@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -197,6 +198,32 @@ public final class ClusterVersionCatalog {
         Set.of(
             new ApplierVersionId(JobIntent.PRIORITY_UPDATED, 1),
             new ApplierVersionId(JobIntent.CREATED, 3)),
+        Set.of()),
+
+    /**
+     * Retroactive gate on the PR #50012 bug fix that added {@code recordRPIMetric} to {@code
+     * ProcessEventTriggeringV2Applier} so process instances started via message/timer/signal/
+     * conditional events are counted toward RPI metrics. The fix shipped to 8.8.x but the backport
+     * to 8.9 was missed; an 8.9 broker taking over a stream that already contained {@code
+     * ProcessEvent.TRIGGERING v=2} records had no v=2 applier, broke replay, and blocked the
+     * upgrade.
+     *
+     * <p>Gating the applier here teaches the pattern: had this capability existed when the fix was
+     * merged, 8.8 brokers would have shipped the v=2 applier code but the write-side {@code
+     * selectVersionFor(TRIGGERING)} would have refused to stamp v=2 records until the operator
+     * raised ECV. An 8.9 cluster (whether or not it had the v=2 applier code) could replay any
+     * pre-raise log because only v=1 records existed. The fix becomes opt-in coordinated activation
+     * rather than implicit write-on-deploy.
+     *
+     * <p>Subsequent {@code TRIGGERING v=3} (PR #52727) is left in {@code BASELINE_APPLIERS} for
+     * now; the same gating pattern should be applied there in a follow-up if its release history
+     * had similar coordination gaps. The exercise here is documenting how a bug fix touching the
+     * stream protocol should be gated <em>at merge time</em>, not paper over what already happened.
+     */
+    EVENT_START_RPI_METRIC(
+        14,
+        "RPI metric tracking on event-driven process starts (retro-gate on PR #50012)",
+        Set.of(new ApplierVersionId(ProcessEventIntent.TRIGGERING, 2)),
         Set.of());
 
     private final int at;

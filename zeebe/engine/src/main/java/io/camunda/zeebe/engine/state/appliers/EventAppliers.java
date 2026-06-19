@@ -144,7 +144,9 @@ public final class EventAppliers implements EventApplier {
           new ApplierVersionId(JobIntent.TIMED_OUT, 2),
           new ApplierVersionId(JobIntent.UPDATED, 2),
           new ApplierVersionId(MessageIntent.EXPIRED, 2),
-          new ApplierVersionId(ProcessEventIntent.TRIGGERING, 2),
+          // ProcessEventIntent.TRIGGERING v=2 is ECV-gated under
+          // Capability.EVENT_START_RPI_METRIC (retro-gate on PR #50012) — it is intentionally
+          // omitted here so the gatedBy() cross-check fires on registration.
           new ApplierVersionId(ProcessEventIntent.TRIGGERING, 3),
           new ApplierVersionId(ProcessInstanceCreationIntent.CREATED, 2),
           new ApplierVersionId(ProcessInstanceIntent.ELEMENT_ACTIVATING, 2),
