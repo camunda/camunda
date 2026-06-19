@@ -1204,7 +1204,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
         .filteredOn(req -> req.getEndpoint().contains("_ism/add"))
-        .hasSize(23)
+        .hasSize(20)
         .allSatisfy(
             request -> {
               final var indexPattern =
