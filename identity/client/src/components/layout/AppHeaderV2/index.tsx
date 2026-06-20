@@ -13,7 +13,7 @@ import {
   preview_useClusterWebappBreadcrumbs as useClusterWebappBreadcrumbs,
 } from "@camunda/camunda-composite-components";
 import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.10";
-import { observer } from "mobx-react-lite";
+import { useCallback } from "react";
 import { Link } from "react-router-dom";
 
 import { useApi } from "src/utility/api";
@@ -29,72 +29,70 @@ import { useCamundaToolsConfig } from "./useCamundaToolsConfig";
 const SKIP_TO_CONTENT_TARGET_ID = "main-content";
 const LOGOUT_DELAY = 1000;
 
-const AppHeaderV2 = observer(
-  ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
-    const { data: license } = useApi(checkLicense);
-    const { data: camundaUser } = useApi(getAuthentication);
-    const { enqueueNotification } = useNotifications();
-    const { t } = useTranslate("authentication");
-    const { t: tNav } = useTranslate("navigation");
+const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
+  const { data: license } = useApi(checkLicense);
+  const { data: camundaUser } = useApi(getAuthentication);
+  const { enqueueNotification } = useNotifications();
+  const { t } = useTranslate("authentication");
+  const { t: tNav } = useTranslate("navigation");
 
-    const logoutWithNotification = async () => {
-      enqueueNotification({
-        kind: "info",
-        title: t("logOut"),
-        subtitle: t("beingLoggedOut"),
-      });
-      return setTimeout(logout, LOGOUT_DELAY);
-    };
-
-    const breadcrumbs = useClusterWebappBreadcrumbs({ currentApp: "identity" });
-    const sidebarChildren = useSidebarChildren(hideNavLinks);
-    const { tools, ToolsProvider } = useCamundaToolsConfig({
-      name: camundaUser?.displayName ?? "",
-      email: camundaUser?.email ?? "",
-      canLogout: Boolean(camundaUser?.canLogout),
-      onLogout: logoutWithNotification,
+  const logoutWithNotification = useCallback(async () => {
+    enqueueNotification({
+      kind: "info",
+      title: t("logOut"),
+      subtitle: t("beingLoggedOut"),
     });
+    return setTimeout(logout, LOGOUT_DELAY);
+  }, [enqueueNotification, t]);
 
-    const licenseTag = getLicenseTag(license);
+  const breadcrumbs = useClusterWebappBreadcrumbs({ currentApp: "identity" });
+  const sidebarChildren = useSidebarChildren(hideNavLinks);
+  const { tools, ToolsProvider } = useCamundaToolsConfig({
+    name: camundaUser?.displayName ?? "",
+    email: camundaUser?.email ?? "",
+    canLogout: Boolean(camundaUser?.canLogout),
+    onLogout: logoutWithNotification,
+  });
 
-    const { navProps } = useC3NavigationV2({
-      app: {
-        ariaLabel: "Admin",
-        linkProps: { to: "/" },
-      },
-      skipToContentTargetId: SKIP_TO_CONTENT_TARGET_ID,
-      sidebarLabels: {
-        collapse: tNav("sidebarCollapse"),
-        expand: tNav("sidebarExpand"),
-        toggleAriaLabel: (expanded) =>
-          expanded ? tNav("sidebarCollapseAria") : tNav("sidebarExpandAria"),
-        groupToggleAriaLabel: ({ label, isExpanded }) =>
-          isExpanded
-            ? tNav("sidebarGroupCollapseAria", { label })
-            : tNav("sidebarGroupExpandAria", { label }),
-      },
-      activeItemKey: "",
-      sidebarChildren,
-      breadcrumbs,
-      tools,
-      // @ts-expect-error - we need to fix it from the C3 side
-      linkComponent: Link,
-      headerTrailingContent: licenseTag.show ? (
-        <C3LicenseTag
-          isProductionLicense={licenseTag.isProductionLicense}
-          isCommercial={licenseTag.isCommercial}
-          expiresAt={licenseTag.expiresAt}
-        />
-      ) : undefined,
-    });
+  const licenseTag = getLicenseTag(license);
 
-    return (
-      <ToolsProvider>
-        <C3NavigationV2 {...navProps} />
-      </ToolsProvider>
-    );
-  },
-);
+  const { navProps } = useC3NavigationV2({
+    app: {
+      ariaLabel: "Admin",
+      linkProps: { to: "/" },
+    },
+    skipToContentTargetId: SKIP_TO_CONTENT_TARGET_ID,
+    sidebarLabels: {
+      collapse: tNav("sidebarCollapse"),
+      expand: tNav("sidebarExpand"),
+      toggleAriaLabel: (expanded) =>
+        expanded ? tNav("sidebarCollapseAria") : tNav("sidebarExpandAria"),
+      groupToggleAriaLabel: ({ label, isExpanded }) =>
+        isExpanded
+          ? tNav("sidebarGroupCollapseAria", { label })
+          : tNav("sidebarGroupExpandAria", { label }),
+    },
+    activeItemKey: "",
+    sidebarChildren,
+    breadcrumbs,
+    tools,
+    // @ts-expect-error - we need to fix it from the C3 side
+    linkComponent: Link,
+    headerTrailingContent: licenseTag.show ? (
+      <C3LicenseTag
+        isProductionLicense={licenseTag.isProductionLicense}
+        isCommercial={licenseTag.isCommercial}
+        expiresAt={licenseTag.expiresAt}
+      />
+    ) : undefined,
+  });
+
+  return (
+    <ToolsProvider>
+      <C3NavigationV2 {...navProps} />
+    </ToolsProvider>
+  );
+};
 
 function getLicenseTag(license: LicenseDto | null | undefined) {
   if (license === undefined || license === null) {
@@ -102,7 +100,7 @@ function getLicenseTag(license: LicenseDto | null | undefined) {
       show: true,
       isProductionLicense: false,
       isCommercial: false,
-      expiresAt: undefined as string | undefined,
+      expiresAt: undefined,
     };
   }
 
