@@ -17,6 +17,7 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.ConditionWaitStateDetails;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,10 +31,13 @@ public class ConditionWaitStateDetailsImpl implements ConditionWaitStateDetails 
     expression = details.getExpression();
     events =
         details.getEvents() == null
-            ? null
-            : details.getEvents().stream()
-                .map(io.camunda.client.protocol.rest.ConditionWaitStateDetails.EventsEnum::getValue)
-                .collect(Collectors.toList());
+            ? Collections.emptyList()
+            : Collections.unmodifiableList(
+                details.getEvents().stream()
+                    .map(
+                        io.camunda.client.protocol.rest.ConditionWaitStateDetails.EventsEnum
+                            ::getValue)
+                    .collect(Collectors.toList()));
   }
 
   @Override
