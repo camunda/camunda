@@ -135,6 +135,53 @@ public class WaitStateConditionalIT {
   }
 
   @Test
+  void shouldRemoveConditionWaitStateWhenProcessInstanceIsCancelled() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("condWaitStateCancelProcess")
+            .startEvent()
+            .intermediateCatchEvent("cond-cancel-catch")
+            .condition(c -> c.condition(CONDITION_EXPRESSION).zeebeVariableEvents(VARIABLE_EVENTS))
+            .endEvent()
+            .done();
+    deployProcessAndWaitForIt(camundaClient, process, "condWaitStateCancelProcess.bpmn");
+
+    final var instance =
+        startProcessInstance(camundaClient, "condWaitStateCancelProcess", Map.of("x", 1));
+    final long pik = instance.getProcessInstanceKey();
+
+    Awaitility.await("condition wait state should appear before cancellation")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+
+    // when — cancel the process instance
+    cancelInstance(camundaClient, instance);
+
+    // then — wait state is removed after cancellation
+    Awaitility.await("condition wait state should be removed after cancellation")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .isEmpty());
+  }
+
+  @Test
   void shouldNotExportConditionWaitStateForRootStartEvent() {
     // given — a process whose root start event has a conditional event definition.
     // Root conditional start subscriptions use processInstanceKey == -1 (no active instance)
@@ -235,21 +282,6 @@ public class WaitStateConditionalIT {
                             .items())
                     .hasSize(1)
                     .allSatisfy(item -> assertThat(item.getElementId()).isEqualTo("cond-v2")));
-
-    // cleanup
-    cancelInstance(camundaClient, instance);
-    Awaitility.await("wait state should be removed after cancellation")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newElementInstanceWaitStateSearchRequest()
-                            .filter(f -> f.processInstanceKey(pik))
-                            .send()
-                            .join()
-                            .items())
-                    .isEmpty());
   }
 
   @Test
