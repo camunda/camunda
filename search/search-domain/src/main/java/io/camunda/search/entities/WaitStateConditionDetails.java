@@ -9,7 +9,6 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
-import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -18,7 +17,7 @@ public record WaitStateConditionDetails(@Nullable String expression, @Nullable L
     implements WaitStateDetails {
 
   public WaitStateConditionDetails {
-    events = events != null ? events : new ArrayList<>();
+    events = events != null ? List.copyOf(events) : List.of();
   }
 
   @Override
