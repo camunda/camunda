@@ -20,7 +20,6 @@ import './Analysis.scss';
 export default function Analysis() {
   const {pathname} = useLocation();
 
-  // V2 surfaces Task/Branch in the sidebar group, so drop the in-page tabs.
   if (IS_NAV_V2_ENABLED) {
     return (
       <div className="Analysis">

@@ -53,8 +53,6 @@ export default function HeaderV2({noActions}: {noActions?: boolean}) {
   );
 }
 
-// Rendered inside NavbarWrapper so the C3 tools and cluster-webapp breadcrumbs
-// resolve against the C3UserConfigurationProvider context (SaaS).
 function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boolean}) {
   const history = useHistory();
   const {getBaseDocsUrl} = useDocs();
