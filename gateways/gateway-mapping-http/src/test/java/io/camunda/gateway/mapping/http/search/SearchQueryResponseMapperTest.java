@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
@@ -59,6 +60,7 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.query.SearchQueryResult;
@@ -1079,6 +1081,37 @@ class SearchQueryResponseMapperTest {
     // then
     final var responseDetails = (JobWaitStateDetails) result.getItems().getFirst().getDetails();
     assertThat(responseDetails.getListenerEventType()).isNull();
+  }
+
+  @Test
+  void shouldMapConditionWaitStateDetails() {
+    // given
+    final var conditionDetails =
+        new WaitStateConditionDetails("= x > 5", List.of("create", "update"));
+    final var entity =
+        new WaitStateEntity.Builder()
+            .processInstanceKey(789L)
+            .elementInstanceKey(111L)
+            .elementId("cond-ice")
+            .elementType(FlowNodeType.INTERMEDIATE_CATCH_EVENT)
+            .rootProcessInstanceKey(999L)
+            .bpmnProcessId("process1")
+            .details(conditionDetails)
+            .tenantId("default")
+            .build();
+
+    // when
+    final var result =
+        SearchQueryResponseMapper.toElementInstanceWaitStateQueryResult(
+            new SearchQueryResult<>(1, false, List.of(entity), null, null));
+
+    // then
+    final var responseDetails =
+        (ConditionWaitStateDetails) result.getItems().getFirst().getDetails();
+    assertThat(responseDetails.getExpression()).isEqualTo("= x > 5");
+    assertThat(responseDetails.getEvents())
+        .extracting(ConditionWaitStateDetails.EventsEnum::getValue)
+        .containsExactly("create", "update");
   }
 
   @Nested
