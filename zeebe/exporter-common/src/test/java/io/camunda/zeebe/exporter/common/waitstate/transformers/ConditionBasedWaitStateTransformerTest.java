@@ -257,6 +257,13 @@ class ConditionBasedWaitStateTransformerTest {
                 r.withRecordType(RecordType.EVENT)
                     .withIntent(ConditionalSubscriptionIntent.CREATED)
                     .withValue(value));
+    final Record<ConditionalSubscriptionRecordValue> migratedRecord =
+        factory.generateRecord(
+            ValueType.CONDITIONAL_SUBSCRIPTION,
+            r ->
+                r.withRecordType(RecordType.EVENT)
+                    .withIntent(ConditionalSubscriptionIntent.MIGRATED)
+                    .withValue(value));
     final Record<ConditionalSubscriptionRecordValue> deletedRecord =
         factory.generateRecord(
             ValueType.CONDITIONAL_SUBSCRIPTION,
@@ -274,6 +281,7 @@ class ConditionBasedWaitStateTransformerTest {
 
     // when / then
     assertThat(transformer.triggersAdd(createdRecord)).isFalse();
+    assertThat(transformer.triggersUpdate(migratedRecord)).isFalse();
     assertThat(transformer.triggersRemoval(deletedRecord)).isFalse();
     assertThat(transformer.triggersRemoval(triggeredRecord)).isFalse();
   }
