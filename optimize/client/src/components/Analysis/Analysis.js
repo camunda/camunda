@@ -10,6 +10,7 @@ import {Link, Route, Switch, useLocation} from 'react-router-dom';
 
 import {ErrorPage, Tabs} from 'components';
 import {t} from 'translation';
+import {IS_NAV_V2_ENABLED} from 'feature-flags';
 
 import {BranchAnalysis} from './BranchAnalysis';
 import {TaskAnalysis} from './TaskAnalysis';
@@ -18,6 +19,19 @@ import './Analysis.scss';
 
 export default function Analysis() {
   const {pathname} = useLocation();
+
+  if (IS_NAV_V2_ENABLED) {
+    return (
+      <div className="Analysis">
+        <Switch>
+          <Route path="/analysis/branchAnalysis" component={BranchAnalysis} />
+          <Route path="/analysis/taskAnalysis" component={TaskAnalysis} />
+          <Route path="/analysis/" exact component={TaskAnalysis} />
+          <Route path="*" component={() => <ErrorPage noLink />} />
+        </Switch>
+      </div>
+    );
+  }
 
   const tabValue = getTabValue(pathname);
 

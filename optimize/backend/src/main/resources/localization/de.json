@@ -53,7 +53,19 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support"
+    "feedback": "Feedback und Support",
+    "info": "Info",
+    "settings": "Einstellungen",
+    "notifications": "Benachrichtigungen",
+    "notificationsDismissAll": "Alle verwerfen",
+    "notificationsEmptyTitle": "Keine Benachrichtigungen",
+    "notificationsEmptyDescription": "Neue Updates zu Ihren Prozessen, Clustern und mehr erscheinen hier.",
+    "sidebarCollapse": "Einklappen",
+    "sidebarExpand": "Ausklappen",
+    "sidebarCollapseAria": "Seitenleiste einklappen",
+    "sidebarExpandAria": "Seitenleiste ausklappen",
+    "sidebarGroupCollapseAria": "{label} einklappen",
+    "sidebarGroupExpandAria": "{label} ausklappen"
   },
   "login": {
     "label": "Einloggen",
