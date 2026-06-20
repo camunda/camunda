@@ -72,7 +72,7 @@ type ToolsConfigParams = {
   onThemeChange: (theme: ThemeOption) => void;
 };
 
-export function useCamundaToolsConfig(params: ToolsConfigParams) {
+function useCamundaToolsConfig(params: ToolsConfigParams) {
   const {
     isSaas,
     isPaidPlan,
@@ -174,3 +174,5 @@ export function useCamundaToolsConfig(params: ToolsConfigParams) {
 
   return useCamundaTools(options);
 }
+
+export {useCamundaToolsConfig};

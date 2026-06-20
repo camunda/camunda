@@ -31,4 +31,10 @@ describe('AppHeader (nav V2)', () => {
     expect(screen.getByRole('link', {name: /processes/i})).toBeInTheDocument();
     expect(screen.getByRole('link', {name: /decisions/i})).toBeInTheDocument();
   });
+
+  it('should render the Operations group parent (V2-only)', async () => {
+    render(<AppHeader />, {wrapper: Wrapper});
+
+    expect(await screen.findByText('Operations')).toBeInTheDocument();
+  });
 });
