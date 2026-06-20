@@ -7,10 +7,15 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
@@ -23,4 +28,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 public class RdbmsTestConfiguration {
 
   @MockitoBean private ActorScheduler actorScheduler;
+
+  @Bean(destroyMethod = "") // DataSource will be closed when closing RdbmsDataSources
+  public DataSource dataSource(final RdbmsDataSources dataSources) {
+    return dataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+  }
 }

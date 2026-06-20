@@ -46,8 +46,6 @@ class MyBatisConfigurationPerTenantIT {
           .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
       assertThat(fixture.factories.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
           .isNotSameAs(fixture.factories.get("tenantb"));
-      assertThat(MY_BATIS.sqlSessionFactory(fixture.factories))
-          .isSameAs(fixture.factories.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
     }
   }
 

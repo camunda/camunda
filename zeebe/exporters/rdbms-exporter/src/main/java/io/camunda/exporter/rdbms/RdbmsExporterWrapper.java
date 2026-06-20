@@ -10,7 +10,6 @@ package io.camunda.exporter.rdbms;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -84,18 +83,15 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private final RdbmsService rdbmsService;
   private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
-  private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private RdbmsExporter exporter;
   private RdbmsCacheRegistry cacheRegistry;
 
   public RdbmsExporterWrapper(
       final RdbmsService rdbmsService,
-      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
-      final VendorDatabaseProperties vendorDatabaseProperties) {
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
     this.rdbmsService = rdbmsService;
     this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
-    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   @Override
@@ -379,10 +375,7 @@ public class RdbmsExporterWrapper implements Exporter {
             builder.withHandler(
                 transformer.config().valueType(),
                 new AuditLogExportHandler<>(
-                    rdbmsWriters.getAuditLogWriter(),
-                    vendorDatabaseProperties,
-                    transformer,
-                    config.getAuditLog())));
+                    rdbmsWriters.getAuditLogWriter(), transformer, config.getAuditLog())));
   }
 
   private void registerWaitStateHandlers(final RdbmsWriters rdbmsWriters, final Builder builder) {

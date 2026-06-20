@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.restore;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
@@ -17,6 +19,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -25,6 +28,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.jspecify.annotations.NullMarked;
@@ -83,7 +87,8 @@ public class RestoreApp implements ApplicationRunner {
       final Camunda camunda,
       final BrokerBasedProperties configuration,
       final BackupStore backupStore,
-      @Nullable @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
+      @Nullable @Autowired(required = false)
+          final Map<String, RdbmsMapperBundle> rdbmsMapperBundleMap,
       final RestoreProperties restoreConfiguration,
       final MeterRegistry meterRegistry,
       final NodeIdProvider nodeIdProvider,
@@ -94,11 +99,19 @@ public class RestoreApp implements ApplicationRunner {
       final PreRestoreAction preRestoreAction) {
     this.configuration = configuration;
     this.backupStore = backupStore;
-    if (exporterPositionMapper == null
-        && camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
-      throw new IllegalStateException("RDBMS-aware restore requires ExporterPositionMapper");
+    if (camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
+      // FIXME https://github.com/camunda/product-hub/issues/3646 RestoreApp with RDBMS is only
+      // supported for DEFAULT_PHYSICAL_TENANT_ID
+      if (rdbmsMapperBundleMap == null
+          || !rdbmsMapperBundleMap.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
+        throw new IllegalStateException(
+            "RDBMS-aware restore requires ExporterPositionMapper for default physical tenant");
+      }
+      exporterPositionMapper =
+          rdbmsMapperBundleMap.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
+    } else {
+      exporterPositionMapper = null;
     }
-    this.exporterPositionMapper = exporterPositionMapper;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
     this.postRestoreAction = postRestoreAction;

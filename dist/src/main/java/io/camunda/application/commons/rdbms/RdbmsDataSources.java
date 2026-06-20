@@ -90,6 +90,10 @@ public final class RdbmsDataSources implements AutoCloseable {
     return ds;
   }
 
+  public Map<String, DataSource> dataSources() {
+    return Map.copyOf(dataSources);
+  }
+
   public VendorDatabaseProperties vendorPropertiesFor(final String physicalTenantId) {
     final var props = vendorProperties.get(physicalTenantId);
     if (props == null) {

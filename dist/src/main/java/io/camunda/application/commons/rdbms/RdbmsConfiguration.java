@@ -14,9 +14,8 @@ import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
@@ -35,12 +34,12 @@ import io.camunda.security.core.authz.ResourceAccessController;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -56,11 +55,6 @@ import org.springframework.context.annotation.Import;
 public class RdbmsConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsConfiguration.class);
-
-  @Bean
-  public RdbmsReaderConfig rdbmsReaderConfig(final Camunda configuration) {
-    return configuration.getData().getSecondaryStorage().getRdbms().getQuery().toReaderConfig();
-  }
 
   @Bean
   public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
@@ -84,10 +78,10 @@ public class RdbmsConfiguration {
 
   @Bean
   public ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory(
-      final VendorDatabaseProperties vendorDatabaseProperties,
+      final RdbmsDataSources rdbmsDataSources,
       final ReplicationStatusMapper replicationStatusMapper) {
     return new ReplicationLogStatusProviderFactory(
-        vendorDatabaseProperties, replicationStatusMapper);
+        rdbmsDataSources.vendorPropertiesFor(DEFAULT_PHYSICAL_TENANT_ID), replicationStatusMapper);
   }
 
   @Bean
@@ -99,11 +93,21 @@ public class RdbmsConfiguration {
   @Bean
   Map<String, RdbmsTenantReaders> rdbmsTenantReaders(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-      final RdbmsReaderConfig readerConfig) {
+      final PhysicalTenantResolver physicalTenantResolver) {
     final var byTenant = new LinkedHashMap<String, RdbmsTenantReaders>();
     rdbmsMapperBundles.forEach(
         (tenantId, bundle) ->
-            byTenant.put(tenantId, RdbmsTenantReaders.create(bundle, readerConfig)));
+            byTenant.put(
+                tenantId,
+                RdbmsTenantReaders.create(
+                    bundle,
+                    physicalTenantResolver
+                        .forPhysicalTenant(tenantId)
+                        .getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getQuery()
+                        .toReaderConfig())));
     return Map.copyOf(byTenant);
   }
 
@@ -159,20 +163,46 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public CommandLineRunner logJdbcDriverInfo(final DataSource dataSource) {
+  public CommandLineRunner logJdbcDriverInfo(final RdbmsDataSources rdbmsDataSources) {
     return args -> {
-      try (final Connection conn = dataSource.getConnection()) {
-        final DatabaseMetaData meta = conn.getMetaData();
-        LOG.debug("JDBC Driver: {} {}", meta.getDriverName(), meta.getDriverVersion());
-        LOG.debug("JDBC Spec: {}.{}", meta.getJDBCMajorVersion(), meta.getJDBCMinorVersion());
+      if (LOG.isDebugEnabled()) {
+        rdbmsDataSources
+            .dataSources()
+            .forEach(
+                (physicalTenantId, datasource) -> {
+                  try (final Connection conn = datasource.getConnection()) {
+                    final DatabaseMetaData meta = conn.getMetaData();
+                    LOG.debug(
+                        "JDBC Driver [physicalTenantId={}]: {} {}",
+                        physicalTenantId,
+                        meta.getDriverName(),
+                        meta.getDriverVersion());
+                    LOG.debug(
+                        "JDBC Spec [physicalTenantId={}]: {}.{}",
+                        physicalTenantId,
+                        meta.getJDBCMajorVersion(),
+                        meta.getJDBCMinorVersion());
+                  } catch (final SQLException e) {
+                    // Best-effort diagnostics only: a failure for one physical tenant must not
+                    // abort
+                    // application startup (this runs as a CommandLineRunner).
+                    LOG.debug(
+                        "Could not log JDBC driver info for physical tenant {}",
+                        physicalTenantId,
+                        e);
+                  }
+                });
       }
     };
   }
 
   @Bean
-  HealthContributor rdbmsStatusHealthIndicator(final DataSource dataSource) {
+  HealthContributor rdbmsStatusHealthIndicator(final RdbmsDataSources rdbmsDataSources) {
     // Equivalent to what Boot would normally wire for "db"
-    return new DataSourceHealthIndicator(dataSource);
+    // TODO: make this a CompositeHealthContributor over all physical tenants (one
+    // DataSourceHealthIndicator per pool) instead of default-tenant only.
+    return new DataSourceHealthIndicator(
+        rdbmsDataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   private static RdbmsTenantReaders defaultReaders(
