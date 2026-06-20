@@ -150,13 +150,13 @@ public class WaitStateEntry {
   }
 
   public enum WaitStateType {
+    CALL_ACTIVITY,
+    CONDITION,
+    INCIDENT,
     JOB,
     MESSAGE,
-    USER_TASK,
-    TIMER,
     SIGNAL,
-    INCIDENT,
-    CALL_ACTIVITY,
-    CONDITION
+    TIMER,
+    USER_TASK
   }
 }

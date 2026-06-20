@@ -11,8 +11,8 @@ import io.camunda.zeebe.exporter.common.waitstate.WaitStateDetails;
 import java.util.List;
 
 /**
- * Wait-state details for condition-based element waits (conditional intermediate catch events,
- * conditional boundary events, and conditional start events in event subprocesses).
+ * Wait-state details for condition-based element waits. Only intermediate conditional catch events
+ * are exported; boundary events and event-subprocess start events are excluded.
  */
 public record ConditionWaitStateDetails(String expression, List<String> events)
     implements WaitStateDetails {}
