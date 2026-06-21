@@ -28,6 +28,7 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -87,29 +88,11 @@ public class ResourceAccessControllerConfiguration {
           final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
           final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
           final TenantAccessProvider tenantAccessProvider) {
-    final Map<String, ResourceAccessController> controllers = new LinkedHashMap<>();
-    physicalTenantSearchClientReaders
-        .readersByPhysicalTenant()
-        .forEach(
-            (tenantId, searchClientReaders) -> {
-              final var cslProps =
-                  physicalTenantSecurityProperties.propertiesByPhysicalTenant().get(tenantId);
-              final var checker =
-                  new AuthorizationChecker(
-                      new SearchAuthorizationScopeRepository(
-                          searchClientReaders.authorizationReader()));
-              final ResourceAccessProvider provider =
-                  cslProps.getAuthorizations().isEnabled()
-                      ? new DefaultResourceAccessProvider(checker)
-                      : new DisabledResourceAccessProvider();
-              final ResourceAccessController rac =
-                  new DocumentBasedResourceAccessController(provider, tenantAccessProvider);
-              controllers.put(
-                  tenantId,
-                  new ResourceAccessDelegatingController(
-                      List.of(new AnonymousResourceAccessController(), rac)));
-            });
-    return new PhysicalTenantResourceAccessControllers(Map.copyOf(controllers));
+    return buildPerTenantControllers(
+        physicalTenantSearchClientReaders,
+        physicalTenantSecurityProperties,
+        tenantAccessProvider,
+        DocumentBasedResourceAccessController::new);
   }
 
   @Bean
@@ -118,6 +101,19 @@ public class ResourceAccessControllerConfiguration {
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
       final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
       final TenantAccessProvider tenantAccessProvider) {
+    return buildPerTenantControllers(
+        physicalTenantSearchClientReaders,
+        physicalTenantSecurityProperties,
+        tenantAccessProvider,
+        RdbmsResourceAccessController::new);
+  }
+
+  private static PhysicalTenantResourceAccessControllers buildPerTenantControllers(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
+      final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
+      final TenantAccessProvider tenantAccessProvider,
+      final BiFunction<ResourceAccessProvider, TenantAccessProvider, ResourceAccessController>
+          controllerFactory) {
     final Map<String, ResourceAccessController> controllers = new LinkedHashMap<>();
     physicalTenantSearchClientReaders
         .readersByPhysicalTenant()
@@ -133,12 +129,12 @@ public class ResourceAccessControllerConfiguration {
                   cslProps.getAuthorizations().isEnabled()
                       ? new DefaultResourceAccessProvider(checker)
                       : new DisabledResourceAccessProvider();
-              final ResourceAccessController rac =
-                  new RdbmsResourceAccessController(provider, tenantAccessProvider);
+              final ResourceAccessController resourceAccessController =
+                  controllerFactory.apply(provider, tenantAccessProvider);
               controllers.put(
                   tenantId,
                   new ResourceAccessDelegatingController(
-                      List.of(new AnonymousResourceAccessController(), rac)));
+                      List.of(new AnonymousResourceAccessController(), resourceAccessController)));
             });
     return new PhysicalTenantResourceAccessControllers(Map.copyOf(controllers));
   }

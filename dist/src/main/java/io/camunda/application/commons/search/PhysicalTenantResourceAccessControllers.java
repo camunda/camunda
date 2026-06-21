@@ -14,8 +14,10 @@ import java.util.Map;
  * Holds the {@link ResourceAccessController} for every physical tenant, keyed by physical tenant
  * id.
  *
- * <p>A typed wrapper is required because injecting a bare {@code Map<String,
- * ResourceAccessController>} would trigger Spring's collection-injection semantics.
+ * <p>A dedicated wrapper type is used so the map stays keyed by physical tenant id. Injecting a
+ * bare {@code Map<String, ResourceAccessController>} would otherwise require a qualifier — without
+ * one, Spring resolves it via bean-collection autowiring, keyed by bean name rather than by
+ * physical tenant id.
  */
 public record PhysicalTenantResourceAccessControllers(
     Map<String, ResourceAccessController> controllersByPhysicalTenant) {}

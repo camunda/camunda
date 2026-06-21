@@ -28,7 +28,7 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.CamundaSearchClients;
-import io.camunda.search.clients.auth.AnonymousResourceAccessController;
+import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.core.authz.ResourceAccessController;
@@ -36,6 +36,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -124,15 +125,22 @@ public class RdbmsConfiguration {
         physicalTenantSearchClientReaders.readersByPhysicalTenant(),
         physicalTenantResourceAccessControllers
             .map(PhysicalTenantResourceAccessControllers::controllersByPhysicalTenant)
-            .orElseGet(() -> anonymousControllers(physicalTenantSearchClientReaders)));
+            .orElseGet(() -> failFastControllers(physicalTenantSearchClientReaders)));
   }
 
-  private static Map<String, ResourceAccessController> anonymousControllers(
+  /**
+   * Fallback for non-web contexts (e.g. Restore, engine-only integration tests) where the per-PT
+   * {@link PhysicalTenantResourceAccessControllers} bean is not created. Such contexts do not
+   * perform authorized data-plane reads; an empty delegating controller keeps the context startable
+   * while failing fast on any accidental read.
+   */
+  private static Map<String, ResourceAccessController> failFastControllers(
       final PhysicalTenantSearchClientReaders readers) {
-    return readers.readersByPhysicalTenant().entrySet().stream()
+    return readers.readersByPhysicalTenant().keySet().stream()
         .collect(
             Collectors.toUnmodifiableMap(
-                Map.Entry::getKey, e -> new AnonymousResourceAccessController()));
+                tenantId -> tenantId,
+                tenantId -> new ResourceAccessDelegatingController(List.of())));
   }
 
   @Bean
