@@ -57,14 +57,8 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
 
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
-    // Serve static assets and favicons for each webapp under the physical-tenant prefix, using the
-    // same no-explicit-cache-control policy as the non-PT paths (Spring Boot's default classpath
-    // handler). Two handlers per webapp:
-    //   assets/**  — hash-suffixed filenames served from the webapp's assets/ classpath dir.
-    //   *.ico      — favicon.ico at the webapp root; needs an explicit handler because all three
-    //                index controllers exclude *.ico from SPA forwarding so it can be served
-    //                statically — the default Spring handler resolves /operate/favicon.ico from
-    //                classpath, but /physical-tenants/<id>/operate/favicon.ico needs this entry.
+    // *.ico needs its own handler: index controllers exclude it from SPA forwarding so it can be
+    // served statically, but the default classpath handler only resolves the unprefixed path.
     for (final String webapp : WebAppProviderAdapter.WEB_APPS) {
       registry
           .addResourceHandler(
