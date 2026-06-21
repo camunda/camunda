@@ -17,15 +17,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.stereotype.Controller;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.util.pattern.PathPatternParser;
 
 @WebMvcTest(useDefaultFilters = false)
 @Import({
   PhysicalTenantWebMvcConfig.class,
-  PhysicalTenantPathPatternMatchingTest.TestController.class
+  PhysicalTenantPathPatternMatchingTest.TestController.class,
+  PhysicalTenantPathPatternMatchingTest.PlainWebappController.class
 })
 class PhysicalTenantPathPatternMatchingTest extends RestTest {
 
@@ -80,6 +83,11 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
   }
 
   @Test
+  void shouldPrefixPlainWebappControllerRoot() {
+    webClient.get().uri("/physical-tenants/default/operate").exchange().expectStatus().isOk();
+  }
+
+  @Test
   void shouldServeWebappAssetUnderPhysicalTenantPrefix() {
     // backed by src/test/resources/META-INF/resources/operate/assets/test-asset.js — proves the
     // resolver strips the leading {tenant}/{webapp}/assets segments injected by the '*' wildcard
@@ -116,6 +124,17 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
   static class TestController {
     @GetMapping("/v2/widgets")
     public String widgets() {
+      return "ok";
+    }
+  }
+
+  // Mirrors the dist webapp index controllers: a plain @Controller (NOT @CamundaRestController)
+  // mapping a webapp root. Verifies such a controller still gets a PT-prefixed sibling.
+  @Controller
+  static class PlainWebappController {
+    @GetMapping("/operate")
+    @ResponseBody
+    public String operate() {
       return "ok";
     }
   }

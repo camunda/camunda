@@ -22,8 +22,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Verifies that static assets under {@code /webapp/assets/**} and the physical-tenant-prefixed
- * sibling {@code /physical-tenants/*}/webapp/assets/**} are served with forever-caching headers and
- * that requests for non-existent assets return 404.
+ * sibling {@code /physical-tenants/<id>/webapp/assets/**} are served with forever-caching headers
+ * and that requests for non-existent assets return 404.
  */
 @SpringBootTest(classes = TestWebappApplication.class, webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
