@@ -191,7 +191,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<AgentInstanceHistoryEntity> searchAgentHistoryItems(
       final AgentInstanceHistoryQuery query) {
-    return doSearchWithReader(readers.agentHistoryReader(), query);
+    return doSearchWithReader(requireScopedReaders().agentHistoryReader(), query);
   }
 
   @Override
