@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
@@ -68,7 +69,7 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
     //                regex so the file can be served statically; the default Spring resource
     //                handler resolves /operate/favicon.ico from classpath, but the PT-prefixed
     //                path /physical-tenants/<id>/operate/favicon.ico needs an explicit handler.
-    for (final String webapp : List.of("operate", "tasklist", "admin")) {
+    for (final String webapp : WebAppProviderAdapter.WEB_APPS) {
       registry
           .addResourceHandler(
               PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*/" + webapp + "/assets/**")
