@@ -32,11 +32,17 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
     </dependency>
-    <!-- PhysicalTenantContext is a request-scoped web helper; servlet/web APIs are provided by the
+    <!-- PhysicalTenantContext is a request-scoped web helper; SegmentStrippingResolver extends
+         Spring MVC's PathResourceResolver. Both servlet/web and webmvc APIs are provided by the
          consuming web applications at runtime. -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
