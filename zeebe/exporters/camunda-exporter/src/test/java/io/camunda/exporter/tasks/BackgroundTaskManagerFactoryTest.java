@@ -19,6 +19,7 @@ import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
@@ -63,6 +64,7 @@ class BackgroundTaskManagerFactoryTest {
   void shouldScheduleProcessInstanceArchiverTaskWhenConfigEnabled() {
     // given
     config.getHistory().setProcessInstanceEnabled(true);
+    config.getHistory().setArchiveByIdEnabled(false);
 
     // when
     final var taskManager = factory.build();
@@ -72,6 +74,22 @@ class BackgroundTaskManagerFactoryTest {
     assertThat(tasks)
         .as("Should contain ProcessInstancesArchiverJob when config is enabled")
         .anyMatch(task -> isProcessInstanceArchiverTask(task));
+  }
+
+  @Test
+  void shouldScheduleProcessInstanceByIdArchiverJobTaskWhenConfigEnabled() {
+    // given
+    config.getHistory().setProcessInstanceEnabled(true);
+    config.getHistory().setArchiveByIdEnabled(true);
+
+    // when
+    final var taskManager = factory.build();
+
+    // then
+    final var tasks = getTasksFromManager(taskManager);
+    assertThat(tasks)
+        .as("Should contain ProcessInstanceByIdArchiverJob when config is enabled")
+        .anyMatch(task -> isProcessInstanceByIdArchiverTask(task));
   }
 
   @Test
@@ -151,8 +169,8 @@ class BackgroundTaskManagerFactoryTest {
     // then
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
-        .as("Should contain both PI archiver and count tasks when all configs are enabled")
-        .anyMatch(task -> isProcessInstanceArchiverTask(task))
+        .as("Should contain both PI by ID archiver and count tasks when all configs are enabled")
+        .anyMatch(task -> isProcessInstanceByIdArchiverTask(task))
         .anyMatch(task -> isProcessInstanceToBeArchivedCountTask(task));
   }
 
@@ -228,6 +246,10 @@ class BackgroundTaskManagerFactoryTest {
 
   private boolean isProcessInstanceArchiverTask(final RunnableTask task) {
     return isTaskOfType(task, ProcessInstanceArchiverJob.class);
+  }
+
+  private boolean isProcessInstanceByIdArchiverTask(final RunnableTask task) {
+    return isTaskOfType(task, ProcessInstanceByIdArchiverJob.class);
   }
 
   private boolean isProcessInstanceToBeArchivedCountTask(final RunnableTask task) {
