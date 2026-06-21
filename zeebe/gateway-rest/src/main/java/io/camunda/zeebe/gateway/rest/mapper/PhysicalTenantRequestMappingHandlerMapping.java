@@ -9,11 +9,14 @@ package io.camunda.zeebe.gateway.rest.mapper;
 
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
+import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -21,7 +24,9 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
   private static final Set<String> PREFIXABLE_ROOTS =
-      Set.of("/v2", "/operate", "/tasklist", "/admin", "/webapp");
+      Stream.concat(
+              Stream.of("/v2", "/webapp"), WebAppProviderAdapter.WEB_APPS.stream().map("/"::concat))
+          .collect(Collectors.toUnmodifiableSet());
 
   @Override
   protected void registerHandlerMethod(
