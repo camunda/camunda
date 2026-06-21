@@ -134,10 +134,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
 
-  @Nullable private final SearchClientReaders readers;
   private final Map<String, SearchClientReaders> tenantReaders;
   @Nullable private final String currentPhysicalTenantId;
-  @Nullable private final ResourceAccessController resourceAccessController;
   private final Map<String, ResourceAccessController> resourceAccessControllerByTenant;
   @Nullable private final SecurityContext securityContext;
 
@@ -157,22 +155,19 @@ public class CamundaSearchClients implements SearchClientsProxy {
     this.currentPhysicalTenantId = currentPhysicalTenantId;
     this.securityContext = securityContext;
     if (currentPhysicalTenantId != null) {
-      readers = this.tenantReaders.get(currentPhysicalTenantId);
-      if (readers == null) {
+      // eagerly validate that the scoped tenant exists in both maps so withPhysicalTenant fails on
+      // an unknown tenant rather than at read time
+      if (!this.tenantReaders.containsKey(currentPhysicalTenantId)) {
         throw new IllegalArgumentException(
             "Unknown physical tenant: '%s'. Known physical tenants: %s"
                 .formatted(currentPhysicalTenantId, this.tenantReaders.keySet()));
       }
-      resourceAccessController = this.resourceAccessControllerByTenant.get(currentPhysicalTenantId);
-      if (resourceAccessController == null) {
+      if (!this.resourceAccessControllerByTenant.containsKey(currentPhysicalTenantId)) {
         throw new IllegalArgumentException(
             "Missing ResourceAccessController for physical tenant '%s'. Known physical tenants: %s"
                 .formatted(
                     currentPhysicalTenantId, this.resourceAccessControllerByTenant.keySet()));
       }
-    } else {
-      readers = null;
-      resourceAccessController = null;
     }
   }
 
@@ -234,7 +229,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public ClusterVariableEntity getClusterVariable(final String name, final String tenant) {
     return doGet(
             resourceAccessChecks ->
-                readers
+                requireScopedReaders()
                     .clusterVariableReader()
                     .getTenantScopedClusterVariable(name, tenant, resourceAccessChecks))
         .orElseThrow(
@@ -247,7 +242,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public ClusterVariableEntity getClusterVariable(final String name) {
     return doGet(
             resourceAccessChecks ->
-                readers
+                requireScopedReaders()
                     .clusterVariableReader()
                     .getGloballyScopedClusterVariable(name, resourceAccessChecks))
         .orElseThrow(
@@ -275,11 +270,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
-    if (!tenantReaders.containsKey(physicalTenantId)) {
-      throw new IllegalArgumentException(
-          "Unknown physical tenant: '%s'. Known tenants: %s"
-              .formatted(physicalTenantId, tenantReaders.keySet()));
-    }
+    // the private constructor validates that the tenant is known
     return new CamundaSearchClients(
         tenantReaders, physicalTenantId, resourceAccessControllerByTenant, securityContext);
   }
@@ -410,7 +401,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final ProcessDefinitionStatisticsFilter filter) {
     return doReadWithResourceAccessController(
         access ->
-            readers
+            requireScopedReaders()
                 .processDefinitionStatisticsReader()
                 .aggregate(new ProcessDefinitionFlowNodeStatisticsQuery(filter), access));
   }
@@ -455,7 +446,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final long processInstanceKey) {
     return doReadWithResourceAccessController(
         access ->
-            readers
+            requireScopedReaders()
                 .processInstanceStatisticsReader()
                 .aggregate(
                     new ProcessInstanceFlowNodeStatisticsQuery(
@@ -631,7 +622,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final String listenerId, final GlobalListenerType listenerType) {
     return doGet(
             resourceAccessChecks ->
-                readers
+                requireScopedReaders()
                     .globalListenerReader()
                     .getGlobalListener(listenerId, listenerType, resourceAccessChecks))
         .orElseThrow(
@@ -785,12 +776,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   private SearchClientReaders requireScopedReaders() {
     requireScoped();
-    return readers;
+    return tenantReaders.get(currentPhysicalTenantId);
   }
 
   private ResourceAccessController requireScopedResourceAccessController() {
     requireScoped();
-    return resourceAccessController;
+    return resourceAccessControllerByTenant.get(currentPhysicalTenantId);
   }
 
   protected <T> T doReadWithResourceAccessController(
