@@ -11,14 +11,17 @@ import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
+import java.io.IOException;
 import java.util.List;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
  * Wires the physical-tenant aware request mapping and static-asset serving into Spring MVC.
@@ -59,15 +62,51 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
     // *.ico needs its own handler: index controllers exclude it from SPA forwarding so it can be
     // served statically, but the default classpath handler only resolves the unprefixed path.
+    // PathPattern.extractPathWithinPattern() starts at the first '*' (the tenant segment), so the
+    // resolver receives "{tenant}/{webapp}/assets/file.js" (resp. "{tenant}/{webapp}/file.ico");
+    // SegmentStrippingResolver drops those leading segments to resolve against the classpath root.
     for (final String webapp : WebAppProviderAdapter.WEB_APPS) {
       registry
           .addResourceHandler(
               PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*/" + webapp + "/assets/**")
-          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/assets/");
+          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/assets/")
+          .resourceChain(false)
+          .addResolver(new SegmentStrippingResolver(3));
       registry
           .addResourceHandler(
               PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*/" + webapp + "/*.ico")
-          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/");
+          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/")
+          .resourceChain(false)
+          .addResolver(new SegmentStrippingResolver(2));
+    }
+  }
+
+  /**
+   * Strips N leading path segments before delegating to {@link PathResourceResolver}. Needed
+   * because {@code PathPattern.extractPathWithinPattern()} starts collecting at the first {@code *}
+   * wildcard, so the resource path handed to the resolver includes the tenant-id segment (and any
+   * literal segments between {@code *} and the trailing wildcard).
+   */
+  private static final class SegmentStrippingResolver extends PathResourceResolver {
+
+    private final int segmentsToSkip;
+
+    SegmentStrippingResolver(final int segmentsToSkip) {
+      this.segmentsToSkip = segmentsToSkip;
+    }
+
+    @Override
+    protected Resource getResource(final String resourcePath, final Resource location)
+        throws IOException {
+      String path = resourcePath;
+      for (int i = 0; i < segmentsToSkip; i++) {
+        final int slash = path.indexOf('/');
+        if (slash < 0) {
+          return null;
+        }
+        path = path.substring(slash + 1);
+      }
+      return super.getResource(path, location);
     }
   }
 }

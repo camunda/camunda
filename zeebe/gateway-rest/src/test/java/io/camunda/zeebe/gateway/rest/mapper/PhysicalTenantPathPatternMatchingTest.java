@@ -79,6 +79,39 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
         .isNotFound();
   }
 
+  @Test
+  void shouldServeWebappAssetUnderPhysicalTenantPrefix() {
+    // backed by src/test/resources/META-INF/resources/operate/assets/test-asset.js — proves the
+    // resolver strips the leading {tenant}/{webapp}/assets segments injected by the '*' wildcard
+    webClient
+        .get()
+        .uri("/physical-tenants/default/operate/assets/test-asset.js")
+        .exchange()
+        .expectStatus()
+        .isOk();
+  }
+
+  @Test
+  void shouldServeWebappFaviconUnderPhysicalTenantPrefix() {
+    // backed by src/test/resources/META-INF/resources/operate/favicon.ico
+    webClient
+        .get()
+        .uri("/physical-tenants/default/operate/favicon.ico")
+        .exchange()
+        .expectStatus()
+        .isOk();
+  }
+
+  @Test
+  void shouldNotServeUnknownWebappAssetUnderPhysicalTenantPrefix() {
+    webClient
+        .get()
+        .uri("/physical-tenants/default/operate/assets/does-not-exist.js")
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+  }
+
   @CamundaRestController
   static class TestController {
     @GetMapping("/v2/widgets")

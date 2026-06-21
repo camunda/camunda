@@ -9,11 +9,14 @@ package io.camunda.webapp;
 
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.spring.utils.PhysicalTenantContext;
+import java.io.IOException;
 import java.time.Duration;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
  * Static-resource configuration for the unified BFF webapp. Maps {@code /webapp/assets/**} to the
@@ -44,10 +47,45 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
         .addResourceHandler(ASSETS_PATH_PATTERN)
         .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
         .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
+    // PathPattern.extractPathWithinPattern() starts at the first '*', so the resource path the
+    // resolver receives includes the tenant segment: "tenantId/webapp/assets/file.js".
+    // SegmentStrippingResolver strips the 3 leading segments to get "file.js" relative to the
+    // classpath location.
     registry
         .addResourceHandler(
             PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*" + ASSETS_PATH_PATTERN)
         .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
-        .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
+        .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable())
+        .resourceChain(false)
+        .addResolver(new SegmentStrippingResolver(3));
+  }
+
+  /**
+   * Strips N leading path segments before delegating to {@link PathResourceResolver}. Needed
+   * because {@code PathPattern.extractPathWithinPattern()} starts collecting at the first {@code *}
+   * wildcard, so the resource path handed to the resolver includes the tenant-id segment (and any
+   * literal segments between {@code *} and {@code **}).
+   */
+  private static final class SegmentStrippingResolver extends PathResourceResolver {
+
+    private final int segmentsToSkip;
+
+    SegmentStrippingResolver(final int segmentsToSkip) {
+      this.segmentsToSkip = segmentsToSkip;
+    }
+
+    @Override
+    protected Resource getResource(final String resourcePath, final Resource location)
+        throws IOException {
+      String path = resourcePath;
+      for (int i = 0; i < segmentsToSkip; i++) {
+        final int slash = path.indexOf('/');
+        if (slash < 0) {
+          return null;
+        }
+        path = path.substring(slash + 1);
+      }
+      return super.getResource(path, location);
+    }
   }
 }

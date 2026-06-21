@@ -21,9 +21,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Verifies that static assets under {@code /webapp/assets/**} are served with forever-caching
- * headers and that requests for non-existent assets return 404 rather than being silently resolved
- * by the resource handler.
+ * Verifies that static assets under {@code /webapp/assets/**} and the physical-tenant-prefixed
+ * sibling {@code /physical-tenants/*}/webapp/assets/**} are served with forever-caching headers and
+ * that requests for non-existent assets return 404.
  */
 @SpringBootTest(classes = TestWebappApplication.class, webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -50,6 +50,31 @@ class WebappCacheHeadersIT {
     // when — ensures the resource handler does not silently 200 on missing files
     final ResponseEntity<String> response =
         restTemplate.getForEntity("/webapp/assets/does-not-exist.js", String.class);
+
+    // then
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void shouldServeWebappAssetsUnderPhysicalTenantPrefixWithImmutableForeverCacheHeader() {
+    // when
+    final ResponseEntity<String> response =
+        restTemplate.getForEntity(
+            "/physical-tenants/test-tenant/webapp/assets/test-asset.js", String.class);
+
+    // then
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getHeaders().getCacheControl())
+        .as("forever-cache header on /physical-tenants/*/webapp/assets/**")
+        .isEqualTo("max-age=31536000, public, immutable");
+  }
+
+  @Test
+  void shouldNotServeUnknownAssetsUnderPhysicalTenantPrefixAsStaticResources() {
+    // when
+    final ResponseEntity<String> response =
+        restTemplate.getForEntity(
+            "/physical-tenants/test-tenant/webapp/assets/does-not-exist.js", String.class);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
