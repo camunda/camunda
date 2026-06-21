@@ -24,7 +24,14 @@ public final class SegmentStrippingResolver extends PathResourceResolver {
 
   private final int segmentsToSkip;
 
+  /**
+   * Creates a resolver that strips {@code segmentsToSkip} leading path segments. Negative values
+   * are rejected.
+   */
   public SegmentStrippingResolver(final int segmentsToSkip) {
+    if (segmentsToSkip < 0) {
+      throw new IllegalArgumentException("segmentsToSkip must be >= 0, but was " + segmentsToSkip);
+    }
     this.segmentsToSkip = segmentsToSkip;
   }
 
