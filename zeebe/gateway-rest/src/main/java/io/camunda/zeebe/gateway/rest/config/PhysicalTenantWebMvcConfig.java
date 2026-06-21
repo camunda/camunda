@@ -11,12 +11,10 @@ import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
-import java.time.Duration;
 import java.util.List;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.CacheControl;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -40,8 +38,6 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
 
   private static final String CLASSPATH_RESOURCES = "classpath:/META-INF/resources/";
-  private static final Duration ASSETS_CACHE_MAX_AGE = Duration.ofDays(365);
-  private static final Duration ICO_CACHE_MAX_AGE = Duration.ofDays(7);
 
   @Bean
   public WebMvcRegistrations physicalTenantWebMvcRegistrations() {
@@ -61,25 +57,23 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
 
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
-    // Serve static assets and favicons for each webapp under the physical-tenant prefix. The
-    // wildcard segment captures any tenant id. Two handlers per webapp:
-    //   assets/**  — hash-suffixed filenames, forever-cached (immutable).
-    //   *.ico      — fixed filename (favicon.ico), short-lived cache. Needed because all three
-    //                index controllers exclude *.ico from SPA forwarding via a negative-lookahead
-    //                regex so the file can be served statically; the default Spring resource
-    //                handler resolves /operate/favicon.ico from classpath, but the PT-prefixed
-    //                path /physical-tenants/<id>/operate/favicon.ico needs an explicit handler.
+    // Serve static assets and favicons for each webapp under the physical-tenant prefix, using the
+    // same no-explicit-cache-control policy as the non-PT paths (Spring Boot's default classpath
+    // handler). Two handlers per webapp:
+    //   assets/**  — hash-suffixed filenames served from the webapp's assets/ classpath dir.
+    //   *.ico      — favicon.ico at the webapp root; needs an explicit handler because all three
+    //                index controllers exclude *.ico from SPA forwarding so it can be served
+    //                statically — the default Spring handler resolves /operate/favicon.ico from
+    //                classpath, but /physical-tenants/<id>/operate/favicon.ico needs this entry.
     for (final String webapp : WebAppProviderAdapter.WEB_APPS) {
       registry
           .addResourceHandler(
               PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*/" + webapp + "/assets/**")
-          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/assets/")
-          .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
+          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/assets/");
       registry
           .addResourceHandler(
               PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*/" + webapp + "/*.ico")
-          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/")
-          .setCacheControl(CacheControl.maxAge(ICO_CACHE_MAX_AGE).cachePublic());
+          .addResourceLocations(CLASSPATH_RESOURCES + webapp + "/");
     }
   }
 }
