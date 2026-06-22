@@ -1533,22 +1533,22 @@ export const MOCK_AGENT_PROCESS_DEFINITION_FLAT = {
   processDefinitionId: MOCK_AGENT_DEFINITION_ID_FLAT,
 };
 
-export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT =
-  MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED.map((el) => ({
-    ...el,
-    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
-    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
-    // Re-point the outer agent subprocess instance key so the Details tab
-    // resolves agent data for this scenario.
-    elementInstanceKey:
-      el.elementInstanceKey === MOCK_AGENT_SUBPROCESS_KEY_COMPLETED
-        ? MOCK_AGENT_SUBPROCESS_KEY_FLAT
-        : el.elementInstanceKey,
-    flowScopeKey:
-      el.flowScopeKey === MOCK_AGENT_SUBPROCESS_KEY_COMPLETED
-        ? MOCK_AGENT_SUBPROCESS_KEY_FLAT
-        : el.flowScopeKey,
-  }));
+const FLAT_REBINDS: RebindMap = {
+  // Root process instance key — used as elementInstanceKey on the PROCESS row
+  // and as flowScopeKey on all top-level elements (StartEvent, Gateway,
+  // AI_Agent outer subprocess, User_Feedback).
+  [MOCK_AGENT_INSTANCE_KEY_COMPLETED]: MOCK_AGENT_INSTANCE_KEY_FLAT,
+  // Outer agent subprocess key — used as elementInstanceKey on the
+  // AD_HOC_SUB_PROCESS row and as flowScopeKey on all inner instances.
+  [MOCK_AGENT_SUBPROCESS_KEY_COMPLETED]: MOCK_AGENT_SUBPROCESS_KEY_FLAT,
+};
+
+export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT = rebindElementInstances(
+  MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED,
+  MOCK_AGENT_INSTANCE_KEY_FLAT,
+  MOCK_AGENT_DEFINITION_KEY_FLAT,
+  FLAT_REBINDS,
+);
 
 export const MOCK_AGENT_ELEMENT_STATISTICS_FLAT =
   MOCK_AGENT_ELEMENT_STATISTICS_COMPLETED;
