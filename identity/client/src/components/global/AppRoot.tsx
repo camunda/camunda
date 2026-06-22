@@ -60,11 +60,13 @@ const GridMain = styled.div`
   display: grid;
   grid-template-rows: 1fr auto;
   grid-template-columns: 1fr;
-  padding-top: 48px;
+  padding-top: var(--c3-header-height, 48px);
 `;
 
 const GridMainContent = styled.div`
   grid-area: 1 / 1 / 1 / 4;
+  padding-left: var(--c3-sidebar-width, 0);
+  transition: padding-left 0.15s ease-out;
 `;
 
 const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
@@ -107,7 +109,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
           <AppHeader hideNavLinks />
         </GridHeader>
         <GridMain>
-          <GridMainContent>
+          <GridMainContent id="main-content" tabIndex={-1}>
             <ForbiddenComponent />
           </GridMainContent>
         </GridMain>
@@ -120,7 +122,9 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
         <AppHeader />
       </GridHeader>
       <GridMain>
-        <GridMainContent>{children}</GridMainContent>
+        <GridMainContent id="main-content" tabIndex={-1}>
+          {children}
+        </GridMainContent>
       </GridMain>
     </>
   );
