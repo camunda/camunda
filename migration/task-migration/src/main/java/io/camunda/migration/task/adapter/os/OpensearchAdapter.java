@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -178,10 +179,46 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   public void reindexLegacyDatedIndex(final String legacyDatedIndex) throws MigrationException {
     final String newDatedIndex = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
     final String stepId = DATED_REINDEX_STEP_PREFIX + sanitizeIndexName(legacyDatedIndex);
+    executeReindex(
+        legacyDatedIndex,
+        newDatedIndex,
+        stepId,
+        "dated index reindex " + legacyDatedIndex,
+        status -> {
+          if (status.total() > 0) {
+            updateIndexAlias(newDatedIndex);
+            setIndexLifecycle(newDatedIndex);
+          } else {
+            LOG.info(
+                "No documents were reindexed from {} to {}. {} was not created.",
+                legacyDatedIndex,
+                newDatedIndex,
+                newDatedIndex);
+          }
+        });
+  }
+
+  @Override
+  public void reindexLegacyMainIndex() throws MigrationException {
+    executeReindex(
+        legacyIndex.getFullQualifiedName(),
+        destinationIndex.getFullQualifiedName(),
+        MAIN_REINDEX_STEP_ID,
+        "main index reindex",
+        status -> {});
+  }
+
+  private void executeReindex(
+      final String source,
+      final String destination,
+      final String stepId,
+      final String label,
+      final Consumer<ReindexTaskStatus> onComplete)
+      throws MigrationException {
     final ProcessorStep existingStep = getReindexStep(stepId);
 
     if (existingStep != null && existingStep.isApplied()) {
-      LOG.info("Dated index reindex for {} already completed, skipping", legacyDatedIndex);
+      LOG.info("Reindex {} already completed, skipping", label);
       return;
     }
 
@@ -201,25 +238,16 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
       }
       if (status.found() && status.completed()) {
         writeReindexStep(stepId, existingStep.getContent(), true);
-        if (status.total() > 0) {
-          updateIndexAlias(newDatedIndex);
-          setIndexLifecycle(newDatedIndex);
-        } else {
-          LOG.info(
-              "No documents were reindexed from {} to {}. {} was not created.",
-              legacyDatedIndex,
-              newDatedIndex,
-              newDatedIndex);
-        }
+        onComplete.accept(status);
         return;
       } else if (status.found()) {
         taskId = existingStep.getContent();
       } else {
-        taskId = submitReindex(legacyDatedIndex, newDatedIndex);
+        taskId = submitReindex(source, destination);
         writeReindexStep(stepId, taskId, false);
       }
     } else {
-      taskId = submitReindex(legacyDatedIndex, newDatedIndex);
+      taskId = submitReindex(source, destination);
       writeReindexStep(stepId, taskId, false);
     }
 
@@ -228,7 +256,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
       finalStatus =
           busyRetryDecorator()
               .decorate(
-                  "Wait for dated index reindex " + legacyDatedIndex,
+                  "Wait for " + label,
                   () -> {
                     final var status = getReindexTaskStatus(taskId);
                     if (!status.found()) {
@@ -247,81 +275,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
       throw new MigrationException(e);
     }
 
-    if (finalStatus.total() > 0) {
-      updateIndexAlias(newDatedIndex);
-      setIndexLifecycle(newDatedIndex);
-    } else {
-      LOG.info(
-          "No documents were reindexed from {} to {}. {} was not created.",
-          legacyDatedIndex,
-          newDatedIndex,
-          newDatedIndex);
-    }
-  }
-
-  @Override
-  public void reindexLegacyMainIndex() throws MigrationException {
-    final String stepId = MAIN_REINDEX_STEP_ID;
-    final ProcessorStep existingStep = getReindexStep(stepId);
-
-    if (existingStep != null && existingStep.isApplied()) {
-      LOG.info("Main index reindex already completed, skipping");
-      return;
-    }
-
-    final String taskId;
-    if (existingStep != null) {
-      final ReindexTaskStatus status;
-      try {
-        status =
-            retryDecorator.decorate(
-                "Check reindex task status " + existingStep.getContent(),
-                () -> getReindexTaskStatus(existingStep.getContent()),
-                s -> false);
-      } catch (final MigrationException e) {
-        throw e;
-      } catch (final Exception e) {
-        throw new MigrationException(e);
-      }
-      if (status.found() && status.completed()) {
-        writeReindexStep(stepId, existingStep.getContent(), true);
-        return;
-      } else if (status.found()) {
-        taskId = existingStep.getContent();
-      } else {
-        taskId =
-            submitReindex(
-                legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
-        writeReindexStep(stepId, taskId, false);
-      }
-    } else {
-      taskId =
-          submitReindex(
-              legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
-      writeReindexStep(stepId, taskId, false);
-    }
-
-    try {
-      busyRetryDecorator()
-          .decorate(
-              "Wait for main index reindex",
-              () -> {
-                final var status = getReindexTaskStatus(taskId);
-                if (!status.found()) {
-                  throw new MigrationException(
-                      "Reindex task " + taskId + " disappeared; restart migration to resubmit");
-                }
-                if (status.completed()) {
-                  writeReindexStep(stepId, taskId, true);
-                }
-                return status;
-              },
-              status -> !status.completed());
-    } catch (final MigrationException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new MigrationException(e);
-    }
+    onComplete.accept(finalStatus);
   }
 
   @Override
