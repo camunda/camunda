@@ -8,7 +8,7 @@
 
 import {lazy, Suspense, useState} from 'react';
 import styled from 'styled-components';
-import {Button, Modal, Tag} from '@carbon/react';
+import {Button, Modal, Tag, Tooltip} from '@carbon/react';
 import {
   ArrowUpRight,
   Maximize,
@@ -108,11 +108,13 @@ function StepTags({
     >
       {tokens !== undefined &&
         (tooltipLabel !== undefined ? (
-          <span title={tooltipLabel}>
-            <Tag type="gray" size="sm">
-              {tokens.toLocaleString()} tokens
-            </Tag>
-          </span>
+          <Tooltip label={tooltipLabel} align="bottom">
+            <span tabIndex={0} style={{display: 'inline-flex'}}>
+              <Tag type="gray" size="sm">
+                {tokens.toLocaleString()} tokens
+              </Tag>
+            </span>
+          </Tooltip>
         ) : (
           <Tag type="gray" size="sm">
             {tokens.toLocaleString()} tokens

@@ -55,6 +55,8 @@ import {
   MOCK_AGENT_DEFINITION_KEY_FLAT,
   MOCK_AGENT_DEFINITION_ID_FLAT,
   MOCK_AGENT_SUBPROCESS_KEY_FLAT,
+  MOCK_AGENT_INNER_INSTANCE_DRAFT_EMAIL_KEY_FLAT,
+  MOCK_AGENT_DRAFT_EMAIL_CHILD_KEY_FLAT,
 } from './constants';
 
 // Extended type for mock data — flowScopeKey is not in the API type but needed for scope filtering
@@ -1552,12 +1554,57 @@ const flatReboundInstances = rebindElementInstances(
 
 // Rename each AD_HOC_SUB_PROCESS_INNER_INSTANCE elementName to its first child's
 // elementName (or elementId as fallback), so the flat-trace UI shows the tool name.
-export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT = flatReboundInstances.map(
-  (el) => {
+// The DraftEmailTemplate pair is appended after the rename step so the rename
+// also covers it (the child entry is present in the same array at rename time).
+const flatDraftEmailInnerInstance: MockElementInstance = {
+  elementInstanceKey: MOCK_AGENT_INNER_INSTANCE_DRAFT_EMAIL_KEY_FLAT,
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_FLAT,
+  elementId: 'AI_Agent',
+  elementName: 'AI Agent#innerInstance',
+  type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+  state: 'COMPLETED',
+  hasIncident: false,
+  flowScopeKey: MOCK_AGENT_SUBPROCESS_KEY_FLAT,
+  rootProcessInstanceKey: null,
+  tenantId: '<default>',
+  startDate: '2026-03-26T14:30:04.500Z',
+  endDate: '2026-03-26T14:30:05.200Z',
+  incidentKey: null,
+};
+
+const flatDraftEmailChild: MockElementInstance = {
+  elementInstanceKey: MOCK_AGENT_DRAFT_EMAIL_CHILD_KEY_FLAT,
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_FLAT,
+  elementId: 'DraftEmailTemplate',
+  elementName: 'Draft email template',
+  type: 'SERVICE_TASK',
+  state: 'COMPLETED',
+  hasIncident: false,
+  flowScopeKey: MOCK_AGENT_INNER_INSTANCE_DRAFT_EMAIL_KEY_FLAT,
+  rootProcessInstanceKey: null,
+  tenantId: '<default>',
+  startDate: '2026-03-26T14:30:04.500Z',
+  endDate: '2026-03-26T14:30:05.200Z',
+  incidentKey: null,
+};
+
+// Build array including the new pair so the rename step can resolve the child.
+const flatReboundInstancesWithDraft = [
+  ...flatReboundInstances,
+  flatDraftEmailInnerInstance,
+  flatDraftEmailChild,
+];
+
+export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT =
+  flatReboundInstancesWithDraft.map((el) => {
     if (el.type !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
       return el;
     }
-    const firstChild = flatReboundInstances.find(
+    const firstChild = flatReboundInstancesWithDraft.find(
       (child) => child.flowScopeKey === el.elementInstanceKey,
     );
     if (!firstChild) {
@@ -1567,8 +1614,7 @@ export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT = flatReboundInstances.map(
       ...el,
       elementName: firstChild.elementName ?? firstChild.elementId,
     };
-  },
-);
+  });
 
 export const MOCK_AGENT_ELEMENT_STATISTICS_FLAT =
   MOCK_AGENT_ELEMENT_STATISTICS_COMPLETED;

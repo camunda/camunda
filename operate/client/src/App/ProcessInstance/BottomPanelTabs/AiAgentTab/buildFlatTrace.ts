@@ -120,7 +120,7 @@ export function buildFlatTrace(agentData: AgentElementData): FlatTraceStep[] {
         tokens: tokensForIteration(m.iterationNumber),
         tokensInput: iter?.tokenUsage.input,
         tokensOutput: iter?.tokenUsage.output,
-        durationMs: diffMs(m.timestamp, firstResultTs),
+        durationMs: diffMs(msgs[i - 1]?.timestamp, m.timestamp),
         toolNames: calls.map((c) => c.name),
       });
 
