@@ -114,8 +114,8 @@ final class Ipv6IntegrationTest {
               cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
               cfg.getCluster().getNetwork().setAdvertisedHost(hostName);
               cfg.getCluster().getNetwork().setHost(INADDR6_ANY);
+              cfg.getSecurity().getAuthentication().setUnprotectedApi(true);
             })
-        .withProperty("camunda.security.authentication.unprotected-api", true)
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, BROKER_IP));
   }
 
@@ -141,8 +141,8 @@ final class Ipv6IntegrationTest {
               cfg.getCluster().getNetwork().setAdvertisedHost(hostName);
               cfg.getCluster().getNetwork().setHost(INADDR6_ANY);
               cfg.getApi().getGrpc().setAddress(INADDR6_ANY);
+              cfg.getSecurity().getAuthentication().setUnprotectedApi(true);
             })
-        .withProperty("camunda.security.authentication.unprotected-api", true)
         .withEnv(UNPROTECTED_API_ENV_VAR, "true")
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, GATEWAY_IP));
   }

@@ -14,7 +14,8 @@ import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
-import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.configuration.Camunda;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
@@ -28,6 +29,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -42,6 +44,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringApplication.class);
 
   protected ConfigurableApplicationContext springContext;
+  protected final Camunda unifiedConfig;
 
   private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
@@ -52,14 +55,21 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Set<String> refreshableKeys = new HashSet<>();
 
   public TestSpringApplication(final Class<?>... springApplications) {
-    this(new HashMap<>(), new HashMap<>(), new ArrayList<>(), springApplications);
+    this(new Camunda(), springApplications);
+  }
+
+  protected TestSpringApplication(
+      final Camunda unifiedConfig, final Class<?>... springApplications) {
+    this(unifiedConfig, new HashMap<>(), new HashMap<>(), new ArrayList<>(), springApplications);
   }
 
   private TestSpringApplication(
+      final Camunda unifiedConfig,
       final Map<String, Bean<?>> beans,
       final Map<String, Object> propertyOverrides,
       final Collection<String> additionalProfiles,
       final Class<?>... springApplications) {
+    this.unifiedConfig = unifiedConfig;
     this.springApplications = springApplications;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
@@ -185,6 +195,32 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   /**
+   * Modifies the unified configuration (camunda.* properties). The in-memory config is flattened
+   * into camunda.* properties at {@link #createSpringBuilder()} time, so all mutations made up to
+   * start are captured. This is the single source of truth for camunda.* properties and is
+   * preferred over {@link #withProperty} for any key that has a unified-config representation, to
+   * avoid conflicts between directly-set properties and the flattened config.
+   *
+   * @param modifier a configuration function that accepts the Camunda configuration object
+   * @return itself for chaining
+   */
+  @Override
+  public T withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
+    return self();
+  }
+
+  /**
+   * Returns the unified configuration object. This provides access to the camunda.* configuration
+   * structure and is the primary way to read/configure the test application.
+   *
+   * @return the Camunda unified configuration object
+   */
+  public Camunda unifiedConfig() {
+    return unifiedConfig;
+  }
+
+  /**
    * Replaces a set of properties that should be re-derived from in-memory builder state on every
    * {@link #start()}. Keys set in a previous call are removed before the new {@code properties} are
    * applied, so fields that disappear between restarts (e.g. an exporter cleared from the unified
@@ -201,7 +237,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withBasicAuth() {
-    withProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    unifiedConfig.getSecurity().getAuthentication().setMethod(AuthenticationMethod.BASIC);
     withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
     return self();
   }
@@ -212,12 +248,13 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withAuthenticationMethod(final AuthenticationMethod authenticationMethod) {
-    return withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
-        .withProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
+    unifiedConfig.getSecurity().getAuthentication().setMethod(authenticationMethod);
+    return withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
   }
 
   protected T withUnauthenticatedAccess(final boolean unprotectedApi) {
-    return withProperty(AuthenticationProperties.API_UNPROTECTED, unprotectedApi);
+    unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(unprotectedApi);
+    return self();
   }
 
   public final T withUnauthenticatedAccess() {
@@ -252,15 +289,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public final Optional<AuthenticationMethod> apiAuthenticationMethod() {
-    if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
+    final var authentication = unifiedConfig.getSecurity().getAuthentication();
+    if (authentication.isUnprotectedApi()) {
       return Optional.empty();
     } else {
-      return Optional.of(
-          AuthenticationMethod.parse(
-              property(
-                  AuthenticationProperties.METHOD,
-                  String.class,
-                  AuthenticationMethod.BASIC.name())));
+      final var method = authentication.getMethod();
+      return Optional.of(method != null ? method : AuthenticationMethod.BASIC);
     }
   }
 
@@ -274,6 +308,10 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
    * can override this to customize the behavior of the test application.
    */
   protected SpringApplicationBuilder createSpringBuilder() {
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
+    // so every with*Config / withUnifiedConfig call made up to now is captured. Refreshable so that
+    // fields cleared between stop/start (e.g. an exporter removed) don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return MainSupport.createDefaultApplicationBuilder()
         .bannerMode(Mode.OFF)
         .registerShutdownHook(false)

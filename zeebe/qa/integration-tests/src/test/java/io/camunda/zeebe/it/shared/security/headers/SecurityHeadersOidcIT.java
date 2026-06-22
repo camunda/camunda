@@ -104,13 +104,11 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
                       .getSecondaryStorage()
                       .getElasticsearch()
                       .setUrl("http://" + CONTAINER.getHttpHostAddress()))
-          // OIDC client config goes through withProperty so CSL's CamundaSecurityLibraryProperties
-          // — bound from Spring's property sources — sees the values. See OidcAuthOverRestIT.
-          .withProperty("camunda.security.authentication.oidc.issuer-uri", buildKeycloakIssuerUri())
-          .withProperty("camunda.security.authentication.oidc.client-id", EXAMPLE_CLIENT_ID)
-          .withProperty("camunda.security.authentication.oidc.redirect-uri", EXAMPLE_REDIRECT_URI)
           .withSecurityConfig(
               c -> {
+                c.getAuthentication().getOidc().setIssuerUri(buildKeycloakIssuerUri());
+                c.getAuthentication().getOidc().setClientId(EXAMPLE_CLIENT_ID);
+                c.getAuthentication().getOidc().setRedirectUri(EXAMPLE_REDIRECT_URI);
                 c.getAuthorizations().setEnabled(true);
                 c.getInitialization()
                     .setMappingRules(
