@@ -22,6 +22,7 @@ import {searchResult} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {AgentDetails} from './index';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
 
 vi.mock('modules/feature-flags', () => ({
   IS_CONVERSATION_HISTORY_ENABLED: true,
@@ -72,6 +73,10 @@ const mockAgentInstance: AgentInstance = {
 };
 
 describe('<AgentDetails />', () => {
+  beforeEach(() => {
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+  });
+
   it('should render AI Agent heading and status for TOOL_CALLING', () => {
     render(
       <AgentDetails
@@ -195,6 +200,36 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should open the status accordion item by default and display the latest agent message', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({role: 'ASSISTANT'})]),
+    );
+
+    render(
+      <AgentDetails
+        agentInstance={mockAgentInstance}
+        isLoading={false}
+        isError={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('latest-agent-message-skeleton'),
+    );
+
+    const statusSection = within(screen.getByTestId('agent-status-section'));
+    expect(
+      statusSection.getByRole('button', {
+        name: 'Status: Calling tools',
+        expanded: true,
+      }),
+    ).toBeVisible();
+    expect(
+      statusSection.getByRole('article', {name: 'Assistant message'}),
+    ).toBeVisible();
+  });
+
   it('should render usage metrics', () => {
     render(
       <AgentDetails
@@ -276,6 +311,8 @@ describe('<AgentDetails />', () => {
     mockSearchAgentInstanceHistory(
       mockAgentInstance.agentInstanceKey,
     ).withSuccess(searchResult([]), {mockResolverFn: historySpy});
+    // Latest message is always fetched. Handle first before history spy handler.
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
 
     const {user} = render(
       <AgentDetails
