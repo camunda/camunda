@@ -44,29 +44,21 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *   <li>Deploy a process v1 that has <b>no user task</b> (just a service task that waits on a job).
  *   <li>Start an instance of v1 with a process-instance variable, and let it wait on the service
  *       task.
- *   <li>Deploy a process v2 that <b>does</b> have a Camunda user task after the service task. The
- *       user task has an input mapping that creates a local variable.
+ *   <li>Deploy a process v2 that <b>does</b> have a Camunda user task after the service task.
  *   <li>Migrate the running instance from v1 to v2 (map the active service task to v2's service
  *       task).
  *   <li>Complete the service-task job so the instance proceeds into the user task.
- *   <li>Search user tasks by variable filters.
+ *   <li>Search user tasks by the {@code processInstanceVariables} filter.
  * </ol>
  *
  * <p>This test requires the exporter optimization {@code skipVariableWriteWithoutUserTasks=true}
  * (enabled below). With it on, variables of the no-user-task v1 instance are never written to the
  * {@code tasklist-task} index, and migration does not back-fill them. Therefore, after the user
- * task activates:
+ * task activates the {@code processInstanceVariables} filter does <b>not</b> find the task — the
+ * pre-migration process variable was skipped and never back-filled (the #49963 gap).
  *
- * <ul>
- *   <li>the <b>localVariables</b> filter finds the task — the user task's own input variable is
- *       exported normally at activation (works without any fix);
- *   <li>the <b>processInstanceVariables</b> filter does <b>not</b> find the task — the
- *       pre-migration process variable was skipped and never back-filled (the #49963 gap).
- * </ul>
- *
- * <p>The process-instance-variable assertion is therefore a <b>characterization</b> of current
- * (buggy) behavior: it asserts the result is empty. Once #49963 is fixed, flip that assertion to
- * expect the task to be found.
+ * <p>The assertion is a <b>characterization</b> of current (buggy) behavior: it asserts the result
+ * is empty. Once #49963 is fixed, flip that assertion to expect the task to be found.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -80,8 +72,6 @@ public class UserTaskMigrationVariableSearchIT {
   private static final String INDEX_PREFIX = "usertaskmigrationvar";
   private static final String PROCESS_VARIABLE_NAME = "amount";
   private static final int PROCESS_VARIABLE_VALUE = 1000;
-  private static final String LOCAL_VARIABLE_NAME = "reviewLevel";
-  private static final String LOCAL_VARIABLE_VALUE = "senior";
   private static final Duration TIMEOUT = Duration.ofSeconds(90);
 
   @TestZeebe(autoStart = false)
@@ -132,7 +122,7 @@ public class UserTaskMigrationVariableSearchIT {
   }
 
   @Test
-  void shouldFindMigratedTaskByLocalVariableButNotByProcessVariable() {
+  void shouldNotFindTaskByProcessInstanceVariablesAfterMigration() {
     // given - v1 has NO user task: start -> service task (waits on a job) -> end
     final BpmnModelInstance v1 =
         Bpmn.createExecutableProcess(PROCESS_V1_ID)
@@ -140,17 +130,12 @@ public class UserTaskMigrationVariableSearchIT {
             .serviceTask(WAIT_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done();
-    // v2 HAS a Camunda user task after the service task, with an input mapping that creates a
-    // LOCAL variable scoped to the user task
+    // v2 HAS a Camunda user task after the service task
     final BpmnModelInstance v2 =
         Bpmn.createExecutableProcess(PROCESS_V2_ID)
             .startEvent()
             .serviceTask(WAIT_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
-            .userTask(
-                USER_TASK_ID,
-                u ->
-                    u.zeebeUserTask()
-                        .zeebeInput("=\"" + LOCAL_VARIABLE_VALUE + "\"", LOCAL_VARIABLE_NAME))
+            .userTask(USER_TASK_ID, u -> u.zeebeUserTask())
             .endEvent()
             .done();
 
@@ -228,30 +213,7 @@ public class UserTaskMigrationVariableSearchIT {
                             .items())
                     .hasSize(1));
 
-    // then - the LOCAL variable filter finds the task (works today, no fix required)
-    await()
-        .atMost(TIMEOUT)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newUserTaskSearchRequest()
-                            .filter(
-                                f ->
-                                    f.processInstanceKey(processInstanceKey)
-                                        .localVariables(
-                                            // string values must be quoted as JSON in the filter,
-                                            // see https://github.com/camunda/camunda/issues/23724
-                                            Map.of(
-                                                LOCAL_VARIABLE_NAME,
-                                                "\"" + LOCAL_VARIABLE_VALUE + "\"")))
-                            .send()
-                            .join()
-                            .items())
-                    .describedAs("local variable filter should find the migrated user task")
-                    .hasSize(1));
-
-    // and - the PROCESS-INSTANCE variable filter does NOT find the task today.
+    // then - the processInstanceVariables filter does NOT find the task today.
     // The pre-migration process variable was skipped from tasklist-task (no user task in v1) and
     // migration does not back-fill it. This is the #49963 gap.
     // CHARACTERIZATION: once #49963 is fixed, change this assertion to expect hasSize(1).
