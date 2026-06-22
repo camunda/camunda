@@ -101,9 +101,9 @@ final class PhysicalTenantRequiredOverrideValidation {
             .toList();
     if (!missing.isEmpty()) {
       throw new UnifiedConfigurationException(
-          "Each explicitly-configured physical tenant must declare its own initialization block, "
-              + "if authorizations are enabled, under "
-              + "'camunda.physical-tenants.<id>.security.initialization.*'; it may not be "
+          "Each explicitly-configured physical tenant must declare its own initialization block under "
+              + "'camunda.physical-tenants.<id>.security.initialization.*' when authorization is enabled "
+              + "for that tenant; it may not be "
               + "inherited from the root (the '"
               + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID
               + "' tenant keeps the top-level 'camunda.security.initialization'). Physical tenants "
