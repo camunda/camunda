@@ -212,11 +212,8 @@ public class OidcOverrideBeansConfiguration {
 
     final Map<String, OidcConfiguration> oidcAuthenticationConfigurations =
         oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
-    // Key the id_token JWS algorithm by registrationId rather than by ClientRegistration instance:
-    // per-physical-tenant scoped chains build their own ClientRegistration instances (same
-    // registrationId, different objects), so an instance-keyed lookup returns null for them and the
-    // scoped id_token signature verification fails. Resolving by registrationId works for both the
-    // cluster chain and the scoped chains.
+    // The decoder factory is a single bean applied to every oauth2Login chain, so it resolves each
+    // registration's configured id_token JWS algorithm by registrationId.
     final Map<String, JwsAlgorithm> algorithmByRegistrationId =
         oidcAuthenticationConfigurations.entrySet().stream()
             .collect(
