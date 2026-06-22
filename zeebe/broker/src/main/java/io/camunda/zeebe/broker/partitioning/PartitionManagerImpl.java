@@ -323,7 +323,8 @@ public final class PartitionManagerImpl
   @Override
   public ActorFuture<Void> transition() {
     // TODO: To be called when a recovery partition transitions to active again
-    return null;
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException("transition not yet implemented"));
   }
 
   @Override

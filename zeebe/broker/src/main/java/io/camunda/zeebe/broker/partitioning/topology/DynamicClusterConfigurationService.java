@@ -21,8 +21,6 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
@@ -30,7 +28,6 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
 
   private volatile ClusterConfiguration initialClusterConfiguration;
   private volatile ClusterConfiguration currentClusterConfiguration;
-  private final Map<String, ModeChangeExecutor> recoveryModeChangeExecutors = new HashMap<>();
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
   private final ClusterChangeExecutor clusterChangeExecutor;
