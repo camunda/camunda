@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: c8-ck-optimize-exporter-variables-cfg
+  labels:
+    camunda.io/purpose: load-test
+    camunda.io/created-by: Christopher-Kujawa
+    deadline-date: "2026-06-25"
+    registry: harbor
+  annotations:
+    topology.kubernetes.io/zone: europe-west1-d
