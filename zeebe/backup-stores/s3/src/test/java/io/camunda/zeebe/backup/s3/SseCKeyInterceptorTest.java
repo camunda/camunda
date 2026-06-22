@@ -17,10 +17,15 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.SdkRequest;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.InterceptorContext;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartCopyRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 
 final class SseCKeyInterceptorTest {
 
@@ -97,6 +102,83 @@ final class SseCKeyInterceptorTest {
 
     // then
     assertThat(result).isSameAs(delete);
+  }
+
+  @Test
+  void shouldFailFastOnCreateMultipartUploadRequest() {
+    // given
+    final var request = CreateMultipartUploadRequest.builder().bucket("bucket").key("key").build();
+
+    // when - then
+    assertThatThrownBy(() -> modify(request))
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("CreateMultipartUploadRequest")
+        .hasMessageContaining("SSE-C");
+  }
+
+  @Test
+  void shouldFailFastOnUploadPartRequest() {
+    // given
+    final var request =
+        UploadPartRequest.builder()
+            .bucket("bucket")
+            .key("key")
+            .uploadId("id")
+            .partNumber(1)
+            .build();
+
+    // when - then
+    assertThatThrownBy(() -> modify(request))
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("UploadPartRequest");
+  }
+
+  @Test
+  void shouldFailFastOnCompleteMultipartUploadRequest() {
+    // given
+    final var request =
+        CompleteMultipartUploadRequest.builder().bucket("bucket").key("key").uploadId("id").build();
+
+    // when - then
+    assertThatThrownBy(() -> modify(request))
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("CompleteMultipartUploadRequest");
+  }
+
+  @Test
+  void shouldFailFastOnCopyObjectRequest() {
+    // given
+    final var request =
+        CopyObjectRequest.builder()
+            .sourceBucket("bucket")
+            .sourceKey("source")
+            .destinationBucket("bucket")
+            .destinationKey("dest")
+            .build();
+
+    // when - then
+    assertThatThrownBy(() -> modify(request))
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("CopyObjectRequest");
+  }
+
+  @Test
+  void shouldFailFastOnUploadPartCopyRequest() {
+    // given
+    final var request =
+        UploadPartCopyRequest.builder()
+            .sourceBucket("bucket")
+            .sourceKey("source")
+            .destinationBucket("bucket")
+            .destinationKey("dest")
+            .uploadId("id")
+            .partNumber(1)
+            .build();
+
+    // when - then
+    assertThatThrownBy(() -> modify(request))
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("UploadPartCopyRequest");
   }
 
   @Test
