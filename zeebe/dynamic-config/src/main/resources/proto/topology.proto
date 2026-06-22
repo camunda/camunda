@@ -119,8 +119,8 @@ message UpdatePartitionDistributorConfigOperation {
 }
 
 enum Mode {
-  MODE_RECOVERING = 0;
-  MODE_PROCESSING = 1;
+  MODE_PROCESSING = 0;
+  MODE_RECOVERING = 1;
 }
 
 message ModeChangeOperation {

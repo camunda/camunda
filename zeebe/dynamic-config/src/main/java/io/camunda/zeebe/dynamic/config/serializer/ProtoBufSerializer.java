@@ -1425,11 +1425,10 @@ public class ProtoBufSerializer
   }
 
   private static Mode fromProtoTopologyMode(final Topology.Mode mode) {
-    return switch (mode) {
-      case MODE_RECOVERING -> Mode.RECOVERING;
-      case MODE_PROCESSING -> Mode.PROCESSING;
-      default -> Mode.RECOVERING;
-    };
+    if (mode == Topology.Mode.MODE_RECOVERING) {
+      return Mode.RECOVERING;
+    }
+    return Mode.PROCESSING;
   }
 
   public Builder encodeTopologyChangeResponse(
