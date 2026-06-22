@@ -8,7 +8,13 @@
 
 import {lazy, Suspense, useState} from 'react';
 import {Button, Modal} from '@carbon/react';
-import {Tools, Time, ArrowUpRight} from '@carbon/icons-react';
+import {
+  Tools,
+  Time,
+  ArrowUpRight,
+  SortAscending,
+  SortDescending,
+} from '@carbon/icons-react';
 import {Copy} from '@carbon/react/icons';
 import type {AgentElementData} from 'modules/contexts/agentData.types';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -261,8 +267,30 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
   );
 }
 
+function orderSteps(
+  steps: FlatTraceStep[],
+  isNewestFirst: boolean,
+): FlatTraceStep[] {
+  if (!isNewestFirst) {
+    return steps;
+  }
+  // A turn begins at a user/assistant step and includes the tool steps that follow it.
+  const turns: FlatTraceStep[][] = [];
+  for (const step of steps) {
+    if (step.kind === 'tool' && turns.length > 0) {
+      turns[turns.length - 1]!.push(step);
+    } else {
+      turns.push([step]);
+    }
+  }
+  return turns.reverse().flat();
+}
+
 function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
-  const steps = buildFlatTrace(agentData);
+  const [isNewestFirst, setIsNewestFirst] = useState(false);
+  const steps = orderSteps(buildFlatTrace(agentData), isNewestFirst);
+
+  const SortIcon = isNewestFirst ? SortDescending : SortAscending;
 
   return (
     <div
@@ -274,6 +302,25 @@ function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
         width: '100%',
       }}
     >
+      <button
+        type="button"
+        data-testid="toggle-flat-trace-order"
+        onClick={() => setIsNewestFirst((prev) => !prev)}
+        style={{
+          all: 'unset',
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          alignSelf: 'flex-start',
+          gap: 'var(--cds-spacing-02)',
+          fontSize: 'var(--cds-helper-text-01-font-size, 0.75rem)',
+          lineHeight: 'var(--cds-helper-text-01-line-height, 1.33333)',
+          color: 'var(--cds-text-secondary)',
+        }}
+      >
+        {isNewestFirst ? 'Most recent first' : 'Oldest first'}
+        <SortIcon size={12} />
+      </button>
       {steps.map((step) => {
         if (step.kind === 'user') {
           return (
