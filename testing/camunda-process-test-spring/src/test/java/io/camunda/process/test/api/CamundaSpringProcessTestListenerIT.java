@@ -34,261 +34,189 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.NestedTestConfiguration;
 
 @SpringBootTest(classes = {CamundaSpringProcessTestListenerIT.TestApplication.class})
 @CamundaSpringProcessTest
-@NestedTestConfiguration(NestedTestConfiguration.EnclosingConfiguration.OVERRIDE)
 public class CamundaSpringProcessTestListenerIT {
 
-  @Nested
-  class IntegrationTests {
+  @Autowired private CamundaClient client;
+  @Autowired private CamundaProcessTestContext processTestContext;
+  @Autowired private TestCaseRunner testCaseRunner;
 
-    @Autowired private CamundaClient client;
-    @Autowired private CamundaProcessTestContext processTestContext;
-    @Autowired private TestCaseRunner testCaseRunner;
+  @Test
+  void shouldCreateProcessInstance() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .name("start")
+            .zeebeOutputExpression("\"active\"", "status")
+            .userTask()
+            .name("task")
+            .endEvent()
+            .name("end")
+            .zeebeOutputExpression("\"ok\"", "result")
+            .done();
 
-    @Nested
-    class ProcessInstanceTests {
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
-      @Test
-      void shouldCreateProcessInstance() {
-        // given
-        final BpmnModelInstance process =
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .name("start")
-                .zeebeOutputExpression("\"active\"", "status")
-                .userTask()
-                .name("task")
-                .endEvent()
-                .name("end")
-                .zeebeOutputExpression("\"ok\"", "result")
-                .done();
+    // when
+    final ProcessInstanceEvent processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
-        client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    // then
+    assertThatProcessInstance(processInstance)
+        .isActive()
+        .hasActiveElements(byName("task"))
+        .hasVariable("status", "active");
+  }
 
-        // when
-        final ProcessInstanceEvent processInstance =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId("process")
-                .latestVersion()
-                .send()
-                .join();
+  @Test
+  void shouldTriggerTimerEvent() {
+    // given
+    final Duration timerDuration = Duration.ofHours(1);
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .name("start")
+            .userTask("A")
+            .name("A")
+            .endEvent()
+            .moveToActivity("A")
+            .boundaryEvent()
+            .timerWithDuration(timerDuration.toString())
+            .userTask()
+            .name("B")
+            .endEvent()
+            .done();
 
-        // then
-        assertThatProcessInstance(processInstance)
-            .isActive()
-            .hasActiveElements(byName("task"))
-            .hasVariable("status", "active");
-      }
-    }
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
-    @Nested
-    class TimerEventTests {
+    final ProcessInstanceEvent processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
-      private final Duration timerDuration = Duration.ofHours(1);
+    // when
+    assertThatProcessInstance(processInstance).hasActiveElements(byName("A"));
+    final Instant timeBefore = processTestContext.getCurrentTime();
+    processTestContext.increaseTime(timerDuration);
+    final Instant timeAfter = processTestContext.getCurrentTime();
 
-      @Test
-      void shouldTriggerTimerEvent() {
-        // given
-        final BpmnModelInstance process =
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .name("start")
-                .userTask("A")
-                .name("A")
-                .endEvent()
-                // attach boundary timer event
-                .moveToActivity("A")
-                .boundaryEvent()
-                .timerWithDuration(timerDuration.toString())
-                .userTask()
-                .name("B")
-                .endEvent()
-                .done();
+    // then
+    assertThatProcessInstance(processInstance)
+        .hasTerminatedElements(byName("A"))
+        .hasActiveElements(byName("B"));
+    assertThat(Duration.between(timeBefore, timeAfter))
+        .isCloseTo(timerDuration, Duration.ofSeconds(10));
+  }
 
-        client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+  @Test
+  void shouldCompleteProcessWithConditionalBehaviors() {
+    // given
+    registerConditionalBehaviors();
 
-        final ProcessInstanceEvent processInstance =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId("process")
-                .latestVersion()
-                .send()
-                .join();
+    // when
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
-        // when
-        assertThatProcessInstance(processInstance).hasActiveElements(byName("A"));
+    // then
+    assertThatProcessInstance(processInstanceEvent)
+        .isCompleted()
+        .hasVariable("happy", true)
+        .hasVariable("exportSuccess", true);
+  }
 
-        final Instant timeBefore = processTestContext.getCurrentTime();
+  @Test
+  void shouldCompleteProcessFirstRun() {
+    // given
+    registerConditionalBehaviors();
 
-        processTestContext.increaseTime(timerDuration);
+    // when
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
-        final Instant timeAfter = processTestContext.getCurrentTime();
+    // then
+    assertThatProcessInstance(processInstanceEvent)
+        .isCompleted()
+        .hasVariable("happy", true)
+        .hasVariable("exportSuccess", true);
+  }
 
-        // then
-        assertThatProcessInstance(processInstance)
-            .hasTerminatedElements(byName("A"))
-            .hasActiveElements(byName("B"));
+  @Test
+  void shouldCompleteProcessSecondRun() {
+    // given
+    registerConditionalBehaviors();
 
-        assertThat(Duration.between(timeBefore, timeAfter))
-            .isCloseTo(timerDuration, Duration.ofSeconds(10));
-      }
-    }
+    // when
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
-    @Nested
-    class ConditionalBehaviorTests {
+    // then
+    assertThatProcessInstance(processInstanceEvent)
+        .isCompleted()
+        .hasVariable("happy", true)
+        .hasVariable("exportSuccess", true);
+  }
 
-      @Nested
-      class ApiTests {
+  @ParameterizedTest
+  @TestCaseSource
+  void shouldPass(final TestCase testCase, final String filename) {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .name("Start")
+            .endEvent("end")
+            .name("End")
+            .done();
 
-        @Test
-        void shouldCompleteProcessWithConditionalBehaviors() {
-          // given
-          CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(MODEL, PROCESS_ID + ".bpmn")
-              .send()
-              .join();
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
-          processTestContext
-              .when(
-                  () ->
-                      CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                          .hasActiveElement(USER_TASK_ID, 1))
-              .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
-              .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
+    // when
+    testCaseRunner.run(testCase);
 
-          processTestContext
-              .when(
-                  () ->
-                      assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                          .hasActiveElements(SERVICE_TASK_ID))
-              .then(() -> processTestContext.completeJob(JOB_TYPE, Map.of("exportSuccess", true)));
+    // then
+    assertThatProcessInstance(ProcessInstanceSelectors.byProcessId("process")).isCreated();
+  }
 
-          // when
-          final ProcessInstanceEvent processInstanceEvent =
-              client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
+  @TestDeployment(resources = {"connector-outbound-process.bpmn"})
+  @Test
+  void shouldDeployProcessDefinitions() {
+    // then
+    Awaitility.await("until process definitions are available (eventually)")
+        .untilAsserted(
+            () ->
+                assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
+                    .extracting(ProcessDefinition::getProcessDefinitionId)
+                    .describedAs("Expect the process specified in @TestDeployment to be deployed")
+                    .contains("outbound-connector-process")
+                    .describedAs("Expect the process specified in @Deployment to be deployed")
+                    .contains("connector-process")
+                    .hasSize(2));
+  }
 
-          // then
-          assertThatProcessInstance(processInstanceEvent)
-              .isCompleted()
-              .hasVariable("happy", true)
-              .hasVariable("exportSuccess", true);
-        }
-      }
+  private void registerConditionalBehaviors() {
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
+    client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
-      @Nested
-      class BeforeEachTests {
+    processTestContext
+        .when(
+            () ->
+                CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
 
-        @BeforeEach
-        void setupBehaviors() {
-          CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(MODEL, PROCESS_ID + ".bpmn")
-              .send()
-              .join();
-
-          processTestContext
-              .when(
-                  () ->
-                      CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                          .hasActiveElement(USER_TASK_ID, 1))
-              .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
-              .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
-
-          processTestContext
-              .when(
-                  () ->
-                      assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                          .hasActiveElements(SERVICE_TASK_ID))
-              .then(() -> processTestContext.completeJob(JOB_TYPE, Map.of("exportSuccess", true)));
-        }
-
-        @Test
-        void shouldCompleteProcessFirstRun() {
-          // given
-          final ProcessInstanceEvent processInstanceEvent =
-              client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
-
-          // then
-          assertThatProcessInstance(processInstanceEvent)
-              .isCompleted()
-              .hasVariable("happy", true)
-              .hasVariable("exportSuccess", true);
-        }
-
-        @Test
-        void shouldCompleteProcessSecondRun() {
-          // given
-          final ProcessInstanceEvent processInstanceEvent =
-              client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
-
-          // then
-          assertThatProcessInstance(processInstanceEvent)
-              .isCompleted()
-              .hasVariable("happy", true)
-              .hasVariable("exportSuccess", true);
-        }
-      }
-    }
-
-    @Nested
-    class JsonTests {
-
-      @ParameterizedTest
-      @TestCaseSource
-      void shouldPass(final TestCase testCase, final String filename) {
-        // given
-        final BpmnModelInstance process =
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .name("Start")
-                .endEvent("end")
-                .name("End")
-                .done();
-
-        client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
-
-        // when
-        testCaseRunner.run(testCase);
-
-        // then
-        assertThatProcessInstance(ProcessInstanceSelectors.byProcessId("process")).isCreated();
-      }
-    }
-
-    @Nested
-    class DeploymentAnnotationTests {
-
-      @TestDeployment(resources = {"connector-outbound-process.bpmn"})
-      @Test
-      void shouldDeployProcessDefinitions() {
-        // then
-        Awaitility.await("until process definitions are available (eventually)")
-            .untilAsserted(
-                () ->
-                    assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
-                        .extracting(ProcessDefinition::getProcessDefinitionId)
-                        .describedAs(
-                            "Expect the process specified in @TestDeployment to be deployed")
-                        .contains("outbound-connector-process")
-                        .describedAs("Expect the process specified in @Deployment to be deployed")
-                        .contains("connector-process")
-                        .hasSize(2));
-      }
-    }
+    processTestContext
+        .when(
+            () ->
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElements(SERVICE_TASK_ID))
+        .then(() -> processTestContext.completeJob(JOB_TYPE, Map.of("exportSuccess", true)));
   }
 
   @Deployment(resources = {"connector-process.bpmn"})
