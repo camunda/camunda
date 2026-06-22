@@ -17,14 +17,10 @@ import { getRoles, Role } from "src/utility/api/roles";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
-<<<<<<< HEAD
 import AddModal from "./modals/AddModal";
 import EditModal from "./modals/EditModal";
 import { Edit, TrashCan } from "@carbon/react/icons";
-=======
-import AddModal from "src/pages/roles/modals/AddModal";
 import { isProtectedRole } from "src/pages/roles/protected-roles";
->>>>>>> 19d686ae (feat: default roles are read-only)
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 
 const List: FC = () => {
@@ -57,7 +53,7 @@ const List: FC = () => {
             icon: TrashCan,
             isDangerous: true,
             onClick: deleteRole,
-            disabled: ({ roleId }: Role) => isProtectedRole(roleId),
+            disabled: ({ id }: Role) => isProtectedRole(id),
           },
         ]}
         sortProperty="name"
