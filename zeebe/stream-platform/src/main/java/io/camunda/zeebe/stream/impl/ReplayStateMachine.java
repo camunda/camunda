@@ -223,11 +223,11 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   }
 
   private void replayEvent(final LoggedEvent currentEvent) {
+    readMetadata(currentEvent);
     if (eventFilter.applies(currentEvent)
         && (currentEvent.getSourceEventPosition() > snapshotPosition
             || currentEvent.getSourceEventPosition()
                 < 0)) { // some events might not have a source pointer
-      readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
       LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
       currentStateDescription.set(
@@ -246,7 +246,26 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       lastReplayedEventPosition = currentTypedEvent.getPosition();
     }
 
+    // Advance the key counter for engine-authored records. EVENT records are always
+    // engine-authored. Follow-up COMMAND records with sourceEventPosition >= 0 are also
+    // engine-authored and may carry a nextKey()-allocated key with no corresponding event
+    // (e.g. the command is rejected before any event is written for its key).
+    // External COMMAND records (sourceEventPosition < 0) are excluded: they carry client-supplied
+    // keys that may be anomalously large (root cause of issue #55571).
+    // COMMAND_REJECTION records are excluded: they echo the originating command's key.
+    if (Protocol.decodePartitionId(currentEvent.getKey()) == partitionId
+        && isEngineAuthoredKeyRecord(currentEvent, metadata)) {
+      keyGeneratorControls.setKeyIfHigher(currentEvent.getKey());
+    }
+
     onRecordReplayed(currentEvent);
+  }
+
+  private boolean isEngineAuthoredKeyRecord(
+      final LoggedEvent event, final RecordMetadata metadata) {
+    final var recordType = metadata.getRecordType();
+    return recordType == RecordType.EVENT
+        || (recordType == RecordType.COMMAND && event.getSourceEventPosition() >= 0);
   }
 
   /**
@@ -283,7 +302,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     currentStateDescription.status("awaiting record to replay");
     final var sourceEventPosition = currentEvent.getSourceEventPosition();
     final var currentPosition = currentEvent.getPosition();
-    final var currentRecordKey = currentEvent.getKey();
 
     // positions should always increase
     // if this is not the case we have some inconsistency in our log
@@ -296,11 +314,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     // we need to keep track of the last source event position to know where to start with
     // processing after replay
     batchSourceEventPosition = sourceEventPosition;
-
-    // records from other partitions should not influence the key generator of this partition
-    if (Protocol.decodePartitionId(currentRecordKey) == partitionId) {
-      keyGeneratorControls.setKeyIfHigher(currentRecordKey);
-    }
   }
 
   /**
