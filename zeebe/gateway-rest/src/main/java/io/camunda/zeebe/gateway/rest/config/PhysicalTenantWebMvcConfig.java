@@ -17,6 +17,7 @@ import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -30,10 +31,11 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * /admin}, {@code /webapp}) automatically gets a {@code /physical-tenants/{physicalTenantId}/...}
  * sibling registration.
  *
- * <p>This config is responsible for <em>routing</em> only. The physical tenant id is extracted from
- * the request by {@code PhysicalTenantFilter} (which runs before the security chain so the id is
- * available to in-chain components), and unknown tenants are rejected by CSL's catch-all security
- * chain — so no MVC interceptor is registered here. See ADR-0003.
+ * <p>The physical tenant id is extracted from the request by {@code PhysicalTenantFilter} (which
+ * runs before the security chain so the id is available to in-chain components), and unknown
+ * tenants are rejected by CSL's catch-all security chain (see ADR-0003). Alongside routing and
+ * static assets, {@link PhysicalTenantWebappContextPathInterceptor} is registered so a PT-prefixed
+ * request renders an SPA shell whose {@code <base href>} carries the tenant prefix.
  */
 @Configuration
 public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
@@ -54,6 +56,13 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
   public void addArgumentResolvers(final List<HandlerMethodArgumentResolver> resolvers) {
     // Enables `@PhysicalTenantId String physicalTenantId` injection on controller methods.
     resolvers.add(new PhysicalTenantIdArgumentResolver());
+  }
+
+  @Override
+  public void addInterceptors(final InterceptorRegistry registry) {
+    // Always wired; no-op for cluster (unprefixed) requests — PT addressing is decided per request
+    // from PhysicalTenantContext, not by a boot-time condition.
+    registry.addInterceptor(new PhysicalTenantWebappContextPathInterceptor());
   }
 
   @Override
