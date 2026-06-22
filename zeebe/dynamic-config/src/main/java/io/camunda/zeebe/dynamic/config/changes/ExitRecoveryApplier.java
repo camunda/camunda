@@ -18,7 +18,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 public class ExitRecoveryApplier implements MemberOperationApplier {
-
+  private static final String TRANSITION_ERROR_MESSAGE =
+      "Expected to exit recovery for member %s, but the member is not part of the cluster";
   private final MemberId memberId;
   private final ModeChangeExecutor recoveryModeChangeExecutor;
 
@@ -36,24 +37,21 @@ public class ExitRecoveryApplier implements MemberOperationApplier {
   @Override
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterConfiguration currentClusterConfiguration) {
+
     if (!currentClusterConfiguration.hasMember(memberId)) {
       return Either.left(
-          new IllegalStateException(
-              String.format(
-                  "Expected to enter recovery for member %s, but the member is not part of the cluster",
-                  memberId)));
+          new IllegalStateException(String.format(TRANSITION_ERROR_MESSAGE, memberId)));
     }
 
-    if (!State.RECOVERING.equals(currentClusterConfiguration.getMember(memberId).state())) {
-      return Either.left(
-          new IllegalStateException(
-              String.format(
-                  "Expected to exit recovery for member %s, but the member is not in recovery state",
-                  memberId)));
-    }
+    final var memberState = currentClusterConfiguration.getMember(memberId).state();
 
-    if (State.ACTIVE.equals(currentClusterConfiguration.getMember(memberId).state())) {
+    if (State.ACTIVE.equals(memberState)) {
       return Either.right(UnaryOperator.identity());
+    }
+
+    if (!State.RECOVERING.equals(memberState)) {
+      return Either.left(
+          new IllegalStateException(String.format(TRANSITION_ERROR_MESSAGE, memberId)));
     }
 
     return Either.right(MemberState::toActive);
