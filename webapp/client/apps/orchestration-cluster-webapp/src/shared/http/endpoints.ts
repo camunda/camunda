@@ -14,6 +14,7 @@ import {
 	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	type QueryBatchOperationsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -119,6 +120,14 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	queryBatchOperations: (body: QueryBatchOperationsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperations.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryBatchOperations.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
 	getIncidentProcessInstanceStatisticsByDefinition: (
 		body: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	) =>
@@ -126,6 +135,13 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByDefinition.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getBatchOperation: ({batchOperationKey}: {batchOperationKey: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getBatchOperation.getUrl({batchOperationKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getBatchOperation.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };
