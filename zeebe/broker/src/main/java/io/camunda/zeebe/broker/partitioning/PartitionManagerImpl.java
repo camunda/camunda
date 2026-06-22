@@ -296,10 +296,9 @@ public final class PartitionManagerImpl
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions();
 
-    // BrokerHealthCheckService tracks a single set of bootstrap partitions. Only the default
-    // physical tenant participates in the broker health check for now; other tenants are invisible.
+    healthCheckService.registerBootstrapPartitions(memberPartitions);
+
     if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-      healthCheckService.registerBootstrapPartitions(memberPartitions);
       clusterConfigurationService.registerPartitionChangeExecutors(this, this);
     }
 
