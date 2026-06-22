@@ -206,20 +206,21 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory,
-      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
-      final ClientRegistrationRepository clientRegistrationRepository) {
+      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository) {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
     decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
 
     final Map<String, OidcConfiguration> oidcAuthenticationConfigurations =
         oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
-    final Map<ClientRegistration, JwsAlgorithm> clientRegistrationToAlgorithmMap =
+    // The decoder factory is a single bean applied to every oauth2Login chain, so it resolves each
+    // registration's configured id_token JWS algorithm by registrationId.
+    final Map<String, JwsAlgorithm> algorithmByRegistrationId =
         oidcAuthenticationConfigurations.entrySet().stream()
             .collect(
-                toMap(
-                    e -> clientRegistrationRepository.findByRegistrationId(e.getKey()),
-                    e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
-    decoderFactory.setJwsAlgorithmResolver(clientRegistrationToAlgorithmMap::get);
+                toMap(Map.Entry::getKey, e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
+    decoderFactory.setJwsAlgorithmResolver(
+        clientRegistration ->
+            algorithmByRegistrationId.get(clientRegistration.getRegistrationId()));
     return decoderFactory;
   }
 
