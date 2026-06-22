@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55592/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55592/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.07f5c796.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55592/assets/js/main.dbd40c4b.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.21926ef8.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/main.6d3db479.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -62,24 +62,39 @@ keyed by the request&#x27;s PT.</p>
 <code>authentication</code> module, built eagerly for each configured PT plus the synthesized <code>default</code> from
 that PT&#x27;s <code>AuthenticationConfiguration</code> (<code>PhysicalTenantAuthConfigurations.forPhysicalTenant(id, env)</code> — the same config source REST uses):</p>
 <ul>
-<li class=""><strong>OIDC</strong> → <code>new AuthenticationHandler.Oidc(decoder, claimsProvider, oidcConfig)</code> where the decoder
-comes from <code>ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)</code> and <code>oidcConfig</code> is <em>that
-PT&#x27;s</em> <code>OidcConfiguration</code>. This is the key reason the per-PT unit is a handler, not a decoder: the
-<code>Oidc</code> handler also derives its <code>OidcPrincipalLoader</code> / <code>OidcGroupsExtractor</code> and prefer-username /
+<li class="">
+<p><strong>OIDC</strong> → <code>new AuthenticationHandler.Oidc(decoder, claimsProvider, oidcConfig)</code> where <strong>all three
+arguments are that PT&#x27;s</strong>: the decoder from
+<code>ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)</code>, <code>oidcConfig</code> = that PT&#x27;s
+<code>OidcConfiguration</code>, and <code>claimsProvider</code> = that PT&#x27;s <code>OidcClaimsProvider</code>. This is the key reason
+the per-PT unit is a handler, not a decoder:</p>
+<ul>
+<li class="">The handler derives its <code>OidcPrincipalLoader</code> / <code>OidcGroupsExtractor</code> and prefer-username /
 groups-claim behaviour from <code>oidcConfig</code> at construction time, so a PT on a different IdP (with
-different username/client-id/groups claim names) needs its own handler, not just its own decoder.
-Swapping only the decoder inside a shared handler would decode the token but extract claims with
-the wrong PT&#x27;s config. The <code>claimsProvider</code> stays the <strong>global</strong> instance: over gRPC only the
-client-credentials flow is used, for which userinfo-based claim enrichment is not relevant (it
-applies to user tokens), so the provider needs no per-PT variation.</li>
-<li class=""><strong>BASIC</strong> → <code>new AuthenticationHandler.BasicAuth(serviceRegistry.userServices(id), passwordEncoder)</code>
+different username/client-id/groups claim names) needs its own handler.</li>
+<li class="">The handler invokes <code>claimsProvider</code> between <code>JwtDecoder.decode(...)</code> and
+<code>OidcPrincipalLoader.load(...)</code> to augment claims from the IdP&#x27;s <code>/userinfo</code> endpoint
+(<a class="" href="/camunda/pr-preview/pr-55592/architecture/components/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/">identity ADR-0006</a> —
+the bearer-token flow, which includes gRPC). That endpoint and its client config are per-IdP,
+so the claims provider is per-PT as well.</li>
+</ul>
+<p>Swapping only the decoder inside a shared handler would decode the token but extract/augment
+claims with the wrong PT&#x27;s config.</p>
+</li>
+<li class="">
+<p><strong>BASIC</strong> → <code>new AuthenticationHandler.BasicAuth(serviceRegistry.userServices(id), passwordEncoder)</code>
 — the same per-PT user-store routing <code>BasicAuthUserDetailsAdapter</code> already uses for REST
-(ADR-0005). <code>passwordEncoder</code> is global.</li>
+(ADR-0005). <code>passwordEncoder</code> is global.</p>
+</li>
 </ul>
 <p>gRPC and REST therefore share the <strong>factory and config-resolution path, not the constructed
 instances</strong>. CSL&#x27;s <code>ScopedApiChainRegistrar</code> is left building REST chains inline; this keeps the gRPC
-change isolated and avoids a CSL release on the critical path. Per-PT build failures are logged and
-skipped (mirroring <code>PhysicalTenantScopeProvider</code>), so a later request to such a PT fails closed.</p>
+change isolated and avoids a CSL release on the critical path.</p>
+<p>Build-failure handling differs by tenant. A failed build for a <strong>non-<code>default</code></strong> PT is logged and
+<strong>skipped</strong> (mirroring <code>PhysicalTenantScopeProvider</code>) — its entry is absent from the registry, so a
+later request to that PT fails closed (§B). A failed build for the <strong><code>default</code></strong> handler is a
+<strong>startup-failing error</strong>: <code>default</code> is the fallback for an absent header and the only handler a
+non-PT deployment has, so the gateway must not start without it rather than silently accept no auth.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="b-the-interceptor-selects-the-handler-by-pt-id-no-reordering-no-interface-change">B. The interceptor selects the handler by PT id; no reordering, no interface change<a href="#b-the-interceptor-selects-the-handler-by-pt-id-no-reordering-no-interface-change" class="hash-link" aria-label="Direct link to B. The interceptor selects the handler by PT id; no reordering, no interface change" title="Direct link to B. The interceptor selects the handler by PT id; no reordering, no interface change" translate="no">​</a></h3>
 <p><code>AuthenticationInterceptor</code> extracts <code>Camunda-Physical-Tenant</code> from <code>Metadata</code> via a helper shared
 with <code>PhysicalTenantInterceptor</code> (which retains &quot;known PT&quot; validation and downstream <code>Context</code>
@@ -157,6 +172,9 @@ that stamps the PT id on REST requests; the contrast that motivates header-readi
 <li class=""><a class="" href="/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/">ADR-0005</a> — per-PT routing of the
 authorization layer; establishes the <code>serviceRegistry.userServices(pt)</code> basic-auth routing this
 ADR mirrors on gRPC.</li>
+<li class=""><a class="" href="/camunda/pr-preview/pr-55592/architecture/components/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/">identity ADR-0006</a> — the
+bearer-token <code>/userinfo</code> claim-augmentation flow (<code>OidcClaimsProvider</code> invoked inside
+<code>AuthenticationHandler.Oidc</code>), which applies to gRPC and is why the claims provider is per-PT.</li>
 <li class="">#54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.</li>
 <li class="">#54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.</li>
 <li class=""><code>AuthenticationInterceptor</code> / <code>AuthenticationHandler</code>
