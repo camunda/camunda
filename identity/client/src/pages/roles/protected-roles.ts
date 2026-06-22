@@ -6,7 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const PROTECTED_ROLE_IDS = new Set(["admin", "rpa", "connectors", "app-integrations", "task-worker"]);
+const PROTECTED_ROLE_IDS = new Set([
+  "admin",
+  "rpa",
+  "connectors",
+  "app-integrations",
+  "task-worker",
+]);
 
 export const isProtectedRole = (roleId: string): boolean =>
   PROTECTED_ROLE_IDS.has(roleId);
