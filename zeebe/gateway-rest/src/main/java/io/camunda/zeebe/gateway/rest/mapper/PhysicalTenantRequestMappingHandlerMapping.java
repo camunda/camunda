@@ -23,6 +23,10 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
+  // Route roots eligible for a per-physical-tenant sibling. This is the primary safeguard for PT
+  // enrollment: shouldPrefix() deliberately admits any non-cluster-scoped controller, so a route
+  // only gets a PT-prefixed sibling when its pattern starts with one of these roots (see prefix()).
+  // Controllers on other paths are therefore never auto-enrolled in PT routing.
   private static final Set<String> PREFIXABLE_ROOTS =
       Stream.concat(
               Stream.of("/v2", "/webapp"), WebAppProviderAdapter.WEB_APPS.stream().map("/"::concat))
@@ -45,6 +49,13 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
     }
   }
 
+  /**
+   * Whether a controller is eligible for per-physical-tenant route prefixing. Deliberately broad —
+   * any controller that is not {@link ClusterScoped}. Eligibility does not mean enrollment: {@link
+   * #PREFIXABLE_ROOTS} is the actual gate, since a route only gets a PT-prefixed sibling when its
+   * pattern starts with a prefixable root. So a non-cluster-scoped controller on an unrelated path
+   * is admitted here but never auto-enrolled in PT routing.
+   */
   @VisibleForTesting
   boolean shouldPrefix(final Class<?> beanType) {
     return beanType != null && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
