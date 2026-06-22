@@ -23,6 +23,61 @@ import (
 
 var evalSymlinks = filepath.EvalSymlinks
 
+const (
+	java25RuntimeVersion      = 25
+	jdkJavaOptionsEnvironment = "JDK_JAVA_OPTIONS"
+)
+
+// java25RuntimeOptions are the JVM options required to run Camunda and the
+// bundled Connectors runtime on JDK 25+. Without them the Connectors runtime
+// can hang on JDK 25 because sun.misc.Unsafe memory access is denied by
+// default. They are applied via JDK_JAVA_OPTIONS so they reach every child
+// JVM (Camunda and Connectors alike), not only the main process.
+var java25RuntimeOptions = []string{
+	"--enable-native-access=ALL-UNNAMED",
+	"--sun-misc-unsafe-memory-access=allow",
+}
+
+// configureJavaCompatibilityOptions injects the JDK 25+ runtime options into
+// JDK_JAVA_OPTIONS when running on JDK 25 or newer. It is a no-op on older
+// JDKs and never duplicates options that are already present.
+func configureJavaCompatibilityOptions(javaMajorVersion int) error {
+	if javaMajorVersion < java25RuntimeVersion {
+		return nil
+	}
+
+	currentOptions := os.Getenv(jdkJavaOptionsEnvironment)
+	updatedOptions := appendMissingOptions(currentOptions, java25RuntimeOptions)
+	if updatedOptions == currentOptions {
+		return nil
+	}
+	if err := os.Setenv(jdkJavaOptionsEnvironment, updatedOptions); err != nil {
+		return fmt.Errorf("failed to set %s: %w", jdkJavaOptionsEnvironment, err)
+	}
+	return nil
+}
+
+// appendMissingOptions appends each required option to currentOptions unless it
+// is already present, preserving any options the user already set.
+func appendMissingOptions(currentOptions string, requiredOptions []string) string {
+	updatedOptions := strings.TrimSpace(currentOptions)
+	existingOptions := make(map[string]struct{})
+	for _, option := range strings.Fields(currentOptions) {
+		existingOptions[option] = struct{}{}
+	}
+	for _, option := range requiredOptions {
+		if _, exists := existingOptions[option]; exists {
+			continue
+		}
+		if updatedOptions == "" {
+			updatedOptions = option
+		} else {
+			updatedOptions = updatedOptions + " " + option
+		}
+	}
+	return updatedOptions
+}
+
 func printSystemInformation(javaVersion, javaHome, javaOpts string) {
 	fmt.Println("")
 	fmt.Println("")
@@ -265,6 +320,10 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	javaMajorVersionInt, _ := strconv.Atoi(javaMajorVersion)
 	if javaMajorVersionInt < expectedJavaVersion {
 		fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
+		os.Exit(1)
+	}
+	if err := configureJavaCompatibilityOptions(javaMajorVersionInt); err != nil {
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
