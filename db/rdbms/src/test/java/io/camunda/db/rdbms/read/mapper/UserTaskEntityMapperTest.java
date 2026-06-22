@@ -38,6 +38,7 @@ public class UserTaskEntityMapperTest {
             .processDefinitionKey(3L)
             .processInstanceKey(4L)
             .rootProcessInstanceKey(5L)
+            .businessId("order-4711")
             .elementInstanceKey(6L)
             .tenantId("tenantId")
             .dueDate(OffsetDateTime.now().plusDays(3))

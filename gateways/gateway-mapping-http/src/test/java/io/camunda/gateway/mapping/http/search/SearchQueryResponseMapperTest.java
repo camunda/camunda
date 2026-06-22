@@ -207,6 +207,7 @@ class SearchQueryResponseMapperTest {
             789L, // processDefinitionKey
             456L, // processInstanceKey
             999L, // rootProcessInstanceKey
+            "business-1", // businessId
             111L, // elementInstanceKey
             "tenant", // tenantId
             null, // dueDate
@@ -765,6 +766,7 @@ class SearchQueryResponseMapperTest {
             789L, // processDefinitionKey
             456L, // processInstanceKey
             null, // rootProcessInstanceKey
+            null, // businessId
             111L, // elementInstanceKey
             "tenant", // tenantId
             null, // dueDate
