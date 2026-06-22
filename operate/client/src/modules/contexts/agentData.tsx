@@ -12,6 +12,7 @@ import {searchAgentInstanceHistory} from 'modules/api/v2/agentInstances/searchAg
 import {useSearchAgentInstances} from 'modules/queries/agentInstances/useSearchAgentInstances';
 import {historyToAgentElementData} from 'modules/queries/agentInstances/historyToAgentElementData';
 import {getScenarioByInstanceKey} from 'modules/mock-server/scenarioRegistry';
+import type {ScenarioDefinition} from 'modules/mock-server/scenarioRegistry';
 import type {
   AgentElementData,
   AgentIteration,
@@ -48,6 +49,7 @@ interface AgentDataContextValue {
   // agents on the canvas — e.g. an orchestrating agent and a nested AI task
   // agent both showing their state at once.
   activeAgentStatuses: ActiveAgentStatus[];
+  variant: ScenarioDefinition['variant'];
 }
 
 const EMPTY_VALUE: AgentDataContextValue = {
@@ -63,6 +65,7 @@ const EMPTY_VALUE: AgentDataContextValue = {
   getToolCallForElement: () => null,
   getAgentStatusLabel: () => null,
   activeAgentStatuses: [],
+  variant: undefined,
 };
 
 const AgentDataContext = createContext<AgentDataContextValue>(EMPTY_VALUE);
@@ -189,6 +192,7 @@ const AgentDataProvider: React.FC<{
       activeAgentStatuses: activeAgentData
         ? buildActiveAgentStatuses(activeAgentData, scenario.agentElementId)
         : [],
+      variant: scenario.variant,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentInstancesResult, historyResults, scenario]);

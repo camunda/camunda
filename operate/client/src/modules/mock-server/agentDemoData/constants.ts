@@ -83,3 +83,10 @@ export const MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_2 = '7451799813685300';
 
 // AI_Agent element-id set is identical across all states.
 export {MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_ACTIVE as MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_MULTIPLE};
+
+// ----- Flat-trace short-term demo (reuses the COMPLETED trace, new keys) -----
+export const MOCK_AGENT_INSTANCE_KEY_FLAT = '2251799813999100';
+export const MOCK_AGENT_DEFINITION_KEY_FLAT = '2251799813999101';
+export const MOCK_AGENT_DEFINITION_ID_FLAT = 'agent-flat-trace-demo';
+export const MOCK_AGENT_SUBPROCESS_KEY_FLAT = '2251799813999102';
+export const MOCK_AGENT_AGENT_INSTANCE_KEY_FLAT = '2251799813999103';

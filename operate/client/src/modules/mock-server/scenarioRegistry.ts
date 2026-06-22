@@ -39,6 +39,10 @@ import {
   MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_1,
   MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
   MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_MULTIPLE,
+  MOCK_AGENT_INSTANCE_KEY_FLAT,
+  MOCK_AGENT_DEFINITION_KEY_FLAT,
+  MOCK_AGENT_DEFINITION_ID_FLAT,
+  MOCK_AGENT_SUBPROCESS_KEY_FLAT,
 } from './agentDemoData/constants';
 import {AGENT_BPMN_XML} from './agentDemoData/agentBpmnXml';
 import {
@@ -70,6 +74,13 @@ import {
   MOCK_AGENT_SEQUENCE_FLOWS_MULTIPLE,
   MOCK_AGENT_VARIABLES_MULTIPLE,
   MOCK_AGENT_JOBS_MULTIPLE,
+  MOCK_AGENT_PROCESS_INSTANCE_FLAT,
+  MOCK_AGENT_PROCESS_DEFINITION_FLAT,
+  MOCK_AGENT_ELEMENT_INSTANCES_FLAT,
+  MOCK_AGENT_ELEMENT_STATISTICS_FLAT,
+  MOCK_AGENT_SEQUENCE_FLOWS_FLAT,
+  MOCK_AGENT_VARIABLES_FLAT,
+  MOCK_AGENT_JOBS_FLAT,
 } from './agentDemoData/agentProcessInstance';
 import {
   MOCK_AGENT_INSTANCE_ACTIVE,
@@ -80,6 +91,8 @@ import {
   MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_1,
   MOCK_AGENT_INSTANCE_MULTIPLE_2,
   MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_2,
+  MOCK_AGENT_INSTANCE_FLAT,
+  MOCK_AGENT_HISTORY_ELEMENTS_FLAT,
 } from './agentDemoData/agentInstanceData';
 
 type MockElementInstance = ElementInstance & {flowScopeKey: string};
@@ -91,6 +104,9 @@ export interface ScenarioDefinition {
   name: string;
   description: string;
   pattern: 'subprocess' | 'task';
+  // Selects which agent-detail renderer the Details tab uses. Omitted/'default'
+  // keeps the current rendering; 'flat-trace' is the short-term demo.
+  variant?: 'default' | 'flat-trace' | 'llm-in-tree';
   agentElementId: string;
   agentElementIds: Set<string>;
   agentInstanceKey?: string;
@@ -220,6 +236,33 @@ export const SCENARIOS: ScenarioDefinition[] = [
         instance: MOCK_AGENT_INSTANCE_MULTIPLE_2,
         elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
         history: MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_2,
+      },
+    ],
+  },
+  {
+    instanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
+    definitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
+    definitionId: MOCK_AGENT_DEFINITION_ID_FLAT,
+    name: 'Agent — flat execution trace (short-term)',
+    description:
+      'Conversation history as a flat trace: tool calls are separate compact blocks at the same level as messages.',
+    pattern: 'subprocess',
+    variant: 'flat-trace',
+    agentElementId: 'AI_Agent',
+    agentElementIds: MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_COMPLETED,
+    bpmnXml: AGENT_BPMN_XML,
+    processInstance: MOCK_AGENT_PROCESS_INSTANCE_FLAT,
+    processDefinition: MOCK_AGENT_PROCESS_DEFINITION_FLAT,
+    elementInstances: MOCK_AGENT_ELEMENT_INSTANCES_FLAT,
+    elementStatistics: MOCK_AGENT_ELEMENT_STATISTICS_FLAT,
+    sequenceFlows: MOCK_AGENT_SEQUENCE_FLOWS_FLAT,
+    variables: MOCK_AGENT_VARIABLES_FLAT,
+    jobs: MOCK_AGENT_JOBS_FLAT,
+    agentInstances: [
+      {
+        instance: MOCK_AGENT_INSTANCE_FLAT,
+        elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_FLAT,
+        history: MOCK_AGENT_HISTORY_ELEMENTS_FLAT,
       },
     ],
   },

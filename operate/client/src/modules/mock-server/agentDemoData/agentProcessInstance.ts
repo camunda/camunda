@@ -51,6 +51,10 @@ import {
   MOCK_USER_FEEDBACK_KEY_MULTIPLE,
   MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
   MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_2,
+  MOCK_AGENT_INSTANCE_KEY_FLAT,
+  MOCK_AGENT_DEFINITION_KEY_FLAT,
+  MOCK_AGENT_DEFINITION_ID_FLAT,
+  MOCK_AGENT_SUBPROCESS_KEY_FLAT,
 } from './constants';
 
 // Extended type for mock data — flowScopeKey is not in the API type but needed for scope filtering
@@ -1513,3 +1517,48 @@ export const MOCK_AGENT_JOBS_MULTIPLE: Job[] = [
     tenantId: '<default>',
   },
 ];
+
+// ----- Flat-trace short-term demo -----
+
+export const MOCK_AGENT_PROCESS_INSTANCE_FLAT = {
+  ...MOCK_AGENT_PROCESS_INSTANCE_COMPLETED,
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_FLAT,
+};
+
+export const MOCK_AGENT_PROCESS_DEFINITION_FLAT = {
+  ...MOCK_AGENT_PROCESS_DEFINITION_COMPLETED,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_FLAT,
+};
+
+export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT =
+  MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED.map((el) => ({
+    ...el,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
+    // Re-point the outer agent subprocess instance key so the Details tab
+    // resolves agent data for this scenario.
+    elementInstanceKey:
+      el.elementInstanceKey === MOCK_AGENT_SUBPROCESS_KEY_COMPLETED
+        ? MOCK_AGENT_SUBPROCESS_KEY_FLAT
+        : el.elementInstanceKey,
+    flowScopeKey:
+      el.flowScopeKey === MOCK_AGENT_SUBPROCESS_KEY_COMPLETED
+        ? MOCK_AGENT_SUBPROCESS_KEY_FLAT
+        : el.flowScopeKey,
+  }));
+
+export const MOCK_AGENT_ELEMENT_STATISTICS_FLAT =
+  MOCK_AGENT_ELEMENT_STATISTICS_COMPLETED;
+
+export const MOCK_AGENT_SEQUENCE_FLOWS_FLAT = {
+  items: MOCK_AGENT_SEQUENCE_FLOWS_COMPLETED.items.map((it) => ({
+    ...it,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
+  })),
+};
+
+export const MOCK_AGENT_VARIABLES_FLAT = MOCK_AGENT_VARIABLES_COMPLETED;
+export const MOCK_AGENT_JOBS_FLAT = MOCK_AGENT_JOBS_COMPLETED;
