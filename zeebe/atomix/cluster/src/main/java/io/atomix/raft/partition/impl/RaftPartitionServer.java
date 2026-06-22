@@ -378,12 +378,6 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.getContext().getTailSegments(index);
   }
 
-  private String getPartitionNameWithTenantPrefix() {
-    final var tenantName = config.getTenantName();
-    final var partitionId = partition.id().id();
-    return PARTITION_NAME_FORMAT.formatted(tenantName, partitionId);
-  }
-
   @VisibleForTesting
   public RaftServer getServer() {
     return server;
