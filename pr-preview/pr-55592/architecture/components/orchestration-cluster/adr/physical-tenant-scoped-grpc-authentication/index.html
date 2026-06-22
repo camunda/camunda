@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55592/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55592/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.87594a03.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55592/assets/js/main.aea965cd.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.3f418437.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/main.f7b0a885.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -103,11 +103,13 @@ claims with the wrong PT&#x27;s config.</p>
 <p>gRPC and REST therefore share the <strong>factory and config-resolution path, not the constructed
 instances</strong>. CSL&#x27;s <code>ScopedApiChainRegistrar</code> is left building REST chains inline; this keeps the gRPC
 change isolated and avoids a CSL release on the critical path.</p>
-<p>Build-failure handling differs by tenant. A failed build for a <strong>non-<code>default</code></strong> PT is logged and
-<strong>skipped</strong> (mirroring <code>PhysicalTenantScopeProvider</code>) — its entry is absent from the registry, so a
-later request to that PT fails closed (§B). A failed build for the <strong><code>default</code></strong> handler is a
-<strong>startup-failing error</strong>: <code>default</code> is the fallback for an absent header and the only handler a
-non-PT deployment has, so the gateway must not start without it rather than silently accept no auth.</p>
+<p>Build failures <strong>fail cluster startup</strong> — for <em>any</em> configured PT, not only <code>default</code>. A handler
+that cannot be built signals a misconfiguration; starting anyway would either silently drop that
+PT&#x27;s API surface or risk a non-isolated fallback, both of which contradict the PT effort&#x27;s
+hard-isolation / no-silent-fallback principle (ADR-0005). Surfacing it loudly at boot is preferred
+over discovering it when a tenant&#x27;s requests start failing. (<code>PhysicalTenantScopeProvider</code>, the
+REST/webapp scoped-chain side, currently logs-and-skips a failed PT instead; aligning it to the same
+fail-fast policy is tracked in #55606.)</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="b-the-interceptor-selects-the-handler-by-pt-id-no-reordering-no-interface-change">B. The interceptor selects the handler by PT id; no reordering, no interface change<a href="#b-the-interceptor-selects-the-handler-by-pt-id-no-reordering-no-interface-change" class="hash-link" aria-label="Direct link to B. The interceptor selects the handler by PT id; no reordering, no interface change" title="Direct link to B. The interceptor selects the handler by PT id; no reordering, no interface change" translate="no">​</a></h3>
 <p><code>AuthenticationInterceptor</code> extracts <code>Camunda-Physical-Tenant</code> from <code>Metadata</code> via a helper shared
 with <code>PhysicalTenantInterceptor</code> (which retains &quot;known PT&quot; validation and downstream <code>Context</code>
