@@ -347,14 +347,14 @@ function ModelCallsStatCard({
   );
 }
 
-const attachmentLabelStyle: React.CSSProperties = {
+export const attachmentLabelStyle: React.CSSProperties = {
   fontSize: 'var(--cds-label-01-font-size)',
   lineHeight: 'var(--cds-label-01-line-height)',
   letterSpacing: 'var(--cds-label-01-letter-spacing)',
   color: 'var(--cds-text-secondary)',
 };
 
-const tagStyle: React.CSSProperties = {
+export const tagStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 4,
@@ -905,7 +905,7 @@ function ExpandableSegment({
   );
 }
 
-function ExpandableMessageBlock({
+export function ExpandableMessageBlock({
   role,
   borderColor,
   contents,
@@ -946,7 +946,9 @@ function ExpandableMessageBlock({
             color: 'var(--cds-text-secondary)',
           }}
         >
-          {iterationNumber !== undefined ? `Iteration ${iterationNumber}` : role}
+          {iterationNumber !== undefined
+            ? `Iteration ${iterationNumber}`
+            : role}
         </span>
       </div>
       {segments.map((segment, index) => (
