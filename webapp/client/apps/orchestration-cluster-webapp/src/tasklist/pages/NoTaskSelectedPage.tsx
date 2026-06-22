@@ -17,7 +17,7 @@ type Props = {
 };
 
 const NoTaskSelectedPage: React.FC<Props> = ({hasNoTasks}) => {
-	const isOldUser = getStateLocally('hasCompletedTask') === true;
+	const isOldUser = getStateLocally('tasklist.hasCompletedTask') === true;
 	const {t} = useTranslation();
 
 	if (hasNoTasks && isOldUser) {

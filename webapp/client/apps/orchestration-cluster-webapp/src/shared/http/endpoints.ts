@@ -9,6 +9,7 @@
 import {
 	endpoints as unifiedAPIEndpoints,
 	type QueryUserTasksRequestBody,
+	type QueryProcessDefinitionsRequestBody,
 	type GetProcessDefinitionInstanceStatisticsRequestBody,
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
@@ -82,6 +83,14 @@ const endpoints = {
 				'Content-Type': 'application/json',
 				'x-is-polling': 'true',
 			},
+		}),
+
+	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryProcessDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryProcessDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
 		}),
 
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>

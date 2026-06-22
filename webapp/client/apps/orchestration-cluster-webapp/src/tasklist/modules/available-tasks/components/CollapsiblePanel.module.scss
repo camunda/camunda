@@ -68,6 +68,27 @@
 	li {
 		max-height: layout.to-rem(40px);
 	}
+
+	.customFilterContainer {
+		max-height: layout.to-rem(40px);
+		display: flex;
+		flex-direction: row;
+		border-bottom: layout.to-rem(1px) solid var(--cds-border-subtle);
+
+		.customFilterNav {
+			width: layout.to-rem(155px);
+			border-bottom: none;
+		}
+
+		.selected,
+		&:hover .overflowMenu.selected {
+			background-color: var(--cds-background-selected);
+		}
+
+		&:hover .overflowMenu {
+			background-color: var(--cds-background-hover);
+		}
+	}
 }
 
 .filterItem {

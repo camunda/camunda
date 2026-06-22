@@ -18,7 +18,7 @@ describe('<NoTaskSelectedPage />', () => {
 	});
 
 	afterEach(() => {
-		clearStateLocally('hasCompletedTask');
+		clearStateLocally('tasklist.hasCompletedTask');
 	});
 
 	it('should show the welcome header for a new user', async () => {
@@ -46,7 +46,7 @@ describe('<NoTaskSelectedPage />', () => {
 	});
 
 	it('should show the pick-a-task prompt for a returning user', async () => {
-		storeStateLocally('hasCompletedTask', true);
+		storeStateLocally('tasklist.hasCompletedTask', true);
 
 		const screen = await render(<NoTaskSelectedPage hasNoTasks={false} />);
 
@@ -54,7 +54,7 @@ describe('<NoTaskSelectedPage />', () => {
 	});
 
 	it('should not show the welcome header for a returning user', async () => {
-		storeStateLocally('hasCompletedTask', true);
+		storeStateLocally('tasklist.hasCompletedTask', true);
 
 		const screen = await render(<NoTaskSelectedPage hasNoTasks={false} />);
 
@@ -62,7 +62,7 @@ describe('<NoTaskSelectedPage />', () => {
 	});
 
 	it('should render nothing for a returning user when there are no tasks', async () => {
-		storeStateLocally('hasCompletedTask', true);
+		storeStateLocally('tasklist.hasCompletedTask', true);
 
 		const screen = await render(<NoTaskSelectedPage hasNoTasks={true} />);
 

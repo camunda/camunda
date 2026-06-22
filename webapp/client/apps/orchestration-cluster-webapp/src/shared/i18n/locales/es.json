@@ -287,6 +287,7 @@
 			"customFiltersModalApplyFilters": "Aplicar filtros",
 			"customFiltersModalAllProcesses": "Todos los procesos",
 			"customFiltersModalAllTenants": "Todos los arrendatarios",
+			"customFiltersModalProcessDefinitionsLoadError": "Error al cargar las definiciones de proceso",
 			"taskFilterPanelCompleted": "Completada",
 			"taskFilterPanelControlsAria": "Controles de filtro",
 			"taskFilterPanelExpandButton": "Expandir para mostrar filtros",

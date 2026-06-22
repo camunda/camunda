@@ -13,6 +13,8 @@ import type {
 	License,
 	QueryUserTasksRequestBody,
 	QueryUserTasksResponseBody,
+	QueryProcessDefinitionsRequestBody,
+	QueryProcessDefinitionsResponseBody,
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
@@ -28,6 +30,7 @@ const queryKeys = {
 	systemConfiguration: () => ['systemConfiguration'] as const,
 	license: () => ['license'] as const,
 	userTasks: (body: QueryUserTasksRequestBody) => ['userTasks', body] as const,
+	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
@@ -129,6 +132,18 @@ const queries = {
 			queryKey: queryKeys.getProcessDefinitionInstanceStatistics(body),
 			queryFn: async (): Promise<GetProcessDefinitionInstanceStatisticsResponseBody> => {
 				const {response, error} = await request(endpoints.getProcessDefinitionInstanceStatistics(body));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
+
+	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryProcessDefinitions(body),
+			queryFn: async (): Promise<QueryProcessDefinitionsResponseBody> => {
+				const {response, error} = await request(endpoints.queryProcessDefinitions(body));
 				if (error !== null) {
 					throw error;
 				}
