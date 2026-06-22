@@ -112,7 +112,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          java-distribution: adopt
+          java-distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           maven-cache-key-modifier: operate
           vault-address: ${{ secrets.VAULT_ADDR }}

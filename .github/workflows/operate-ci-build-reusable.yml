@@ -101,7 +101,7 @@ jobs:
           minimus: true
           dockerhub: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
           harbor: true
-          java-distribution: adopt
+          java-distribution: temurin
           maven-cache-key-modifier: operate
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
