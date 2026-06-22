@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Pagination} from '@carbon/react';
+import {Link, Pagination} from '@carbon/react';
 import {useQuery, keepPreviousData} from '@tanstack/react-query';
-import {Link, useNavigate} from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenError} from '#/shared/errors';
 import {SortableTable} from '#/operate/shared/SortableTable';
@@ -68,7 +68,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 			switch (col.key) {
 				case 'operationType':
 					return (
-						<Link to="/operate/batch-operations/$batchOperationKey" params={{batchOperationKey: row.batchOperationKey}}>
+						<Link href={`/operate/batch-operations/${row.batchOperationKey}`}>
 							{formatOperationType(row.batchOperationType)}
 						</Link>
 					);
@@ -116,6 +116,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 					page={page}
 					onChange={({page: newPage, pageSize: newPageSize}) => {
 						void navigate({
+							to: '.',
 							search: (prev) => ({...prev, page: newPage, pageSize: newPageSize}),
 						});
 					}}

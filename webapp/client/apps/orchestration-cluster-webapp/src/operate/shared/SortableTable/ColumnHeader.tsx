@@ -30,7 +30,7 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defau
 	const handleSort = () => {
 		const newOrder: SortOrder =
 			isActive && activeOrder === 'asc' ? 'desc' : isActive && activeOrder === 'desc' ? 'asc' : defaultOrder;
-		void navigate({search: (prev) => ({...prev, sort: `${sortKey}+${newOrder}`})});
+		void navigate({to: '.', search: (prev) => ({...prev, sort: `${sortKey}+${newOrder}`})});
 	};
 
 	return (

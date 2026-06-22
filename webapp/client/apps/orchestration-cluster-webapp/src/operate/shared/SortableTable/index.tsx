@@ -88,4 +88,3 @@ function SortableTable<TRow>({
 }
 
 export {SortableTable};
-export type {Column};
