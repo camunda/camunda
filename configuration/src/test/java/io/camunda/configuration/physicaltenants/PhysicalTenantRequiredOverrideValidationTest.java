@@ -185,4 +185,21 @@ class PhysicalTenantRequiredOverrideValidationTest {
         .withMessageContaining("tenantb")
         .withMessageNotContaining("tenanta");
   }
+
+  @Test
+  void shouldRequireInitializationWhenAuthorizationValueIsBlank() {
+    // given a non-default tenant whose authorization.enabled is present but blank (YAML
+    // 'enabled:'), with no initialization block and no root override
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of("camunda.physical-tenants.tenanta.security.authorization.enabled", ""));
+
+    // when / then Spring binds a blank value to "unbound", so authorization resolves to the
+    // default (enabled) and initialization is still required — a clear configuration error,
+    // not a NullPointerException (which would not match UnifiedConfigurationException)
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantRequiredOverrideValidation.validate(environment))
+        .withMessageContaining("camunda.physical-tenants.<id>.security.initialization")
+        .withMessageContaining("tenanta");
+  }
 }
