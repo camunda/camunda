@@ -23,6 +23,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,13 +39,15 @@ public final class UsageMetricsServiceTest {
     client = mock(UsageMetricsSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     authentication = mock(CamundaAuthentication.class);
+    final var executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new UsageMetricsServices(
             PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
-            mock(ApiServicesExecutorProvider.class),
+            executorProvider,
             null);
   }
 
