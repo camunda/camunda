@@ -11,6 +11,9 @@ import classnames from 'classnames';
 import {Button, ComboBox, InlineNotification, Stack, TextInputSkeleton} from '@carbon/react';
 
 import {Modal} from 'components';
+// imported via its direct path rather than the 'components' barrel to avoid a barrel
+// initialization cycle that leaves the export undefined when pulled alongside other barrel imports
+import {ExportFilterHint} from 'components/ExportFilterHint';
 import {t} from 'translation';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
@@ -135,9 +138,19 @@ export default function VariableFilter({
       className={classnames('VariableFilter__modal', className)}
     >
       <Modal.Header
-        title={t('common.filter.modalHeader', {
-          type: t(`common.filter.types.${filterType}`),
-        })}
+        title={
+          <>
+            {t('common.filter.modalHeader', {
+              type: t(`common.filter.types.${filterType}`),
+            })}
+            {t(`common.filter.types.${filterType}`) === t(`common.filter.types.variable`) && (
+              <>
+                {' '}
+                <ExportFilterHint variant="variable" />
+              </>
+            )}
+          </>
+        }
       />
       <Modal.Content>
         <Stack gap={6}>

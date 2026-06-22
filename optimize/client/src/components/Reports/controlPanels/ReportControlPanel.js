@@ -14,6 +14,9 @@ import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
 import {Filter} from 'filter';
 import {useDocs, useErrorHandling} from 'hooks';
+// imported via its direct path rather than the 'components' barrel to avoid a barrel
+// initialization cycle that leaves the export undefined when pulled alongside other barrel imports
+import {ExportFilterHint} from 'components/ExportFilterHint';
 import {
   getFlowNodeNames,
   loadProcessDefinitionXml,
@@ -381,6 +384,10 @@ export default function ReportControlPanel({report, updateReport, setLoading}) {
             open
           >
             <ul className="reportSetup">
+              <li className="exportFilterHint">
+                {t('common.exportFilterHint.reportSetupLabel')}{' '}
+                <ExportFilterHint variant="reportSetup" />
+              </li>
               <li className="select">
                 <span className="label">{t(`report.view.label`)}</span>
                 <View
