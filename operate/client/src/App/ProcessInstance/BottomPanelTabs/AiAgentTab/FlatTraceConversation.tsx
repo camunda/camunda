@@ -8,7 +8,7 @@
 
 import {lazy, Suspense, useState} from 'react';
 import styled from 'styled-components';
-import {Button, Modal, Tag, Tooltip} from '@carbon/react';
+import {Button, Modal} from '@carbon/react';
 import {
   ArrowUpRight,
   Maximize,
@@ -31,6 +31,7 @@ type ToolInstanceLink = {
   innerInstanceKey: string;
   innerElementId: string;
   anchorElementId: string;
+  displayName: string;
 };
 
 export type {ToolInstanceLink};
@@ -104,35 +105,28 @@ function StepTags({
         flexWrap: 'wrap',
       }}
     >
-      {tokens !== undefined &&
-        (tooltipLabel ? (
-          <Tooltip label={tooltipLabel} align="bottom">
-            <span tabIndex={0} style={{display: 'inline-flex'}}>
-              <Tag type="gray" size="sm">
-                {tokens.toLocaleString()} tokens
-              </Tag>
-            </span>
-          </Tooltip>
-        ) : (
-          <Tag type="gray" size="sm">
-            {tokens.toLocaleString()} tokens
-          </Tag>
-        ))}
-      {duration !== null && (
-        <Tag type="gray" size="sm">
-          {duration}
-        </Tag>
+      {tokens !== undefined && (
+        <span style={tagStyle} title={tooltipLabel}>
+          {tokens.toLocaleString()} tokens
+        </span>
       )}
+      {duration !== null && <span style={tagStyle}>{duration}</span>}
     </div>
   );
+}
+
+function prettifyToolId(id: string): string {
+  return id.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
 }
 
 function ToolBlock({
   step,
   toolInstanceMap,
+  resolveDisplayName,
 }: {
   step: Extract<FlatTraceStep, {kind: 'tool'}>;
   toolInstanceMap: Map<string, ToolInstanceLink>;
+  resolveDisplayName: (toolId: string) => string;
 }) {
   const {selectElementInstance} = useProcessInstanceElementSelection();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -179,7 +173,7 @@ function ToolBlock({
             flexShrink: 0,
           }}
         >
-          {step.name}
+          {resolveDisplayName(step.name)}
         </span>
 
         {/* Monospace output preview — fills remaining space, truncates */}
@@ -206,7 +200,7 @@ function ToolBlock({
             hasIconOnly
             renderIcon={Maximize}
             iconDescription="Expand"
-            tooltipPosition="left"
+            tooltipPosition="bottom"
             aria-label="Expand"
             data-testid="expand-tool-detail"
             onClick={() => setIsModalOpen(true)}
@@ -219,7 +213,7 @@ function ToolBlock({
               hasIconOnly
               renderIcon={ArrowUpRight}
               iconDescription="Execution details"
-              tooltipPosition="left"
+              tooltipPosition="bottom"
               aria-label="Execution details"
               data-testid="open-tool-execution-details"
               onClick={() =>
@@ -237,7 +231,7 @@ function ToolBlock({
 
       <Modal
         open={isModalOpen}
-        modalHeading={step.name}
+        modalHeading={resolveDisplayName(step.name)}
         onRequestClose={() => setIsModalOpen(false)}
         size="lg"
         passiveModal
@@ -405,8 +399,11 @@ function FlatTraceConversation({
   agentData: AgentElementData;
   toolInstanceMap: Map<string, ToolInstanceLink>;
 }) {
-  const [isNewestFirst, setIsNewestFirst] = useState(false);
+  const [isNewestFirst, setIsNewestFirst] = useState(true);
   const steps = orderSteps(buildFlatTrace(agentData), isNewestFirst);
+
+  const resolveDisplayName = (toolId: string): string =>
+    toolInstanceMap.get(toolId)?.displayName ?? prettifyToolId(toolId);
 
   const SortIcon = isNewestFirst ? SortDescending : SortAscending;
 
@@ -479,7 +476,7 @@ function FlatTraceConversation({
                   <span style={attachmentLabelStyle}>Tool calls</span>
                   {step.toolNames.map((name) => (
                     <span key={name} style={tagStyle}>
-                      {name}
+                      {resolveDisplayName(name)}
                     </span>
                   ))}
                 </div>
@@ -492,6 +489,7 @@ function FlatTraceConversation({
             key={step.key}
             step={step as Extract<FlatTraceStep, {kind: 'tool'}>}
             toolInstanceMap={toolInstanceMap}
+            resolveDisplayName={resolveDisplayName}
           />
         );
       })}

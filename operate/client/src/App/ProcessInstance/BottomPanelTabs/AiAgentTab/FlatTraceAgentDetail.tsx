@@ -22,6 +22,7 @@ import {
   ModelCallsStatCard,
   ExpandableMessageBlock,
   StatusAccordion,
+  tagStyle,
 } from './AgentDetailPanel';
 import {FlatTraceConversation} from './FlatTraceConversation';
 import type {ToolInstanceLink} from './FlatTraceConversation';
@@ -29,6 +30,7 @@ import type {ToolInstanceLink} from './FlatTraceConversation';
 const accordionTitle = (
   Icon: React.ComponentType<{size?: number}>,
   label: string,
+  chip?: React.ReactNode,
 ) => (
   <span
     style={{
@@ -39,6 +41,7 @@ const accordionTitle = (
   >
     <Icon size={16} />
     {label}
+    {chip}
   </span>
 );
 
@@ -97,6 +100,7 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
           innerInstanceKey: innerInstance.elementInstanceKey,
           innerElementId: innerInstance.elementId,
           anchorElementId: child.elementId,
+          displayName: child.elementName ?? child.elementId,
         });
       }
     }
@@ -110,7 +114,11 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
         <AccordionItem
           title={accordionTitle(
             MeterAlt,
-            `Usage · ${agentData.usage.modelCalls.current} / ${agentData.usage.modelCalls.limit} model calls`,
+            'Usage',
+            <span style={tagStyle}>
+              {agentData.usage.modelCalls.current} /{' '}
+              {agentData.usage.modelCalls.limit}
+            </span>,
           )}
         >
           <div
@@ -152,7 +160,17 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
           </AccordionItem>
         )}
 
-        <AccordionItem title={accordionTitle(Tools, 'Tool definitions')}>
+        <AccordionItem title={accordionTitle(DocumentBlank, 'System prompt')}>
+          <div style={{width: '100%'}}>
+            <ExpandableMessageBlock
+              role="System"
+              borderColor="var(--cds-border-subtle-01)"
+              contents={[agentData.systemPrompt]}
+            />
+          </div>
+        </AccordionItem>
+
+        <AccordionItem title={accordionTitle(Tools, 'Tool descriptions')}>
           <div
             style={{
               display: 'flex',
@@ -177,16 +195,6 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
                 </div>
               </div>
             ))}
-          </div>
-        </AccordionItem>
-
-        <AccordionItem title={accordionTitle(DocumentBlank, 'System prompt')}>
-          <div style={{width: '100%'}}>
-            <ExpandableMessageBlock
-              role="System"
-              borderColor="var(--cds-border-subtle-01)"
-              contents={[agentData.systemPrompt]}
-            />
           </div>
         </AccordionItem>
 
