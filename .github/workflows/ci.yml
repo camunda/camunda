@@ -970,7 +970,7 @@ jobs:
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     strategy:
       # In case of stress testing, we want the status from all jobs.
       fail-fast: false
@@ -1001,11 +1001,10 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
-          -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
-          -P rdbms,extract-flaky-tests
+          -P rdbms,extract-flaky-tests,parallel-tests
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
