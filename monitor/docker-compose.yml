@@ -1,8 +1,7 @@
-version: '3'
-
 volumes:
     grafana: {}
     prometheus: {}
+    elasticsearch: {}
 
 services:
   prometheus:
@@ -16,6 +15,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
     ports:
       - 9090:9090
 
@@ -29,17 +29,37 @@ services:
     volumes:
       - grafana:/var/lib/grafana
       - ./grafana/dashboards/:/var/lib/grafana/dashboards/
-      - ./grafana/zeebe.json/:/var/lib/grafana/dashboards/zeebe.json
-      - ./grafana/zeebe-overview.json/:/var/lib/grafana/dashboards/zeebe-overview.json
-      - ./grafana/dashboards/core-features/overview.json:/var/lib/grafana/dashboards/overview.json
-      - ./grafana/dashboards/core-features/rest.json:/var/lib/grafana/dashboards/rest.json
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=camunda
       - GF_USERS_ALLOW_SIGN_UP=false
 
-  zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-SNAPSHOT}
-    container_name: zeebe
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+
+  camunda:
+    image: camunda/camunda:${CAMUNDA_VERSION:-SNAPSHOT}
+    container_name: camunda
+    environment:
+      - SPRING_PROFILES_ACTIVE=consolidated-auth,tasklist,broker,operate
+      - CAMUNDA_DATA_SECONDARY_STORAGE_TYPE=elasticsearch
+      - CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     ports:
       - 9600:9600
+      - 8080:8080
+      - 26500:26500

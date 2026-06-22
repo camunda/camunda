@@ -1,0 +1,19 @@
+groups:
+  - name: local-recording-rules
+    rules:
+      # These mirror the recording rules that kube-prometheus-stack defines in a
+      # real cluster. Here they are computed from the synthetic container metrics
+      # produced by the metrics-generator, making infrastructure dashboard panels
+      # work locally without a full Kubernetes node metrics pipeline.
+
+      - record: node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate
+        expr: |
+          sum by (cluster, namespace, pod, container) (
+            irate(container_cpu_usage_seconds_total{image!=""}[5m])
+          )
+
+      - record: node_namespace_pod_container:container_memory_working_set_bytes
+        expr: |
+          sum by (cluster, namespace, pod, container) (
+            container_memory_working_set_bytes{image!=""}
+          )
