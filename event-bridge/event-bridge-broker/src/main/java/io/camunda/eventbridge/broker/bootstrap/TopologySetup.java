@@ -65,7 +65,7 @@ final class TopologySetup {
     final var clusterCfg = properties.cluster();
     final var address = Address.from(Address.defaultAdvertisedHost().getHostAddress(), 26501);
 
-    final var brokerInfo = new BrokerInfo(nodeId, address.toString());
+    final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
     brokerInfo
         .setClusterSize(clusterCfg.clusterSize())
         .setPartitionsCount(properties.broker().partitionCount())

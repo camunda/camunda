@@ -102,7 +102,7 @@ public final class PartitionFactory {
     final var config = new RaftPartitionConfig();
     config.setStorageConfig(storageConfig);
     config.setPriorityElectionEnabled(false);
-    config.setEngineName("event-bridge");
+    config.setTenantName("event-bridge");
     config.setSendOnLegacySubject(false);
     config.setReceiveOnLegacySubject(false);
     config.setEntryValidator(new NoopEntryValidator());

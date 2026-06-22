@@ -50,7 +50,7 @@ public class SegmentedJournalBuilder {
 
   private @Nullable JournalMetaStore journalMetaStore;
   private final MeterRegistry meterRegistry;
-  private JournalIndexCursor indexSupplier;
+  private @Nullable JournalIndexCursor indexSupplier;
   private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
 
   SegmentedJournalBuilder(final MeterRegistry meterRegistry) {
@@ -177,6 +177,7 @@ public class SegmentedJournalBuilder {
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
+    requireNonNull(indexSupplier, "must specify a journal meta store");
     final var segmentLoader =
         new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator, indexSupplier);
     final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");

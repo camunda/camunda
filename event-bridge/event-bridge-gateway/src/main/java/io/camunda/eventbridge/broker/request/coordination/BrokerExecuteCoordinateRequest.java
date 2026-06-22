@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.coordination;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
 import io.camunda.eventbridge.protocol.ExecuteCoordinateRequestDecoder;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -68,8 +69,8 @@ public abstract class BrokerExecuteCoordinateRequest<T> extends BrokerRequest<T>
   }
 
   @Override
-  public Optional<Integer> getBrokerId() {
-    return Optional.of(0);
+  public Optional<BrokerMemberId> getBrokerId() {
+    return Optional.of(BrokerMemberId.from(0));
   }
 
   @Override

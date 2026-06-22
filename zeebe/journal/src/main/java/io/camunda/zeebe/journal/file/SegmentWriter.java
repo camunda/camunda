@@ -211,11 +211,9 @@ final class SegmentWriter {
       final Either<SegmentFull, Integer> writeResult) {
     return writeResult
         .map(
-            recordLength -> {
-              finalizeAppend(
-                  expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
-              return lastEntry;
-            })
+            recordLength ->
+                finalizeAppend(
+                    expectedChecksum, startPosition, frameLength, metadataLength, recordLength))
         .map(
             entry -> {
               tryUpdateIndex(entry, startPosition, frameLength, metadataLength);

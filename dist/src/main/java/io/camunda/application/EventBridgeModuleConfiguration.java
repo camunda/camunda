@@ -32,7 +32,6 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -143,8 +142,7 @@ public class EventBridgeModuleConfiguration {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry),
-            TopicSupplier.withLegacyTopicName());
+            new BrokerClientRequestMetrics(meterRegistry));
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
   }

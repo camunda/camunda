@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.publish;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.eventbridge.protocol.ExecutePublishResponseDecoder;
 import io.camunda.eventbridge.protocol.ExecutePublishResponseEncoder;
 import io.camunda.eventbridge.protocol.request.PublishBatchResponse;
@@ -78,8 +79,8 @@ public abstract class BrokerExecutePublishRequest<T> extends BrokerRequest<T> {
   }
 
   @Override
-  public Optional<Integer> getBrokerId() {
-    return Optional.of(0);
+  public Optional<BrokerMemberId> getBrokerId() {
+    return Optional.of(BrokerMemberId.from(0));
   }
 
   @Override

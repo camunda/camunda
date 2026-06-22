@@ -24,6 +24,7 @@ import io.camunda.zeebe.util.IndexEntry;
 import io.camunda.zeebe.util.IndexScanResult;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.jspecify.annotations.Nullable;
 
 class SegmentedJournalReader implements JournalReader {
 
@@ -191,7 +192,7 @@ class SegmentedJournalReader implements JournalReader {
     return journal.getLastSegment() == segment;
   }
 
-  private Segment forwardToCorrectSegment(final Segment segment, final long asqn) {
+  private @Nullable Segment forwardToCorrectSegment(final Segment segment, final long asqn) {
     Segment currentSegment = segment;
     while (currentSegment != null && currentSegment.isOpen()) {
       final var segmentIndex = currentSegment.segmentIndex();
@@ -225,6 +226,10 @@ class SegmentedJournalReader implements JournalReader {
       initialSegment = journal.getFirstSegment();
     } else {
       initialSegment = journal.getSegment(index);
+    }
+
+    if (initialSegment == null) {
+      throw new RuntimeException("initialSegment is null");
     }
 
     final var finalSegment = forwardToCorrectSegment(initialSegment, fromAsqn);

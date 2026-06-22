@@ -48,7 +48,12 @@ public final class SegmentIndex implements AutoCloseable {
    */
   public SegmentIndex(final Path segmentPath, final int maxSegmentSize) throws IOException {
     final String segmentFileName = segmentPath.getFileName().toString();
-    indexPath = segmentPath.getParent().resolve(segmentFileName + ".sidx");
+    final var parent = segmentPath.getParent();
+    if (parent != null) {
+      indexPath = parent.resolve(segmentFileName + ".sidx");
+    } else {
+      throw new RuntimeException("Parent is null");
+    }
 
     indexChannel =
         FileChannel.open(
