@@ -11,6 +11,8 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.REBALANCE_IN_PROGRESS;
 
 import io.camunda.eventbridge.broker.coordinator.assignor.PartitionAssignment.ReconciliationResult;
+import io.camunda.eventbridge.broker.coordinator.stream.CoordinatorStream;
+import io.camunda.eventbridge.broker.coordinator.stream.GroupMetadataCodec;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -22,16 +24,20 @@ import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CoordinationManager extends Actor {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CoordinationManager.class);
 
   private final int partitionId;
   private final ConsumerGroupRegistry registry;
@@ -39,7 +45,11 @@ public class CoordinationManager extends Actor {
   private final int partitionCount;
   private final SnowflakeIdGenerator idGenerator;
   private final InstantSource clock;
-  private final OffsetStore offsetStore;
+
+  // Committed offsets are now replicated state on the coordinator partition's stream processor
+  // (RocksDB + Raft log), replacing the previous local-file OffsetStore. This survives clean
+  // failover: a new leader resumes from the replayed state.
+  private final CoordinatorStream coordinatorStream;
 
   private final Duration heartbeatTimeout;
   private final Duration heartbeatCheckInterval;
@@ -48,14 +58,14 @@ public class CoordinationManager extends Actor {
       final int partitionId,
       final int partitionCount,
       final InstantSource clock,
-      final Path dataDirectory) {
+      final CoordinatorStream coordinatorStream) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clock = clock;
+    this.coordinatorStream = coordinatorStream;
     registry = new ConsumerGroupRegistry(new HashMap<>());
     validator = new CoordinationValidator(registry);
     idGenerator = new SnowflakeIdGenerator(1L);
-    offsetStore = new OffsetStore(dataDirectory);
     heartbeatTimeout = Duration.ofSeconds(10);
     heartbeatCheckInterval = Duration.ofSeconds(1);
   }
@@ -108,30 +118,60 @@ public class CoordinationManager extends Actor {
   }
 
   public ActorFuture<CommitOffsetResponse> handleCommit(final CommitOffsetRequest request) {
-    return actor.call(() -> commit(request));
+    final CompletableActorFuture<CommitOffsetResponse> result = new CompletableActorFuture<>();
+    actor.run(() -> commit(request, result));
+    return result;
   }
 
-  private CommitOffsetResponse commit(final CommitOffsetRequest request) {
+  private void commit(
+      final CommitOffsetRequest request,
+      final CompletableActorFuture<CommitOffsetResponse> result) {
     final var groupId = request.getGroupId();
     final var memberId = request.getMemberId();
 
-    return validator
-        .isGroupIdValid(groupId)
-        .flatMap(ok -> validator.isActiveMember(groupId, memberId))
-        // Fence zombie commits: reject if the committing member's epoch is stale (a newer
-        // generation has taken over), so a consumer that lost the partition cannot rewind it.
-        .flatMap(
-            ok ->
-                validator.isValidMemberEpoch(
-                    request.getMemberEpoch(),
-                    registry.getGroup(groupId).getSession(memberId).getMetadata().getMemberEpoch()))
-        .map(
-            ok -> {
-              final long committed =
-                  offsetStore.commit(groupId, request.getPartitionId(), request.getPosition());
-              return new CommitOffsetResponse().setErrorCode(NONE).setCommittedPosition(committed);
-            })
-        .fold(errorCode -> new CommitOffsetResponse().setErrorCode(errorCode), Function.identity());
+    final var validation =
+        validator
+            .isGroupIdValid(groupId)
+            .flatMap(ok -> validator.isActiveMember(groupId, memberId))
+            // Fence zombie commits: reject if the committing member's epoch is stale (a newer
+            // generation has taken over), so a consumer that lost the partition cannot rewind it.
+            .flatMap(
+                ok ->
+                    validator.isValidMemberEpoch(
+                        request.getMemberEpoch(),
+                        registry
+                            .getGroup(groupId)
+                            .getSession(memberId)
+                            .getMetadata()
+                            .getMemberEpoch()))
+            // Fence by ownership: a member may only commit partitions the coordinator assigned it.
+            .flatMap(
+                ok ->
+                    validator.ownsPartition(
+                        registry.getGroup(groupId), memberId, request.getPartitionId()));
+
+    if (validation.isLeft()) {
+      result.complete(new CommitOffsetResponse().setErrorCode(validation.getLeft()));
+      return;
+    }
+
+    // Replicate the commit through the coordinator stream; complete once it has been processed.
+    coordinatorStream
+        .commit(groupId, request.getPartitionId(), request.getPosition())
+        .whenComplete(
+            (committed, error) ->
+                actor.run(
+                    () -> {
+                      if (error != null) {
+                        result.complete(
+                            new CommitOffsetResponse().setErrorCode(CoordinationErrorCode.UNKNOWN));
+                      } else {
+                        result.complete(
+                            new CommitOffsetResponse()
+                                .setErrorCode(NONE)
+                                .setCommittedPosition(committed));
+                      }
+                    }));
   }
 
   private JoinGroupResponse joinGroup(final JoinGroupRequest request) {
@@ -154,15 +194,19 @@ public class CoordinationManager extends Actor {
       final String groupId, final String instanceId) {
     final var group = getOrCreateConsumerGroup(groupId);
     final var member = getOrCreateMemberMetadata(group, instanceId);
-    member.incrementMemberEpoch();
 
-    return validator
-        .isNotActiveMember(groupId, member.getMemberId())
-        .map(
-            ok -> {
-              group.addSession(new GroupMemberSession(member, clock.instant()));
-              return member;
-            });
+    // A static member re-joining while its session is still active is a duplicate/retried join
+    // (at-least-once request delivery, or a client rejoin racing a still-live session). Answer it
+    // idempotently with the current member id and epoch: do NOT bump the epoch or add a second
+    // session. Bumping the epoch here without the live member learning the new value is exactly
+    // what fenced its in-flight heartbeats and drove the perpetual rejoin storm.
+    if (group.isActiveConsumer(member.getMemberId())) {
+      return Either.right(member);
+    }
+
+    member.incrementMemberEpoch();
+    group.addSession(new GroupMemberSession(member, clock.instant()));
+    return Either.right(member);
   }
 
   private LeaveGroupResponse leaveGroup(final LeaveGroupRequest request) {
@@ -214,9 +258,36 @@ public class CoordinationManager extends Actor {
       return group;
     }
 
-    final var newGroup = new ConsumerGroup(groupId, partitionCount, this, clock);
+    final var newGroup =
+        new ConsumerGroup(groupId, partitionCount, this, clock, this::persistGroupMetadata);
     registry.addGroup(newGroup);
     return newGroup;
+  }
+
+  /** Replicates a group's membership/assignment after a rebalance so it survives failover. */
+  private void persistGroupMetadata(final ConsumerGroup group) {
+    coordinatorStream.replicateGroupMetadata(
+        group.getGroupId(), GroupMetadataCodec.encode(group.toMetadata()));
+  }
+
+  /**
+   * Rebuilds consumer groups from the coordinator stream's replicated metadata. Called once on
+   * leader activation (after stream replay has populated the state), so consumers re-attach with
+   * their existing epoch and assignment instead of a full rejoin storm.
+   */
+  private void restoreGroups() {
+    final var snapshot = coordinatorStream.groupMetadataSnapshot();
+    final var now = clock.instant();
+    snapshot.forEach(
+        (groupId, payload) ->
+            getOrCreateConsumerGroup(groupId).restore(GroupMetadataCodec.decode(payload), now));
+    if (!snapshot.isEmpty()) {
+      LOG.info(
+          "Coordinator partition {} — restored {} consumer group(s) from replicated metadata: {}",
+          partitionId,
+          snapshot.size(),
+          snapshot.keySet());
+    }
   }
 
   private MemberMetadata getOrCreateMemberMetadata(
@@ -267,7 +338,7 @@ public class CoordinationManager extends Actor {
         .setRevoke(delta.revoke())
         .setAssignment(delta.assignment())
         .setAssignmentEpoch(group.getAssignmentEpoch())
-        .setCommittedOffsets(offsetStore.getOffsets(group.getGroupId()));
+        .setCommittedOffsets(coordinatorStream.committedOffsets(group.getGroupId()));
   }
 
   @Override
@@ -277,7 +348,10 @@ public class CoordinationManager extends Actor {
 
   @Override
   protected void onActorStarted() {
-    offsetStore.load();
+    // Committed-offset state lives in the coordinator stream's replicated ZeebeDb (loaded via
+    // stream replay), so there is no local file to load here. Membership is rebuilt from the
+    // replicated group metadata so consumers re-attach after a coordinator failover.
+    restoreGroups();
     scheduleConsumerEviction();
   }
 

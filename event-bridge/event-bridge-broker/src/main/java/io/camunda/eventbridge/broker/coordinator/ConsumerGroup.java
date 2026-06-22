@@ -17,6 +17,8 @@ import io.camunda.eventbridge.broker.coordinator.assignor.PartitionAssignment;
 import io.camunda.eventbridge.broker.coordinator.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.broker.coordinator.assignor.PartitionAssignor;
 import io.camunda.eventbridge.broker.coordinator.assignor.PartitionAssignor.PartitionAssignmentContext;
+import io.camunda.eventbridge.broker.coordinator.stream.GroupMetadataCodec.GroupMetadata;
+import io.camunda.eventbridge.broker.coordinator.stream.GroupMetadataCodec.MemberSnapshot;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public final class ConsumerGroup {
@@ -59,15 +62,20 @@ public final class ConsumerGroup {
   private final List<Integer> partitions;
   private PartitionAssignment partitionAssignment;
 
+  // Invoked after each rebalance so the coordinator can replicate the new membership/assignment.
+  private final Consumer<ConsumerGroup> onRebalanced;
+
   ConsumerGroup(
       final String groupId,
       final int partitionCount,
       final ConcurrencyControl executor,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final Consumer<ConsumerGroup> onRebalanced) {
     this.groupId = groupId;
     this.partitionCount = partitionCount;
     this.executor = executor;
     this.clock = clock;
+    this.onRebalanced = onRebalanced;
     state = EMPTY;
     assignmentEpoch = 1;
     debounce = Duration.ofSeconds(2);
@@ -133,6 +141,22 @@ public final class ConsumerGroup {
     return sessions.containsKey(memberId);
   }
 
+  /**
+   * Whether the coordinator currently designates {@code memberId} as the owner of {@code
+   * partitionId} — true if the partition is in the member's confirmed assignment or its current
+   * target assignment. Used to fence offset commits. Checking the target (not only the confirmed
+   * handshake result) lets a freshly assigned member commit during the brief window before the
+   * rebalance stabilizes; stale-generation zombies are already rejected by the member-epoch check
+   * that runs before this one.
+   */
+  public boolean isAssignedPartition(final String memberId, final int partitionId) {
+    final var session = sessions.get(memberId);
+    if (session != null && session.getAssignedPartitions().contains(partitionId)) {
+      return true;
+    }
+    return partitionAssignment.forConsumer(memberId).contains(partitionId);
+  }
+
   List<GroupMemberSession> getExpiredSessions(final Instant deadline) {
     return sessions.values().stream()
         .filter(session -> session.isSessionExpired(deadline))
@@ -156,6 +180,52 @@ public final class ConsumerGroup {
     computePendingRevocations();
     rebalanceStartedAt = clock.instant();
     transitionTo(STABILIZING);
+
+    // Replicate the new membership/assignment so it survives coordinator failover.
+    onRebalanced.accept(this);
+  }
+
+  /** Builds a replicable snapshot of the current membership and target assignment. */
+  GroupMetadata toMetadata() {
+    final List<MemberSnapshot> members = new ArrayList<>();
+    for (final var session : sessions.values()) {
+      final var metadata = session.getMetadata();
+      members.add(
+          new MemberSnapshot(
+              metadata.getMemberId(),
+              metadata.getInstanceId(),
+              metadata.getMemberEpoch(),
+              new ArrayList<>(partitionAssignment.forConsumer(metadata.getMemberId()))));
+    }
+    return new GroupMetadata(assignmentEpoch, members);
+  }
+
+  /**
+   * Rebuilds the group from replicated metadata after a coordinator failover: restores members,
+   * their epochs, and confirmed assignments into a STABILIZED group, with fresh heartbeat deadlines
+   * so re-attaching consumers are not immediately evicted.
+   */
+  void restore(final GroupMetadata metadata, final Instant now) {
+    assignmentEpoch = metadata.assignmentEpoch();
+    final Map<String, List<Integer>> assignments = new HashMap<>();
+    for (final var member : metadata.members()) {
+      final var memberMetadata =
+          member.instanceId() == null
+              ? MemberMetadata.dynamicMember(member.memberId())
+              : MemberMetadata.staticMember(member.memberId(), member.instanceId());
+      memberMetadata.setMemberEpoch((int) member.memberEpoch());
+
+      final var session = new GroupMemberSession(memberMetadata, now);
+      session.confirmAssignment(assignmentEpoch, member.partitions());
+      sessions.put(member.memberId(), session);
+      stableConsumers.add(member.memberId());
+      if (memberMetadata.isStaticMember()) {
+        knownStaticMembers.put(memberMetadata.getInstanceId(), memberMetadata);
+      }
+      assignments.put(member.memberId(), member.partitions());
+    }
+    partitionAssignment = new PartitionAssignment(assignments);
+    state = sessions.isEmpty() ? EMPTY : STABILIZED;
   }
 
   /**
@@ -179,7 +249,11 @@ public final class ConsumerGroup {
   public ReconciliationResult reconcileAssignment(
       final GroupMemberSession session, final List<Integer> ownedPartitions) {
     if (state != STABILIZING) {
-      return ReconciliationResult.noop(ownedPartitions);
+      // Not rebalancing: drive the member back to its confirmed assignment. In steady state this is
+      // a no-op (owned == confirmed), but after a rejoin (which clears the client's owned set) or a
+      // failover re-attach it re-sends the confirmed partitions so the member recovers them instead
+      // of being stuck owning nothing.
+      return restoreToConfirmedAssignment(session, ownedPartitions);
     }
 
     final var memberId = session.getMetadata().getMemberId();
@@ -206,6 +280,21 @@ public final class ConsumerGroup {
     }
 
     return safeDelta;
+  }
+
+  /**
+   * Computes the delta that moves a member from the partitions it currently reports owning to its
+   * last confirmed assignment. Used outside an active rebalance to recover a member that rejoined
+   * or re-attached after a coordinator failover (and therefore reports owning nothing).
+   */
+  private ReconciliationResult restoreToConfirmedAssignment(
+      final GroupMemberSession session, final List<Integer> ownedPartitions) {
+    final var confirmed = session.getAssignedPartitions();
+    final var ownedSet = new HashSet<>(ownedPartitions);
+    final var assign = confirmed.stream().filter(p -> !ownedSet.contains(p)).sorted().toList();
+    final var revoke =
+        ownedPartitions.stream().filter(p -> !confirmed.contains(p)).sorted().toList();
+    return new ReconciliationResult(revoke, assign, List.copyOf(confirmed));
   }
 
   private void trackStability(final String memberId) {

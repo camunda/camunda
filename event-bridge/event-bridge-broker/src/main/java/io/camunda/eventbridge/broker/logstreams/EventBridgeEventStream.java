@@ -54,7 +54,14 @@ public final class EventBridgeEventStream implements AutoCloseable {
   }
 
   public ActorFuture<Void> openAsync() {
-    final var nextPosition = recoverNextPosition();
+    final var lastPosition = recoverLastPosition();
+    final var nextPosition = lastPosition < 0 ? INITIAL_POSITION : lastPosition + 1;
+
+    // Re-seed the high watermark to the recovered tip so a newly elected leader reports the correct
+    // committed position immediately, rather than -1 until its first fresh append.
+    if (lastPosition >= 0) {
+      highWatermark.seed(lastPosition);
+    }
 
     inbound = new InboundQueue(queueCapacity, flowControl);
 
@@ -79,15 +86,10 @@ public final class EventBridgeEventStream implements AutoCloseable {
     return submitFuture;
   }
 
-  private long recoverNextPosition() {
+  /** Returns the last committed record position in the log, or {@code -1} if the log is empty. */
+  private long recoverLastPosition() {
     try (final var reader = newReader()) {
-      final var lastPosition = reader.seekToEnd();
-
-      if (lastPosition < 0) {
-        return INITIAL_POSITION;
-      }
-
-      return lastPosition + 1;
+      return reader.seekToEnd();
     }
   }
 

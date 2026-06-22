@@ -36,4 +36,18 @@ public interface HighWatermark {
    * @param committedBytes the physical byte size of the newly committed batch
    */
   void onCommitted(long commitPosition, int committedBytes);
+
+  /**
+   * Seeds the watermark to a recovered commit position on leader activation, so a newly elected
+   * leader does not under-report the high watermark (and starve long-poll wake-ups) until its first
+   * fresh append.
+   *
+   * <p><b>Contract:</b> Called once during partition leader startup with the last committed
+   * position recovered from the log. A no-op if the position does not advance the current
+   * watermark. The byte counter is left at zero — it only feeds relative (delta-since-park)
+   * comparisons, which are established per parked request after activation.
+   *
+   * @param commitPosition the last committed record position recovered from the log
+   */
+  void seed(long commitPosition);
 }

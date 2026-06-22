@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +43,11 @@ public final class Consumer {
 
   private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
 
+  /** Sentinel for a newly assigned partition whose start offset has not been resolved yet. */
+  private static final long UNSET_POSITION = Long.MIN_VALUE;
+
   private final ScheduledExecutorService executor;
+  private final OffsetResetPolicy offsetResetPolicy;
   private final String groupId;
   private final String instanceId;
   // Written from executor threads (join/heartbeat/leave), read from caller threads (poll, commit) —
@@ -74,6 +77,7 @@ public final class Consumer {
     this.client = client;
     this.instanceId = instanceId;
     executor = client.getExecutor();
+    offsetResetPolicy = client.getOffsetResetPolicy();
   }
 
   /**
@@ -91,6 +95,7 @@ public final class Consumer {
     memberEpoch = initialEpoch;
     this.client = client;
     executor = client.getExecutor();
+    offsetResetPolicy = client.getOffsetResetPolicy();
     applyOwnedPartitions(initialPartitions);
   }
 
@@ -280,6 +285,74 @@ public final class Consumer {
    *     has already been called, or wrapped in an {@link java.util.concurrent.ExecutionException}
    *     if {@code close()} races with the in-flight task
    */
+  /**
+   * Re-registers this consumer with the coordinator after it has been fenced or the coordinator
+   * lost its membership (e.g. a coordinator failover wiped the in-memory registry). Synchronous:
+   * callers are already on an executor thread (the heartbeat loop or a commit retry).
+   *
+   * <p>Acquires a fresh {@code memberId}/{@code memberEpoch} and drops owned partitions; the
+   * coordinator reassigns them on the next heartbeat and re-seeds committed offsets. {@link
+   * #nextPositions} for retained partitions is preserved (and only ever advanced via {@code max}),
+   * so resumption is at-least-once.
+   */
+  private void rejoinSync() {
+    final String requestBody;
+    try {
+      final var body = new LinkedHashMap<String, Object>();
+      body.put("instanceId", instanceId);
+      requestBody = client.getObjectMapper().writeValueAsString(body);
+    } catch (final JsonProcessingException e) {
+      throw new EventBridgeException("Failed to serialize rejoin request", e);
+    }
+
+    final var httpRequest =
+        HttpRequest.newBuilder()
+            .uri(
+                URI.create(
+                    client.getGatewayUrl()
+                        + "/v1/groups/"
+                        + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
+                        + "/join"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .build();
+
+    final HttpResponse<String> response;
+    try {
+      response = client.getHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+    } catch (final IOException | InterruptedException e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      throw new CoordinatorUnavailableException("Rejoin request failed: " + e.getMessage());
+    }
+
+    if (response.statusCode() != 200) {
+      throw new EventBridgeException(
+          "Rejoin failed: HTTP " + response.statusCode() + " — " + response.body());
+    }
+
+    final Map<String, Object> body;
+    try {
+      //noinspection unchecked
+      body = client.getObjectMapper().readValue(response.body(), Map.class);
+    } catch (final IOException e) {
+      throw new EventBridgeException("Failed to parse rejoin response", e);
+    }
+
+    memberId = (String) body.get("memberId");
+    final var epochVal = body.get("memberEpoch");
+    memberEpoch = epochVal instanceof final Number n ? n.longValue() : 0L;
+    applyOwnedPartitions(List.of());
+
+    LOG.info(
+        "[Rejoin][Consumer={}] group {} rejoined as member {} (epoch {})",
+        instanceId,
+        groupId,
+        memberId,
+        memberEpoch);
+  }
+
   public CompletableFuture<Void> sendHeartbeat() {
     checkNotClosed();
     return CompletableFuture.runAsync(
@@ -330,6 +403,17 @@ public final class Consumer {
           if (httpResponse.statusCode() == 503) {
             throw new CoordinatorUnavailableException(
                 "Heartbeat rejected — coordinator unavailable");
+          }
+          if (httpResponse.statusCode() == 409) {
+            // Fenced or unknown member (stale epoch, or the coordinator failed over and lost
+            // in-memory membership). Re-register instead of heartbeating forever as a ghost.
+            LOG.warn(
+                "[Heartbeat][Consumer={}] membership fenced/unknown (409); rejoining group {}",
+                instanceId,
+                groupId);
+            rejoinSync();
+            scheduleSendHeartbeat();
+            return;
           }
           if (httpResponse.statusCode() != 200) {
             throw new EventBridgeException(
@@ -420,7 +504,12 @@ public final class Consumer {
 
     for (final int partitionId : partitions) {
       checkNotClosed();
-      final long fromPosition = nextPositions.getOrDefault(partitionId, -1L);
+      long fromPosition = nextPositions.getOrDefault(partitionId, -1L);
+      if (fromPosition == UNSET_POSITION) {
+        // No committed offset for this newly assigned partition — apply the reset policy.
+        fromPosition = resolveStartPosition(partitionId);
+        nextPositions.put(partitionId, fromPosition);
+      }
 
       final Map<String, Object> response = doPoll(partitionId, fromPosition, maxRecords);
       if (!"OK".equals(response.get("status"))) {
@@ -521,19 +610,11 @@ public final class Consumer {
             doCommitOffset(partitionId, position);
           } catch (final ConsumerNotRegisteredException e) {
             LOG.warn(
-                "Consumer not registered on commitOffset; sending heartbeat and retrying once: {}",
+                "Consumer not registered on commitOffset; rejoining and retrying once: {}",
                 e.getMessage());
-            try {
-              sendHeartbeat().get();
-            } catch (final ExecutionException | InterruptedException hbEx) {
-              if (hbEx instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-              }
-              throw new EventBridgeException(
-                  "Heartbeat failed during commitOffset retry: " + hbEx.getMessage(), hbEx);
-            }
-            // Retry exactly once; any exception (including ConsumerNotRegisteredException)
-            // propagates to the caller.
+            rejoinSync();
+            // Retry exactly once with the fresh membership; any exception (including a repeated
+            // ConsumerNotRegisteredException, e.g. the partition is no longer owned) propagates.
             doCommitOffset(partitionId, position);
           }
         });
@@ -609,7 +690,8 @@ public final class Consumer {
       throw new EventBridgeException("commitOffset HTTP request failed", e);
     }
 
-    if (response.statusCode() == 404) {
+    if (response.statusCode() == 404 || response.statusCode() == 409) {
+      // 409: fenced/unknown member — the coordinator rejected the commit (no longer a silent 200).
       throw new ConsumerNotRegisteredException(groupId, memberId);
     }
     if (response.statusCode() == 400) {
@@ -623,6 +705,28 @@ public final class Consumer {
       throw new EventBridgeException(
           "commitOffset failed: HTTP " + response.statusCode() + " — " + response.body());
     }
+  }
+
+  /**
+   * Resolves the start position for a newly assigned partition that has no committed offset, per
+   * the configured {@link OffsetResetPolicy}: {@code EARLIEST} → oldest retained ({@code -1});
+   * {@code LATEST} → just past the current end of the log (skip existing records). Falls back to
+   * earliest on error.
+   */
+  private long resolveStartPosition(final int partitionId) {
+    if (offsetResetPolicy == OffsetResetPolicy.LATEST) {
+      try {
+        final long highWatermark = client.fetch(partitionId, 0, 4096).join().highWatermark();
+        return highWatermark < 0 ? 0L : highWatermark + 1;
+      } catch (final RuntimeException e) {
+        LOG.warn(
+            "Failed to resolve LATEST start for partition {}; falling back to earliest",
+            partitionId,
+            e);
+        return -1L;
+      }
+    }
+    return -1L; // EARLIEST
   }
 
   /**
@@ -652,7 +756,9 @@ public final class Consumer {
     Collections.sort(sorted);
     nextPositions.keySet().retainAll(sorted);
     for (final int p : sorted) {
-      nextPositions.putIfAbsent(p, -1L);
+      // Newly assigned: start unresolved. A committed offset (seedCommittedOffsets) or the reset
+      // policy (resolved on first poll) determines where this partition actually starts.
+      nextPositions.putIfAbsent(p, UNSET_POSITION);
     }
     ownedPartitions = Collections.unmodifiableList(sorted);
   }

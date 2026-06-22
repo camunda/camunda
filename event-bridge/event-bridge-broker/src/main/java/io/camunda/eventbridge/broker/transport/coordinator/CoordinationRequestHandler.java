@@ -17,8 +17,14 @@ import java.util.concurrent.CompletableFuture;
 
 public final class CoordinationRequestHandler implements RequestHandler {
 
-  // Must match the topic the gateway BrokerClient sends to (default partition group).
-  private static final String TOPIC_FORMAT = "default-coordinate-api-%d";
+  /** Broker-client routing group for coordination — distinct from the data group ("default"). */
+  public static final String COORDINATOR_ROUTING_GROUP = "event-bridge-coordinator";
+
+  // Must exactly match the subject the gateway BrokerClient sends to:
+  // "<group>-<requestType>-api-<partitionId>" (see AtomixServerTransport#topicName). The gateway
+  // sets the coordinate request's partition group to COORDINATOR_ROUTING_GROUP and resolves this
+  // (coordinator-group) partition's leader from gossip.
+  private static final String TOPIC_FORMAT = COORDINATOR_ROUTING_GROUP + "-coordinate-api-%d";
 
   private final int partitionId;
   private final CoordinationManager coordinationManager;

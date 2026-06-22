@@ -66,6 +66,17 @@
       <artifactId>zeebe-snapshots</artifactId>
     </dependency>
 
+    <!-- Stream processor platform: coordinator state processing + follower replay + snapshots -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-stream-platform</artifactId>
+    </dependency>
+    <!-- RocksDB-backed ZeebeDb for the coordinator's replicated offset state -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+
     <!-- Zeebe journal (underlying segment storage accessed for truncation) -->
     <dependency>
       <groupId>io.camunda</groupId>

@@ -89,21 +89,25 @@ public final class EventBridgeDtos {
   /**
    * Response body for {@code POST /v1/consumers/{groupId}/{consumerId}/heartbeat}.
    *
-   * @param epoch coordinator's current epoch; always {@code >= request.epoch}
+   * <p>Field names must match exactly what the client parses ({@code Consumer.sendHeartbeat}):
+   * {@code memberEpoch} drives full-reconciliation detection and {@code assignment} carries the
+   * full target set. They were previously named {@code epoch}/{@code fullAssignment}, which
+   * silently disabled the client's full-reconciliation path.
+   *
+   * @param memberEpoch coordinator's current epoch; always {@code >= request.epoch}
    * @param revoke partitions the consumer must stop processing and acknowledge
    * @param assign partitions the consumer should start processing and acknowledge
-   * @param fullAssignment complete target assignment; non-empty only when the coordinator epoch has
-   *     advanced since the consumer's last heartbeat, in which case the consumer must reconcile
-   *     fully from this list
+   * @param assignment complete target assignment; applied when the coordinator epoch has advanced
+   *     since the consumer's last heartbeat, in which case the consumer reconciles fully from it
    */
   public record HeartbeatResponse(
       String errorCode,
       String memberId,
-      long epoch,
+      long memberEpoch,
       List<Integer> revoke,
       List<Integer> assign,
       long assignmentEpoch,
-      List<Integer> fullAssignment,
+      List<Integer> assignment,
       java.util.Map<Integer, Long> committedOffsets) {}
 
   public record LatestPositionResponse(long position) {}

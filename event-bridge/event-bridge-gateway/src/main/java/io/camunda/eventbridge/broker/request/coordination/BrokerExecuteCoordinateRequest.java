@@ -22,16 +22,27 @@ public abstract class BrokerExecuteCoordinateRequest<T> extends BrokerRequest<T>
   protected final ExecuteCoordinateRequest request = new ExecuteCoordinateRequest();
   protected final ExecuteCoordinateResponse response = new ExecuteCoordinateResponse();
 
+  // Broker-client routing group for the coordinator's dedicated Raft group. Must match
+  // CoordinationRequestHandler#COORDINATOR_ROUTING_GROUP and the gossiped coordinator BrokerInfo.
+  private static final String COORDINATOR_ROUTING_GROUP = "event-bridge-coordinator";
+
+  // Target coordinator shard, derived from the consumer group id by the gateway service (see
+  // CoordinatorRouting). Defaults to 1 (single-shard).
+  private int partitionId = 1;
+
   public BrokerExecuteCoordinateRequest(final CoordinateRequestType type) {
     // The super-constructor takes the schema/template of the RESPONSE this request decodes — not
     // the request's. Previously this passed the request decoder's schema and a hardcoded "2".
     super(ExecuteCoordinateResponseDecoder.SCHEMA_ID, ExecuteCoordinateResponseDecoder.TEMPLATE_ID);
     request.setType(type);
+    // Route to the coordinator group's partition leader (resolved from gossip), with NOT_LEADER
+    // retry — instead of a hardcoded node, which broke on coordinator failover.
+    setPartitionGroup(COORDINATOR_ROUTING_GROUP);
   }
 
   @Override
   public int getPartitionId() {
-    return 1;
+    return partitionId;
   }
 
   @Override
@@ -41,17 +52,17 @@ public abstract class BrokerExecuteCoordinateRequest<T> extends BrokerRequest<T>
 
   @Override
   public void setPartitionId(final int partitionId) {
-    throw new UnsupportedOperationException();
+    this.partitionId = partitionId;
   }
 
   @Override
   public boolean addressesSpecificPartition() {
-    return false;
+    return true;
   }
 
   @Override
   public boolean requiresPartitionId() {
-    return false;
+    return true;
   }
 
   @Override
@@ -72,7 +83,9 @@ public abstract class BrokerExecuteCoordinateRequest<T> extends BrokerRequest<T>
 
   @Override
   public Optional<BrokerMemberId> getBrokerId() {
-    return Optional.of(BrokerMemberId.from(0));
+    // Empty: the BrokerClient resolves the coordinator group's partition leader from the gossiped
+    // topology (getTopology(COORDINATOR_ROUTING_GROUP)) and retries on NOT_LEADER.
+    return Optional.empty();
   }
 
   @Override

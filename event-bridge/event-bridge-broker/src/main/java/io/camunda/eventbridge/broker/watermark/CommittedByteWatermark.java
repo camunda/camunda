@@ -94,6 +94,18 @@ public final class CommittedByteWatermark implements HighWatermark {
     }
   }
 
+  @Override
+  public void seed(final long commitPosition) {
+    final PartitionWatermark previous = currentWatermark;
+    if (commitPosition <= previous.commitPosition()) {
+      return; // already at or beyond the recovered position
+    }
+    // Preserve the running byte total (normally 0 on a fresh leader) and only move the position
+    // forward to the recovered tip. Parked fetchers snapshot the byte counter at park time, so a
+    // zero baseline here is correct.
+    currentWatermark = new PartitionWatermark(commitPosition, previous.committedBytes());
+  }
+
   public void setOnWatermarkAdvancedNotifier(final Runnable onWatermarkAdvancedNotifier) {
     this.onWatermarkAdvancedNotifier = onWatermarkAdvancedNotifier;
   }

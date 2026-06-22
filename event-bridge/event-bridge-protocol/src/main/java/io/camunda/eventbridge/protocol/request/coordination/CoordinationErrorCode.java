@@ -13,6 +13,8 @@ public enum CoordinationErrorCode {
   FENCED_MEMBER_EPOCH("fenced_member_epoch"),
   FENCED_MEMBER_ACTIVE("fenced_member_active"),
   INVALID_GROUP_ID("invalid_group_id"),
+  // The member is valid but does not own the partition it is trying to commit (stale assignment).
+  NOT_PARTITION_OWNER("not_partition_owner"),
 
   REBALANCE_IN_PROGRESS("rebalance_in_progress"),
 

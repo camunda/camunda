@@ -95,22 +95,30 @@ public class BalancedStickyAssignor implements PartitionAssignor {
       final int maxLoad,
       final int numConsumersWithMax) {
 
+    // Each consumer's own target: the first numConsumersWithMax (sorted) carry maxLoad, the rest
+    // minLoad. Draining/filling must respect each consumer's target — not a single global maxLoad —
+    // otherwise a consumer sitting at maxLoad whose target is minLoad never relinquishes a
+    // partition, and a newly joined consumer is left with none.
+    final var targetLoad = new HashMap<String, Integer>();
+    for (int i = 0; i < consumers.size(); i++) {
+      targetLoad.put(consumers.get(i), i < numConsumersWithMax ? maxLoad : minLoad);
+    }
+
     final var overloaded = new ArrayList<String>();
     final var underloaded = new LinkedList<String>();
 
-    for (int i = 0; i < consumers.size(); i++) {
-      final var consumer = consumers.get(i);
+    for (final var consumer : consumers) {
       final var size = assignment.get(consumer).size();
-      final var targetLoad = i < numConsumersWithMax ? maxLoad : minLoad;
+      final var target = targetLoad.get(consumer);
 
-      if (size > targetLoad) {
+      if (size > target) {
         overloaded.add(consumer);
-      } else if (size < targetLoad) {
+      } else if (size < target) {
         underloaded.add(consumer);
       }
     }
 
-    if (overloaded.isEmpty() && underloaded.isEmpty()) {
+    if (overloaded.isEmpty() || underloaded.isEmpty()) {
       return;
     }
 
@@ -124,8 +132,8 @@ public class BalancedStickyAssignor implements PartitionAssignor {
         (stickySet.contains(partition) ? sticky : nonSticky).add(partition);
       }
 
-      movePartitions(nonSticky, fromSet, assignment, underloaded, maxLoad);
-      movePartitions(sticky, fromSet, assignment, underloaded, maxLoad);
+      movePartitions(nonSticky, fromSet, assignment, underloaded, targetLoad, targetLoad.get(from));
+      movePartitions(sticky, fromSet, assignment, underloaded, targetLoad, targetLoad.get(from));
     }
   }
 
@@ -134,10 +142,11 @@ public class BalancedStickyAssignor implements PartitionAssignor {
       final Set<Integer> fromSet,
       final Map<String, Set<Integer>> assignment,
       final LinkedList<String> underloaded,
-      final int maxLoad) {
+      final Map<String, Integer> targetLoad,
+      final int fromTarget) {
 
     for (final var partition : candidates) {
-      if (underloaded.isEmpty() || fromSet.size() <= maxLoad) {
+      if (underloaded.isEmpty() || fromSet.size() <= fromTarget) {
         break;
       }
 
@@ -145,7 +154,7 @@ public class BalancedStickyAssignor implements PartitionAssignor {
       final var to = underloaded.getFirst();
       assignment.get(to).add(partition);
 
-      if (assignment.get(to).size() >= maxLoad) {
+      if (assignment.get(to).size() >= targetLoad.get(to)) {
         underloaded.removeFirst();
       }
     }

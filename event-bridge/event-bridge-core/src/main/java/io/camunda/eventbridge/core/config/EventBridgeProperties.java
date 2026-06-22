@@ -39,7 +39,7 @@ public record EventBridgeProperties(
               new TruncationProperties(60_000));
     }
     if (coordinator == null) {
-      coordinator = new CoordinatorProperties("broker-0", 30_000);
+      coordinator = new CoordinatorProperties("broker-0", 30_000, 1);
     }
     if (consumer == null) {
       consumer = new ConsumerProperties(10_000, 2_000, 5_000, 100, 1_000, 1);
@@ -124,9 +124,15 @@ public record EventBridgeProperties(
    * @param brokerId the SWIM member ID of the coordinator broker (default "broker-0")
    * @param sessionTimeoutMs session timeout in milliseconds; consumers not sending a heartbeat
    *     within this window are considered dead (default 30000)
+   * @param partitionCount number of coordinator Raft partitions the consumer-group coordinator is
+   *     sharded across (default 1). Each group is owned by exactly one partition (by {@code
+   *     groupId} hash); raise this to scale coordination across brokers. Must be identical on every
+   *     node.
    */
   public record CoordinatorProperties(
-      @DefaultValue("broker-0") String brokerId, @DefaultValue("30000") long sessionTimeoutMs) {}
+      @DefaultValue("broker-0") String brokerId,
+      @DefaultValue("30000") long sessionTimeoutMs,
+      @DefaultValue("1") int partitionCount) {}
 
   /**
    * Consumer-side configuration.

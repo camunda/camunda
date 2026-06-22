@@ -12,18 +12,23 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.camunda.eventbridge.broker.coordinator.stream.CoordinatorPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
+import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +53,7 @@ final class PartitionBootstrapper {
 
   private final List<CreatedPartition> createdPartitions = new ArrayList<>();
   private final List<PartitionLifecycle> lifecycles = new ArrayList<>();
+  private final List<CoordinatorPartition> coordinatorPartitions = new ArrayList<>();
 
   PartitionBootstrapper(
       final AtomixCluster cluster,
@@ -67,6 +73,7 @@ final class PartitionBootstrapper {
   void start(
       final Set<PartitionMetadata> distribution,
       final TopologyManagerImpl topologyManager,
+      final TopologyManagerImpl coordinatorTopologyManager,
       final MessagingService brokerMessagingService) {
 
     final var membershipService = cluster.getMembershipService();
@@ -97,6 +104,103 @@ final class PartitionBootstrapper {
           topologyManager,
           brokerMessagingService);
     }
+
+    bootstrapCoordinator(
+        localMemberId,
+        factory,
+        managementService,
+        brokerMessagingService,
+        coordinatorTopologyManager);
+  }
+
+  /**
+   * Bootstraps the dedicated coordinator Raft group, sharded into {@code
+   * coordinator.partitionCount} partitions (each replicated across {@code replicationFactor}
+   * members). A group is owned by exactly one shard (by {@code groupId} hash). Each shard's leader
+   * runs the coordinator over a {@code StreamProcessor}; followers replay the committed offset log
+   * so failover is clean.
+   */
+  private void bootstrapCoordinator(
+      final MemberId localMemberId,
+      final PartitionFactory factory,
+      final DefaultPartitionManagementService managementService,
+      final MessagingService brokerMessagingService,
+      final TopologyManagerImpl coordinatorTopologyManager) {
+
+    final var clusterSize = properties.cluster().clusterSize();
+    final var members =
+        IntStream.range(0, clusterSize)
+            .mapToObj(i -> MemberId.from("broker-" + i))
+            .sorted()
+            .toList();
+    final var partitionCount = Math.max(1, properties.coordinator().partitionCount());
+    final var replicationFactor = Math.min(properties.raft().replicationFactor(), clusterSize);
+
+    // Reuse the same round-robin distribution as the data partitions, but in the coordinator group.
+    final var distribution =
+        new RoundRobinPartitionDistributor(PartitionFactory.COORDINATOR_GROUP_NAME)
+            .distributePartitions(members, partitionCount, replicationFactor);
+
+    distribution.stream()
+        .filter(p -> p.members().contains(localMemberId))
+        .forEach(
+            partition ->
+                bootstrapCoordinatorPartition(
+                    partition.id().id(),
+                    Set.copyOf(partition.members()),
+                    localMemberId,
+                    factory,
+                    managementService,
+                    brokerMessagingService,
+                    coordinatorTopologyManager));
+  }
+
+  private void bootstrapCoordinatorPartition(
+      final int partitionId,
+      final Set<MemberId> members,
+      final MemberId localMemberId,
+      final PartitionFactory factory,
+      final DefaultPartitionManagementService managementService,
+      final MessagingService brokerMessagingService,
+      final TopologyManagerImpl coordinatorTopologyManager) {
+
+    final var created = factory.createCoordinator(partitionId, members, localMemberId);
+    createdPartitions.add(created);
+
+    final var runtimeDirectory =
+        factory
+            .getPartitionDirectory(PartitionFactory.COORDINATOR_GROUP_NAME, partitionId)
+            .resolve("runtime");
+
+    final var coordinatorPartition =
+        new CoordinatorPartition(
+            partitionId,
+            properties.broker().partitionCount(),
+            created.raftPartition(),
+            actorScheduler,
+            brokerMessagingService,
+            clock,
+            runtimeDirectory,
+            (ConstructableSnapshotStore) created.snapshotStore(),
+            coordinatorTopologyManager);
+    coordinatorPartitions.add(coordinatorPartition);
+    actorScheduler.submitActor(coordinatorPartition);
+
+    created
+        .raftPartition()
+        .addRoleChangeListener((role, term) -> coordinatorPartition.onRoleChange(role, term));
+
+    created
+        .raftPartition()
+        .bootstrap(managementService, created.snapshotStore())
+        .whenComplete(
+            (rp, error) -> {
+              if (error != null) {
+                LOG.error("Failed to bootstrap coordinator raft partition {}", partitionId, error);
+              } else {
+                LOG.info("Coordinator raft partition {} bootstrapped", partitionId);
+              }
+            });
   }
 
   void stop() {
@@ -111,6 +215,15 @@ final class PartitionBootstrapper {
     }
     lifecycles.clear();
 
+    for (final var coordinatorPartition : coordinatorPartitions) {
+      try {
+        coordinatorPartition.closeAsync();
+      } catch (final Exception e) {
+        LOG.warn("Error closing coordinator partition", e);
+      }
+    }
+    coordinatorPartitions.clear();
+
     for (final var partition : createdPartitions) {
       try {
         partition.raftPartition().close().get(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -119,7 +232,10 @@ final class PartitionBootstrapper {
       }
 
       try {
-        partition.snapshotStore().closeAsync();
+        // Both NoopSnapshotStore and FileBasedSnapshotStore are actors.
+        if (partition.snapshotStore() instanceof final Actor actor) {
+          actor.closeAsync();
+        }
       } catch (final Exception e) {
         LOG.warn("Error closing snapshot store for partition {}", partition.partitionId(), e);
       }

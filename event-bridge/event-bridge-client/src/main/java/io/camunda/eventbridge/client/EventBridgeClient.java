@@ -60,26 +60,45 @@ public final class EventBridgeClient implements AutoCloseable {
   private final String gatewayUrl;
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
+  private final OffsetResetPolicy offsetResetPolicy;
 
   private EventBridgeClient(
-      final String gatewayUrl, final HttpClient httpClient, final ObjectMapper objectMapper) {
+      final String gatewayUrl,
+      final HttpClient httpClient,
+      final ObjectMapper objectMapper,
+      final OffsetResetPolicy offsetResetPolicy) {
     this.gatewayUrl =
         gatewayUrl.endsWith("/") ? gatewayUrl.substring(0, gatewayUrl.length() - 1) : gatewayUrl;
     this.httpClient = httpClient;
     this.objectMapper = objectMapper;
+    this.offsetResetPolicy = offsetResetPolicy;
     executor = Executors.newScheduledThreadPool(4);
   }
 
   /**
-   * Creates a client with default settings pointing to the given gateway URL.
+   * Creates a client with default settings (offset reset {@link OffsetResetPolicy#EARLIEST}).
    *
    * @param gatewayUrl base URL of the Event Bridge gateway (e.g. {@code "http://localhost:8080"})
    */
   public static EventBridgeClient create(final String gatewayUrl) {
+    return create(gatewayUrl, OffsetResetPolicy.EARLIEST);
+  }
+
+  /**
+   * Creates a client with an explicit {@link OffsetResetPolicy} for newly assigned partitions that
+   * have no committed offset.
+   */
+  public static EventBridgeClient create(
+      final String gatewayUrl, final OffsetResetPolicy offsetResetPolicy) {
     return new EventBridgeClient(
         gatewayUrl,
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build(),
-        new ObjectMapper());
+        new ObjectMapper(),
+        offsetResetPolicy);
+  }
+
+  OffsetResetPolicy getOffsetResetPolicy() {
+    return offsetResetPolicy;
   }
 
   // -------------------------------------------------------------------------

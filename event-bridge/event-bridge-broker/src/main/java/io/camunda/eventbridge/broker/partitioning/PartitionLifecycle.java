@@ -10,7 +10,6 @@ package io.camunda.eventbridge.broker.partitioning;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.eventbridge.broker.partitioning.steps.CoordinatorRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.EventStreamFetcherStep;
 import io.camunda.eventbridge.broker.partitioning.steps.EventStreamStep;
 import io.camunda.eventbridge.broker.partitioning.steps.FetchPurgatoryStep;
@@ -67,13 +66,14 @@ public final class PartitionLifecycle extends Actor {
             idGenerator,
             executorService);
     context.setRequestHandlerRegistry(new RequestHandlerRegistry(partitionId, messagingService));
+    // The consumer-group coordinator no longer runs on data partitions; it has its own Raft group
+    // (see CoordinatorPartition), so its replicated offset log never pollutes the event stream.
     leaderSteps =
         List.of(
             new LogStorageStep(),
             new HighWatermarkStep(),
             new EventStreamStep(),
             new FetchPurgatoryStep(),
-            new CoordinatorRequestHandlerStep(),
             new EventStreamFetcherStep(),
             new PublishRequestHandlerStep(),
             new PollRequestHandlerStep(),

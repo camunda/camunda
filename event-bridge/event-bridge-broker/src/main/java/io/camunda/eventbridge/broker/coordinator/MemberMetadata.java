@@ -35,6 +35,11 @@ public class MemberMetadata {
     memberEpoch++;
   }
 
+  /** Restores the epoch when rebuilding membership from replicated metadata after failover. */
+  public void setMemberEpoch(final int memberEpoch) {
+    this.memberEpoch = memberEpoch;
+  }
+
   public boolean isStaticMember() {
     return instanceId != null && !instanceId.isBlank();
   }

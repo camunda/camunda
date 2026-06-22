@@ -126,7 +126,11 @@ public final class BrokerBootstrap {
             InstantSource.system(),
             idGenerator,
             executorService);
-    partitionBootstrapper.start(distribution, topologyManager, brokerMessagingService);
+    partitionBootstrapper.start(
+        distribution,
+        topologyManager,
+        topologySetup.getCoordinatorTopologyManager(),
+        brokerMessagingService);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
   }

@@ -11,6 +11,8 @@ import io.camunda.eventbridge.broker.request.coordination.BrokerCommitRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerHeartbeatRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerJoinGroupRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerLeaveGroupRequest;
+import io.camunda.eventbridge.core.config.EventBridgeProperties;
+import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
@@ -30,34 +32,51 @@ public class CoordinatorService {
 
   private final BrokerClient brokerClient;
   private final ExecutorService executor;
+  private final int coordinatorPartitionCount;
 
   public CoordinatorService(
-      final BrokerClient brokerClient, final ServicesExecutorProvider executorProvider) {
+      final BrokerClient brokerClient,
+      final ServicesExecutorProvider executorProvider,
+      final EventBridgeProperties properties) {
     this.brokerClient = brokerClient;
     executor = executorProvider.getExecutor();
+    coordinatorPartitionCount = Math.max(1, properties.coordinator().partitionCount());
   }
 
   public CompletableFuture<JoinGroupResponse> joinGroup(final JoinGroupRequest request) {
+    final var brokerRequest = new BrokerJoinGroupRequest().wrapRequest(request);
+    brokerRequest.setPartitionId(shardFor(request.getGroupId()));
     return brokerClient
-        .sendRequest(new BrokerJoinGroupRequest().wrapRequest(request))
+        .sendRequest(brokerRequest)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   public CompletableFuture<HeartbeatResponse> heartbeat(final HeartbeatRequest request) {
+    final var brokerRequest = new BrokerHeartbeatRequest().wrapRequest(request);
+    brokerRequest.setPartitionId(shardFor(request.getGroupId()));
     return brokerClient
-        .sendRequest(new BrokerHeartbeatRequest().wrapRequest(request))
+        .sendRequest(brokerRequest)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   public CompletableFuture<LeaveGroupResponse> leaveGroup(final LeaveGroupRequest request) {
+    final var brokerRequest = new BrokerLeaveGroupRequest().wrapRequest(request);
+    brokerRequest.setPartitionId(shardFor(request.getGroupId()));
     return brokerClient
-        .sendRequest(new BrokerLeaveGroupRequest().wrapRequest(request))
+        .sendRequest(brokerRequest)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   public CompletableFuture<CommitOffsetResponse> commit(final CommitOffsetRequest request) {
+    final var brokerRequest = new BrokerCommitRequest().wrapRequest(request);
+    brokerRequest.setPartitionId(shardFor(request.getGroupId()));
     return brokerClient
-        .sendRequest(new BrokerCommitRequest().wrapRequest(request))
+        .sendRequest(brokerRequest)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
+  }
+
+  /** Routes a group to its owning coordinator shard (consistent with the brokers' bootstrap). */
+  private int shardFor(final String groupId) {
+    return CoordinatorRouting.partitionForGroup(groupId, coordinatorPartitionCount);
   }
 }

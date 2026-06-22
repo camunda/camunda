@@ -12,8 +12,10 @@ import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.HeartbeatRequest;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.LeaveGroupRequest;
 import io.camunda.eventbridge.mapper.RequestMapper;
 import io.camunda.eventbridge.mapper.ResponseMapper;
+import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.service.CoordinatorService;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,10 +61,10 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return ResponseEntity.ok(null);
+                return coordinatorUnavailable();
               }
-              final var response = responseMapper.toJoinGroupResponse(res);
-              return ResponseEntity.ok(response);
+              return ResponseEntity.status(statusFor(res.getErrorCode()))
+                  .body(responseMapper.toJoinGroupResponse(res));
             });
   }
 
@@ -78,10 +80,13 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return ResponseEntity.ok(null);
+                return coordinatorUnavailable();
               }
-              final var response = responseMapper.toHeartbeatResponse(res);
-              return ResponseEntity.ok(response);
+              // Surface the coordinator's error code as an HTTP status so the client can act on it
+              // (e.g. rejoin on a fenced/unknown member) rather than silently treating every
+              // heartbeat as a success.
+              return ResponseEntity.status(statusFor(res.getErrorCode()))
+                  .body(responseMapper.toHeartbeatResponse(res));
             });
   }
 
@@ -97,10 +102,10 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return ResponseEntity.ok(null);
+                return coordinatorUnavailable();
               }
-              final var response = responseMapper.toLeaveGroupResponse(res);
-              return ResponseEntity.ok(response);
+              return ResponseEntity.status(statusFor(res.getErrorCode()))
+                  .body(responseMapper.toLeaveGroupResponse(res));
             });
   }
 
@@ -116,9 +121,38 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return ResponseEntity.internalServerError().build();
+                return coordinatorUnavailable();
               }
-              return ResponseEntity.ok(responseMapper.toCommitResponse(res));
+              // A fenced/unknown member must NOT read as a successful commit — map it to a status
+              // (409) the client treats as "rejoin then retry", instead of a silent 200.
+              return ResponseEntity.status(statusFor(res.getErrorCode()))
+                  .body(responseMapper.toCommitResponse(res));
             });
+  }
+
+  /**
+   * Maps a coordinator error code to the HTTP status the client reacts to.
+   *
+   * <ul>
+   *   <li>{@code 200} — success, or a normal rebalance the client keeps polling through.
+   *   <li>{@code 409} — the member is fenced/unknown (stale epoch, or the coordinator failed over
+   *       and lost in-memory membership): the client must rejoin.
+   *   <li>{@code 400} — malformed request (invalid group id).
+   *   <li>{@code 500} — unexpected coordinator error.
+   * </ul>
+   */
+  private static HttpStatus statusFor(final CoordinationErrorCode code) {
+    return switch (code) {
+      case NONE, REBALANCE_IN_PROGRESS -> HttpStatus.OK;
+      case UNKNOWN_MEMBER_ID, FENCED_MEMBER_EPOCH, FENCED_MEMBER_ACTIVE, NOT_PARTITION_OWNER ->
+          HttpStatus.CONFLICT;
+      case INVALID_GROUP_ID -> HttpStatus.BAD_REQUEST;
+      case UNKNOWN -> HttpStatus.INTERNAL_SERVER_ERROR;
+    };
+  }
+
+  /** The coordinator partition leader was unreachable; the client should retry. */
+  private static ResponseEntity<Object> coordinatorUnavailable() {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
   }
 }

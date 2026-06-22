@@ -17,7 +17,11 @@ import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.camunda.eventbridge.broker.logstreams.ApplicationEntryCursorAdapter;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -38,6 +42,9 @@ public final class PartitionFactory {
 
   public static final String GROUP_NAME = "event-bridge-partition";
 
+  /** Dedicated Raft group for the consumer-group coordinator (separate from data partitions). */
+  public static final String COORDINATOR_GROUP_NAME = "event-bridge-coordinator";
+
   private static final Logger LOG = LoggerFactory.getLogger(PartitionFactory.class);
 
   private final EventBridgeProperties properties;
@@ -52,44 +59,102 @@ public final class PartitionFactory {
   /** Creates the raft partition and snapshot store. The raft partition is not bootstrapped yet. */
   public CreatedPartition create(
       final int partitionId, final Set<MemberId> members, final MemberId localMemberId) {
-
-    final var partitionDir = getPartitionDirectory(partitionId);
+    final var partitionDir = getPartitionDirectory(GROUP_NAME, partitionId);
     ensureDirectoryExists(partitionDir, partitionId);
 
     final var raftPartition =
-        createRaftPartition(partitionId, members, localMemberId, partitionDir);
+        createRaftPartition(
+            GROUP_NAME,
+            partitionId,
+            members,
+            localMemberId,
+            partitionDir,
+            new ApplicationEntryCursorAdapter());
 
+    // Data partitions don't snapshot yet (consumers read the full log); compaction follows the
+    // coordinator's committed offsets in a later step.
     final var snapshotStore = new NoopSnapshotStore(partitionId);
     actorScheduler.submitActor(snapshotStore);
 
-    LOG.info("Partition {} — raft partition and snapshot store created", partitionId);
-
+    LOG.info("Partition {}/{} — raft partition created", GROUP_NAME, partitionId);
     return new CreatedPartition(partitionId, raftPartition, snapshotStore);
   }
 
+  /**
+   * Creates a coordinator Raft partition in its own group, backed by a {@link
+   * FileBasedSnapshotStore} so the StreamProcessor's state can be snapshotted, replicated to
+   * lagging followers, and the log compacted. Uses the default journal index cursor (the
+   * coordinator log carries StreamProcessor records, not EventBridge batches).
+   */
+  public CreatedPartition createCoordinator(
+      final int partitionId, final Set<MemberId> members, final MemberId localMemberId) {
+    final var partitionDir = getPartitionDirectory(COORDINATOR_GROUP_NAME, partitionId);
+    ensureDirectoryExists(partitionDir, partitionId);
+
+    final var raftPartition =
+        createRaftPartition(
+            COORDINATOR_GROUP_NAME, partitionId, members, localMemberId, partitionDir, null);
+
+    final var snapshotStore =
+        new FileBasedSnapshotStore(
+            parseNodeId(localMemberId),
+            partitionId,
+            partitionDir,
+            new ChecksumProviderRocksDBImpl(),
+            new SimpleMeterRegistry());
+    actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound());
+
+    LOG.info(
+        "Partition {}/{} — raft partition and file-based snapshot store created",
+        COORDINATOR_GROUP_NAME,
+        partitionId);
+    return new CreatedPartition(partitionId, raftPartition, snapshotStore);
+  }
+
+  private static int parseNodeId(final MemberId memberId) {
+    try {
+      return Integer.parseInt(memberId.id().replaceAll("[^0-9]", ""));
+    } catch (final NumberFormatException e) {
+      return 0;
+    }
+  }
+
   public Path getPartitionDirectory(final int partitionId) {
+    return getPartitionDirectory(GROUP_NAME, partitionId);
+  }
+
+  public Path getPartitionDirectory(final String groupName, final int partitionId) {
     return Paths.get(properties.data().directory())
-        .resolve(GROUP_NAME)
+        .resolve(groupName)
         .resolve("partitions")
         .resolve(String.valueOf(partitionId));
   }
 
   private RaftPartition createRaftPartition(
+      final String groupName,
       final int partitionId,
       final Set<MemberId> members,
       final MemberId localMemberId,
-      final Path partitionDirectory) {
+      final Path partitionDirectory,
+      final ApplicationEntryCursorAdapter journalIndexCursor) {
 
     final var storageConfig = buildStorageConfig();
-    final var partitionConfig = buildPartitionConfig(storageConfig);
-    final var metadata = buildMetadata(partitionId, members, localMemberId);
+    // The Raft messaging subject prefix is "<tenantName>-partition-<id>", so the two groups MUST
+    // use
+    // distinct tenant names — otherwise the data and coordinator partitions that share an id (1, 2,
+    // …) would collide on their Raft vote/append subjects and never elect a stable leader.
+    final var partitionConfig = buildPartitionConfig(storageConfig, groupName);
+    final var metadata = buildMetadata(groupName, partitionId, members, localMemberId);
 
-    return new RaftPartition(
-        metadata,
-        partitionConfig,
-        partitionDirectory.toFile(),
-        new SimpleMeterRegistry(),
-        new ApplicationEntryCursorAdapter());
+    return journalIndexCursor == null
+        ? new RaftPartition(
+            metadata, partitionConfig, partitionDirectory.toFile(), new SimpleMeterRegistry())
+        : new RaftPartition(
+            metadata,
+            partitionConfig,
+            partitionDirectory.toFile(),
+            new SimpleMeterRegistry(),
+            journalIndexCursor);
   }
 
   private RaftStorageConfig buildStorageConfig() {
@@ -98,11 +163,13 @@ public final class PartitionFactory {
     return config;
   }
 
-  private static RaftPartitionConfig buildPartitionConfig(final RaftStorageConfig storageConfig) {
+  private static RaftPartitionConfig buildPartitionConfig(
+      final RaftStorageConfig storageConfig, final String tenantName) {
     final var config = new RaftPartitionConfig();
     config.setStorageConfig(storageConfig);
     config.setPriorityElectionEnabled(false);
-    config.setTenantName("event-bridge");
+    // Per-group tenant name → per-group Raft subjects (see createRaftPartition).
+    config.setTenantName(tenantName);
     config.setSendOnLegacySubject(false);
     config.setReceiveOnLegacySubject(false);
     config.setEntryValidator(new NoopEntryValidator());
@@ -110,8 +177,11 @@ public final class PartitionFactory {
   }
 
   private static PartitionMetadata buildMetadata(
-      final int partitionId, final Set<MemberId> members, final MemberId preferredLeader) {
-    final var raftPartitionId = PartitionId.from(GROUP_NAME, partitionId);
+      final String groupName,
+      final int partitionId,
+      final Set<MemberId> members,
+      final MemberId preferredLeader) {
+    final var raftPartitionId = PartitionId.from(groupName, partitionId);
     final Map<MemberId, Integer> priorities =
         members.stream().collect(Collectors.toMap(m -> m, m -> 1));
     return new PartitionMetadata(raftPartitionId, members, priorities, 1, preferredLeader);
@@ -127,5 +197,5 @@ public final class PartitionFactory {
 
   /** Holds the raft-level components for a single partition. */
   public record CreatedPartition(
-      int partitionId, RaftPartition raftPartition, NoopSnapshotStore snapshotStore) {}
+      int partitionId, RaftPartition raftPartition, ReceivableSnapshotStore snapshotStore) {}
 }

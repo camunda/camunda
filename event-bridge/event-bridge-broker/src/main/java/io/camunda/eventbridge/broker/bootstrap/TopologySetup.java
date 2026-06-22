@@ -10,6 +10,7 @@ package io.camunda.eventbridge.broker.bootstrap;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
+import io.camunda.eventbridge.broker.transport.coordinator.CoordinationRequestHandler;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
@@ -31,6 +32,7 @@ final class TopologySetup {
   private final BrokerTopologyManager gatewayTopologyManager;
 
   private TopologyManagerImpl topologyManager;
+  private TopologyManagerImpl coordinatorTopologyManager;
 
   TopologySetup(
       final ClusterMembershipService membershipService,
@@ -60,11 +62,37 @@ final class TopologySetup {
           (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
     }
 
-    LOG.info("Topology manager started for broker {}", localMemberId);
+    // Separate topology manager for the coordinator group: it publishes a second BrokerInfo (under
+    // a group-specific member-property key), so the gateway resolves the coordinator partition's
+    // leader independently of the data partitions — exactly how Zeebe routes per partition group.
+    final var coordinatorBrokerInfo = createCoordinatorBrokerInfo(localMemberId);
+    coordinatorTopologyManager = new TopologyManagerImpl(membershipService, coordinatorBrokerInfo);
+    actorScheduler.submitActor(coordinatorTopologyManager);
+    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
+      coordinatorTopologyManager.addTopologyPartitionListener(
+          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
+    }
+
+    LOG.info("Topology managers started for broker {}", localMemberId);
     return topologyManager;
   }
 
+  /**
+   * The coordinator-group topology manager (used by the coordinator partition to gossip its role).
+   */
+  TopologyManagerImpl getCoordinatorTopologyManager() {
+    return coordinatorTopologyManager;
+  }
+
   void stop() {
+    if (coordinatorTopologyManager != null) {
+      try {
+        coordinatorTopologyManager.closeAsync().join();
+      } catch (final Exception e) {
+        LOG.warn("Error closing coordinator topology manager", e);
+      }
+      coordinatorTopologyManager = null;
+    }
     if (topologyManager != null) {
       try {
         topologyManager.closeAsync().join();
@@ -86,6 +114,31 @@ final class TopologySetup {
     brokerInfo
         .setClusterSize(clusterCfg.clusterSize())
         .setPartitionsCount(properties.broker().partitionCount())
+        .setReplicationFactor(properties.raft().replicationFactor());
+
+    final var version = VersionUtil.getVersion();
+    if (version != null && !version.isBlank()) {
+      brokerInfo.setVersion(version);
+    }
+
+    return brokerInfo;
+  }
+
+  /**
+   * BrokerInfo for the coordinator routing group (single partition). Tagged with the coordinator
+   * partition group so the gateway maintains a separate per-group topology for it.
+   */
+  private BrokerInfo createCoordinatorBrokerInfo(final MemberId localMemberId) {
+    final var nodeId = parseNodeId(localMemberId.id());
+    final var clusterCfg = properties.cluster();
+    final var address =
+        Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
+
+    final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
+    brokerInfo
+        .setPartitionGroup(CoordinationRequestHandler.COORDINATOR_ROUTING_GROUP)
+        .setClusterSize(clusterCfg.clusterSize())
+        .setPartitionsCount(1)
         .setReplicationFactor(properties.raft().replicationFactor());
 
     final var version = VersionUtil.getVersion();
