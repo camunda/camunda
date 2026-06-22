@@ -7,9 +7,8 @@
  */
 
 import {lazy, Suspense, useState} from 'react';
-import {Button, Modal} from '@carbon/react';
+import {Button, Modal, Tag} from '@carbon/react';
 import {
-  Time,
   ArrowUpRight,
   Maximize,
   SortAscending,
@@ -41,20 +40,6 @@ function formatDuration(ms?: number): string | null {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-const lightTagStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 4,
-  padding: '0 var(--cds-spacing-02)',
-  borderRadius: 4,
-  fontSize: 'var(--cds-label-01-font-size)',
-  lineHeight: 'var(--cds-label-01-line-height)',
-  letterSpacing: 'var(--cds-label-01-letter-spacing)',
-  color: 'var(--cds-text-secondary)',
-  background: 'var(--cds-layer-01)',
-  whiteSpace: 'nowrap',
-};
-
 function StepTags({
   tokens,
   durationMs,
@@ -75,15 +60,14 @@ function StepTags({
       }}
     >
       {tokens !== undefined && (
-        <span style={{...lightTagStyle, fontVariantNumeric: 'tabular-nums'}}>
+        <Tag type="gray" size="sm">
           {tokens.toLocaleString()} tokens
-        </span>
+        </Tag>
       )}
       {duration !== null && (
-        <span style={{...lightTagStyle, fontVariantNumeric: 'tabular-nums'}}>
-          <Time size={12} />
+        <Tag type="gray" size="sm">
           {duration}
-        </span>
+        </Tag>
       )}
     </div>
   );
@@ -113,83 +97,34 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
       <div
         data-testid="tool-detail-block"
         style={{
-          padding: 'var(--cds-spacing-04)',
-          background: 'var(--cds-layer-02)',
-          borderRadius: 4,
-          borderLeft: '3px solid var(--cds-border-subtle-01)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--cds-spacing-03)',
+          padding: 'var(--cds-spacing-02) 0',
+          borderBottom: '1px solid var(--cds-border-subtle-00)',
+          minWidth: 0,
         }}
       >
-        {/* Header row */}
-        <div
+        {/* Tool name */}
+        <span
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 'var(--cds-spacing-03)',
+            fontWeight: 400,
+            fontSize: 'var(--cds-body-compact-01-font-size)',
+            color: 'var(--cds-text-secondary)',
+            flexShrink: 0,
           }}
         >
-          {/* Left: name + time tag */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-03)',
-              minWidth: 0,
-            }}
-          >
-            <span
-              style={{
-                fontWeight: 600,
-                fontSize: 'var(--cds-body-compact-01-font-size)',
-                flexShrink: 0,
-              }}
-            >
-              {step.name}
-            </span>
-            {duration !== null && (
-              <span
-                style={{
-                  ...lightTagStyle,
-                  fontVariantNumeric: 'tabular-nums',
-                  flexShrink: 0,
-                }}
-              >
-                <Time size={12} />
-                {duration}
-              </span>
-            )}
-          </div>
+          {step.name}
+        </span>
 
-          {/* Right: action buttons */}
-          <div style={{display: 'flex', flexShrink: 0}}>
-            <Button
-              kind="ghost"
-              size="sm"
-              hasIconOnly
-              renderIcon={Maximize}
-              iconDescription="Expand"
-              tooltipPosition="left"
-              aria-label="Expand"
-              data-testid="expand-tool-detail"
-              onClick={() => setIsModalOpen(true)}
-            />
-            {step.hasInstance && (
-              <Button
-                kind="ghost"
-                size="sm"
-                hasIconOnly
-                renderIcon={ArrowUpRight}
-                iconDescription="Execution details"
-                tooltipPosition="left"
-                aria-label="Execution details"
-                data-testid="open-tool-execution-details"
-                onClick={() => selectElement({elementId: step.name})}
-              />
-            )}
-          </div>
-        </div>
+        {/* Execution time tag */}
+        {duration !== null && (
+          <Tag type="gray" size="sm">
+            {duration}
+          </Tag>
+        )}
 
-        {/* Body: monospace JSON input preview */}
+        {/* Monospace input preview */}
         <span
           style={{
             fontFamily: 'var(--cds-code-01-font-family)',
@@ -198,11 +133,42 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            display: 'block',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {inputPreview}
         </span>
+
+        {/* Right-aligned action buttons */}
+        <div style={{display: 'flex', flexShrink: 0, marginLeft: 'auto'}}>
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            renderIcon={Maximize}
+            iconDescription="Expand"
+            tooltipPosition="left"
+            aria-label="Expand"
+            data-testid="expand-tool-detail"
+            onClick={() => setIsModalOpen(true)}
+            style={{color: 'var(--cds-icon-secondary)'}}
+          />
+          {step.hasInstance && (
+            <Button
+              kind="ghost"
+              size="sm"
+              hasIconOnly
+              renderIcon={ArrowUpRight}
+              iconDescription="Execution details"
+              tooltipPosition="left"
+              aria-label="Execution details"
+              data-testid="open-tool-execution-details"
+              onClick={() => selectElement({elementId: step.name})}
+              style={{color: 'var(--cds-icon-secondary)'}}
+            />
+          )}
+        </div>
       </div>
 
       <Modal

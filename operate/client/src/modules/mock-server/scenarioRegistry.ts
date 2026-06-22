@@ -243,7 +243,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     instanceKey: MOCK_AGENT_INSTANCE_KEY_FLAT,
     definitionKey: MOCK_AGENT_DEFINITION_KEY_FLAT,
     definitionId: MOCK_AGENT_DEFINITION_ID_FLAT,
-    name: 'Agent — flat execution trace (short-term)',
+    name: 'Tool calls in conversation',
     description:
       'Conversation history as a flat trace: tool calls are separate compact blocks at the same level as messages.',
     pattern: 'subprocess',
