@@ -7,7 +7,7 @@
     "@axe-core/playwright": "4.11.3",
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
     "@camunda/camunda-api-zod-schemas": "0.0.73",
-    "@camunda/camunda-composite-components": "0.23.3",
+    "@camunda/camunda-composite-components": "0.25.0",
     "@carbon/elements": "11.90.0",
     "@carbon/react": "1.108.0",
     "@devbookhq/splitter": "1.4.2",
