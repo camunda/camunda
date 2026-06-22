@@ -184,8 +184,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
   });
 
-  //Skipped due to bug 50945: https://github.com/camunda/camunda/issues/50945
-  test.skip('Get process instance statistics sort by processDefinitionId - Success', async ({
+  test('Get process instance statistics sort by processDefinitionId - Success', async ({
     request,
   }) => {
     const res = await request.post(

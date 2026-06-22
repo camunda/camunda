@@ -142,11 +142,10 @@ test.describe.parallel('Process instance statistics by version', () => {
     request,
   }) => {
     const sort = [
-      //Skipped due to bug 50976: https://github.com/camunda/camunda/issues/50976
-      // {field: "processDefinitionId", order: "ASC"},
-      // {field: "processDefinitionKey", order: "ASC"},
-      // {field: "processDefinitionName", order: "ASC"},
-      // {field: "processDefinitionVersion", order: "ASC"},
+      {field: "processDefinitionId", order: "ASC"},
+      {field: "processDefinitionKey", order: "ASC"},
+      {field: "processDefinitionName", order: "ASC"},
+      {field: "processDefinitionVersion", order: "ASC"},
       {field: 'activeInstancesWithIncidentCount', order: 'ASC'},
       {field: 'activeInstancesWithoutIncidentCount', order: 'ASC'},
     ];
