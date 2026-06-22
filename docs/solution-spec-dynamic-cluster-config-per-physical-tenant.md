@@ -590,33 +590,71 @@ Add encode/decode methods to `ProtoBufSerializer` for `PartitionGroupClusterConf
 Each Java type maps directly to its dedicated proto message (see §7). No temporary
 `ClusterConfiguration` intermediary; no reuse of `ClusterTopology` for the new types.
 
-Migration: when decoding `GossipState` and field 2 (`partitionGroupClusterTopology`) is absent,
-fall back to field 1 (`clusterTopology`) and convert via `ofDefault()`:
-- Each `MemberState` entry → `BrokerState` (state extracted, partitions dropped) for membership
-- Each `MemberState` entry → `MemberPartitionState` (partitions extracted, state dropped) for
-the default group
+**Gossip migration** — two separate paths: encoding (send) and decoding (receive):
+
+*Send (dual-write):* new brokers populate BOTH fields of `GossipState`:
+- Field 2 (`partitionGroupClusterTopology`): the full `PartitionGroupClusterConfiguration` using
+  the new dedicated messages.
+- Field 1 (`clusterTopology`): a legacy `ClusterTopology` derived from `partitionGroups["default"]`
+  and `clusterMembership`, using the existing `encodeClusterTopology()` path. This keeps old
+  brokers' view of this node current during the rolling upgrade window. If field 1 were left unset,
+  old brokers would freeze their last-known state for this node and never see subsequent lifecycle
+  or partition changes — stalling any old-broker coordinator.
+
+*Receive:* when decoding a `GossipState`:
+- If field 2 (`partitionGroupClusterTopology`) is present → decode directly as
+  `PartitionGroupClusterConfiguration`.
+- If absent (message from an old broker) → read `clusterTopology` (field 1) and migrate via
+  `ofDefault()`:
+  - Each `MemberState` entry → `BrokerState` (state extracted, partitions dropped) for membership
+  - Each `MemberState` entry → `MemberPartitionState` (partitions extracted, state dropped) for
+    the default group
+
+**Persistence migration — header version bump:**
+`PersistedClusterConfiguration` uses a fixed-size header that already contains a version field.
+Use this version to identify the body format:
+- Header version 1 (current / legacy): body is raw `ClusterTopology` bytes — read via
+  `decodeClusterTopology()` and migrate via `ofDefault()`.
+- Header version 2 (new): body is raw `PartitionGroupClusterTopology` bytes — read via
+  `decodePartitionGroupClusterConfiguration()`.
+
+When writing the new format, bump the header version to 2 and encode the body with
+`encodePartitionGroupClusterConfiguration()`. On first boot after an upgrade the broker reads
+header version 1, migrates via `ofDefault()`, and immediately writes back header version 2 with
+the migrated content.
 
 **Implementation idea**
 Add to `ProtoBufSerializer`:
 - `encodePartitionGroupClusterConfiguration(PartitionGroupClusterConfiguration)` → `byte[]`
-Encodes to `PartitionGroupClusterTopology` proto using the new dedicated messages.
+  Encodes to `PartitionGroupClusterTopology` proto using the new dedicated messages.
+- `encodeGossipState(PartitionGroupClusterConfiguration)` → `byte[]`
+  Dual-write: builds a `GossipState` with field 1 derived from the default group (legacy path) and
+  field 2 from the full wrapper (new path).
+- `decodeGossipState(byte[])` → `PartitionGroupClusterConfiguration`
+  Checks field 2 first; if absent migrates from field 1 via `ofDefault()`.
 - `decodePartitionGroupClusterConfiguration(byte[])` → `PartitionGroupClusterConfiguration`
-Tries field 2 of `GossipState`; if absent migrates from field 1.
+  Decodes raw `PartitionGroupClusterTopology` bytes (no `GossipState` envelope); used by
+  persistence (header version 2 path).
 - `encodeClusterMembership(ClusterMembership)` → `ClusterMembership` proto — maps
-`BrokerState` per member directly.
+  `BrokerState` per member directly.
 - `decodeClusterMembership(proto.ClusterMembership)` → Java `ClusterMembership`
 - `encodePartitionGroupConfiguration(PartitionGroupConfiguration)` → `PartitionGroupConfiguration`
-proto — maps `MemberPartitionState` per member directly.
+  proto — maps `MemberPartitionState` per member directly.
 - `decodePartitionGroupConfiguration(proto.PartitionGroupConfiguration)` → Java
-`PartitionGroupConfiguration`
+  `PartitionGroupConfiguration`
 - Internal `encodePhasedChangePlan` / `decodePhasedChangePlan` helpers.
 
 Do not modify any existing serialiser method.
 
 **Acceptance criteria**
 - Round-trip test with two groups.
-- Migration test: encode old `ClusterConfiguration` (legacy `ClusterTopology` bytes), decode with
-new method; default group content preserved; `clusterMembership` members have correct `State`.
+- Migration test (gossip): decode a raw `ClusterTopology`-based `GossipState` (field 2 absent);
+  default group content preserved; `clusterMembership` members have correct `State`.
+- Migration test (persistence): decode a legacy header-v1 file; verify migrated content; verify
+  that the rewritten file has header version 2 and round-trips as `PartitionGroupClusterTopology`.
+- Dual-write test: encode a `PartitionGroupClusterConfiguration` via `encodeGossipState()`; decode
+  with old code path (`decode(byte[])`) and confirm `clusterTopology` is non-empty and matches
+  the default group.
 - Round-trip test for `PhasedChangePlan` with both phase types.
 
 **Depends on** — Issues 1, 3
@@ -790,8 +828,10 @@ coordinator (used in Issues 12, 13).
 
 **Implementation idea**
 
-1. Update `PersistedClusterConfiguration` to use `encodePartitionGroupClusterConfiguration` /
-   `decodePartitionGroupClusterConfiguration` (from Issue 5). First-boot migration is automatic.
+1. Update `PersistedClusterConfiguration` to write header version 2 and encode the body with
+   `encodePartitionGroupClusterConfiguration` (from Issue 5). On read, branch on the header
+   version: version 1 → `decodeClusterTopology()` + `ofDefault()` migration; version 2 →
+   `decodePartitionGroupClusterConfiguration()`. First-boot migration is automatic.
 2. In `ClusterConfigurationManagerImpl`:
    - Remove `nonDefaultGroupConfigs` field.
    - Store the wrapper internally; all group reads/writes go through `wrapper.partitionGroups()`.
@@ -818,9 +858,11 @@ Migrate `ClusterConfigurationGossiper` to gossip `PartitionGroupClusterTopology`
 `GossipState.partitionGroupClusterTopology` field (field 2). After this issue, non-default group
 state is visible cluster-wide.
 
-Rolling-restart safety: field 2 is additive — old brokers (proto3) silently ignore it, so new
-brokers can emit field 2 immediately without a feature gate. Old brokers continue emitting field 1
-only; new brokers read field 2 when present and fall back to field 1 migration when absent.
+Rolling-restart safety: new brokers dual-write both fields of `GossipState` — field 1 carries a
+legacy `ClusterTopology` derived from the default group, field 2 carries the full
+`PartitionGroupClusterTopology`. Old brokers read only field 1 and continue to receive live
+updates from new nodes. New brokers read field 2 when present (new broker sender) and fall back
+to field 1 migration when absent (old broker sender). No feature gate is required.
 
 **Implementation idea**
 
@@ -830,18 +872,22 @@ Relevant files:
 
 Steps:
 1. Change gossiper internal state to hold `PartitionGroupClusterConfiguration`.
-2. On send: encode into `GossipState` with `partitionGroupClusterTopology` (field 2) set; leave
-field 1 (`clusterTopology`) unset (old brokers ignore unknown field 2).
-3. On receipt: decode `GossipState` — if field 2 is present, decode via Issue 5 serialiser;
-if absent, decode field 1 and migrate via `ofDefault()`. Merge using
-`PartitionGroupClusterConfiguration.merge()` (from Issue 3).
+2. On send: call `encodeGossipState(PartitionGroupClusterConfiguration)` from Issue 5, which
+dual-writes field 1 (default-group legacy view) and field 2 (full wrapper). Both fields are
+always populated; old brokers see field 1, new brokers prefer field 2.
+3. On receipt: call `decodeGossipState(byte[])` from Issue 5 — if field 2 is present, decode as
+`PartitionGroupClusterConfiguration`; if absent, decode field 1 and migrate via `ofDefault()`.
+Merge using `PartitionGroupClusterConfiguration.merge()` (from Issue 3).
 4. `ClusterConfigurationUpdateListener` callbacks: existing listeners receive `ClusterConfiguration`
 (extract default group from `wrapper.partitionGroups().get("default")`). Add a new listener
 shape receiving `PartitionGroupClusterConfiguration` for the coordinator.
 
 **Acceptance criteria**
 - Two-broker test (both on new code): non-default group state propagates via gossip.
-- Rolling-restart test: default group state converges between old and new brokers.
+- Dual-write test: gossip message from a new broker decoded by the old code path produces a
+  non-empty `ClusterTopology` matching the default group's current state.
+- Rolling-restart test: default group state converges between old and new brokers (old broker
+  sees live updates from new brokers via field 1).
 - All existing gossip integration tests pass.
 - Rolling-restart strategy documented in PR.
 

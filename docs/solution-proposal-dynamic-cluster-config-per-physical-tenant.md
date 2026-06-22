@@ -560,14 +560,34 @@ message GossipState {
 }
 ```
 
-Migration: on decoding a `GossipState`, check field 2 first:
-- If `partitionGroupClusterTopology` (field 2) is present → decode directly.
-- If absent (old broker or pre-upgrade snapshot) → read `clusterTopology` (field 1) and migrate:
-- `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped),
-`clusterId` and `recovery` preserved
-- `partitionGroups["default"]` = all members as `MemberPartitionState` (partitions extracted,
-state dropped), `routingState` and `incarnationNumber` preserved
-- `pendingPlan` = absent
+**Gossip: dual-write for rolling-upgrade safety.** New brokers populate *both* fields on every
+send. Field 1 (`clusterTopology`) is derived from `partitionGroups["default"]` and
+`clusterMembership` using the existing `ClusterTopology` encoding, so old brokers continue
+receiving live lifecycle and partition updates from upgraded nodes. Field 2
+(`partitionGroupClusterTopology`) carries the full wrapper for new-broker consumers. If field 1
+were left unset, old brokers would freeze their view of any upgraded node; an old-broker
+coordinator would stall waiting for state changes that it never sees.
+
+**Receive path:** check field 2 first:
+- If `partitionGroupClusterTopology` (field 2) is present → decode directly as
+  `PartitionGroupClusterConfiguration`.
+- If absent (message from an old broker) → read `clusterTopology` (field 1) and migrate via
+  `ofDefault()`:
+  - `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped),
+    `clusterId` and `recovery` preserved
+  - `partitionGroups["default"]` = all members as `MemberPartitionState` (partitions extracted,
+    state dropped), `routingState` and `incarnationNumber` preserved
+  - `pendingPlan` = absent
+
+**Persistence: header version discriminator.** `PersistedClusterConfiguration` already has a
+fixed-size header containing a version field. Use this version to identify the body format:
+- Header version 1 (legacy): body is raw `ClusterTopology` bytes → read via
+  `decodeClusterTopology()` + `ofDefault()` migration.
+- Header version 2 (new): body is raw `PartitionGroupClusterTopology` bytes → read via
+  `decodePartitionGroupClusterConfiguration()`.
+
+On first boot after an upgrade the broker reads header version 1, migrates automatically, and
+writes back header version 2. No separate migration step is required.
 
 ### 3.11 Pros and cons
 
@@ -592,8 +612,9 @@ state dropped), `routingState` and `incarnationNumber` preserved
   carries only partition assignments — no shared type with conflicting semantics.
 - Phase advancement for cluster-spanning operations depends on coordinator availability at each
   phase boundary (see §4 for mitigation ideas).
-- Rolling restart requires the gossip handler to accept both old and new wire formats during the
-  upgrade window.
+- Rolling restart requires new brokers to dual-write `GossipState` (field 1 for old brokers,
+  field 2 for new brokers) and the gossip handler to accept both wire formats during the upgrade
+  window.
 - Operations that span cluster membership and partition groups (broker join+assign) require the
   coordinator to generate correctly sequenced phases; request transformers must enforce this.
 
