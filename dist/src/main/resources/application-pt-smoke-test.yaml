@@ -46,9 +46,6 @@ camunda:
         client-id: camunda-pt-default-client
         client-secret: default-secret
         issuer-uri: http://localhost:8081/realms/default
-        # Explicit JWK set so the per-PT scoped chain can verify ID-token signatures: unlike the
-        # cluster chain it does not pick up the discovered jwk-set-uri, so set it explicitly.
-        jwk-set-uri: http://localhost:8081/realms/default/protocol/openid-connect/certs
         audiences: [pt-default-aud]
         # CSL builds full ClientRegistrations (authorization_code grant), which require a
         # non-empty redirect-uri even though the API smoke only exercises bearer auth.
@@ -65,8 +62,6 @@ camunda:
             client-id: camunda-pt-default-via-tenanta-client
             client-secret: default-via-tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
-            # Explicit JWK set for the per-PT scoped chain's ID-token signature verification.
-            jwk-set-uri: http://localhost:8082/realms/tenanta/protocol/openid-connect/certs
             audiences: [pt-default-via-tenanta-aud]
             redirect-uri: "{baseUrl}/sso-callback"
   physical-tenants:
