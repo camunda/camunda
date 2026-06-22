@@ -60,6 +60,36 @@ public final class MessageCorrelationBusinessIdTest {
           .endEvent()
           .done();
 
+  // Interrupting boundary message event on a service task: correlation cancels the task and the
+  // boundary path runs to the end event, so the process completes — a deterministic positive
+  // terminal.
+  private static final BpmnModelInstance INTERRUPTING_BOUNDARY_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("task", t -> t.zeebeJobType("test"))
+          .boundaryEvent("boundary")
+          .cancelActivity(true)
+          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+          .endEvent()
+          .moveToActivity("task")
+          .endEvent()
+          .done();
+
+  // Non-interrupting boundary message event: correlation spawns a token on the boundary path while
+  // the service task keeps running, so the process does not complete; the CORRELATED record is the
+  // positive terminal instead.
+  private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("task", t -> t.zeebeJobType("test"))
+          .boundaryEvent("boundary")
+          .cancelActivity(false)
+          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+          .endEvent()
+          .moveToActivity("task")
+          .endEvent()
+          .done();
+
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   // --- Asymmetric rule, publish-then-subscribe is not relevant; these test
@@ -458,6 +488,139 @@ public final class MessageCorrelationBusinessIdTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
+  // --- Boundary message events: the asymmetric rule holds identically for interrupting and
+  // --- non-interrupting boundary events. The subscription opens the same way (when the attached
+  // --- activity activates) and carries the PI's businessId captured at OPEN time. The positive
+  // --- terminal differs per variant — see each test.
+
+  @Test
+  public void
+      shouldFireInterruptingBoundaryForMessageWithoutBusinessIdAgainstSubscriptionWithOne() {
+    // given a PI with businessId "biz-42" waiting on an interrupting boundary message event
+    engine.deployment().withXmlResource(INTERRUPTING_BOUNDARY_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-bnd-1")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when a message without a businessId is published (asymmetric rule: it still correlates)
+    engine.message().withName("message").withCorrelationKey("order-bnd-1").publish();
+
+    // then the boundary event interrupts the task and the process completes, and the CORRELATED
+    // event carries the subscribing PI's businessId
+    assertProcessCompleted(processInstanceKey);
+    assertThat(correlatedSubscriptionBusinessId(processInstanceKey)).isEqualTo("biz-42");
+  }
+
+  @Test
+  public void shouldFireInterruptingBoundaryForMessageWithMatchingBusinessId() {
+    // given
+    engine.deployment().withXmlResource(INTERRUPTING_BOUNDARY_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-bnd-2")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when an exactly-matching businessId is published
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-bnd-2")
+        .withBusinessId("biz-42")
+        .publish();
+
+    // then the boundary event fires and the process completes
+    assertProcessCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldNotFireInterruptingBoundaryForMessageWithDifferentBusinessId() {
+    // given
+    engine.deployment().withXmlResource(INTERRUPTING_BOUNDARY_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-bnd-3")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when a message with a different businessId is published with TTL=0 for a deterministic
+    // EXPIRED terminal
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-bnd-3")
+        .withBusinessId("other-biz")
+        .withTimeToLive(0L)
+        .publish();
+
+    // then the boundary event never fires
+    assertNoCorrelationUpToMessageExpiry(processInstanceKey, "message", "order-bnd-3");
+  }
+
+  @Test
+  public void shouldFireNonInterruptingBoundaryForMessageWithMatchingBusinessId() {
+    // given a PI with businessId "biz-42" waiting on a non-interrupting boundary message event
+    engine.deployment().withXmlResource(NON_INTERRUPTING_BOUNDARY_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-bnd-4")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when an exactly-matching businessId is published
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-bnd-4")
+        .withBusinessId("biz-42")
+        .publish();
+
+    // then the boundary event fires (the task stays active, so the CORRELATED record — carrying the
+    // PI's businessId — is the terminal, not process completion)
+    assertThat(correlatedSubscriptionBusinessId(processInstanceKey)).isEqualTo("biz-42");
+  }
+
+  @Test
+  public void shouldNotFireNonInterruptingBoundaryForMessageWithDifferentBusinessId() {
+    // given
+    engine.deployment().withXmlResource(NON_INTERRUPTING_BOUNDARY_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-bnd-5")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when a message with a different businessId is published with TTL=0 for a deterministic
+    // EXPIRED terminal
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-bnd-5")
+        .withBusinessId("other-biz")
+        .withTimeToLive(0L)
+        .publish();
+
+    // then the boundary event never fires
+    assertNoCorrelationUpToMessageExpiry(processInstanceKey, "message", "order-bnd-5");
+  }
+
   private static BpmnModelInstance processWithIntermediateCatch(final String processId) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
@@ -472,6 +635,15 @@ public final class MessageCorrelationBusinessIdTest {
     return RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .getFirst();
+  }
+
+  private static String correlatedSubscriptionBusinessId(final long processInstanceKey) {
+    return RecordingExporter.processMessageSubscriptionRecords(
+            ProcessMessageSubscriptionIntent.CORRELATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getValue()
+        .getBusinessId();
   }
 
   private static void assertProcessCompleted(final long processInstanceKey) {
