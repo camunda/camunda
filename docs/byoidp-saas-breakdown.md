@@ -388,6 +388,7 @@ its inclusion in this epic is an open question.
   brief).
 - Web Modeler internal implementation. Only the Console-side `externalIdpEnabled` signal and the
   WM feature ticket are tracked here.
+TODO add PKJWT note, the auth method would require that a keystore is uploaded and stored; this needs a secure solution for storage and injection of the keystore into the pods, a way to remove/rotate the keystore, and a UI for uploading and managing the keystore. This is a non-trivial amount of work that may be better scoped as a separate epic.
 
 ---
 
