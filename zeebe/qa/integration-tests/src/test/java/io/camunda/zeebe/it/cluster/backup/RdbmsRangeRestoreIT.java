@@ -7,17 +7,20 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride.RDBMS_EXPORTER_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
@@ -33,9 +36,9 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import javax.sql.DataSource;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,14 +83,22 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
   void setUp() {
     backupActuator = BackupActuator.of(broker);
     workingDirectory = broker.getWorkingDirectory();
-    exporterPositionMapper = broker.bean(ExporterPositionMapper.class);
+    final Map<String, RdbmsMapperBundle> bundles = broker.bean("rdbmsMapperBundles");
+    final var defaultBundle = bundles.get(DEFAULT_PHYSICAL_TENANT_ID);
+    if (defaultBundle == null) {
+      throw new IllegalStateException(
+          "Missing default physical tenant '%s' in rdbmsMapperBundles; known tenants: %s"
+              .formatted(DEFAULT_PHYSICAL_TENANT_ID, bundles.keySet()));
+    }
+    exporterPositionMapper = defaultBundle.exporterPositionMapper();
     pinClock(broker);
   }
 
   @AfterEach
   void tearDown() throws SQLException {
-    final var ds = broker.bean(DataSource.class);
-    if (ds != null) {
+    final var dataSources = broker.bean(RdbmsDataSources.class);
+    if (dataSources != null) {
+      final var ds = dataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
       try (final var connection = ds.getConnection()) {
         connection.createStatement().execute("DROP ALL OBJECTS");
       }

@@ -172,6 +172,18 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  @SuppressWarnings("unchecked")
+  public <V> V bean(final String beanName) {
+    if (springContext == null) {
+      if (!beans.containsKey(beanName)) {
+        throw new IllegalArgumentException(
+            "No bean with name '%s' registered in TestSpringApplication".formatted(beanName));
+      }
+      return (V) beans.get(beanName).value();
+    }
+    return (V) springContext.getBean(beanName);
+  }
+
   /**
    * Replaces a set of properties that should be re-derived from in-memory builder state on every
    * {@link #start()}. Keys set in a previous call are removed before the new {@code properties} are

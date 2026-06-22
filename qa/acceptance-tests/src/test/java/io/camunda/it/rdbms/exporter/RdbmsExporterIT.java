@@ -7,17 +7,17 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -115,7 +115,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,34 +139,23 @@ class RdbmsExporterIT {
 
   private static final RecordFixtures FIXTURES = new RecordFixtures();
   private final ExporterTestController controller = new ExporterTestController();
-  private final VendorDatabaseProperties vendorDatabaseProperties =
-      new VendorDatabaseProperties(
-          new Properties() {
-            {
-              setProperty("databaseId", "h2");
-              setProperty("variableValue.previewSize", "100");
-              setProperty("userCharColumn.size", "50");
-              setProperty("errorMessage.size", "500");
-              setProperty("treePath.size", "500");
-              setProperty("disableFkBeforeTruncate", "true");
-            }
-          });
   @Autowired private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
   @Autowired private RdbmsService rdbmsService;
-  @Autowired private ExporterPositionMapper exporterPositionMapper;
+  @Autowired private Map<String, RdbmsMapperBundle> rdbmsMapperBundles;
+  private ExporterPositionMapper exporterPositionMapper;
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
   void setUp() {
-    exporter =
-        new RdbmsExporterWrapper(
-            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
+    exporterPositionMapper =
+        rdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
+    exporter = new RdbmsExporterWrapper(rdbmsService, rdbmsSchemaManagerRegistry);
     exporter.configure(
         new ExporterContext(
             null,
             new ExporterConfiguration("foo", Map.of("queueSize", 0)),
             1,
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
@@ -1503,15 +1491,13 @@ class RdbmsExporterIT {
     // given - create a separate exporter with interval-based flush (queueSize > 0, not per-record)
     // Use partitionId=2 to avoid interfering with other tests that use partitionId=1
     final var intervalController = new ExporterTestController();
-    final var intervalExporter =
-        new RdbmsExporterWrapper(
-            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
+    final var intervalExporter = new RdbmsExporterWrapper(rdbmsService, rdbmsSchemaManagerRegistry);
     intervalExporter.configure(
         new ExporterContext(
             null,
             new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100)),
             2,
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),

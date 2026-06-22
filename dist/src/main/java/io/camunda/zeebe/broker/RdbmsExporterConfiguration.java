@@ -13,7 +13,6 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterFactory;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -34,10 +33,8 @@ public class RdbmsExporterConfiguration {
   @Bean
   public RdbmsExporterFactory rdbmsExporterFactory(
       final RdbmsService rdbmsService,
-      final VendorDatabaseProperties vendorDatabaseProperties,
       final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
-    return new RdbmsExporterFactory(
-        rdbmsService, vendorDatabaseProperties, rdbmsSchemaManagerRegistry);
+    return new RdbmsExporterFactory(rdbmsService, rdbmsSchemaManagerRegistry);
   }
 
   @Bean

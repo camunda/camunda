@@ -7,15 +7,17 @@
  */
 package io.camunda.it.rdbms.db;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -30,14 +32,15 @@ public class PurgerCompletenessIT {
 
   @Autowired JdbcTemplate jdbcTemplate;
 
-  @Autowired private PurgeMapper purgeMapper;
-  @Autowired private VendorDatabaseProperties vendorDatabaseProperties;
+  @Autowired private Map<String, RdbmsMapperBundle> rdbmsMapperBundleMap;
+  @Autowired private RdbmsDataSources rdbmsDataSources;
 
   @Test
   public void shouldFindWithSpecificFilter() {
-    final var spy = spy(purgeMapper);
+    final var spy = spy(rdbmsMapperBundleMap.get(DEFAULT_PHYSICAL_TENANT_ID).purgeMapper());
 
-    final var rdbmsPurger = new RdbmsPurger(spy, vendorDatabaseProperties);
+    final var rdbmsPurger =
+        new RdbmsPurger(spy, rdbmsDataSources.vendorPropertiesFor(DEFAULT_PHYSICAL_TENANT_ID));
 
     rdbmsPurger.purgeRdbms();
 

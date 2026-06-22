@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
@@ -68,10 +67,7 @@ class RdbmsExporterWrapperTest {
         .thenReturn(configuration);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(
-            mock(RdbmsService.class),
-            mock(RdbmsSchemaManagerRegistry.class),
-            mock(VendorDatabaseProperties.class));
+        new RdbmsExporterWrapper(mock(RdbmsService.class), mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     assertThatThrownBy(() -> exporterWrapper.configure(context))
@@ -93,10 +89,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(
-            rdbmsService,
-            mock(RdbmsSchemaManagerRegistry.class),
-            mock(VendorDatabaseProperties.class));
+        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);
@@ -175,10 +168,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(
-            rdbmsService,
-            mock(RdbmsSchemaManagerRegistry.class),
-            mock(VendorDatabaseProperties.class));
+        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);
@@ -242,10 +232,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(
-            rdbmsService,
-            mock(RdbmsSchemaManagerRegistry.class),
-            mock(VendorDatabaseProperties.class));
+        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);
@@ -309,10 +296,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(
-            rdbmsService,
-            mock(RdbmsSchemaManagerRegistry.class),
-            mock(VendorDatabaseProperties.class));
+        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);

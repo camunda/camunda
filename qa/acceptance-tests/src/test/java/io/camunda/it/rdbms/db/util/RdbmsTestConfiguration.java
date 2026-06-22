@@ -7,8 +7,11 @@
  */
 package io.camunda.it.rdbms.db.util;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
 import org.mockito.Mockito;
@@ -25,6 +28,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Import({RdbmsConfiguration.class, UnifiedConfigurationModule.class})
 @PropertySource("classpath:rdbms-test-defaults.properties")
 public class RdbmsTestConfiguration {
+
+  @Bean(destroyMethod = "") // DataSource will be closed when closing RdbmsDataSources
+  public DataSource dataSource(final RdbmsDataSources dataSources) {
+    return dataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+  }
 
   /** Support for transactional tests with @RdbmsDataJdbcTest or @DataJdbcTest */
   @Bean

@@ -33,11 +33,14 @@ import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
+import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
@@ -98,38 +101,41 @@ class RdbmsWriterFactoryTenantRoutingTest {
     return new RdbmsMapperBundle(
         mock(SqlSessionFactory.class),
         mock(VendorDatabaseProperties.class),
-        mock(ExporterPositionMapper.class),
+        mock(AgentInstanceMapper.class),
         mock(AuditLogMapper.class),
-        mock(DecisionInstanceMapper.class),
+        mock(AuthorizationMapper.class),
+        mock(BatchOperationMapper.class),
+        mock(ClusterVariableMapper.class),
+        mock(CorrelatedMessageSubscriptionMapper.class),
         mock(DecisionDefinitionMapper.class),
+        mock(DecisionInstanceMapper.class),
         mock(DecisionRequirementsMapper.class),
+        mock(DeployedResourceMapper.class),
+        mock(ExporterPositionMapper.class),
         mock(FlowNodeInstanceMapper.class),
+        mock(FormMapper.class),
+        mock(GlobalListenerMapper.class),
+        mock(GroupMapper.class),
+        mock(HistoryDeletionMapper.class),
         mock(IncidentMapper.class),
-        mock(ProcessInstanceMapper.class),
-        mock(ProcessDefinitionMapper.class),
-        mock(PurgeMapper.class),
-        mock(UserTaskMapper.class),
-        mock(VariableMapper.class),
         mock(JobMapper.class),
         mock(JobMetricsBatchMapper.class),
+        mock(MappingRuleMapper.class),
+        mock(MessageSubscriptionMapper.class),
+        mock(PersistentWebSessionMapper.class),
+        mock(ProcessDefinitionMapper.class),
+        mock(ProcessInstanceMapper.class),
+        mock(PurgeMapper.class),
+        mock(ReplicationStatusMapper.class),
+        mock(RoleMapper.class),
         mock(SequenceFlowMapper.class),
+        mock(TableMetricsMapper.class),
+        mock(TenantMapper.class),
         mock(UsageMetricMapper.class),
         mock(UsageMetricTUMapper.class),
-        mock(BatchOperationMapper.class),
-        mock(MessageSubscriptionMapper.class),
-        mock(CorrelatedMessageSubscriptionMapper.class),
-        mock(ClusterVariableMapper.class),
-        mock(HistoryDeletionMapper.class),
-        mock(AgentInstanceMapper.class),
-        mock(WaitStateMapper.class),
-        mock(AuthorizationMapper.class),
-        mock(FormMapper.class),
-        mock(GroupMapper.class),
-        mock(MappingRuleMapper.class),
-        mock(RoleMapper.class),
-        mock(TenantMapper.class),
         mock(UserMapper.class),
-        mock(GlobalListenerMapper.class),
-        mock(DeployedResourceMapper.class));
+        mock(UserTaskMapper.class),
+        mock(VariableMapper.class),
+        mock(WaitStateMapper.class));
   }
 }
