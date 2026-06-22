@@ -13,18 +13,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.BatchCountMismatchException;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,10 +42,22 @@ class ArchiveByIdTaskSupplierTest {
 
   private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
 
-  @Test
-  void shouldRetryOnRetryableErrorAndRecordMetric() {
+  static Stream<Throwable> retryableErrors() {
+    return Stream.of(
+        new CompletionException(mock(SocketTimeoutException.class)),
+        new CompletionException(mock(ElasticsearchException.class)),
+        new CompletionException(mock(OpenSearchException.class)),
+        new CompletionException(mock(BatchCountMismatchException.class)),
+        mock(SocketTimeoutException.class),
+        mock(ElasticsearchException.class),
+        mock(OpenSearchException.class),
+        mock(BatchCountMismatchException.class));
+  }
+
+  @ParameterizedTest
+  @MethodSource("retryableErrors")
+  void shouldRetryOnRetryableErrorAndRecordMetric(final Throwable retryableError) {
     // given
-    final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
@@ -46,7 +65,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(
                         List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
@@ -87,15 +106,15 @@ class ArchiveByIdTaskSupplierTest {
 
   @Test
   void shouldThrowWhenMaxRetriesExceeded() {
-    // given - maxRetryCount of 2, so only 1 retry is allowed
+    // given - maxRetryCount of 1, so only 1 retry is allowed
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
 
     final var taskSupplier =
         new ArchiveByIdTaskSupplier<>(
-            historyConfigWithMaxRetry(2),
+            historyConfigWithMaxRetry(1),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
@@ -104,12 +123,12 @@ class ArchiveByIdTaskSupplierTest {
             metrics,
             LOGGER);
 
-    // when - first call retries (retryCount becomes 1, which is < maxRetryCount 2)
+    // when - first call retries (retryCount becomes 1, which is <= maxRetryCount 1)
     final var firstResult = taskSupplier.moveNextBatch().join();
     assertThat(firstResult).isEqualTo(0L);
     verify(metrics, times(1)).recordArchiverBatchRetry();
 
-    // when - second call exceeds max retries (retryCount becomes 2, which is NOT < 2)
+    // when - second call exceeds max retries (retryCount becomes 2, which is NOT <= 1)
     final var future = taskSupplier.moveNextBatch();
 
     // then - should throw
@@ -128,7 +147,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(nonRetryableError),
@@ -153,7 +172,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
-            searchAfter -> CompletableFuture.completedFuture(ArchiveDocIdsBatch.empty()),
+            (searchAfter, size) -> CompletableFuture.completedFuture(ArchiveDocIdsBatch.empty()),
             (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -170,17 +189,17 @@ class ArchiveByIdTaskSupplierTest {
 
   @Test
   void shouldResetRetryCountAfterSuccessfulBatch() {
-    // given - maxRetryAttempts=3 means 2 retries allowed before throwing on the 3rd failure.
+    // given - maxRetryAttempts=2 means 2 retries allowed before throwing on the 3rd failure.
     // reindex calls 1, 3, 4, 5, 6 fail; calls 2, 7 succeed.
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
         new ArchiveByIdTaskSupplier<>(
-            historyConfigWithMaxRetry(3),
+            historyConfigWithMaxRetry(2),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> {
@@ -212,7 +231,7 @@ class ArchiveByIdTaskSupplierTest {
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
     verify(metrics, times(3)).recordArchiverBatchRetry();
 
-    // call 5 fails (retryCount=3, NOT < maxRetryAttempts 3) — throws and resets retryCount
+    // call 5 fails (retryCount=3, NOT <= maxRetryAttempts 2) — throws and resets retryCount
     assertThatThrownBy(() -> taskSupplier.moveNextBatch().join())
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(SocketTimeoutException.class);
@@ -224,6 +243,155 @@ class ArchiveByIdTaskSupplierTest {
     // when - call 7 succeeds
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
     assertThat(taskSupplier.getTotalArchived()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldReduceReindexBatchSizeAfterEachRetry() {
+    // given - maxRetryAttempts=3: allows up to 3 retries (throws on the 4th consecutive failure).
+    // Reindex fails on calls 1, 2, and 5, succeeds on other calls.
+    final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
+    final var reindexCallCount = new AtomicInteger(0);
+    final var batchSize = new AtomicInteger(0);
+
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) -> {
+              batchSize.set(size);
+              return CompletableFuture.completedFuture(
+                  ArchiveDocIdsBatch.from(
+                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
+            },
+            (source, dest, ids) -> {
+              if (Set.of(1, 2, 5).contains(reindexCallCount.incrementAndGet())) {
+                return CompletableFuture.failedFuture(retryableError);
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when - attempt 1 fails, full batch size used
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+
+    // when - attempt 2 fails, batch size was halved
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(600);
+
+    // when - attempt 3 succeeds, batch size was halved again
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(300);
+
+    // when - attempt 4 successful, batch size is kept
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(300);
+
+    // when - attempt 5 fails, current batch size used
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(300);
+
+    // when - attempt 6 succeeds, batch size was halved
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(150);
+  }
+
+  @Test
+  void shouldNotReduceBatchSizeBelowMinimum() {
+    // given - starting batch size of 100 so it hits the floor at 50 after one halving
+    final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
+    final var reindexCallCount = new AtomicInteger(0);
+    final var batchSize = new AtomicInteger(0);
+
+    final var config = new HistoryConfiguration();
+    config.setArchiveByIdMaxRetryAttempts(10);
+    config.setArchiveByIdRetryDelayMs(0);
+    config.setReindexBatchSize(100);
+
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) -> {
+              batchSize.set(size);
+              return CompletableFuture.completedFuture(
+                  ArchiveDocIdsBatch.from(
+                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
+            },
+            (source, dest, ids) -> {
+              if (reindexCallCount.incrementAndGet() <= 3) {
+                return CompletableFuture.failedFuture(retryableError);
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when - attempt 1 fails: 100 used, reduction gives 50
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(100);
+
+    // when - attempt 2 fails: 50 used, reduction stays at 50 (floor)
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(50);
+
+    // when - attempt 3 fails: still 50 (floor enforced)
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(50);
+
+    // when - attempt 4 succeeds: still 50
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(50);
+  }
+
+  @Test
+  void shouldNotReduceBatchSizeForNonSocketTimeoutRetryableError() {
+    // given - retryable error that is NOT a SocketTimeoutException
+    final var batchMismatchError =
+        new CompletionException(new BatchCountMismatchException("reindex", "count mismatch"));
+    final var reindexCallCount = new AtomicInteger(0);
+    final var batchSize = new AtomicInteger(0);
+
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) -> {
+              batchSize.set(size);
+              return CompletableFuture.completedFuture(
+                  ArchiveDocIdsBatch.from(
+                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
+            },
+            (source, dest, ids) -> {
+              if (reindexCallCount.incrementAndGet() <= 2) {
+                return CompletableFuture.failedFuture(batchMismatchError);
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when - attempt 1 fails with non-SocketTimeout error
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+
+    // when - attempt 2 fails: batch size unchanged
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+
+    // when - attempt 3 succeeds: batch size still unchanged
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(1200);
   }
 
   @Test
@@ -239,7 +407,7 @@ class ArchiveByIdTaskSupplierTest {
             config,
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> {
@@ -268,6 +436,7 @@ class ArchiveByIdTaskSupplierTest {
     final var config = new HistoryConfiguration();
     config.setArchiveByIdMaxRetryAttempts(maxRetryCount);
     config.setArchiveByIdRetryDelayMs(0);
+    config.setReindexBatchSize(1200);
     return config;
   }
 }

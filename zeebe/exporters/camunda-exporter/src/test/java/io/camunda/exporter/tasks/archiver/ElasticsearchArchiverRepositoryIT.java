@@ -95,8 +95,8 @@ final class ElasticsearchArchiverRepositoryIT {
 
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
+  private HistoryConfiguration config;
   private String indexPrefix;
   private final String zeebeIndexPrefix = "zeebe-record";
   private String processInstanceIndex;
@@ -117,6 +117,7 @@ final class ElasticsearchArchiverRepositoryIT {
 
   @BeforeEach
   void beforeEach() {
+    config = new HistoryConfiguration();
     config.setRetention(retention);
     indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
     resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
@@ -1009,7 +1010,8 @@ final class ElasticsearchArchiverRepositoryIT {
                 List.of("111"),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                config.getReindexBatchSize())
             .join();
 
     assertThat(batch.documents())
@@ -1029,7 +1031,8 @@ final class ElasticsearchArchiverRepositoryIT {
                 List.of("999"),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                config.getReindexBatchSize())
             .join();
 
     assertThat(emptyBatch.isEmpty()).isTrue();
@@ -1038,7 +1041,6 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // when searching for process instance key 111 with reindex batch size of 2
     // then - we expect documents with IDs 1 and 2 to be returned
-    config.setReindexBatchSize(2);
     final var batchPg1 =
         repository
             .getArchiveDocIdsBatch(
@@ -1047,7 +1049,8 @@ final class ElasticsearchArchiverRepositoryIT {
                 List.of("111"),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                2)
             .join();
 
     assertThat(batchPg1.documents())
@@ -1057,7 +1060,6 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // when searching for process instance key 111 with searchAfter from page 1
     // then - we expect document with ID 4 to be returned
-    config.setReindexBatchSize(2);
     final var batchPg2 =
         repository
             .getArchiveDocIdsBatch(
@@ -1066,7 +1068,8 @@ final class ElasticsearchArchiverRepositoryIT {
                 List.of("111"),
                 Map.of(),
                 Map.of(),
-                batchPg1.searchAfter())
+                batchPg1.searchAfter(),
+                2)
             .join();
 
     assertThat(batchPg2.documents()).extracting(IdWithRouting::id).containsExactlyInAnyOrder("4");
@@ -1074,7 +1077,6 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // when searching for process instance key 111 with searchAfter from page 2
     // then - we expect no documents to be returned
-    config.setReindexBatchSize(2);
     final var batchPg3 =
         repository
             .getArchiveDocIdsBatch(
@@ -1083,7 +1085,8 @@ final class ElasticsearchArchiverRepositoryIT {
                 List.of("111"),
                 Map.of(),
                 Map.of(),
-                batchPg2.searchAfter())
+                batchPg2.searchAfter(),
+                2)
             .join();
 
     assertThat(batchPg3.isEmpty()).isTrue();
@@ -1092,7 +1095,6 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // when searching for process instance key 111 with exclusion filter for joinRelation=activity
     // then - we expect only documents with joinRelation != activity (IDs 1 and 4)
-    config.setReindexBatchSize(100);
     final var batchExcluded =
         repository
             .getArchiveDocIdsBatch(
@@ -1101,7 +1103,8 @@ final class ElasticsearchArchiverRepositoryIT {
                 List.of("111"),
                 Map.of(),
                 Map.of("joinRelation", "activity"),
-                null)
+                null,
+                100)
             .join();
 
     assertThat(batchExcluded.documents())
@@ -1119,7 +1122,8 @@ final class ElasticsearchArchiverRepositoryIT {
                 List.of("111"),
                 Map.of("joinRelation", "variable"),
                 Map.of("joinRelation", "activity"),
-                null)
+                null,
+                100)
             .join();
 
     assertThat(batchBothFilters.documents())
