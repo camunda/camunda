@@ -12,6 +12,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;

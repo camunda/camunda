@@ -10,7 +10,6 @@ package io.camunda.application.commons.rdbms;
 import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
-import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
@@ -29,6 +28,7 @@ import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.micrometer.core.instrument.MeterRegistry;

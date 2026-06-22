@@ -18,6 +18,7 @@ import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.security.core.authz.ResourceAccessProvider;

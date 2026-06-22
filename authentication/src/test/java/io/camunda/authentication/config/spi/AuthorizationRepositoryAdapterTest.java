@@ -8,12 +8,16 @@
 package io.camunda.authentication.config.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
+import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -23,15 +27,37 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.authz.ResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 class AuthorizationRepositoryAdapterTest {
 
   private final AuthorizationReader authorizationReader = mock(AuthorizationReader.class);
+  private final SearchClientReaders searchClientReaders = mock(SearchClientReaders.class);
+  private final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders =
+      new PhysicalTenantSearchClientReaders(Map.of("default", searchClientReaders));
   private final AuthorizationRepositoryAdapter adapter =
-      new AuthorizationRepositoryAdapter(authorizationReader);
+      new AuthorizationRepositoryAdapter(physicalTenantSearchClientReaders);
+
+  @BeforeEach
+  void setUp() {
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+    when(searchClientReaders.authorizationReader()).thenReturn(authorizationReader);
+  }
+
+  @AfterEach
+  void tearDown() {
+    RequestContextHolder.resetRequestAttributes();
+  }
 
   @Test
   void shouldReturnAuthorizationsForPrincipal() {
@@ -124,6 +150,7 @@ class AuthorizationRepositoryAdapterTest {
 
     // then
     assertThat(result).isEmpty();
+    verifyNoInteractions(searchClientReaders);
     verifyNoInteractions(authorizationReader);
   }
 
@@ -183,5 +210,46 @@ class AuthorizationRepositoryAdapterTest {
           .describedAs("PermissionType.%s", ocPermission.name())
           .isEqualTo(PermissionType.valueOf(ocPermission.name()));
     }
+  }
+
+  @Test
+  void shouldRouteToReaderForCurrentPhysicalTenant() {
+    // given a request scoped to a non-default physical tenant, and an adapter that knows both
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, "blue");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+    final var blueReader = mock(AuthorizationReader.class);
+    final var blueReaders = mock(SearchClientReaders.class);
+    when(blueReaders.authorizationReader()).thenReturn(blueReader);
+    when(blueReader.search(any(AuthorizationQuery.class), any(ResourceAccessChecks.class)))
+        .thenReturn(SearchQueryResult.<AuthorizationEntity>of(b -> b.items(List.of())));
+    final var multiTenantAdapter =
+        new AuthorizationRepositoryAdapter(
+            new PhysicalTenantSearchClientReaders(
+                Map.of("default", searchClientReaders, "blue", blueReaders)));
+
+    final var authentication = CamundaAuthentication.of(b -> b.user("alice"));
+
+    // when
+    multiTenantAdapter.findAuthorizations(authentication, ResourceType.COMPONENT);
+
+    // then the read is routed to the current tenant's reader, not the default one
+    verify(blueReader).search(any(AuthorizationQuery.class), any(ResourceAccessChecks.class));
+    verifyNoInteractions(authorizationReader);
+  }
+
+  @Test
+  void shouldFailFastWhenNoReaderForPhysicalTenant() {
+    // given a request scoped to a physical tenant that has no registered reader
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, "ghost");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    final var authentication = CamundaAuthentication.of(b -> b.user("alice"));
+
+    // when / then
+    assertThatThrownBy(() -> adapter.findAuthorizations(authentication, ResourceType.COMPONENT))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("ghost");
   }
 }

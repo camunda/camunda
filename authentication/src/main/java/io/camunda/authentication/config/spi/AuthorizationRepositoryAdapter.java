@@ -8,6 +8,8 @@
 package io.camunda.authentication.config.spi;
 
 import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
+import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -18,6 +20,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.authz.ResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -37,20 +40,19 @@ import org.slf4j.LoggerFactory;
  * mapping rules. Lookups bypass tenant/resource access checks because this port is consulted to
  * compute those checks itself ({@link ResourceAccessChecks#disabled()}).
  *
- * <p>The injected {@link AuthorizationReader} is wired with Spring's {@code @Lazy} at the bean
- * method (see {@code WebSecurityConfig.authorizationRepositoryPort}) so the {@code SearchClients}
- * factory chain it sits on instantiates lazily at first authorization check rather than eagerly at
- * host-bean construction. The adapter itself is unaware of the indirection — it just calls methods
- * on the reader as if it were the real bean.
+ * <p>The reader is resolved per request: {@code findAuthorizations} reads from the {@link
+ * AuthorizationReader} of the in-context physical tenant, selected from {@link
+ * PhysicalTenantSearchClientReaders} by {@link PhysicalTenantContext#current()}.
  */
 public class AuthorizationRepositoryAdapter implements AuthorizationRepositoryPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationRepositoryAdapter.class);
 
-  private final AuthorizationReader authorizationReader;
+  private final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders;
 
-  public AuthorizationRepositoryAdapter(final AuthorizationReader authorizationReader) {
-    this.authorizationReader = authorizationReader;
+  public AuthorizationRepositoryAdapter(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
+    this.physicalTenantSearchClientReaders = physicalTenantSearchClientReaders;
   }
 
   @Override
@@ -77,6 +79,15 @@ public class AuthorizationRepositoryAdapter implements AuthorizationRepositoryPo
                                 .resourceType(resourceType.name()))
                     .unlimited());
 
+    final String physicalTenantId = PhysicalTenantContext.current();
+    final var readersByPhysicalTenant = physicalTenantSearchClientReaders.readersByPhysicalTenant();
+    final SearchClientReaders searchClientReaders = readersByPhysicalTenant.get(physicalTenantId);
+    if (searchClientReaders == null) {
+      throw new IllegalStateException(
+          "No AuthorizationReader registered for physical tenant '%s'; known physical tenants: %s"
+              .formatted(physicalTenantId, readersByPhysicalTenant.keySet()));
+    }
+    final AuthorizationReader authorizationReader = searchClientReaders.authorizationReader();
     final var entities = authorizationReader.search(query, ResourceAccessChecks.disabled()).items();
     LOG.trace(
         "findAuthorizations: resourceType={} matched {} authorization record(s)",

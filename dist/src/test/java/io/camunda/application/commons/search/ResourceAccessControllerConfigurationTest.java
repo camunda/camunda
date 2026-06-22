@@ -18,6 +18,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.core.authz.ResourceAccessController;
