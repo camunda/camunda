@@ -162,7 +162,6 @@ public class Cluster implements Cloneable {
    */
   private String zone;
 
-  private boolean sendOnLegacySubject = false;
   private boolean receiveOnLegacySubject = true;
 
   public NodeIdProvider getNodeIdProvider() {
@@ -341,14 +340,6 @@ public class Cluster implements Cloneable {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
   }
 
-  public boolean isSendOnLegacySubject() {
-    return sendOnLegacySubject;
-  }
-
-  public void setSendOnLegacySubject(final boolean sendOnLegacySubject) {
-    this.sendOnLegacySubject = sendOnLegacySubject;
-  }
-
   public String getZone() {
     return zone;
   }
@@ -400,8 +391,6 @@ public class Cluster implements Cloneable {
         + compressionAlgorithm
         + ", globalListeners="
         + globalListeners
-        + ", sendOnLegacySubject="
-        + sendOnLegacySubject
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
         + ", zone='"

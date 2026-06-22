@@ -15,7 +15,6 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -329,8 +328,7 @@ public class RestoreManager implements CloseableSilently {
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
                 .generatePartitionDistribution());
-    final var raftPartitionFactory =
-        new RaftPartitionFactory(PartitionManagerImpl.DEFAULT_GROUP_NAME, configuration);
+    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
 
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))

@@ -150,7 +150,7 @@ public final class PartitionManagerImpl
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(partitionGroup, brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
     RocksDbSharedCacheMetrics.registerAllocationStrategy(
         brokerMeterRegistry,
         brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());

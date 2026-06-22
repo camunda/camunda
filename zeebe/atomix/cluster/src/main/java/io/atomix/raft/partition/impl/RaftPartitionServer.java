@@ -43,6 +43,7 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.serializer.Serializer;
 import io.camunda.zeebe.journal.SegmentInfo;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -319,47 +320,30 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServerCommunicator createServerProtocol() {
-    final var legacySubjects = createLegacySubjects();
-    final var tenantSubjects = createTenantSubjects();
+    final var partitionId = partition.id().id();
+    final var partitionGroup = partition.id().group();
 
-    final var sendingSubject =
-        config.isSendOnLegacySubject() && legacySubjects != null ? legacySubjects : tenantSubjects;
+    final var sendingSubject = PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId);
+    final var sendingContext = new RaftMessageContext(sendingSubject);
 
-    final List<RaftMessageContext> receivingSubjects;
-    if (config.isReceiveOnLegacySubject() && legacySubjects != null) {
-      receivingSubjects = List.of(legacySubjects, tenantSubjects);
-    } else {
-      receivingSubjects = List.of(tenantSubjects);
-    }
+    final var receivingSubjects =
+        partitionGroup.equals(Protocol.DEFAULT_PARTITION_GROUP_NAME)
+                && config.isReceiveOnLegacySubject()
+            ? List.of(
+                PARTITION_NAME_FORMAT.formatted("raft-partition", partitionId),
+                PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId))
+            : List.of(PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId));
+    final var receivingContext = receivingSubjects.stream().map(RaftMessageContext::new).toList();
 
     return new RaftServerCommunicator(
-        sendingSubject,
-        receivingSubjects,
+        sendingContext,
+        receivingContext,
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
         requestTimeout,
         snapshotRequestTimeout,
         configurationChangeTimeout,
         new RaftRequestMetrics(partition.name(), meterRegistry));
-  }
-
-  private RaftMessageContext createLegacySubjects() {
-    final var legacyGroupName = config.getLegacyGroupName();
-    if (legacyGroupName == null) {
-      return null;
-    }
-    // The legacy subject uses the old group name (set to "raft-partition" for the default engine)
-    // so that new brokers can still receive messages from old brokers that have not been upgraded
-    // yet. This is decoupled from partition.name() because the GROUP_NAME constant was changed to
-    // "default" as part of #50538. Only the default engine sets this — non-default engines have no
-    // legacy subjects to listen on.
-    final var legacyPrefix = PARTITION_NAME_FORMAT.formatted(legacyGroupName, partition.id().id());
-    return new RaftMessageContext(legacyPrefix);
-  }
-
-  private RaftMessageContext createTenantSubjects() {
-    final var tenantPrefix = getPartitionNameWithTenantPrefix();
-    return new RaftMessageContext(tenantPrefix);
   }
 
   public CompletableFuture<Void> stepDown() {
