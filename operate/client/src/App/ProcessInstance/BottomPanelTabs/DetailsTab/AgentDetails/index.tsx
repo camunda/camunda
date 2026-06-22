@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import type {
   AgentInstance,
   AgentInstanceStatus,
@@ -74,6 +75,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   isLoading,
   isError,
 }) => {
+  const [isConversationHistoryOpen, setIsConversationHistoryOpen] =
+    useState(false);
+
   if (isLoading) {
     return (
       <AgentDetailsContainer>
@@ -102,7 +106,18 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   const {metrics, limits, definition} = agentInstance;
 
   return (
-    <AgentDetailsContainer data-testid="agent-details">
+    <AgentDetailsContainer
+      data-testid="agent-details"
+      onKeyDown={(e) => {
+        // TODO: Workaround for https://github.com/carbon-design-system/carbon/issues/22483.
+        if (
+          e.key === 'Escape' &&
+          (e.target as HTMLElement).innerText === 'Conversation history'
+        ) {
+          setIsConversationHistoryOpen(false);
+        }
+      }}
+    >
       <AgentHeading>AI Agent</AgentHeading>
       <Accordion align="start">
         <AccordionItem
@@ -139,6 +154,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         {IS_CONVERSATION_HISTORY_ENABLED && (
           <AccordionItem
             data-testid="agent-conversation-history-section"
+            open={isConversationHistoryOpen}
+            onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
             title={
               <SectionTitle icon={<Chat size={16} />}>
                 Conversation history
@@ -147,6 +164,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
           >
             <ConversationHistory
               agentInstanceKey={agentInstance.agentInstanceKey}
+              isVisible={isConversationHistoryOpen}
               enablePeriodicRefetch={isAgentInstanceRunning(agentInstance)}
             />
           </AccordionItem>

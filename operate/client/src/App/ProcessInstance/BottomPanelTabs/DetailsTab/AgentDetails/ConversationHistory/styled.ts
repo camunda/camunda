@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Button} from '@carbon/react';
 import styled from 'styled-components';
 
 const ConversationContainer = styled.div`
@@ -14,7 +15,7 @@ const ConversationContainer = styled.div`
   gap: var(--cds-spacing-04);
 `;
 
-const ErrorHint = styled.span`
+const StatusHint = styled.span`
   font-size: var(--cds-body-compact-01-font-size);
   font-weight: var(--cds-body-compact-01-font-weight);
   line-height: var(--cds-body-compact-01-line-height);
@@ -22,4 +23,8 @@ const ErrorHint = styled.span`
   color: var(--cds-text-primary);
 `;
 
-export {ConversationContainer, ErrorHint};
+const ShowMoreButton = styled(Button)`
+  align-self: center;
+`;
+
+export {ConversationContainer, StatusHint, ShowMoreButton};

@@ -13,23 +13,29 @@ import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
-import {ConversationContainer, ErrorHint} from './styled';
+import {ConversationContainer, StatusHint, ShowMoreButton} from './styled';
+import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
 type ConversationHistoryProps = {
   agentInstanceKey: string;
+  isVisible: boolean;
   enablePeriodicRefetch: boolean;
 };
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   agentInstanceKey,
+  isVisible,
   enablePeriodicRefetch,
 }) => {
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const {selectElement} = useProcessInstanceElementSelection();
-  const {data, status} = useAgentInstanceHistory(agentInstanceKey, {
-    enablePeriodicRefetch,
-    sortOrder,
-  });
+  const {data, status, hasNextPage, fetchNextPage, isFetchingNextPage} =
+    useAgentInstanceHistory(agentInstanceKey, {
+      enabled: isVisible,
+      enablePeriodicRefetch,
+      sortOrder,
+      select: flattenPaginatedPages,
+    });
 
   if (status === 'pending') {
     return (
@@ -40,10 +46,12 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   }
 
   if (status === 'error') {
+    return <StatusHint>Failed to load conversation history.</StatusHint>;
+  }
+
+  if (data.items.length === 0) {
     return (
-      <ErrorHint data-testid="conversation-history-error">
-        Failed to load conversation history.
-      </ErrorHint>
+      <StatusHint>No conversation with this agent instance found.</StatusHint>
     );
   }
 
@@ -73,6 +81,12 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           }}
         />
       ))}
+      {isFetchingNextPage && <SkeletonText paragraph lineCount={2} />}
+      {!isFetchingNextPage && hasNextPage && (
+        <ShowMoreButton kind="ghost" size="sm" onClick={() => fetchNextPage()}>
+          Show more
+        </ShowMoreButton>
+      )}
     </ConversationContainer>
   );
 };

@@ -50,6 +50,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -66,6 +67,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -76,6 +78,27 @@ describe('<ConversationHistory />', () => {
 
     expect(
       screen.getByText('Failed to load conversation history.'),
+    ).toBeInTheDocument();
+  });
+
+  it('should show a hint when there are no conversation messages', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(
+      screen.getByText('No conversation with this agent instance found.'),
     ).toBeInTheDocument();
   });
 
@@ -104,6 +127,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -153,6 +177,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -179,6 +204,7 @@ describe('<ConversationHistory />', () => {
 
   it('should toggle the history sort order when the sort button is clicked', async () => {
     let query: unknown;
+    const item = mockAgentInstanceHistoryItem();
     mockServer.use(
       http.post(
         endpoints.searchAgentInstanceHistory.getUrl({
@@ -186,7 +212,7 @@ describe('<ConversationHistory />', () => {
         }),
         async ({request}) => {
           query = await request.json();
-          return Response.json(searchResult([]));
+          return Response.json(searchResult([item]));
         },
       ),
     );
@@ -195,6 +221,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -222,6 +249,60 @@ describe('<ConversationHistory />', () => {
         sort: [{field: 'producedAt', order: 'asc'}],
       }),
     );
+  });
+
+  it('should show a "Show more" button when more items exist and load them on click', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '2',
+            role: 'ASSISTANT',
+            content: [{contentType: 'TEXT', text: 'Second page message'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '1',
+            role: 'USER',
+            content: [{contentType: 'TEXT', text: 'First page message'}],
+          }),
+        ],
+        2,
+      ),
+    );
+
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(screen.getByText('First page message')).toBeInTheDocument();
+    expect(screen.queryByText('Second page message')).not.toBeInTheDocument();
+
+    const showMoreButton = screen.getByRole('button', {name: 'Show more'});
+    expect(showMoreButton).toBeInTheDocument();
+
+    await user.click(showMoreButton);
+
+    expect(await screen.findByText('Second page message')).toBeInTheDocument();
+    expect(screen.getByText('First page message')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Show more'}),
+    ).not.toBeInTheDocument();
   });
 
   it('should render document references', async () => {
@@ -277,6 +358,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -324,6 +406,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );

@@ -6,9 +6,41 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, within} from 'modules/testing-library';
+import {
+  act,
+  render,
+  screen,
+  waitForElementToBeRemoved,
+  within,
+} from 'modules/testing-library';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import type {ReactNode} from 'react';
+import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstances/searchAgentInstanceHistory';
+import {searchResult} from 'modules/testUtils';
+import {Paths} from 'modules/Routes';
 import {AgentDetails} from './index';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+
+vi.mock('modules/feature-flags', () => ({
+  IS_CONVERSATION_HISTORY_ENABLED: true,
+}));
+
+function createWrapper() {
+  const queryClient = getMockQueryClient();
+  return ({children}: {children: ReactNode}) => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+}
 
 const mockAgentInstance: AgentInstance = {
   agentInstanceKey: '2251799813851828',
@@ -47,6 +79,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByText('AI Agent')).toBeInTheDocument();
@@ -63,6 +96,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const statusSection = screen.getByTestId('agent-status-section');
@@ -78,6 +112,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const statusSection = screen.getByTestId('agent-status-section');
@@ -91,6 +126,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const statusSection = screen.getByTestId('agent-status-section');
@@ -106,6 +142,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const statusSection = screen.getByTestId('agent-status-section');
@@ -121,6 +158,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const statusSection = screen.getByTestId('agent-status-section');
@@ -164,6 +202,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const modelCalls = screen.getByRole('article', {name: 'Model Calls'});
@@ -196,6 +235,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const section = screen.getByTestId('agent-model-section');
@@ -214,6 +254,7 @@ describe('<AgentDetails />', () => {
         isLoading={false}
         isError={false}
       />,
+      {wrapper: createWrapper()},
     );
 
     const section = screen.getByTestId('agent-system-prompt-section');
@@ -228,5 +269,39 @@ describe('<AgentDetails />', () => {
     expect(
       within(section).getByRole('button', {name: 'Expand'}),
     ).toBeInTheDocument();
+  });
+
+  it('should not fetch the conversation history until its accordion item is opened', async () => {
+    const historySpy = vi.fn();
+    mockSearchAgentInstanceHistory(
+      mockAgentInstance.agentInstanceKey,
+    ).withSuccess(searchResult([]), {mockResolverFn: historySpy});
+
+    const {user} = render(
+      <AgentDetails
+        agentInstance={mockAgentInstance}
+        isLoading={false}
+        isError={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    const section = screen.getByTestId('agent-conversation-history-section');
+    expect(section).toBeInTheDocument();
+
+    // Flush potentially pending queries otherwise this test cannot break.
+    // eslint-disable-next-line testing-library/no-unnecessary-act
+    await act(async () => {});
+    expect(historySpy).not.toHaveBeenCalled();
+
+    await user.click(
+      within(section).getByRole('button', {name: 'Conversation history'}),
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(historySpy).toHaveBeenCalledTimes(1);
   });
 });
