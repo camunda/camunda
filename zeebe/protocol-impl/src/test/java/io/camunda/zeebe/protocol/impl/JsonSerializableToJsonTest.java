@@ -1354,6 +1354,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(2L)
                   .setMessageKey(3L)
                   .setCorrelationKey(wrapString("test-key"))
+                  .setBusinessId(wrapString("test-business-id"))
                   .setVariables(VARIABLES_MSGPACK);
             },
         """
@@ -1365,6 +1366,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 2,
                   "messageKey": 3,
                   "correlationKey": "test-key",
+                  "businessId": "test-business-id",
                   "variables": {
                     "foo": "bar"
                   },
@@ -1396,6 +1398,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": -1,
                   "messageKey": -1,
                   "correlationKey": "",
+                  "businessId": "",
                   "variables": {},
                   "tenantId": "<default>"
                 }

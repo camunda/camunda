@@ -67,4 +67,12 @@ public interface MessageStartEventSubscriptionRecordValue
    *     subscription. Otherwise, it returns -1.
    */
   long getMessageKey();
+
+  /**
+   * @return the business id carried by the message that correlated to this subscription. It is only
+   *     set when a message is correlated to this subscription, and it becomes the business id of
+   *     the process instance created by the start event. Otherwise, it returns an empty string.
+   * @since 8.10
+   */
+  String getBusinessId();
 }

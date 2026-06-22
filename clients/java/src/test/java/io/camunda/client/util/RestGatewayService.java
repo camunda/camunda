@@ -495,6 +495,12 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getElementInstanceWaitStateSearchUrl(), response);
   }
 
+  public void onSearchCorrelatedMessageSubscriptionsRequest(
+      final io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult
+          response) {
+    registerPost(RestGatewayPaths.getCorrelatedMessageSubscriptionsSearchUrl(), response);
+  }
+
   public void onSearchUserTaskAuditLogRequest(
       final long userTaskKey, final AuditLogSearchQueryResult response) {
     registerPost(RestGatewayPaths.getUserTaskAuditLogSearchUrl(userTaskKey), response);

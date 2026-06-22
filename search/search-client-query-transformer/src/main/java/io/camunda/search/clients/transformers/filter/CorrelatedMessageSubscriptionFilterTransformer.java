@@ -30,6 +30,7 @@ public class CorrelatedMessageSubscriptionFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final CorrelatedMessageSubscriptionFilter filter) {
     return and(
+        stringOperations(BUSINESS_ID, filter.businessIdOperations()),
         stringOperations(CORRELATION_KEY, filter.correlationKeyOperations()),
         dateTimeOperations(CORRELATION_TIME, filter.correlationTimeOperations()),
         stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),

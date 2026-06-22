@@ -406,4 +406,15 @@
     </createTable>
   </changeSet>
 
+  <changeSet id="add_business_id_to_correlated_message_subscription" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" columnName="BUSINESS_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION">
+      <column name="BUSINESS_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

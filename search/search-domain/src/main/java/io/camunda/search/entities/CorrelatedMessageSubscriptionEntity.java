@@ -27,7 +27,8 @@ public record CorrelatedMessageSubscriptionEntity(
     @Nullable Long rootProcessInstanceKey,
     Long subscriptionKey,
     @Nullable MessageSubscriptionType subscriptionType,
-    String tenantId)
+    String tenantId,
+    @Nullable String businessId)
     implements TenantOwnedEntity {
 
   public CorrelatedMessageSubscriptionEntity {
@@ -62,6 +63,7 @@ public record CorrelatedMessageSubscriptionEntity(
     private @Nullable Long subscriptionKey;
     private @Nullable MessageSubscriptionType subscriptionType;
     private @Nullable String tenantId;
+    private @Nullable String businessId;
 
     public Builder correlationKey(final String correlationKey) {
       this.correlationKey = correlationKey;
@@ -133,6 +135,11 @@ public record CorrelatedMessageSubscriptionEntity(
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     @SuppressWarnings("NullAway")
     public CorrelatedMessageSubscriptionEntity build() {
       return new CorrelatedMessageSubscriptionEntity(
@@ -149,7 +156,8 @@ public record CorrelatedMessageSubscriptionEntity(
           rootProcessInstanceKey,
           subscriptionKey,
           subscriptionType,
-          tenantId);
+          tenantId,
+          businessId);
     }
   }
 

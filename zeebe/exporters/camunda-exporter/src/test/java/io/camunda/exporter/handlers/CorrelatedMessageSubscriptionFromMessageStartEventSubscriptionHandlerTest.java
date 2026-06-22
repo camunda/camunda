@@ -137,6 +137,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final String businessId = "businessId";
     final Intent intent = MessageStartEventSubscriptionIntent.CORRELATED;
     final var recordValue =
         ImmutableMessageStartEventSubscriptionRecordValue.builder()
@@ -148,6 +149,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
             .withProcessInstanceKey(processInstanceKey)
             .withProcessDefinitionKey(processDefinitionKey)
             .withTenantId(tenantId)
+            .withBusinessId(businessId)
             .build();
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -183,6 +185,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     assertThat(entity.getSubscriptionKey()).isEqualTo(recordKey);
     assertThat(entity.getSubscriptionType()).isEqualTo("START_EVENT");
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
+    assertThat(entity.getBusinessId()).isEqualTo(businessId);
   }
 
   @Test
@@ -209,6 +212,28 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
 
     // then
     assertThat(entity.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final var recordValue =
+        ImmutableMessageStartEventSubscriptionRecordValue.builder().withBusinessId("").build();
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                    .withValue(recordValue));
+
+    final CorrelatedMessageSubscriptionEntity entity =
+        underTest.createNewEntity(underTest.generateIds(record).getFirst());
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
   }
 
   @Test

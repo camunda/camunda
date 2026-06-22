@@ -35,6 +35,7 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
             .subscriptionKey(321L)
             .subscriptionType(MessageSubscriptionType.PROCESS_EVENT)
             .tenantId("tenantId")
+            .businessId("testBusinessId")
             .build();
 
     // When
@@ -80,5 +81,6 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.tenantId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.businessId()).isNull(); // nullable field is passed through unchanged
   }
 }

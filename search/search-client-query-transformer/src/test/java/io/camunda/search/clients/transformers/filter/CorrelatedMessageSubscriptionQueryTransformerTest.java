@@ -69,6 +69,13 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
             (Function<
                     CorrelatedMessageSubscriptionFilter.Builder,
                     ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+                b -> b.businessIds("biz1"),
+            "businessId",
+            "biz1"),
+        Arguments.of(
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.correlationKeys("key1"),
             "correlationKey",
             "key1"),

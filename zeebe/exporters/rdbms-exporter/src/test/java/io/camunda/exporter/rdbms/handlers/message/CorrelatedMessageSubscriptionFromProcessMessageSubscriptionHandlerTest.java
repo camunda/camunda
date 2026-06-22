@@ -96,6 +96,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final String businessId = "businessId";
     final Intent intent = ProcessMessageSubscriptionIntent.CORRELATED;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -108,6 +109,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
             .withMessageName(messageName)
             .withProcessInstanceKey(processInstanceKey)
             .withTenantId(tenantId)
+            .withBusinessId(businessId)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -142,6 +144,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     assertThat(entity.subscriptionKey()).isEqualTo(recordKey);
     assertThat(entity.subscriptionType()).isEqualTo(MessageSubscriptionType.PROCESS_EVENT);
     assertThat(entity.tenantId()).isEqualTo(tenantId);
+    assertThat(entity.businessId()).isEqualTo(businessId);
   }
 
   @Test
@@ -166,5 +169,32 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     verify(correlatedMessageSubscriptionWriter).create(itemCaptor.capture());
     final CorrelatedMessageSubscriptionDbModel entity = itemCaptor.getValue();
     assertThat(entity.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final long recordKey = 789;
+    final long messageKey = 555;
+    final Intent intent = ProcessMessageSubscriptionIntent.CORRELATED;
+
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withMessageKey(messageKey)
+            .withBusinessId("")
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(intent).withKey(recordKey).withValue(recordValue));
+
+    // when
+    underTest.export(record);
+
+    // then
+    final var itemCaptor = ArgumentCaptor.forClass(CorrelatedMessageSubscriptionDbModel.class);
+    verify(correlatedMessageSubscriptionWriter).create(itemCaptor.capture());
+    final CorrelatedMessageSubscriptionDbModel entity = itemCaptor.getValue();
+    assertThat(entity.businessId()).isNull();
   }
 }

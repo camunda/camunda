@@ -1024,6 +1024,8 @@ class RdbmsExporterIT {
         .isEqualTo(recordValue.getProcessInstanceKey());
     assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
         .isEqualTo(recordValue.getRootProcessInstanceKey());
+    assertThat(correlatedMessageSubscription.get().businessId())
+        .isEqualTo(recordValue.getBusinessId());
   }
 
   @Test
@@ -1052,6 +1054,8 @@ class RdbmsExporterIT {
         .isEqualTo(processInstanceKey);
     assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
         .isEqualTo(processInstanceKey);
+    assertThat(correlatedMessageSubscription.get().businessId())
+        .isEqualTo(recordValue.getBusinessId());
   }
 
   @Test

@@ -205,6 +205,7 @@ public final class EventHandle {
         .setCorrelationKey(correlationKey)
         .setMessageKey(messageKey)
         .setMessageName(messageName)
+        .setBusinessId(businessId)
         .setVariables(variables)
         .setTenantId(subscription.getTenantId());
 

@@ -31,6 +31,11 @@ public record CorrelatedMessageSubscriptionSort(List<FieldSorting> orderings)
       extends SortOption.AbstractBuilder<CorrelatedMessageSubscriptionSort.Builder>
       implements ObjectBuilder<CorrelatedMessageSubscriptionSort> {
 
+    public Builder businessId() {
+      currentOrdering = new FieldSorting("businessId", null);
+      return this;
+    }
+
     public Builder correlationKey() {
       currentOrdering = new FieldSorting("correlationKey", null);
       return this;
