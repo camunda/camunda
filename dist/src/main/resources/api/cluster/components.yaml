@@ -382,6 +382,8 @@ schemas:
           - PRE_SCALING
           - POST_SCALING
           - UPDATE_PARTITION_DISTRIBUTOR_CONFIG
+          - ENTER_RECOVERY
+          - EXIT_RECOVERY
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -399,6 +401,10 @@ schemas:
         $ref: "components.yaml#/schemas/ExporterId"
       partitionDistributionConfig:
         $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      physicalTenantId:
+        type: string
+        description: Physical tenant id subject to the operation
+
 
   BrokerState:
     title: BrokerState

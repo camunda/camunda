@@ -27,7 +27,7 @@ public enum ClusterConfigurationRequestTopics {
   FORCE_REMOVE_BROKERS("topology-broker-force-remove"),
   UPDATE_ROUTING_STATE("topology-cluster-update-routing-state"),
   UPDATE_PARTITION_DISTRIBUTION("topology-cluster-update-partition-distribution"),
-  RECOVERY_MODE("topology-member-recovery");
+  MODE_CHANGE("topology-mode-change");
 
   private final String topic;
 

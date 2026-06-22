@@ -228,7 +228,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
 
   private void registerEnterRecoveryHandler() {
     communicationService.replyTo(
-        ClusterConfigurationRequestTopics.RECOVERY_MODE.topic(),
+        ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
         serializer::decodeModeChangeRequest,
         request -> {
           return mapResponse(clusterConfigurationManagementApi.enterRecovery(request));
