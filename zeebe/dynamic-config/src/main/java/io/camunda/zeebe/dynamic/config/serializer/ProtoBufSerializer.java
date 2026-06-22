@@ -1472,40 +1472,95 @@ public class ProtoBufSerializer
       final io.camunda.zeebe.dynamic.config.state.PartitionGroupClusterConfiguration config) {
     final var builder =
         Topology.PartitionGroupClusterTopology.newBuilder()
-            .setClusterMembership(encodeClusterTopology(config.clusterMembership()));
+            .setClusterMembership(encodeClusterMembership(config.clusterMembership()));
 
     config
-        .partitionGroupConfigs()
+        .partitionGroups()
         .forEach(
             (groupId, groupConfig) ->
-                builder.putPartitionGroups(groupId, encodeClusterTopology(groupConfig)));
+                builder.putPartitionGroups(
+                    groupId, encodePartitionGroupConfiguration(groupConfig)));
 
-    config
-        .pendingPlan()
-        .ifPresent(plan -> builder.setPendingPlan(encodePartitionGroupChangePlan(plan)));
+    config.pendingPlan().ifPresent(plan -> builder.setPendingPlan(encodePhasedChangePlan(plan)));
 
     return builder.build();
   }
 
   private io.camunda.zeebe.dynamic.config.state.PartitionGroupClusterConfiguration fromProto(
       final Topology.PartitionGroupClusterTopology proto) {
-    final var membership = decodeClusterTopology(proto.getClusterMembership());
+    final var membership = decodeClusterMembership(proto.getClusterMembership());
 
-    final Map<String, io.camunda.zeebe.dynamic.config.state.ClusterConfiguration> groups =
+    final Map<String, io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration> groups =
         proto.getPartitionGroupsMap().entrySet().stream()
-            .collect(Collectors.toMap(Entry::getKey, e -> decodeClusterTopology(e.getValue())));
+            .collect(
+                Collectors.toMap(
+                    Entry::getKey, e -> decodePartitionGroupConfiguration(e.getValue())));
 
-    final Optional<io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan> pendingPlan =
+    final Optional<io.camunda.zeebe.dynamic.config.state.PhasedChangePlan> pendingPlan =
         proto.hasPendingPlan()
-            ? Optional.of(decodePartitionGroupChangePlan(proto.getPendingPlan()))
+            ? Optional.of(decodePhasedChangePlan(proto.getPendingPlan()))
             : Optional.empty();
 
     return new io.camunda.zeebe.dynamic.config.state.PartitionGroupClusterConfiguration(
         membership, groups, pendingPlan);
   }
 
-  private Topology.PartitionGroupChangePlan encodePartitionGroupChangePlan(
-      final io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan plan) {
+  private Topology.ClusterTopology encodeClusterMembership(
+      final io.camunda.zeebe.dynamic.config.state.ClusterMembership membership) {
+    final var tempConfig =
+        new io.camunda.zeebe.dynamic.config.state.ClusterConfiguration(
+            membership.version(),
+            membership.members(),
+            membership.lastChange(),
+            membership.pendingChanges(),
+            Optional.empty(),
+            membership.clusterId(),
+            io.camunda.zeebe.dynamic.config.state.ClusterConfiguration.INITIAL_INCARNATION_NUMBER,
+            membership.recovery());
+    return encodeClusterTopology(tempConfig);
+  }
+
+  private io.camunda.zeebe.dynamic.config.state.ClusterMembership decodeClusterMembership(
+      final Topology.ClusterTopology proto) {
+    final var config = decodeClusterTopology(proto);
+    return new io.camunda.zeebe.dynamic.config.state.ClusterMembership(
+        config.version(),
+        config.members(),
+        config.lastChange(),
+        config.pendingChanges(),
+        config.clusterId(),
+        config.recovery());
+  }
+
+  private Topology.ClusterTopology encodePartitionGroupConfiguration(
+      final io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration groupConfig) {
+    final var tempConfig =
+        new io.camunda.zeebe.dynamic.config.state.ClusterConfiguration(
+            groupConfig.version(),
+            groupConfig.members(),
+            groupConfig.lastChange(),
+            groupConfig.pendingChanges(),
+            groupConfig.routingState(),
+            Optional.empty(),
+            groupConfig.incarnationNumber(),
+            false);
+    return encodeClusterTopology(tempConfig);
+  }
+
+  private io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration
+      decodePartitionGroupConfiguration(final Topology.ClusterTopology proto) {
+    final var config = decodeClusterTopology(proto);
+    return new io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration(
+        config.version(),
+        config.members(),
+        config.lastChange(),
+        config.pendingChanges(),
+        config.routingState(),
+        config.incarnationNumber());
+  }
+
+  private Topology.PartitionGroupChangePlan encodePhasedChangePlan(
+      final io.camunda.zeebe.dynamic.config.state.PhasedChangePlan plan) {
     final var builder =
         Topology.PartitionGroupChangePlan.newBuilder()
             .setId(plan.id())
@@ -1516,7 +1571,7 @@ public class ProtoBufSerializer
                     .build())
             .setCurrentPhaseIndex(plan.currentPhaseIndex());
 
-    plan.phases().forEach(phase -> builder.addPhases(encodePartitionGroupPhase(phase)));
+    plan.phases().forEach(phase -> builder.addPhases(encodePhasedChangePlanPhase(phase)));
 
     if (plan.lastChange() != null) {
       builder.setLastChange(encodeCompletedChange(plan.lastChange()));
@@ -1525,14 +1580,15 @@ public class ProtoBufSerializer
     return builder.build();
   }
 
-  private io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan
-      decodePartitionGroupChangePlan(final Topology.PartitionGroupChangePlan proto) {
-    final var phases = proto.getPhasesList().stream().map(this::decodePartitionGroupPhase).toList();
+  private io.camunda.zeebe.dynamic.config.state.PhasedChangePlan decodePhasedChangePlan(
+      final Topology.PartitionGroupChangePlan proto) {
+    final var phases =
+        proto.getPhasesList().stream().map(this::decodePhasedChangePlanPhase).toList();
 
     final io.camunda.zeebe.dynamic.config.state.CompletedChange lastChange =
         proto.hasLastChange() ? decodeCompletedChange(proto.getLastChange()) : null;
 
-    return new io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan(
+    return new io.camunda.zeebe.dynamic.config.state.PhasedChangePlan(
         proto.getId(),
         Instant.ofEpochSecond(proto.getStartedAt().getSeconds(), proto.getStartedAt().getNanos()),
         proto.getCurrentPhaseIndex(),
@@ -1540,19 +1596,16 @@ public class ProtoBufSerializer
         lastChange);
   }
 
-  private Topology.PartitionGroupPhase encodePartitionGroupPhase(
-      final io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.Phase phase) {
+  private Topology.PartitionGroupPhase encodePhasedChangePlanPhase(
+      final io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase phase) {
     final var builder = Topology.PartitionGroupPhase.newBuilder();
     return switch (phase) {
-      case io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.ClusterMembershipPhase
-              p -> {
+      case io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.ClusterMembershipPhase p -> {
         final var membershipBuilder = Topology.ClusterMembershipPhase.newBuilder();
         p.operations().forEach(op -> membershipBuilder.addOperations(encodeOperation(op)));
         yield builder.setMembershipPhase(membershipBuilder.build()).build();
       }
-      case io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan
-                  .PartitionGroupParallelPhase
-              p -> {
+      case io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase p -> {
         final var parallelBuilder = Topology.PartitionGroupParallelPhase.newBuilder();
         p.operationsPerGroup()
             .forEach(
@@ -1566,16 +1619,16 @@ public class ProtoBufSerializer
     };
   }
 
-  private io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.Phase
-      decodePartitionGroupPhase(final Topology.PartitionGroupPhase proto) {
+  private io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase decodePhasedChangePlanPhase(
+      final Topology.PartitionGroupPhase proto) {
     return switch (proto.getPhaseTypeCase()) {
       case MEMBERSHIPPHASE -> {
         final var ops =
             proto.getMembershipPhase().getOperationsList().stream()
                 .map(this::decodeOperation)
                 .toList();
-        yield new io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan
-            .ClusterMembershipPhase(ops);
+        yield new io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.ClusterMembershipPhase(
+            ops);
       }
       case PARTITIONPHASE -> {
         final Map<
@@ -1590,7 +1643,7 @@ public class ProtoBufSerializer
                                 e.getValue().getOperationsList().stream()
                                     .map(this::decodeOperation)
                                     .toList()));
-        yield new io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan
+        yield new io.camunda.zeebe.dynamic.config.state.PhasedChangePlan
             .PartitionGroupParallelPhase(operationsPerGroup);
       }
       case PHASETYPE_NOT_SET ->

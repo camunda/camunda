@@ -9,11 +9,13 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics.OperationObserver;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -66,9 +68,11 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private boolean onGoingConfigurationChangeOperation = false;
   private boolean shouldRetry = false;
   // Per-group change appliers for non-default partition groups (keyed by group ID)
-  private final Map<String, ConfigurationChangeAppliers> partitionGroupAppliers = new HashMap<>();
-  // In-memory ClusterConfiguration for non-default partition groups; not yet persisted or gossiped
-  private final Map<String, ClusterConfiguration> nonDefaultGroupConfigs = new HashMap<>();
+  private final Map<String, PartitionGroupConfigurationChangeAppliers> partitionGroupAppliers =
+      new HashMap<>();
+  // In-memory PartitionGroupConfiguration for non-default partition groups; not yet
+  // persisted/gossiped
+  private final Map<String, PartitionGroupConfiguration> nonDefaultGroupConfigs = new HashMap<>();
   // Per-group operation-in-progress flag
   private final Map<String, Boolean> onGoingGroupOperations = new HashMap<>();
   // Per-group should-retry flag
@@ -385,7 +389,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * execute concurrently.
    */
   void registerPartitionGroupAppliers(
-      final String groupId, final ConfigurationChangeAppliers appliers) {
+      final String groupId, final PartitionGroupConfigurationChangeAppliers appliers) {
     executor.run(
         () -> {
           partitionGroupAppliers.put(groupId, appliers);
@@ -405,13 +409,13 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * of any newly pending operation for the local member.
    */
   ActorFuture<Void> updatePartitionGroupConfig(
-      final String groupId, final UnaryOperator<ClusterConfiguration> updater) {
+      final String groupId, final UnaryOperator<PartitionGroupConfiguration> updater) {
     final var future = executor.<Void>createFuture();
     executor.run(
         () -> {
           try {
             final var current =
-                nonDefaultGroupConfigs.getOrDefault(groupId, ClusterConfiguration.init());
+                nonDefaultGroupConfigs.getOrDefault(groupId, PartitionGroupConfiguration.init());
             final var updated = updater.apply(current);
             nonDefaultGroupConfigs.put(groupId, updated);
             future.complete(null);
@@ -425,7 +429,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /** Seeds the initial configuration for a non-default partition group. */
-  void setPartitionGroupConfig(final String groupId, final ClusterConfiguration config) {
+  void setPartitionGroupConfig(final String groupId, final PartitionGroupConfiguration config) {
     executor.run(
         () -> {
           nonDefaultGroupConfigs.put(groupId, config);
@@ -434,12 +438,12 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   @VisibleForTesting
-  ClusterConfiguration getPartitionGroupConfig(final String groupId) {
+  PartitionGroupConfiguration getPartitionGroupConfig(final String groupId) {
     return nonDefaultGroupConfigs.get(groupId);
   }
 
   private boolean shouldApplyGroupOperation(
-      final String groupId, final ClusterConfiguration config) {
+      final String groupId, final PartitionGroupConfiguration config) {
     return (!onGoingGroupOperations.getOrDefault(groupId, false)
             || shouldRetryGroup.getOrDefault(groupId, false))
         && config.pendingChangesFor(localMemberId).isPresent()
@@ -447,7 +451,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   private void applyGroupConfigurationChangeOperation(
-      final String groupId, final ClusterConfiguration config) {
+      final String groupId, final PartitionGroupConfiguration config) {
     if (!shouldApplyGroupOperation(groupId, config)) {
       return;
     }
@@ -493,16 +497,17 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
   private void onGroupOperationApplied(
       final String groupId,
-      final ClusterConfiguration configOnWhichOpApplied,
+      final PartitionGroupConfiguration configOnWhichOpApplied,
       final ClusterConfigurationChangeOperation operation,
-      final UnaryOperator<ClusterConfiguration> transformer,
+      final UnaryOperator<PartitionGroupConfiguration> transformer,
       final Throwable error,
       final OperationObserver observer) {
     onGoingGroupOperations.put(groupId, false);
     if (error == null) {
       observer.applied();
       backoffRetry.reset();
-      final var current = nonDefaultGroupConfigs.getOrDefault(groupId, ClusterConfiguration.init());
+      final var current =
+          nonDefaultGroupConfigs.getOrDefault(groupId, PartitionGroupConfiguration.init());
       if (current.version() != configOnWhichOpApplied.version()) {
         LOG.debug(
             "Configuration changed for group {} while applying operation {}. "

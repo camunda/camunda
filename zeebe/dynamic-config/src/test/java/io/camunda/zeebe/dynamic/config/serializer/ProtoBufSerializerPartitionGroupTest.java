@@ -13,13 +13,15 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterMembership;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.ClusterMembershipPhase;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.ClusterMembershipPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,15 +48,15 @@ final class ProtoBufSerializerPartitionGroupTest {
   void shouldRoundTripPartitionGroupClusterConfiguration() {
     // given
     final var membership =
-        ClusterConfiguration.init()
+        ClusterMembership.init()
             .addMember(MEMBER_1, activeMember())
             .addMember(MEMBER_2, activeMember());
     final var defaultGroup =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(MEMBER_1, activeWithPartition(1))
             .addMember(MEMBER_2, activeWithPartition(1));
     final var tenantAGroup =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(MEMBER_1, activeWithPartition(2))
             .addMember(MEMBER_2, activeWithPartition(2));
     final var config =
@@ -68,9 +70,9 @@ final class ProtoBufSerializerPartitionGroupTest {
     // then
     assertThat(decoded.clusterMembership().members()).containsKey(MEMBER_1);
     assertThat(decoded.clusterMembership().members()).containsKey(MEMBER_2);
-    assertThat(decoded.partitionGroupConfigs()).containsKeys("default", "tenantA");
-    assertThat(decoded.partitionGroupConfigs().get("default").members()).containsKey(MEMBER_1);
-    assertThat(decoded.partitionGroupConfigs().get("tenantA").members()).containsKey(MEMBER_2);
+    assertThat(decoded.partitionGroups()).containsKeys("default", "tenantA");
+    assertThat(decoded.partitionGroups().get("default").members()).containsKey(MEMBER_1);
+    assertThat(decoded.partitionGroups().get("tenantA").members()).containsKey(MEMBER_2);
     assertThat(decoded.pendingPlan()).isEmpty();
   }
 
@@ -87,8 +89,8 @@ final class ProtoBufSerializerPartitionGroupTest {
     final var migrated = serializer.decodePartitionGroupClusterConfiguration(encoded);
 
     // then
-    assertThat(migrated.partitionGroupConfigs()).containsKey("default");
-    assertThat(migrated.partitionGroupConfigs().get("default").members())
+    assertThat(migrated.partitionGroups()).containsKey("default");
+    assertThat(migrated.partitionGroups().get("default").members())
         .containsKey(MEMBER_1)
         .containsKey(MEMBER_2);
     // clusterMembership members have empty partitions
@@ -100,18 +102,18 @@ final class ProtoBufSerializerPartitionGroupTest {
   }
 
   @Test
-  void shouldRoundTripPartitionGroupChangePlan() {
+  void shouldRoundTripPhasedChangePlan() {
     // given — plan with membership phase and partition group parallel phase
     final var membershipPhase =
         new ClusterMembershipPhase(List.of(new MemberJoinOperation(MEMBER_2)));
     final var parallelPhase =
         new PartitionGroupParallelPhase(
             Map.of("tenantA", List.of(new PartitionJoinOperation(MEMBER_2, 3, 1))));
-    final var plan = PartitionGroupChangePlan.init(42L, List.of(membershipPhase, parallelPhase));
+    final var plan = PhasedChangePlan.init(42L, List.of(membershipPhase, parallelPhase));
 
-    final var membership = ClusterConfiguration.init().addMember(MEMBER_1, activeMember());
+    final var membership = ClusterMembership.init().addMember(MEMBER_1, activeMember());
     final var tenantAGroup =
-        ClusterConfiguration.init().addMember(MEMBER_1, activeWithPartition(2));
+        PartitionGroupConfiguration.init().addMember(MEMBER_1, activeWithPartition(2));
     final var config =
         new PartitionGroupClusterConfiguration(
             membership, Map.of("tenantA", tenantAGroup), Optional.of(plan));

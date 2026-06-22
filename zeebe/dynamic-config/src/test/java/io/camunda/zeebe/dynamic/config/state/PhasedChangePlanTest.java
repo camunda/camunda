@@ -11,22 +11,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.ClusterMembershipPhase;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.ClusterMembershipPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class PartitionGroupChangePlanTest {
+class PhasedChangePlanTest {
 
-  private static PartitionGroupChangePlan planWithPhaseIndex(
+  private static PhasedChangePlan planWithPhaseIndex(
       final long id, final int phaseIndex, final int totalPhases) {
-    final List<PartitionGroupChangePlan.Phase> phases =
+    final List<PhasedChangePlan.Phase> phases =
         java.util.stream.IntStream.range(0, totalPhases)
-            .mapToObj(i -> (PartitionGroupChangePlan.Phase) new ClusterMembershipPhase(List.of()))
+            .mapToObj(i -> (PhasedChangePlan.Phase) new ClusterMembershipPhase(List.of()))
             .toList();
-    return new PartitionGroupChangePlan(id, Instant.now(), phaseIndex, phases, null);
+    return new PhasedChangePlan(id, Instant.now(), phaseIndex, phases, null);
   }
 
   @Test
@@ -88,7 +88,7 @@ class PartitionGroupChangePlanTest {
     final var phase0 =
         new ClusterMembershipPhase(List.of(new MemberJoinOperation(MemberId.from("1"))));
     final var phase1 = new ClusterMembershipPhase(List.of());
-    final var plan = PartitionGroupChangePlan.init(1L, List.of(phase0, phase1));
+    final var plan = PhasedChangePlan.init(1L, List.of(phase0, phase1));
 
     // when
     final var current = plan.currentPhase();
@@ -101,11 +101,11 @@ class PartitionGroupChangePlanTest {
   void shouldDetectHasNextPhase() {
     // given — single-phase plan
     final var singlePhase =
-        PartitionGroupChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of())));
+        PhasedChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of())));
 
     // given — two-phase plan
     final var twoPhase =
-        PartitionGroupChangePlan.init(
+        PhasedChangePlan.init(
             2L,
             List.of(
                 new ClusterMembershipPhase(List.of()), new PartitionGroupParallelPhase(Map.of())));

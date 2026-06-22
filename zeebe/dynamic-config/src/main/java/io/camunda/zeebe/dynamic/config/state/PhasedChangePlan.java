@@ -12,23 +12,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public record PartitionGroupChangePlan(
+/**
+ * A coordinator-generated plan that drives a multi-partition-group reconfiguration in sequential
+ * phases. Each phase is either a {@link ClusterMembershipPhase} (broker joins/leaves) or a {@link
+ * PartitionGroupParallelPhase} (partition operations across one or more groups that run
+ * concurrently with each other).
+ */
+public record PhasedChangePlan(
     long id,
     Instant startedAt,
     int currentPhaseIndex,
     List<Phase> phases,
     CompletedChange lastChange) { // nullable — null means no completed change yet
 
-  public PartitionGroupChangePlan {
+  public PhasedChangePlan {
     phases = List.copyOf(phases);
   }
 
-  public static PartitionGroupChangePlan init(final long id, final List<Phase> phases) {
-    return new PartitionGroupChangePlan(id, Instant.now(), 0, phases, null);
+  public static PhasedChangePlan init(final long id, final List<Phase> phases) {
+    return new PhasedChangePlan(id, Instant.now(), 0, phases, null);
   }
 
-  public PartitionGroupChangePlan withNextPhase() {
-    return new PartitionGroupChangePlan(id, startedAt, currentPhaseIndex + 1, phases, lastChange);
+  public PhasedChangePlan withNextPhase() {
+    return new PhasedChangePlan(id, startedAt, currentPhaseIndex + 1, phases, lastChange);
   }
 
   public boolean hasNextPhase() {
@@ -39,7 +45,7 @@ public record PartitionGroupChangePlan(
     return phases.get(currentPhaseIndex);
   }
 
-  public PartitionGroupChangePlan merge(final PartitionGroupChangePlan other) {
+  public PhasedChangePlan merge(final PhasedChangePlan other) {
     if (id == other.id) {
       // Same plan: furthest-advanced phase index wins
       return currentPhaseIndex >= other.currentPhaseIndex ? this : other;

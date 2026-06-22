@@ -10,9 +10,9 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
-import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.changes.NoopConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliers.PartitionGroupOperationApplier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -67,7 +68,7 @@ final class ClusterConfigurationManagerPartitionGroupTest {
     // given
     final var manager = startManager();
     final var groupConfig =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .startConfigurationChange(List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     manager.setPartitionGroupConfig("tenantA", groupConfig);
@@ -89,7 +90,7 @@ final class ClusterConfigurationManagerPartitionGroupTest {
     // given
     final var manager = startManager();
     final var groupConfig =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .startConfigurationChange(List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
 
@@ -106,22 +107,24 @@ final class ClusterConfigurationManagerPartitionGroupTest {
   void shouldApplyOperationsForTwoGroupsConcurrently() {
     // given — both groups have a pending op; appliers that track how many are started
     final var opsStarted = new AtomicInteger(0);
-    final var groupAFuture = new CompletableActorFuture<UnaryOperator<ClusterConfiguration>>();
-    final var groupBFuture = new CompletableActorFuture<UnaryOperator<ClusterConfiguration>>();
+    final var groupAFuture =
+        new CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>();
+    final var groupBFuture =
+        new CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>();
 
-    final ConfigurationChangeAppliers appliersA =
+    final PartitionGroupConfigurationChangeAppliers appliersA =
         op -> new CapturingApplier(localMemberId, opsStarted, groupAFuture);
-    final ConfigurationChangeAppliers appliersB =
+    final PartitionGroupConfigurationChangeAppliers appliersB =
         op -> new CapturingApplier(localMemberId, opsStarted, groupBFuture);
 
     final var manager = startManager();
 
     final var configA =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .startConfigurationChange(List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     final var configB =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .startConfigurationChange(List.of(new PartitionLeaveOperation(localMemberId, 2, 1)));
 
@@ -152,12 +155,12 @@ final class ClusterConfigurationManagerPartitionGroupTest {
   void shouldApplyNonDefaultGroupOpIndependentlyFromDefaultGroup() {
     // given — default group has no pending op; tenantA has one
     final var appliersApplied = new AtomicBoolean(false);
-    final ConfigurationChangeAppliers groupAppliers =
+    final PartitionGroupConfigurationChangeAppliers groupAppliers =
         op -> new TrackingLeaveApplier(localMemberId, appliersApplied);
 
     final var manager = startManager();
     final var groupConfig =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .startConfigurationChange(List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
 
@@ -178,7 +181,7 @@ final class ClusterConfigurationManagerPartitionGroupTest {
     // given
     final var manager = startManager();
     final var groupConfig =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .startConfigurationChange(List.of(new PartitionLeaveOperation(localMemberId, 1, 1)));
     manager.setPartitionGroupConfig("tenantA", groupConfig);
@@ -196,7 +199,7 @@ final class ClusterConfigurationManagerPartitionGroupTest {
     // given
     final var manager = startManager();
     final var initial =
-        ClusterConfiguration.init()
+        PartitionGroupConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
     manager.setPartitionGroupConfig("tenantA", initial);
 
@@ -243,32 +246,35 @@ final class ClusterConfigurationManagerPartitionGroupTest {
   }
 
   /** Completes the leave operation synchronously. */
-  private static final class LeaveApplier implements ConfigurationChangeAppliers {
+  private static final class LeaveApplier implements PartitionGroupConfigurationChangeAppliers {
     @Override
-    public MemberOperationApplier getApplier(final ClusterConfigurationChangeOperation operation) {
+    public PartitionGroupOperationApplier getApplier(
+        final ClusterConfigurationChangeOperation operation) {
       final MemberId memberId = operation.memberId();
-      return new MemberOperationApplier() {
+      return new PartitionGroupOperationApplier() {
         @Override
         public MemberId memberId() {
           return memberId;
         }
 
         @Override
-        public io.camunda.zeebe.util.Either<Exception, UnaryOperator<MemberState>> initMemberState(
-            final ClusterConfiguration config) {
-          return io.camunda.zeebe.util.Either.right(MemberState::toLeaving);
+        public io.camunda.zeebe.util.Either<Exception, UnaryOperator<PartitionGroupConfiguration>>
+            init(final PartitionGroupConfiguration config) {
+          return io.camunda.zeebe.util.Either.right(
+              c -> c.updateMember(memberId, MemberState::toLeaving));
         }
 
         @Override
-        public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
-          return CompletableActorFuture.completed(MemberState::toLeft);
+        public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
+          return CompletableActorFuture.completed(
+              c -> c.updateMember(memberId, MemberState::toLeft));
         }
       };
     }
   }
 
-  /** Tracks that the operation was applied. Implements MemberOperationApplier directly. */
-  private static final class TrackingLeaveApplier implements MemberOperationApplier {
+  /** Tracks that the operation was applied. Implements PartitionGroupOperationApplier directly. */
+  private static final class TrackingLeaveApplier implements PartitionGroupOperationApplier {
     private final MemberId memberId;
     private final AtomicBoolean applied;
 
@@ -283,15 +289,16 @@ final class ClusterConfigurationManagerPartitionGroupTest {
     }
 
     @Override
-    public io.camunda.zeebe.util.Either<Exception, UnaryOperator<MemberState>> initMemberState(
-        final ClusterConfiguration config) {
-      return io.camunda.zeebe.util.Either.right(MemberState::toLeaving);
+    public io.camunda.zeebe.util.Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+        final PartitionGroupConfiguration config) {
+      return io.camunda.zeebe.util.Either.right(
+          c -> c.updateMember(memberId, MemberState::toLeaving));
     }
 
     @Override
-    public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
+    public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
       applied.set(true);
-      return CompletableActorFuture.completed(MemberState::toLeft);
+      return CompletableActorFuture.completed(c -> c.updateMember(memberId, MemberState::toLeft));
     }
   }
 
@@ -300,30 +307,34 @@ final class ClusterConfigurationManagerPartitionGroupTest {
    * Used to verify that two groups start their operations before either completes (concurrency
    * check).
    */
-  private static final class CapturingApplier
-      implements ConfigurationChangeAppliers.ClusterOperationApplier {
+  private static final class CapturingApplier implements PartitionGroupOperationApplier {
     private final MemberId memberId;
     private final AtomicInteger started;
-    private final CompletableActorFuture<UnaryOperator<ClusterConfiguration>> resultFuture;
+    private final CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>> resultFuture;
 
     CapturingApplier(
         final MemberId memberId,
         final AtomicInteger started,
-        final CompletableActorFuture<UnaryOperator<ClusterConfiguration>> resultFuture) {
+        final CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>> resultFuture) {
       this.memberId = memberId;
       this.started = started;
       this.resultFuture = resultFuture;
     }
 
     @Override
-    public io.camunda.zeebe.util.Either<Exception, UnaryOperator<ClusterConfiguration>> init(
-        final ClusterConfiguration config) {
+    public MemberId memberId() {
+      return memberId;
+    }
+
+    @Override
+    public io.camunda.zeebe.util.Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+        final PartitionGroupConfiguration config) {
       return io.camunda.zeebe.util.Either.right(
           c -> c.updateMember(memberId, MemberState::toLeaving));
     }
 
     @Override
-    public ActorFuture<UnaryOperator<ClusterConfiguration>> apply() {
+    public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
       started.incrementAndGet();
       return resultFuture;
     }

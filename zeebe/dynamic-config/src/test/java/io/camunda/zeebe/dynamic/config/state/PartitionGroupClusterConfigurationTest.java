@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.ClusterMembershipPhase;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.ClusterMembershipPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,9 +26,9 @@ class PartitionGroupClusterConfigurationTest {
   private static final DynamicPartitionConfig EMPTY_PARTITION_CONFIG =
       DynamicPartitionConfig.init();
 
-  private static ClusterConfiguration clusterConfigWithMember(
+  private static PartitionGroupConfiguration groupConfigWithMember(
       final MemberId memberId, final MemberState memberState) {
-    return ClusterConfiguration.init().addMember(memberId, memberState);
+    return PartitionGroupConfiguration.init().addMember(memberId, memberState);
   }
 
   private static MemberState activeWithPartition(final int partitionId) {
@@ -37,11 +37,11 @@ class PartitionGroupClusterConfigurationTest {
   }
 
   private static PartitionGroupClusterConfiguration emptyTwoGroupConfig() {
-    final var membership = ClusterConfiguration.init().addMember(MEMBER_1, activeMember());
+    final var membership = ClusterMembership.init().addMember(MEMBER_1, activeMember());
     final var defaultGroup =
-        ClusterConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
+        PartitionGroupConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
     final var tenantAGroup =
-        ClusterConfiguration.init().addMember(MEMBER_1, activeWithPartition(2));
+        PartitionGroupConfiguration.init().addMember(MEMBER_1, activeWithPartition(2));
     return new PartitionGroupClusterConfiguration(
         membership, Map.of("default", defaultGroup, "tenantA", tenantAGroup), Optional.empty());
   }
@@ -55,8 +55,8 @@ class PartitionGroupClusterConfigurationTest {
     // given
     final var m1State = MemberState.initializeAsActive(Map.of());
     final var m2State = MemberState.initializeAsActive(Map.of());
-    final var membership1 = ClusterConfiguration.init().addMember(MEMBER_1, m1State);
-    final var membership2 = ClusterConfiguration.init().addMember(MEMBER_2, m2State);
+    final var membership1 = ClusterMembership.init().addMember(MEMBER_1, m1State);
+    final var membership2 = ClusterMembership.init().addMember(MEMBER_2, m2State);
     final var config1 =
         new PartitionGroupClusterConfiguration(membership1, Map.of(), Optional.empty());
     final var config2 =
@@ -73,76 +73,77 @@ class PartitionGroupClusterConfigurationTest {
   @Test
   void shouldAdoptGroupPresentOnlyInOther() {
     // given
-    final var groupConfig = ClusterConfiguration.init().addMember(MEMBER_1, activeMember());
+    final var groupConfig = PartitionGroupConfiguration.init().addMember(MEMBER_1, activeMember());
     final var config1 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of(), Optional.empty());
+            ClusterMembership.init(), Map.of(), Optional.empty());
     final var config2 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of("tenantB", groupConfig), Optional.empty());
+            ClusterMembership.init(), Map.of("tenantB", groupConfig), Optional.empty());
 
     // when
     final var merged = config1.merge(config2);
 
     // then
-    assertThat(merged.partitionGroupConfigs()).containsKey("tenantB");
+    assertThat(merged.partitionGroups()).containsKey("tenantB");
   }
 
   @Test
   void shouldAdoptGroupPresentOnlyInThis() {
     // given
-    final var groupConfig = ClusterConfiguration.init().addMember(MEMBER_1, activeMember());
+    final var groupConfig = PartitionGroupConfiguration.init().addMember(MEMBER_1, activeMember());
     final var config1 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of("myGroup", groupConfig), Optional.empty());
+            ClusterMembership.init(), Map.of("myGroup", groupConfig), Optional.empty());
     final var config2 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of(), Optional.empty());
+            ClusterMembership.init(), Map.of(), Optional.empty());
 
     // when
     final var merged = config1.merge(config2);
 
     // then
-    assertThat(merged.partitionGroupConfigs()).containsKey("myGroup");
+    assertThat(merged.partitionGroups()).containsKey("myGroup");
   }
 
   @Test
   void shouldMergeOverlappingGroups() {
     // given — same group "default", config2 has higher version because it has extra member
-    final var groupV1 = ClusterConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
-    // Simulate a higher-version config by doing a configuration change + advance
+    final var groupV1 =
+        PartitionGroupConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
     final var groupV2 =
-        ClusterConfiguration.builder()
-            .version(groupV1.version() + 1)
-            .members(Map.of(MEMBER_1, activeWithPartition(1), MEMBER_2, activeWithPartition(2)))
-            .build();
+        new PartitionGroupConfiguration(
+            groupV1.version() + 1,
+            Map.of(MEMBER_1, activeWithPartition(1), MEMBER_2, activeWithPartition(2)),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER);
     final var config1 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of("default", groupV1), Optional.empty());
+            ClusterMembership.init(), Map.of("default", groupV1), Optional.empty());
     final var config2 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of("default", groupV2), Optional.empty());
+            ClusterMembership.init(), Map.of("default", groupV2), Optional.empty());
 
     // when
     final var merged = config1.merge(config2);
 
     // then — higher version wins
-    assertThat(merged.partitionGroupConfigs().get("default").version())
-        .isEqualTo(groupV2.version());
-    assertThat(merged.partitionGroupConfigs().get("default").members()).containsKey(MEMBER_2);
+    assertThat(merged.partitionGroups().get("default").version()).isEqualTo(groupV2.version());
+    assertThat(merged.partitionGroups().get("default").members()).containsKey(MEMBER_2);
   }
 
   @Test
   void shouldAdoptPendingPlanFromOtherWhenAbsentLocally() {
     // given
-    final var plan =
-        PartitionGroupChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of())));
+    final var plan = PhasedChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of())));
     final var config1 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of(), Optional.empty());
+            ClusterMembership.init(), Map.of(), Optional.empty());
     final var config2 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of(), Optional.of(plan));
+            ClusterMembership.init(), Map.of(), Optional.of(plan));
 
     // when
     final var merged = config1.merge(config2);
@@ -156,18 +157,16 @@ class PartitionGroupClusterConfigurationTest {
   void shouldMergePendingPlansWhenBothPresent() {
     // given — plan with id=1 at phase 1 vs plan with id=1 at phase 0 → phase 1 wins
     final var phases =
-        List.<PartitionGroupChangePlan.Phase>of(
+        List.<PhasedChangePlan.Phase>of(
             new ClusterMembershipPhase(List.of()), new ClusterMembershipPhase(List.of()));
-    final var planAtPhase1 =
-        new PartitionGroupChangePlan(1L, java.time.Instant.now(), 1, phases, null);
-    final var planAtPhase0 =
-        new PartitionGroupChangePlan(1L, java.time.Instant.now(), 0, phases, null);
+    final var planAtPhase1 = new PhasedChangePlan(1L, java.time.Instant.now(), 1, phases, null);
+    final var planAtPhase0 = new PhasedChangePlan(1L, java.time.Instant.now(), 0, phases, null);
     final var config1 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of(), Optional.of(planAtPhase1));
+            ClusterMembership.init(), Map.of(), Optional.of(planAtPhase1));
     final var config2 =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of(), Optional.of(planAtPhase0));
+            ClusterMembership.init(), Map.of(), Optional.of(planAtPhase0));
 
     // when
     final var merged = config1.merge(config2);
@@ -179,12 +178,12 @@ class PartitionGroupClusterConfigurationTest {
   @Test
   void shouldActivateMembershipPhaseOnInitPlan() {
     // given
-    final var membership = ClusterConfiguration.init().addMember(MEMBER_1, activeMember());
+    final var membership = ClusterMembership.init().addMember(MEMBER_1, activeMember());
     final var config =
         new PartitionGroupClusterConfiguration(membership, Map.of(), Optional.empty());
     final var joinOp = new MemberJoinOperation(MEMBER_2);
     final var plan =
-        PartitionGroupChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of(joinOp))));
+        PhasedChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of(joinOp))));
 
     // when
     final var result = config.initPlan(plan);
@@ -197,15 +196,15 @@ class PartitionGroupClusterConfigurationTest {
   @Test
   void shouldActivatePartitionGroupParallelPhaseOnInitPlan() {
     // given
-    final var membership = ClusterConfiguration.init().addMember(MEMBER_1, activeMember());
+    final var membership = ClusterMembership.init().addMember(MEMBER_1, activeMember());
     final var defaultGroup =
-        ClusterConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
+        PartitionGroupConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
     final var config =
         new PartitionGroupClusterConfiguration(
             membership, Map.of("default", defaultGroup), Optional.empty());
     final var joinOp = new PartitionJoinOperation(MEMBER_1, 2, 1);
     final var plan =
-        PartitionGroupChangePlan.init(
+        PhasedChangePlan.init(
             1L, List.of(new PartitionGroupParallelPhase(Map.of("default", List.of(joinOp)))));
 
     // when
@@ -213,7 +212,7 @@ class PartitionGroupClusterConfigurationTest {
 
     // then
     assertThat(result.pendingPlan()).isPresent();
-    assertThat(result.partitionGroupConfigs().get("default").hasPendingChanges()).isTrue();
+    assertThat(result.partitionGroups().get("default").hasPendingChanges()).isTrue();
     // clusterMembership is not touched
     assertThat(result.clusterMembership().hasPendingChanges()).isFalse();
   }
@@ -221,16 +220,16 @@ class PartitionGroupClusterConfigurationTest {
   @Test
   void shouldAdvanceToNextPhase() {
     // given — two-phase plan: membership phase then partition group phase
-    final var membership = ClusterConfiguration.init().addMember(MEMBER_1, activeMember());
+    final var membership = ClusterMembership.init().addMember(MEMBER_1, activeMember());
     final var defaultGroup =
-        ClusterConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
+        PartitionGroupConfiguration.init().addMember(MEMBER_1, activeWithPartition(1));
     final var config =
         new PartitionGroupClusterConfiguration(
             membership, Map.of("default", defaultGroup), Optional.empty());
 
     final var phase0 = new ClusterMembershipPhase(List.of());
     final var phase1 = new PartitionGroupParallelPhase(Map.of());
-    final var plan = PartitionGroupChangePlan.init(1L, List.of(phase0, phase1));
+    final var plan = PhasedChangePlan.init(1L, List.of(phase0, phase1));
 
     // when
     final var afterPhase0 = config.initPlan(plan);
@@ -243,11 +242,10 @@ class PartitionGroupClusterConfigurationTest {
   @Test
   void shouldCompletePlan() {
     // given
-    final var plan =
-        PartitionGroupChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of())));
+    final var plan = PhasedChangePlan.init(1L, List.of(new ClusterMembershipPhase(List.of())));
     final var config =
         new PartitionGroupClusterConfiguration(
-            ClusterConfiguration.init(), Map.of(), Optional.of(plan));
+            ClusterMembership.init(), Map.of(), Optional.of(plan));
 
     // when
     final var completed = config.completePlan();
@@ -275,7 +273,7 @@ class PartitionGroupClusterConfigurationTest {
   void shouldNotAffectPartitionGroupsOnMembershipUpdate() {
     // given
     final var config = emptyTwoGroupConfig();
-    final var originalGroups = config.partitionGroupConfigs();
+    final var originalGroups = config.partitionGroups();
 
     // when
     final var updated =
@@ -283,6 +281,6 @@ class PartitionGroupClusterConfigurationTest {
             membership -> membership.addMember(MEMBER_2, activeMember()));
 
     // then
-    assertThat(updated.partitionGroupConfigs()).isEqualTo(originalGroups);
+    assertThat(updated.partitionGroups()).isEqualTo(originalGroups);
   }
 }

@@ -14,22 +14,30 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
- * Top-level configuration type for a cluster with multiple partition groups. Wraps:
+ * Top-level configuration type for a cluster with multiple partition groups.
+ *
+ * <p>Note: this type is named {@code PartitionGroupClusterConfiguration} in the POC. It will be
+ * renamed to {@code ClusterConfiguration} in a later implementation step, when the existing {@code
+ * ClusterConfiguration} usages have been fully migrated. The user-facing design uses {@code
+ * ClusterConfiguration} as the top-level name.
  *
  * <ul>
- *   <li>clusterMembership: all brokers with lifecycle state; MemberState.partitions always empty
- *   <li>partitionGroupConfigs: one ClusterConfiguration per partition group (keyed by group ID)
- *   <li>pendingPlan: the coordinator's phased execution plan (absent for single-group operations)
+ *   <li>{@code clusterMembership}: all brokers with lifecycle state; MemberState.partitions always
+ *       empty
+ *   <li>{@code partitionGroups}: one {@link PartitionGroupConfiguration} per partition group, keyed
+ *       by group ID
+ *   <li>{@code pendingPlan}: the coordinator's phased execution plan (absent for single-group
+ *       operations)
  * </ul>
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public record PartitionGroupClusterConfiguration(
-    ClusterConfiguration clusterMembership,
-    Map<String, ClusterConfiguration> partitionGroupConfigs,
-    Optional<PartitionGroupChangePlan> pendingPlan) {
+    ClusterMembership clusterMembership,
+    Map<String, PartitionGroupConfiguration> partitionGroups,
+    Optional<PhasedChangePlan> pendingPlan) {
 
   public PartitionGroupClusterConfiguration {
-    partitionGroupConfigs = ImmutableMap.copyOf(partitionGroupConfigs);
+    partitionGroups = ImmutableMap.copyOf(partitionGroups);
   }
 
   /**
@@ -39,16 +47,23 @@ public record PartitionGroupClusterConfiguration(
    */
   public static PartitionGroupClusterConfiguration ofDefault(
       final ClusterConfiguration defaultConfig) {
-    // Build clusterMembership: same members but with partitions cleared
-    var membership = ClusterConfiguration.init();
+    var membership = ClusterMembership.init();
     for (final var entry : defaultConfig.members().entrySet()) {
       final var m = entry.getValue();
       membership =
           membership.addMember(
               entry.getKey(), new MemberState(m.version(), m.lastUpdated(), m.state(), Map.of()));
     }
+    final var groupConfig =
+        new PartitionGroupConfiguration(
+            defaultConfig.version(),
+            defaultConfig.members(),
+            defaultConfig.lastChange(),
+            defaultConfig.pendingChanges(),
+            defaultConfig.routingState(),
+            defaultConfig.incarnationNumber());
     return new PartitionGroupClusterConfiguration(
-        membership, Map.of("default", defaultConfig), Optional.empty());
+        membership, Map.of("default", groupConfig), Optional.empty());
   }
 
   /**
@@ -58,12 +73,12 @@ public record PartitionGroupClusterConfiguration(
   public PartitionGroupClusterConfiguration merge(final PartitionGroupClusterConfiguration other) {
     final var mergedMembership = clusterMembership.merge(other.clusterMembership);
 
-    // Union: start with other's groups, then merge-insert from this
-    final var mergedGroups = new HashMap<>(other.partitionGroupConfigs);
-    partitionGroupConfigs.forEach(
-        (groupId, config) -> mergedGroups.merge(groupId, config, ClusterConfiguration::merge));
+    final var mergedGroups = new HashMap<>(other.partitionGroups);
+    partitionGroups.forEach(
+        (groupId, config) ->
+            mergedGroups.merge(groupId, config, PartitionGroupConfiguration::merge));
 
-    final Optional<PartitionGroupChangePlan> mergedPlan;
+    final Optional<PhasedChangePlan> mergedPlan;
     if (pendingPlan.isEmpty()) {
       mergedPlan = other.pendingPlan;
     } else if (other.pendingPlan.isEmpty()) {
@@ -79,7 +94,7 @@ public record PartitionGroupClusterConfiguration(
    * Initialises and activates the first phase of a new plan. The plan's currentPhaseIndex must be
    * 0. Copies Phase 0 operations into the appropriate sub-configs.
    */
-  public PartitionGroupClusterConfiguration initPlan(final PartitionGroupChangePlan plan) {
+  public PartitionGroupClusterConfiguration initPlan(final PhasedChangePlan plan) {
     if (plan.currentPhaseIndex() != 0) {
       throw new IllegalArgumentException(
           "Plan passed to initPlan must have currentPhaseIndex == 0");
@@ -105,40 +120,40 @@ public record PartitionGroupClusterConfiguration(
   /** Clears the pending plan (called when the last phase completes). */
   public PartitionGroupClusterConfiguration completePlan() {
     return new PartitionGroupClusterConfiguration(
-        clusterMembership, partitionGroupConfigs, Optional.empty());
+        clusterMembership, partitionGroups, Optional.empty());
   }
 
   /** Applies the updater to the named partition group config. */
   public PartitionGroupClusterConfiguration updatePartitionGroupConfig(
-      final String groupId, final UnaryOperator<ClusterConfiguration> updater) {
-    final var existing = partitionGroupConfigs.get(groupId);
+      final String groupId, final UnaryOperator<PartitionGroupConfiguration> updater) {
+    final var existing = partitionGroups.get(groupId);
     if (existing == null) {
       throw new IllegalArgumentException("Unknown partition group: " + groupId);
     }
-    final var updated = new HashMap<>(partitionGroupConfigs);
+    final var updated = new HashMap<>(partitionGroups);
     updated.put(groupId, updater.apply(existing));
     return new PartitionGroupClusterConfiguration(clusterMembership, updated, pendingPlan);
   }
 
   /** Applies the updater to clusterMembership only. */
   public PartitionGroupClusterConfiguration updateClusterMembership(
-      final UnaryOperator<ClusterConfiguration> updater) {
+      final UnaryOperator<ClusterMembership> updater) {
     return new PartitionGroupClusterConfiguration(
-        updater.apply(clusterMembership), partitionGroupConfigs, pendingPlan);
+        updater.apply(clusterMembership), partitionGroups, pendingPlan);
   }
 
-  private PartitionGroupClusterConfiguration applyPhase(final PartitionGroupChangePlan plan) {
+  private PartitionGroupClusterConfiguration applyPhase(final PhasedChangePlan plan) {
     return switch (plan.currentPhase()) {
-      case PartitionGroupChangePlan.ClusterMembershipPhase p -> {
+      case PhasedChangePlan.ClusterMembershipPhase p -> {
         final var updatedMembership =
             p.operations().isEmpty()
                 ? clusterMembership
                 : clusterMembership.startConfigurationChange(p.operations());
         yield new PartitionGroupClusterConfiguration(
-            updatedMembership, partitionGroupConfigs, Optional.of(plan));
+            updatedMembership, partitionGroups, Optional.of(plan));
       }
-      case PartitionGroupChangePlan.PartitionGroupParallelPhase p -> {
-        final var updatedGroups = new HashMap<>(partitionGroupConfigs);
+      case PhasedChangePlan.PartitionGroupParallelPhase p -> {
+        final var updatedGroups = new HashMap<>(partitionGroups);
         p.operationsPerGroup()
             .forEach(
                 (groupId, ops) -> {
