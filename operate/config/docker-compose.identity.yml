@@ -121,6 +121,7 @@ services:
       - 26500:26500
       - 9600:9600
       - 8080:8080
+    restart: always
     depends_on:
       - elasticsearch
       - identity

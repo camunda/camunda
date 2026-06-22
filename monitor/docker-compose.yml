@@ -39,7 +39,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
 
   camunda:
-    image: camunda/camunda:${ZEEBE_VERSION:-SNAPSHOT}
+    image: camunda/camunda:${CAMUNDA_VERSION:-SNAPSHOT}
     container_name: camunda
     environment:
       - SPRING_PROFILES_ACTIVE=broker

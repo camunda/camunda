@@ -80,7 +80,7 @@ services:
       timeout: 5s
       retries: 3
   camunda:
-    image: camunda/camunda:${ZEEBE_VERSION:-latest}
+    image: camunda/camunda:${CAMUNDA_VERSION:-latest}
     container_name: camunda
     environment:
       - SPRING_PROFILES_ACTIVE=broker
