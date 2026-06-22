@@ -186,7 +186,8 @@ interface PartitionGroupConfigurationChangeAppliers {
 
     interface PartitionGroupOperationApplier {
         MemberId memberId();
-        Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(PartitionGroupConfiguration config);
+        Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
+            PartitionGroupClusterConfiguration wrapper, String groupId);
         ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply();
     }
 }
@@ -526,10 +527,24 @@ for group keys.
 `ClusterMembership`; wraps each member as a `MemberPartitionState` (partition assignments
 extracted) for `PartitionGroupConfiguration`, placed in `partitionGroups["default"]`.
 - Add `updatePartitionGroupConfig(groupId, updater)` and `updateClusterMembership(updater)`.
+- Add `withDerivedMembership()`: rebuilds `clusterMembership` as a pure function of
+  `partitionGroups["default"]` (state + version extracted from each member entry; partitions
+  dropped). Returns a new `PartitionGroupClusterConfiguration` with the updated membership. Used
+  by the manager in the transitional period (Issues 10–11) before phased dispatch takes over.
+  Does nothing (returns `this`) if `partitionGroups` has no `"default"` entry yet.
+- `PartitionGroupConfiguration.advance()` removes members whose `partitions` map is **empty**
+  after plan completion (replaces the legacy `state() == State.LEFT` filter). Empty partitions
+  after `PartitionLeaveApplier` removes the last partition is the structural equivalent of LEFT
+  in the new model.
 
 **Acceptance criteria**
 - Unit tests: concurrent membership merge at same version; group-key union; overlapping group
 merge; plan merge delegation; `ofDefault()` correctness.
+- `withDerivedMembership()` test: after updating a member in the default group, calling
+  `withDerivedMembership()` produces a `clusterMembership` that matches the updated state;
+  version matches the default group's version.
+- `advance()` test: member with empty `partitions` is removed after advance; member with at
+  least one partition is kept.
 - `ClusterMembership` and `PartitionGroupConfiguration` have their own unit tests for `merge()`.
 - No existing class is modified.
 
@@ -690,10 +705,28 @@ Extend `applyConfigurationChangeOperation`: after the default group, iterate
 using per-group state maps. Default and non-default appliers must be **different instances**
 (each closes over a different update callback).
 
+**Applier `init()` signature:** `PartitionGroupOperationApplier.init()` receives
+`(PartitionGroupClusterConfiguration wrapper, String groupId)` — the full wrapper, not just the
+group's config. Appliers that guard on the broker being ACTIVE (e.g., `PartitionJoinApplier`,
+`PartitionBootstrapApplier`) look up the lifecycle state via
+`wrapper.clusterMembership().members().get(memberId)`. The return type
+(`UnaryOperator<PartitionGroupConfiguration>`) is unchanged. The dispatch site must pass the full
+wrapper to every `init()` call.
+
+**`PartitionGroupConfiguration.advance()` member cleanup:** After plan completion, `advance()`
+removes member entries whose `partitions` map is empty (contrast: the default-group path removes
+members with `state() == State.LEFT`). `PartitionLeaveApplier` removes partitions; once all
+partitions are gone the member entry is cleaned up on the next `advance()`. This is safe because
+`PartitionBootstrapApplier.init()` always writes at least one JOINING partition entry, so the
+partitions map is never empty between init and completion.
+
 **Acceptance criteria**
 - Tests: op applied for non-default group; no op without appliers; two groups' `apply()` futures
 pending simultaneously (concurrent dispatch); isolation between groups;
 `updatePartitionGroupConfig` triggers dispatch.
+- Test: `PartitionJoinApplier` (or equivalent) correctly rejects init when broker is not ACTIVE
+  in `clusterMembership` (non-default group path).
+- Test: member with no remaining partitions is removed after `advance()` in a non-default group.
 - All existing manager tests pass.
 
 **Depends on** — Issues 2, 3
@@ -723,6 +756,13 @@ applier constructors with `updatePartitionGroupConfig` as the update callback.
 - Call `registerPartitionGroupAppliers(partitionGroup, appliers)` instead of
 `registerTopologyChangeAppliers(appliers)`.
 3. On shutdown: call `removePartitionGroupAppliers(partitionGroup)` for non-default groups.
+
+The dispatch site in `applyGroupConfigurationChangeOperation()` must pass the full
+`PartitionGroupClusterConfiguration` wrapper and the `groupId` string to every
+`operationApplier.init()` call (per the updated interface; see §4 and Issue 6). The wrapper is
+available from the manager's internal state after Issue 10; in Issue 7 (pre-Issue 10), pass a
+synthesised wrapper containing at least the `clusterMembership` derived from the default group
+and the current group config.
 
 **Acceptance criteria**
 - Non-default `PartitionManagerImpl` registers appliers on startup and unregisters on shutdown.
@@ -820,8 +860,19 @@ Existing public APIs (`getClusterConfiguration()`, `updateClusterConfiguration()
 work for the default group via compat accessors — do not break the public API.
 
 For now, member ops (`MemberJoinOperation` etc.) still update the default group's config (not
-`clusterMembership` directly). Populate `clusterMembership` at write time as a copy of the
-default group's members with empty partitions.
+`clusterMembership` directly). `clusterMembership` is kept current by calling
+`withDerivedMembership()` (added in Issue 3) before every persist and gossip.
+
+**Transitional invariant (Issues 10–11):** `clusterMembership` is a pure, synchronous function of
+`partitionGroups["default"]`, recomputed at every `updateLocalConfiguration()` call. Specifically:
+`clusterMembership.members` = members from the default group with lifecycle state extracted;
+`clusterMembership.version` = the default group's version. This invariant is enforced by always
+calling `withDerivedMembership()` before writing; it is never computed at read time.
+
+**Cutover (Issue 12):** Once `PhasedChangePlan` dispatch is active, member ops are routed through
+`ClusterMembershipPhase` and write directly to `clusterMembership`. At that point `withDerivedMembership()`
+must NOT be called — `clusterMembership` is the source of truth. Add a `// TODO Issue 12: remove
+withDerivedMembership() once phased dispatch is live` comment at the call site.
 
 Add `ActorFuture<PartitionGroupClusterConfiguration> getMultiTenantConfiguration()` for the
 coordinator (used in Issues 12, 13).
@@ -838,7 +889,9 @@ coordinator (used in Issues 12, 13).
    - `updatePartitionGroupConfig(groupId, updater)` → `wrapper.updatePartitionGroupConfig(groupId, updater)` → persist.
    - `getClusterConfiguration()` → `wrapper.partitionGroups().get("default")`.
    - `updateClusterConfiguration(updater)` → extract default group, apply updater, put back, persist.
-3. At persist time, populate `clusterMembership` from default group's members with empty partitions.
+3. In `updateLocalConfiguration()`, call `wrapper.withDerivedMembership()` before every
+   `persist()` and `gossip()` call. This is the only call site; `clusterMembership` is never
+   derived at read time. Leave a TODO comment referencing Issue 12 (the cutover point).
 
 **Acceptance criteria**
 - Old-format persistence file migrates transparently on first boot.
@@ -846,6 +899,9 @@ coordinator (used in Issues 12, 13).
 - `nonDefaultGroupConfigs` field removed.
 - All existing `ClusterConfigurationManagerImpl` and `PersistedClusterConfiguration` tests pass.
 - `getMultiTenantConfiguration()` returns the full wrapper.
+- Transitional invariant test: after `updateClusterConfiguration()` changes a member's lifecycle
+  state (e.g., JOINING → ACTIVE), `getMultiTenantConfiguration().clusterMembership().members()`
+  reflects the updated state without an additional explicit write.
 
 **Depends on** — Issues 5, 6, 7, 8
 

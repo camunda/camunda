@@ -610,6 +610,15 @@ writes back header version 2. No separate migration step is required.
 - ~~`MemberState.state` semantic overloading~~ Resolved: `BrokerState` (for `ClusterMembership`)
   carries only the lifecycle `State`; `MemberPartitionState` (for `PartitionGroupConfiguration`)
   carries only partition assignments — no shared type with conflicting semantics.
+- ~~Partition appliers cannot check `memberState.state() == ACTIVE` on `MemberPartitionState`~~
+  Resolved: `PartitionGroupOperationApplier.init()` receives the full
+  `PartitionGroupClusterConfiguration` wrapper so appliers can look up broker lifecycle state from
+  `clusterMembership`. Member removal from a group uses empty-`partitions` semantics (presence in
+  map = hosting partitions) rather than a `State.LEFT` flag.
+- ~~`clusterMembership` transitional fragility~~ Resolved: during Issues 10–11, `clusterMembership`
+  is recomputed from `partitionGroups["default"]` at every `updateLocalConfiguration()` call via
+  `withDerivedMembership()`. Invariant: versions always match. Cutover to direct writes happens
+  at Issue 12 when phased dispatch goes live; a TODO comment marks the call site.
 - Phase advancement for cluster-spanning operations depends on coordinator availability at each
   phase boundary (see §4 for mitigation ideas).
 - Rolling restart requires new brokers to dual-write `GossipState` (field 1 for old brokers,
