@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Processes | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Processes | Camunda Platform"><meta data-rh="true" name="description" content="This page collects processes we follow in the camunda/camunda monorepo."><meta data-rh="true" property="og:description" content="This page collects processes we follow in the camunda/camunda monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-54928/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Processes","item":"https://camunda.github.io/camunda/pr-preview/pr-54928/processes"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-54928/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-54928/assets/js/runtime~main.80bc8fd3.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-54928/assets/js/main.8b7d7276.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54928/assets/js/runtime~main.59aa9cf3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54928/assets/js/main.f92df921.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -15,7 +15,7 @@
 <p>This page collects processes we follow in the <code>camunda/camunda</code> monorepo.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="green-checks-on-main-and-stable-branches">Green Checks on <code>main</code> and <code>stable/*</code> Branches<a href="#green-checks-on-main-and-stable-branches" class="hash-link" aria-label="Direct link to green-checks-on-main-and-stable-branches" title="Direct link to green-checks-on-main-and-stable-branches" translate="no">​</a></h2>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="purpose">Purpose<a href="#purpose" class="hash-link" aria-label="Direct link to Purpose" title="Direct link to Purpose" translate="no">​</a></h3>
-<p>This process ensures that <code>main</code> and <code>stable/*</code> base branches stay green continuously. Every build failure is unexpected and will be handled as an incident.</p>
+<p>This process ensures that <code>main</code> and <code>stable/*</code> base branches stay green continuously. Every build failure is unexpected and will be handled as a L1 incident.</p>
 <p>We use this process because:</p>
 <ul>
 <li class="">These branches are our release and integration baseline, so red checks indicate reduced stability and threaten release-readiness.</li>
@@ -29,7 +29,7 @@
 <li class="">Detect GHA job failures across <code>on: push</code> and <code>on: schedule</code> workflows <code>main</code> and <code>stable/*</code>.</li>
 <li class="">Alert immediately via Grafana on any unsuccessful job.</li>
 <li class="">Create and route incidents to the right owners/medics based on <code>.codeowners</code>.</li>
-<li class="">Drive mitigation and resolution via the established incident process.</li>
+<li class="">Drive mitigation (SLA: within 1 day) and resolution via the established incident process.</li>
 <li class="">Keep base branches green over time instead of reacting ad hoc.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="implementation">Implementation<a href="#implementation" class="hash-link" aria-label="Direct link to Implementation" title="Direct link to Implementation" translate="no">​</a></h3>
@@ -44,9 +44,11 @@
 </ol>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="operating-notes">Operating Notes<a href="#operating-notes" class="hash-link" aria-label="Direct link to Operating Notes" title="Direct link to Operating Notes" translate="no">​</a></h3>
 <ul>
-<li class="">This is complementary to Unified CI SLO/threshold monitoring; it is stricter for base branches by alerting on every failure.</li>
-<li class="">The process focuses on reliability of release-critical branches and includes both push and scheduled execution paths.</li>
-<li class="">If recurring test instability is found, evaluate quarantine or other mitigation mechanisms with clear ownership and follow-up.</li>
+<li class="">Complements Unified CI SLOs monitoring by being stricter for base branches: alerts on every failure.</li>
+<li class="">Focuses on reliability of release-critical (base) branches: covers push and scheduled triggers.</li>
+<li class="">Remind ICs to prioritize quick mitigation (<a href="#sla" class="">with 1 day SLA</a>) via incident.io nudges.</li>
+<li class="">Monitoring via daily Slack overview of open CI incidents with &quot;mitigation overdue&quot; warning.</li>
+<li class="">If recurring test instability found, evaluate quarantine or other mitigations with clear ownership and follow-up.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="renovate-pr-handling">Renovate PR Handling<a href="#renovate-pr-handling" class="hash-link" aria-label="Direct link to Renovate PR Handling" title="Direct link to Renovate PR Handling" translate="no">​</a></h2>
 <p>We use <a class="" href="/camunda/pr-preview/pr-54928/ci/#renovate">Renovate to automate dependency updates</a> in the <code>camunda/camunda</code> monorepo. However, not all updates can be automatically merged as-is due to breaking changes or adjustments needed to the code base.</p>
