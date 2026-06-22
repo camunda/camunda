@@ -14,6 +14,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName.Form;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
@@ -86,10 +88,14 @@ final class PhysicalTenantRequiredOverrideValidation {
       }
     }
 
+    final Binder binder = Binder.get(environment);
     final List<String> missing =
         declaredTenants.stream()
             .filter(id -> !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(id))
             .filter(id -> !tenantsWithInitialization.contains(id))
+            // an initialization block seeds authorizations; a tenant running with
+            // authorization disabled has no use for it, so it is not required.
+            .filter(id -> authorizationEnabledFor(binder, id))
             .toList();
     if (!missing.isEmpty()) {
       throw new UnifiedConfigurationException(
@@ -106,5 +112,23 @@ final class PhysicalTenantRequiredOverrideValidation {
   private static boolean declaresInitialization(final ConfigurationPropertyName relative) {
     return REQUIRED_INITIALIZATION.equals(relative)
         || REQUIRED_INITIALIZATION.isAncestorOf(relative);
+  }
+
+  /**
+   * Resolves the effective {@code authorization.enabled} for a tenant: the per-tenant override if
+   * declared, otherwise the root value, otherwise the default ({@code true}). This is the only
+   * value read by this validation; the rest is pure key inspection.
+   */
+  private static boolean authorizationEnabledFor(final Binder binder, final String tenantId) {
+    final var perTenant =
+        binder.bind(
+            Camunda.PREFIX + ".physical-tenants." + tenantId + ".security.authorization.enabled",
+            Bindable.of(Boolean.class));
+    if (perTenant.isBound()) {
+      return perTenant.get();
+    }
+    return binder
+        .bind(Camunda.PREFIX + ".security.authorization.enabled", Bindable.of(Boolean.class))
+        .orElse(true);
   }
 }
