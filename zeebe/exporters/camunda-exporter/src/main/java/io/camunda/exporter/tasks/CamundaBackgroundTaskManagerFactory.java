@@ -438,7 +438,6 @@ public final class CamundaBackgroundTaskManagerFactory {
     final var postExport = config.getPostExport();
     return new ReschedulingTask(
         new MigrationVariableBackfillTask(
-            metadata,
             migrationVariableBackfillRepository,
             postExport.getBatchSize(),
             config.getIndex().getVariableSizeThreshold(),

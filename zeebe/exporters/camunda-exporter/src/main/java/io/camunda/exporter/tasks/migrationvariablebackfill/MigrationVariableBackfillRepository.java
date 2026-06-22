@@ -23,14 +23,20 @@ public interface MigrationVariableBackfillRepository extends AutoCloseable {
    * Returns the next batch of process instance keys that need variable backfilling. Only entries
    * written by {@link
    * io.camunda.exporter.handlers.PostImporterQueueFromProcessInstanceMigrationHandler} (action type
-   * {@code PROCESS_INSTANCE_MIGRATION}) are returned, and only those with a position strictly
-   * greater than {@code fromPosition}.
+   * {@code PROCESS_INSTANCE_MIGRATION}) are returned.
    *
-   * @param fromPosition the exclusive lower bound on the position field
    * @param size the maximum number of entries to return
-   * @return a batch; {@link PendingBackfillBatch#isEmpty()} is true when there is no work to do
+   * @return a list of process instance keys; empty when there is no work to do
    */
-  CompletionStage<PendingBackfillBatch> getPendingBackfillBatch(long fromPosition, int size);
+  CompletionStage<List<Long>> getPendingBackfillBatch(int size);
+
+  /**
+   * Removes the processed backfill entries for the given process instance keys from the queue.
+   * Called after all variables have been successfully upserted.
+   *
+   * @param processInstanceKeys the process instance keys whose queue entries should be deleted
+   */
+  CompletionStage<Void> deletePendingBackfillEntries(List<Long> processInstanceKeys);
 
   /**
    * Fetches all variables for a process instance from the variable store.
@@ -49,21 +55,18 @@ public interface MigrationVariableBackfillRepository extends AutoCloseable {
    */
   CompletionStage<Void> bulkUpsertTaskVariables(List<TaskVariableEntity> variables);
 
-  /** A batch of pending migration variable backfill work. */
-  record PendingBackfillBatch(long highestPosition, List<Long> processInstanceKeys) {
-    public boolean isEmpty() {
-      return processInstanceKeys.isEmpty();
-    }
-  }
-
   /** No-op implementation for use in environments where the feature is disabled. */
   class Noop implements MigrationVariableBackfillRepository {
 
     @Override
-    public CompletionStage<PendingBackfillBatch> getPendingBackfillBatch(
-        final long fromPosition, final int size) {
-      return java.util.concurrent.CompletableFuture.completedFuture(
-          new PendingBackfillBatch(-1, List.of()));
+    public CompletionStage<List<Long>> getPendingBackfillBatch(final int size) {
+      return java.util.concurrent.CompletableFuture.completedFuture(List.of());
+    }
+
+    @Override
+    public CompletionStage<Void> deletePendingBackfillEntries(
+        final List<Long> processInstanceKeys) {
+      return java.util.concurrent.CompletableFuture.completedFuture(null);
     }
 
     @Override

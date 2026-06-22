@@ -9,7 +9,6 @@ package io.camunda.exporter.tasks.migrationvariablebackfill;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
-import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -58,30 +57,43 @@ public final class ElasticsearchMigrationVariableBackfillRepository extends Elas
   }
 
   @Override
-  public CompletionStage<MigrationVariableBackfillRepository.PendingBackfillBatch>
-      getPendingBackfillBatch(final long fromPosition, final int size) {
-    final var query = createPendingBackfillQuery(fromPosition);
+  public CompletionStage<List<Long>> getPendingBackfillBatch(final int size) {
     final var request =
         new SearchRequest.Builder()
             .index(postImporterQueueAlias)
-            .query(query)
+            .query(createPendingBackfillQuery())
             .ignoreUnavailable(true)
             .allowNoIndices(true)
-            .source(
-                s ->
-                    s.filter(
-                        f ->
-                            f.includes(
-                                PostImporterQueueTemplate.PROCESS_INSTANCE_KEY,
-                                PostImporterQueueTemplate.POSITION)))
-            .sort(
-                s -> s.field(f -> f.field(PostImporterQueueTemplate.POSITION).order(SortOrder.Asc)))
+            .source(s -> s.filter(f -> f.includes(PostImporterQueueTemplate.PROCESS_INSTANCE_KEY)))
             .size(size)
             .build();
 
     return client
         .search(request, PendingBackfillEntry.class)
-        .thenApplyAsync(this::toPendingBackfillBatch, executor);
+        .thenApplyAsync(
+            r ->
+                r.hits().hits().stream()
+                    .map(h -> h.source().processInstanceKey())
+                    .collect(Collectors.toList()),
+            executor);
+  }
+
+  @Override
+  public CompletionStage<Void> deletePendingBackfillEntries(final List<Long> processInstanceKeys) {
+    if (processInstanceKeys.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final var operations =
+        processInstanceKeys.stream()
+            .map(
+                key ->
+                    BulkOperation.of(
+                        o ->
+                            o.delete(d -> d.index(postImporterQueueAlias).id(String.valueOf(key)))))
+            .collect(Collectors.toList());
+    final var request =
+        new BulkRequest.Builder().operations(operations).refresh(Refresh.WaitFor).build();
+    return client.bulk(request).thenApplyAsync(r -> null, executor);
   }
 
   @Override
@@ -140,12 +152,7 @@ public final class ElasticsearchMigrationVariableBackfillRepository extends Elas
                         .action(a -> a.doc(updateFields).upsert(variable))));
   }
 
-  private Query createPendingBackfillQuery(final long fromPosition) {
-    final var positionQ =
-        QueryBuilders.range(
-            r ->
-                r.number(
-                    n -> n.field(PostImporterQueueTemplate.POSITION).gt((double) fromPosition)));
+  private Query createPendingBackfillQuery() {
     final var typeQ =
         QueryBuilders.term(
             t ->
@@ -153,21 +160,8 @@ public final class ElasticsearchMigrationVariableBackfillRepository extends Elas
                     .value(PostImporterActionType.PROCESS_INSTANCE_MIGRATION.name()));
     final var partitionQ =
         QueryBuilders.term(t -> t.field(PostImporterQueueTemplate.PARTITION_ID).value(partitionId));
-    return QueryBuilders.bool(b -> b.must(positionQ, typeQ, partitionQ));
+    return QueryBuilders.bool(b -> b.must(typeQ, partitionQ));
   }
 
-  private MigrationVariableBackfillRepository.PendingBackfillBatch toPendingBackfillBatch(
-      final co.elastic.clients.elasticsearch.core.SearchResponse<PendingBackfillEntry> response) {
-    final var hits = response.hits().hits();
-    if (hits.isEmpty()) {
-      return new MigrationVariableBackfillRepository.PendingBackfillBatch(-1L, List.of());
-    }
-    final var highestPosition = hits.getLast().source().position();
-    final var processInstanceKeys =
-        hits.stream().map(h -> h.source().processInstanceKey()).collect(Collectors.toList());
-    return new MigrationVariableBackfillRepository.PendingBackfillBatch(
-        highestPosition, processInstanceKeys);
-  }
-
-  private record PendingBackfillEntry(long processInstanceKey, long position) {}
+  private record PendingBackfillEntry(long processInstanceKey) {}
 }

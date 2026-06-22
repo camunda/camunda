@@ -23,11 +23,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
-import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
-import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -61,31 +59,48 @@ public final class OpenSearchMigrationVariableBackfillRepository extends Opensea
   }
 
   @Override
-  public CompletionStage<MigrationVariableBackfillRepository.PendingBackfillBatch>
-      getPendingBackfillBatch(final long fromPosition, final int size) {
-    final var query = createPendingBackfillQuery(fromPosition);
+  public CompletionStage<List<Long>> getPendingBackfillBatch(final int size) {
     final var request =
         new SearchRequest.Builder()
             .index(postImporterQueueAlias)
-            .query(query)
+            .query(createPendingBackfillQuery())
             .ignoreUnavailable(true)
             .allowNoIndices(true)
-            .source(
-                s ->
-                    s.filter(
-                        f ->
-                            f.includes(
-                                PostImporterQueueTemplate.PROCESS_INSTANCE_KEY,
-                                PostImporterQueueTemplate.POSITION)))
-            .sort(
-                s -> s.field(f -> f.field(PostImporterQueueTemplate.POSITION).order(SortOrder.Asc)))
+            .source(s -> s.filter(f -> f.includes(PostImporterQueueTemplate.PROCESS_INSTANCE_KEY)))
             .size(size)
             .build();
 
     try {
       return client
           .search(request, PendingBackfillEntry.class)
-          .thenApplyAsync(this::toPendingBackfillBatch, executor);
+          .thenApplyAsync(
+              r ->
+                  r.hits().hits().stream()
+                      .map(h -> h.source().processInstanceKey())
+                      .collect(Collectors.toList()),
+              executor);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  @Override
+  public CompletionStage<Void> deletePendingBackfillEntries(final List<Long> processInstanceKeys) {
+    if (processInstanceKeys.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final var operations =
+        processInstanceKeys.stream()
+            .map(
+                key ->
+                    BulkOperation.of(
+                        o ->
+                            o.delete(d -> d.index(postImporterQueueAlias).id(String.valueOf(key)))))
+            .collect(Collectors.toList());
+    final var request =
+        new BulkRequest.Builder().operations(operations).refresh(Refresh.WaitFor).build();
+    try {
+      return client.bulk(request).thenApplyAsync(r -> null, executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }
@@ -155,13 +170,7 @@ public final class OpenSearchMigrationVariableBackfillRepository extends Opensea
                         .upsert(variable)));
   }
 
-  private Query createPendingBackfillQuery(final long fromPosition) {
-    final var positionQ =
-        QueryBuilders.range()
-            .field(PostImporterQueueTemplate.POSITION)
-            .gt(JsonData.of(fromPosition))
-            .build()
-            .toQuery();
+  private Query createPendingBackfillQuery() {
     final var typeQ =
         QueryBuilders.term()
             .field(PostImporterQueueTemplate.ACTION_TYPE)
@@ -174,21 +183,8 @@ public final class OpenSearchMigrationVariableBackfillRepository extends Opensea
             .value(v -> v.longValue(partitionId))
             .build()
             .toQuery();
-    return QueryBuilders.bool().must(positionQ, typeQ, partitionQ).build().toQuery();
+    return QueryBuilders.bool().must(typeQ, partitionQ).build().toQuery();
   }
 
-  private MigrationVariableBackfillRepository.PendingBackfillBatch toPendingBackfillBatch(
-      final org.opensearch.client.opensearch.core.SearchResponse<PendingBackfillEntry> response) {
-    final var hits = response.hits().hits();
-    if (hits.isEmpty()) {
-      return new MigrationVariableBackfillRepository.PendingBackfillBatch(-1L, List.of());
-    }
-    final var highestPosition = hits.getLast().source().position();
-    final var processInstanceKeys =
-        hits.stream().map(h -> h.source().processInstanceKey()).collect(Collectors.toList());
-    return new MigrationVariableBackfillRepository.PendingBackfillBatch(
-        highestPosition, processInstanceKeys);
-  }
-
-  private record PendingBackfillEntry(long processInstanceKey, long position) {}
+  private record PendingBackfillEntry(long processInstanceKey) {}
 }

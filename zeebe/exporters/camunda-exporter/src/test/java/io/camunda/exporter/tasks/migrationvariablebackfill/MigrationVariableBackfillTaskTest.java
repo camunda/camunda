@@ -9,16 +9,11 @@ package io.camunda.exporter.tasks.migrationvariablebackfill;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.exporter.ExporterMetadata;
-import io.camunda.exporter.tasks.migrationvariablebackfill.MigrationVariableBackfillRepository.PendingBackfillBatch;
-import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskVariableEntity;
@@ -38,13 +33,11 @@ final class MigrationVariableBackfillTaskTest {
   private static final int BATCH_SIZE = 10;
   private static final int VARIABLE_SIZE_THRESHOLD = 8191;
 
-  private final ExporterMetadata metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
   private final MigrationVariableBackfillRepository repository =
       Mockito.mock(MigrationVariableBackfillRepository.class);
 
   private final MigrationVariableBackfillTask underTest =
       new MigrationVariableBackfillTask(
-          metadata,
           repository,
           BATCH_SIZE,
           VARIABLE_SIZE_THRESHOLD,
@@ -52,9 +45,11 @@ final class MigrationVariableBackfillTaskTest {
 
   @BeforeEach
   void setUp() {
-    when(repository.getPendingBackfillBatch(anyLong(), anyInt()))
-        .thenReturn(CompletableFuture.completedFuture(new PendingBackfillBatch(-1L, List.of())));
+    when(repository.getPendingBackfillBatch(anyInt()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
     when(repository.bulkUpsertTaskVariables(Mockito.anyList()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(repository.deletePendingBackfillEntries(Mockito.anyList()))
         .thenReturn(CompletableFuture.completedFuture(null));
   }
 
@@ -68,24 +63,12 @@ final class MigrationVariableBackfillTaskTest {
   }
 
   @Test
-  void shouldQueryUsingMetadataPosition() {
-    // given
-    metadata.setLastMigrationVariableBackfillPosition(42L);
-
-    // when
-    underTest.execute().toCompletableFuture().join();
-
-    // then
-    verify(repository).getPendingBackfillBatch(eq(42L), anyInt());
-  }
-
-  @Test
   void shouldQueryUsingConfiguredBatchSize() {
     // when
     underTest.execute().toCompletableFuture().join();
 
     // then
-    verify(repository).getPendingBackfillBatch(anyLong(), eq(BATCH_SIZE));
+    verify(repository).getPendingBackfillBatch(BATCH_SIZE);
   }
 
   @Test
@@ -94,7 +77,7 @@ final class MigrationVariableBackfillTaskTest {
     underTest.execute().toCompletableFuture().join();
 
     // then
-    verify(repository, never()).getVariablesByProcessInstanceKey(anyLong());
+    verify(repository, never()).getVariablesByProcessInstanceKey(Mockito.anyLong());
   }
 
   @Test
@@ -106,18 +89,26 @@ final class MigrationVariableBackfillTaskTest {
     verify(repository, never()).bulkUpsertTaskVariables(Mockito.anyList());
   }
 
+  @Test
+  void shouldNotDeleteWhenBatchIsEmpty() {
+    // when
+    underTest.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository, never()).deletePendingBackfillEntries(Mockito.anyList());
+  }
+
   @Nested
   final class WithPendingBatch {
 
     private final long processInstanceKey = 100L;
-    private final long highestPosition = 50L;
 
     @BeforeEach
     void setUp() {
-      when(repository.getPendingBackfillBatch(anyLong(), anyInt()))
-          .thenReturn(
-              CompletableFuture.completedFuture(
-                  new PendingBackfillBatch(highestPosition, List.of(processInstanceKey))));
+      when(repository.getPendingBackfillBatch(anyInt()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(processInstanceKey)));
+      when(repository.deletePendingBackfillEntries(Mockito.anyList()))
+          .thenReturn(CompletableFuture.completedFuture(null));
     }
 
     @Test
@@ -148,7 +139,22 @@ final class MigrationVariableBackfillTaskTest {
     }
 
     @Test
-    void shouldUpdateMetadataPositionAfterBatch() {
+    void shouldDeleteProcessedEntriesAfterBackfill() {
+      // given
+      when(repository.getVariablesByProcessInstanceKey(processInstanceKey))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(buildVariable(processInstanceKey, 1L, "x", "1"))));
+
+      // when
+      underTest.execute().toCompletableFuture().join();
+
+      // then
+      verify(repository, times(1)).deletePendingBackfillEntries(List.of(processInstanceKey));
+    }
+
+    @Test
+    void shouldDeleteEvenWhenInstanceHasNoVariables() {
       // given
       when(repository.getVariablesByProcessInstanceKey(processInstanceKey))
           .thenReturn(CompletableFuture.completedFuture(List.of()));
@@ -157,21 +163,7 @@ final class MigrationVariableBackfillTaskTest {
       underTest.execute().toCompletableFuture().join();
 
       // then
-      assertThat(metadata.getLastMigrationVariableBackfillPosition()).isEqualTo(highestPosition);
-    }
-
-    @Test
-    void shouldNotUpdateMetadataPositionWhenBatchIsEmpty() {
-      // given
-      metadata.setLastMigrationVariableBackfillPosition(7L);
-      when(repository.getPendingBackfillBatch(anyLong(), anyInt()))
-          .thenReturn(CompletableFuture.completedFuture(new PendingBackfillBatch(-1L, List.of())));
-
-      // when
-      underTest.execute().toCompletableFuture().join();
-
-      // then
-      assertThat(metadata.getLastMigrationVariableBackfillPosition()).isEqualTo(7L);
+      verify(repository, times(1)).deletePendingBackfillEntries(List.of(processInstanceKey));
     }
 
     @Test
@@ -238,11 +230,9 @@ final class MigrationVariableBackfillTaskTest {
     void shouldUpsertVariablesForEachProcessInstanceInBatch() {
       // given
       final long secondInstanceKey = 200L;
-      when(repository.getPendingBackfillBatch(anyLong(), anyInt()))
+      when(repository.getPendingBackfillBatch(anyInt()))
           .thenReturn(
-              CompletableFuture.completedFuture(
-                  new PendingBackfillBatch(
-                      highestPosition, List.of(processInstanceKey, secondInstanceKey))));
+              CompletableFuture.completedFuture(List.of(processInstanceKey, secondInstanceKey)));
 
       when(repository.getVariablesByProcessInstanceKey(processInstanceKey))
           .thenReturn(
