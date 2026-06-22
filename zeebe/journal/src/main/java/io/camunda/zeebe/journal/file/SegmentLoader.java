@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import org.agrona.IoUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +39,13 @@ final class SegmentLoader {
   private final SegmentAllocator allocator;
   private final long minFreeDiskSpace;
   private final JournalMetrics metrics;
-  private final JournalIndexCursor journalIndexCursor;
+  private final @Nullable JournalIndexCursor journalIndexCursor;
 
   SegmentLoader(
       final long minFreeDiskSpace,
       final JournalMetrics metrics,
       final SegmentAllocator allocator,
-      final JournalIndexCursor journalIndexCursor) {
+      final @Nullable JournalIndexCursor journalIndexCursor) {
     this.minFreeDiskSpace = minFreeDiskSpace;
     this.metrics = metrics;
     this.allocator = allocator;
@@ -235,12 +236,33 @@ final class SegmentLoader {
         if (asqn != SegmentedJournal.ASQN_IGNORE) {
           lastValidLogAsqn = asqn;
 
-          // TODO: use the cursor to create the missing asqn index entries
-          // If the log has data that the index missed (lazy flush power loss),
-          // append it back to the index now!
+          // If the log has data that the index missed (lazy flush power loss), append it back to
+          // the index now.
           if (asqn > index.getLastIndexedAsqn()) {
             final int dataOffset = reader.buffer().position() - record.data().capacity();
-            index.appendEntry(asqn, asqn, record.index(), dataOffset, record.data().capacity());
+            if (journalIndexCursor != null) {
+              // Rebuild the per-batch index entries with their true lowest/highest ASQN range and
+              // per-batch offset/length, exactly as the live append path
+              // (SegmentWriter#tryUpdateIndex) does. A single record can span an ASQN *range* (a
+              // batch of events) and may even contain several batches; indexing it as one
+              // (asqn, asqn) entry collapses the range to the record's lowest ASQN, which makes
+              // fetches that start mid-range be skipped by SegmentIndex#scanEntries after a
+              // restart.
+              journalIndexCursor.wrap(record.data(), dataOffset);
+              while (journalIndexCursor.hasNext()) {
+                journalIndexCursor.next();
+                index.appendEntry(
+                    journalIndexCursor.currentLowestAsqn(),
+                    journalIndexCursor.currentHighestAsqn(),
+                    record.index(),
+                    journalIndexCursor.currentOffset(),
+                    journalIndexCursor.currentLength());
+                lastValidLogAsqn =
+                    Math.max(lastValidLogAsqn, journalIndexCursor.currentHighestAsqn());
+              }
+            } else {
+              index.appendEntry(asqn, asqn, record.index(), dataOffset, record.data().capacity());
+            }
           }
         }
       }

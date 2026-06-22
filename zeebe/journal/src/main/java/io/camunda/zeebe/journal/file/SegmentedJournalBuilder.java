@@ -177,7 +177,9 @@ public class SegmentedJournalBuilder {
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
-    requireNonNull(indexSupplier, "must specify a journal meta store");
+    // The index cursor is optional: it is only used to populate the out-of-band ASQN index for
+    // zero-copy fetch (event bridge). Journals without it (e.g. regular Zeebe partitions) simply
+    // do not maintain that index; the append and recovery paths null-guard the cursor.
     final var segmentLoader =
         new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator, indexSupplier);
     final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");
@@ -193,6 +195,6 @@ public class SegmentedJournalBuilder {
             indexSupplier);
 
     return new SegmentedJournal(
-        journalIndex, segmentsManager, journalMetrics, journalMetaStore, indexSupplier);
+        journalIndex, segmentsManager, journalMetrics, metaStore, indexSupplier);
   }
 }

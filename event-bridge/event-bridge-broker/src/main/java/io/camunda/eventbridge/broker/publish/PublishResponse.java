@@ -11,6 +11,7 @@ import io.camunda.eventbridge.protocol.ExecutePublishResponseEncoder;
 import io.camunda.eventbridge.protocol.MessageHeaderEncoder;
 import io.camunda.eventbridge.protocol.PublishResponseStatus;
 import io.camunda.eventbridge.protocol.RejectionReason;
+import java.nio.charset.StandardCharsets;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Serializes and deserializes publish responses using SBE-generated codecs. */
@@ -46,7 +47,8 @@ public final class PublishResponse {
   }
 
   public static byte[] error(final RejectionReason reason, final String message) {
-    final var messageBytes = message != null ? message.getBytes() : new byte[0];
+    final var messageBytes =
+        message != null ? message.getBytes(StandardCharsets.UTF_8) : new byte[0];
 
     final int totalLength =
         MessageHeaderEncoder.ENCODED_LENGTH

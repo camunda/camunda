@@ -12,6 +12,7 @@ import io.camunda.zeebe.util.JournalIndexCursor;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Holds a normal segment file that hasn't been written to and that has no {@link
@@ -24,7 +25,7 @@ record UninitializedSegment(
     MappedByteBuffer buffer,
     FileChannel channel,
     JournalIndex journalIndex,
-    JournalIndexCursor journalIndexCursor) {
+    @Nullable JournalIndexCursor journalIndexCursor) {
 
   /**
    * Creates a proper, initialized segment by writing a {@link SegmentDescriptor } with the given

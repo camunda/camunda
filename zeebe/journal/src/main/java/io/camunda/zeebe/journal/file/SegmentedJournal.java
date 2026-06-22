@@ -52,14 +52,14 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
   private final JournalMetaStore metaStore;
-  private final JournalIndexCursor journalIndexCursor;
+  private final @Nullable JournalIndexCursor journalIndexCursor;
 
   SegmentedJournal(
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final JournalIndexCursor journalIndexCursor) {
+      final @Nullable JournalIndexCursor journalIndexCursor) {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");

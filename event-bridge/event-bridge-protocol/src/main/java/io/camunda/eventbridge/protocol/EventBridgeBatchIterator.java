@@ -190,7 +190,10 @@ public final class EventBridgeBatchIterator {
       }
       final int entryLength = buffer.getInt(pos);
       pos += Integer.BYTES;
-      if (entryLength <= 0 || pos + entryLength > end) {
+      // An entry must be at least MIN_ENTRY_LENGTH (the keyLength field) — matching what
+      // EventBridgeEntry.wrap accepts. A 1..3-byte entryLength would pass a `<= 0` check here but
+      // then throw in wrap, so the two validators must agree.
+      if (entryLength < EventBridgeEntry.MIN_ENTRY_LENGTH || pos + entryLength > end) {
         return -1;
       }
       pos += entryLength;

@@ -58,6 +58,12 @@ public class FetchResponse implements BufferReader {
     highWatermark = bodyDecoder.highWatermark();
 
     final int dataLength = bodyDecoder.dataLength();
+    // Guard against a corrupt/forged var-data length before allocating: it cannot exceed the
+    // bytes actually available in this message.
+    if (dataLength < 0 || dataLength > length) {
+      throw new IllegalArgumentException(
+          "FetchResponse dataLength " + dataLength + " out of bounds for message length " + length);
+    }
     data = new byte[dataLength];
     if (dataLength > 0) {
       bodyDecoder.getData(data, 0, dataLength);

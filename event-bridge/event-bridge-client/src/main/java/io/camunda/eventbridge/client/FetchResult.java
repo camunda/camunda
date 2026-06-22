@@ -71,6 +71,13 @@ public final class FetchResult {
     if (dataLength == 0) {
       return empty(highWatermark);
     }
+    // Don't trust the wire length: a negative or overrunning dataLength would blow up the
+    // arraycopy below. Treat it as a malformed response rather than crashing the caller.
+    if (dataLength < 0 || body.length < HEADER_SIZE + dataLength) {
+      return error(
+          statusCode,
+          "Malformed fetch response: dataLength " + dataLength + " for body " + body.length);
+    }
 
     final var batchData = new byte[dataLength];
     System.arraycopy(body, HEADER_SIZE, batchData, 0, dataLength);
@@ -225,7 +232,7 @@ public final class FetchResult {
         final int batchLength = EventBridgeBatch.getBatchLength(buffer, batchCursor);
         final int totalSize = EventBridgeBatch.totalSize(batchLength);
 
-        if (batchLength <= 0 || batchCursor + totalSize > dataLength) {
+        if (batchLength <= 0 || totalSize <= 0 || batchCursor + totalSize > dataLength) {
           return false;
         }
 

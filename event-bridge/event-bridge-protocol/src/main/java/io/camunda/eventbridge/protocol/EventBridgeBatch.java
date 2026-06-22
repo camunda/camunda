@@ -99,8 +99,12 @@ public final class EventBridgeBatch {
   /** Header size in bytes. Records start immediately after. */
   public static final int HEADER_LENGTH = 40;
 
+  // -- Attribute bit masks: compression codec in bits 0-2 --
   public static final int COMPRESSION_MASK = 0x07; // bits 0-2
   public static final int COMPRESSION_NONE = 0;
+  public static final int COMPRESSION_LZ4 = 1;
+  public static final int COMPRESSION_ZSTD = 2;
+  public static final int COMPRESSION_SNAPPY = 3;
 
   // -- CRC range: from ATTRIBUTES_OFFSET to end of batch --
   //
@@ -110,11 +114,6 @@ public final class EventBridgeBatch {
   // Position and timestamp are excluded because the broker patches them
   // after the producer computes the CRC. This avoids CRC recomputation
   // on the broker's hot path.
-  public static final int COMPRESSION_LZ4 = 1;
-
-  // -- Attribute bit masks --
-  public static final int COMPRESSION_ZSTD = 2;
-  public static final int COMPRESSION_SNAPPY = 3;
 
   /** Number of bytes before the batchLength field (position + batchLength field itself). */
   private static final int BYTES_BEFORE_BATCH_LENGTH_PAYLOAD = BATCH_LENGTH_OFFSET + Integer.BYTES;

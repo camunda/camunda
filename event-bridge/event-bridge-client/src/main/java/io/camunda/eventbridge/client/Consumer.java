@@ -47,8 +47,10 @@ public final class Consumer {
   private final ScheduledExecutorService executor;
   private final String groupId;
   private final String instanceId;
-  private String memberId;
-  private long memberEpoch = 0;
+  // Written from executor threads (join/heartbeat/leave), read from caller threads (poll, commit) —
+  // must be volatile for visibility, since this class is documented as thread-safe.
+  private volatile String memberId;
+  private volatile long memberEpoch = 0;
   private final EventBridgeClient client;
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -64,7 +66,7 @@ public final class Consumer {
    */
   private final ConcurrentHashMap<Integer, Long> nextPositions = new ConcurrentHashMap<>();
 
-  private ScheduledFuture scheduledHeartbeat;
+  private volatile ScheduledFuture<?> scheduledHeartbeat;
 
   /** Primary constructor. Consumer starts with no owned partitions and {@code currentEpoch = 0}. */
   Consumer(final String groupId, final String instanceId, final EventBridgeClient client) {
@@ -121,19 +123,27 @@ public final class Consumer {
         .sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
         .handleAsync(
             (response, error) -> {
+              if (error != null || response == null) {
+                return future.completeExceptionally(
+                    new CoordinatorUnavailableException(
+                        "Join group request failed: "
+                            + (error != null ? error.getMessage() : "no response")));
+              }
+
               Map<String, Object> body;
               try {
                 //noinspection unchecked
                 body = client.getObjectMapper().readValue(response.body(), Map.class);
               } catch (final IOException e) {
-                LOG.warn("Failed to parse heartbeat response body; skipping state update", e);
+                LOG.warn("Failed to parse join response body; skipping state update", e);
                 body = Map.of();
               }
 
               if (response.statusCode() == 200) {
                 final var errorCode = (String) body.get("errorCode");
                 memberId = (String) body.get("memberId");
-                memberEpoch = ((Number) body.get("memberEpoch")).longValue();
+                final var epochVal = body.get("memberEpoch");
+                memberEpoch = epochVal instanceof final Number n ? n.longValue() : 0L;
 
                 LOG.info(
                     "[JoinGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d; start send heartbeat"
@@ -181,12 +191,19 @@ public final class Consumer {
         .sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
         .handleAsync(
             (response, error) -> {
+              if (error != null || response == null) {
+                return future.completeExceptionally(
+                    new CoordinatorUnavailableException(
+                        "Leave group request failed: "
+                            + (error != null ? error.getMessage() : "no response")));
+              }
+
               Map<String, Object> body;
               try {
                 //noinspection unchecked
                 body = client.getObjectMapper().readValue(response.body(), Map.class);
               } catch (final IOException e) {
-                LOG.warn("Failed to parse heartbeat response body; skipping state update", e);
+                LOG.warn("Failed to parse leave response body; skipping state update", e);
                 body = Map.of();
               }
 
@@ -201,12 +218,15 @@ public final class Consumer {
                 memberEpoch = -1;
                 ownedPartitions = Collections.emptyList();
 
-                scheduledHeartbeat.cancel(false);
+                final var hb = scheduledHeartbeat;
+                if (hb != null) {
+                  hb.cancel(false);
+                }
 
                 return future.complete(null);
               }
 
-              return future.completeExceptionally(new RuntimeException("Failed to Join Group"));
+              return future.completeExceptionally(new RuntimeException("Failed to Leave Group"));
             },
             executor);
 
@@ -339,15 +359,15 @@ public final class Consumer {
             return;
           }
 
+          // Note: no explicit ACK is sent for either path. The coordinator confirms a revocation
+          // from the ownedPartitions this consumer reports in its next heartbeat (see
+          // ConsumerGroup.reconcileAssignment); applying the change here and reporting it next beat
+          // is the acknowledgement.
           if (serverEpoch > snapshotEpoch) {
             // Full reconciliation: replace owned partitions wholesale from fullAssignment.
             final List<Integer> fullAssignment = extractList(body, "assignment");
             applyOwnedPartitions(fullAssignment);
             memberEpoch = serverEpoch;
-
-            final List<Integer> revoked =
-                snapshotOwned.stream().filter(p -> !fullAssignment.contains(p)).toList();
-            //            sendAckQuietly(serverEpoch, revoked, fullAssignment);
           } else {
             // Delta path (serverEpoch == snapshotEpoch).
             final List<Integer> revoke = extractList(body, "revoke");
@@ -358,7 +378,6 @@ public final class Consumer {
               newOwned.removeAll(revoke);
               newOwned.addAll(assign);
               applyOwnedPartitions(newOwned);
-              //              sendAckQuietly(serverEpoch, revoke, assign);
             }
           }
 

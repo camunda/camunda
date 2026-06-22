@@ -54,7 +54,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * var events = consumer.poll(100, Duration.ofMillis(1000));
  * }</pre>
  */
-public final class EventBridgeClient {
+public final class EventBridgeClient implements AutoCloseable {
 
   private final ScheduledExecutorService executor;
   private final String gatewayUrl;
@@ -176,6 +176,16 @@ public final class EventBridgeClient {
   public CompletableFuture<Consumer> subscribe(final String groupId, final String consumerId) {
     final var consumer = new Consumer(groupId, consumerId, this);
     return consumer.joinGroup().handle((ignore, error) -> consumer);
+  }
+
+  /**
+   * Shuts down the client's scheduler and HTTP client. After close, scheduled consumer heartbeats
+   * stop and in-flight requests are abandoned. Idempotent.
+   */
+  @Override
+  public void close() {
+    executor.shutdownNow();
+    httpClient.close();
   }
 
   String getGatewayUrl() {

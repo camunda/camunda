@@ -67,33 +67,6 @@ public final class EventBridgeDtos {
   public record CommitResponse(String errorCode, long committedPosition) {}
 
   // -------------------------------------------------------------------------
-  // Subscribe
-
-  /**
-   * @deprecated Subscribe is superseded by heartbeat auto-registration. This DTO is retained for
-   *     backward compatibility with the SBE codec and will be removed once the SBE schema drops the
-   *     SubscribeResponse message type.
-   */
-  @Deprecated
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record SubscribeResponse(
-      String status,
-      List<Integer> assignedPartitions,
-      Long generation,
-      String error,
-      String message) {
-
-    public static SubscribeResponse ok(
-        final List<Integer> assignedPartitions, final long generation) {
-      return new SubscribeResponse("OK", assignedPartitions, generation, null, null);
-    }
-
-    public static SubscribeResponse error(final String errorCode, final String message) {
-      return new SubscribeResponse("ERROR", null, null, errorCode, message);
-    }
-  }
-
-  // -------------------------------------------------------------------------
   // Heartbeat
 
   public record JoinGroupRequest(String instanceId) {}
@@ -133,56 +106,10 @@ public final class EventBridgeDtos {
       List<Integer> fullAssignment,
       java.util.Map<Integer, Long> committedOffsets) {}
 
-  // -------------------------------------------------------------------------
-  // Ack
-
-  /**
-   * Request body for {@code POST /v1/consumers/{groupId}/{consumerId}/ack}.
-   *
-   * @param epoch the coordinator epoch from the heartbeat response that triggered this ACK
-   * @param revoked partition IDs the consumer has stopped processing
-   * @param assigned partition IDs the consumer has started processing
-   */
-  public record AckRequest(long epoch, List<Integer> revoked, List<Integer> assigned) {}
-
-  /**
-   * Response body for {@code POST /v1/consumers/{groupId}/{consumerId}/ack}.
-   *
-   * @param status result of the ACK; see {@link AckStatus}
-   */
-  public record AckResponse(AckStatus status) {
-
-    public static AckResponse ok() {
-      return new AckResponse(AckStatus.OK);
-    }
-  }
-
   public record LatestPositionResponse(long position) {}
 
   // -------------------------------------------------------------------------
   // Latest position
 
   public record ErrorResponse(String error, String message) {}
-
-  // -------------------------------------------------------------------------
-  // Error (publish/routing errors)
-
-  /** Status values returned in an {@link AckResponse}. */
-  public enum AckStatus {
-    /**
-     * ACK accepted; partition state advanced and consumer ownership recorded. Also returned for
-     * stale-epoch ACKs, which are silently discarded without state mutation.
-     */
-    OK,
-    /**
-     * The supplied epoch does not match the coordinator's current epoch. The consumer should
-     * re-synchronise by sending a heartbeat.
-     */
-    EPOCH_MISMATCH,
-    /**
-     * The {@code consumerId} is not registered in the specified group. The consumer should
-     * re-register via a heartbeat before retrying.
-     */
-    CONSUMER_NOT_FOUND
-  }
 }

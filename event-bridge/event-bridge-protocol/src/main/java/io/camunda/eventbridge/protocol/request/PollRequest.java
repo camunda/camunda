@@ -120,7 +120,7 @@ public class PollRequest implements BufferReader, BufferWriter {
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
-        .wrapAndApplyHeader(buffer, 0, headerEncoder)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .groupId(groupId)
         .consumerId(consumerId)
         .partitionId(partitionId)

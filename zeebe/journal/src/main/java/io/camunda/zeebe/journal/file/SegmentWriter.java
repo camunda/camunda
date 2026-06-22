@@ -61,7 +61,7 @@ final class SegmentWriter {
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
   private final JournalMetrics metrics;
-  private final JournalIndexCursor journalIndexCursor;
+  private final @Nullable JournalIndexCursor journalIndexCursor;
 
   SegmentWriter(
       final MappedByteBuffer buffer,
@@ -69,7 +69,7 @@ final class SegmentWriter {
       final JournalIndex index,
       final long lastWrittenAsqn,
       final JournalMetrics metrics,
-      final JournalIndexCursor journalIndexCursor) {
+      final @Nullable JournalIndexCursor journalIndexCursor) {
     this.segment = segment;
     descriptorLength = segment.descriptor().encodingLength();
     recordUtil = new JournalRecordReaderUtil(serializer);

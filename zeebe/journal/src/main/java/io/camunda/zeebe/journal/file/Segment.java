@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.IoUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
   private final AtomicBoolean deleted = new AtomicBoolean(false);
-  private final JournalIndexCursor journalIndexCursor;
+  private final @Nullable JournalIndexCursor journalIndexCursor;
 
   Segment(
       final SegmentFile file,
@@ -78,7 +79,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
       final JournalIndex index,
       final SegmentIndex segmentIndex,
       final JournalMetrics metrics,
-      final JournalIndexCursor journalIndexCursor) {
+      final @Nullable JournalIndexCursor journalIndexCursor) {
     this.file = file;
     this.descriptor = descriptor;
     this.descriptorSerializer = descriptorSerializer;

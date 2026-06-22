@@ -58,7 +58,7 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
-  private final JournalIndexCursor journalIndexCursor;
+  private final @Nullable JournalIndexCursor journalIndexCursor;
 
   private volatile @Nullable Segment currentSegment;
 
@@ -70,7 +70,7 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final JournalIndexCursor journalIndexCursor) {
+      final @Nullable JournalIndexCursor journalIndexCursor) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;

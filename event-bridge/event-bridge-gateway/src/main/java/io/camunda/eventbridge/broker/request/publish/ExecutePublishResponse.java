@@ -15,6 +15,7 @@ import io.camunda.eventbridge.protocol.PublishResponseStatus;
 import io.camunda.eventbridge.protocol.request.PublishBatchResponse;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -64,7 +65,7 @@ public class ExecutePublishResponse implements BufferReader, BufferWriter {
   public int getLength() {
     final var rejectionMessageBytes =
         response.getRejectionMessage() != null
-            ? response.getRejectionMessage().getBytes()
+            ? response.getRejectionMessage().getBytes(StandardCharsets.UTF_8)
             : new byte[0];
     return MessageHeaderEncoder.ENCODED_LENGTH
         + ExecutePublishResponseEncoder.BLOCK_LENGTH
@@ -76,11 +77,11 @@ public class ExecutePublishResponse implements BufferReader, BufferWriter {
   public int write(final MutableDirectBuffer buffer, final int offset) {
     final var rejectionMessageBytes =
         response.getRejectionMessage() != null
-            ? response.getRejectionMessage().getBytes()
+            ? response.getRejectionMessage().getBytes(StandardCharsets.UTF_8)
             : new byte[0];
 
     bodyEncoder
-        .wrapAndApplyHeader(buffer, 0, headerEncoder)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .status(response.getStatus())
         .rejectionReason(response.getRejectionReason())
         .firstPosition(response.getFirstPosition())
