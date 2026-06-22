@@ -107,7 +107,12 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
     <AgentAccordionContainer>
       <Accordion align="start">
         <StatusAccordion agentData={agentData} />
-        <AccordionItem title={accordionTitle(MeterAlt, 'Usage')} open>
+        <AccordionItem
+          title={accordionTitle(
+            MeterAlt,
+            `Usage · ${agentData.usage.modelCalls.current} / ${agentData.usage.modelCalls.limit} model calls`,
+          )}
+        >
           <div
             style={{
               display: 'flex',
