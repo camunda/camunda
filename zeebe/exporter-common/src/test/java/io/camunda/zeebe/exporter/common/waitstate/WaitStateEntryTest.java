@@ -117,12 +117,13 @@ class WaitStateEntryTest {
     // when / then
     assertThat(WaitStateType.values())
         .containsExactlyInAnyOrder(
+            WaitStateType.CALL_ACTIVITY,
+            WaitStateType.CONDITION,
+            WaitStateType.INCIDENT,
             WaitStateType.JOB,
             WaitStateType.MESSAGE,
-            WaitStateType.USER_TASK,
-            WaitStateType.TIMER,
             WaitStateType.SIGNAL,
-            WaitStateType.INCIDENT,
-            WaitStateType.CALL_ACTIVITY);
+            WaitStateType.TIMER,
+            WaitStateType.USER_TASK);
   }
 }

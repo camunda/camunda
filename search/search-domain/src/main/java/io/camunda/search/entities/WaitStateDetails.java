@@ -12,7 +12,8 @@ public sealed interface WaitStateDetails
         WaitStateMessageDetails,
         WaitStateUserTaskDetails,
         WaitStateTimerDetails,
-        WaitStateSignalDetails {
+        WaitStateSignalDetails,
+        WaitStateConditionDetails {
 
   WaitStateType waitStateType();
 
@@ -21,6 +22,7 @@ public sealed interface WaitStateDetails
     MESSAGE,
     USER_TASK,
     TIMER,
-    SIGNAL
+    SIGNAL,
+    CONDITION
   }
 }

@@ -45,7 +45,27 @@ public interface ConditionalSubscriptionRecordValue
   /**
    * @return the key of the related element instance.
    */
+  @Override
   long getElementInstanceKey();
+
+  /**
+   * Bridges {@link WaitStateRelated#getElementId()} to {@link #getCatchEventId()}.
+   *
+   * <p>Implementations should annotate this override with {@code @JsonIgnore} to avoid duplicating
+   * {@code catchEventId} in serialised output.
+   *
+   * @since 8.10
+   */
+  @Override
+  default String getElementId() {
+    return getCatchEventId();
+  }
+
+  /**
+   * @return the bpmn process id of the corresponding process definition
+   */
+  @Override
+  String getBpmnProcessId();
 
   /**
    * @return the key of the related process instance
@@ -56,12 +76,8 @@ public interface ConditionalSubscriptionRecordValue
   /**
    * @return the process definition key
    */
+  @Override
   long getProcessDefinitionKey();
-
-  /**
-   * @return the bpmn process id of the corresponding process definition
-   */
-  String getBpmnProcessId();
 
   /**
    * @return the id of the catch event tied to the subscription

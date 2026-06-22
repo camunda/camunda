@@ -4348,8 +4348,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId":"process-1",
                   "processDefinitionKey":456,
                   "rootProcessInstanceKey":999,
-                  "elementType":"INTERMEDIATE_CATCH_EVENT",
-                  "elementId":"catchEvent"
+                  "elementType":"INTERMEDIATE_CATCH_EVENT"
                 }
                 """
       },
@@ -4376,8 +4375,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId":"",
                   "processDefinitionKey":-1,
                   "rootProcessInstanceKey":-1,
-                  "elementType":"UNSPECIFIED",
-                  "elementId":""
+                  "elementType":"UNSPECIFIED"
                 }
                 """
       },

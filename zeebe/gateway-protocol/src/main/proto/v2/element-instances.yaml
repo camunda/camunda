@@ -849,12 +849,14 @@ components:
           USER_TASK: '#/components/schemas/UserTaskWaitStateDetails'
           TIMER: '#/components/schemas/TimerWaitStateDetails'
           SIGNAL: '#/components/schemas/SignalWaitStateDetails'
+          CONDITION: '#/components/schemas/ConditionWaitStateDetails'
       oneOf:
         - $ref: '#/components/schemas/JobWaitStateDetails'
         - $ref: '#/components/schemas/MessageWaitStateDetails'
         - $ref: '#/components/schemas/UserTaskWaitStateDetails'
         - $ref: '#/components/schemas/TimerWaitStateDetails'
         - $ref: '#/components/schemas/SignalWaitStateDetails'
+        - $ref: '#/components/schemas/ConditionWaitStateDetails'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -865,6 +867,7 @@ components:
         - USER_TASK
         - TIMER
         - SIGNAL
+        - CONDITION
 
     BaseWaitStateDetails:
       description: Common fields shared by all wait-state details variants.
@@ -978,6 +981,27 @@ components:
           description: The name of the signal being awaited.
           type: string
       x-added-in-version: "8.10"
+
+    ConditionWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - expression
+        - events
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        expression:
+          description: The condition expression that must evaluate to true to proceed.
+          type: string
+        events:
+          description: The variable events that trigger condition re-evaluation. Empty means all events.
+          type: array
+          items:
+            type: string
+            enum:
+              - create
+              - update
 
     AdHocSubProcessActivateActivityReference:
       type: object

@@ -135,6 +135,17 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
+  @Override
+  public String getElementId() {
+    return getCatchEventId();
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
   @Override
   public long getProcessInstanceKey() {
     return processInstanceKeyProp.getValue();
@@ -213,13 +224,19 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public ConditionalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
-    catchEventIdProp.setValue(catchEventId);
+  @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  public ConditionalSubscriptionRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
     return this;
   }
 
-  public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+  public ConditionalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
+    catchEventIdProp.setValue(catchEventId);
+    return this;
   }
 
   public ConditionalSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
@@ -249,21 +266,6 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
 
   public ConditionalSubscriptionRecord setRootProcessInstanceKey(final long key) {
     rootProcessInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  @Override
-  public String getElementId() {
-    return getCatchEventId();
-  }
-
-  @Override
-  public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
-  }
-
-  public ConditionalSubscriptionRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
     return this;
   }
 }
