@@ -369,7 +369,13 @@ export const tagStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-export function StatusAccordion({agentData}: {agentData: AgentElementData}) {
+export function StatusAccordion({
+  agentData,
+  showIterationLabel = true,
+}: {
+  agentData: AgentElementData;
+  showIterationLabel?: boolean;
+}) {
   const {selectElement} = useProcessInstanceElementSelection();
 
   const statusLabels: Record<string, string> = {
@@ -453,7 +459,11 @@ export function StatusAccordion({agentData}: {agentData: AgentElementData}) {
             role="Assistant"
             borderColor="#8a3ffc"
             contents={currentMessage ? [currentMessage] : []}
-            iterationNumber={iterationCount > 0 ? iterationCount : undefined}
+            iterationNumber={
+              showIterationLabel && iterationCount > 0
+                ? iterationCount
+                : undefined
+            }
           >
             {agentData.status !== 'COMPLETED' && activeTools.length > 0 && (
               <div

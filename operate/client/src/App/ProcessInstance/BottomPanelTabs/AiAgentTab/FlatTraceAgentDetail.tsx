@@ -109,7 +109,7 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
   return (
     <AgentAccordionContainer>
       <Accordion align="start">
-        <StatusAccordion agentData={agentData} />
+        <StatusAccordion agentData={agentData} showIterationLabel={false} />
         <AccordionItem
           title={accordionTitle(
             MeterAlt,
