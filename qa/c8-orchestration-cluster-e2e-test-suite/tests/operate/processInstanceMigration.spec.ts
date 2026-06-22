@@ -601,9 +601,21 @@ test.describe.serial('Process Instance Migration', () => {
 
       await validateURL(page, /operationId=/);
 
-      await expect(
-        operateProcessesPage.getVersionCells(targetVersion),
-      ).toHaveCount(3, {timeout: 60000});
+      // The migrate operation reports success once Zeebe applies it, but the
+      // operationId-filtered list does not refetch on its own, so it can stay
+      // stale showing only the instances re-indexed so far. Reload between
+      // attempts to force a fresh fetch until all 3 reflect the target version.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.getVersionCells(targetVersion),
+          ).toHaveCount(3, {timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
+      });
 
       await expect(
         operateProcessesPage.getVersionCells(sourceVersion),

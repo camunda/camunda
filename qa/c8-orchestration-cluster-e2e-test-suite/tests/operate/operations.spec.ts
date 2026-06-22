@@ -148,6 +148,9 @@ test.describe('Operations', () => {
       const operationEntry =
         operateOperationPanelPage.getCancelOperationEntry(1);
 
+      // The cancel operation's success count is only rendered once Operate's
+      // importer marks the cancellation complete, which can lag under load.
+      // Reload and retry generously so this importer delay does not flake.
       await waitForAssertion({
         assertion: async () => {
           await expect(operationEntry).toBeVisible();
@@ -156,7 +159,7 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 10,
+        maxRetries: 15,
       });
 
       const operationId = await operationEntry.getByRole('link').innerText();
@@ -187,7 +190,7 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 3,
+        maxRetries: 8,
       });
 
       await operateOperationPanelPage.collapseOperationIdField();
