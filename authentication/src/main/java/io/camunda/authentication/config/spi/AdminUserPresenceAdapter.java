@@ -12,7 +12,8 @@ import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
-import io.camunda.service.RoleServices;
+import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -34,13 +35,13 @@ public class AdminUserPresenceAdapter implements AdminUserPresencePort {
   private static final String ADMIN_ROLE_ID = DefaultRole.ADMIN.getId();
   private static final String USER_MEMBERS = "users";
 
-  private final RoleServices roleServices;
+  private final ServiceRegistry serviceRegistry;
   private final InitializationConfiguration initializationConfiguration;
 
   public AdminUserPresenceAdapter(
-      final RoleServices roleServices,
+      final ServiceRegistry serviceRegistry,
       final InitializationConfiguration initializationConfiguration) {
-    this.roleServices = roleServices;
+    this.serviceRegistry = serviceRegistry;
     this.initializationConfiguration = initializationConfiguration;
   }
 
@@ -57,8 +58,9 @@ public class AdminUserPresenceAdapter implements AdminUserPresencePort {
     }
 
     try {
-      return roleServices.hasMembersOfType(
-          ADMIN_ROLE_ID, EntityType.USER, CamundaAuthentication.anonymous());
+      return serviceRegistry
+          .roleServices(PhysicalTenantContext.current())
+          .hasMembersOfType(ADMIN_ROLE_ID, EntityType.USER, CamundaAuthentication.anonymous());
     } catch (final RuntimeException ex) {
       LOG.error(
           "Error while searching for admin role members. This might indicate that secondary storage is down.",
