@@ -115,10 +115,15 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
           title={accordionTitle(
             MeterAlt,
             'Usage',
-            <span style={tagStyle}>
-              {agentData.usage.modelCalls.current} /{' '}
-              {agentData.usage.modelCalls.limit}
-            </span>,
+            <>
+              <span style={tagStyle}>
+                {agentData.usage.modelCalls.current} /{' '}
+                {agentData.usage.modelCalls.limit} model calls
+              </span>
+              <span style={tagStyle}>
+                {agentData.usage.tokensUsed.totalTokens.toLocaleString()} tokens
+              </span>
+            </>,
           )}
         >
           <div

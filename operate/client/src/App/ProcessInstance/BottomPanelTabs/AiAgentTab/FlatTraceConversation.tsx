@@ -97,21 +97,40 @@ function StepTags({
   const tooltipLabel = hasBreakdown
     ? `Input: ${tokensInput.toLocaleString()} · Output: ${tokensOutput.toLocaleString()}`
     : undefined;
+  const metricStyle: React.CSSProperties = {
+    color: 'var(--cds-text-secondary)',
+    fontSize: 'var(--cds-label-01-font-size, 0.75rem)',
+    fontVariantNumeric: 'tabular-nums',
+    lineHeight: 'var(--cds-label-01-line-height, 1.33333)',
+  };
+
+  const parts: React.ReactNode[] = [];
+  if (tokens !== undefined) {
+    parts.push(
+      <span key="tokens" style={metricStyle} title={tooltipLabel}>
+        {tokens.toLocaleString()} tokens
+      </span>,
+    );
+  }
+  if (duration !== null) {
+    if (parts.length > 0) {
+      parts.push(
+        <span key="sep" style={metricStyle} aria-hidden>
+          {' · '}
+        </span>,
+      );
+    }
+    parts.push(
+      <span key="duration" style={metricStyle}>
+        {duration}
+      </span>,
+    );
+  }
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 'var(--cds-spacing-02)',
-        flexWrap: 'wrap',
-      }}
-    >
-      {tokens !== undefined && (
-        <span style={tagStyle} title={tooltipLabel}>
-          {tokens.toLocaleString()} tokens
-        </span>
-      )}
-      {duration !== null && <span style={tagStyle}>{duration}</span>}
-    </div>
+    <span style={{display: 'inline-flex', alignItems: 'baseline'}}>
+      {parts}
+    </span>
   );
 }
 
@@ -201,6 +220,7 @@ function ToolBlock({
             renderIcon={Maximize}
             iconDescription="Expand"
             tooltipPosition="bottom"
+            tooltipAlignment="end"
             aria-label="Expand"
             data-testid="expand-tool-detail"
             onClick={() => setIsModalOpen(true)}
@@ -214,6 +234,7 @@ function ToolBlock({
               renderIcon={ArrowUpRight}
               iconDescription="Execution details"
               tooltipPosition="bottom"
+              tooltipAlignment="end"
               aria-label="Execution details"
               data-testid="open-tool-execution-details"
               onClick={() =>
