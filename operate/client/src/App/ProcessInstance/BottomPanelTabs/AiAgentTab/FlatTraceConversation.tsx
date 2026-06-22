@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {lazy, Suspense, useState} from 'react';
+import {lazy, Suspense, useState} from 'react';
 import {Button, Modal, Tag} from '@carbon/react';
 import {
   ArrowUpRight,
@@ -97,33 +97,76 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
       <div
         data-testid="tool-detail-block"
         style={{
+          padding: 'var(--cds-spacing-04)',
+          background: 'var(--cds-layer-02)',
+          borderRadius: '4px',
+          borderLeft: '3px solid var(--cds-border-subtle-01)',
           display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--cds-spacing-03)',
-          padding: 'var(--cds-spacing-02) 0',
+          flexDirection: 'column',
+          gap: 'var(--cds-spacing-02)',
           minWidth: 0,
         }}
       >
-        {/* Tool name */}
-        <span
+        {/* Header row: tool name + time tag + action buttons */}
+        <div
           style={{
-            fontWeight: 400,
-            fontSize: 'var(--cds-body-compact-01-font-size)',
-            color: 'var(--cds-text-secondary)',
-            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--cds-spacing-03)',
+            minWidth: 0,
           }}
         >
-          {step.name}
-        </span>
+          {/* Tool name */}
+          <span
+            style={{
+              fontWeight: 400,
+              fontSize: 'var(--cds-body-compact-01-font-size)',
+              color: 'var(--cds-text-secondary)',
+              flexShrink: 0,
+            }}
+          >
+            {step.name}
+          </span>
 
-        {/* Execution time tag */}
-        {duration !== null && (
-          <Tag type="gray" size="sm">
-            {duration}
-          </Tag>
-        )}
+          {/* Execution time tag */}
+          {duration !== null && (
+            <Tag type="gray" size="sm">
+              {duration}
+            </Tag>
+          )}
 
-        {/* Monospace input preview */}
+          {/* Right-aligned action buttons */}
+          <div style={{display: 'flex', flexShrink: 0, marginLeft: 'auto'}}>
+            <Button
+              kind="ghost"
+              size="sm"
+              hasIconOnly
+              renderIcon={Maximize}
+              iconDescription="Expand"
+              tooltipPosition="left"
+              aria-label="Expand"
+              data-testid="expand-tool-detail"
+              onClick={() => setIsModalOpen(true)}
+              style={{color: 'var(--cds-icon-secondary)'}}
+            />
+            {step.hasInstance && (
+              <Button
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={ArrowUpRight}
+                iconDescription="Execution details"
+                tooltipPosition="left"
+                aria-label="Execution details"
+                data-testid="open-tool-execution-details"
+                onClick={() => selectElement({elementId: step.name})}
+                style={{color: 'var(--cds-icon-secondary)'}}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Body row: monospace input preview */}
         <span
           style={{
             fontFamily: 'var(--cds-code-01-font-family)',
@@ -132,42 +175,11 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            flex: 1,
             minWidth: 0,
           }}
         >
           {inputPreview}
         </span>
-
-        {/* Right-aligned action buttons */}
-        <div style={{display: 'flex', flexShrink: 0, marginLeft: 'auto'}}>
-          <Button
-            kind="ghost"
-            size="sm"
-            hasIconOnly
-            renderIcon={Maximize}
-            iconDescription="Expand"
-            tooltipPosition="left"
-            aria-label="Expand"
-            data-testid="expand-tool-detail"
-            onClick={() => setIsModalOpen(true)}
-            style={{color: 'var(--cds-icon-secondary)'}}
-          />
-          {step.hasInstance && (
-            <Button
-              kind="ghost"
-              size="sm"
-              hasIconOnly
-              renderIcon={ArrowUpRight}
-              iconDescription="Execution details"
-              tooltipPosition="left"
-              aria-label="Execution details"
-              data-testid="open-tool-execution-details"
-              onClick={() => selectElement({elementId: step.name})}
-              style={{color: 'var(--cds-icon-secondary)'}}
-            />
-          )}
-        </div>
       </div>
 
       <Modal
@@ -368,65 +380,37 @@ function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
         {isNewestFirst ? 'Most recent first' : 'Oldest first'}
         <SortIcon size={12} />
       </button>
-      {(() => {
-        const rendered: React.ReactNode[] = [];
-        let i = 0;
-        while (i < steps.length) {
-          const step = steps[i]!;
-          if (step.kind === 'user') {
-            rendered.push(
-              <ExpandableMessageBlock
-                key={step.key}
-                role="User"
-                borderColor="var(--cds-interactive)"
-                contents={step.content}
-              />,
-            );
-            i++;
-          } else if (step.kind === 'assistant') {
-            rendered.push(
-              <ExpandableMessageBlock
-                key={step.key}
-                role="Assistant"
-                borderColor="#8a3ffc"
-                contents={step.content}
-                headerMeta={
-                  <StepTags tokens={step.tokens} durationMs={step.durationMs} />
-                }
-              />,
-            );
-            i++;
-          } else {
-            // Collect all consecutive tool steps
-            const toolGroup: Extract<FlatTraceStep, {kind: 'tool'}>[] = [];
-            while (i < steps.length && steps[i]!.kind === 'tool') {
-              toolGroup.push(
-                steps[i] as Extract<FlatTraceStep, {kind: 'tool'}>,
-              );
-              i++;
-            }
-            rendered.push(
-              <div
-                key={toolGroup[0]!.key}
-                style={{
-                  background: 'var(--cds-layer-01)',
-                  border: '1px solid var(--cds-border-subtle-01)',
-                  borderRadius: '4px',
-                  padding: 'var(--cds-spacing-02) var(--cds-spacing-03)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--cds-spacing-02)',
-                }}
-              >
-                {toolGroup.map((toolStep) => (
-                  <ToolBlock key={toolStep.key} step={toolStep} />
-                ))}
-              </div>,
-            );
-          }
+      {steps.map((step) => {
+        if (step.kind === 'user') {
+          return (
+            <ExpandableMessageBlock
+              key={step.key}
+              role="User"
+              borderColor="var(--cds-interactive)"
+              contents={step.content}
+            />
+          );
         }
-        return rendered;
-      })()}
+        if (step.kind === 'assistant') {
+          return (
+            <ExpandableMessageBlock
+              key={step.key}
+              role="Assistant"
+              borderColor="#8a3ffc"
+              contents={step.content}
+              headerMeta={
+                <StepTags tokens={step.tokens} durationMs={step.durationMs} />
+              }
+            />
+          );
+        }
+        return (
+          <ToolBlock
+            key={step.key}
+            step={step as Extract<FlatTraceStep, {kind: 'tool'}>}
+          />
+        );
+      })}
     </div>
   );
 }
