@@ -41,13 +41,11 @@ public class OidcAuthOverRestStartupIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-          // OIDC client config goes through withProperty so CSL's CamundaSecurityLibraryProperties
-          // — bound from Spring's property sources — sees the values. See OidcAuthOverRestIT.
-          .withProperty("camunda.security.authentication.oidc.issuer-uri", UNREACHABLE_ISSUER_URI)
-          .withProperty("camunda.security.authentication.oidc.client-id", "example")
-          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
+                c.getAuthentication().getOidc().setIssuerUri(UNREACHABLE_ISSUER_URI);
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("example.com");
                 c.getAuthorizations().setEnabled(true);
                 final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
                 defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER_ID)));

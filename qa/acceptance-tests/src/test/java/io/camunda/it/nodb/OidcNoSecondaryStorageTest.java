@@ -67,17 +67,13 @@ public class OidcNoSecondaryStorageTest {
       new TestStandaloneBroker()
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
-          .withProperty("camunda.security.authentication.method", "oidc")
-          // OIDC client config goes through withProperty so CSL's CamundaSecurityLibraryProperties
-          // — bound from Spring's property sources — sees the values. See OidcAuthOverRestIT.
-          .withProperty(
-              "camunda.security.authentication.oidc.issuer-uri",
-              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
-          // Required for OIDC configuration even if not used in this test
-          .withProperty("camunda.security.authentication.oidc.client-id", "example")
-          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
+                c.getAuthentication()
+                    .getOidc()
+                    .setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("example.com");
                 c.getAuthorizations().setEnabled(true);
                 c.getInitialization()
                     .setMappingRules(

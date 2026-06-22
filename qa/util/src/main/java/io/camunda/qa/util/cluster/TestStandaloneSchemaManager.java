@@ -10,25 +10,18 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneSchemaManager;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
-import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
-import java.util.function.Consumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 public class TestStandaloneSchemaManager
     extends TestSpringApplication<TestStandaloneSchemaManager> {
 
-  private final Camunda unifiedConfig;
-
   public TestStandaloneSchemaManager() {
     super(UnifiedConfigurationModule.class, StandaloneSchemaManager.class);
-
-    unifiedConfig = new Camunda();
   }
 
   @Override
@@ -52,18 +45,6 @@ public class TestStandaloneSchemaManager
   }
 
   /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneSchemaManager withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
-  /**
    * Convenience method for setting the secondary storage type in the unified configuration.
    *
    * @param type the secondary storage type
@@ -76,9 +57,6 @@ public class TestStandaloneSchemaManager
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    // Flatten the in-memory unified config into camunda.* properties at the latest possible point.
-    // Refreshable so that fields cleared between stop/start don't remain.
-    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 }

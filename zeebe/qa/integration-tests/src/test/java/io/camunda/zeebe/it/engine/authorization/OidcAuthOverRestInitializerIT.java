@@ -50,17 +50,13 @@ public class OidcAuthOverRestInitializerIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-          // OIDC client config goes through withProperty so CSL's CamundaSecurityLibraryProperties
-          // — bound from Spring's property sources — sees the values. See OidcAuthOverRestIT.
-          .withProperty(
-              "camunda.security.authentication.oidc.issuer-uri",
-              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
-          // The following two properties are only needed for the webapp login flow which we don't
-          // test here, but CSL requires client-id to build a ClientRegistrationRepository.
-          .withProperty("camunda.security.authentication.oidc.client-id", "example")
-          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
+                c.getAuthentication()
+                    .getOidc()
+                    .setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("example.com");
                 c.getAuthorizations().setEnabled(true);
                 // add a preconfigured user. This should not be allowed with OIDC
                 c.getInitialization()
