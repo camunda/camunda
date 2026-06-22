@@ -1,0 +1,77 @@
+# Elasticsearch values for Camunda Platform Chart.
+# https://github.com/camunda/camunda-platform-helm
+#
+# This configures Elasticsearch when it's used for Optimize AND as the Camunda secondary storage.
+#
+# If you want to configure Elasticsearch only for Optimize and use another
+# secondary storage option for Camunda, see
+# the "camunda-platform-values-optimize-elasticsearch.yaml" file.
+# If you make changes to this file or the
+# "camunda-platform-values-optimize-elasticsearch.yaml" file, make sure to keep
+# the other file in sync (minus the secondary storage-only options).
+
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  elasticsearch:
+    enabled: true
+    url:
+      # The Elasticsearch host value used to connect to Elasticsearch depends
+      # on the "elasticsearch.fullnameOverride" value.
+      # If you change the "elasticsearch.fullnameOverride" value, make sure to
+      # update this host value accordingly.
+      host: elastic
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  # We need to explicitly set the secondary storage type to ELS
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  data:
+    secondaryStorage:
+      type: elasticsearch
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+elasticsearch:
+  enabled: true
+  # Override the default name for ConfigMap, Service, etc.
+  # Changing this value also changes the name of the Kubernetes Service used by
+  # the other components to connect to Elasticsearch, make sure to update
+  # the "global.elasticsearch.url.host" value accordingly.
+  fullnameOverride: elastic
+  clusterName: elasticsearch
+  master:
+    fullnameOverride: elastic
+    nameOverride: elastic
+    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    replicaCount: 3
+    pdb:
+      minAvailable: 2
+    ## @param elasticsearch.master.heapSize
+    heapSize: 3g
+    persistence:
+      ## @param elasticsearch.master.persistence.size
+      size: 512Gi
+      storageClass: benchmark-ssd-zonal-v1
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 7000m
+        memory: 8Gi
+      limits:
+        cpu: 7000m
+        memory: 8Gi
+    nodeSelector:
+      component: benchmark-n2-standard-8
+      topology.kubernetes.io/zone: europe-west1-b
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-8
+        effect: NoSchedule
+  extraConfig:
+    logger.org.elasticsearch.deprecation: "OFF"
