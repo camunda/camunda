@@ -24,9 +24,9 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
  *
  * <p>{@link AnalyticsExporter} never needs to change when new events are added.
  */
-final class HandlerCatalog {
+final class AnalyticsHandlerCatalog {
 
-  private HandlerCatalog() {}
+  private AnalyticsHandlerCatalog() {}
 
   static HandlerRegistry build(final OtelSdkManager otelSdkManager) {
     return new HandlerRegistry()

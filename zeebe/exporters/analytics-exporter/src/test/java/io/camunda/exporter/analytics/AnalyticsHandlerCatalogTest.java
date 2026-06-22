@@ -18,7 +18,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class HandlerCatalogTest {
+class AnalyticsHandlerCatalogTest {
 
   @Test
   void shouldRegisterAllExpectedHandlers() {
@@ -27,7 +27,7 @@ class HandlerCatalogTest {
     final var otelSdkManager = TestOtelSdkManager.inMemory(logExporter);
 
     // when
-    final var registry = HandlerCatalog.build(otelSdkManager);
+    final var registry = AnalyticsHandlerCatalog.build(otelSdkManager);
 
     // then
     assertThat(registry.registrations())

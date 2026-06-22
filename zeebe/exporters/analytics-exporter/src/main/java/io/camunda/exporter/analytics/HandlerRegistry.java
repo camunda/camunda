@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,7 +52,7 @@ final class HandlerRegistry {
     return this;
   }
 
-  /** Returns all registered (ValueType, Intent) pairs. Package-private for use in tests. */
+  @VisibleForTesting
   Set<Map.Entry<ValueType, Intent>> registrations() {
     return handlers.entrySet().stream()
         .flatMap(e -> e.getValue().keySet().stream().map(intent -> Map.entry(e.getKey(), intent)))

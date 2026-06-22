@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class UserTaskCreatedHandlerTest {
@@ -75,7 +76,12 @@ class UserTaskCreatedHandlerTest {
                   .containsEntry(AnalyticsAttributes.Process.DEFINITION_KEY, 42L)
                   .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, 100L)
                   .containsEntry(AnalyticsAttributes.Element.ID, "user-task-1")
-                  .containsEntry(AnalyticsAttributes.Tenant.ID, "<default>");
+                  .containsEntry(AnalyticsAttributes.Tenant.ID, "<default>")
+                  .containsKey(AnalyticsAttributes.Log.POSITION)
+                  .containsKey(AnalyticsAttributes.Event.SEQUENCE_NUMBER);
+
+              assertThat(logRecord.getTimestampEpochNanos())
+                  .isEqualTo(TimeUnit.MILLISECONDS.toNanos(record.getTimestamp()));
 
               // PII must not appear in any attribute value
               final var allValues = attrs.values().stream().map(Object::toString).toList();
@@ -83,31 +89,6 @@ class UserTaskCreatedHandlerTest {
                   .doesNotContain("john.doe@example.com")
                   .doesNotContain("alice@example.com")
                   .doesNotContain("finance-team");
-            });
-  }
-
-  @Test
-  void shouldIncludeLogPositionAndSequenceNumber() {
-    // given
-    final var logExporter = InMemoryLogRecordExporter.create();
-    final var handler = new UserTaskCreatedHandler(TestOtelSdkManager.inMemory(logExporter));
-    final var record =
-        FACTORY.generateRecord(
-            ValueType.USER_TASK,
-            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.CREATED));
-
-    // when
-    handler.handle(typed(record));
-
-    // then
-    assertThat(logExporter.getFinishedLogRecordItems())
-        .singleElement()
-        .satisfies(
-            logRecord -> {
-              final var attrs = logRecord.getAttributes().asMap();
-              assertThat(attrs)
-                  .containsKey(AnalyticsAttributes.Log.POSITION)
-                  .containsKey(AnalyticsAttributes.Event.SEQUENCE_NUMBER);
             });
   }
 }

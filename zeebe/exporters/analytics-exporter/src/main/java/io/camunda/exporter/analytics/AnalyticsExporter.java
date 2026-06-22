@@ -52,7 +52,7 @@ public class AnalyticsExporter implements Exporter {
         AnalyticsExporterContext.create(
             resolveLicenseKey(context), resolveClusterId(context), context.getPartitionId());
 
-    handlers = HandlerCatalog.build(otelSdkManager).apply(context);
+    handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
 
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}",
