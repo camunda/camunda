@@ -8,7 +8,7 @@
 
 import {lazy, Suspense, useState} from 'react';
 import styled from 'styled-components';
-import {Button, Modal, Tag, DefinitionTooltip} from '@carbon/react';
+import {Button, Modal, Tag, Tooltip} from '@carbon/react';
 import {
   ArrowUpRight,
   Maximize,
@@ -59,14 +59,12 @@ const ToolRow = styled.div`
   }
 `;
 
-// Carbon's compact definition tooltip (lighter than the standalone Tooltip).
-// Suppress the default dotted-underline trigger styling so it reads cleanly
-// around the token tag.
-const MetricTooltip = styled(DefinitionTooltip)`
-  .cds--definition-term {
-    border-bottom: none;
-    cursor: default;
-    font-size: inherit;
+// The standard Carbon tooltip, with tightened padding so the small
+// token breakdown reads compactly.
+const MetricTooltip = styled(Tooltip)`
+  .cds--popover-content,
+  .cds--tooltip-content {
+    padding: var(--cds-spacing-02) var(--cds-spacing-03);
   }
 `;
 
@@ -119,10 +117,12 @@ function StepTags({
     >
       {tokens !== undefined &&
         (tooltipLabel !== undefined ? (
-          <MetricTooltip definition={tooltipLabel} align="bottom" openOnHover>
-            <Tag type="gray" size="sm">
-              {tokens.toLocaleString()} tokens
-            </Tag>
+          <MetricTooltip label={tooltipLabel} align="bottom">
+            <span tabIndex={0} style={{display: 'inline-flex'}}>
+              <Tag type="gray" size="sm">
+                {tokens.toLocaleString()} tokens
+              </Tag>
+            </span>
           </MetricTooltip>
         ) : (
           <Tag type="gray" size="sm">
