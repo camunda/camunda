@@ -13,6 +13,7 @@ import {
   Maximize,
   SortAscending,
   SortDescending,
+  Tools,
 } from '@carbon/icons-react';
 import {Copy} from '@carbon/react/icons';
 import type {AgentElementData} from 'modules/contexts/agentData.types';
@@ -102,84 +103,86 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
           borderRadius: '4px',
           borderLeft: '3px solid var(--cds-border-subtle-01)',
           display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--cds-spacing-02)',
+          alignItems: 'center',
+          gap: 'var(--cds-spacing-03)',
           minWidth: 0,
         }}
       >
-        {/* Header row: tool name + time tag + action buttons */}
-        <div
+        {/* Tool icon */}
+        <span
           style={{
+            color: 'var(--cds-icon-secondary)',
             display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--cds-spacing-03)',
-            minWidth: 0,
+            flexShrink: 0,
           }}
         >
-          {/* Tool name */}
-          <span
-            style={{
-              fontWeight: 400,
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              color: 'var(--cds-text-secondary)',
-              flexShrink: 0,
-            }}
-          >
-            {step.name}
-          </span>
+          <Tools size={16} />
+        </span>
 
-          {/* Execution time tag */}
-          {duration !== null && (
-            <Tag type="gray" size="sm">
-              {duration}
-            </Tag>
-          )}
+        {/* Tool name */}
+        <span
+          style={{
+            fontWeight: 400,
+            fontSize: 'var(--cds-body-compact-01-font-size)',
+            color: 'var(--cds-text-secondary)',
+            flexShrink: 0,
+          }}
+        >
+          {step.name}
+        </span>
 
-          {/* Right-aligned action buttons */}
-          <div style={{display: 'flex', flexShrink: 0, marginLeft: 'auto'}}>
-            <Button
-              kind="ghost"
-              size="sm"
-              hasIconOnly
-              renderIcon={Maximize}
-              iconDescription="Expand"
-              tooltipPosition="left"
-              aria-label="Expand"
-              data-testid="expand-tool-detail"
-              onClick={() => setIsModalOpen(true)}
-              style={{color: 'var(--cds-icon-secondary)'}}
-            />
-            {step.hasInstance && (
-              <Button
-                kind="ghost"
-                size="sm"
-                hasIconOnly
-                renderIcon={ArrowUpRight}
-                iconDescription="Execution details"
-                tooltipPosition="left"
-                aria-label="Execution details"
-                data-testid="open-tool-execution-details"
-                onClick={() => selectElement({elementId: step.name})}
-                style={{color: 'var(--cds-icon-secondary)'}}
-              />
-            )}
-          </div>
-        </div>
+        {/* Execution time tag */}
+        {duration !== null && (
+          <Tag type="gray" size="sm" style={{flexShrink: 0}}>
+            {duration}
+          </Tag>
+        )}
 
-        {/* Body row: monospace input preview */}
+        {/* Monospace input preview — fills remaining space, truncates */}
         <span
           style={{
             fontFamily: 'var(--cds-code-01-font-family)',
             fontSize: 'var(--cds-code-01-font-size, 12px)',
             color: 'var(--cds-text-secondary)',
+            flex: 1,
+            minWidth: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            minWidth: 0,
           }}
         >
           {inputPreview}
         </span>
+
+        {/* Action buttons */}
+        <div style={{display: 'flex', flexShrink: 0}}>
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            renderIcon={Maximize}
+            iconDescription="Expand"
+            tooltipPosition="left"
+            aria-label="Expand"
+            data-testid="expand-tool-detail"
+            onClick={() => setIsModalOpen(true)}
+            style={{color: 'var(--cds-icon-secondary)'}}
+          />
+          {step.hasInstance && (
+            <Button
+              kind="ghost"
+              size="sm"
+              hasIconOnly
+              renderIcon={ArrowUpRight}
+              iconDescription="Execution details"
+              tooltipPosition="left"
+              aria-label="Execution details"
+              data-testid="open-tool-execution-details"
+              onClick={() => selectElement({elementId: step.name})}
+              style={{color: 'var(--cds-icon-secondary)'}}
+            />
+          )}
+        </div>
       </div>
 
       <Modal
