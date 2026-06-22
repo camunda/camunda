@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -94,7 +95,7 @@ import org.slf4j.Logger;
 public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private Map<Integer, Boolean> partitionInstallStatus;
+  private Map<PartitionId, Boolean> partitionInstallStatus;
   /* set to true when all partitions are installed. Once set to true, it is never
   changed. */
   private volatile boolean allPartitionsInstalled = false;
@@ -110,8 +111,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
     partitionInstallStatus =
-        partitions.stream()
-            .collect(Collectors.toMap(metadata -> metadata.id().number(), p -> false));
+        partitions.stream().collect(Collectors.toMap(PartitionMetadata::id, p -> false));
     partitions.forEach(
         metadata ->
             healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().number())));
@@ -127,13 +127,13 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   @Override
-  public void onBecameRaftFollower(final int partitionId, final long term) {
+  public void onBecameRaftFollower(final PartitionId partitionId, final long term) {
     checkState();
     updateBrokerReadyStatus(partitionId);
   }
 
   @Override
-  public void onBecameRaftLeader(final int partitionId, final long term) {
+  public void onBecameRaftLeader(final PartitionId partitionId, final long term) {
     checkState();
     updateBrokerReadyStatus(partitionId);
   }
@@ -144,7 +144,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     }
   }
 
-  private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {
+  private ActorFuture<Void> updateBrokerReadyStatus(final PartitionId partitionId) {
     return actor.call(
         () -> {
           if (!allPartitionsInstalled) {

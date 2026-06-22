@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
+import io.camunda.zeebe.protocol.Protocol;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Test;
 
@@ -47,9 +49,10 @@ public class BrokerHealthCheckServiceTest {
 
     // when + then
 
-    assertThatThrownBy(() -> healthCheckService.onBecameRaftFollower(0, 0))
+    final var partitionId = new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, 0);
+    assertThatThrownBy(() -> healthCheckService.onBecameRaftFollower(partitionId, 0))
         .isInstanceOf(IllegalStateException.class);
-    assertThatThrownBy(() -> healthCheckService.onBecameRaftLeader(0, 0))
+    assertThatThrownBy(() -> healthCheckService.onBecameRaftLeader(partitionId, 0))
         .isInstanceOf(IllegalStateException.class);
   }
 }
