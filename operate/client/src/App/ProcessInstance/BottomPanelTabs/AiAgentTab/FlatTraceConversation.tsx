@@ -86,11 +86,11 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const inputKeys = Object.keys(step.input);
+  const compactInput = JSON.stringify(step.input).replace(/\s+/g, ' ');
   const inputPreview =
     inputKeys.length === 0
       ? 'No input'
-      : JSON.stringify(step.input).replace(/\s+/g, ' ').slice(0, 80) +
-        (JSON.stringify(step.input).length > 80 ? '…' : '');
+      : compactInput.slice(0, 80) + (compactInput.length > 80 ? '…' : '');
 
   const inputText =
     inputKeys.length > 0 ? JSON.stringify(step.input, null, 2) : '';
