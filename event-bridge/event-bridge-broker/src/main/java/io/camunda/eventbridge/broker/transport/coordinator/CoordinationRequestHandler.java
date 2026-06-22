@@ -16,7 +16,8 @@ import java.util.concurrent.CompletableFuture;
 
 public final class CoordinationRequestHandler implements RequestHandler {
 
-  private static final String TOPIC_FORMAT = "coordinate-api-%d";
+  // Must match the topic the gateway BrokerClient sends to (default partition group).
+  private static final String TOPIC_FORMAT = "default-coordinate-api-%d";
 
   private final int partitionId;
   private final CoordinationManager coordinationManager;

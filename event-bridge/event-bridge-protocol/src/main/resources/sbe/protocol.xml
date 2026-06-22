@@ -183,4 +183,30 @@
     <data name="errorMessage" id="2" type="varDataEncoding"/>
   </sbe:message>
 
+  <!-- =====================================================================
+       FetchResponse (templateId=11): partition leader → gateway
+       Batched, zero-copy read result. All metadata is fixed-size block fields;
+       'data' is a single trailing var-data field carrying the raw, contiguous
+       EventBridgeBatch bytes, which the broker streams via sendfile (the bytes
+       are not copied through the JVM heap on the broker egress).
+       ===================================================================== -->
+  <sbe:message name="FetchResponse" id="11" description="Batched fetch result; data is raw EventBridgeBatch bytes">
+    <field name="errorCode" id="1" type="ErrorCode"/>
+    <field name="firstPosition" id="2" type="int64"/>
+    <field name="lastPosition" id="3" type="int64"/>
+    <field name="highWatermark" id="4" type="int64"/>
+    <data name="data" id="5" type="varDataEncoding"/>
+  </sbe:message>
+
+  <!-- =====================================================================
+       FetchRequest (templateId=12): gateway → partition leader
+       ===================================================================== -->
+  <sbe:message name="FetchRequest" id="12" description="Fetch a contiguous range of batches from a partition">
+    <field name="partitionId" id="1" type="int32"/>
+    <field name="fromPosition" id="2" type="int64"/>
+    <field name="maxBytes" id="3" type="int32"/>
+    <field name="minBytes" id="4" type="int32"/>
+    <field name="maxWaitMs" id="5" type="int64"/>
+  </sbe:message>
+
 </sbe:messageSchema>

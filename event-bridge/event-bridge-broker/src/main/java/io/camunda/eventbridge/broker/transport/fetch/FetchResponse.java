@@ -27,10 +27,11 @@ import java.util.List;
 public record FetchResponse(
     long firstBatchPosition,
     long lastBatchPosition,
+    long highWatermark,
     IndexScanResult.Success scanResult,
     int dataLength) {
 
-  private static final FetchResponse EMPTY_RESPONSE = new FetchResponse(0, -1, null, 0);
+  private static final FetchResponse EMPTY_RESPONSE = new FetchResponse(0, -1, 0, null, 0);
 
   /** Empty response — no data available. */
   public static FetchResponse empty() {

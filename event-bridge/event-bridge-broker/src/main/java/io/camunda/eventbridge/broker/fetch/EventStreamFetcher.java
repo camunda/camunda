@@ -117,9 +117,16 @@ public final class EventStreamFetcher implements AutoCloseable {
               .completeExceptionally(
                   new IllegalArgumentException("OFFSET_OUT_OF_RANGE: " + task.offset()));
 
-      case final EndOfLog endOfLog ->
-          // Tip of the log reached. Park in purgatory to await new appends.
+      case final EndOfLog endOfLog -> {
+        // Tip of the log reached. Park to await new appends — unless the deadline has already
+        // passed (e.g. an immediate maxWaitMs=0 fetch, or a long-poll that just timed out and was
+        // re-dispatched), in which case complete empty so the request does not spin.
+        if (clock.millis() >= task.deadlineMs()) {
+          task.responseFuture().complete(null);
+        } else {
           purgatory.park(task, actualMinBytes, preReadWatermark);
+        }
+      }
 
       case final Success success -> {
         final FetchResponse response = success.response();
@@ -142,13 +149,14 @@ public final class EventStreamFetcher implements AutoCloseable {
 
   private ReadOutcome safeReadBatches(final FetchTask task) {
     final int maxBytes = Math.min(task.maxBytes(), maxReadBytesPerFetch);
-    final long remainingMs = Math.max(0, task.deadlineMs() - clock.millis());
 
-    if (remainingMs == 0) {
-      return ReadOutcome.Timeout.INSTANCE;
-    }
+    // Always attempt at least one read so an immediate fetch (maxWaitMs=0, hence deadline=now)
+    // still returns data that is already committed. Waiting for more data is handled afterwards by
+    // parking in the purgatory on EndOfLog / min-bytes-not-met. Acquiring a flow-control permit
+    // with a zero (or already-elapsed) deadline still succeeds immediately when a permit is free.
+    final long acquireMs = Math.max(0, task.deadlineMs() - clock.millis());
 
-    if (flowControl.tryAcquire(1, remainingMs, TimeUnit.MILLISECONDS)) {
+    if (flowControl.tryAcquire(1, acquireMs, TimeUnit.MILLISECONDS)) {
       try {
         return readBatches(task.offset(), maxBytes);
       } finally {
@@ -182,7 +190,12 @@ public final class EventStreamFetcher implements AutoCloseable {
 
           // FetchResponse now encapsulates the result (which holds the lease)
           final var response =
-              new FetchResponse(firstPosition, highestPosition, success, dataLength);
+              new FetchResponse(
+                  firstPosition,
+                  highestPosition,
+                  highWatermark.get().commitPosition(),
+                  success,
+                  dataLength);
           yield new Success(response);
         }
       };

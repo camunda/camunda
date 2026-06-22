@@ -11,18 +11,23 @@ import io.atomix.cluster.messaging.ManagedPayload;
 import io.camunda.eventbridge.broker.fetch.EventStreamFetcher;
 import io.camunda.eventbridge.broker.transport.RequestHandler;
 import java.util.concurrent.CompletableFuture;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Handles fetch requests for a single partition. Decodes the request, dispatches it to the {@link
- * EventStreamFetcher} which reads on a virtual thread, and completes the future with the serialized
- * response.
+ * Handles fetch requests for a single partition. Decodes the SBE {@code FetchRequest}, dispatches
+ * it to the {@link EventStreamFetcher} (which reads on a virtual thread), and completes the future
+ * with a {@link ManagedFetchResponseAdapter} — an SBE {@code FetchResponse} whose payload is
+ * streamed zero-copy.
  *
  * <p>For immediate fetches (enough data available or maxWaitMs = 0), the future completes quickly.
  * For long-poll fetches, the future remains pending until new data arrives or the timeout expires.
+ *
+ * <p>The topic matches the group-prefixed name the gateway BrokerClient sends to (default group).
  */
 public final class FetchRequestHandler implements RequestHandler {
 
-  private static final String TOPIC_FORMAT = "fetch-api-%d";
+  private static final String TOPIC_FORMAT = "default-fetch-api-%d";
+  private static final String CONSUMER_ID = "gateway";
 
   private final int partitionId;
   private final EventStreamFetcher fetchService;
@@ -39,14 +44,32 @@ public final class FetchRequestHandler implements RequestHandler {
 
   @Override
   public CompletableFuture<ManagedPayload> handleWithManagedPayload(final byte[] requestBytes) {
-    final var request = new FetchRequest("foo", partitionId, 999, 1024, 1, 1000 * 60 * 5);
+    final FetchRequest request;
+    try {
+      final var sbeRequest = new io.camunda.eventbridge.protocol.request.FetchRequest();
+      sbeRequest.wrap(new UnsafeBuffer(requestBytes), 0, requestBytes.length);
+      request =
+          new FetchRequest(
+              CONSUMER_ID,
+              sbeRequest.getPartitionId(),
+              sbeRequest.getFromPosition(),
+              sbeRequest.getMaxBytes(),
+              sbeRequest.getMinBytes(),
+              sbeRequest.getMaxWaitMs());
+    } catch (final RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
+    }
 
     final var responseFuture = new CompletableFuture<ManagedPayload>();
     fetchService
         .handleFetch(request)
         .whenComplete(
             (res, error) -> {
-              responseFuture.complete(new ManagedFetchResponseAdapter(res));
+              if (error != null) {
+                responseFuture.completeExceptionally(error);
+              } else {
+                responseFuture.complete(new ManagedFetchResponseAdapter(res));
+              }
             });
 
     return responseFuture;

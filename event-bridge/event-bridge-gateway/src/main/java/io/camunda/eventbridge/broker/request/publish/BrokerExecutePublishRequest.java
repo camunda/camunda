@@ -9,7 +9,6 @@ package io.camunda.eventbridge.broker.request.publish;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.eventbridge.protocol.ExecutePublishResponseDecoder;
-import io.camunda.eventbridge.protocol.ExecutePublishResponseEncoder;
 import io.camunda.eventbridge.protocol.request.PublishBatchResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -23,9 +22,10 @@ public abstract class BrokerExecutePublishRequest<T> extends BrokerRequest<T> {
 
   private final ExecutePublishRequest request = new ExecutePublishRequest();
   private final ExecutePublishResponse response = new ExecutePublishResponse();
+  private int partitionId = 1;
 
   public BrokerExecutePublishRequest() {
-    super(ExecutePublishResponseDecoder.SCHEMA_ID, ExecutePublishResponseEncoder.TEMPLATE_ID);
+    super(ExecutePublishResponseDecoder.SCHEMA_ID, ExecutePublishResponseDecoder.TEMPLATE_ID);
   }
 
   public void wrapPublishResponse(final PublishBatchResponse target) {
@@ -37,9 +37,14 @@ public abstract class BrokerExecutePublishRequest<T> extends BrokerRequest<T> {
     return this;
   }
 
+  public BrokerExecutePublishRequest<T> partitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
   @Override
   public int getPartitionId() {
-    return 1;
+    return partitionId;
   }
 
   @Override
@@ -49,17 +54,17 @@ public abstract class BrokerExecutePublishRequest<T> extends BrokerRequest<T> {
 
   @Override
   public void setPartitionId(final int partitionId) {
-    throw new UnsupportedOperationException();
+    this.partitionId = partitionId;
   }
 
   @Override
   public boolean addressesSpecificPartition() {
-    return false;
+    return true;
   }
 
   @Override
   public boolean requiresPartitionId() {
-    return false;
+    return true;
   }
 
   @Override
@@ -80,7 +85,9 @@ public abstract class BrokerExecutePublishRequest<T> extends BrokerRequest<T> {
 
   @Override
   public Optional<BrokerMemberId> getBrokerId() {
-    return Optional.of(BrokerMemberId.from(0));
+    // Empty: the BrokerClient resolves the partition leader from cluster topology
+    // (addressesSpecificPartition → getLeaderForPartition) and retries on NOT_LEADER.
+    return Optional.empty();
   }
 
   @Override

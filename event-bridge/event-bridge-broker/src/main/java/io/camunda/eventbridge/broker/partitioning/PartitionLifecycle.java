@@ -16,6 +16,7 @@ import io.camunda.eventbridge.broker.partitioning.steps.EventStreamStep;
 import io.camunda.eventbridge.broker.partitioning.steps.FetchPurgatoryStep;
 import io.camunda.eventbridge.broker.partitioning.steps.HighWatermarkStep;
 import io.camunda.eventbridge.broker.partitioning.steps.LogStorageStep;
+import io.camunda.eventbridge.broker.partitioning.steps.PollRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.PublishRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.TopologyStep;
 import io.camunda.eventbridge.broker.transport.RequestHandlerRegistry;
@@ -75,6 +76,7 @@ public final class PartitionLifecycle extends Actor {
             new CoordinatorRequestHandlerStep(),
             new EventStreamFetcherStep(),
             new PublishRequestHandlerStep(),
+            new PollRequestHandlerStep(),
             new TopologyStep(topologyManager));
   }
 

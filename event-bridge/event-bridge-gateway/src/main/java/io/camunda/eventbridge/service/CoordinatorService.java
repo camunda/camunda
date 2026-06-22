@@ -20,7 +20,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.function.BiFunction;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,31 +37,18 @@ public class CoordinatorService {
   public CompletableFuture<JoinGroupResponse> joinGroup(final JoinGroupRequest request) {
     return brokerClient
         .sendRequest(new BrokerJoinGroupRequest().wrapRequest(request))
-        .handleAsync(handleBrokerResponse(), executor)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   public CompletableFuture<HeartbeatResponse> heartbeat(final HeartbeatRequest request) {
     return brokerClient
         .sendRequest(new BrokerHeartbeatRequest().wrapRequest(request))
-        .handleAsync(handleBrokerResponse(), executor)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   public CompletableFuture<LeaveGroupResponse> leaveGroup(final LeaveGroupRequest request) {
     return brokerClient
         .sendRequest(new BrokerLeaveGroupRequest().wrapRequest(request))
-        .handleAsync(handleBrokerResponse(), executor)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
-  }
-
-  private <R> BiFunction<BrokerResponse<R>, Throwable, BrokerResponse<R>> handleBrokerResponse() {
-    return (response, error) -> {
-      if (error != null) {
-        // TODO
-        System.out.println("FAILED " + error.getMessage());
-      }
-      return response;
-    };
   }
 }

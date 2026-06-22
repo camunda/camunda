@@ -7,40 +7,53 @@
  */
 package io.camunda.eventbridge.client;
 
-import java.util.Scanner;
+import java.nio.charset.StandardCharsets;
 
-public class EventBridgeClientTest {
+/**
+ * Manual POC driver. Talks to a single gateway ({@code http://localhost:8080}) and exercises every
+ * partition — in a multi-broker cluster the gateway transparently routes each partition to its
+ * leader, so this also validates cross-broker publish + fetch.
+ */
+public final class EventBridgeClientTest {
+
+  private EventBridgeClientTest() {}
 
   public static void main(final String[] args) throws Exception {
-
     final var client = EventBridgeClient.create("http://localhost:8080");
+    final int partitions = args.length > 0 ? Integer.parseInt(args[0]) : 2;
 
-    final var consumer1 = client.subscribe("cam", "foo").join();
+    for (int p = 1; p <= partitions; p++) {
+      final var positions =
+          client
+              .newBatch()
+              .add("order-" + p + "-a", ("hello-from-p" + p).getBytes(StandardCharsets.UTF_8))
+              .add("order-" + p + "-b", ("world-from-p" + p).getBytes(StandardCharsets.UTF_8))
+              .publish(p)
+              .join();
+      System.out.println("[p" + p + "] published positions: " + positions);
+    }
 
-    Thread.sleep(5000);
-
-    final var consumer2 = client.subscribe("cam", "bar").join();
-
-    Thread.sleep(5000);
-
-    final var consumer3 = client.subscribe("cam", "rab").join();
-
-    Thread.sleep(15000);
-    consumer2.leaveGroup().join();
-
-    Thread.sleep(15000);
-    consumer2.joinGroup().join();
-
-    waitUntilSystemInput("exit");
-  }
-
-  private static void waitUntilSystemInput(final String exitCode) {
-    try (final Scanner scanner = new Scanner(System.in)) {
-      while (scanner.hasNextLine()) {
-        final String nextLine = scanner.nextLine();
-        if (nextLine.contains(exitCode)) {
-          return;
-        }
+    for (int p = 1; p <= partitions; p++) {
+      final var fetch = client.fetch(p, 0, 64 * 1024).join();
+      System.out.println(
+          "[p"
+              + p
+              + "] fetch success="
+              + fetch.isSuccess()
+              + " firstPos="
+              + fetch.firstBatchPosition()
+              + " lastPos="
+              + fetch.lastBatchPosition()
+              + " hw="
+              + fetch.highWatermark());
+      for (final var entry : fetch.entries(0)) {
+        System.out.println(
+            "    p"
+                + p
+                + "@"
+                + entry.getPosition()
+                + " = "
+                + new String(entry.getValueCopy(), StandardCharsets.UTF_8));
       }
     }
   }

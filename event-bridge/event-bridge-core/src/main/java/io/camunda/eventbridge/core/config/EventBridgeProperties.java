@@ -56,7 +56,7 @@ public record EventBridgeProperties(
     if (cluster == null) {
       cluster =
           new ClusterProperties(
-              "event-bridge", "broker-0", "0.0.0.0", 26502, 1, null, null, List.of());
+              "event-bridge", "broker-0", "0.0.0.0", 26502, 1, null, null, 26501, List.of());
     }
   }
 
@@ -207,6 +207,7 @@ public record EventBridgeProperties(
       @DefaultValue("1") int clusterSize,
       String advertisedHost,
       Integer advertisedPort,
+      @DefaultValue("26501") int commandApiPort,
       List<String> initialContactPoints) {
 
     public ClusterProperties {

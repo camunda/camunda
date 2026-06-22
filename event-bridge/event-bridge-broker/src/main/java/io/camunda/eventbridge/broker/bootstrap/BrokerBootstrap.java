@@ -8,12 +8,19 @@
 package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
+import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.threading.ExecutorServiceFactory;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
+import java.util.stream.IntStream;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +49,7 @@ public final class BrokerBootstrap {
   private final ExecutorServiceFactory executorServiceFactory;
   private final IdGenerator idGenerator;
   private final MeterRegistry meterRegistry;
+  private final BrokerTopologyManager gatewayTopologyManager;
 
   private MessagingServiceSetup messagingServiceSetup;
   private TopologySetup topologySetup;
@@ -57,7 +65,8 @@ public final class BrokerBootstrap {
       final PartitionDistributor distributor,
       final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final BrokerTopologyManager gatewayTopologyManager) {
     this.cluster = cluster;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
@@ -65,6 +74,7 @@ public final class BrokerBootstrap {
     this.executorServiceFactory = executorServiceFactory;
     this.idGenerator = idGenerator;
     this.meterRegistry = meterRegistry;
+    this.gatewayTopologyManager = gatewayTopologyManager;
   }
 
   public void start() {
@@ -81,8 +91,27 @@ public final class BrokerBootstrap {
     final var brokerMessagingService = messagingServiceSetup.start();
 
     // 2. Start topology — BrokerInfo + SWIM gossip
-    topologySetup = new TopologySetup(cluster.getMembershipService(), actorScheduler, properties);
+    topologySetup =
+        new TopologySetup(
+            cluster.getMembershipService(), actorScheduler, properties, gatewayTopologyManager);
     final var topologyManager = topologySetup.start();
+
+    // 2b. Build the cluster configuration once — the single source of truth (as in Zeebe) for both
+    // raft partition placement (which partitions this broker starts) and gateway routing (which
+    // partitions exist, via BrokerClusterState.getPartitions()).
+    final var configuration = buildClusterConfiguration();
+
+    // Feed it to the gateway topology so getPartitions() is populated; combined with gossiped
+    // leadership this lets the BrokerClient route partition-addressed requests natively.
+    gatewayTopologyManager.onClusterConfigurationUpdated(configuration);
+    LOG.info(
+        "Seeded gateway cluster configuration with partitions {}",
+        configuration.partitionIds().boxed().toList());
+
+    // Derive the raft partition distribution from the same configuration (mirrors Zeebe's
+    // PartitionManagerImpl, which starts the partitions whose members include the local node).
+    final var distribution =
+        ConfigurationUtil.getPartitionDistributionFrom(configuration, PartitionFactory.GROUP_NAME);
 
     // 3. Start Fetch Stream Executor Service
     executorServiceSetup = new ExecutorServiceSetup(executorServiceFactory);
@@ -94,13 +123,32 @@ public final class BrokerBootstrap {
             cluster,
             actorScheduler,
             properties,
-            distributor,
             InstantSource.system(),
             idGenerator,
             executorService);
-    partitionBootstrapper.start(topologyManager, brokerMessagingService);
+    partitionBootstrapper.start(distribution, topologyManager, brokerMessagingService);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
+  }
+
+  /**
+   * Builds the cluster configuration from the (deterministic) partition distribution over the
+   * configured members. Every node computes the same configuration, so raft placement and gateway
+   * routing agree across the cluster.
+   */
+  private ClusterConfiguration buildClusterConfiguration() {
+    final var clusterSize = properties.cluster().clusterSize();
+    final var members =
+        IntStream.range(0, clusterSize)
+            .mapToObj(i -> MemberId.from("broker-" + i))
+            .sorted()
+            .toList();
+    final var distribution =
+        distributor.distributePartitions(
+            members, properties.broker().partitionCount(), properties.raft().replicationFactor());
+
+    return ConfigurationUtil.getClusterConfigFrom(
+        distribution, DynamicPartitionConfig.init(), properties.cluster().name());
   }
 
   public void stop() {

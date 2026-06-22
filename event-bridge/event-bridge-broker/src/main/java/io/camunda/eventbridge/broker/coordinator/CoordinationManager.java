@@ -40,7 +40,8 @@ public class CoordinationManager extends Actor {
   private final Duration heartbeatTimeout;
   private final Duration heartbeatCheckInterval;
 
-  public CoordinationManager(final int partitionId, final int partitionCount, final InstantSource clock) {
+  public CoordinationManager(
+      final int partitionId, final int partitionCount, final InstantSource clock) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clock = clock;

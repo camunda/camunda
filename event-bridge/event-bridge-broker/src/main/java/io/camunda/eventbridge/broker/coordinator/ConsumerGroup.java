@@ -234,7 +234,10 @@ public final class ConsumerGroup {
   }
 
   private static List<Integer> createPartitions(final int partitionCount) {
-    return IntStream.range(0, partitionCount).boxed().toList();
+    // Partition IDs are 1-based across the system (broker partitions, publish/fetch/poll topics),
+    // so the coordinator must assign 1-based IDs too — otherwise consumers poll a partition that
+    // has no handler (e.g. partition 0).
+    return IntStream.rangeClosed(1, partitionCount).boxed().toList();
   }
 
   enum ConsumerGroupState {

@@ -31,7 +31,8 @@
       <groupId>io.camunda</groupId>
       <artifactId>event-bridge-protocol</artifactId>
       <version>8.10.0-SNAPSHOT</version>
-    </dependency><!-- Jackson for JSON HTTP communication -->
+    </dependency>
+    <!-- Jackson for JSON HTTP communication -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>

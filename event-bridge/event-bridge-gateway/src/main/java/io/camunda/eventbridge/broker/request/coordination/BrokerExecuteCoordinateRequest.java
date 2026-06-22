@@ -9,7 +9,7 @@ package io.camunda.eventbridge.broker.request.coordination;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
-import io.camunda.eventbridge.protocol.ExecuteCoordinateRequestDecoder;
+import io.camunda.eventbridge.protocol.ExecuteCoordinateResponseDecoder;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.transport.RequestType;
@@ -23,7 +23,9 @@ public abstract class BrokerExecuteCoordinateRequest<T> extends BrokerRequest<T>
   protected final ExecuteCoordinateResponse response = new ExecuteCoordinateResponse();
 
   public BrokerExecuteCoordinateRequest(final CoordinateRequestType type) {
-    super(ExecuteCoordinateRequestDecoder.SCHEMA_ID, 2);
+    // The super-constructor takes the schema/template of the RESPONSE this request decodes — not
+    // the request's. Previously this passed the request decoder's schema and a hardcoded "2".
+    super(ExecuteCoordinateResponseDecoder.SCHEMA_ID, ExecuteCoordinateResponseDecoder.TEMPLATE_ID);
     request.setType(type);
   }
 

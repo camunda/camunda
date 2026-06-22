@@ -11,6 +11,8 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -26,16 +28,19 @@ final class TopologySetup {
   private final ClusterMembershipService membershipService;
   private final ActorSchedulingService actorScheduler;
   private final EventBridgeProperties properties;
+  private final BrokerTopologyManager gatewayTopologyManager;
 
   private TopologyManagerImpl topologyManager;
 
   TopologySetup(
       final ClusterMembershipService membershipService,
       final ActorSchedulingService actorScheduler,
-      final EventBridgeProperties properties) {
+      final EventBridgeProperties properties,
+      final BrokerTopologyManager gatewayTopologyManager) {
     this.membershipService = membershipService;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
+    this.gatewayTopologyManager = gatewayTopologyManager;
   }
 
   TopologyManagerImpl start() {
@@ -44,6 +49,16 @@ final class TopologySetup {
 
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
     actorScheduler.submitActor(topologyManager);
+
+    // Bridge local raft leadership into the gateway's topology. The gateway BrokerTopologyManager
+    // learns remote brokers' leadership from SWIM gossip events, but in this single-JVM deployment
+    // it does not get a membership event for the local node's own BrokerInfo update. So whenever a
+    // local partition's leader changes, re-ingest membership (which now includes the freshly
+    // published local BrokerInfo) so getLeaderForPartition resolves local partitions too.
+    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
+      topologyManager.addTopologyPartitionListener(
+          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
+    }
 
     LOG.info("Topology manager started for broker {}", localMemberId);
     return topologyManager;
@@ -63,7 +78,9 @@ final class TopologySetup {
   private BrokerInfo createBrokerInfo(final MemberId localMemberId) {
     final var nodeId = parseNodeId(localMemberId.id());
     final var clusterCfg = properties.cluster();
-    final var address = Address.from(Address.defaultAdvertisedHost().getHostAddress(), 26501);
+    // Advertise the command API address other nodes (and the gateway) use to reach this broker.
+    final var address =
+        Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
 
     final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
     brokerInfo

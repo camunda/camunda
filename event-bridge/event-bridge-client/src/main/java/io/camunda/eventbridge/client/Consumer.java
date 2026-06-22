@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Consumer handle returned by {@link EventBridgePublishClient#subscribe(String, String)}.
+ * Consumer handle returned by {@link EventBridgeClient#subscribe(String, String)}.
  *
  * <p>Tracks the consumer's owned partitions, epoch, and per-partition {@code nextPosition}. Call
  * {@link #sendHeartbeat()} periodically to maintain group membership and receive partition
@@ -48,7 +48,7 @@ public final class Consumer {
   private final String groupId;
   private final String instanceId;
   private String memberId;
-  private int memberEpoch = 0;
+  private long memberEpoch = 0;
   private final EventBridgeClient client;
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -133,7 +133,7 @@ public final class Consumer {
               if (response.statusCode() == 200) {
                 final var errorCode = (String) body.get("errorCode");
                 memberId = (String) body.get("memberId");
-                memberEpoch = (int) body.get("memberEpoch");
+                memberEpoch = ((Number) body.get("memberEpoch")).longValue();
 
                 LOG.info(
                     "[JoinGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d; start send heartbeat"
@@ -214,7 +214,24 @@ public final class Consumer {
   }
 
   private void scheduleSendHeartbeat() {
-    scheduledHeartbeat = executor.schedule(this::sendHeartbeat, 3, TimeUnit.SECONDS);
+    if (closed.get()) {
+      return;
+    }
+    // Reschedule regardless of success: a transient heartbeat failure must not silently stop the
+    // heartbeat loop and let the consumer expire from the group.
+    scheduledHeartbeat =
+        executor.schedule(
+            () ->
+                sendHeartbeat()
+                    .whenComplete(
+                        (ignored, error) -> {
+                          if (error != null) {
+                            LOG.warn("Heartbeat failed; will retry: {}", error.getMessage());
+                            scheduleSendHeartbeat();
+                          }
+                        }),
+            3,
+            TimeUnit.SECONDS);
   }
 
   // -------------------------------------------------------------------------
@@ -311,8 +328,8 @@ public final class Consumer {
             return;
           }
 
-          final int serverEpoch =
-              ((Number) body.getOrDefault("memberEpoch", snapshotEpoch)).intValue();
+          final long serverEpoch =
+              ((Number) body.getOrDefault("memberEpoch", snapshotEpoch)).longValue();
 
           if (serverEpoch < snapshotEpoch) {
             LOG.debug(
@@ -358,22 +375,19 @@ public final class Consumer {
 
   /**
    * Pulls the next batch of events from all currently owned partitions, in ascending partition ID
-   * order.
+   * order, via the gateway poll endpoint (routed to each partition's leader).
    *
-   * <p><strong>Note on latency:</strong> with N partitions and a {@code timeout} of T ms, the
-   * worst-case wall-clock latency is N × T plus network overhead.
+   * <p>POC note: this uses the immediate (non-long-poll) path, so {@code timeout} is not used to
+   * wait server-side. Callers should pace their poll loop (e.g. a short sleep when no events are
+   * returned).
    *
    * @param maxRecords maximum number of records to fetch per partition
-   * @param timeout per-partition server-side long-poll wait time
+   * @param timeout currently unused (reserved for long-poll support)
    * @return list of events fetched (may be empty if no new records available)
    * @throws ConsumerClosedException if {@link #close()} has been called
    */
   public List<Event> poll(final int maxRecords, final Duration timeout) {
     checkNotClosed();
-    final int serverWaitMs = (int) Math.min(timeout.toMillis(), Integer.MAX_VALUE);
-    // Snapshot epoch once so every partition in this sweep reports the same value to the server,
-    // regardless of any concurrent sendHeartbeat() that may update currentEpoch mid-sweep.
-    final long epochSnapshot = memberEpoch;
     final List<Event> allEvents = new ArrayList<>();
 
     final List<Integer> partitions = new ArrayList<>(ownedPartitions);
@@ -386,27 +400,77 @@ public final class Consumer {
     for (final int partitionId : partitions) {
       checkNotClosed();
       final long fromPosition = nextPositions.getOrDefault(partitionId, -1L);
-      final var response =
-          doPoll(partitionId, fromPosition, maxRecords, serverWaitMs, epochSnapshot);
 
-      //noinspection unchecked
+      final Map<String, Object> response = doPoll(partitionId, fromPosition, maxRecords);
+      if (!"OK".equals(response.get("status"))) {
+        // Partition not currently pollable here (e.g. leadership moved); skip this sweep.
+        continue;
+      }
+
+      @SuppressWarnings("unchecked")
       final List<Map<String, Object>> events =
           (List<Map<String, Object>>) response.getOrDefault("events", List.of());
       for (final Map<String, Object> evt : events) {
         final long position = ((Number) evt.get("position")).longValue();
-        final String base64Payload = (String) evt.get("payload");
-        final byte[] payload = Base64.getDecoder().decode(base64Payload);
+        final byte[] payload = Base64.getDecoder().decode((String) evt.get("payload"));
         allEvents.add(new Event(position, partitionId, payload));
       }
 
-      final Object nextPosObj = response.get("nextPosition");
-      if (nextPosObj != null) {
-        pendingPositions.put(partitionId, ((Number) nextPosObj).longValue());
+      final Object nextPos = response.get("nextPosition");
+      if (nextPos != null) {
+        pendingPositions.put(partitionId, ((Number) nextPos).longValue());
       }
     }
 
     nextPositions.putAll(pendingPositions);
     return allEvents;
+  }
+
+  private Map<String, Object> doPoll(
+      final int partitionId, final long fromPosition, final int maxRecords) {
+    final String query =
+        "fromPosition="
+            + fromPosition
+            + "&maxRecords="
+            + maxRecords
+            + "&epoch="
+            + memberEpoch
+            + (memberId == null
+                ? ""
+                : "&consumerId=" + URLEncoder.encode(memberId, StandardCharsets.UTF_8))
+            + "&groupId="
+            + URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+
+    final var uri =
+        URI.create(client.getGatewayUrl() + "/v1/events/" + partitionId + "/poll?" + query);
+    final var request = HttpRequest.newBuilder().uri(uri).GET().build();
+
+    final HttpResponse<String> response;
+    try {
+      response = client.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (final IOException | InterruptedException e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      throw new EventBridgeException("poll HTTP request failed for partition " + partitionId, e);
+    }
+
+    if (response.statusCode() != 200) {
+      throw new EventBridgeException(
+          "poll failed on partition "
+              + partitionId
+              + ": HTTP "
+              + response.statusCode()
+              + " — "
+              + response.body());
+    }
+
+    try {
+      //noinspection unchecked
+      return client.getObjectMapper().readValue(response.body(), Map.class);
+    } catch (final IOException e) {
+      throw new EventBridgeException("Failed to parse poll response", e);
+    }
   }
 
   /**
@@ -460,6 +524,9 @@ public final class Consumer {
    */
   public void close() {
     closed.set(true);
+    if (scheduledHeartbeat != null) {
+      scheduledHeartbeat.cancel(false);
+    }
   }
 
   public String getGroupId() {
@@ -527,114 +594,6 @@ public final class Consumer {
     if (response.statusCode() != 204 && response.statusCode() != 200) {
       throw new EventBridgeException(
           "commitOffset failed: HTTP " + response.statusCode() + " — " + response.body());
-    }
-  }
-
-  /**
-   * Sends an ACK to the coordinator. Non-2xx responses are logged and discarded per spec; the
-   * coordinator's {@code ackTimeoutMs} handles the case where no ACK is received.
-   */
-  private void sendAckQuietly(
-      final long epoch, final List<Integer> revoked, final List<Integer> assigned) {
-    final String requestBody;
-    try {
-      final var ackBody = new LinkedHashMap<String, Object>();
-      ackBody.put("epoch", epoch);
-      ackBody.put("revoked", revoked);
-      ackBody.put("assigned", assigned);
-      requestBody = client.getObjectMapper().writeValueAsString(ackBody);
-    } catch (final JsonProcessingException e) {
-      LOG.warn("Failed to serialize ACK request; skipping ACK", e);
-      return;
-    }
-
-    final var request =
-        HttpRequest.newBuilder()
-            .uri(
-                URI.create(
-                    client.getGatewayUrl()
-                        + "/v1/consumers/"
-                        + URLEncoder.encode(groupId, StandardCharsets.UTF_8).replace("+", "%20")
-                        + "/"
-                        + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
-                        + "/ack"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-            .build();
-
-    try {
-      final var response =
-          client.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-      if (response.statusCode() != 200) {
-        LOG.warn(
-            "ACK returned non-200 status {}; coordinator will handle via ackTimeoutMs",
-            response.statusCode());
-      }
-    } catch (final IOException | InterruptedException e) {
-      if (e instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
-      LOG.warn(
-          "ACK HTTP request failed; coordinator will handle via ackTimeoutMs: {}", e.getMessage());
-    }
-  }
-
-  private Map<String, Object> doPoll(
-      final int partitionId,
-      final long fromPosition,
-      final int maxRecords,
-      final int serverWaitMs,
-      final long epoch) {
-    final int socketTimeoutMs = serverWaitMs + EventBridgeClient.POLL_TIMEOUT_SLACK_MS;
-    final String query =
-        "groupId="
-            + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
-            + "&consumerId="
-            + URLEncoder.encode(memberId, StandardCharsets.UTF_8)
-            + "&fromPosition="
-            + fromPosition
-            + "&maxRecords="
-            + maxRecords
-            + "&serverWaitMs="
-            + serverWaitMs
-            + "&epoch="
-            + epoch;
-    final URI uri;
-    try {
-      final var base = URI.create(client.getGatewayUrl() + "/v1/events/" + partitionId + "/poll");
-      uri = new URI(base.getScheme(), base.getAuthority(), base.getPath(), query, null);
-    } catch (final java.net.URISyntaxException e) {
-      throw new EventBridgeException("Failed to build poll URI", e);
-    }
-
-    final var request =
-        HttpRequest.newBuilder().uri(uri).timeout(Duration.ofMillis(socketTimeoutMs)).GET().build();
-
-    final HttpResponse<String> response;
-    try {
-      response = client.getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    } catch (final IOException | InterruptedException e) {
-      if (e instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
-      throw new EventBridgeException("poll HTTP request failed for partition " + partitionId, e);
-    }
-
-    if (response.statusCode() != 200) {
-      throw new EventBridgeException(
-          "poll failed on partition "
-              + partitionId
-              + ": HTTP "
-              + response.statusCode()
-              + " — "
-              + response.body());
-    }
-
-    try {
-      //noinspection unchecked
-      return client.getObjectMapper().readValue(response.body(), Map.class);
-    } catch (final IOException e) {
-      throw new EventBridgeException("Failed to parse poll response", e);
     }
   }
 

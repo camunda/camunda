@@ -15,6 +15,7 @@ import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor
 import io.camunda.eventbridge.broker.threading.ExecutorServiceFactory;
 import io.camunda.eventbridge.broker.threading.VirtualThreadExecutorFactory;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.agrona.concurrent.IdGenerator;
@@ -49,7 +50,8 @@ public class EventBridgeBrokerConfiguration {
       final PartitionDistributor distributor,
       final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final BrokerTopologyManager gatewayTopologyManager) {
     return new BrokerBootstrap(
         cluster,
         actorScheduler,
@@ -57,7 +59,8 @@ public class EventBridgeBrokerConfiguration {
         distributor,
         executorServiceFactory,
         idGenerator,
-        meterRegistry);
+        meterRegistry,
+        gatewayTopologyManager);
   }
 
   @Bean

@@ -7,41 +7,36 @@
  */
 package io.camunda.eventbridge.service;
 
-import io.camunda.eventbridge.broker.request.publish.BrokerPublishRequest;
-import io.camunda.eventbridge.protocol.request.PublishBatchResponse;
+import io.camunda.eventbridge.broker.request.poll.BrokerPollRequest;
+import io.camunda.eventbridge.protocol.request.PollResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import org.springframework.stereotype.Component;
 
+/** Routes a consumer poll to the partition leader over the broker transport (copy-based SBE). */
 @Component
-public class PublishService {
+public class PollService {
 
   private final BrokerClient brokerClient;
   private final ExecutorService executor;
 
-  PublishService(final BrokerClient brokerClient, final ServicesExecutorProvider executorProvider) {
+  PollService(final BrokerClient brokerClient, final ServicesExecutorProvider executorProvider) {
     this.brokerClient = brokerClient;
     executor = executorProvider.getExecutor();
   }
 
-  /**
-   * Publishes a batch of events to the given partition's leader (resolved by the BrokerClient from
-   * cluster topology).
-   *
-   * @param body the raw client request body (full EventBridgeBatch)
-   * @return a future with the decoded response
-   */
-  public CompletableFuture<PublishBatchResponse> publish(final int partitionId, final byte[] body) {
-    final var validation = EventBridgeBatchValidator.validate(body);
-    if (!validation.valid()) {
-      return CompletableFuture.failedFuture(new IllegalArgumentException(validation.error()));
-    }
+  public CompletableFuture<PollResponse> poll(
+      final int partitionId,
+      final String groupId,
+      final String consumerId,
+      final long fromPosition,
+      final int maxRecords,
+      final long epoch) {
 
-    final var request = new BrokerPublishRequest();
-    request.partitionId(partitionId);
-    request.wrapBatch(body);
+    final var request = new BrokerPollRequest();
+    request.setup(partitionId, groupId, consumerId, fromPosition, maxRecords, epoch);
 
     return brokerClient.sendRequest(request).thenApplyAsync(BrokerResponse::getResponse, executor);
   }

@@ -38,7 +38,7 @@ final class MessagingServiceSetup {
 
   MessagingService start() {
     final var clusterCfg = properties.cluster();
-    final var address = Address.from(Address.defaultAdvertisedHost().getHostAddress(), 26501);
+    final var address = Address.from(clusterCfg.bindHost(), clusterCfg.commandApiPort());
 
     messagingService =
         new NettyMessagingService(

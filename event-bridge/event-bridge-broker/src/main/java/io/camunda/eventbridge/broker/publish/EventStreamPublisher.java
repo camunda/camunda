@@ -24,15 +24,14 @@ import java.util.function.Predicate;
 /**
  * Per-partition actor that drains the inbound MPSC queue and batches writes to LogStorage.
  *
- * <p><b>Batching & Latency:</b>
- * Uses an adaptive state machine. If the pipeline is idle, inbound data is flushed immediately
- * for minimum latency. If appends are currently in-flight, a linger timer accumulates subsequent
- * data into larger batches to maximize throughput and preserve Raft IOPS.
+ * <p><b>Batching & Latency:</b> Uses an adaptive state machine. If the pipeline is idle, inbound
+ * data is flushed immediately for minimum latency. If appends are currently in-flight, a linger
+ * timer accumulates subsequent data into larger batches to maximize throughput and preserve Raft
+ * IOPS.
  *
- * <p><b>Memory & GC Management:</b>
- * Bounded by {@code maxInFlightAppends}. Uses a pre-allocated object pool of {@link PendingAppend}
- * contexts to ensure that array manipulation, closures, and futures generate zero heap garbage
- * during the hot path.
+ * <p><b>Memory & GC Management:</b> Bounded by {@code maxInFlightAppends}. Uses a pre-allocated
+ * object pool of {@link PendingAppend} contexts to ensure that array manipulation, closures, and
+ * futures generate zero heap garbage during the hot path.
  */
 public final class EventStreamPublisher extends Actor {
 
@@ -77,7 +76,8 @@ public final class EventStreamPublisher extends Actor {
       final InboundQueue inbound,
       final HighWatermark highWatermark) {
     if (lingerInterval.toMillis() <= 0) {
-      throw new IllegalArgumentException("lingerInterval must be strictly > 0 to protect Raft IOPS");
+      throw new IllegalArgumentException(
+          "lingerInterval must be strictly > 0 to protect Raft IOPS");
     }
 
     this.partitionId = partitionId;
@@ -114,14 +114,16 @@ public final class EventStreamPublisher extends Actor {
     currentDrainBytes = 0;
 
     int unreleasedPermits = 0;
-    final var error = new IllegalStateException(
-        "Event stream appender for partition " + partitionId + " closing");
+    final var error =
+        new IllegalStateException(
+            "Event stream appender for partition " + partitionId + " closing");
 
     // Phase 1: Drain and fail anything remaining in the inbound queue
-    inbound.drainAndCheckRemaining(entry -> {
-      listener.onFailed(entry.requestId(), error);
-      return true; // continue draining, ignoring max limits
-    });
+    inbound.drainAndCheckRemaining(
+        entry -> {
+          listener.onFailed(entry.requestId(), error);
+          return true; // continue draining, ignoring max limits
+        });
 
     // Phase 2: Fail anything drained but not yet submitted to LogStorage
     for (int i = 0; i < drainedEntries.size(); i++) {
@@ -147,16 +149,14 @@ public final class EventStreamPublisher extends Actor {
     activeAppends.clear();
   }
 
-  /**
-   * Signals the actor to process data. Coalesced by {@link InboundQueue#scheduleDrain}.
-   */
+  /** Signals the actor to process data. Coalesced by {@link InboundQueue#scheduleDrain}. */
   public void submitDrain() {
     actor.submit(this::onDataAvailable);
   }
 
   /**
-   * Internal callback mechanism invoked by {@link PendingAppend#run()} to schedule
-   * completion logic without allocating a lambda wrapper.
+   * Internal callback mechanism invoked by {@link PendingAppend#run()} to schedule completion logic
+   * without allocating a lambda wrapper.
    */
   void submitAppendCompletion(final PendingAppend append) {
     actor.submit(append);
@@ -229,11 +229,7 @@ public final class EventStreamPublisher extends Actor {
 
     try {
       logStorage.append(
-          firstBatchPosition,
-          append.lastPosition(),
-          append.getWriter(clock.millis()),
-          append
-      );
+          firstBatchPosition, append.lastPosition(), append.getWriter(clock.millis()), append);
 
       inFlightAppends++;
       activeAppends.add(append);
@@ -251,9 +247,7 @@ public final class EventStreamPublisher extends Actor {
     drainedEntries.clear();
   }
 
-  /**
-   * Processes terminal states from LogStorage (Commit or Failure).
-   */
+  /** Processes terminal states from LogStorage (Commit or Failure). */
   void onAppendCompleted(final PendingAppend append) {
     inFlightAppends--;
     activeAppends.remove(append);

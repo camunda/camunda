@@ -15,7 +15,9 @@ import java.util.concurrent.CompletableFuture;
 
 public final class PublishRequestHandler implements RequestHandler {
 
-  private static final String TOPIC_FORMAT = "publish-api-%d";
+  // Must match the topic the gateway BrokerClient sends to: "{partitionGroup}-{type}-api-{id}"
+  // with the default partition group.
+  private static final String TOPIC_FORMAT = "default-publish-api-%d";
 
   private final int partitionId;
   private final EventStreamWriter writer;

@@ -8,11 +8,10 @@
 package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingService;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
-import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
@@ -22,6 +21,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.IdGenerator;
@@ -29,8 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Computes partition distribution, uses {@link PartitionFactory} to create raft-level components,
- * creates lifecycle actors, wires role change listeners, and bootstraps raft.
+ * Starts the raft partitions assigned to the local node by the cluster configuration. Mirrors
+ * Zeebe's {@code PartitionManagerImpl}: the partition distribution is derived from the (single
+ * source of truth) cluster configuration, and the local node starts the partitions whose members
+ * include it.
  */
 final class PartitionBootstrapper {
 
@@ -40,7 +42,6 @@ final class PartitionBootstrapper {
   private final AtomixCluster cluster;
   private final ActorSchedulingService actorScheduler;
   private final EventBridgeProperties properties;
-  private final PartitionDistributor distributor;
   private final InstantSource clock;
   private final IdGenerator idGenerator;
   private final ExecutorService executorService;
@@ -52,39 +53,33 @@ final class PartitionBootstrapper {
       final AtomixCluster cluster,
       final ActorSchedulingService actorScheduler,
       final EventBridgeProperties properties,
-      final PartitionDistributor distributor,
       final InstantSource clock,
       final IdGenerator idGenerator,
       final ExecutorService executorService) {
     this.cluster = cluster;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
-    this.distributor = distributor;
     this.clock = clock;
     this.idGenerator = idGenerator;
     this.executorService = executorService;
   }
 
   void start(
-      final TopologyManagerImpl topologyManager, final MessagingService brokerMessagingService) {
+      final Set<PartitionMetadata> distribution,
+      final TopologyManagerImpl topologyManager,
+      final MessagingService brokerMessagingService) {
 
     final var membershipService = cluster.getMembershipService();
     final var localMemberId = membershipService.getLocalMember().id();
-    final var sortedMembers =
-        membershipService.getMembers().stream().map(Member::id).sorted().toList();
 
-    final var partitionCount = properties.broker().partitionCount();
-    final var replicationFactor = properties.raft().replicationFactor();
-
-    final var distribution =
-        distributor.distributeForMember(
-            localMemberId, sortedMembers, partitionCount, replicationFactor);
+    // Start the partitions assigned to this node (members include the local member), exactly like
+    // Zeebe's PartitionManagerImpl derives placement from the cluster configuration.
+    final var localPartitions =
+        distribution.stream().filter(p -> p.members().contains(localMemberId)).toList();
 
     LOG.info(
-        "Bootstrapping EventBridge partitions {} (total: {}, replication: {}, local: {})",
-        distribution.getPartitionIds(),
-        partitionCount,
-        replicationFactor,
+        "Bootstrapping EventBridge partitions {} (local: {})",
+        localPartitions.stream().map(p -> p.id().id()).sorted().toList(),
         localMemberId);
 
     final var factory = new PartitionFactory(properties, actorScheduler);
@@ -92,11 +87,10 @@ final class PartitionBootstrapper {
     final var managementService =
         new DefaultPartitionManagementService(membershipService, cluster.getCommunicationService());
 
-    for (final var partitionId : distribution.getPartitionIds()) {
-      final var members = distribution.getMembersForPartition(partitionId);
+    for (final var partition : localPartitions) {
       bootstrapPartition(
-          partitionId,
-          members,
+          partition.id().id(),
+          Set.copyOf(partition.members()),
           localMemberId,
           factory,
           managementService,
@@ -135,7 +129,7 @@ final class PartitionBootstrapper {
 
   private void bootstrapPartition(
       final int partitionId,
-      final java.util.Set<MemberId> members,
+      final Set<MemberId> members,
       final MemberId localMemberId,
       final PartitionFactory factory,
       final DefaultPartitionManagementService managementService,
