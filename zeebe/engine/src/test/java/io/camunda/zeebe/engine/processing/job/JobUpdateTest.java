@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
+
 // seed-data-demo: test PR for /seed-data sibling walkthrough — safe to delete
 
 import static org.assertj.core.api.Assertions.assertThat;
