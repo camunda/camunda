@@ -17,8 +17,19 @@ public final class RecordValues {
 
   private final Map<ValueType, UnifiedRecordValue> eventCache;
 
+  /** Default cache covering all engine record values ({@link ValueType}). */
   public RecordValues() {
-    eventCache = Collections.unmodifiableMap(UnifiedRecordValue.allRecordsMap());
+    this(UnifiedRecordValue.allRecordsMap());
+  }
+
+  /**
+   * Cache over a caller-supplied {@link ValueType} → value mapping, so platform users other than
+   * the engine (e.g. the event bridge coordinator stream) can deserialize their own record types
+   * without registering them in the shared protocol. Pass it via {@code
+   * StreamProcessorBuilder.recordValues(Supplier)}.
+   */
+  public RecordValues(final Map<ValueType, UnifiedRecordValue> eventCache) {
+    this.eventCache = Collections.unmodifiableMap(eventCache);
   }
 
   public UnifiedRecordValue readRecordValue(final LoggedEvent event, final ValueType valueType) {

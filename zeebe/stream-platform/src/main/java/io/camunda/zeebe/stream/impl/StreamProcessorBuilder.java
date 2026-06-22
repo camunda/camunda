@@ -18,11 +18,13 @@ import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import io.camunda.zeebe.stream.impl.records.RecordValues;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class StreamProcessorBuilder {
 
@@ -33,6 +35,9 @@ public final class StreamProcessorBuilder {
 
   private List<RecordProcessor> recordProcessors;
   private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
+  // Default: engine record values. Overridable so other platform users (e.g. the event bridge
+  // coordinator) can supply their own ValueType → record-value mapping without a protocol change.
+  private Supplier<RecordValues> recordValuesSupplier = RecordValues::new;
 
   public StreamProcessorBuilder() {
     streamProcessorContext = new StreamProcessorContext();
@@ -41,6 +46,20 @@ public final class StreamProcessorBuilder {
   public StreamProcessorBuilder recordProcessors(final List<RecordProcessor> recordProcessors) {
     this.recordProcessors = recordProcessors;
     return this;
+  }
+
+  /**
+   * Overrides the {@link RecordValues} used to deserialize log records. Defaults to the engine's
+   * full value set; supply a custom one to deserialize record types not registered in the shared
+   * protocol. A supplier (not an instance) keeps {@code RecordValues} owned by the processor.
+   */
+  public StreamProcessorBuilder recordValues(final Supplier<RecordValues> recordValuesSupplier) {
+    this.recordValuesSupplier = recordValuesSupplier;
+    return this;
+  }
+
+  public Supplier<RecordValues> getRecordValuesSupplier() {
+    return recordValuesSupplier;
   }
 
   public StreamProcessorBuilder actorSchedulingService(

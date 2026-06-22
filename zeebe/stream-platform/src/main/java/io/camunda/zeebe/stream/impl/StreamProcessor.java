@@ -25,7 +25,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
-import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -123,7 +122,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     streamProcessorContext =
         processorBuilder
             .getProcessingContext()
-            .eventCache(new RecordValues())
+            .eventCache(processorBuilder.getRecordValuesSupplier().get())
             .actor(actor)
             .abortCondition(this::isClosed);
     logStream = streamProcessorContext.getLogStream();
