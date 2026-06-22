@@ -19,7 +19,7 @@ type Props = {
 	tabIndex?: number;
 };
 
-function InstancesByProcessVersions({processDefinitionId, tenantId, tabIndex}: Props) {
+const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenantId, tabIndex}) => {
 	const {t} = useTranslation();
 	const {data} = useInstancesByProcessVersions(processDefinitionId, tenantId);
 
@@ -55,6 +55,6 @@ function InstancesByProcessVersions({processDefinitionId, tenantId, tabIndex}: P
 			})}
 		</ul>
 	);
-}
+};
 
 export {InstancesByProcessVersions};

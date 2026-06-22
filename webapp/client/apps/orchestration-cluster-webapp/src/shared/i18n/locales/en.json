@@ -427,7 +427,9 @@
 				"instancesInVersion_other": "{{count}} Instances in Version {{version}}",
 				"version": "Version {{version}}",
 				"fetchErrorHeading": "Data could not be fetched",
-				"fetchErrorDescription": "Refresh the page to try again"
+				"fetchErrorDescription": "Refresh the page to try again",
+				"versionDetailsFetchError": "Failed to load version details",
+				"incidentDetailsFetchError": "Failed to load incident details"
 			},
 			"processes": {
 				"title": "Processes"

@@ -24,7 +24,7 @@ type Props = {
 	dataTestId?: string;
 };
 
-function PartiallyExpandableDataTable({headers, rows, expandedContents, dataTestId}: Props) {
+const PartiallyExpandableDataTable: React.FC<Props> = ({headers, rows, expandedContents, dataTestId}) => {
 	const tableBodyContent = (
 		rows: DataTableRenderProps<Row, React.ReactNode[]>['rows'],
 		headers: DataTableRenderProps<Row, React.ReactNode[]>['headers'],
@@ -92,6 +92,6 @@ function PartiallyExpandableDataTable({headers, rows, expandedContents, dataTest
 			)}
 		/>
 	);
-}
+};
 
 export {PartiallyExpandableDataTable};

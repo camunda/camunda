@@ -18,7 +18,7 @@ type Props = {
 	tabIndex?: number;
 };
 
-function IncidentsByErrorDefinitions({errorHashCode, tabIndex}: Props) {
+const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, tabIndex}) => {
 	const {t} = useTranslation();
 	const {data} = useIncidentsByErrorDefinitions(errorHashCode);
 
@@ -51,6 +51,6 @@ function IncidentsByErrorDefinitions({errorHashCode, tabIndex}: Props) {
 			})}
 		</ul>
 	);
-}
+};
 
 export {IncidentsByErrorDefinitions};

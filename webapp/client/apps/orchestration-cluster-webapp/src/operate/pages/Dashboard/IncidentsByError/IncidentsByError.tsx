@@ -15,7 +15,8 @@ import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
-import {ExpandedRowErrorBoundary} from '../ExpandedRowErrorBoundary';
+import {ErrorBoundary} from 'react-error-boundary';
+import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
 import {useIncidentsByError, PAGE_SIZE} from './useIncidentsByError';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
@@ -23,7 +24,7 @@ import {ScrollableList, LoadingRow, LinkWrapper} from './styled';
 
 const ROW_HEIGHT = 64;
 
-function IncidentsByError() {
+const IncidentsByError: React.FC = () => {
 	const {t} = useTranslation();
 	const {
 		data,
@@ -86,7 +87,9 @@ function IncidentsByError() {
 		() =>
 			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				accumulator[String(item.errorHashCode)] = (
-					<ExpandedRowErrorBoundary>
+					<ErrorBoundary
+						fallback={<ExpandedRowErrorFallback message={t('operate.dashboard.incidentDetailsFetchError')} />}
+					>
 						<Suspense
 							fallback={
 								<LoadingRow>
@@ -96,7 +99,7 @@ function IncidentsByError() {
 						>
 							<IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />
 						</Suspense>
-					</ExpandedRowErrorBoundary>
+					</ErrorBoundary>
 				);
 				return accumulator;
 			}, {}),
@@ -147,6 +150,6 @@ function IncidentsByError() {
 			)}
 		</ScrollableList>
 	);
-}
+};
 
 export {IncidentsByError};

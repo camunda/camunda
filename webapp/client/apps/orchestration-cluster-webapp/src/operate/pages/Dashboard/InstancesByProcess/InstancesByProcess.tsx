@@ -14,7 +14,8 @@ import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {ExpandedRowErrorBoundary} from '../ExpandedRowErrorBoundary';
+import {ErrorBoundary} from 'react-error-boundary';
+import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
 import {useInstancesByProcess, PAGE_SIZE} from './useInstancesByProcess';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
@@ -22,7 +23,7 @@ import {ScrollableList, LoadingRow, LinkWrapper} from './styled';
 
 const ROW_HEIGHT = 64;
 
-function InstancesByProcess() {
+const InstancesByProcess: React.FC = () => {
 	const {t} = useTranslation();
 	const {
 		data,
@@ -94,7 +95,9 @@ function InstancesByProcess() {
 			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				if (item.hasMultipleVersions) {
 					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
-						<ExpandedRowErrorBoundary>
+						<ErrorBoundary
+							fallback={<ExpandedRowErrorFallback message={t('operate.dashboard.versionDetailsFetchError')} />}
+						>
 							<Suspense
 								fallback={
 									<LoadingRow>
@@ -104,7 +107,7 @@ function InstancesByProcess() {
 							>
 								<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
 							</Suspense>
-						</ExpandedRowErrorBoundary>
+						</ErrorBoundary>
 					);
 				}
 				return accumulator;
@@ -146,6 +149,6 @@ function InstancesByProcess() {
 			)}
 		</ScrollableList>
 	);
-}
+};
 
 export {InstancesByProcess};
