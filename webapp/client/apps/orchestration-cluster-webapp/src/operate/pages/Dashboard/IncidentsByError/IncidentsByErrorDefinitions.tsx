@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {useIncidentsByErrorDefinitions} from './useIncidentsByError';
-import {Li, LinkWrapper} from './styled';
+import {incidentsByErrorDefinitionsQuery} from './incidentsByError.queries';
+import {Li, LinkWrapper} from '../styled';
 
 type Props = {
 	errorHashCode: number;
@@ -20,7 +21,7 @@ type Props = {
 
 const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, tabIndex}) => {
 	const {t} = useTranslation();
-	const {data} = useIncidentsByErrorDefinitions(errorHashCode);
+	const {data} = useSuspenseQuery(incidentsByErrorDefinitionsQuery(errorHashCode));
 
 	return (
 		<ul>

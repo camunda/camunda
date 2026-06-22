@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {infiniteQueryOptions, useInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
+import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
 	GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
@@ -43,15 +43,8 @@ const incidentsByErrorInfiniteQuery = () =>
 		maxPages: MAX_PAGES,
 	});
 
-function useIncidentsByError() {
-	return useInfiniteQuery({
-		...incidentsByErrorInfiniteQuery(),
-		refetchInterval: 5000,
-	});
-}
-
-function useIncidentsByErrorDefinitions(errorHashCode: number) {
-	return useSuspenseQuery({
+const incidentsByErrorDefinitionsQuery = (errorHashCode: number) =>
+	queryOptions({
 		queryKey: ['incidentsByErrorDefinitions', errorHashCode] as const,
 		queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByDefinitionResponseBody> => {
 			const {response, error} = await request(
@@ -65,6 +58,5 @@ function useIncidentsByErrorDefinitions(errorHashCode: number) {
 			return response.json();
 		},
 	});
-}
 
-export {incidentsByErrorInfiniteQuery, useIncidentsByError, useIncidentsByErrorDefinitions, PAGE_SIZE};
+export {incidentsByErrorInfiniteQuery, incidentsByErrorDefinitionsQuery, PAGE_SIZE};

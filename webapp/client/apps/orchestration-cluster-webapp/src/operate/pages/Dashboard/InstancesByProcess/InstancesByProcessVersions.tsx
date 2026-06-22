@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {useInstancesByProcessVersions} from './useInstancesByProcess';
-import {Li, LinkWrapper} from './styled';
+import {instancesByProcessVersionsQuery} from './instancesByProcess.queries';
+import {Li, LinkWrapper} from '../styled';
 
 type Props = {
 	processDefinitionId: string;
@@ -21,7 +22,7 @@ type Props = {
 
 const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenantId, tabIndex}) => {
 	const {t} = useTranslation();
-	const {data} = useInstancesByProcessVersions(processDefinitionId, tenantId);
+	const {data} = useSuspenseQuery(instancesByProcessVersionsQuery(processDefinitionId, tenantId));
 
 	return (
 		<ul>

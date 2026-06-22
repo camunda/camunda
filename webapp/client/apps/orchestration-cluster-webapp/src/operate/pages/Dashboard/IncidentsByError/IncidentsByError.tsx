@@ -6,23 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {Suspense, useCallback, useMemo} from 'react';
-import {DataTableSkeleton, InlineLoading} from '@carbon/react';
-import SvgErrorRobot from '#/shared/svg/ErrorRobot';
+import {Suspense, useMemo, type ReactElement} from 'react';
+import {useInfiniteQuery} from '@tanstack/react-query';
+import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.10';
+import {ErrorBoundary} from 'react-error-boundary';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
-import {ErrorBoundary} from 'react-error-boundary';
+import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
-import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
-import {useIncidentsByError, PAGE_SIZE} from './useIncidentsByError';
+import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
+import {LinkWrapper, LoadingRow} from '../styled';
+import {incidentsByErrorInfiniteQuery, PAGE_SIZE} from './incidentsByError.queries';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
-import {ScrollableList, LoadingRow, LinkWrapper} from './styled';
-
-const ROW_HEIGHT = 64;
 
 const IncidentsByError: React.FC = () => {
 	const {t} = useTranslation();
@@ -36,26 +35,20 @@ const IncidentsByError: React.FC = () => {
 		hasPreviousPage,
 		isFetchingNextPage,
 		isFetchingPreviousPage,
-	} = useIncidentsByError();
+	} = useInfiniteQuery({...incidentsByErrorInfiniteQuery(), refetchInterval: 5000});
 
 	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const totalItems = data?.pages[0]?.page.totalItems ?? 0;
 
-	const handleScroll = useCallback(
-		async (event: React.UIEvent<HTMLDivElement>) => {
-			const target = event.target as HTMLDivElement;
-			const atBottom = Math.floor(target.scrollHeight - target.clientHeight - target.scrollTop) <= 0;
-			const atTop = target.scrollTop === 0;
-
-			if (atBottom && hasNextPage && !isFetchingNextPage) {
-				await fetchNextPage();
-			} else if (atTop && hasPreviousPage && !isFetchingPreviousPage) {
-				await fetchPreviousPage();
-				target.scrollTop = PAGE_SIZE * ROW_HEIGHT;
-			}
-		},
-		[hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage, fetchNextPage, fetchPreviousPage],
-	);
+	const onScroll = useDashboardScrollPagination({
+		pageSize: PAGE_SIZE,
+		hasNextPage,
+		hasPreviousPage,
+		isFetchingNextPage,
+		isFetchingPreviousPage,
+		fetchNextPage,
+		fetchPreviousPage,
+	});
 
 	const rows = useMemo(
 		() =>
@@ -85,7 +78,7 @@ const IncidentsByError: React.FC = () => {
 
 	const expandedContents = useMemo(
 		() =>
-			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
+			items.reduce<Record<string, ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				accumulator[String(item.errorHashCode)] = (
 					<ErrorBoundary
 						fallback={<ExpandedRowErrorFallback message={t('operate.dashboard.incidentDetailsFetchError')} />}
@@ -103,52 +96,32 @@ const IncidentsByError: React.FC = () => {
 				);
 				return accumulator;
 			}, {}),
-		[items],
+		[items, t],
 	);
 
-	if (isPending) {
-		return <DataTableSkeleton columnCount={1} rowCount={20} showHeader={false} showToolbar={false} />;
-	}
-
-	if (isError) {
-		return (
-			<EmptyState
-				icon={<SvgErrorRobot aria-hidden />}
-				heading={t('operate.dashboard.fetchErrorHeading')}
-				description={t('operate.dashboard.fetchErrorDescription')}
-			/>
-		);
-	}
-
-	if (totalItems === 0) {
-		return (
+	const healthyEmptyState =
+		!isPending && !isError && totalItems === 0 ? (
 			<EmptyState
 				icon={<img src={emptyStateIconUrl} alt={t('operate.dashboard.healthyProcessesHeading')} />}
 				heading={t('operate.dashboard.healthyProcessesHeading')}
 				description={t('operate.dashboard.healthyProcessesDescription')}
 			/>
-		);
-	}
+		) : undefined;
 
 	return (
-		<ScrollableList onScroll={handleScroll} data-testid="incidents-by-error-list">
-			{isFetchingPreviousPage && (
-				<LoadingRow>
-					<InlineLoading />
-				</LoadingRow>
-			)}
-			<PartiallyExpandableDataTable
-				dataTestId="incident-byError"
-				headers={[{key: 'incident', header: 'incident'}]}
-				rows={rows}
-				expandedContents={expandedContents}
-			/>
-			{isFetchingNextPage && (
-				<LoadingRow>
-					<InlineLoading />
-				</LoadingRow>
-			)}
-		</ScrollableList>
+		<ExpandableList
+			isPending={isPending}
+			isError={isError}
+			emptyState={healthyEmptyState}
+			listTestId="incidents-by-error-list"
+			dataTestId="incident-byError"
+			header="incident"
+			rows={rows}
+			expandedContents={expandedContents}
+			isFetchingNextPage={isFetchingNextPage}
+			isFetchingPreviousPage={isFetchingPreviousPage}
+			onScroll={onScroll}
+		/>
 	);
 };
 

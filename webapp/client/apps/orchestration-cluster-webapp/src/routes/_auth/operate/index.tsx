@@ -8,8 +8,8 @@
 
 import {createFileRoute} from '@tanstack/react-router';
 import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningInstancesCount';
-import {instancesByProcessInfiniteQuery} from '#/operate/pages/Dashboard/InstancesByProcess/useInstancesByProcess';
-import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/useIncidentsByError';
+import {instancesByProcessInfiniteQuery} from '#/operate/pages/Dashboard/InstancesByProcess/instancesByProcess.queries';
+import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
 import {Dashboard} from '#/operate/pages/Dashboard/Dashboard';
 
 export const Route = createFileRoute('/_auth/operate/')({
