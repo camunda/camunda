@@ -14,10 +14,11 @@ import java.util.Map;
  * Holds the {@link CamundaSecurityLibraryProperties} for every physical tenant, keyed by physical
  * tenant id.
  *
- * <p>A typed wrapper is required because injecting a bare {@code Map<String,
- * CamundaSecurityLibraryProperties>} would trigger Spring's collection-injection semantics: Spring
- * would look for beans of type {@code CamundaSecurityLibraryProperties} and key them by bean name
- * rather than by physical tenant id.
+ * <p>This wrapper record is not strictly required — a dedicated bean of type {@code Map<String,
+ * CamundaSecurityLibraryProperties>} would work just as well. It is used to keep the injection
+ * point explicit and unambiguous: it avoids any confusion with Spring's bean-collection autowiring,
+ * which for a bare {@code Map<String, CamundaSecurityLibraryProperties>} injection point keys the
+ * map by bean name rather than by physical tenant id.
  */
 public record PhysicalTenantSecurityProperties(
     Map<String, CamundaSecurityLibraryProperties> propertiesByPhysicalTenant) {}
