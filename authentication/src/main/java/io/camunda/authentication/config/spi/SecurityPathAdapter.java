@@ -86,7 +86,8 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/webapp/custom.css",
           "/webapp/favicon.ico");
 
-  private static final Set<String> WEB_COMPONENT_NAMES = Set.of("admin", "operate", "tasklist");
+  // Single source of truth for the web component names; see WebAppProviderAdapter#WEB_APPS.
+  private static final Set<String> WEB_COMPONENT_NAMES = WebAppProviderAdapter.WEB_APPS;
 
   private static final Set<String> ADMIN_FILTER_BYPASS_PATHS =
       Set.of(
