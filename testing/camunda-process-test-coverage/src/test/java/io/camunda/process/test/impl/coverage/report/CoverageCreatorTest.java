@@ -124,6 +124,111 @@ class CoverageCreatorTest {
   }
 
   @Test
+  void shouldCreatePartialProcessCoverageWhenOnlySomeElementsAreCompleted() {
+    // given: a process with 3 flow nodes (start, task, end) and 2 sequence flows = 5 total
+    final BpmnModelInstance bpmnModel =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task")
+            .endEvent("end")
+            .done();
+
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn("process");
+
+    // only the start event is completed – not the task or end event
+    final ElementInstance startEvent = mock(ElementInstance.class);
+    when(startEvent.getElementId()).thenReturn("start");
+    when(startEvent.getType()).thenReturn(ElementInstanceType.START_EVENT);
+    when(startEvent.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ProcessModel processModel =
+        ImmutableProcessModel.builder()
+            .processDefinitionId("process")
+            .totalElementCount(5)
+            .version("1")
+            .xml(Bpmn.convertToString(bpmnModel))
+            .build();
+
+    final ImmutableCoverageProcessInstanceData processInstanceData =
+        ImmutableCoverageProcessInstanceData.builder()
+            .processInstance(processInstance)
+            .addElementInstances(startEvent)
+            .build();
+
+    // when
+    final ProcessCoverage coverage =
+        CoverageCreator.createCoverage(processInstanceData, processModel);
+
+    // then
+    assertThat(coverage.getProcessDefinitionId()).isEqualTo("process");
+    assertThat(coverage.getCompletedElements()).containsExactly("start");
+    assertThat(coverage.getTakenSequenceFlows()).isEmpty();
+    assertThat(coverage.getCoverage()).isEqualTo(1.0 / 5.0);
+  }
+
+  @Test
+  void shouldCreatePartialDecisionCoverageWhenOnlySomeRulesAreMatched() {
+    // given: a decision table with 3 rules, but only 1 is matched
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
+    final MatchedDecisionRule matchedRule = mock(MatchedDecisionRule.class);
+    final DecisionModel model =
+        ImmutableDecisionModel.builder()
+            .decisionDefinitionId("decision")
+            .totalRuleCount(3)
+            .version("1")
+            .xml("<dmn />")
+            .build();
+
+    when(decisionInstance.getDecisionInstanceId()).thenReturn("instance-1");
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn("decision");
+    when(matchedRule.getRuleId()).thenReturn("rule-1");
+    when(matchedRule.getRuleIndex()).thenReturn(1);
+    when(decisionInstance.getMatchedRules()).thenReturn(Arrays.asList(matchedRule));
+
+    final ImmutableCoverageDecisionInstanceData decisionInstanceResult =
+        ImmutableCoverageDecisionInstanceData.builder().decisionInstance(decisionInstance).build();
+
+    // when
+    final DecisionCoverage coverage =
+        DecisionCoverageCreator.createCoverage(decisionInstanceResult, model);
+
+    // then: only 1 of 3 rules matched → coverage = 1/3
+    assertThat(coverage.getDecisionDefinitionId()).isEqualTo("decision");
+    assertThat(coverage.getMatchedRuleIds()).containsExactly("rule-1");
+    assertThat(coverage.getMatchedRuleIndices()).containsExactly(1);
+    assertThat(coverage.getCoverage()).isEqualTo(1.0 / 3.0);
+  }
+
+  @Test
+  void shouldCreateZeroDecisionCoverageWhenNoRulesAreMatched() {
+    // given: a decision table with 2 rules, none matched
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
+    final DecisionModel model =
+        ImmutableDecisionModel.builder()
+            .decisionDefinitionId("decision")
+            .totalRuleCount(2)
+            .version("1")
+            .xml("<dmn />")
+            .build();
+
+    when(decisionInstance.getDecisionInstanceId()).thenReturn("instance-1");
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn("decision");
+    when(decisionInstance.getMatchedRules()).thenReturn(java.util.Collections.emptyList());
+
+    final ImmutableCoverageDecisionInstanceData decisionInstanceResult =
+        ImmutableCoverageDecisionInstanceData.builder().decisionInstance(decisionInstance).build();
+
+    // when
+    final DecisionCoverage coverage =
+        DecisionCoverageCreator.createCoverage(decisionInstanceResult, model);
+
+    // then
+    assertThat(coverage.getCoverage()).isEqualTo(0.0);
+    assertThat(coverage.getMatchedRuleIds()).isEmpty();
+  }
+
+  @Test
   void shouldCollectEventBasedGatewayFlows() {
     // given: a BPMN model with an event-based gateway
     final BpmnModelInstance model =
