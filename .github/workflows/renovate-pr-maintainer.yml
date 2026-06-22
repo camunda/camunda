@@ -42,7 +42,7 @@ jobs:
     # rebase stale PRs (by adding the Renovate `rebase` label) or re-run their
     # failed required jobs.
     - name: Maintain Renovate PRs
-      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@0b9cc967700205dc4e42250aa9b53f35d46411a0
+      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@be5b0496892a83e6b3c5cedb818b771e8ed68121
       with:
         dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
