@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55592/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55592/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.38a2f899.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/main.09af87f6.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-55592/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-55592/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-55592/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-55592/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>ADR-0006: Physical-Tenant-Scoped gRPC Authentication</h1></header>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="status">Status<a href="#status" class="hash-link" aria-label="Direct link to Status" title="Direct link to Status" translate="no">​</a></h2>
+<p>Proposed</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deciders">Deciders<a href="#deciders" class="hash-link" aria-label="Direct link to Deciders" title="Direct link to Deciders" translate="no">​</a></h2>
+<ul>
+<li class="">Sebastian Bathke (<a href="https://github.com/megglos" target="_blank" rel="noopener noreferrer" class="">@megglos</a>) — proposer</li>
+<li class="">Lena Schoenburg (<a href="https://github.com/lenaschoenburg" target="_blank" rel="noopener noreferrer" class="">@lenaschoenburg</a>)</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p>The physical-tenant (PT) effort routes each request&#x27;s authentication and authorization to the
+configuration of the tenant it targets. For the REST/webapp surfaces this is established:
+<a class="" href="/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> stamps the PT id on the
+request before Spring Security runs; <a class="" href="/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/">ADR-0005</a>
+routes the authorization layer per PT; and basic-auth credential validation already resolves
+<code>PhysicalTenantContext.current()</code> and selects <code>serviceRegistry.userServices(physicalTenantId)</code> in
+<code>BasicAuthUserDetailsAdapter</code>. OIDC token validation for REST is built per PT by CSL&#x27;s
+<code>ScopedJwtDecoderFactory</code>, driven by the OC-side <code>PhysicalTenantScopeProvider</code> /
+<code>PhysicalTenantAuthConfigurations.forPhysicalTenant(id, env)</code>.</p>
+<p>The <strong>gRPC</strong> gateway is the remaining surface, and it does not share REST&#x27;s mechanism:</p>
+<ul>
+<li class="">It has <strong>no Spring Security filter chain</strong>. Authentication happens in
+<code>AuthenticationInterceptor</code>, which delegates to a sealed <code>AuthenticationHandler</code> (<code>Oidc</code> or
+<code>BasicAuth</code>). Today <code>Oidc</code> holds a <strong>single</strong> <code>JwtDecoder</code> and <code>BasicAuth</code> a <strong>single</strong>
+<code>UserServices</code> — both pinned to the cluster/<code>default</code> configuration.</li>
+<li class="">Routing is <strong>header-based</strong> (<code>Camunda-Physical-Tenant</code>), not path-based. REST&#x27;s per-PT decoders
+are built inline inside CSL&#x27;s HTTP <code>SecurityFilterChain</code> closures (<code>ScopedApiChainRegistrar</code>),
+keyed by request path — they are not exposed as beans and are not reusable from gRPC.</li>
+<li class=""><strong>Interceptor ordering matters.</strong> <code>AuthenticationInterceptor</code> is the <strong>outermost</strong> server
+interceptor and runs <strong>before</strong> <code>PhysicalTenantInterceptor</code> — per gRPC&#x27;s
+<code>ServerInterceptors.intercept</code> contract (&quot;the last interceptor will have its <code>interceptCall</code>
+called first&quot;), and in <code>Gateway.applyInterceptors()</code> the auth interceptor is added last. So the PT
+id is <strong>not</strong> present in the gRPC <code>Context</code> when authentication runs; the interceptor must obtain
+it from the request <code>Metadata</code> itself.</li>
+</ul>
+<p>The per-PT primitives this needs already exist on <code>main</code>: <code>ServiceRegistry.userServices(pt)</code> (the
+basic-auth user store, used by the REST adapter above) and the
+<code>ScopedJwtDecoderFactory</code> + <code>PhysicalTenantAuthConfigurations</code> construction path (the OIDC decoder
+builder REST uses).</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p>Authenticate gRPC requests against the targeted PT&#x27;s configuration, selecting the PT from the
+<code>Camunda-Physical-Tenant</code> header. The cluster&#x27;s authentication <strong>method</strong> stays global (OIDC <em>or</em>
+BASIC, as today); per PT we vary the whole method-specific configuration — for OIDC the decoder
+<strong>and</strong> its claim mappings, for BASIC the user store. Per-PT method selection is out of scope.</p>
+<p>The unit selected per PT is a fully-constructed <strong><code>AuthenticationHandler</code></strong>, not a bare decoder. A
+gRPC request authenticates exactly as today; the only addition is choosing <em>which</em> handler runs,
+keyed by the request&#x27;s PT.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="a-a-grpc-owned-per-pt-handler-registry-decoupled-from-rest">A. A gRPC-owned per-PT handler registry, decoupled from REST<a href="#a-a-grpc-owned-per-pt-handler-registry-decoupled-from-rest" class="hash-link" aria-label="Direct link to A. A gRPC-owned per-PT handler registry, decoupled from REST" title="Direct link to A. A gRPC-owned per-PT handler registry, decoupled from REST" translate="no">​</a></h3>
+<p>Introduce a <code>Map&lt;String, AuthenticationHandler&gt;</code> registry bean (keyed by PT id) in the
+<code>authentication</code> module, built eagerly for each configured PT plus the synthesized <code>default</code> from
+that PT&#x27;s <code>AuthenticationConfiguration</code> (<code>PhysicalTenantAuthConfigurations.forPhysicalTenant(id, env)</code> — the same config source REST uses):</p>
+<ul>
+<li class=""><strong>OIDC</strong> → <code>new AuthenticationHandler.Oidc(decoder, claimsProvider, oidcConfig)</code> where the decoder
+comes from <code>ScopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig)</code> and <code>oidcConfig</code> is <em>that
+PT&#x27;s</em> <code>OidcConfiguration</code>. This is the key reason the per-PT unit is a handler, not a decoder: the
+<code>Oidc</code> handler also derives its <code>OidcPrincipalLoader</code> / <code>OidcGroupsExtractor</code> and prefer-username /
+groups-claim behaviour from <code>oidcConfig</code> at construction time, so a PT on a different IdP (with
+different username/client-id/groups claim names) needs its own handler, not just its own decoder.
+Swapping only the decoder inside a shared handler would decode the token but extract claims with
+the wrong PT&#x27;s config.</li>
+<li class=""><strong>BASIC</strong> → <code>new AuthenticationHandler.BasicAuth(serviceRegistry.userServices(id), passwordEncoder)</code>
+— the same per-PT user-store routing <code>BasicAuthUserDetailsAdapter</code> already uses for REST
+(ADR-0005). <code>passwordEncoder</code> is global.</li>
+</ul>
+<p>gRPC and REST therefore share the <strong>factory and config-resolution path, not the constructed
+instances</strong>. CSL&#x27;s <code>ScopedApiChainRegistrar</code> is left building REST chains inline; this keeps the gRPC
+change isolated and avoids a CSL release on the critical path. Per-PT build failures are logged and
+skipped (mirroring <code>PhysicalTenantScopeProvider</code>), so a later request to such a PT fails closed.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="b-the-interceptor-selects-the-handler-by-pt-id-no-reordering-no-interface-change">B. The interceptor selects the handler by PT id; no reordering, no interface change<a href="#b-the-interceptor-selects-the-handler-by-pt-id-no-reordering-no-interface-change" class="hash-link" aria-label="Direct link to B. The interceptor selects the handler by PT id; no reordering, no interface change" title="Direct link to B. The interceptor selects the handler by PT id; no reordering, no interface change" translate="no">​</a></h3>
+<p><code>AuthenticationInterceptor</code> extracts <code>Camunda-Physical-Tenant</code> from <code>Metadata</code> via a helper shared
+with <code>PhysicalTenantInterceptor</code> (which retains &quot;known PT&quot; validation and downstream <code>Context</code>
+stamping), looks the handler up in the registry, and invokes it — the <code>AuthenticationHandler</code>
+interface is <strong>unchanged</strong> (<code>authenticate(String authorizationHeader)</code>):</p>
+<div class="language-java codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-java codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">final String ptId = resolvePhysicalTenantId(headers);   // shared helper; absent → &quot;default&quot;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">final AuthenticationHandler handler = handlersByTenant.get(ptId);</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">if (handler == null) {                                   // unknown / unconfigured PT</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  return deny(call, Status.UNAUTHENTICATED);</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">}</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">return switch (handler.authenticate(authorization)) { /* Left → deny, Right → proceed */ };</span><br></div></code></pre></div></div>
+<p>An <strong>absent</strong> header resolves to the <code>default</code> PT (the registry always has a <code>default</code> handler), so
+it authenticates normally — identical to a non-PT deployment. Only an <strong>unresolvable</strong> PT (no handler
+in the registry) fails closed with <code>UNAUTHENTICATED</code>, never a partial or <code>default</code> fallback. Because
+auth stays outermost (it runs before <code>PhysicalTenantInterceptor</code>), an <strong>unknown</strong> PT returns
+<code>UNAUTHENTICATED</code> rather than <code>NOT_FOUND</code>, so unauthenticated callers cannot probe PT existence.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="c-both-gateway-construction-sites-supply-the-registry">C. Both gateway construction sites supply the registry<a href="#c-both-gateway-construction-sites-supply-the-registry" class="hash-link" aria-label="Direct link to C. Both gateway construction sites supply the registry" title="Direct link to C. Both gateway construction sites supply the registry" translate="no">​</a></h3>
+<p>The standalone gateway (<code>GatewayModuleConfiguration</code>) and the embedded gateway
+(<code>EmbeddedGatewayServiceStep</code> → <code>BrokerStartupContext</code> → <code>EmbeddedGatewayService</code>) both pass the
+handler registry into <code>Gateway</code>, which uses it in <code>applyInterceptors()</code> to build the
+<code>AuthenticationInterceptor</code>. When no PTs are configured the registry is <code>{ default → &lt;handler built from the cluster&#x27;s root config&gt; }</code>, so non-PT deployments are unchanged.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive">Positive<a href="#positive" class="hash-link" aria-label="Direct link to Positive" title="Direct link to Positive" translate="no">​</a></h3>
+<ul>
+<li class="">gRPC reaches per-PT authentication parity with REST: OIDC tokens are validated against the
+targeted PT&#x27;s issuer/audience <strong>and</strong> principal/group claims are extracted with that PT&#x27;s claim
+mappings, and basic-auth credentials are validated against the targeted PT&#x27;s user store.</li>
+<li class="">Selecting a whole per-PT <code>AuthenticationHandler</code> (rather than swapping a decoder inside a shared
+handler) keeps each PT&#x27;s full method config self-contained, leaves the <code>AuthenticationHandler</code>
+interface unchanged, and makes each PT&#x27;s handler independently testable.</li>
+<li class="">No implicit <code>default</code> routing — the PT is always explicit (from the header, defaulting to
+<code>default</code> only when the header is absent), and an unresolvable PT fails closed, in line with the
+PT effort&#x27;s &quot;never silently fall back to <code>default</code>&quot; direction.</li>
+<li class="">CSL stays physical-tenant-agnostic (Slice 1 principle): all PT resolution lives OC-side, reusing
+<code>ScopedJwtDecoderFactory</code>, <code>PhysicalTenantAuthConfigurations</code>, and <code>ServiceRegistry</code>.</li>
+<li class="">The gRPC change is isolated — REST&#x27;s <code>ScopedApiChainRegistrar</code> is untouched.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative--trade-offs">Negative / trade-offs<a href="#negative--trade-offs" class="hash-link" aria-label="Direct link to Negative / trade-offs" title="Direct link to Negative / trade-offs" translate="no">​</a></h3>
+<ul>
+<li class="">A <strong>second per-PT auth construction</strong> exists (gRPC&#x27;s handler registry plus REST&#x27;s inline chains).
+Both derive from one config source (<code>PhysicalTenantAuthConfigurations</code>), so drift risk is low;
+consolidating onto a shared registry remains a possible fast-follow.</li>
+<li class="">Per-PT handlers are built <strong>eagerly</strong> at startup (one decoder / JWKS client per PT for OIDC). This
+matches REST&#x27;s per-scope construction; if startup cost becomes a concern, lazy construction is a
+later refinement.</li>
+<li class="">The <code>Camunda-Physical-Tenant</code> header is parsed in two interceptors; the shared helper keeps the
+parse + default-resolution logic single-sourced.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="neutral">Neutral<a href="#neutral" class="hash-link" aria-label="Direct link to Neutral" title="Direct link to Neutral" translate="no">​</a></h3>
+<ul>
+<li class="">The cluster authentication method stays global; the handler-selection <code>switch</code> is unchanged.</li>
+<li class="">Single/default-PT deployments are unchanged (everything resolves to the one <code>default</code> PT).</li>
+<li class=""><code>PhysicalTenantInterceptor</code> keeps its existing role (known-PT validation + downstream <code>Context</code>
+stamping for service routing); auth only borrows its header-reading.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives Considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives Considered" title="Direct link to Alternatives Considered" translate="no">​</a></h2>
+<ol>
+<li class="">
+<p><strong>Reorder interceptors so <code>PhysicalTenantInterceptor</code> precedes auth</strong>, letting auth read the PT
+id from <code>Context</code>. Rejected: it lets unauthenticated callers distinguish <code>NOT_FOUND</code> vs.
+<code>UNAUTHENTICATED</code> (a PT-existence probe) and changes the established chain ordering for no real
+gain over reading the header directly.</p>
+</li>
+<li class="">
+<p><strong>Share REST decoder instances with gRPC</strong> by exposing CSL&#x27;s per-chain decoders as beans.
+Rejected for this slice: REST decoders are path-keyed and captive inside filter-chain closures,
+and exposing them pushes PT/scope concepts deeper into CSL, widening blast radius. Sharing the
+construction path gives the same correctness without the coupling.</p>
+</li>
+<li class="">
+<p><strong>Per-PT authentication method</strong> (each PT independently OIDC or BASIC, from its merged
+<code>AuthenticationConfiguration</code>). Deferred: significant interceptor complexity for a capability the
+slice does not require — the issue asks only to route to the corresponding decoder / user store.</p>
+</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="references">References<a href="#references" class="hash-link" aria-label="Direct link to References" title="Direct link to References" translate="no">​</a></h2>
+<ul>
+<li class=""><a class="" href="/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> — pre-security filter
+that stamps the PT id on REST requests; the contrast that motivates header-reading on gRPC.</li>
+<li class=""><a class="" href="/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/">ADR-0005</a> — per-PT routing of the
+authorization layer; establishes the <code>serviceRegistry.userServices(pt)</code> basic-auth routing this
+ADR mirrors on gRPC.</li>
+<li class="">#54896 — Physical Tenants Identity, Slice 2 (gRPC) — the issue this ADR addresses.</li>
+<li class="">#54728 — Physical Tenants Identity, Slice 1 (parent); the principle that CSL stays PT-agnostic.</li>
+<li class=""><code>AuthenticationInterceptor</code> / <code>AuthenticationHandler</code>
+(<code>zeebe/gateway-grpc/.../interceptors/impl/</code>) — the gRPC auth entry point and sealed handler this
+ADR makes PT-aware.</li>
+<li class=""><code>PhysicalTenantInterceptor</code> (<code>zeebe/gateway-grpc/.../interceptors/impl/</code>) — reads/validates the
+<code>Camunda-Physical-Tenant</code> header; source of the shared header helper.</li>
+<li class=""><code>ScopedJwtDecoderFactory</code> (CSL) and <code>PhysicalTenantAuthConfigurations</code> /
+<code>PhysicalTenantScopeProvider</code> (<code>authentication/.../pt/</code>) — the per-PT decoder construction path
+shared with REST.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/architecture/components/orchestration-cluster/adr/0006-physical-tenant-scoped-grpc-authentication.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#status" class="table-of-contents__link toc-highlight">Status</a></li><li><a href="#deciders" class="table-of-contents__link toc-highlight">Deciders</a></li><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a><ul><li><a href="#a-a-grpc-owned-per-pt-handler-registry-decoupled-from-rest" class="table-of-contents__link toc-highlight">A. A gRPC-owned per-PT handler registry, decoupled from REST</a></li><li><a href="#b-the-interceptor-selects-the-handler-by-pt-id-no-reordering-no-interface-change" class="table-of-contents__link toc-highlight">B. The interceptor selects the handler by PT id; no reordering, no interface change</a></li><li><a href="#c-both-gateway-construction-sites-supply-the-registry" class="table-of-contents__link toc-highlight">C. Both gateway construction sites supply the registry</a></li></ul></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a><ul><li><a href="#positive" class="table-of-contents__link toc-highlight">Positive</a></li><li><a href="#negative--trade-offs" class="table-of-contents__link toc-highlight">Negative / trade-offs</a></li><li><a href="#neutral" class="table-of-contents__link toc-highlight">Neutral</a></li></ul></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives Considered</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
