@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CheckmarkFilled, CheckmarkOutline, CloseFilled, Pause, Pending, Renew, Warning} from '@carbon/icons-react';
+import {CheckmarkFilled, CheckmarkOutline, CloseFilled, Pause, Pending, Renew, Warning} from '@carbon/react/icons';
 import styled from 'styled-components';
 import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
 
