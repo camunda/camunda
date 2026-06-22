@@ -101,6 +101,9 @@ optimize:
     # workload may benefit (or even require) from a different value here.
     - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
       value: "1000" # default 200
+    # Disabling Variable import completelty
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_VARIABLE_IMPORT_ENABLED
+      value: "false"
 
   tolerations:
     - key: nodepool
