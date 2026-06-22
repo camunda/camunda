@@ -8,7 +8,6 @@
 package io.camunda.search.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,17 +25,19 @@ class WaitStateConditionDetailsTest {
   }
 
   @Test
-  void shouldReturnImmutableListWhenEventsIsNull() {
+  void shouldReturnMutableListWhenEventsIsNull() {
     // given
     final var details = new WaitStateConditionDetails(null, null);
 
-    // when / then
-    assertThatThrownBy(() -> details.events().add("event"))
-        .isInstanceOf(UnsupportedOperationException.class);
+    // when
+    details.events().add("event");
+
+    // then
+    assertThat(details.events()).containsExactly("event");
   }
 
   @Test
-  void shouldReturnImmutableCopyOfProvidedEvents() {
+  void shouldReturnCopyOfProvidedEvents() {
     // given
     final var mutableList = new ArrayList<>(List.of("event-a", "event-b"));
     final var details = new WaitStateConditionDetails(null, mutableList);
@@ -49,12 +50,14 @@ class WaitStateConditionDetailsTest {
   }
 
   @Test
-  void shouldReturnImmutableListWhenEventsIsNonNull() {
+  void shouldReturnMutableListWhenEventsIsNonNull() {
     // given
     final var details = new WaitStateConditionDetails(null, List.of("event-a"));
 
-    // when / then
-    assertThatThrownBy(() -> details.events().add("event-b"))
-        .isInstanceOf(UnsupportedOperationException.class);
+    // when
+    details.events().add("event-b");
+
+    // then
+    assertThat(details.events()).containsExactly("event-a", "event-b");
   }
 }
