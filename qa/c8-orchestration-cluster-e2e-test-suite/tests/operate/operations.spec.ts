@@ -272,7 +272,7 @@ test.describe('Operations', () => {
         },
         maxRetries: 10,
       });
-      
+
       await Promise.all(
         instances.map((instance) =>
           expect(
