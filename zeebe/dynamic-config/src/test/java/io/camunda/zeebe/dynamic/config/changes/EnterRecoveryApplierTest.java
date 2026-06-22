@@ -19,6 +19,7 @@ import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
 final class EnterRecoveryApplierTest {
@@ -71,7 +72,7 @@ final class EnterRecoveryApplierTest {
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("member is not in active state");
+        .hasMessageContaining("the member is not part of the cluster");
   }
 
   @Test
@@ -86,10 +87,8 @@ final class EnterRecoveryApplierTest {
     final var result = applier.initMemberState(config);
 
     // then
-    EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("member is not in active state");
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get()).isInstanceOf(UnaryOperator.class);
   }
 
   @Test

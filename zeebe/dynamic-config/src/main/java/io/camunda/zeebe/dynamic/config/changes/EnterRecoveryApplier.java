@@ -38,7 +38,6 @@ public class EnterRecoveryApplier implements MemberOperationApplier {
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterConfiguration currentClusterConfiguration) {
     if (!currentClusterConfiguration.hasMember(memberId)) {
-
       return Either.left(
           new IllegalStateException(String.format(TRANSITION_ERROR_MESSAGE, memberId)));
     }
