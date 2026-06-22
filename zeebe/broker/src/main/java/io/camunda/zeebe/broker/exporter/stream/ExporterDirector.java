@@ -457,10 +457,26 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final String exporterId,
       final ExporterStateDistributeMessage.ExporterStateEntry exporterState) {
 
+    if (!isExporterConfigured(exporterId)) {
+      // The exporter is not configured (anymore) on this node, e.g. it was disabled or deleted.
+      // Accepting its state would re-introduce a removed exporter into the runtime state, where its
+      // stale position is never advanced and only removed again on the next restart via
+      // clearExporterState(). Since getLowestPosition() is the minimum across all exporter states,
+      // such a stale entry pins the snapshot/compaction position and prevents log compaction.
+      LOG.trace(
+          "Ignoring distributed state for exporter '{}' which is not configured anymore.",
+          exporterId);
+      return;
+    }
+
     if (state.getPosition(exporterId) < exporterState.position()) {
       state.setExporterState(exporterId, exporterState.position(), exporterState.metadata());
       metrics.setLastUpdatedExportedPosition(exporterId, exporterState.position());
     }
+  }
+
+  private boolean isExporterConfigured(final String exporterId) {
+    return containers.stream().anyMatch(container -> container.getId().equals(exporterId));
   }
 
   private void initContainers() throws Exception {
