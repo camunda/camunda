@@ -195,7 +195,7 @@ const statValueStyle: React.CSSProperties = {
   color: 'var(--cds-text-primary)',
 };
 
-function TokensStatCard({
+export function TokensStatCard({
   usage,
 }: {
   usage: {
@@ -269,7 +269,7 @@ function TokensStatCard({
   );
 }
 
-function ToolsCalledStatCard({current}: {current: number}) {
+export function ToolsCalledStatCard({current}: {current: number}) {
   return (
     <div style={statCardStyle}>
       <div style={statLabelStyle}>Tools called</div>
@@ -286,7 +286,7 @@ function ToolsCalledStatCard({current}: {current: number}) {
   );
 }
 
-function ModelCallsStatCard({
+export function ModelCallsStatCard({
   current,
   limit,
 }: {

@@ -33,7 +33,7 @@ const STATUS_MAP: Record<AgentInstanceStatus, AgentStatus> = {
 // these from the definition instead of hardcoding. Today the BPMN carries them
 // in <bpmn:documentation> on each tool element, but they're not surfaced through
 // any API field the frontend reads.
-const TOOL_DESCRIPTIONS: Record<string, string> = {
+export const TOOL_DESCRIPTIONS: Record<string, string> = {
   ListUsers: 'Lists all available users in the directory.',
   LoadUserByID: "Fetches a single user's full profile by their ID.",
   GetDateAndTime:
