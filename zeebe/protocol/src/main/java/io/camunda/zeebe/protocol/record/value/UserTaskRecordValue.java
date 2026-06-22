@@ -106,4 +106,14 @@ public interface UserTaskRecordValue
    *     8.9
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the business ID inherited from the owning process instance, captured when the user task
+   * is created. A user task in a child process instance carries whatever business ID that child
+   * instance was created with.
+   *
+   * @return the business ID of the owning process instance, or an empty string if it has none (or
+   *     for versions prior to 8.10)
+   */
+  String getBusinessId();
 }
