@@ -38,9 +38,9 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=camunda
       - GF_USERS_ALLOW_SIGN_UP=false
 
-  camunda:
+  zeebe:
     image: camunda/camunda:${CAMUNDA_VERSION:-SNAPSHOT}
-    container_name: camunda
+    container_name: zeebe
     environment:
       - SPRING_PROFILES_ACTIVE=broker
       # Use an in-memory RDBMS backend so the broker starts without an external database.
