@@ -225,6 +225,7 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getBusinessId()).isEqualTo("business-1");
   }
 
   @Test
