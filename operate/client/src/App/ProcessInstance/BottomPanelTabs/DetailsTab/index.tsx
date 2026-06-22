@@ -28,6 +28,7 @@ import {
   IterationDetail,
   ToolCallDetail,
 } from '../AiAgentTab/AgentDetailPanel';
+import {FlatTraceAgentDetail} from '../AiAgentTab/FlatTraceAgentDetail';
 
 const DetailsTab: React.FC = () => {
   const {
@@ -49,6 +50,7 @@ const DetailsTab: React.FC = () => {
     getAgentDataForElement,
     getIterationForElement,
     getToolCallForElement,
+    variant,
   } = useAgentData();
 
   const businessObject = selectedElementId
@@ -364,6 +366,8 @@ const DetailsTab: React.FC = () => {
           <IterationDetail iteration={iteration} />
         ) : toolInfo ? (
           <ToolCallDetail tool={toolInfo.tool} iteration={toolInfo.iteration} />
+        ) : variant === 'flat-trace' ? (
+          <FlatTraceAgentDetail agentData={agentData} />
         ) : (
           <DefaultAgentDetail agentData={agentData} />
         )}
