@@ -11,7 +11,6 @@ import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DE
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
-import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -20,6 +19,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;

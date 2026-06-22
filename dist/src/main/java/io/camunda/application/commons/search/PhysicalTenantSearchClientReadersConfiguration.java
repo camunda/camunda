@@ -14,6 +14,7 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.cache.ProcessCache;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.tenant.SearchClients;

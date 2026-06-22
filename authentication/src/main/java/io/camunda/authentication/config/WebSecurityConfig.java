@@ -14,7 +14,7 @@ import io.camunda.authentication.config.spi.IdentityToAdminComponentAliasAdapter
 import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.authentication.pt.PhysicalTenantSecurityConfiguration;
-import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
@@ -111,21 +111,21 @@ public class WebSecurityConfig {
   }
 
   /**
-   * Host {@link AuthorizationRepositoryPort} backed by OC's {@link AuthorizationReader}. Only
-   * registered when secondary storage is enabled — without it there is no live authorization data
-   * to consult and CSL's webapp authorization filter has nothing meaningful to enforce.
+   * Host {@link AuthorizationRepositoryPort} backed by the per-physical-tenant authorization
+   * readers. Only registered when secondary storage is enabled — without it there is no live
+   * authorization data to consult and CSL's webapp authorization filter has nothing meaningful to
+   * enforce.
    *
-   * <p>{@link AuthorizationReader} is injected with {@link Lazy @Lazy}: Spring hands the adapter a
-   * proxy that defers resolution of the real bean (and therefore the {@code SearchClients} factory
-   * chain it depends on) to the first authorization lookup. Keeps security wiring decoupled from
-   * storage liveness at boot and keeps the adapter free of Spring types.
+   * <p>The adapter selects the reader for the in-context physical tenant on each lookup from {@link
+   * PhysicalTenantSearchClientReaders}, the same per-tenant readers wrapper the data plane
+   * consumes.
    */
   @Bean
   @ConditionalOnSecondaryStorageEnabled
   @ConditionalOnMissingBean(AuthorizationRepositoryPort.class)
   public AuthorizationRepositoryPort authorizationRepositoryPort(
-      @Lazy final AuthorizationReader authorizationReader) {
-    return new AuthorizationRepositoryAdapter(authorizationReader);
+      @Lazy final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
+    return new AuthorizationRepositoryAdapter(physicalTenantSearchClientReaders);
   }
 
   /**

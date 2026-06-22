@@ -14,6 +14,7 @@ import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
