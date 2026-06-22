@@ -97,27 +97,6 @@ fi
 enable_single_zone="${6:-true}"
 enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
 
-# Pick a "random" zone, selected from the input value.
-function hashmod_zone() {
-    local input="${1?"Specify an initial value to compute the zone from"}"
-
-    # We can get the list of zones with already created nodes with:
-    # kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io\/zone}{"\n"}{end}' | sort | uniq -c
-    zones=(
-        europe-west1-b
-        europe-west1-c
-        europe-west1-d
-    )
-    nb_zones=${#zones[@]}
-
-    # bc only accept hexadecimal with capitalized letters
-    checksum="$(echo "$input" | md5sum | cut -c 1-32 | tr "a-z" "A-Z")"
-    hashmod="$(echo "ibase=16; $checksum % $nb_zones" | bc)"
-
-    zone="${zones[$hashmod]}"
-    echo "$zone"
-}
-
 # `hashmod_zone` is deterministic, so the zone baked into namespace.yaml and
 # the values files matches any re-applied manifest after TTL deletion.
 if [[ "$enable_single_zone" == "true" ]]; then
@@ -209,27 +188,7 @@ fi
 ################################ CREDENTIALS ################################################
 #############################################################################################
 
-function get_existing_secret() {
-  jsonObject=$1
-  key=$2
-  existing_secret=$(echo "$jsonObject" | jq --raw-output --arg key "$key" '.[$key] // empty' | base64 -d)
-  if [ -z "$existing_secret" ]; then
-    echo "ERROR: existing camunda-credentials secret is missing key '$key'."
-    exit 1
-  fi
-  echo "$existing_secret"
-}
-
-# Generate credentials. These are baked into resources/camunda-credentials.yaml
-# and (for the orchestration OIDC secret) into load-test-values.yaml. Any
-# subsequent `make install` reapplies the same manifest, so the secret in the
-# cluster always matches the value the load test starter authenticates with.
-# `head -c 20` closes the pipe early; upstream `tr` then takes SIGPIPE and
-# returns 141 under `set -o pipefail`. Wrap in a subshell so the harmless
-# SIGPIPE doesn't trip `set -e` in the caller.
-function gen_password() { ( set +o pipefail; LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20 ); }
-function gen_token()    { openssl rand -hex 16; }
-
+# `get_existing_secret`, `gen_password`, and `gen_token` are sourced from utils.sh.
 
 # If the secret already exists in the cluster, preserve all existing values to avoid breaking any live load test.
 # If the secret doesn't exist, generate new random values for all keys.
