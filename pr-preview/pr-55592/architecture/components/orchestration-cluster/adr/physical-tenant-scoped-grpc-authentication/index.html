@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0006: Physical-Tenant-Scoped gRPC Authentication | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55592/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55592/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.32a8a9f8.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55592/assets/js/main.6c04a253.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.07f5c796.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/main.dbd40c4b.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -69,9 +69,9 @@ PT&#x27;s</em> <code>OidcConfiguration</code>. This is the key reason the per-PT
 groups-claim behaviour from <code>oidcConfig</code> at construction time, so a PT on a different IdP (with
 different username/client-id/groups claim names) needs its own handler, not just its own decoder.
 Swapping only the decoder inside a shared handler would decode the token but extract claims with
-the wrong PT&#x27;s config. The <code>claimsProvider</code> stays the <strong>global</strong> instance — over gRPC only the
-client-credentials flow is handled, and the provider passes the access-token claims through as-is,
-so it needs no per-PT variation.</li>
+the wrong PT&#x27;s config. The <code>claimsProvider</code> stays the <strong>global</strong> instance: over gRPC only the
+client-credentials flow is used, for which userinfo-based claim enrichment is not relevant (it
+applies to user tokens), so the provider needs no per-PT variation.</li>
 <li class=""><strong>BASIC</strong> → <code>new AuthenticationHandler.BasicAuth(serviceRegistry.userServices(id), passwordEncoder)</code>
 — the same per-PT user-store routing <code>BasicAuthUserDetailsAdapter</code> already uses for REST
 (ADR-0005). <code>passwordEncoder</code> is global.</li>
