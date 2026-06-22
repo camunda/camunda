@@ -19,6 +19,8 @@ camunda:
             client-id: camunda-pt-tenantb-client
             client-secret: tenantb-secret
             issuer-uri: http://localhost:8083/realms/tenantb
+            # Explicit JWK set for the per-PT scoped chain's ID-token signature verification.
+            jwk-set-uri: http://localhost:8083/realms/tenantb/protocol/openid-connect/certs
             audiences: [pt-tenantb-aud]
             redirect-uri: "{baseUrl}/sso-callback"
   physical-tenants:
