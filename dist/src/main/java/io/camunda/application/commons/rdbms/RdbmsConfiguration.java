@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
+import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -37,6 +38,8 @@ import java.sql.DatabaseMetaData;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,10 +119,28 @@ public class RdbmsConfiguration {
   @Bean
   public CamundaSearchClients camundaSearchClients(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
-      final List<ResourceAccessController> resourceAccessControllers) {
+      final Optional<PhysicalTenantResourceAccessControllers>
+          physicalTenantResourceAccessControllers) {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        new ResourceAccessDelegatingController(resourceAccessControllers));
+        physicalTenantResourceAccessControllers
+            .map(PhysicalTenantResourceAccessControllers::controllersByPhysicalTenant)
+            .orElseGet(() -> failFastControllers(physicalTenantSearchClientReaders)));
+  }
+
+  /**
+   * Fallback for non-web contexts (e.g. Restore, engine-only integration tests) where the per-PT
+   * {@link PhysicalTenantResourceAccessControllers} bean is not created. Such contexts do not
+   * perform authorized data-plane reads; an empty delegating controller keeps the context startable
+   * while failing fast on any accidental read.
+   */
+  private static Map<String, ResourceAccessController> failFastControllers(
+      final PhysicalTenantSearchClientReaders readers) {
+    return readers.readersByPhysicalTenant().keySet().stream()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                tenantId -> tenantId,
+                tenantId -> new ResourceAccessDelegatingController(List.of())));
   }
 
   @Bean

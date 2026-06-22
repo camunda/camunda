@@ -10,6 +10,8 @@ package io.camunda.application.commons.rdbms;
 import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
+import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -28,6 +30,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -141,12 +144,19 @@ class RdbmsConfigurationPerTenantReadersIT {
     }
 
     /**
-     * Required only so that {@link CamundaSearchClients} can execute a read; access control is not
-     * under test here.
+     * Provides an anonymous controller per physical tenant so {@link CamundaSearchClients} can
+     * execute reads; access control is not under test here.
      */
     @Bean
-    ResourceAccessController testAnonymousResourceAccessController() {
-      return new AnonymousResourceAccessController();
+    PhysicalTenantResourceAccessControllers testPhysicalTenantResourceAccessControllers(
+        final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
+      return new PhysicalTenantResourceAccessControllers(
+          physicalTenantSearchClientReaders.readersByPhysicalTenant().keySet().stream()
+              .collect(
+                  Collectors.toUnmodifiableMap(
+                      tenantId -> tenantId,
+                      tenantId ->
+                          (ResourceAccessController) new AnonymousResourceAccessController())));
     }
 
     private static void configureTenant(final MockEnvironment env, final String tenantId) {

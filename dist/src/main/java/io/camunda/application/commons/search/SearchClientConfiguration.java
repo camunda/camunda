@@ -20,6 +20,9 @@ import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,9 +62,27 @@ public class SearchClientConfiguration {
   })
   public CamundaSearchClients camundaSearchClients(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
-      final List<ResourceAccessController> resourceAccessControllers) {
+      final Optional<PhysicalTenantResourceAccessControllers>
+          physicalTenantResourceAccessControllers) {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        new ResourceAccessDelegatingController(resourceAccessControllers));
+        physicalTenantResourceAccessControllers
+            .map(PhysicalTenantResourceAccessControllers::controllersByPhysicalTenant)
+            .orElseGet(() -> failFastControllers(physicalTenantSearchClientReaders)));
+  }
+
+  /**
+   * Fallback for non-web contexts (e.g. Restore, engine-only integration tests) where the per-PT
+   * {@link PhysicalTenantResourceAccessControllers} bean is not created. Such contexts do not
+   * perform authorized data-plane reads; an empty delegating controller keeps the context startable
+   * while failing fast on any accidental read.
+   */
+  private static Map<String, ResourceAccessController> failFastControllers(
+      final PhysicalTenantSearchClientReaders readers) {
+    return readers.readersByPhysicalTenant().keySet().stream()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                tenantId -> tenantId,
+                tenantId -> new ResourceAccessDelegatingController(List.of())));
   }
 }
