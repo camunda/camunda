@@ -1,0 +1,30 @@
+fullnameOverride: "prom-els-exporter"
+
+# The target Elasticsearch/OpenSearch cluster is configured at deployment time
+# via: --set es.uri
+
+commonLabels:
+  camunda.io/created-by: Christopher-Kujawa
+  camunda.io/purpose: load-test
+
+image:
+  # Route through colocated GAR pull-through cache to avoid quay.io rate limiting
+  # Original: quay.io/prometheuscommunity/elasticsearch-exporter
+  repository: "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter"
+  # Set your specific exporter version here
+  tag: "v1.10.0"
+
+log:
+  format: json
+
+serviceMonitor:
+  ## If true, a ServiceMonitor CRD is created for a prometheus operator
+  ## https://github.com/coreos/prometheus-operator
+  ##
+  enabled: true
+  # Labels used by the service monitor, specific to our prometheus installation
+  labels:
+    release: monitoring
+
+nodeSelector:
+  topology.kubernetes.io/zone: europe-west1-c
