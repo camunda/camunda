@@ -25,7 +25,10 @@ public final class CoordinatorRequestHandlerStep implements PartitionStartupStep
   public void prepare(final PartitionContext context) {
     final var mgr =
         new CoordinationManager(
-            context.getPartitionId(), context.getPartitionCount(), context.getClock());
+            context.getPartitionId(),
+            context.getPartitionCount(),
+            context.getClock(),
+            context.getRaftPartition().dataDirectory().toPath());
     context.setCoordinationManager(mgr);
     context.setCoordinationRequestHandler(
         new CoordinationRequestHandler(context.getPartitionId(), mgr));

@@ -362,6 +362,8 @@ public final class Consumer {
             }
           }
 
+          seedCommittedOffsets(body);
+
           final var state = (String) body.get("errorCode");
 
           LOG.info(
@@ -553,13 +555,20 @@ public final class Consumer {
   // Internal helpers
 
   private void doCommitOffset(final int partitionId, final long position) {
-    final String url = client.getGatewayUrl() + "/v1/events/" + partitionId + "/commit";
+    // Commit goes to the coordinator (owns membership + epoch), which fences stale commits.
+    final String url =
+        client.getGatewayUrl()
+            + "/v1/groups/"
+            + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
+            + "/consumers/"
+            + URLEncoder.encode(memberId, StandardCharsets.UTF_8)
+            + "/commit";
     final String jsonBody;
     try {
       final var bodyMap = new LinkedHashMap<String, Object>();
-      bodyMap.put("groupId", groupId);
-      bodyMap.put("consumerId", memberId);
+      bodyMap.put("partitionId", partitionId);
       bodyMap.put("position", position);
+      bodyMap.put("memberEpoch", memberEpoch);
       jsonBody = client.getObjectMapper().writeValueAsString(bodyMap);
     } catch (final JsonProcessingException e) {
       throw new EventBridgeException("Failed to serialize commitOffset request", e);
@@ -594,6 +603,24 @@ public final class Consumer {
     if (response.statusCode() != 204 && response.statusCode() != 200) {
       throw new EventBridgeException(
           "commitOffset failed: HTTP " + response.statusCode() + " — " + response.body());
+    }
+  }
+
+  /**
+   * Seeds {@link #nextPositions} from the coordinator's committed offsets carried in the heartbeat
+   * response, so a (re)assigned consumer resumes from the committed position. Uses {@code max} so
+   * an in-flight local position is never rewound to an older committed one.
+   */
+  private void seedCommittedOffsets(final Map<String, Object> body) {
+    if (!(body.get("committedOffsets") instanceof final Map<?, ?> committed)) {
+      return;
+    }
+    for (final var entry : committed.entrySet()) {
+      final int partition = Integer.parseInt(String.valueOf(entry.getKey()));
+      if (!ownedPartitions.contains(partition) || !(entry.getValue() instanceof Number offset)) {
+        continue;
+      }
+      nextPositions.merge(partition, offset.longValue(), Math::max);
     }
   }
 

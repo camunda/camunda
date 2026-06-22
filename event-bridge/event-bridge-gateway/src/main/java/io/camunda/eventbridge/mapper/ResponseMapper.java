@@ -9,6 +9,7 @@ package io.camunda.eventbridge.mapper;
 
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos;
 import io.camunda.eventbridge.protocol.request.PublishBatchResponse;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
@@ -28,6 +29,11 @@ public class ResponseMapper {
     return new EventBridgeDtos.LeaveGroupResponse(response.getErrorCode().getId());
   }
 
+  public EventBridgeDtos.CommitResponse toCommitResponse(final CommitOffsetResponse response) {
+    return new EventBridgeDtos.CommitResponse(
+        response.getErrorCode().getId(), response.getCommittedPosition());
+  }
+
   public EventBridgeDtos.HeartbeatResponse toHeartbeatResponse(final HeartbeatResponse response) {
     return new EventBridgeDtos.HeartbeatResponse(
         response.getErrorCode().getId(),
@@ -36,7 +42,8 @@ public class ResponseMapper {
         response.getRevoke(),
         response.getAssign(),
         response.getAssignmentEpoch(),
-        response.getAssignment());
+        response.getAssignment(),
+        response.getCommittedOffsets());
   }
 
   public EventBridgeDtos.PublishBatchResponse toPublishBatchResponse(

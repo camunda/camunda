@@ -11,6 +11,8 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.REBALANCE_IN_PROGRESS;
 
 import io.camunda.eventbridge.broker.coordinator.assignor.PartitionAssignment.ReconciliationResult;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
@@ -21,6 +23,7 @@ import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.HashMap;
@@ -36,18 +39,23 @@ public class CoordinationManager extends Actor {
   private final int partitionCount;
   private final SnowflakeIdGenerator idGenerator;
   private final InstantSource clock;
+  private final OffsetStore offsetStore;
 
   private final Duration heartbeatTimeout;
   private final Duration heartbeatCheckInterval;
 
   public CoordinationManager(
-      final int partitionId, final int partitionCount, final InstantSource clock) {
+      final int partitionId,
+      final int partitionCount,
+      final InstantSource clock,
+      final Path dataDirectory) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clock = clock;
     registry = new ConsumerGroupRegistry(new HashMap<>());
     validator = new CoordinationValidator(registry);
     idGenerator = new SnowflakeIdGenerator(1L);
+    offsetStore = new OffsetStore(dataDirectory);
     heartbeatTimeout = Duration.ofSeconds(10);
     heartbeatCheckInterval = Duration.ofSeconds(1);
   }
@@ -97,6 +105,33 @@ public class CoordinationManager extends Actor {
 
   public ActorFuture<HeartbeatResponse> handleHeartbeat(final HeartbeatRequest request) {
     return actor.call(() -> heartbeat(request));
+  }
+
+  public ActorFuture<CommitOffsetResponse> handleCommit(final CommitOffsetRequest request) {
+    return actor.call(() -> commit(request));
+  }
+
+  private CommitOffsetResponse commit(final CommitOffsetRequest request) {
+    final var groupId = request.getGroupId();
+    final var memberId = request.getMemberId();
+
+    return validator
+        .isGroupIdValid(groupId)
+        .flatMap(ok -> validator.isActiveMember(groupId, memberId))
+        // Fence zombie commits: reject if the committing member's epoch is stale (a newer
+        // generation has taken over), so a consumer that lost the partition cannot rewind it.
+        .flatMap(
+            ok ->
+                validator.isValidMemberEpoch(
+                    request.getMemberEpoch(),
+                    registry.getGroup(groupId).getSession(memberId).getMetadata().getMemberEpoch()))
+        .map(
+            ok -> {
+              final long committed =
+                  offsetStore.commit(groupId, request.getPartitionId(), request.getPosition());
+              return new CommitOffsetResponse().setErrorCode(NONE).setCommittedPosition(committed);
+            })
+        .fold(errorCode -> new CommitOffsetResponse().setErrorCode(errorCode), Function.identity());
   }
 
   private JoinGroupResponse joinGroup(final JoinGroupRequest request) {
@@ -231,7 +266,8 @@ public class CoordinationManager extends Actor {
         .setAssign(delta.assign())
         .setRevoke(delta.revoke())
         .setAssignment(delta.assignment())
-        .setAssignmentEpoch(group.getAssignmentEpoch());
+        .setAssignmentEpoch(group.getAssignmentEpoch())
+        .setCommittedOffsets(offsetStore.getOffsets(group.getGroupId()));
   }
 
   @Override
@@ -241,6 +277,7 @@ public class CoordinationManager extends Actor {
 
   @Override
   protected void onActorStarted() {
+    offsetStore.load();
     scheduleConsumerEviction();
   }
 

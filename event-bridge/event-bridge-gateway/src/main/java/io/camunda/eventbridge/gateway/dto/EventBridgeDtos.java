@@ -54,25 +54,17 @@ public final class EventBridgeDtos {
   // Commit
 
   /**
-   * Request body for {@code POST /v1/events/{partitionId}/commit}.
+   * Request body for {@code POST /v1/groups/{groupId}/consumers/{memberId}/commit}. The group and
+   * member come from the path.
    *
-   * @param groupId consumer group identifier
-   * @param consumerId consumer identifier
-   * @param position log position to commit (idempotent if ≤ current committed offset)
+   * @param partitionId partition the offset belongs to
+   * @param position next position to read (idempotent; only advances)
+   * @param memberEpoch the committing member's epoch (for fencing stale commits)
    */
-  public record CommitRequest(String groupId, String consumerId, long position) {}
+  public record CommitRequest(int partitionId, long position, long memberEpoch) {}
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record CommitResponse(String status, String error, String message) {
-
-    public static CommitResponse ok() {
-      return new CommitResponse("OK", null, null);
-    }
-
-    public static CommitResponse error(final String errorCode, final String message) {
-      return new CommitResponse("ERROR", errorCode, message);
-    }
-  }
+  public record CommitResponse(String errorCode, long committedPosition) {}
 
   // -------------------------------------------------------------------------
   // Subscribe
@@ -138,7 +130,8 @@ public final class EventBridgeDtos {
       List<Integer> revoke,
       List<Integer> assign,
       long assignmentEpoch,
-      List<Integer> fullAssignment) {}
+      List<Integer> fullAssignment,
+      java.util.Map<Integer, Long> committedOffsets) {}
 
   // -------------------------------------------------------------------------
   // Ack

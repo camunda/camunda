@@ -7,9 +7,12 @@
  */
 package io.camunda.eventbridge.service;
 
+import io.camunda.eventbridge.broker.request.coordination.BrokerCommitRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerHeartbeatRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerJoinGroupRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerLeaveGroupRequest;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
@@ -49,6 +52,12 @@ public class CoordinatorService {
   public CompletableFuture<LeaveGroupResponse> leaveGroup(final LeaveGroupRequest request) {
     return brokerClient
         .sendRequest(new BrokerLeaveGroupRequest().wrapRequest(request))
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
+  }
+
+  public CompletableFuture<CommitOffsetResponse> commit(final CommitOffsetRequest request) {
+    return brokerClient
+        .sendRequest(new BrokerCommitRequest().wrapRequest(request))
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 }

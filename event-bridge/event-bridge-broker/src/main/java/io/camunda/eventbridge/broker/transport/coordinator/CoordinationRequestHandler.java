@@ -9,6 +9,7 @@ package io.camunda.eventbridge.broker.transport.coordinator;
 
 import io.camunda.eventbridge.broker.coordinator.CoordinationManager;
 import io.camunda.eventbridge.broker.transport.RequestHandler;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
@@ -36,10 +37,19 @@ public final class CoordinationRequestHandler implements RequestHandler {
       case JOIN_GROUP -> handleJoinGroup(request);
       case LEAVE_GROUP -> handleLeaveGroup(request);
       case HEARTBEAT -> handleHeartbeat(request);
+      case COMMIT -> handleCommit(request);
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));
     };
+  }
+
+  private CompletableFuture<byte[]> handleCommit(final CoordinationRequest request) {
+    final var commit = new CommitOffsetRequest();
+    commit.wrap(request.value());
+
+    return toFuture(
+        coordinationManager.handleCommit(commit), CoordinationResponseEncoder::encodeCommit);
   }
 
   private CompletableFuture<byte[]> handleJoinGroup(final CoordinationRequest request) {

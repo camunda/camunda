@@ -103,4 +103,22 @@ public class CoordinationController {
               return ResponseEntity.ok(response);
             });
   }
+
+  @PostMapping("/{groupId}/consumers/{memberId}/commit")
+  public CompletableFuture<ResponseEntity<Object>> commit(
+      @PathVariable final String groupId,
+      @PathVariable final String memberId,
+      @RequestBody final EventBridgeDtos.CommitRequest commitRequest) {
+
+    final var request = requestMapper.toCommitRequest(groupId, memberId, commitRequest);
+    return coordinatorService
+        .commit(request)
+        .handleAsync(
+            (res, error) -> {
+              if (error != null) {
+                return ResponseEntity.internalServerError().build();
+              }
+              return ResponseEntity.ok(responseMapper.toCommitResponse(res));
+            });
+  }
 }

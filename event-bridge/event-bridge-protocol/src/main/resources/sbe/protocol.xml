@@ -61,6 +61,7 @@
       <validValue name="HEARTBEAT">0</validValue>
       <validValue name="JOIN_GROUP">1</validValue>
       <validValue name="LEAVE_GROUP">2</validValue>
+      <validValue name="COMMIT">3</validValue>
     </enum>
 
     <enum name="PublishResponseStatus" encodingType="uint8"

@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.mapper;
 
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
@@ -38,5 +39,15 @@ public class RequestMapper {
         .setMemberId(memberId)
         .setMemberEpoch(request.epoch())
         .setOwnedPartitions(request.ownedPartitions());
+  }
+
+  public CommitOffsetRequest toCommitRequest(
+      final String groupId, final String memberId, final EventBridgeDtos.CommitRequest request) {
+    return new CommitOffsetRequest()
+        .setGroupId(groupId)
+        .setMemberId(memberId)
+        .setMemberEpoch(request.memberEpoch())
+        .setPartitionId(request.partitionId())
+        .setPosition(request.position());
   }
 }

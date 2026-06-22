@@ -28,6 +28,10 @@ final class CoordinationResponseEncoder {
     return encode(response);
   }
 
+  static byte[] encodeCommit(final BufferWriter response) {
+    return encode(response);
+  }
+
   private static byte[] encode(final BufferWriter response) {
     final var valueLength = response.getLength();
     final var byteArray = new byte[valueLength];

@@ -16,8 +16,11 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class HeartbeatResponse extends UnpackedObject {
 
@@ -32,16 +35,24 @@ public class HeartbeatResponse extends UnpackedObject {
   private final ArrayProperty<IntegerValue> assignmentProp =
       new ArrayProperty<>("assignment", IntegerValue::new);
   private final LongProperty assignmentEpochProp = new LongProperty("assignmentEpoch", -1L);
+  // Committed offsets for the member's partitions, as two parallel arrays (partition[i] ->
+  // offset[i]).
+  private final ArrayProperty<IntegerValue> committedPartitionsProp =
+      new ArrayProperty<>("committedPartitions", IntegerValue::new);
+  private final ArrayProperty<LongValue> committedOffsetsProp =
+      new ArrayProperty<>("committedOffsets", LongValue::new);
 
   public HeartbeatResponse() {
-    super(7);
+    super(9);
     declareProperty(errorCodeProp)
         .declareProperty(memberIdProp)
         .declareProperty(memberEpochProp)
         .declareProperty(assignProp)
         .declareProperty(revokeProp)
         .declareProperty(assignmentProp)
-        .declareProperty(assignmentEpochProp);
+        .declareProperty(assignmentEpochProp)
+        .declareProperty(committedPartitionsProp)
+        .declareProperty(committedOffsetsProp);
   }
 
   public CoordinationErrorCode getErrorCode() {
@@ -119,6 +130,33 @@ public class HeartbeatResponse extends UnpackedObject {
 
   public HeartbeatResponse setAssignmentEpoch(final long assignmentEpoch) {
     assignmentEpochProp.setValue(assignmentEpoch);
+    return this;
+  }
+
+  /** Committed offset per partition for this member (partition -> next position to read). */
+  public Map<Integer, Long> getCommittedOffsets() {
+    final var partitions = new ArrayList<Integer>();
+    committedPartitionsProp.forEach(e -> partitions.add(e.getValue()));
+    final var offsets = new ArrayList<Long>();
+    committedOffsetsProp.forEach(e -> offsets.add(e.getValue()));
+
+    final var result = new TreeMap<Integer, Long>();
+    for (int i = 0; i < Math.min(partitions.size(), offsets.size()); i++) {
+      result.put(partitions.get(i), offsets.get(i));
+    }
+    return result;
+  }
+
+  public HeartbeatResponse setCommittedOffsets(final Map<Integer, Long> committedOffsets) {
+    committedPartitionsProp.reset();
+    committedOffsetsProp.reset();
+    if (committedOffsets != null) {
+      committedOffsets.forEach(
+          (partition, offset) -> {
+            committedPartitionsProp.add().setValue(partition);
+            committedOffsetsProp.add().setValue(offset);
+          });
+    }
     return this;
   }
 }
