@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useState} from 'react';
+import React, {lazy, Suspense, useState} from 'react';
 import {Button, Modal, Tag} from '@carbon/react';
 import {
   ArrowUpRight,
@@ -101,7 +101,6 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
           alignItems: 'center',
           gap: 'var(--cds-spacing-03)',
           padding: 'var(--cds-spacing-02) 0',
-          borderBottom: '1px solid var(--cds-border-subtle-00)',
           minWidth: 0,
         }}
       >
@@ -369,32 +368,65 @@ function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
         {isNewestFirst ? 'Most recent first' : 'Oldest first'}
         <SortIcon size={12} />
       </button>
-      {steps.map((step) => {
-        if (step.kind === 'user') {
-          return (
-            <ExpandableMessageBlock
-              key={step.key}
-              role="User"
-              borderColor="var(--cds-interactive)"
-              contents={step.content}
-            />
-          );
+      {(() => {
+        const rendered: React.ReactNode[] = [];
+        let i = 0;
+        while (i < steps.length) {
+          const step = steps[i]!;
+          if (step.kind === 'user') {
+            rendered.push(
+              <ExpandableMessageBlock
+                key={step.key}
+                role="User"
+                borderColor="var(--cds-interactive)"
+                contents={step.content}
+              />,
+            );
+            i++;
+          } else if (step.kind === 'assistant') {
+            rendered.push(
+              <ExpandableMessageBlock
+                key={step.key}
+                role="Assistant"
+                borderColor="#8a3ffc"
+                contents={step.content}
+                headerMeta={
+                  <StepTags tokens={step.tokens} durationMs={step.durationMs} />
+                }
+              />,
+            );
+            i++;
+          } else {
+            // Collect all consecutive tool steps
+            const toolGroup: Extract<FlatTraceStep, {kind: 'tool'}>[] = [];
+            while (i < steps.length && steps[i]!.kind === 'tool') {
+              toolGroup.push(
+                steps[i] as Extract<FlatTraceStep, {kind: 'tool'}>,
+              );
+              i++;
+            }
+            rendered.push(
+              <div
+                key={toolGroup[0]!.key}
+                style={{
+                  background: 'var(--cds-layer-01)',
+                  border: '1px solid var(--cds-border-subtle-01)',
+                  borderRadius: '4px',
+                  padding: 'var(--cds-spacing-02) var(--cds-spacing-03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--cds-spacing-02)',
+                }}
+              >
+                {toolGroup.map((toolStep) => (
+                  <ToolBlock key={toolStep.key} step={toolStep} />
+                ))}
+              </div>,
+            );
+          }
         }
-        if (step.kind === 'assistant') {
-          return (
-            <ExpandableMessageBlock
-              key={step.key}
-              role="Assistant"
-              borderColor="#8a3ffc"
-              contents={step.content}
-              headerMeta={
-                <StepTags tokens={step.tokens} durationMs={step.durationMs} />
-              }
-            />
-          );
-        }
-        return <ToolBlock key={step.key} step={step} />;
-      })}
+        return rendered;
+      })()}
     </div>
   );
 }
