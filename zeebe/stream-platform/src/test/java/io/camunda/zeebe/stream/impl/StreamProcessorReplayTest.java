@@ -366,6 +366,47 @@ final class StreamProcessorReplayTest {
             any(Throwable.class), any(TypedRecord.class), any(ProcessingResultBuilder.class));
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/55571")
+  void shouldNotAdvanceKeyCounterWhenReplayingRejectionWithLargeKey() {
+    // given
+    // write a normal command/event pair first to establish a baseline key in the log
+    final var normalEventKey = Protocol.encodePartitionId(1, 5L);
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .key(normalEventKey)
+            .causedBy(0));
+
+    // a command + rejection pair with an anomalously large key — valid partition bits but a
+    // sequence number far ahead, simulating a misbehaving client or corrupt request that was
+    // rejected by the engine; both the command and rejection carry this key in their log-entry
+    // header
+    final var anomalouslyLargeKey = Protocol.encodePartitionId(1, 1_000_000_000L);
+    streamPlatform.writeBatch(
+        RecordToWrite.command()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .key(anomalouslyLargeKey),
+        RecordToWrite.rejection()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .key(anomalouslyLargeKey)
+            .causedBy(0));
+
+    // when: start the stream processor — triggers replay of all log records
+    streamPlatform.startStreamProcessor();
+
+    // then: the key counter must be at the highest EVENT key (5), not the anomalous value from
+    // the rejection records; only engine-authored COMMANDS/EVENT should advance the counter during
+    // replay
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
+        .as(
+            "key counter must stay at the highest EVENT key (%d), "
+                + "not jump to the anomalous command/rejection key (%d)",
+            Protocol.decodeKeyInPartition(normalEventKey),
+            Protocol.decodeKeyInPartition(anomalouslyLargeKey))
+        .isEqualTo(Protocol.decodeKeyInPartition(normalEventKey));
+  }
+
   @Test
   void shouldIgnoreKeysFromDifferentPartition() {
     // given
