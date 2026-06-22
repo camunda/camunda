@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -43,7 +44,9 @@ import org.junit.Test;
  *
  * <p>Tests cover both correlation directions (publish-then-subscribe and subscribe-then-publish), a
  * multi-definition scenario where two processes share the same name/key but differ in business id
- * usage, and a pin that the value captured at OPEN time is what governs later correlation.
+ * usage, and a pin that the value captured at OPEN time is what governs later correlation. The
+ * asymmetric rule is also exercised through the explicit {@code CorrelateMessage} command, not only
+ * the {@code PublishMessage} path, since the two are distinct engine entry points.
  */
 public final class MessageCorrelationBusinessIdTest {
 
@@ -366,6 +369,93 @@ public final class MessageCorrelationBusinessIdTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(correlated.getValue().getBusinessId()).isEmpty();
+  }
+
+  // --- Explicit CorrelateMessage command path: a distinct engine entry point
+  // --- (MessageCorrelationRecord) from the asynchronous PublishMessage path (MessageRecord).
+
+  @Test
+  public void shouldCorrelateViaCommandWhenBusinessIdMatches() {
+    // given a PI with businessId "biz-42" waiting on an intermediate catch event
+    engine.deployment().withXmlResource(INTERMEDIATE_CATCH_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-cmd-1")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when an exactly-matching businessId is correlated through the explicit command
+    engine
+        .messageCorrelation()
+        .withName("message")
+        .withCorrelationKey("order-cmd-1")
+        .withBusinessId("biz-42")
+        .expectNothing()
+        .correlate();
+
+    // then the catch event fires and the process completes
+    assertProcessCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCorrelateViaCommandWithoutBusinessIdToSubscriptionWithOne() {
+    // given a PI with businessId "biz-42" waiting on an intermediate catch event
+    engine.deployment().withXmlResource(INTERMEDIATE_CATCH_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-cmd-2")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when a command without a businessId is correlated (asymmetric rule: it still correlates)
+    engine
+        .messageCorrelation()
+        .withName("message")
+        .withCorrelationKey("order-cmd-2")
+        .expectNothing()
+        .correlate();
+
+    // then the catch event fires and the process completes
+    assertProcessCompleted(processInstanceKey);
+  }
+
+  /**
+   * A CorrelateMessage whose businessId excludes the only subscription (via the asymmetric filter)
+   * leaves nothing to correlate, so the command is rejected NOT_FOUND — unlike PublishMessage,
+   * which would simply not correlate.
+   */
+  @Test
+  public void shouldNotCorrelateViaCommandWhenBusinessIdDiffers() {
+    // given a PI with businessId "biz-42" waiting on an intermediate catch event
+    engine.deployment().withXmlResource(INTERMEDIATE_CATCH_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-cmd-3")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when a command with a different businessId is correlated, the only subscription is excluded
+    // by the asymmetric filter, leaving nothing to correlate
+    final var rejection =
+        engine
+            .messageCorrelation()
+            .withName("message")
+            .withCorrelationKey("order-cmd-3")
+            .withBusinessId("other-biz")
+            .expectRejection()
+            .correlate();
+
+    // then the command is rejected because no (matching) subscription was found
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   private static BpmnModelInstance processWithIntermediateCatch(final String processId) {
