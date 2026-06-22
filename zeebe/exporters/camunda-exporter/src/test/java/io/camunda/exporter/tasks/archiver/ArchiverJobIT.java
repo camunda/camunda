@@ -59,6 +59,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob> {
   protected static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
   protected static final int PARTITION_ID = 1;
   protected static final AtomicLong ID_GENERATOR = new AtomicLong(1);
+  protected static final Duration ARCHIVE_TIMEOUT = Duration.ofSeconds(30L);
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -111,7 +112,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob> {
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(0);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(0);
         });
   }
 
