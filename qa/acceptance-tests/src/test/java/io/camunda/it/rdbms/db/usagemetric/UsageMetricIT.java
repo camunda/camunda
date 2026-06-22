@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.usagemetrics;
+package io.camunda.it.rdbms.db.usagemetric;
 
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
@@ -46,7 +46,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
-public class UsageMetricsIT {
+public class UsageMetricIT {
 
   private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
   private static final long ASSIGNEE_HASH_2 = getStringHashValue("assignee2");
