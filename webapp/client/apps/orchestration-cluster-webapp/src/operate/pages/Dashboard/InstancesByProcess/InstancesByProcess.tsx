@@ -6,22 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {Suspense, useCallback, useMemo} from 'react';
-import {DataTableSkeleton, InlineLoading} from '@carbon/react';
+import {Suspense, useMemo, type ReactElement} from 'react';
+import {useInfiniteQuery} from '@tanstack/react-query';
+import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import SvgErrorRobot from '#/shared/svg/ErrorRobot';
-import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
+import {ErrorBoundary} from 'react-error-boundary';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
-import {ErrorBoundary} from 'react-error-boundary';
+import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
-import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
-import {useInstancesByProcess, PAGE_SIZE} from './useInstancesByProcess';
+import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
+import {LinkWrapper, LoadingRow} from '../styled';
+import {instancesByProcessInfiniteQuery, PAGE_SIZE} from './instancesByProcess.queries';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
-import {ScrollableList, LoadingRow, LinkWrapper} from './styled';
-
-const ROW_HEIGHT = 64;
 
 const InstancesByProcess: React.FC = () => {
 	const {t} = useTranslation();
@@ -35,25 +33,19 @@ const InstancesByProcess: React.FC = () => {
 		hasPreviousPage,
 		isFetchingNextPage,
 		isFetchingPreviousPage,
-	} = useInstancesByProcess();
+	} = useInfiniteQuery({...instancesByProcessInfiniteQuery(), refetchInterval: 5000});
 
 	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
-	const handleScroll = useCallback(
-		async (event: React.UIEvent<HTMLDivElement>) => {
-			const target = event.target as HTMLDivElement;
-			const atBottom = Math.floor(target.scrollHeight - target.clientHeight - target.scrollTop) <= 0;
-			const atTop = target.scrollTop === 0;
-
-			if (atBottom && hasNextPage && !isFetchingNextPage) {
-				await fetchNextPage();
-			} else if (atTop && hasPreviousPage && !isFetchingPreviousPage) {
-				await fetchPreviousPage();
-				target.scrollTop = PAGE_SIZE * ROW_HEIGHT;
-			}
-		},
-		[hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage, fetchNextPage, fetchPreviousPage],
-	);
+	const onScroll = useDashboardScrollPagination({
+		pageSize: PAGE_SIZE,
+		hasNextPage,
+		hasPreviousPage,
+		isFetchingNextPage,
+		isFetchingPreviousPage,
+		fetchNextPage,
+		fetchPreviousPage,
+	});
 
 	const rows = useMemo(
 		() =>
@@ -92,7 +84,7 @@ const InstancesByProcess: React.FC = () => {
 
 	const expandedContents = useMemo(
 		() =>
-			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
+			items.reduce<Record<string, ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				if (item.hasMultipleVersions) {
 					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
 						<ErrorBoundary
@@ -112,42 +104,22 @@ const InstancesByProcess: React.FC = () => {
 				}
 				return accumulator;
 			}, {}),
-		[items],
+		[items, t],
 	);
 
-	if (isPending) {
-		return <DataTableSkeleton columnCount={1} rowCount={20} showHeader={false} showToolbar={false} />;
-	}
-
-	if (isError) {
-		return (
-			<EmptyState
-				icon={<SvgErrorRobot aria-hidden />}
-				heading={t('operate.dashboard.fetchErrorHeading')}
-				description={t('operate.dashboard.fetchErrorDescription')}
-			/>
-		);
-	}
-
 	return (
-		<ScrollableList onScroll={handleScroll} data-testid="instances-by-process-list">
-			{isFetchingPreviousPage && (
-				<LoadingRow>
-					<InlineLoading />
-				</LoadingRow>
-			)}
-			<PartiallyExpandableDataTable
-				dataTestId="instances-by-process-definition"
-				headers={[{key: 'instance', header: 'instance'}]}
-				rows={rows}
-				expandedContents={expandedContents}
-			/>
-			{isFetchingNextPage && (
-				<LoadingRow>
-					<InlineLoading />
-				</LoadingRow>
-			)}
-		</ScrollableList>
+		<ExpandableList
+			isPending={isPending}
+			isError={isError}
+			listTestId="instances-by-process-list"
+			dataTestId="instances-by-process-definition"
+			header="instance"
+			rows={rows}
+			expandedContents={expandedContents}
+			isFetchingNextPage={isFetchingNextPage}
+			isFetchingPreviousPage={isFetchingPreviousPage}
+			onScroll={onScroll}
+		/>
 	);
 };
 

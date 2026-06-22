@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {infiniteQueryOptions, useInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
+import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
@@ -52,15 +52,8 @@ const instancesByProcessInfiniteQuery = () =>
 		maxPages: MAX_PAGES,
 	});
 
-function useInstancesByProcess() {
-	return useInfiniteQuery({
-		...instancesByProcessInfiniteQuery(),
-		refetchInterval: 5000,
-	});
-}
-
-function useInstancesByProcessVersions(processDefinitionId: string, tenantId: string | null) {
-	return useSuspenseQuery({
+const instancesByProcessVersionsQuery = (processDefinitionId: string, tenantId: string | null) =>
+	queryOptions({
 		queryKey: ['instancesByProcessVersions', processDefinitionId, tenantId] as const,
 		queryFn: async (): Promise<GetProcessDefinitionInstanceVersionStatisticsResponseBody> => {
 			const {response, error} = await request(
@@ -75,6 +68,5 @@ function useInstancesByProcessVersions(processDefinitionId: string, tenantId: st
 			return response.json();
 		},
 	});
-}
 
-export {instancesByProcessInfiniteQuery, useInstancesByProcess, useInstancesByProcessVersions, PAGE_SIZE};
+export {instancesByProcessInfiniteQuery, instancesByProcessVersionsQuery, PAGE_SIZE};

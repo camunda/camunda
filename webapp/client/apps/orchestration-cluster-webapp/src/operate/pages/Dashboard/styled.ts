@@ -9,6 +9,7 @@
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
 import {Tile as BaseTile} from '@carbon/react';
+import {Link} from '@tanstack/react-router';
 
 const Container = styled.main`
 	height: 100%;
@@ -77,4 +78,42 @@ const ErrorText = styled.p`
 	color: var(--cds-text-error);
 `;
 
-export {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1, ErrorText};
+const ScrollableList = styled.div`
+	flex: 1;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+`;
+
+const LoadingRow = styled.div`
+	padding: var(--cds-spacing-03) 0;
+	display: flex;
+	justify-content: center;
+`;
+
+const LinkWrapper = styled(Link)`
+	display: block;
+	text-decoration: none !important;
+	padding: var(--cds-spacing-03) 0;
+`;
+
+const Li = styled.li`
+	// override the hover color on expandable row's children
+	&:hover {
+		background-color: var(--cds-layer-hover);
+	}
+`;
+
+export {
+	Container,
+	Grid,
+	ScrollableContent,
+	Tile,
+	TileTitle,
+	VisuallyHiddenH1,
+	ErrorText,
+	ScrollableList,
+	LoadingRow,
+	LinkWrapper,
+	Li,
+};
