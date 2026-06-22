@@ -8,5 +8,6 @@
 package io.camunda.webapps.schema.entities.post;
 
 public enum PostImporterActionType {
-  INCIDENT
+  INCIDENT,
+  PROCESS_INSTANCE_MIGRATION
 }

@@ -31,11 +31,16 @@ public final class ExporterMetadata {
   private static final Logger LOGGER = LoggerFactory.getLogger(ExporterMetadata.class);
   private static final AtomicLongFieldUpdater<ExporterMetadata> INCIDENT_POSITION_SETTER =
       AtomicLongFieldUpdater.newUpdater(ExporterMetadata.class, "lastIncidentUpdatePosition");
+  private static final AtomicLongFieldUpdater<ExporterMetadata>
+      MIGRATION_VARIABLE_BACKFILL_POSITION_SETTER =
+          AtomicLongFieldUpdater.newUpdater(
+              ExporterMetadata.class, "lastMigrationVariableBackfillPosition");
   private static final int UNSET_POSITION = -1;
 
   @JsonIgnore private final ObjectWriter objectWriter;
   @JsonIgnore private final ObjectReader objectReader;
   private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
+  private volatile long lastMigrationVariableBackfillPosition = UNSET_POSITION;
   private Map<TaskImplementation, Long> firstUserTaskKeys =
       new HashMap<>() {
         {
@@ -59,6 +64,15 @@ public final class ExporterMetadata {
     INCIDENT_POSITION_SETTER.updateAndGet(
         this,
         prev -> updateLastIncidentUpdatePositionMonotonic(newLastIncidentUpdatePosition, prev));
+  }
+
+  public long getLastMigrationVariableBackfillPosition() {
+    return lastMigrationVariableBackfillPosition;
+  }
+
+  public void setLastMigrationVariableBackfillPosition(final long newPosition) {
+    MIGRATION_VARIABLE_BACKFILL_POSITION_SETTER.updateAndGet(
+        this, prev -> Math.max(prev, newPosition));
   }
 
   public long getFirstUserTaskKey(final TaskImplementation implementation) {
@@ -114,7 +128,10 @@ public final class ExporterMetadata {
   @Override
   public int hashCode() {
     return Objects.hash(
-        lastIncidentUpdatePosition, firstUserTaskKeys, firstProcessMessageSubscriptionKey);
+        lastIncidentUpdatePosition,
+        lastMigrationVariableBackfillPosition,
+        firstUserTaskKeys,
+        firstProcessMessageSubscriptionKey);
   }
 
   @Override
@@ -127,6 +144,7 @@ public final class ExporterMetadata {
     }
     final ExporterMetadata that = (ExporterMetadata) o;
     return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition
+        && lastMigrationVariableBackfillPosition == that.lastMigrationVariableBackfillPosition
         && firstUserTaskKeys == that.firstUserTaskKeys
         && firstProcessMessageSubscriptionKey == that.firstProcessMessageSubscriptionKey;
   }
@@ -136,6 +154,8 @@ public final class ExporterMetadata {
     return "ExporterMetadata{"
         + "lastIncidentUpdatePosition="
         + lastIncidentUpdatePosition
+        + ", lastMigrationVariableBackfillPosition="
+        + lastMigrationVariableBackfillPosition
         + ", firstUserTaskKeys="
         + firstUserTaskKeys
         + ", firstProcessMessageSubscriptionKey="

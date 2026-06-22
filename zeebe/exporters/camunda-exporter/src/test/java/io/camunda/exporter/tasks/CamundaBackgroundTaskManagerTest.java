@@ -16,6 +16,7 @@ import io.camunda.exporter.tasks.archiver.NoopArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository.NoopHistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
+import io.camunda.exporter.tasks.migrationvariablebackfill.MigrationVariableBackfillRepository.Noop;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -42,6 +43,8 @@ final class CamundaBackgroundTaskManagerTest {
         new CloseableBatchOperationUpdateRepository();
     private final CloseableHistoryDeletionRepository historyDeletionRepository =
         new CloseableHistoryDeletionRepository();
+    private final CloseableMigrationVariableBackfillRepository migrationVariableBackfillRepository =
+        new CloseableMigrationVariableBackfillRepository();
     private final CamundaBackgroundTaskManager taskManager =
         new CamundaBackgroundTaskManager(
             1,
@@ -50,6 +53,7 @@ final class CamundaBackgroundTaskManagerTest {
             incidentRepository,
             batchOperationUpdateRepository,
             historyDeletionRepository,
+            migrationVariableBackfillRepository,
             LoggerFactory.getLogger(CamundaBackgroundTaskManagerTest.class),
             executor,
             java.util.List.of(),
@@ -70,6 +74,7 @@ final class CamundaBackgroundTaskManagerTest {
       assertThat(incidentRepository.isClosed).isTrue();
       assertThat(batchOperationUpdateRepository.isClosed).isTrue();
       assertThat(historyDeletionRepository.isClosed).isTrue();
+      assertThat(migrationVariableBackfillRepository.isClosed).isTrue();
     }
 
     @Test
@@ -112,6 +117,15 @@ final class CamundaBackgroundTaskManagerTest {
     void shouldNotThrowOnHistoryDeletionRepositoryCloseError() {
       // given
       historyDeletionRepository.exception = new RuntimeException("foo");
+
+      // when
+      assertThatCode(taskManager::close).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotThrowOnMigrationVariableBackfillRepositoryCloseError() {
+      // given
+      migrationVariableBackfillRepository.exception = new RuntimeException("foo");
 
       // when
       assertThatCode(taskManager::close).doesNotThrowAnyException();
@@ -194,6 +208,20 @@ final class CamundaBackgroundTaskManagerTest {
 
       @Override
       public void close() throws Exception {
+        if (exception != null) {
+          throw exception;
+        }
+
+        isClosed = true;
+      }
+    }
+
+    private static final class CloseableMigrationVariableBackfillRepository extends Noop {
+      private boolean isClosed;
+      private RuntimeException exception;
+
+      @Override
+      public void close() {
         if (exception != null) {
           throw exception;
         }

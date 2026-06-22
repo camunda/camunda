@@ -45,6 +45,10 @@ import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
+import io.camunda.exporter.tasks.migrationvariablebackfill.ElasticsearchMigrationVariableBackfillRepository;
+import io.camunda.exporter.tasks.migrationvariablebackfill.MigrationVariableBackfillRepository;
+import io.camunda.exporter.tasks.migrationvariablebackfill.MigrationVariableBackfillTask;
+import io.camunda.exporter.tasks.migrationvariablebackfill.OpenSearchMigrationVariableBackfillRepository;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.BatchOperationDependant;
@@ -60,8 +64,10 @@ import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
@@ -92,6 +98,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
   private HistoryDeletionRepository historyDeletionRepository;
   private AuditLogArchiverRepository auditLogArchiverRepository;
+  private MigrationVariableBackfillRepository migrationVariableBackfillRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
 
@@ -133,6 +140,7 @@ public final class CamundaBackgroundTaskManagerFactory {
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
       historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
       auditLogArchiverRepository = createAuditLogArchiverRepository(asyncClient);
+      migrationVariableBackfillRepository = createMigrationVariableBackfillRepository(asyncClient);
     } else {
       final var connector = new ElasticsearchConnector(config.getConnect());
       final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
@@ -142,6 +150,7 @@ public final class CamundaBackgroundTaskManagerFactory {
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
       historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
       auditLogArchiverRepository = createAuditLogArchiverRepository(asyncClient);
+      migrationVariableBackfillRepository = createMigrationVariableBackfillRepository(asyncClient);
     }
 
     final List<RunnableTask> tasks = buildTasks();
@@ -153,6 +162,7 @@ public final class CamundaBackgroundTaskManagerFactory {
         incidentRepository,
         batchOperationUpdateRepository,
         historyDeletionRepository,
+        migrationVariableBackfillRepository,
         logger,
         executor,
         tasks,
@@ -260,6 +270,9 @@ public final class CamundaBackgroundTaskManagerFactory {
     final List<RunnableTask> tasks = new ArrayList<>();
 
     tasks.add(buildIncidentMarkerTask());
+    if (config.isSkipVariableWriteWithoutUserTasks()) {
+      tasks.add(buildMigrationVariableBackfillTask());
+    }
     if (config.getHistory().isProcessInstanceEnabled()) {
       tasks.add(buildProcessInstanceArchiverJob());
       if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
@@ -379,6 +392,56 @@ public final class CamundaBackgroundTaskManagerFactory {
             executor,
             incidentNotifier,
             metrics,
+            logger),
+        1,
+        postExport.getDelayBetweenRuns(),
+        postExport.getMaxDelayBetweenRuns(),
+        executor,
+        logger);
+  }
+
+  private MigrationVariableBackfillRepository createMigrationVariableBackfillRepository(
+      final OpenSearchAsyncClient asyncClient) {
+    final var postImporterTemplate =
+        resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+    final var variableTemplate =
+        resourceProvider.getIndexTemplateDescriptor(VariableTemplate.class);
+    final var taskTemplate = resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class);
+    return new OpenSearchMigrationVariableBackfillRepository(
+        partitionId,
+        postImporterTemplate.getAlias(),
+        variableTemplate.getAlias(),
+        taskTemplate.getFullQualifiedName(),
+        asyncClient,
+        executor,
+        logger);
+  }
+
+  private MigrationVariableBackfillRepository createMigrationVariableBackfillRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    final var postImporterTemplate =
+        resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+    final var variableTemplate =
+        resourceProvider.getIndexTemplateDescriptor(VariableTemplate.class);
+    final var taskTemplate = resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class);
+    return new ElasticsearchMigrationVariableBackfillRepository(
+        partitionId,
+        postImporterTemplate.getAlias(),
+        variableTemplate.getAlias(),
+        taskTemplate.getFullQualifiedName(),
+        asyncClient,
+        executor,
+        logger);
+  }
+
+  private ReschedulingTask buildMigrationVariableBackfillTask() {
+    final var postExport = config.getPostExport();
+    return new ReschedulingTask(
+        new MigrationVariableBackfillTask(
+            metadata,
+            migrationVariableBackfillRepository,
+            postExport.getBatchSize(),
+            config.getIndex().getVariableSizeThreshold(),
             logger),
         1,
         postExport.getDelayBetweenRuns(),

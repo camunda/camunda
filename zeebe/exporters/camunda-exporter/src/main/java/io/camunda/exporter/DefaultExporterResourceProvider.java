@@ -53,6 +53,7 @@ import io.camunda.exporter.handlers.MessageSubscriptionFromMessageStartEventSubs
 import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.PostImporterQueueFromProcessInstanceMigrationHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.ResourceCreatedHandler;
 import io.camunda.exporter.handlers.ResourceDeletedHandler;
@@ -274,6 +275,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 decisionRequirementsCache),
             new PostImporterQueueFromIncidentHandler(
                 indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
+            new PostImporterQueueFromProcessInstanceMigrationHandler(
+                indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName(),
+                processCache,
+                configuration.isSkipVariableWriteWithoutUserTasks()),
             new FlowNodeInstanceFromIncidentHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromProcessInstanceHandler(

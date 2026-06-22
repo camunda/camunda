@@ -12,6 +12,7 @@ import io.camunda.exporter.tasks.archiver.AuditLogArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
+import io.camunda.exporter.tasks.migrationvariablebackfill.MigrationVariableBackfillRepository;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager;
 import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -35,6 +36,7 @@ public final class CamundaBackgroundTaskManager implements CloseableSilently {
   private final IncidentUpdateRepository incidentRepository;
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
   private final HistoryDeletionRepository historyDeletionRepository;
+  private final MigrationVariableBackfillRepository migrationVariableBackfillRepository;
   private final Logger logger;
   private final BackgroundTaskManager delegate;
 
@@ -45,6 +47,8 @@ public final class CamundaBackgroundTaskManager implements CloseableSilently {
       final @WillCloseWhenClosed IncidentUpdateRepository incidentRepository,
       final @WillCloseWhenClosed BatchOperationUpdateRepository batchOperationUpdateRepository,
       final @WillCloseWhenClosed HistoryDeletionRepository historyDeletionRepository,
+      final @WillCloseWhenClosed MigrationVariableBackfillRepository
+              migrationVariableBackfillRepository,
       final Logger logger,
       final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
       final List<RunnableTask> tasks,
@@ -63,6 +67,10 @@ public final class CamundaBackgroundTaskManager implements CloseableSilently {
     this.historyDeletionRepository =
         Objects.requireNonNull(
             historyDeletionRepository, "must specify a history deletion repository");
+    this.migrationVariableBackfillRepository =
+        Objects.requireNonNull(
+            migrationVariableBackfillRepository,
+            "must specify a migration variable backfill repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     delegate = new BackgroundTaskManager(partitionId, logger, executor, tasks, closeTimeout);
   }
@@ -79,7 +87,8 @@ public final class CamundaBackgroundTaskManager implements CloseableSilently {
         auditLogArchiverRepository,
         incidentRepository,
         batchOperationUpdateRepository,
-        historyDeletionRepository);
+        historyDeletionRepository,
+        migrationVariableBackfillRepository);
   }
 
   public void start() {
