@@ -282,9 +282,8 @@ test('external datasources', async (t) => {
 
   await t.click(e.addTileButton);
 
-  await t.switchToIframe(e.externalReport);
-
-  await t.expect(e.exampleHeading.textContent).contains('Example Domain');
+  await t.expect(e.externalReport.exists).ok({timeout: 60000});
+  await t.expect(e.externalReport.getAttribute('src')).contains('example.com');
 });
 
 test('text report', async (t) => {

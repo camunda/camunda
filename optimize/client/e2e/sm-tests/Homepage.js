@@ -230,10 +230,10 @@ test('multi definition selection', async (t) => {
     .typeText(Common.templateModalProcessField, firstDefinition, {replace: true})
     .click(Common.carbonOption(firstDefinition));
 
-  const secondDefinition = 'complexProcess';
+  const secondDefinition = 'complex';
   await t
     .typeText(Common.templateModalProcessField, secondDefinition, {replace: true})
-    .click(Common.carbonOption(secondDefinition));
+    .click(Common.carbonOption(/complex/i));
 
   await t.click(Common.modalConfirmButton);
 });

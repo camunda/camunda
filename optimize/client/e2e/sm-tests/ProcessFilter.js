@@ -362,7 +362,7 @@ test('add process instance duration filter', async (t) => {
 
 test('add an incident filter', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Only Incidents Process');
+  await u.selectReportDefinition(t, /incident/i);
   await u.selectView(t, 'Incident', 'Resolution duration');
 
   await t.click(Report.sectionToggle('Filters'));

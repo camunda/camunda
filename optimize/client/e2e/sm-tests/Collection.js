@@ -95,7 +95,7 @@ test('add, edit and delete sources', async (t) => {
 
   // add source by definition
   await t.click(e.emptyStateAdd);
-  const definitionName = 'Big variable process';
+  const definitionName = 'Big form process';
   await t.typeText(e.sourceModalSearchField, 'big', {replace: true});
   await t.click(e.selectAllCheckbox);
   await t.click(Common.modalConfirmButton);

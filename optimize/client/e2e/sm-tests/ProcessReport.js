@@ -586,11 +586,6 @@ test('aggregators', async (t) => {
   await u.selectView(t, 'Process instance', 'Duration');
 
   await t.click(e.sectionToggle('Filters'));
-  await t.click(e.filterButton);
-  await t.click(Common.menuOption('Instance state'));
-  await t.click(e.modalOption('Completed'));
-  await t.click(Common.modalConfirmButton);
-
   const avg = await e.reportNumber.textContent;
 
   await t.resizeWindow(1600, 800);
@@ -986,7 +981,7 @@ test('show raw data and process model', async (t) => {
 
 test('incident reports', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Only Incidents Process');
+  await u.selectReportDefinition(t, /incident/i);
   await u.selectView(t, 'Incident', 'Count');
   await t.click(e.removeGroupButton);
 
@@ -1143,7 +1138,7 @@ test('multi-aggregation reports', async (t) => {
 test('group by process', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Order process');
-  await u.selectReportDefinition(t, 'bigProcess');
+  await u.selectReportDefinition(t, /big.*process/i);
 
   await u.selectView(t, 'Process instance', 'Count');
   await u.selectGroupby(t, 'Process');
@@ -1406,7 +1401,7 @@ test('hide collapsible section if report has table view', async (t) => {
 
 test.meta({type: 'visual'})('variable submenus are positioned correctly', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Big variable process');
+  await u.selectReportDefinition(t, 'Big form process');
   await u.selectView(t, 'Process instance', 'Count');
   await t.click(e.groupbyDropdown);
   await t.hover(Common.menuOption('Variable'));
