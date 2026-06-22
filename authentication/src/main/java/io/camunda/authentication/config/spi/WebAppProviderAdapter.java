@@ -19,7 +19,7 @@ import java.util.Set;
  */
 public class WebAppProviderAdapter implements WebAppProviderPort {
 
-  private static final Set<String> WEB_APPS = Set.of("admin", "operate", "tasklist");
+  public static final Set<String> WEB_APPS = Set.of("admin", "operate", "tasklist");
 
   @Override
   public Optional<String> webAppFor(final HttpServletRequest request) {
