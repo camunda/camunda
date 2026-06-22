@@ -40,20 +40,21 @@ JOINING → ACTIVE → LEAVING → LEFT) and **partition assignment** (which par
 hosts). With multiple partition groups, a broker might be in the cluster but not yet assigned to
 any partition group — making it invisible in a pure per-group config.
 
-### Option A — `PartitionGroupClusterConfiguration` wrapper with dedicated cluster membership
+### Option A — `ClusterConfiguration` wrapper with dedicated `ClusterMembership` and `PartitionGroupConfiguration` types
 
 ```
-PartitionGroupClusterConfiguration
-  clusterMembership: ClusterConfiguration       // ALL brokers; partitions always empty
-  partitionGroupConfigs: Map<groupId, ClusterConfiguration>
-  pendingPlan: Optional<PartitionGroupChangePlan>
+ClusterConfiguration
+  clusterMembership: ClusterMembership
+  partitionGroups: Map<groupId, PartitionGroupConfiguration>
+  phasedChangePlan: Optional<PhasedChangePlan>
 ```
 
-Each partition group has a complete, independent `ClusterConfiguration`. A dedicated
-`clusterMembership` section tracks all brokers regardless of partition group assignment.
-Cluster-spanning operations (member join/leave) go through a phased `PartitionGroupChangePlan`;
-pure single-group operations (exporter changes) go directly into the target group's
-`pendingChanges`.
+Dedicated types separate the two concerns: `ClusterMembership` tracks all brokers with their
+lifecycle state (no partition assignment), and `PartitionGroupConfiguration` tracks the per-group
+partition assignment and Raft replica state. This eliminates the semantic ambiguity of reusing
+`ClusterConfiguration` for two different purposes (broker lifecycle vs. partition state).
+Cluster-spanning operations (member join/leave) go through a phased `PhasedChangePlan`; pure
+single-group operations (exporter changes) go directly into the target group's `pendingChanges`.
 
 ### Option A' — Same wrapper; `default` partition group is the membership authority
 
@@ -89,17 +90,18 @@ and initializer. A separate membership-only manager tracks all brokers.
 
 ### Comparison
 
-| Criterion | A (wrapper + dedicated membership) | A' (wrapper + default authority) | B (additive field) | C (compound key) | D (federation) |
-|---|---|---|---|---|---|
-| All members always visible | ✅ explicit field | ✅ via "default" | ✅ existing members map | ✅ | ✅ |
-| Independent change plans | ✅ | ✅ | ⚠️ requires duplication | ⚠️ needs plan redesign | ✅ |
-| Different partition counts | ✅ | ✅ | ⚠️ asymmetric | ✅ | ✅ |
-| Symmetric group model | ✅ | ❌ default is special | ❌ | ✅ | ✅ |
-| Removes `withGroupName()` | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Proto migration risk | Medium | Medium | Low | High | None |
-| Blast radius | Wide | Wide | Narrow | Widest | Moderate |
-| Stuck operation blast radius | Per-group isolated | Per-group isolated | Per-group isolated | Cluster-wide | Per-group isolated |
-| Long-term viable | ✅ | ⚠️ special-casing leaks | ❌ needs migration | ❌ plan redesign needed | ⚠️ N× overhead |
+|            Criterion            | A (dedicated types) | A' (wrapper + default authority) |   B (additive field)    |    C (compound key)    |   D (federation)   |
+|---------------------------------|---------------------|----------------------------------|-------------------------|------------------------|--------------------|
+| All members always visible      | ✅ ClusterMembership | ✅ via "default"                  | ✅ existing members map  | ✅                      | ✅                  |
+| Independent change plans        | ✅                   | ✅                                | ⚠️ requires duplication | ⚠️ needs plan redesign | ✅                  |
+| Different partition counts      | ✅                   | ✅                                | ⚠️ asymmetric           | ✅                      | ✅                  |
+| Symmetric group model           | ✅                   | ❌ default is special             | ❌                       | ✅                      | ✅                  |
+| Removes `withGroupName()`       | ✅                   | ✅                                | ❌                       | ✅                      | ✅                  |
+| Distinct types for each concern | ✅                   | ❌ reuses ClusterConfiguration    | ❌                       | ✅                      | ✅                  |
+| Proto migration risk            | Medium              | Medium                           | Low                     | High                   | None               |
+| Blast radius                    | Wide                | Wide                             | Narrow                  | Widest                 | Moderate           |
+| Stuck operation blast radius    | Per-group isolated  | Per-group isolated               | Per-group isolated      | Cluster-wide           | Per-group isolated |
+| Long-term viable                | ✅                   | ⚠️ special-casing leaks          | ❌ needs migration       | ❌ plan redesign needed | ⚠️ N× overhead     |
 
 **Option B** cannot cleanly represent different partition counts for the default partition group
 and requires a migration to Option A before they are needed. **Option C** cannot provide
@@ -122,55 +124,65 @@ assigned to the `default` partition group.
 
 ### 3.1 Data model
 
+The top-level type is `ClusterConfiguration` (named `PartitionGroupClusterConfiguration` in the
+POC; will be renamed when the existing `ClusterConfiguration` usages are fully migrated):
+
 ```java
-record PartitionGroupClusterConfiguration(
-    ClusterConfiguration clusterMembership,                // ALL brokers; MemberState.partitions always empty
-    Map<String, ClusterConfiguration> partitionGroupConfigs, // one per partition group ID
-    Optional<PartitionGroupChangePlan> pendingPlan           // only for cluster-spanning operations
+record ClusterConfiguration(
+    ClusterMembership clusterMembership,
+    Map<String, PartitionGroupConfiguration> partitionGroups,
+    Optional<PhasedChangePlan> phasedChangePlan
 )
 ```
 
-**`clusterMembership`** holds every broker in the cluster with its lifecycle state. The
-`partitions` map in each `MemberState` here is always empty. `clusterId` lives here. Member
-lifecycle operations (`MemberJoinOperation`, `MemberLeaveOperation`, `MemberRemoveOperation`)
-apply exclusively here.
+**`ClusterMembership`** holds every broker in the cluster with its lifecycle state. It does not
+carry partition assignment. Fields: `version`, `members` (all brokers as `BrokerState`, carrying
+only `State state`, `long version`, and `Instant lastUpdated`), `pendingChanges` (for membership
+operations), `lastChange`, `clusterId`, `recovery`.
+Member lifecycle operations (`MemberJoinOperation`, `MemberLeaveOperation`,
+`MemberRemoveOperation`, `PreScalingOperation`, `PostScalingOperation`) apply exclusively here.
 
-**`partitionGroupConfigs`** holds one `ClusterConfiguration` per partition group. Each only
-includes members that host partitions in that group. `MemberState.state` here means the broker's
-participation state in that group's Raft replicas — the same JOINING/ACTIVE/LEAVING/LEFT enum,
-scoped to partition-group membership rather than cluster membership. `incarnationNumber` is
-tracked per partition group here, since each group has its own Raft history. Partition change
-plans, routing state, exporter state, and history-management operations
-(`UpdateIncarnationNumberOperation`, `DeleteHistoryOperation`) live here.
+> **POC note:** The POC Java code reuses `MemberState` for `ClusterMembership.members` with a
+> contract that `partitions` is always empty. `BrokerState` (no `partitions` field) is the
+> specified type; it will be introduced as a refactor step alongside Issue 3 in the solution spec.
 
-**`pendingPlan`** records the phased execution plan for operations that span cluster membership
-and partition groups. It is present only when such a cross-phase operation is in progress. Pure
-single-group operations do not use it.
+**`PartitionGroupConfiguration`** holds the per-group partition state. Each entry tracks only
+members that host partitions in that group. Members are represented as `MemberPartitionState`,
+which carries only `SortedMap<Integer, PartitionState> partitions`, `long version`, and
+`Instant lastUpdated` — no lifecycle `State`. Fields: `version`, `members`,
+`pendingChanges`, `lastChange`, `routingState`, `incarnationNumber`. Partition change operations,
+exporter operations, routing state updates, incarnation number updates, and history-deletion
+operations live here. `clusterId` and `recovery` are absent — those are cluster-wide properties
+that belong exclusively in `ClusterMembership`.
+
+**`PhasedChangePlan`** records the coordinator-generated phased execution plan for operations that
+span cluster membership and partition groups. It is present only when such a cross-phase operation
+is in progress. Pure single-group operations do not use it.
 
 ### 3.2 Two kinds of operations
 
-The distinction between the two kinds determines whether `pendingPlan` is used.
+The distinction between the two kinds determines whether `phasedChangePlan` is used.
 
 **Single-group operations** (exporter disable/enable/delete, per-group routing update,
 per-group partition reconfiguration, incarnation number update, history deletion) do not require
 cluster membership changes. The coordinator writes their operations directly into
-`partitionGroupConfigs[groupId].pendingChanges`. No `PartitionGroupChangePlan` is created.
+`partitionGroups[groupId].pendingChanges`. No `PhasedChangePlan` is created.
 
 **Cluster-spanning operations** (scale-up, scale-down, broker replacement — any operation that
 requires `MemberJoinOperation` or `MemberLeaveOperation`) must sequence membership changes before
-partition changes. The coordinator generates a `PartitionGroupChangePlan` with explicit phases.
+partition changes. The coordinator generates a `PhasedChangePlan` with explicit phases.
 
 The "one plan at a time" constraint is **per-partition-group**, not global:
 
-- The coordinator rejects a new request for group A if `partitionGroupConfigs["groupA"].hasPendingChanges()`.
+- The coordinator rejects a new request for group A if `partitionGroups["groupA"].hasPendingChanges()`.
 - Two requests for different partition groups A and B can be in flight simultaneously.
-- A cluster-spanning request additionally requires `pendingPlan` to be absent and all partition
-  groups it will touch in any future phase to have no pending changes.
+- A cluster-spanning request additionally requires `phasedChangePlan` to be absent and all
+  partition groups it will touch in any future phase to have no pending changes.
 
 ### 3.3 Phased change plan
 
 ```java
-record PartitionGroupChangePlan(
+record PhasedChangePlan(
     long id,
     Instant startedAt,
     int currentPhaseIndex,   // advances as phases complete; indexes into `phases`
@@ -190,25 +202,25 @@ sealed interface Phase {
 }
 ```
 
-All phases are pre-computed and stored in `pendingPlan.phases` at plan creation. This is
+All phases are pre-computed and stored in `phasedChangePlan.phases` at plan creation. This is
 required for coordinator restart recovery: if the coordinator restarts mid-plan, it reads
 `currentPhaseIndex` and the stored phases to determine where to resume.
 
 When a phase is activated, the coordinator copies that phase's operations into the appropriate
-sub-configs' `pendingChanges` in a single atomic update of `PartitionGroupClusterConfiguration`.
-Future phases remain in `pendingPlan.phases` but their operations are not yet in sub-configs.
+sub-configs' `pendingChanges` in a single atomic update of `ClusterConfiguration`.
+Future phases remain in `phasedChangePlan.phases` but their operations are not yet in sub-configs.
 
 ### 3.4 Operation dispatch
 
-| Operation | Kind | Sub-config target |
-|---|---|---|
-| `MemberJoinOperation`, `MemberLeaveOperation`, `MemberRemoveOperation` | cluster-spanning | `clusterMembership` |
-| `PreScalingOperation`, `PostScalingOperation` | cluster-spanning | `clusterMembership` |
-| `UpdateIncarnationNumberOperation`, `DeleteHistoryOperation` | **single-group** | `partitionGroupConfigs[groupId]` |
-| `PartitionBootstrapOperation`, `PartitionJoinOperation`, `PartitionLeaveOperation` | cluster-spanning | `partitionGroupConfigs[groupId]` |
-| `StartPartitionScaleUp`, `AwaitRedistributionCompletion`, `AwaitRelocationCompletion` | cluster-spanning | `partitionGroupConfigs[groupId]` |
-| `PartitionDisableExporterOperation`, `PartitionEnableExporterOperation`, `PartitionDeleteExporterOperation` | **single-group** | `partitionGroupConfigs[groupId]` |
-| `UpdateRoutingState` (per-group) | **single-group** | `partitionGroupConfigs[groupId]` |
+|                                                  Operation                                                  |       Kind       |     Sub-config target      |
+|-------------------------------------------------------------------------------------------------------------|------------------|----------------------------|
+| `MemberJoinOperation`, `MemberLeaveOperation`, `MemberRemoveOperation`                                      | cluster-spanning | `clusterMembership`        |
+| `PreScalingOperation`, `PostScalingOperation`                                                               | cluster-spanning | `clusterMembership`        |
+| `UpdateIncarnationNumberOperation`, `DeleteHistoryOperation`                                                | **single-group** | `partitionGroups[groupId]` |
+| `PartitionBootstrapOperation`, `PartitionJoinOperation`, `PartitionLeaveOperation`                          | cluster-spanning | `partitionGroups[groupId]` |
+| `StartPartitionScaleUp`, `AwaitRedistributionCompletion`, `AwaitRelocationCompletion`                       | cluster-spanning | `partitionGroups[groupId]` |
+| `PartitionDisableExporterOperation`, `PartitionEnableExporterOperation`, `PartitionDeleteExporterOperation` | **single-group** | `partitionGroups[groupId]` |
+| `UpdateRoutingState` (per-group)                                                                            | **single-group** | `partitionGroups[groupId]` |
 
 ### 3.5 How a broker executes its operations
 
@@ -219,8 +231,8 @@ Each broker's `ClusterConfigurationManagerImpl` checks two sources on every conf
    → execute the membership operation (one at a time)
    → call updateClusterMembership(c -> c.advanceConfigurationChange(...))
 
-2. for each groupId in partitionGroupConfigs:
-       partitionGroupConfigs[groupId].pendingChangesFor(localMemberId)
+2. for each groupId in partitionGroups:
+       partitionGroups[groupId].pendingChangesFor(localMemberId)
        → hand to PartitionManagerImpl[groupId] (non-blocking per group)
        → call updatePartitionGroupConfig(groupId, c -> c.advanceConfigurationChange(...))
 ```
@@ -235,11 +247,11 @@ The coordinator is a `ClusterConfigurationUpdateListener`. On every config updat
 whether the active phase has finished:
 
 ```java
-void onClusterConfigurationUpdated(PartitionGroupClusterConfiguration config) {
+void onClusterConfigurationUpdated(ClusterConfiguration config) {
     if (!isCoordinator(config)) return;
-    if (config.pendingPlan().isEmpty()) return;
+    if (config.phasedChangePlan().isEmpty()) return;
 
-    final var plan = config.pendingPlan().get();
+    final var plan = config.phasedChangePlan().get();
     final var currentPhase = plan.phases().get(plan.currentPhaseIndex());
 
     final boolean phaseComplete = switch (currentPhase) {
@@ -247,7 +259,7 @@ void onClusterConfigurationUpdated(PartitionGroupClusterConfiguration config) {
             !config.clusterMembership().hasPendingChanges();
         case PartitionGroupParallelPhase p ->
             p.operationsPerGroup().keySet().stream()
-                .allMatch(id -> !config.partitionGroupConfigs().get(id).hasPendingChanges());
+                .allMatch(id -> !config.partitionGroups().get(id).hasPendingChanges());
     };
 
     if (!phaseComplete) return;
@@ -264,72 +276,70 @@ void onClusterConfigurationUpdated(PartitionGroupClusterConfiguration config) {
 
 ### 3.7 Merge semantics
 
-#### How existing `ClusterConfiguration` sub-configs merge
+#### How `ClusterMembership` and `PartitionGroupConfiguration` sub-configs merge
 
-`ClusterConfiguration` uses a two-level versioning scheme:
+Both `ClusterMembership` and `PartitionGroupConfiguration` use a two-level versioning scheme:
 
-- **Config version** (`ClusterConfiguration.version`): incremented at exactly two points — when
-  the coordinator calls `startConfigurationChange()` (plan start) and when the last operation in a
-  plan completes (plan end). Between those two events all operation completions keep the config
-  version constant and advance only `ClusterChangePlan.version`.
-- **Member version** (`MemberState.version`): incremented by each member when it advances its own
-  state. Only the member itself ever writes its own `MemberState`.
+- **Config version** (`version`): incremented at exactly two points — when the coordinator calls
+  `startConfigurationChange()` (plan start) and when the last operation in a plan completes (plan
+  end). Between those two events all operation completions keep the config version constant and
+  advance only `ClusterChangePlan.version`.
+- **Member version** (`version` on `BrokerState` or `MemberPartitionState`): incremented by each
+  member when it advances its own state. Only the member itself ever writes its own member state.
 
-`ClusterConfiguration.merge()` uses the config version as a fast path: if versions differ, the
-higher version wins wholesale. If equal (concurrent writes during plan execution), it merges
-field-by-field:
+Both types use the config version as a fast path: if versions differ, the higher version wins
+wholesale. If equal (concurrent writes during plan execution), they merge field-by-field:
 
-- **Members**: union of keys, each overlapping `MemberState` merged by its own version (highest
+- **Members**: union of keys, each overlapping member state merged by its own `version` (highest
   wins).
 - **`pendingChanges`** (`ClusterChangePlan`): higher plan-internal version wins; no conflict
   detection — safe because only one broker per operation advances the plan.
-- **`routingState`**: higher version wins; same version + different content throws — protected by
-  coordinator exclusivity.
-- **`incarnationNumber`**: `Math.max()`.
+- **`routingState`** (PartitionGroupConfiguration only): higher version wins; same version +
+  different content throws — protected by coordinator exclusivity.
+- **`incarnationNumber`** (PartitionGroupConfiguration only): `Math.max()`.
+- **`clusterId`** (ClusterMembership only): first non-empty wins.
+- **`recovery`** (ClusterMembership only): OR semantics (either `true` wins).
 - **`lastChange`**: taken from `this`. Safe because `lastChange` is written only on plan
   completion, which bumps the config version — `lastChange` disagreements only occur at different
   config versions and are resolved by the fast path. **Invariant to preserve: never write
   `lastChange` without also bumping the config version.**
 
-Each group's `ClusterConfiguration` in `partitionGroupConfigs` applies this same logic
-independently.
+#### `ClusterConfiguration.merge()`
 
-#### `PartitionGroupClusterConfiguration.merge()`
-
-`PartitionGroupClusterConfiguration` has **no outer version**. Every gossip reconciliation is a
+`ClusterConfiguration` has **no outer version**. Every gossip reconciliation is a
 full field-by-field merge. The structure behaves as a CRDT: the result is the component-wise
 maximum of all received state.
 
 ```java
-PartitionGroupClusterConfiguration merge(PartitionGroupClusterConfiguration other) {
+ClusterConfiguration merge(ClusterConfiguration other) {
     final var mergedMembership = clusterMembership.merge(other.clusterMembership);
 
     // Union of keys: a group present in only one side is adopted without conflict.
-    final var mergedGroups = new HashMap<>(other.partitionGroupConfigs);
-    partitionGroupConfigs.forEach((groupId, config) ->
-        mergedGroups.merge(groupId, config, ClusterConfiguration::merge));
+    final var mergedGroups = new HashMap<>(other.partitionGroups);
+    partitionGroups.forEach((groupId, config) ->
+        mergedGroups.merge(groupId, config, PartitionGroupConfiguration::merge));
 
-    final var mergedPlan = mergePlan(pendingPlan, other.pendingPlan);
-    return new PartitionGroupClusterConfiguration(
-        mergedMembership, Map.copyOf(mergedGroups), mergedPlan);
+    final var mergedPlan = mergePlan(phasedChangePlan, other.phasedChangePlan);
+    return new ClusterConfiguration(mergedMembership, Map.copyOf(mergedGroups), mergedPlan);
 }
 ```
 
 **Union semantics for new partition groups**: a group key present in one side but absent in the
 other is adopted directly. This handles partition group provisioning — early gossip carries the
-new group entry, stale gossip does not. Once a group key appears it is never removed by a merge (deletion could be delivered in a later iteration.).
+new group entry, stale gossip does not. Once a group key appears it is never removed by a merge
+(deletion could be delivered in a later iteration).
 
-#### `PartitionGroupChangePlan.merge()`
+#### `PhasedChangePlan.merge()`
 
 ```java
-Optional<PartitionGroupChangePlan> mergePlan(
-    Optional<PartitionGroupChangePlan> a, Optional<PartitionGroupChangePlan> b) {
+Optional<PhasedChangePlan> mergePlan(
+    Optional<PhasedChangePlan> a, Optional<PhasedChangePlan> b) {
     if (a.isEmpty()) return b;
     if (b.isEmpty()) return a;
     return Optional.of(a.get().merge(b.get()));
 }
 
-PartitionGroupChangePlan merge(PartitionGroupChangePlan other) {
+PhasedChangePlan merge(PhasedChangePlan other) {
     if (id == other.id) {
         // Same plan advancing through phases — take the furthest-advanced index.
         return currentPhaseIndex >= other.currentPhaseIndex ? this : other;
@@ -346,7 +356,7 @@ PartitionGroupChangePlan merge(PartitionGroupChangePlan other) {
 ```
 
 **Why "take the more advanced plan" is safe across different IDs**: the coordinator only generates
-a new plan when `pendingPlan` is absent (§3.2). In the race window where a new coordinator starts
+a new plan when `phasedChangePlan` is absent (§3.2). In the race window where a new coordinator starts
 a fresh plan (at phase 0) before converging gossip, the existing plan is at phase ≥ 0. Taking the
 plan with the higher `currentPhaseIndex` prevents the cluster from being driven backward.
 Idempotent phase activation (see below) means that if the existing plan's phase operations are
@@ -359,33 +369,32 @@ coordinator must derive the next plan ID from the last ID seen in the persisted 
 
 #### Phases as read-only templates
 
-`pendingPlan.phases` is a **read-only roadmap**. The coordinator writes it once at plan creation
-and never modifies the phase entries afterward — only `currentPhaseIndex` advances. When a phase
-is activated, its operations are **copied** into the appropriate sub-config:
+`phasedChangePlan.phases` is a **read-only roadmap**. The coordinator writes it once at plan
+creation and never modifies the phase entries afterward — only `currentPhaseIndex` advances. When
+a phase is activated, its operations are **copied** into the appropriate sub-config:
 `clusterMembership.pendingChanges` for a `ClusterMembershipPhase`, or
-`partitionGroupConfigs[groupId].pendingChanges` for each group in a
-`PartitionGroupParallelPhase`. From that point execution is driven entirely by the sub-configs.
-Brokers poll sub-config `pendingChanges`; the coordinator checks sub-config
-`hasPendingChanges()` for phase completion. Neither reads from `pendingPlan.phases` at runtime.
+`partitionGroups[groupId].pendingChanges` for each group in a `PartitionGroupParallelPhase`. From
+that point execution is driven entirely by the sub-configs. Brokers poll sub-config
+`pendingChanges`; the coordinator checks sub-config `hasPendingChanges()` for phase completion.
+Neither reads from `phasedChangePlan.phases` at runtime.
 
-This is why `PartitionGroupChangePlan.merge()` can safely select one plan wholesale: the phases
-in the losing plan are discarded, but the in-progress execution state is not in those phase
-objects — it is in the sub-configs, which merge independently via their own
-`ClusterConfiguration.merge()`. Taking the winning plan's future phases gives the coordinator the
-correct roadmap for what comes next.
+This is why `PhasedChangePlan.merge()` can safely select one plan wholesale: the phases in the
+losing plan are discarded, but the in-progress execution state is not in those phase objects — it
+is in the sub-configs, which merge independently via their own type's `merge()`. Taking the
+winning plan's future phases gives the coordinator the correct roadmap for what comes next.
 
-After a phase is activated, its entry in `pendingPlan.phases` becomes advisory. A newly elected
-coordinator that has only partial gossip can determine what is currently executing by inspecting
-the sub-configs directly (`hasPendingChanges()` on each). The stored future phases are only
-needed to know what the coordinator must activate next — they carry no execution state of their
-own.
+After a phase is activated, its entry in `phasedChangePlan.phases` becomes advisory. A newly
+elected coordinator that has only partial gossip can determine what is currently executing by
+inspecting the sub-configs directly (`hasPendingChanges()` on each). The stored future phases are
+only needed to know what the coordinator must activate next — they carry no execution state of
+their own.
 
 #### Phase activation idempotency
 
 When multiple brokers simultaneously activate Phase N+1 (Idea A, §4) or a coordinator
 re-activates a phase after restart:
 
-1. Both read `pendingPlan.phases[N+1]` — identical content (pre-stored at plan creation).
+1. Both read `phasedChangePlan.phases[N+1]` — identical content (pre-stored at plan creation).
 2. Both call `ClusterChangePlan.init(phases[N+1].operations)`, producing a fresh plan at the
    same initial plan-internal version with identical content.
 3. Both write to the same sub-config, both producing `sub-config.version = V+1`.
@@ -408,7 +417,7 @@ observed sub-config state.
 
 ### 3.8 Example: scale-up — add broker B5, remove B1
 
-**Generated `PartitionGroupChangePlan`:**
+**Generated `PhasedChangePlan`:**
 
 ```
 Phase 0 — ClusterMembershipPhase
@@ -426,12 +435,12 @@ Phase 2 — ClusterMembershipPhase
 1. Coordinator activates Phase 0: `clusterMembership.pendingChanges = [MemberJoinOperation(B5)]`.
 2. B5 executes the join. `clusterMembership.pendingChanges` clears.
 3. Coordinator detects Phase 0 complete; activates Phase 1 atomically:
-   both `partitionGroupConfigs["default"].pendingChanges` and `partitionGroupConfigs["groupA"].pendingChanges`
-   are populated in a single config update.
+both `partitionGroups["default"].pendingChanges` and `partitionGroups["groupA"].pendingChanges`
+are populated in a single config update.
 4. B5's `PartitionManagerImpl["default"]` and `PartitionManagerImpl["groupA"]` bootstrap
-   partition 1 concurrently (independent Raft groups, independent actors).
+partition 1 concurrently (independent Raft groups, independent actors).
 5. B1 concurrently handles `PartitionLeaveOp` in both groups once B5's bootstrap completes in
-   each (sequential within-plan ordering enforces this per group).
+each (sequential within-plan ordering enforces this per group).
 6. Coordinator detects both partition groups in Phase 1 have no pending changes; activates Phase 2.
 7. B1 executes `MemberLeaveOperation`. Plan complete.
 
@@ -440,23 +449,23 @@ Phase 2 — ClusterMembershipPhase
 **Request 1:** disable `es-exporter` on groupA — in progress.
 
 ```
-partitionGroupConfigs["groupA"].pendingChanges = ClusterChangePlan([
+partitionGroups["groupA"].pendingChanges = ClusterChangePlan([
     PartitionDisableExporterOp(B1, p=1, "es-exporter"),
     PartitionDisableExporterOp(B2, p=2, "es-exporter")
 ])
-// pendingPlan absent
+// phasedChangePlan absent
 ```
 
 **Request 2 arrives while Request 1 is in progress:** disable `es-exporter` on groupB.
 
-Coordinator checks: `partitionGroupConfigs["groupB"].hasPendingChanges() == false` ✓
+Coordinator checks: `partitionGroups["groupB"].hasPendingChanges() == false` ✓
 
 ```
-partitionGroupConfigs["groupB"].pendingChanges = ClusterChangePlan([
+partitionGroups["groupB"].pendingChanges = ClusterChangePlan([
     PartitionDisableExporterOp(B1, p=1, "es-exporter"),
     PartitionDisableExporterOp(B2, p=2, "es-exporter")
 ])
-// pendingPlan still absent
+// phasedChangePlan still absent
 ```
 
 Both plans execute fully concurrently:
@@ -472,25 +481,64 @@ No cross-group coordination. Each broker's per-group actors are independent.
 
 ### 3.10 Proto
 
+Each Java type maps to a dedicated proto message. Existing messages (`ClusterChangePlan`,
+`CompletedChange`, `RoutingState`, `PartitionState`, `TopologyChangeOperation`, `State` enum) are
+reused unchanged. `ClusterTopology` and `MemberState` are kept for the legacy gossip migration
+path only and must not be removed.
+
 ```protobuf
-message PartitionGroupClusterTopology {
-  ClusterTopology clusterMembership = 1;           // all members; PartitionState maps always empty
-  map<string, ClusterTopology> partitionGroups = 2; // keyed by partition group ID
-  PartitionGroupChangePlan pendingPlan = 3;
+// Dedicated broker lifecycle state — no partition assignments
+message BrokerState {
+  State state = 1;
+  int64 version = 2;
+  google.protobuf.Timestamp lastUpdated = 3;
 }
 
-message PartitionGroupChangePlan {
+// Dedicated partition assignment state — no lifecycle State
+message MemberPartitionState {
+  map<int32, PartitionState> partitions = 1;
+  int64 version = 2;
+  google.protobuf.Timestamp lastUpdated = 3;
+}
+
+// Encodes ClusterMembership
+message ClusterMembership {
+  int64 version = 1;
+  map<string, BrokerState> members = 2;
+  CompletedChange lastChange = 3;
+  ClusterChangePlan pendingChanges = 4;
+  optional string clusterId = 5;
+  bool recovery = 6;
+}
+
+// Encodes PartitionGroupConfiguration
+message PartitionGroupConfiguration {
+  int64 version = 1;
+  map<string, MemberPartitionState> members = 2;
+  CompletedChange lastChange = 3;
+  ClusterChangePlan pendingChanges = 4;
+  RoutingState routingState = 5;
+  int64 incarnationNumber = 6;
+}
+
+message PartitionGroupClusterTopology {
+  ClusterMembership clusterMembership = 1;
+  map<string, PartitionGroupConfiguration> partitionGroups = 2;
+  PhasedChangePlan pendingPlan = 3;
+}
+
+message PhasedChangePlan {
   int64 id = 1;
   google.protobuf.Timestamp startedAt = 2;
   int32 currentPhaseIndex = 3;
-  repeated Phase phases = 4;
+  repeated PhasedChangePlanPhase phases = 4;
   CompletedChange lastChange = 5;
 }
 
-message Phase {
+message PhasedChangePlanPhase {
   oneof phase_type {
-    ClusterMembershipPhase       membershipPhase    = 1;
-    PartitionGroupParallelPhase  partitionGroupPhase = 2;
+    ClusterMembershipPhase      membershipPhase = 1;
+    PartitionGroupParallelPhase partitionPhase  = 2;
   }
 }
 
@@ -507,13 +555,18 @@ message PartitionGroupOperationList {
 }
 
 message GossipState {
-  PartitionGroupClusterTopology clusterTopology = 1;  // replaces bare ClusterTopology
+  ClusterTopology clusterTopology = 1;                              // kept; old brokers read/write this field
+  PartitionGroupClusterTopology partitionGroupClusterTopology = 2;  // new; upgraded brokers write this field
 }
 ```
 
-Migration: on reading an old-format file (bare `ClusterTopology`), wrap it as:
-- `clusterMembership` = all members with `partitions` cleared
-- `partitionGroups["default"]` = original config unchanged
+Migration: on decoding a `GossipState`, check field 2 first:
+- If `partitionGroupClusterTopology` (field 2) is present → decode directly.
+- If absent (old broker or pre-upgrade snapshot) → read `clusterTopology` (field 1) and migrate:
+- `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped),
+`clusterId` and `recovery` preserved
+- `partitionGroups["default"]` = all members as `MemberPartitionState` (partitions extracted,
+state dropped), `routingState` and `incarnationNumber` preserved
 - `pendingPlan` = absent
 
 ### 3.11 Pros and cons
@@ -521,10 +574,11 @@ Migration: on reading an old-format file (bare `ClusterTopology`), wrap it as:
 **Pros**
 
 - Per-partition-group change plans, routing state, and exporter state are fully independent.
-- `ClusterConfiguration` is reused verbatim per partition group — all existing plan, gossip
-  merge, and operation logic applies without modification.
+- Dedicated types (`ClusterMembership`, `PartitionGroupConfiguration`) remove the semantic
+  ambiguity of reusing `ClusterConfiguration` for both broker lifecycle and partition state. Each
+  type carries only the fields that apply to its concern.
 - Different partition counts per group: each group's `partitionCount()` is independent.
-- All brokers are always visible via `clusterMembership` regardless of group assignment.
+- All brokers are always visible via `ClusterMembership` regardless of group assignment.
 - `withGroupName()` is removed entirely.
 - Concurrent single-group operations (exporter changes, per-group reconfiguration) work
   without global coordination.
@@ -533,8 +587,9 @@ Migration: on reading an old-format file (bare `ClusterTopology`), wrap it as:
 
 - Wide blast radius: every consumer of `ClusterConfigurationService` must be updated or shielded
   behind a compatibility accessor.
-- `MemberState.state` carries different semantics in `clusterMembership` (broker lifecycle) vs
-  `partitionGroupConfigs` (Raft-group participation lifecycle) — same type, different context.
+- ~~`MemberState.state` semantic overloading~~ Resolved: `BrokerState` (for `ClusterMembership`)
+  carries only the lifecycle `State`; `MemberPartitionState` (for `PartitionGroupConfiguration`)
+  carries only partition assignments — no shared type with conflicting semantics.
 - Phase advancement for cluster-spanning operations depends on coordinator availability at each
   phase boundary (see §4 for mitigation ideas).
 - Rolling restart requires the gossip handler to accept both old and new wire formats during the
@@ -545,17 +600,18 @@ Migration: on reading an old-format file (bare `ClusterTopology`), wrap it as:
 ### 3.12 Incremental delivery
 
 Each increment leaves the system in a working state. The `default` partition group's scale and
-exporter operations work throughout.
+exporter operations work throughout. The goal for Phase 1 is infrastructure support for multiple
+partition groups; API support for non-default groups comes later.
 
-| # | What | `default` group behavior |
-|---|---|---|
-| 1 | `PartitionGroupClusterConfiguration` + `PartitionGroupChangePlan` data model; proto; serialization; migration | Unchanged |
-| 2 | Gossip and persistence carry `PartitionGroupClusterTopology`; compat accessors for existing consumers | Unchanged |
-| 3 | Non-default partition group entries seeded from static config; `PartitionDistribution` derived per-group; `withGroupName()` removed | Unchanged |
-| 4 | Non-default group `PartitionManagerImpl` instances register executors and update `partitionGroupConfigs[id]` on state changes | Unchanged |
-| 5 | Coordinator generates `PartitionGroupChangePlan` for default-group-only operations; phase advancement wired | Identical result, new mechanics; verified by existing tests |
-| 6 | Scale/exporter operations generate ops for all partition groups; `PartitionGroupParallelPhase` spans all group configs | Multi-group enabled |
-| 7 | REST topology API exposes per-group state | API surface |
+| # |                                                                               What                                                                                |                  `default` group behavior                   |
+|---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| 1 | `ClusterMembership`, `PartitionGroupConfiguration`, `PhasedChangePlan` data model; proto; serialization; migration                                                | Unchanged                                                   |
+| 2 | `ClusterConfiguration` wrapper (currently `PartitionGroupClusterConfiguration`); gossip and persistence carry new format; compat accessors for existing consumers | Unchanged                                                   |
+| 3 | Non-default partition group entries seeded from static config; `PartitionDistribution` derived per-group; `withGroupName()` removed                               | Unchanged                                                   |
+| 4 | Non-default group `PartitionManagerImpl` instances register `PartitionGroupConfigurationChangeAppliers` and update `partitionGroups[id]` on state changes         | Unchanged                                                   |
+| 5 | Coordinator generates `PhasedChangePlan` for default-group-only operations; phase advancement wired                                                               | Identical result, new mechanics; verified by existing tests |
+| 6 | Scale/exporter operations generate ops for all partition groups; `PartitionGroupParallelPhase` spans all group configs                                            | Multi-group enabled                                         |
+| 7 | REST topology API exposes per-group state                                                                                                                         | API surface                                                 |
 
 ---
 
@@ -570,7 +626,7 @@ coordinator was only a liveness concern when *starting* an operation, not while 
 
 ### Idea A — Any ACTIVE broker can advance phases
 
-Phase N+1's operations are pre-computed and stored in `pendingPlan.phases[N+1]` at plan creation.
+Phase N+1's operations are pre-computed and stored in `phasedChangePlan.phases[N+1]` at plan creation.
 Advancing a phase is a deterministic, idempotent read-then-write: read `phases[N+1]`, copy
 operations into sub-configs. Any broker that observes (via gossip) that the current phase is
 complete can perform this write.
@@ -606,7 +662,7 @@ for a coordinator that isn't there.
 
 Fixes:
 1. On detecting it has become coordinator (membership change event or broker startup), check
-   whether `pendingPlan` has a complete current phase and advance it immediately.
+whether `phasedChangePlan` has a complete current phase and advance it immediately.
 2. A periodic watchdog on the coordinator (e.g., every gossip sync interval) checks for stuck plans.
 
 **Effect:** availability gap shrinks to one gossip round after the new coordinator detects its
@@ -615,7 +671,7 @@ rather than eliminated.
 
 ### Idea D — System partition as the phase state machine (future)
 
-Store `PartitionGroupChangePlan` in the Raft-replicated system partition. The system partition
+Store `PhasedChangePlan` in the Raft-replicated system partition. The system partition
 leader (elected by Raft, not the coordinator role) manages phase transitions. Raft election
 provides automatic failover without relying on gossip convergence.
 
