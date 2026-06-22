@@ -71,7 +71,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   private static final List<CrossTenantValidation> CROSS_TENANT_VALIDATIONS =
       List.of(
           new SecondaryStorageIsolationValidation(),
-          new SecondaryStorageTypeHomogeneityValidation());
+          new SecondaryStorageTypeHomogeneityValidation(),
+          new DocumentStoreIsolationValidation());
 
   private final Map<String, Camunda> resolved;
 
@@ -96,6 +97,13 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
+      // Recompute only camunda.document.* via the catalog-with-inheritance overlay.
+      // The generic two-bind above replaces the value POJO of any shared store id,
+      // dropping root's sibling fields (the Map-value footgun). forPhysicalTenant repairs shared
+      // stores (field-override) and applies the optional `assigned` restriction. Every other
+      // property keeps the generic two-bind.
+      physicalTenant.setDocument(
+          PhysicalTenantDocumentConfigurations.forPhysicalTenant(physicalTenantId, environment));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
