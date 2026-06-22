@@ -7,7 +7,7 @@
  */
 
 import {useMemo} from 'react';
-import {Accordion, AccordionItem} from '@carbon/react';
+import {Accordion, AccordionItem, Tag} from '@carbon/react';
 import {MeterAlt, Chat, Tools, DocumentBlank, Chip} from '@carbon/icons-react';
 import {useQueries} from '@tanstack/react-query';
 import type {AgentElementData} from 'modules/contexts/agentData.types';
@@ -22,7 +22,6 @@ import {
   ModelCallsStatCard,
   ExpandableMessageBlock,
   StatusAccordion,
-  tagStyle,
 } from './AgentDetailPanel';
 import {FlatTraceConversation} from './FlatTraceConversation';
 import type {ToolInstanceLink} from './FlatTraceConversation';
@@ -116,13 +115,12 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
             MeterAlt,
             'Usage',
             <>
-              <span style={tagStyle}>
-                {agentData.usage.modelCalls.current} /{' '}
-                {agentData.usage.modelCalls.limit} model calls
-              </span>
-              <span style={tagStyle}>
+              <Tag type="gray" size="sm">
+                {agentData.usage.modelCalls.current} model calls
+              </Tag>
+              <Tag type="gray" size="sm">
                 {agentData.usage.tokensUsed.totalTokens.toLocaleString()} tokens
-              </span>
+              </Tag>
             </>,
           )}
         >

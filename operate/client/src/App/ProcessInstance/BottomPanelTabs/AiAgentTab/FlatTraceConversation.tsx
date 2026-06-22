@@ -8,7 +8,7 @@
 
 import {lazy, Suspense, useState} from 'react';
 import styled from 'styled-components';
-import {Button, Modal} from '@carbon/react';
+import {Button, Modal, Tag} from '@carbon/react';
 import {
   ArrowUpRight,
   Maximize,
@@ -97,39 +97,32 @@ function StepTags({
   const tooltipLabel = hasBreakdown
     ? `Input: ${tokensInput.toLocaleString()} · Output: ${tokensOutput.toLocaleString()}`
     : undefined;
-  const metricStyle: React.CSSProperties = {
-    color: 'var(--cds-text-secondary)',
-    fontSize: 'var(--cds-label-01-font-size, 0.75rem)',
-    fontVariantNumeric: 'tabular-nums',
-    lineHeight: 'var(--cds-label-01-line-height, 1.33333)',
-  };
-
-  const parts: React.ReactNode[] = [];
-  if (tokens !== undefined) {
-    parts.push(
-      <span key="tokens" style={metricStyle} title={tooltipLabel}>
-        {tokens.toLocaleString()} tokens
-      </span>,
-    );
-  }
-  if (duration !== null) {
-    if (parts.length > 0) {
-      parts.push(
-        <span key="sep" style={metricStyle} aria-hidden>
-          {' · '}
-        </span>,
-      );
-    }
-    parts.push(
-      <span key="duration" style={metricStyle}>
-        {duration}
-      </span>,
-    );
-  }
 
   return (
-    <span style={{display: 'inline-flex', alignItems: 'baseline'}}>
-      {parts}
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 'var(--cds-spacing-02)',
+      }}
+    >
+      {tokens !== undefined &&
+        (tooltipLabel !== undefined ? (
+          <span title={tooltipLabel}>
+            <Tag type="gray" size="sm">
+              {tokens.toLocaleString()} tokens
+            </Tag>
+          </span>
+        ) : (
+          <Tag type="gray" size="sm">
+            {tokens.toLocaleString()} tokens
+          </Tag>
+        ))}
+      {duration !== null && (
+        <Tag type="gray" size="sm">
+          {duration}
+        </Tag>
+      )}
     </span>
   );
 }
