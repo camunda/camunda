@@ -27,6 +27,14 @@ import {
   tagStyle,
 } from './AgentDetailPanel';
 
+type ToolInstanceLink = {
+  innerInstanceKey: string;
+  innerElementId: string;
+  anchorElementId: string;
+};
+
+export type {ToolInstanceLink};
+
 const ToolRow = styled.div`
   display: flex;
   align-items: center;
@@ -119,9 +127,17 @@ function StepTags({
   );
 }
 
-function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
-  const {selectElement} = useProcessInstanceElementSelection();
+function ToolBlock({
+  step,
+  toolInstanceMap,
+}: {
+  step: Extract<FlatTraceStep, {kind: 'tool'}>;
+  toolInstanceMap: Map<string, ToolInstanceLink>;
+}) {
+  const {selectElementInstance} = useProcessInstanceElementSelection();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const link = toolInstanceMap.get(step.name);
 
   const compactOutput =
     step.output !== undefined
@@ -196,7 +212,7 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
             onClick={() => setIsModalOpen(true)}
             style={{color: 'var(--cds-icon-secondary)'}}
           />
-          {step.hasInstance && (
+          {link !== undefined && (
             <Button
               kind="ghost"
               size="sm"
@@ -206,7 +222,13 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
               tooltipPosition="left"
               aria-label="Execution details"
               data-testid="open-tool-execution-details"
-              onClick={() => selectElement({elementId: step.name})}
+              onClick={() =>
+                selectElementInstance({
+                  elementId: link.innerElementId,
+                  elementInstanceKey: link.innerInstanceKey,
+                  anchorElementId: link.anchorElementId,
+                })
+              }
               style={{color: 'var(--cds-icon-secondary)'}}
             />
           )}
@@ -376,7 +398,13 @@ function orderSteps(
   return turns.reverse().flat();
 }
 
-function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
+function FlatTraceConversation({
+  agentData,
+  toolInstanceMap,
+}: {
+  agentData: AgentElementData;
+  toolInstanceMap: Map<string, ToolInstanceLink>;
+}) {
   const [isNewestFirst, setIsNewestFirst] = useState(false);
   const steps = orderSteps(buildFlatTrace(agentData), isNewestFirst);
 
@@ -463,6 +491,7 @@ function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
           <ToolBlock
             key={step.key}
             step={step as Extract<FlatTraceStep, {kind: 'tool'}>}
+            toolInstanceMap={toolInstanceMap}
           />
         );
       })}

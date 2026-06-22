@@ -6,10 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {Accordion, AccordionItem} from '@carbon/react';
 import {MeterAlt, Chat, Tools, DocumentBlank, Chip} from '@carbon/icons-react';
+import {useQueries} from '@tanstack/react-query';
 import type {AgentElementData} from 'modules/contexts/agentData.types';
+import {useAgentData} from 'modules/contexts/agentData';
 import {TOOL_DESCRIPTIONS} from 'modules/queries/agentInstances/historyToAgentElementData';
+import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
+import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
 import {AgentAccordionContainer, MetaLabel} from './styled';
 import {
   TokensStatCard,
@@ -19,6 +24,7 @@ import {
   StatusAccordion,
 } from './AgentDetailPanel';
 import {FlatTraceConversation} from './FlatTraceConversation';
+import type {ToolInstanceLink} from './FlatTraceConversation';
 
 const accordionTitle = (
   Icon: React.ComponentType<{size?: number}>,
@@ -37,6 +43,66 @@ const accordionTitle = (
 );
 
 function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
+  const {primaryAgentElementInstanceKey} = useAgentData();
+
+  // Step 1: fetch all AD_HOC_SUB_PROCESS_INNER_INSTANCE children of the outer
+  // subprocess. Each inner instance wraps exactly one tool activation.
+  const {data: innerInstancesResult} = useSearchElementInstancesByScope(
+    {
+      filter: {
+        elementInstanceScopeKey: primaryAgentElementInstanceKey ?? '',
+      },
+      page: {limit: 200},
+    },
+    {enabled: !!primaryAgentElementInstanceKey},
+  );
+
+  const innerInstances = useMemo(
+    () =>
+      (innerInstancesResult?.items ?? []).filter(
+        (el) => el.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+      ),
+    [innerInstancesResult],
+  );
+
+  // Step 2: for each inner instance, fetch its tool children (one per inner
+  // instance). We use useQueries to fan out in parallel.
+  const toolChildResults = useQueries({
+    queries: innerInstances.map((inner) => ({
+      queryKey: [
+        'elementInstancesSearchByScope',
+        {filter: {elementInstanceScopeKey: inner.elementInstanceKey}},
+      ],
+      queryFn: async () => {
+        const {response, error} = await searchElementInstances({
+          filter: {elementInstanceScopeKey: inner.elementInstanceKey},
+          page: {limit: 10},
+        });
+        if (response !== null) {
+          return {innerInstance: inner, items: response.items};
+        }
+        throw error;
+      },
+    })),
+  });
+
+  // Build map: toolElementId → ToolInstanceLink
+  const toolInstanceMap = useMemo(() => {
+    const map = new Map<string, ToolInstanceLink>();
+    for (const result of toolChildResults) {
+      if (!result.data) continue;
+      const {innerInstance, items} = result.data;
+      for (const child of items) {
+        map.set(child.elementId, {
+          innerInstanceKey: innerInstance.elementInstanceKey,
+          innerElementId: innerInstance.elementId,
+          anchorElementId: child.elementId,
+        });
+      }
+    }
+    return map;
+  }, [toolChildResults]);
+
   return (
     <AgentAccordionContainer>
       <Accordion align="start">
@@ -73,7 +139,10 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
             open
           >
             <div style={{width: '100%'}}>
-              <FlatTraceConversation agentData={agentData} />
+              <FlatTraceConversation
+                agentData={agentData}
+                toolInstanceMap={toolInstanceMap}
+              />
             </div>
           </AccordionItem>
         )}
