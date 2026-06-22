@@ -910,12 +910,14 @@ export function ExpandableMessageBlock({
   borderColor,
   contents,
   iterationNumber,
+  headerMeta,
   children,
 }: {
   role: string;
   borderColor: string;
   contents: string[];
   iterationNumber?: number;
+  headerMeta?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const segments = contents.filter((c) => c.length > 0);
@@ -950,6 +952,7 @@ export function ExpandableMessageBlock({
             ? `Iteration ${iterationNumber}`
             : role}
         </span>
+        {headerMeta}
       </div>
       {segments.map((segment, index) => (
         <ExpandableSegment

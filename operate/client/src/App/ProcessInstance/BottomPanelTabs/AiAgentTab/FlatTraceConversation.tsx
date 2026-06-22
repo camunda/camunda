@@ -9,15 +9,16 @@
 import {lazy, Suspense, useState} from 'react';
 import {Button, Modal} from '@carbon/react';
 import {
-  Tools,
   Time,
   ArrowUpRight,
+  Maximize,
   SortAscending,
   SortDescending,
 } from '@carbon/icons-react';
 import {Copy} from '@carbon/react/icons';
 import type {AgentElementData} from 'modules/contexts/agentData.types';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {TOOL_DESCRIPTIONS} from 'modules/queries/agentInstances/historyToAgentElementData';
 import {buildFlatTrace, type FlatTraceStep} from './buildFlatTrace';
 import {ExpandableMessageBlock} from './AgentDetailPanel';
 
@@ -68,17 +69,18 @@ function StepTags({
   return (
     <div
       style={{
-        marginTop: 'var(--cds-spacing-03)',
         display: 'flex',
         gap: 'var(--cds-spacing-02)',
         flexWrap: 'wrap',
       }}
     >
       {tokens !== undefined && (
-        <span style={lightTagStyle}>{tokens.toLocaleString()} tokens</span>
+        <span style={{...lightTagStyle, fontVariantNumeric: 'tabular-nums'}}>
+          {tokens.toLocaleString()} tokens
+        </span>
       )}
       {duration !== null && (
-        <span style={lightTagStyle}>
+        <span style={{...lightTagStyle, fontVariantNumeric: 'tabular-nums'}}>
           <Time size={12} />
           {duration}
         </span>
@@ -103,41 +105,91 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
   const outputText =
     step.output !== undefined ? JSON.stringify(step.output, null, 2) : '';
   const duration = formatDuration(step.durationMs);
+  const description =
+    TOOL_DESCRIPTIONS[step.name] ?? 'No description available.';
 
   return (
     <>
       <div
-        data-testid="open-tool-detail-block"
-        role="button"
-        tabIndex={0}
-        onClick={() => setIsModalOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setIsModalOpen(true);
-          }
-        }}
+        data-testid="tool-detail-block"
         style={{
-          cursor: 'pointer',
-          padding: 'var(--cds-spacing-03) var(--cds-spacing-04)',
-          background: 'var(--cds-layer-01)',
+          padding: 'var(--cds-spacing-04)',
+          background: 'var(--cds-layer-02)',
           borderRadius: 4,
-          border: '1px solid var(--cds-border-subtle-01)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--cds-spacing-03)',
+          borderLeft: '3px solid var(--cds-border-subtle-01)',
         }}
       >
-        <Tools size={16} style={{flexShrink: 0}} />
-        <span
+        {/* Header row */}
+        <div
           style={{
-            fontWeight: 600,
-            fontSize: 'var(--cds-body-compact-01-font-size)',
-            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 'var(--cds-spacing-03)',
           }}
         >
-          {step.name}
-        </span>
+          {/* Left: name + time tag */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                fontWeight: 600,
+                fontSize: 'var(--cds-body-compact-01-font-size)',
+                flexShrink: 0,
+              }}
+            >
+              {step.name}
+            </span>
+            {duration !== null && (
+              <span
+                style={{
+                  ...lightTagStyle,
+                  fontVariantNumeric: 'tabular-nums',
+                  flexShrink: 0,
+                }}
+              >
+                <Time size={12} />
+                {duration}
+              </span>
+            )}
+          </div>
+
+          {/* Right: action buttons */}
+          <div style={{display: 'flex', flexShrink: 0}}>
+            <Button
+              kind="ghost"
+              size="sm"
+              hasIconOnly
+              renderIcon={Maximize}
+              iconDescription="Expand"
+              tooltipPosition="left"
+              aria-label="Expand"
+              data-testid="expand-tool-detail"
+              onClick={() => setIsModalOpen(true)}
+            />
+            {step.hasInstance && (
+              <Button
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={ArrowUpRight}
+                iconDescription="Execution details"
+                tooltipPosition="left"
+                aria-label="Execution details"
+                data-testid="open-tool-execution-details"
+                onClick={() => selectElement({elementId: step.name})}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Body: monospace JSON input preview */}
         <span
           style={{
             fontFamily: 'var(--cds-code-01-font-family)',
@@ -146,36 +198,11 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            flex: 1,
-            minWidth: 0,
+            display: 'block',
           }}
         >
           {inputPreview}
         </span>
-        {duration !== null && (
-          <span style={{...lightTagStyle, flexShrink: 0}}>
-            <Time size={12} />
-            {duration}
-          </span>
-        )}
-        {/* Jump to the BPMN element without opening the modal. Conditional on
-            an inner instance existing (State A always has one). */}
-        {step.hasInstance && (
-          <Button
-            kind="ghost"
-            size="sm"
-            hasIconOnly
-            renderIcon={ArrowUpRight}
-            iconDescription="Go to element"
-            tooltipPosition="left"
-            aria-label="Go to element"
-            data-testid="goto-tool-element"
-            onClick={(e) => {
-              e.stopPropagation();
-              selectElement({elementId: step.name});
-            }}
-          />
-        )}
       </div>
 
       <Modal
@@ -185,81 +212,136 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
         size="lg"
         passiveModal
       >
+        {/* Tool description */}
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0 var(--cds-spacing-05) var(--cds-spacing-03)',
+            padding: '0 var(--cds-spacing-05) var(--cds-spacing-04)',
+            fontSize: 'var(--cds-body-compact-01-font-size)',
+            lineHeight: '1.5',
+            color: 'var(--cds-text-secondary)',
           }}
         >
-          {step.hasInstance ? (
-            <Button
-              kind="ghost"
-              size="sm"
-              renderIcon={ArrowUpRight}
-              onClick={() => {
-                setIsModalOpen(false);
-                selectElement({elementId: step.name});
-              }}
-            >
-              Go to element
-            </Button>
-          ) : (
-            <span />
-          )}
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Copy}
-            onClick={() =>
-              navigator.clipboard.writeText(
-                `Input:\n${inputText}\n\nOutput:\n${outputText}`,
-              )
-            }
-          >
-            Copy
-          </Button>
+          {description}
         </div>
+
+        {/* Input and Output side by side */}
         <Suspense
-          fallback={<div style={{height: '30vh'}}>Loading editor…</div>}
+          fallback={<div style={{height: '40vh'}}>Loading editor…</div>}
         >
-          <div style={{padding: '0 var(--cds-spacing-05)'}}>
-            <p style={{margin: '0 0 var(--cds-spacing-02)', fontWeight: 600}}>
-              Input
-            </p>
-            <MonacoEditor
-              height="25vh"
-              language="json"
-              value={inputText || '{}'}
-              options={{
-                readOnly: true,
-                minimap: {enabled: false},
-                fontSize: 13,
-                wordWrap: 'on',
-                scrollBeyondLastLine: false,
-              }}
-            />
-            <p
+          <div
+            style={{
+              display: 'flex',
+              gap: 'var(--cds-spacing-05)',
+              padding: '0 var(--cds-spacing-05) var(--cds-spacing-05)',
+            }}
+          >
+            {/* Input column */}
+            <div
               style={{
-                margin: 'var(--cds-spacing-05) 0 var(--cds-spacing-02)',
-                fontWeight: 600,
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--cds-spacing-03)',
               }}
             >
-              Output
-            </p>
-            <MonacoEditor
-              height="25vh"
-              language="json"
-              value={outputText || 'No output'}
-              options={{
-                readOnly: true,
-                minimap: {enabled: false},
-                fontSize: 13,
-                wordWrap: 'on',
-                scrollBeyondLastLine: false,
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontWeight: 600,
+                    fontSize: 'var(--cds-body-compact-01-font-size)',
+                  }}
+                >
+                  Input
+                </p>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  hasIconOnly
+                  renderIcon={Copy}
+                  iconDescription="Copy input"
+                  tooltipPosition="left"
+                  aria-label="Copy input"
+                  data-testid="copy-tool-input"
+                  onClick={() =>
+                    navigator.clipboard.writeText(inputText || '{}')
+                  }
+                />
+              </div>
+              <MonacoEditor
+                height="40vh"
+                language="json"
+                value={inputText || '{}'}
+                options={{
+                  readOnly: true,
+                  minimap: {enabled: false},
+                  fontSize: 13,
+                  wordWrap: 'on',
+                  scrollBeyondLastLine: false,
+                }}
+              />
+            </div>
+
+            {/* Output column */}
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--cds-spacing-03)',
               }}
-            />
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontWeight: 600,
+                    fontSize: 'var(--cds-body-compact-01-font-size)',
+                  }}
+                >
+                  Output
+                </p>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  hasIconOnly
+                  renderIcon={Copy}
+                  iconDescription="Copy output"
+                  tooltipPosition="left"
+                  aria-label="Copy output"
+                  data-testid="copy-tool-output"
+                  onClick={() =>
+                    navigator.clipboard.writeText(outputText || 'No output')
+                  }
+                />
+              </div>
+              <MonacoEditor
+                height="40vh"
+                language="json"
+                value={outputText || 'No output'}
+                options={{
+                  readOnly: true,
+                  minimap: {enabled: false},
+                  fontSize: 13,
+                  wordWrap: 'on',
+                  scrollBeyondLastLine: false,
+                }}
+              />
+            </div>
           </div>
         </Suspense>
       </Modal>
@@ -339,9 +421,10 @@ function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
               role="Assistant"
               borderColor="#8a3ffc"
               contents={step.content}
-            >
-              <StepTags tokens={step.tokens} durationMs={step.durationMs} />
-            </ExpandableMessageBlock>
+              headerMeta={
+                <StepTags tokens={step.tokens} durationMs={step.durationMs} />
+              }
+            />
           );
         }
         return <ToolBlock key={step.key} step={step} />;
