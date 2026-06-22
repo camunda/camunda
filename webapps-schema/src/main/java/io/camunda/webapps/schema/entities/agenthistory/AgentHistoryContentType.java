@@ -7,13 +7,8 @@
  */
 package io.camunda.webapps.schema.entities.agenthistory;
 
-/**
- * Entity-layer enum for the content type of a history entry content block. {@code UNKNOWN} is used
- * for any protocol value that has no explicit mapping (e.g. {@code UNSPECIFIED} or future types);
- * the content is still stored with all available fields so data is not silently discarded.
- */
+/** Entity-layer enum for the content type of a history entry content block. */
 public enum AgentHistoryContentType {
-  UNKNOWN,
   TEXT,
   DOCUMENT,
   OBJECT

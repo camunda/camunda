@@ -24,7 +24,10 @@ public class AgentHistoryDocumentReader extends DocumentBasedReader implements A
   @Override
   public SearchQueryResult<AgentInstanceHistoryEntity> search(
       final AgentInstanceHistoryQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException(
-        "AgentHistoryDocumentReader is not yet implemented. Tracked in #55268.");
+    return getSearchExecutor()
+        .search(
+            query,
+            io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.class,
+            resourceAccessChecks);
   }
 }

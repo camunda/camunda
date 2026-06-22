@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.COMMIT_STATUS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
@@ -255,7 +256,7 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldMapUnspecifiedRoleToUnknown() {
+  void shouldThrowOnUnspecifiedRole() {
     // given
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder()
@@ -268,11 +269,12 @@ final class AgentHistoryHandlerTest {
             r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
     final var entity = new AgentHistoryEntity().setId("1");
 
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then
-    assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.UNKNOWN);
+    // when / then
+    assertThatThrownBy(() -> underTest.updateEntity(record, entity))
+        .as(
+            "If a new AgentHistoryRole is added, add an explicit case to AgentHistoryHandler.mapRole()")
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Unexpected UNSPECIFIED AgentHistoryRole on an exported record");
   }
 
   @ParameterizedTest(name = "[{index}] Intent ''{0}'' should map to the expected commitStatus")
@@ -300,12 +302,12 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getCommitStatus()).isEqualTo(expected);
   }
 
-  @ParameterizedTest(name = "[{index}] Unexpected ''{0}'' should map to ''UNKNOWN'' commitStatus")
+  @ParameterizedTest(name = "[{index}] Unexpected ''{0}'' should throw")
   @EnumSource(
       value = AgentHistoryIntent.class,
       names = {"CREATED", "COMMITTED", "DISCARDED"},
       mode = Mode.EXCLUDE)
-  void shouldMapUnexpectedIntentToUnknownCommitStatus(final AgentHistoryIntent intent) {
+  void shouldThrowForUnexpectedIntent(final AgentHistoryIntent intent) {
     // given
     final Record<AgentHistoryRecordValue> record =
         factory.generateRecord(
@@ -313,11 +315,12 @@ final class AgentHistoryHandlerTest {
             r -> r.withIntent(intent).withValue(buildMinimalRecordValue(1L, 1)));
     final var entity = new AgentHistoryEntity().setId("1");
 
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then
-    assertThat(entity.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.UNKNOWN);
+    // when / then
+    assertThatThrownBy(() -> underTest.updateEntity(record, entity))
+        .as(
+            "If a new AgentHistoryIntent is handled, add an explicit case to AgentHistoryHandler.mapCommitStatusFromIntent()")
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Unexpected AgentHistoryIntent on an exported record: " + intent);
   }
 
   @Test
@@ -357,8 +360,8 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldMapUnspecifiedContentTypeToUnknown() {
-    // given — UNSPECIFIED is the protocol sentinel; it should survive as UNKNOWN (not be dropped)
+  void shouldThrowOnUnspecifiedContentType() {
+    // given — UNSPECIFIED is the protocol sentinel; it cannot occur for a real exported record
     final var unspecifiedItem =
         ImmutableAgentHistoryMessageContentValue.builder()
             .withContentType(
@@ -377,18 +380,12 @@ final class AgentHistoryHandlerTest {
             r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
     final var entity = new AgentHistoryEntity().setId("1");
 
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then — UNSPECIFIED is preserved as UNKNOWN with all available fields
-    assertThat(entity.getContent())
-        .singleElement()
-        .satisfies(
-            content -> {
-              assertThat(content.contentType()).isEqualTo(AgentHistoryContentType.UNKNOWN);
-              assertThat(content.text()).isEqualTo("some text");
-              assertThat(content.object()).isEqualTo(Map.of("key", "value"));
-            });
+    // when / then
+    assertThatThrownBy(() -> underTest.updateEntity(record, entity))
+        .as(
+            "If a new AgentHistoryContentType is added, add an explicit case to AgentHistoryHandler.mapContent()")
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Unexpected UNSPECIFIED AgentHistoryContentType on an exported record");
   }
 
   @ParameterizedTest(
@@ -547,9 +544,9 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldConvertNonPositiveProducedAtToNull() {
-    // given — producedAt == -1 is the protocol default for "unset"; Instant.ofEpochMilli(-1)
-    // would produce a 1969 timestamp, which is invalid for this field
+  void shouldFallBackToRecordTimestampWhenProducedAtNonPositive() {
+    // given — producedAt == -1 is the protocol default for "unset"; fall back to the record
+    // timestamp so the non-nullable API contract is preserved
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildMinimalRecordValue(1L, 1))
@@ -565,7 +562,8 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getProducedAt()).isNull();
+    assertThat(entity.getProducedAt())
+        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
   }
 
   // --- helpers ---
