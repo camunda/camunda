@@ -26,7 +26,8 @@ import org.springframework.core.env.Environment;
 /**
  * Required-override policy for physical-tenant configuration: every explicitly-configured physical
  * tenant must declare its own {@code initialization} block under {@code
- * camunda.physical-tenants.<id>.security.initialization.*}.
+ * camunda.physical-tenants.<id>.security.initialization.*}, unless authorization is disabled for
+ * that tenant.
  *
  * <p>The {@code initialization} block seeds tenant-scoped identity (users, roles, authorizations,
  * tenants, …). Unlike the cluster-wide settings guarded by {@link
@@ -39,10 +40,11 @@ import org.springframework.core.env.Environment;
  * root configuration and keeps the top-level {@code camunda.security.initialization}, whether it is
  * synthesized from the root or declared explicitly.
  *
- * <p>Enforcement is pure <em>key inspection</em> over the declared {@code physical-tenants.<id>.*}
- * keys — the same walk {@link PhysicalTenantResolver#discover(Environment)} does — with no value
- * comparison and no binding. A tenant that declares no key at or under {@code
- * security.initialization} fails resolution.
+ * <p>Enforcement is <em>key inspection</em> over the declared {@code physical-tenants.<id>.*} keys
+ * — the same walk {@link PhysicalTenantResolver#discover(Environment)} does. The one value it binds
+ * is the tenant's effective {@code security.authorization.enabled} (per-tenant override, else root,
+ * else the default), which determines whether the tenant is exempt. A tenant with authorization
+ * enabled that declares no key at or under {@code security.initialization} fails resolution.
  */
 @NullMarked
 final class PhysicalTenantRequiredOverrideValidation {
@@ -93,8 +95,8 @@ final class PhysicalTenantRequiredOverrideValidation {
         declaredTenants.stream()
             .filter(id -> !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(id))
             .filter(id -> !tenantsWithInitialization.contains(id))
-            // an initialization block seeds authorizations; a tenant running with
-            // authorization disabled has no use for it, so it is not required.
+            // the initialization block only takes effect when authorization is enabled, so a
+            // tenant running with authorization disabled is not required to declare one.
             .filter(id -> authorizationEnabledFor(binder, id))
             .toList();
     if (!missing.isEmpty()) {
