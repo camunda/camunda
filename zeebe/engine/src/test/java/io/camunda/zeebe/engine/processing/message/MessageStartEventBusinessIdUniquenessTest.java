@@ -193,6 +193,41 @@ public final class MessageStartEventBusinessIdUniquenessTest {
   }
 
   @Test
+  public void shouldAllowSameBusinessIdForMessageStartsInDifferentTenants() {
+    // given the message-start process deployed to two tenants
+    engine.deployment().withTenantId("tenant-a").withXmlResource(MESSAGE_START_PROCESS).deploy();
+    engine.deployment().withTenantId("tenant-b").withXmlResource(MESSAGE_START_PROCESS).deploy();
+
+    // when a message carrying the same businessId is published to each tenant
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("") // empty key so the correlation-key lock is not the gate
+        .withBusinessId("biz-shared")
+        .withTenantId("tenant-a")
+        .withVariables(Map.of("seq", 1))
+        .publish();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("")
+        .withBusinessId("biz-shared")
+        .withTenantId("tenant-b")
+        .withVariables(Map.of("seq", 2))
+        .publish();
+
+    // then both tenants start a PI with the shared businessId — uniqueness is tenant-scoped, so the
+    // same businessId in a different tenant does not collide
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(2))
+        .allSatisfy(r -> assertThat(r.getValue().getBusinessId()).isEqualTo("biz-shared"))
+        .extracting(r -> r.getValue().getTenantId())
+        .containsExactlyInAnyOrder("tenant-a", "tenant-b");
+  }
+
+  @Test
   public void shouldAllowMessageWithoutBusinessIdEvenWhenBusinessIdIsHeld() {
     // given a PI already holds "biz-42"
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
