@@ -16,6 +16,7 @@ import {
   ToolsCalledStatCard,
   ModelCallsStatCard,
   ExpandableMessageBlock,
+  StatusAccordion,
 } from './AgentDetailPanel';
 import {FlatTraceConversation} from './FlatTraceConversation';
 
@@ -39,6 +40,7 @@ function FlatTraceAgentDetail({agentData}: {agentData: AgentElementData}) {
   return (
     <AgentAccordionContainer>
       <Accordion align="start">
+        <StatusAccordion agentData={agentData} />
         <AccordionItem title={accordionTitle(MeterAlt, 'Usage')} open>
           <div
             style={{

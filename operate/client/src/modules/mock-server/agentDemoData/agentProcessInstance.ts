@@ -1543,11 +1543,31 @@ const FLAT_REBINDS: RebindMap = {
   [MOCK_AGENT_SUBPROCESS_KEY_COMPLETED]: MOCK_AGENT_SUBPROCESS_KEY_FLAT,
 };
 
-export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT = rebindElementInstances(
+const flatReboundInstances = rebindElementInstances(
   MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED,
   MOCK_AGENT_INSTANCE_KEY_FLAT,
   MOCK_AGENT_DEFINITION_KEY_FLAT,
   FLAT_REBINDS,
+);
+
+// Rename each AD_HOC_SUB_PROCESS_INNER_INSTANCE elementName to its first child's
+// elementName (or elementId as fallback), so the flat-trace UI shows the tool name.
+export const MOCK_AGENT_ELEMENT_INSTANCES_FLAT = flatReboundInstances.map(
+  (el) => {
+    if (el.type !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
+      return el;
+    }
+    const firstChild = flatReboundInstances.find(
+      (child) => child.flowScopeKey === el.elementInstanceKey,
+    );
+    if (!firstChild) {
+      return el;
+    }
+    return {
+      ...el,
+      elementName: firstChild.elementName ?? firstChild.elementId,
+    };
+  },
 );
 
 export const MOCK_AGENT_ELEMENT_STATISTICS_FLAT =

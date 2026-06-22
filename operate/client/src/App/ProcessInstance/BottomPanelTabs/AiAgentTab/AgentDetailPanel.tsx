@@ -369,7 +369,7 @@ export const tagStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-function StatusAccordion({agentData}: {agentData: AgentElementData}) {
+export function StatusAccordion({agentData}: {agentData: AgentElementData}) {
   const {selectElement} = useProcessInstanceElementSelection();
 
   const statusLabels: Record<string, string> = {

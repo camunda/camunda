@@ -19,7 +19,10 @@ export type FlatTraceStep =
       content: string[];
       timestamp?: string;
       tokens?: number;
+      tokensInput?: number;
+      tokensOutput?: number;
       durationMs?: number;
+      toolNames: string[];
     }
   | {
       kind: 'tool';
@@ -58,11 +61,15 @@ export function buildFlatTrace(agentData: AgentElementData): FlatTraceStep[] {
   const steps: FlatTraceStep[] = [];
   let i = 0;
 
-  const tokensForIteration = (n?: number): number | undefined => {
+  const iterationFor = (n?: number) => {
     if (n === undefined) {
       return undefined;
     }
-    const it = agentData.iterations[n - 1];
+    return agentData.iterations[n - 1];
+  };
+
+  const tokensForIteration = (n?: number): number | undefined => {
+    const it = iterationFor(n);
     if (!it) {
       return undefined;
     }
@@ -104,13 +111,17 @@ export function buildFlatTrace(agentData: AgentElementData): FlatTraceStep[] {
       }
 
       const firstResultTs = results[0]?.timestamp;
+      const iter = iterationFor(m.iterationNumber);
       steps.push({
         kind: 'assistant',
         key: `assistant-${i}`,
         content: m.content,
         timestamp: m.timestamp,
         tokens: tokensForIteration(m.iterationNumber),
+        tokensInput: iter?.tokenUsage.input,
+        tokensOutput: iter?.tokenUsage.output,
         durationMs: diffMs(m.timestamp, firstResultTs),
+        toolNames: calls.map((c) => c.name),
       });
 
       calls.forEach((call, idx) => {

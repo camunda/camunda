@@ -7,7 +7,8 @@
  */
 
 import {lazy, Suspense, useState} from 'react';
-import {Button, Modal, Tag} from '@carbon/react';
+import styled from 'styled-components';
+import {Button, Modal, Tag, Tooltip} from '@carbon/react';
 import {
   ArrowUpRight,
   Maximize,
@@ -20,7 +21,34 @@ import type {AgentElementData} from 'modules/contexts/agentData.types';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {TOOL_DESCRIPTIONS} from 'modules/queries/agentInstances/historyToAgentElementData';
 import {buildFlatTrace, type FlatTraceStep} from './buildFlatTrace';
-import {ExpandableMessageBlock} from './AgentDetailPanel';
+import {
+  ExpandableMessageBlock,
+  attachmentLabelStyle,
+  tagStyle,
+} from './AgentDetailPanel';
+
+const ToolRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+  min-width: 0;
+  padding: var(--cds-spacing-04);
+  background: var(--cds-layer-02);
+  border-radius: 4px;
+  border-left: 3px solid var(--cds-border-subtle-01);
+
+  & > .tool-actions {
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+    flex-shrink: 0;
+    display: flex;
+  }
+
+  &:hover > .tool-actions,
+  &:focus-within > .tool-actions {
+    opacity: 1;
+  }
+`;
 
 const MonacoEditor = lazy(async () => {
   const [{loadMonaco}, Editor] = await Promise.all([
@@ -43,15 +71,23 @@ function formatDuration(ms?: number): string | null {
 
 function StepTags({
   tokens,
+  tokensInput,
+  tokensOutput,
   durationMs,
 }: {
   tokens?: number;
+  tokensInput?: number;
+  tokensOutput?: number;
   durationMs?: number;
 }) {
   const duration = formatDuration(durationMs);
   if (tokens === undefined && duration === null) {
     return null;
   }
+  const hasBreakdown = tokensInput !== undefined && tokensOutput !== undefined;
+  const tooltipLabel = hasBreakdown
+    ? `Input: ${tokensInput.toLocaleString()} · Output: ${tokensOutput.toLocaleString()}`
+    : undefined;
   return (
     <div
       style={{
@@ -60,11 +96,20 @@ function StepTags({
         flexWrap: 'wrap',
       }}
     >
-      {tokens !== undefined && (
-        <Tag type="gray" size="sm">
-          {tokens.toLocaleString()} tokens
-        </Tag>
-      )}
+      {tokens !== undefined &&
+        (tooltipLabel ? (
+          <Tooltip label={tooltipLabel} align="bottom">
+            <span tabIndex={0} style={{display: 'inline-flex'}}>
+              <Tag type="gray" size="sm">
+                {tokens.toLocaleString()} tokens
+              </Tag>
+            </span>
+          </Tooltip>
+        ) : (
+          <Tag type="gray" size="sm">
+            {tokens.toLocaleString()} tokens
+          </Tag>
+        ))}
       {duration !== null && (
         <Tag type="gray" size="sm">
           {duration}
@@ -78,36 +123,26 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
   const {selectElement} = useProcessInstanceElementSelection();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const inputKeys = Object.keys(step.input);
-  const compactInput = JSON.stringify(step.input).replace(/\s+/g, ' ');
-  const inputPreview =
-    inputKeys.length === 0
-      ? 'No input'
-      : compactInput.slice(0, 80) + (compactInput.length > 80 ? '…' : '');
+  const compactOutput =
+    step.output !== undefined
+      ? JSON.stringify(step.output).replace(/\s+/g, ' ')
+      : undefined;
+  const outputPreview =
+    compactOutput === undefined
+      ? 'No output'
+      : compactOutput.slice(0, 80) + (compactOutput.length > 80 ? '…' : '');
 
+  const inputKeys = Object.keys(step.input);
   const inputText =
     inputKeys.length > 0 ? JSON.stringify(step.input, null, 2) : '';
   const outputText =
     step.output !== undefined ? JSON.stringify(step.output, null, 2) : '';
-  const duration = formatDuration(step.durationMs);
   const description =
     TOOL_DESCRIPTIONS[step.name] ?? 'No description available.';
 
   return (
     <>
-      <div
-        data-testid="tool-detail-block"
-        style={{
-          padding: 'var(--cds-spacing-04)',
-          background: 'var(--cds-layer-02)',
-          borderRadius: '4px',
-          borderLeft: '3px solid var(--cds-border-subtle-01)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--cds-spacing-03)',
-          minWidth: 0,
-        }}
-      >
+      <ToolRow data-testid="tool-detail-block">
         {/* Tool icon */}
         <span
           style={{
@@ -131,14 +166,7 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
           {step.name}
         </span>
 
-        {/* Execution time tag */}
-        {duration !== null && (
-          <Tag type="gray" size="sm" style={{flexShrink: 0}}>
-            {duration}
-          </Tag>
-        )}
-
-        {/* Monospace input preview — fills remaining space, truncates */}
+        {/* Monospace output preview — fills remaining space, truncates */}
         <span
           style={{
             fontFamily: 'var(--cds-code-01-font-family)',
@@ -151,11 +179,11 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
             whiteSpace: 'nowrap',
           }}
         >
-          {inputPreview}
+          {outputPreview}
         </span>
 
-        {/* Action buttons */}
-        <div style={{display: 'flex', flexShrink: 0}}>
+        {/* Action buttons — revealed on hover/focus-within */}
+        <div className="tool-actions">
           <Button
             kind="ghost"
             size="sm"
@@ -183,7 +211,7 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
             />
           )}
         </div>
-      </div>
+      </ToolRow>
 
       <Modal
         open={isModalOpen}
@@ -402,9 +430,33 @@ function FlatTraceConversation({agentData}: {agentData: AgentElementData}) {
               borderColor="#8a3ffc"
               contents={step.content}
               headerMeta={
-                <StepTags tokens={step.tokens} durationMs={step.durationMs} />
+                <StepTags
+                  tokens={step.tokens}
+                  tokensInput={step.tokensInput}
+                  tokensOutput={step.tokensOutput}
+                  durationMs={step.durationMs}
+                />
               }
-            />
+            >
+              {step.toolNames.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 'var(--cds-spacing-05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--cds-spacing-02)',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span style={attachmentLabelStyle}>Tool calls</span>
+                  {step.toolNames.map((name) => (
+                    <span key={name} style={tagStyle}>
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </ExpandableMessageBlock>
           );
         }
         return (
