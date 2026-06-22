@@ -16,7 +16,7 @@ const mockQueryUserTasksEndpoint = createEndpointMock({
 
 const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
-	method: endpoints.getProcessDefinitionInstanceStatistics.method,
+	method: endpoints.getProcessDefinitionInstanceStatistics.method as 'POST',
 });
 
 const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
@@ -26,7 +26,17 @@ const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
 
 const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
 	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
-	method: endpoints.getIncidentProcessInstanceStatisticsByError.method,
+	method: endpoints.getIncidentProcessInstanceStatisticsByError.method as 'POST',
+});
+
+const mockGetProcessDefinitionInstanceVersionStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl(),
+	method: endpoints.getProcessDefinitionInstanceVersionStatistics.method as 'POST',
+});
+
+const mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint = createEndpointMock({
+	endpoint: endpoints.getIncidentProcessInstanceStatisticsByDefinition.getUrl(),
+	method: endpoints.getIncidentProcessInstanceStatisticsByDefinition.method as 'POST',
 });
 
 const mockCurrentUserEndpoint = createEndpointMock({
@@ -70,4 +80,6 @@ export {
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 };

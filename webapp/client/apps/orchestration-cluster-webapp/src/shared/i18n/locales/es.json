@@ -404,13 +404,27 @@
 				"noInstancesHeading": "No hay instancias de proceso en ejecución",
 				"noInstancesDescription": "Para ver las instancias finalizadas, vaya a la vista de Procesos. Inicie una nueva instancia de proceso para ver actividad aquí.",
 				"learnMoreLink": "Más información sobre Operate",
-				"goToModelerButton": "Ir al Modeler"
+				"goToModelerButton": "Ir al Modeler",
+				"healthyProcessesHeading": "Sus procesos están saludables",
+				"healthyProcessesDescription": "No hay incidentes en ninguna instancia.",
+				"instancesInOneVersion_one": "1 Instancia en 1 Versión",
+				"instancesInOneVersion_other": "{{count}} Instancias en 1 Versión",
+				"instancesInMultipleVersions_one": "1 Instancia en 2+ Versiones",
+				"instancesInMultipleVersions_other": "{{count}} Instancias en 2+ Versiones",
+				"instancesInVersion_one": "1 Instancia en la Versión {{version}}",
+				"instancesInVersion_other": "{{count}} Instancias en la Versión {{version}}",
+				"version": "Versión {{version}}",
+				"fetchErrorHeading": "No se pudieron recuperar los datos",
+				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo"
 			},
 			"processes": {
 				"title": "Procesos"
 			},
 			"decisions": {
 				"title": "Decisiones"
+			},
+			"operations": {
+				"title": "Operaciones"
 			},
 			"operationsLog": {
 				"title": "Registro de operaciones"

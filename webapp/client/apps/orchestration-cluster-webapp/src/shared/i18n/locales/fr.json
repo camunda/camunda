@@ -407,13 +407,27 @@
 				"noInstancesHeading": "Aucune instance de processus en cours",
 				"noInstancesDescription": "Pour afficher les instances terminées, accédez à la vue Processus. Démarrez une nouvelle instance de processus pour voir l'activité ici.",
 				"learnMoreLink": "En savoir plus sur Operate",
-				"goToModelerButton": "Aller au Modeler"
+				"goToModelerButton": "Aller au Modeler",
+				"healthyProcessesHeading": "Vos processus sont sains",
+				"healthyProcessesDescription": "Il n'y a aucun incident sur aucune instance.",
+				"instancesInOneVersion_one": "1 Instance dans 1 Version",
+				"instancesInOneVersion_other": "{{count}} Instances dans 1 Version",
+				"instancesInMultipleVersions_one": "1 Instance dans 2+ Versions",
+				"instancesInMultipleVersions_other": "{{count}} Instances dans 2+ Versions",
+				"instancesInVersion_one": "1 Instance dans la Version {{version}}",
+				"instancesInVersion_other": "{{count}} Instances dans la Version {{version}}",
+				"version": "Version {{version}}",
+				"fetchErrorHeading": "Les données n'ont pas pu être récupérées",
+				"fetchErrorDescription": "Actualisez la page pour réessayer"
 			},
 			"processes": {
 				"title": "Processus"
 			},
 			"decisions": {
 				"title": "Décisions"
+			},
+			"operations": {
+				"title": "Opérations"
 			},
 			"operationsLog": {
 				"title": "Journal des opérations"

@@ -18,7 +18,7 @@ import {
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
-import {createProcessDefinitionInstanceStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -44,7 +44,7 @@ test('should redirect to the initial page on success', async ({network, page, lo
 			successResponse: HttpResponse.json(createLicense()),
 		}),
 		mockGetProcessDefinitionInstanceStatisticsEndpoint({
-			successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
+			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);
 
@@ -87,7 +87,7 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 			successResponse: HttpResponse.json(licenseMock),
 		}),
 		mockGetProcessDefinitionInstanceStatisticsEndpoint({
-			successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
+			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);
 

@@ -11,6 +11,8 @@ import {useRunningInstancesCount} from './useRunningInstancesCount';
 import {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1} from './styled';
 import {MetricPanel} from './MetricPanel/MetricPanel';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
+import {InstancesByProcess} from './InstancesByProcess/InstancesByProcess';
+import {IncidentsByError} from './IncidentsByError/IncidentsByError';
 
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
@@ -26,12 +28,18 @@ const Dashboard: React.FC = () => {
 				</Tile>
 				<Tile>
 					<TileTitle>{t('operate.dashboard.processesByNameTitle')}</TileTitle>
-					<ScrollableContent>{hasNoInstances ? <NoInstancesEmptyState /> : null}</ScrollableContent>
+					{hasNoInstances ? (
+						<ScrollableContent>
+							<NoInstancesEmptyState />
+						</ScrollableContent>
+					) : (
+						<InstancesByProcess />
+					)}
 				</Tile>
 				{!hasNoInstances && (
 					<Tile>
 						<TileTitle>{t('operate.dashboard.incidentsByErrorTitle')}</TileTitle>
-						<ScrollableContent />
+						<IncidentsByError />
 					</Tile>
 				)}
 			</Grid>

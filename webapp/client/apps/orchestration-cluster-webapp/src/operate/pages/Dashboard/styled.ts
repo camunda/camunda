@@ -70,4 +70,11 @@ const VisuallyHiddenH1 = styled.h1`
 	border: 0;
 `;
 
-export {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1};
+const ErrorText = styled.p`
+	${styles.bodyCompact01};
+	margin: 0;
+	padding: var(--cds-spacing-03) 0;
+	color: var(--cds-text-error);
+`;
+
+export {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1, ErrorText};
