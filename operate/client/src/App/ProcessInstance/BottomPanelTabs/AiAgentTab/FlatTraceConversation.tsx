@@ -195,7 +195,7 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
         {/* Tool description */}
         <div
           style={{
-            padding: '0 var(--cds-spacing-05) var(--cds-spacing-04)',
+            paddingBottom: 'var(--cds-spacing-04)',
             fontSize: 'var(--cds-body-compact-01-font-size)',
             lineHeight: '1.5',
             color: 'var(--cds-text-secondary)',
@@ -212,7 +212,7 @@ function ToolBlock({step}: {step: Extract<FlatTraceStep, {kind: 'tool'}>}) {
             style={{
               display: 'flex',
               gap: 'var(--cds-spacing-05)',
-              padding: '0 var(--cds-spacing-05) var(--cds-spacing-05)',
+              paddingBottom: 'var(--cds-spacing-05)',
             }}
           >
             {/* Input column */}
