@@ -29,6 +29,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
+  private String businessId;
   private Long elementInstanceKey;
   private String tenantId;
   private OffsetDateTime dueDate;
@@ -60,6 +61,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       final Long processDefinitionKey,
       final Long processInstanceKey,
       final Long rootProcessInstanceKey,
+      final String businessId,
       final Long elementInstanceKey,
       final String tenantId,
       final OffsetDateTime dueDate,
@@ -82,6 +84,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    this.businessId = businessId;
     this.elementInstanceKey = elementInstanceKey;
     this.tenantId = tenantId;
     this.dueDate = dueDate;
@@ -199,6 +202,14 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
+  public String businessId() {
+    return businessId;
+  }
+
+  public void businessId(final String businessId) {
+    this.businessId = businessId;
+  }
+
   public Long elementInstanceKey() {
     return elementInstanceKey;
   }
@@ -314,6 +325,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
         .processDefinitionKey(processDefinitionKey)
         .processInstanceKey(processInstanceKey)
         .rootProcessInstanceKey(rootProcessInstanceKey)
+        .businessId(businessId)
         .elementInstanceKey(elementInstanceKey)
         .tenantId(tenantId)
         .dueDate(dueDate)
@@ -342,6 +354,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private Long rootProcessInstanceKey;
+    private String businessId;
     private Long elementInstanceKey;
     private String tenantId;
     private OffsetDateTime dueDate;
@@ -424,6 +437,11 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     public Builder elementInstanceKey(final Long elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
@@ -501,6 +519,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
               processDefinitionKey,
               processInstanceKey,
               rootProcessInstanceKey,
+              businessId,
               elementInstanceKey,
               tenantId,
               dueDate,

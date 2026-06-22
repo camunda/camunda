@@ -417,4 +417,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_business_id_to_user_task" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}USER_TASK" columnName="BUSINESS_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}USER_TASK">
+      <column name="BUSINESS_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>
