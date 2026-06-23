@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -53,6 +54,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
   private final Set<String> refreshableKeys = new HashSet<>();
+  private final Map<String, Camunda> ptConfigs = new LinkedHashMap<>();
 
   public TestSpringApplication(final Class<?>... springApplications) {
     this(new Camunda(), springApplications);
@@ -221,6 +223,23 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   /**
+   * Mutates the unified configuration for a single physical tenant. The per-tenant {@link Camunda}
+   * is flattened into {@code camunda.physical-tenants.<tenantId>.*} properties at {@link
+   * #createSpringBuilder()} time, mirroring how {@code
+   * io.camunda.configuration.physicaltenants.PhysicalTenantResolver} binds a physical tenant from
+   * those same keys. Use {@link #withUnifiedConfig(Consumer)} for the root ({@code default})
+   * tenant.
+   *
+   * @param tenantId the physical tenant id
+   * @param modifier a configuration function that accepts the tenant's Camunda configuration object
+   * @return itself for chaining
+   */
+  public T withPtConfig(final String tenantId, final Consumer<Camunda> modifier) {
+    modifier.accept(ptConfigs.computeIfAbsent(tenantId, id -> new Camunda()));
+    return self();
+  }
+
+  /**
    * Replaces a set of properties that should be re-derived from in-memory builder state on every
    * {@link #start()}. Keys set in a previous call are removed before the new {@code properties} are
    * applied, so fields that disappear between restarts (e.g. an exporter cleared from the unified
@@ -311,7 +330,16 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
     // so every with*Config / withUnifiedConfig call made up to now is captured. Refreshable so that
     // fields cleared between stop/start (e.g. an exporter removed) don't remain.
-    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
+    final Map<String, Object> flatProperties =
+        new LinkedHashMap<>(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
+    // withRefreshableProperties replaces (not accumulates) the refreshable set, so the root config
+    // and every physical tenant must be merged into a single map before registering them.
+    ptConfigs.forEach(
+        (tenantId, ptConfig) ->
+            flatProperties.putAll(
+                ExtendedConfigurationBuilder.flatPropertiesFor(
+                    ptConfig, "camunda.physical-tenants." + tenantId)));
+    withRefreshableProperties(flatProperties);
     return MainSupport.createDefaultApplicationBuilder()
         .bannerMode(Mode.OFF)
         .registerShutdownHook(false)
