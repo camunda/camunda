@@ -149,7 +149,7 @@ export class IdentityUsersPage {
     );
     this.deleteUserModalDeleteButton = this.deleteUserModal.getByRole(
       'button',
-      {name: 'danger Delete user'},
+      {name: 'Delete user'},
     );
 
     this.emptyState = page.getByText('No users created yet', {exact: true});
