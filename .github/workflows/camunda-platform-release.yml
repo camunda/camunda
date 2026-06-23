@@ -99,10 +99,12 @@ jobs:
       - name: Parse Release Version
         run: |
           if [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            echo "RELEASE_MAJOR=${BASH_REMATCH[1]}" >> "$GITHUB_ENV"
-            echo "RELEASE_MINOR=${BASH_REMATCH[2]}" >> "$GITHUB_ENV"
-            echo "RELEASE_PATCH=${BASH_REMATCH[3]}" >> "$GITHUB_ENV"
-            echo "IS_STABLE_VERSION=true" >> "$GITHUB_ENV"
+            {
+              echo "RELEASE_MAJOR=${BASH_REMATCH[1]}"
+              echo "RELEASE_MINOR=${BASH_REMATCH[2]}"
+              echo "RELEASE_PATCH=${BASH_REMATCH[3]}"
+              echo "IS_STABLE_VERSION=true"
+            } >> "$GITHUB_ENV"
           else
             echo "IS_STABLE_VERSION=false" >> "$GITHUB_ENV"
           fi
@@ -315,7 +317,7 @@ jobs:
           if [[ "$RELEASE_PATCH" == "0" ]]; then
             PREV_MINOR=$((RELEASE_MINOR - 1))
             if [[ "$PREV_MINOR" -lt 0 ]]; then
-              echo "ERROR: Cannot compute previous minor for ${RELEASE_VERSION} (MINOR=0). Set the 'backwards.compat.version' property in parent/pom.xml to the last stable minor baseline (e.g. 8.X.0) before re-running."
+              echo "ERROR: Cannot compute previous minor for ${RELEASE_VERSION} (MINOR=0). Please set 'backwards.compat.version' in parent/pom.xml to the last stable release from the previous release line (e.g. 8.<minor>.<patch> for a 9.0.0 release), then re-run the workflow."
               exit 1
             fi
             COMPAT_VERSION="${RELEASE_MAJOR}.${PREV_MINOR}.0"
