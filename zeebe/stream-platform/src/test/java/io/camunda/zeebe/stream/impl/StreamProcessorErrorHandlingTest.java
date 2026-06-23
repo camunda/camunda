@@ -112,8 +112,13 @@ class StreamProcessorErrorHandlingTest {
           rejectionWriteAttempts.incrementAndGet();
           return Either.left(LogStreamWriter.WriteFailure.WRITE_LIMIT_EXHAUSTED);
         };
-    final var spyLogStream = spy(logContext.logStream());
-    when(spyLogStream.newLogStreamWriter()).thenReturn(failingWriter);
+    // the stream processor uses the wrapped async log stream (getAsyncLogStream()), so the failing
+    // writer has to be injected there rather than on the synchronous wrapper
+    final var realLogStream = logContext.logStream();
+    final var spyAsyncLogStream = spy(realLogStream.getAsyncLogStream());
+    when(spyAsyncLogStream.newLogStreamWriter()).thenReturn(failingWriter);
+    final var spyLogStream = spy(realLogStream);
+    when(spyLogStream.getAsyncLogStream()).thenReturn(spyAsyncLogStream);
     streamPlatform.setLogContext(
         new StreamPlatform.LogContext(spyLogStream, logContext.meterRegistry()));
 
