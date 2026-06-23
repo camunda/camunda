@@ -33,7 +33,6 @@ public class PollResponse implements BufferReader, BufferWriter {
 
   private ErrorCode errorCode = ErrorCode.NONE;
   private long nextPosition;
-  private long epoch;
   private List<PollEvent> events = new ArrayList<>();
   private String errorMessage = "";
 
@@ -43,10 +42,6 @@ public class PollResponse implements BufferReader, BufferWriter {
 
   public long getNextPosition() {
     return nextPosition;
-  }
-
-  public long getEpoch() {
-    return epoch;
   }
 
   public List<PollEvent> getEvents() {
@@ -67,11 +62,6 @@ public class PollResponse implements BufferReader, BufferWriter {
     return this;
   }
 
-  public PollResponse epoch(final long epoch) {
-    this.epoch = epoch;
-    return this;
-  }
-
   public PollResponse events(final List<PollEvent> events) {
     this.events = events;
     return this;
@@ -88,7 +78,6 @@ public class PollResponse implements BufferReader, BufferWriter {
 
     errorCode = bodyDecoder.errorCode();
     nextPosition = bodyDecoder.nextPosition();
-    epoch = bodyDecoder.epoch();
 
     events = new ArrayList<>();
     for (final var evt : bodyDecoder.events()) {
@@ -127,8 +116,7 @@ public class PollResponse implements BufferReader, BufferWriter {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .errorCode(errorCode)
-        .nextPosition(nextPosition)
-        .epoch(epoch);
+        .nextPosition(nextPosition);
 
     final var data = bodyEncoder.eventsCount(events.size());
     for (final var event : events) {

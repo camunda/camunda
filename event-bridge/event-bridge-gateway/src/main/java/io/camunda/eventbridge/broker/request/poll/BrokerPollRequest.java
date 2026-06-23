@@ -31,21 +31,13 @@ public class BrokerPollRequest extends BrokerRequest<PollResponse> {
   }
 
   public BrokerPollRequest setup(
-      final int partitionId,
-      final String groupId,
-      final String consumerId,
-      final long fromPosition,
-      final int maxRecords,
-      final long epoch) {
+      final int partitionId, final long fromPosition, final int maxRecords) {
     this.partitionId = partitionId;
     request
         .partitionId(partitionId)
-        .groupId(groupId == null ? "" : groupId)
-        .consumerId(consumerId == null ? "" : consumerId)
         .fromPosition(fromPosition)
         .maxRecords(maxRecords)
-        .serverWaitMs(0)
-        .epoch(epoch);
+        .serverWaitMs(0);
     return this;
   }
 

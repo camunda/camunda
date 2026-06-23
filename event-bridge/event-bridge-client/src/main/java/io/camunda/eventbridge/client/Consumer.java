@@ -538,18 +538,10 @@ public final class Consumer {
 
   private Map<String, Object> doPoll(
       final int partitionId, final long fromPosition, final int maxRecords) {
-    final String query =
-        "fromPosition="
-            + fromPosition
-            + "&maxRecords="
-            + maxRecords
-            + "&epoch="
-            + memberEpoch
-            + (memberId == null
-                ? ""
-                : "&consumerId=" + URLEncoder.encode(memberId, StandardCharsets.UTF_8))
-            + "&groupId="
-            + URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+    // Reads are not group-aware (see the poll-fencing decision): a poll is just a partition +
+    // offset
+    // + limit. Membership/epoch is only enforced at commit time on the coordinator.
+    final String query = "fromPosition=" + fromPosition + "&maxRecords=" + maxRecords;
 
     final var uri =
         URI.create(client.getGatewayUrl() + "/v1/events/" + partitionId + "/poll?" + query);

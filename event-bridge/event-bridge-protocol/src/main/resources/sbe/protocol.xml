@@ -115,22 +115,21 @@
        PollRequest (id=5): gateway → partition leader
        ===================================================================== -->
   <sbe:message name="PollRequest" id="5" description="Pull events from a partition log">
+    <!-- Reads are not group-aware: a poll is just (partition, offset, limit). Consumer-group
+         membership/epoch is never checked on the read path; fencing happens at commit time on the
+         coordinator. See the poll-fencing decision in the event-bridge docs. -->
     <field name="partitionId" id="1" type="int32"/>
     <field name="fromPosition" id="2" type="int64"/>
     <field name="maxRecords" id="3" type="int32"/>
     <field name="serverWaitMs" id="4" type="int32"/>
-    <field name="epoch" id="5" type="int64"/>
-    <data name="groupId" id="6" type="varDataEncoding"/>
-    <data name="consumerId" id="7" type="varDataEncoding"/>
   </sbe:message>
 
   <!-- =====================================================================
        PollResponse (id=6): partition leader → gateway
        ===================================================================== -->
-  <sbe:message name="PollResponse" id="6" description="Polled events or rebalance notification">
+  <sbe:message name="PollResponse" id="6" description="Polled events from a partition log">
     <field name="errorCode" id="1" type="ErrorCode"/>
     <field name="nextPosition" id="2" type="int64"/>
-    <field name="epoch" id="3" type="int64"/>
     <group name="events" id="4" dimensionType="groupSizeEncoding">
       <field name="position" id="5" type="int64"/>
       <data name="payload" id="6" type="varDataEncoding"/>

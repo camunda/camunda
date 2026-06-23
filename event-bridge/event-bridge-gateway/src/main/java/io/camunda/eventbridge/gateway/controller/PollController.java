@@ -35,13 +35,10 @@ public class PollController {
   public CompletableFuture<ResponseEntity<EventBridgeDtos.PollResponse>> poll(
       @PathVariable final int partitionId,
       @RequestParam(defaultValue = "-1") final long fromPosition,
-      @RequestParam(defaultValue = "1024") final int maxRecords,
-      @RequestParam(required = false) final String groupId,
-      @RequestParam(required = false) final String consumerId,
-      @RequestParam(defaultValue = "0") final long epoch) {
+      @RequestParam(defaultValue = "1024") final int maxRecords) {
 
     return pollService
-        .poll(partitionId, groupId, consumerId, fromPosition, maxRecords, epoch)
+        .poll(partitionId, fromPosition, maxRecords)
         .handle(
             (res, error) -> {
               if (error != null) {
@@ -56,7 +53,7 @@ public class PollController {
                                   e.position(), Base64.getEncoder().encodeToString(e.payload())))
                       .toList();
               return ResponseEntity.ok(
-                  EventBridgeDtos.PollResponse.ok(events, res.getNextPosition(), res.getEpoch()));
+                  EventBridgeDtos.PollResponse.ok(events, res.getNextPosition()));
             });
   }
 

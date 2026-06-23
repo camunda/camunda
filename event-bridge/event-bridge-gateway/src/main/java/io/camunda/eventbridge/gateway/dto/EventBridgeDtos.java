@@ -27,26 +27,14 @@ public final class EventBridgeDtos {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record PollResponse(
-      String status,
-      List<PollEvent> events,
-      Long nextPosition,
-      Long epoch,
-      List<Integer> assignedPartitions,
-      String error,
-      String message) {
+      String status, List<PollEvent> events, Long nextPosition, String error, String message) {
 
-    public static PollResponse ok(
-        final List<PollEvent> events, final long nextPosition, final long epoch) {
-      return new PollResponse("OK", events, nextPosition, epoch, null, null, null);
-    }
-
-    public static PollResponse rebalance(final List<Integer> assignedPartitions, final long epoch) {
-      return new PollResponse(
-          "REBALANCE_IN_PROGRESS", List.of(), null, epoch, assignedPartitions, null, null);
+    public static PollResponse ok(final List<PollEvent> events, final long nextPosition) {
+      return new PollResponse("OK", events, nextPosition, null, null);
     }
 
     public static PollResponse error(final String errorCode, final String message) {
-      return new PollResponse("ERROR", null, null, null, null, errorCode, message);
+      return new PollResponse("ERROR", null, null, errorCode, message);
     }
   }
 

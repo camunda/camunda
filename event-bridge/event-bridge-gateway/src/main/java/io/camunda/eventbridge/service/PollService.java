@@ -28,15 +28,10 @@ public class PollService {
   }
 
   public CompletableFuture<PollResponse> poll(
-      final int partitionId,
-      final String groupId,
-      final String consumerId,
-      final long fromPosition,
-      final int maxRecords,
-      final long epoch) {
+      final int partitionId, final long fromPosition, final int maxRecords) {
 
     final var request = new BrokerPollRequest();
-    request.setup(partitionId, groupId, consumerId, fromPosition, maxRecords, epoch);
+    request.setup(partitionId, fromPosition, maxRecords);
 
     return brokerClient.sendRequest(request).thenApplyAsync(BrokerResponse::getResponse, executor);
   }

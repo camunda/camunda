@@ -87,7 +87,6 @@ public final class PollRequestHandler implements RequestHandler {
         new PollResponse()
             .errorCode(ErrorCode.NONE)
             .nextPosition(events.isEmpty() ? fromPosition : nextPosition)
-            .epoch(request.getEpoch())
             .events(events)
             .errorMessage("");
 
