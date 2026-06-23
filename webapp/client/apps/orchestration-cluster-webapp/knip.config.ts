@@ -29,6 +29,8 @@ const config: KnipConfig = {
 		'src/operate/shared/Frame/**',
 		'src/operate/shared/CollapsablePanel/**',
 		'src/operate/shared/FiltersPanel/**',
+		'src/operate/shared/ResizablePanel/**',
+		'src/operate/shared/InstancesList/**',
 	],
 	ignoreDependencies: ['@vitest/browser', '@devbookhq/splitter'],
 };
