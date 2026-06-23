@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,10 +28,7 @@ final class TemplateReader {
   private static final String INDEX_TEMPLATE_FILENAME_PATTERN =
       "/opensearch/zeebe-record-%s-template.json";
 
-  // subdirectory avoids classpath collision with elasticsearch-exporter which has identically-named
-  // templates at the root but in flat (non-nested) settings format
   private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/opensearch/zeebe-record-template.json";
-  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final OpensearchExporterConfiguration.IndexConfiguration config;
 
