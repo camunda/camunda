@@ -236,7 +236,7 @@ orchestration:
   image:
     registry: docker.io
     repository: camunda/camunda
-    tag: "8.8-SNAPSHOT"
+    tag: "8.8.28"
   ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   ## @param core.partitionCount defines how many partitions are set up in the cluster
