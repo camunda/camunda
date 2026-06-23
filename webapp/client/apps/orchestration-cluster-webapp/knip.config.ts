@@ -19,7 +19,6 @@ const config: KnipConfig = {
 		'shared-test-modules/api-mocks/user-tasks.ts',
 		'shared-test-modules/api-mocks/process-definition-statistics.ts',
 		'shared-test-modules/api-mocks/incident-statistics.ts',
-		'src/operate/shared/constants/**',
 		'src/operate/shared/utils/**',
 		'src/operate/shared/PanelTitle/**',
 		'src/operate/shared/EmptyMessage/**',
