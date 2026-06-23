@@ -31,7 +31,7 @@ jobs:
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -49,7 +49,7 @@ jobs:
           version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
           push: true
           distball: ${{ steps.build-backend.outputs.distball }}
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
           ./mvnw \
