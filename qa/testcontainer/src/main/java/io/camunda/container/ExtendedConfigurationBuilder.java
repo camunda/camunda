@@ -322,12 +322,23 @@ public class ExtendedConfigurationBuilder {
    * List elements are emitted as {@code key[i]}; map entries as {@code key.entryKey}.
    */
   public static Map<String, Object> flatPropertiesFor(final Camunda config) {
+    return flatPropertiesFor(config, CAMUNDA_HEADER);
+  }
+
+  /**
+   * Same as {@link #flatPropertiesFor(Camunda)} but emits the keys under an arbitrary {@code
+   * prefix} instead of the top-level {@code camunda} header — e.g. {@code
+   * camunda.physical-tenants.<id>} so a physical-tenant {@link Camunda} can be flattened into the
+   * very keys the broker binds it from (see {@code
+   * io.camunda.configuration.physicaltenants.PhysicalTenantResolver}).
+   */
+  public static Map<String, Object> flatPropertiesFor(final Camunda config, final String prefix) {
     final Map<String, Object> defaultMap = flatten(new Camunda());
     final Map<String, Object> configuredMap = flatten(config);
     final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
     putLegacyNodeIdPropertyIfNeeded(diff);
     final Map<String, Object> flat = new LinkedHashMap<>();
-    flattenInto(diff, CAMUNDA_HEADER, flat);
+    flattenInto(diff, prefix, flat);
     return flat;
   }
 
