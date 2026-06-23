@@ -21,6 +21,8 @@ type Props = {
 
 const ResizablePanel: React.FC<Props> = ({children, direction, minHeights, minWidths, panelId}) => {
 	const cursorResizingClassName = direction === SplitDirection.Vertical ? 'nsResizing' : 'ewResizing';
+	const storedSizes = getStateLocally('operate.panelStates')?.[panelId];
+	const initialSizes = Array.isArray(storedSizes) ? storedSizes : [50, 50];
 
 	return (
 		<Splitter
@@ -28,7 +30,7 @@ const ResizablePanel: React.FC<Props> = ({children, direction, minHeights, minWi
 			direction={direction}
 			minHeights={minHeights}
 			minWidths={minWidths}
-			initialSizes={(getStateLocally('operate.panelStates')?.[panelId] as number[] | undefined) ?? [50, 50]}
+			initialSizes={initialSizes}
 			gutterClassName={`custom-gutter-${direction}`}
 			draggerClassName={`custom-dragger-${direction}`}
 			onResizeStarted={() => {
