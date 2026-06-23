@@ -86,8 +86,10 @@ public class AnalyticsExporter implements Exporter {
       heartbeatTask = null;
     }
     otelSdkManager.close();
-    controller.updateLastExportedRecordPosition(
-        controller.getLastExportedRecordPosition(), metadata.serialize());
+    if (controller != null && metadata != null) {
+      controller.updateLastExportedRecordPosition(
+          controller.getLastExportedRecordPosition(), metadata.serialize());
+    }
     LOG.info("Analytics exporter closed");
   }
 

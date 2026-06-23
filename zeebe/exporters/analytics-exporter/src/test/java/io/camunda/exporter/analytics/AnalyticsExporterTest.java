@@ -324,6 +324,23 @@ class AnalyticsExporterTest {
             });
   }
 
+  @Test
+  void shouldNotThrowOnCloseWhenNeverOpened() {
+    // given — exporter is configured but open() was never called, so controller is null
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
+            .setClusterId("test-cluster")
+            .setPartitionId(1)
+            .setLicenseKey("test-license-key");
+    final var unopenedExporter = new AnalyticsExporter();
+    unopenedExporter.configure(context);
+
+    // when / then — close must not throw even though controller is null
+    assertThatCode(unopenedExporter::close).doesNotThrowAnyException();
+  }
+
   // -- helpers --
 
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
