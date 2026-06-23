@@ -14,7 +14,6 @@ on:
       - '.github/actions/**'
       - '.github/workflows/operate-*'
       - 'bom/*'
-      - 'operate.Dockerfile'
       - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
@@ -25,7 +24,6 @@ on:
       - '.github/actions/**'
       - '.github/workflows/operate-*'
       - 'bom/*'
-      - 'operate.Dockerfile'
       - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
@@ -57,7 +55,7 @@ jobs:
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
-          dockerfile: operate.Dockerfile
+          dockerfile: camunda.Dockerfile
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -108,7 +106,7 @@ jobs:
           context: .
           push: true
           tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
-          file: operate.Dockerfile
+          file: camunda.Dockerfile
       - name: Run Docker tests
         run: ./mvnw -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
