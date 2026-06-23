@@ -8,7 +8,12 @@
 package io.camunda.zeebe.exporter.common.tasks;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.CompletableFuture;
@@ -179,6 +184,26 @@ final class ReschedulingTaskTest {
     inOrder
         .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 12L, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
+  void shouldLogDebugNotErrorWhenRejectedDuringShutdown() throws InterruptedException {
+    // given
+    final var future = new CompletableFuture<Integer>();
+    when(archiverJob.execute()).thenReturn(future);
+    final var mockLogger = mock(Logger.class);
+    final var localExecutor = new ScheduledThreadPoolExecutor(1);
+    final var task = new ReschedulingTask(archiverJob, 1, 10, 1000, localExecutor, mockLogger);
+
+    // when - task is started, closed, executor shut down, then the in-flight future completes
+    task.run();
+    task.close();
+    localExecutor.shutdown();
+    future.complete(1);
+
+    // then - DEBUG log for shutdown rejection, no ERROR log
+    verify(mockLogger, timeout(5_000).atLeastOnce()).debug(anyString(), any(Object.class));
+    verify(mockLogger, never()).error(anyString(), any(Object.class), any(Throwable.class));
   }
 
   @Test
