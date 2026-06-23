@@ -120,24 +120,7 @@ public final class BrokerBootstrap {
     executorServiceSetup = new ExecutorServiceSetup(executorServiceFactory);
     final var executorService = executorServiceSetup.start();
 
-    // 3b. Wire the topic-registry propagation channel (Option 1: the registry-shard coordinator
-    // leader broadcasts the registry; every broker reconciles from it). The local node also needs
-    // the registry, but cluster broadcast excludes the sender, so the publisher additionally
-    // delivers to the local sink. The subscriber receives broadcasts from remote registry leaders.
-    final var comm = cluster.getCommunicationService();
-    final Consumer<byte[]> registrySink =
-        payload ->
-            LOG.info(
-                "Received topic registry broadcast: {}",
-                TopicAssignmentGossip.decode(payload).keySet());
-    comm.consume(TopicAssignmentGossip.SUBJECT, Function.identity(), registrySink, executorService);
-    final TopicAssignmentGossip.Publisher topicAssignmentPublisher =
-        payload -> {
-          comm.broadcast(TopicAssignmentGossip.SUBJECT, payload, Function.identity(), true);
-          registrySink.accept(payload);
-        };
-
-    // 4. Start partitions — raft + lifecycle actors (uses broker messaging service)
+    // 4. Build partition bootstrapper + the topic reconciler that the registry broadcast drives.
     partitionBootstrapper =
         new PartitionBootstrapper(
             cluster,
@@ -146,6 +129,26 @@ public final class BrokerBootstrap {
             InstantSource.system(),
             idGenerator,
             executorService);
+    final var localMemberId = cluster.getMembershipService().getLocalMember().id();
+    final var topicReconciler =
+        new TopicReconciler(properties, partitionBootstrapper, topologySetup, localMemberId);
+
+    // 4b. Wire the topic-registry propagation channel (Option 1: the registry-shard coordinator
+    // leader broadcasts the registry; every broker reconciles its local topic Raft groups from it).
+    // The local node also needs the registry, but cluster broadcast excludes the sender, so the
+    // publisher additionally delivers to the local sink. The subscriber receives broadcasts from
+    // remote registry leaders.
+    final var comm = cluster.getCommunicationService();
+    final Consumer<byte[]> registrySink =
+        payload -> topicReconciler.reconcile(TopicAssignmentGossip.decode(payload));
+    comm.consume(TopicAssignmentGossip.SUBJECT, Function.identity(), registrySink, executorService);
+    final TopicAssignmentGossip.Publisher topicAssignmentPublisher =
+        payload -> {
+          comm.broadcast(TopicAssignmentGossip.SUBJECT, payload, Function.identity(), true);
+          registrySink.accept(payload);
+        };
+
+    // 5. Start partitions — raft + lifecycle actors (uses broker messaging service)
     partitionBootstrapper.start(
         distribution,
         topologyManager,

@@ -26,9 +26,9 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -54,10 +54,12 @@ final class PartitionBootstrapper {
   private final IdGenerator idGenerator;
   private final ExecutorService executorService;
 
-  private final List<CreatedPartition> createdPartitions = new ArrayList<>();
-  private final List<PartitionLifecycle> lifecycles = new ArrayList<>();
-  private final List<LogRetentionCompactor> retentionCompactors = new ArrayList<>();
-  private final List<CoordinatorPartition> coordinatorPartitions = new ArrayList<>();
+  // CopyOnWrite: boot mutates these on the start thread, runtime topic provisioning on the
+  // reconciler thread, and stop() iterates them — so all access must be thread-safe.
+  private final List<CreatedPartition> createdPartitions = new CopyOnWriteArrayList<>();
+  private final List<PartitionLifecycle> lifecycles = new CopyOnWriteArrayList<>();
+  private final List<LogRetentionCompactor> retentionCompactors = new CopyOnWriteArrayList<>();
+  private final List<CoordinatorPartition> coordinatorPartitions = new CopyOnWriteArrayList<>();
 
   // Initialized in start(); reused by runtime topic-group provisioning after boot.
   private PartitionFactory factory;

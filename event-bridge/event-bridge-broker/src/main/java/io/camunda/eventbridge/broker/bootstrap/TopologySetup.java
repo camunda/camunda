@@ -33,6 +33,8 @@ final class TopologySetup {
 
   private TopologyManagerImpl topologyManager;
   private TopologyManagerImpl coordinatorTopologyManager;
+  private final java.util.List<TopologyManagerImpl> topicTopologyManagers =
+      new java.util.concurrent.CopyOnWriteArrayList<>();
 
   TopologySetup(
       final ClusterMembershipService membershipService,
@@ -84,7 +86,36 @@ final class TopologySetup {
     return coordinatorTopologyManager;
   }
 
+  /**
+   * Creates a topology manager for a per-topic Raft group, provisioned at runtime. Like the
+   * coordinator group, it publishes a BrokerInfo under the topic group's own member-property key so
+   * the gateway resolves that topic's partition leaders independently of the data partitions.
+   */
+  TopologyManagerImpl createTopicTopologyManager(
+      final String topicGroup, final int partitionCount) {
+    final var localMemberId = membershipService.getLocalMember().id();
+    final var brokerInfo = createTopicBrokerInfo(localMemberId, topicGroup, partitionCount);
+    final var manager = new TopologyManagerImpl(membershipService, brokerInfo);
+    actorScheduler.submitActor(manager);
+    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
+      manager.addTopologyPartitionListener(
+          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
+    }
+    topicTopologyManagers.add(manager);
+    LOG.info(
+        "Topic topology manager started for group {} ({} partitions)", topicGroup, partitionCount);
+    return manager;
+  }
+
   void stop() {
+    for (final var manager : topicTopologyManagers) {
+      try {
+        manager.closeAsync().join();
+      } catch (final Exception e) {
+        LOG.warn("Error closing topic topology manager", e);
+      }
+    }
+    topicTopologyManagers.clear();
     if (coordinatorTopologyManager != null) {
       try {
         coordinatorTopologyManager.closeAsync().join();
@@ -139,6 +170,32 @@ final class TopologySetup {
         .setPartitionGroup(CoordinationRequestHandler.COORDINATOR_ROUTING_GROUP)
         .setClusterSize(clusterCfg.clusterSize())
         .setPartitionsCount(1)
+        .setReplicationFactor(properties.raft().replicationFactor());
+
+    final var version = VersionUtil.getVersion();
+    if (version != null && !version.isBlank()) {
+      brokerInfo.setVersion(version);
+    }
+
+    return brokerInfo;
+  }
+
+  /**
+   * BrokerInfo for a per-topic routing group. Tagged with the topic's Raft group name so the
+   * gateway maintains a separate per-group topology for the topic's partitions.
+   */
+  private BrokerInfo createTopicBrokerInfo(
+      final MemberId localMemberId, final String topicGroup, final int partitionCount) {
+    final var nodeId = parseNodeId(localMemberId.id());
+    final var clusterCfg = properties.cluster();
+    final var address =
+        Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
+
+    final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
+    brokerInfo
+        .setPartitionGroup(topicGroup)
+        .setClusterSize(clusterCfg.clusterSize())
+        .setPartitionsCount(partitionCount)
         .setReplicationFactor(properties.raft().replicationFactor());
 
     final var version = VersionUtil.getVersion();
