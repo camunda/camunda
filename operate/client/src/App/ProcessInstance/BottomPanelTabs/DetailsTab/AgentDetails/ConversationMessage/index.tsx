@@ -7,7 +7,7 @@
  */
 
 import {useReducer} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Tag, Tooltip} from '@carbon/react';
 import {Document, Maximize} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
@@ -24,6 +24,8 @@ import {
   AttachmentsContainer,
   AttachmentsLabel,
   AttachmentButton,
+  MessageHeader,
+  MetricsContainer,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
@@ -31,6 +33,7 @@ import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 type Actor = AgentInstanceHistoryRole | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
 type ToolCall = AgentInstanceHistoryItem['toolCalls'][number];
+type Metrics = AgentInstanceHistoryItem['metrics'];
 
 const readableTitleByActor: Record<Actor, string> = {
   SYSTEM: 'System prompt',
@@ -46,10 +49,15 @@ const labelByActor: Record<Actor, string> = {
   TOOL_RESULT: 'Tool Result',
 };
 
+function formatDuration(ms: number): string {
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(2)}s`;
+}
+
 type ConversationMessageProps = {
   actor: Actor;
   content: ContentItem[];
   historyItemKey?: string;
+  metrics?: Metrics | null;
   toolCalls?: ToolCall[];
   onToolCallClick?: (toolCall: ToolCall) => void;
 };
@@ -58,6 +66,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   actor,
   content,
   historyItemKey,
+  metrics = null,
   toolCalls = [],
   onToolCallClick,
 }) => {
@@ -76,7 +85,25 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
       data-testid={`conversation-message${historyItemKey ? `-${historyItemKey}` : ''}`}
       aria-label={readableTitleByActor[actor]}
     >
-      <ActorLabel>{labelByActor[actor]}</ActorLabel>
+      <MessageHeader>
+        <ActorLabel>{labelByActor[actor]}</ActorLabel>
+        {metrics !== null && (
+          <MetricsContainer>
+            <Tooltip
+              description={`Input: ${metrics.inputTokens.toLocaleString()} · Output: ${metrics.outputTokens.toLocaleString()}`}
+              align="bottom"
+            >
+              <Tag type="gray" size="sm">
+                {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}
+                &nbsp;tokens
+              </Tag>
+            </Tooltip>
+            <Tag type="gray" size="sm">
+              {formatDuration(metrics.durationMs)}
+            </Tag>
+          </MetricsContainer>
+        )}
+      </MessageHeader>
       {content.map((entry, index) => {
         switch (entry.contentType) {
           case 'DOCUMENT': {
