@@ -14,7 +14,6 @@ import io.camunda.eventbridge.broker.partitioning.steps.EventStreamFetcherStep;
 import io.camunda.eventbridge.broker.partitioning.steps.EventStreamStep;
 import io.camunda.eventbridge.broker.partitioning.steps.FetchPurgatoryStep;
 import io.camunda.eventbridge.broker.partitioning.steps.HighWatermarkStep;
-import io.camunda.eventbridge.broker.partitioning.steps.LogRetentionStep;
 import io.camunda.eventbridge.broker.partitioning.steps.LogStorageStep;
 import io.camunda.eventbridge.broker.partitioning.steps.PollRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.PublishRequestHandlerStep;
@@ -55,9 +54,7 @@ public final class PartitionLifecycle extends Actor {
       final InstantSource clock,
       final IdGenerator idGenerator,
       final TopologyManagerImpl topologyManager,
-      final ExecutorService executorService,
-      final long retentionMaxRecords,
-      final long retentionCompactionIntervalMs) {
+      final ExecutorService executorService) {
     context =
         new PartitionContext(
             partitionId,
@@ -80,8 +77,7 @@ public final class PartitionLifecycle extends Actor {
             new EventStreamFetcherStep(),
             new PublishRequestHandlerStep(),
             new PollRequestHandlerStep(),
-            new TopologyStep(topologyManager),
-            new LogRetentionStep(retentionMaxRecords, retentionCompactionIntervalMs));
+            new TopologyStep(topologyManager));
   }
 
   @Override

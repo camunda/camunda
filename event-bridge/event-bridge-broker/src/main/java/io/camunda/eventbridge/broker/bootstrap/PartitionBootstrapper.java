@@ -13,6 +13,7 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.camunda.eventbridge.broker.coordinator.stream.CoordinatorPartition;
+import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +55,7 @@ final class PartitionBootstrapper {
 
   private final List<CreatedPartition> createdPartitions = new ArrayList<>();
   private final List<PartitionLifecycle> lifecycles = new ArrayList<>();
+  private final List<LogRetentionCompactor> retentionCompactors = new ArrayList<>();
   private final List<CoordinatorPartition> coordinatorPartitions = new ArrayList<>();
 
   PartitionBootstrapper(
@@ -215,6 +218,15 @@ final class PartitionBootstrapper {
     }
     lifecycles.clear();
 
+    for (final var compactor : retentionCompactors) {
+      try {
+        compactor.closeAsync();
+      } catch (final Exception e) {
+        LOG.warn("Error closing retention compactor", e);
+      }
+    }
+    retentionCompactors.clear();
+
     for (final var coordinatorPartition : coordinatorPartitions) {
       try {
         coordinatorPartition.closeAsync();
@@ -267,11 +279,22 @@ final class PartitionBootstrapper {
             clock,
             idGenerator,
             topologyManager,
-            executorService,
-            properties.retention().maxRecordsPerPartition(),
-            properties.retention().compactionIntervalMs());
+            executorService);
     lifecycles.add(lifecycle);
     actorScheduler.submitActor(lifecycle);
+
+    // 2b. Retention compaction runs on every replica (leader and followers), not just the leader:
+    // each node trims its own committed log prefix independently. This is safe — Raft guarantees an
+    // identical committed prefix everywhere, so replicas differ only in how far back they retain,
+    // never in shared content — and it bounds disk on followers without waiting for promotion.
+    final var retentionCompactor =
+        new LogRetentionCompactor(
+            partitionId,
+            created.raftPartition(),
+            properties.retention().maxRecordsPerPartition(),
+            Duration.ofMillis(properties.retention().compactionIntervalMs()));
+    retentionCompactors.add(retentionCompactor);
+    actorScheduler.submitActor(retentionCompactor);
 
     // 3. Wire raft role changes to lifecycle — before bootstrap so no events are lost
     created.raftPartition().addRoleChangeListener((role, term) -> lifecycle.onRoleChange(role));
