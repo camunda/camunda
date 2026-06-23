@@ -7,6 +7,7 @@
  */
 
 import React, {forwardRef} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Panel, Header, Collapsable, ExpandIcon, CollapseIcon, IconButton, Content} from './styled';
 import {PanelTitle} from '../PanelTitle';
 import {Layer} from '@carbon/react';
@@ -41,6 +42,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 		},
 		ref,
 	) => {
+		const {t} = useTranslation();
 		const tooltipAlignment = panelPosition === 'RIGHT' ? 'left' : 'right';
 
 		return (
@@ -57,8 +59,8 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 					<Panel data-testid="collapsed-panel" $panelPosition={panelPosition} $isClickable onClick={onToggle}>
 						<IconButton
 							kind="ghost"
-							label={`Expand ${label}`}
-							aria-label={`Expand ${label}`}
+							label={t('operate.shared.collapsablePanel.expand', {label})}
+							aria-label={t('operate.shared.collapsablePanel.expand', {label})}
 							align={tooltipAlignment}
 							size="sm"
 						>
@@ -73,8 +75,8 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 							<IconButton
 								kind="ghost"
 								onClick={onToggle}
-								label={`Collapse ${label}`}
-								aria-label={`Collapse ${label}`}
+								label={t('operate.shared.collapsablePanel.collapse', {label})}
+								aria-label={t('operate.shared.collapsablePanel.collapse', {label})}
 								align={tooltipAlignment}
 								size="sm"
 							>

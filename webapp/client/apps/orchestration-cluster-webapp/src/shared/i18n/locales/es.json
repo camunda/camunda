@@ -445,6 +445,14 @@
 				"diagramShell": {
 					"forbiddenMessage": "Permisos insuficientes para ver la definición",
 					"forbiddenAdditionalInfo": "Póngase en contacto con el propietario o administrador de su organización para obtener los permisos necesarios"
+				},
+				"collapsablePanel": {
+					"expand": "Expandir {{label}}",
+					"collapse": "Contraer {{label}}"
+				},
+				"filtersPanel": {
+					"label": "Filtro",
+					"resetFilters": "Restablecer filtros"
 				}
 			}
 		}
