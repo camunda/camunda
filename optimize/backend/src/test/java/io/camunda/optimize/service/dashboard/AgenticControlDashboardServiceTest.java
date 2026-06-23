@@ -531,6 +531,29 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
+  void shouldExposeTokenTileDescriptionAsSubtitle() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the avg-tokens NUMBER tile surfaces its description as the subtitle override
+    final ArgumentCaptor<ProcessReportDataDto> captor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID),
+            isNull(),
+            captor.capture(),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_TOKENS_NAME),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_TOKENS_DESCRIPTION),
+            isNull());
+    assertThat(captor.getValue().getConfiguration().getSubtitle())
+        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_AVG_TOKENS_DESCRIPTION);
+  }
+
+  @Test
   void shouldUpsertTokenTrendReportOnWarmRestart() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
