@@ -8,12 +8,12 @@
 package io.camunda.eventbridge.broker.transport.poll;
 
 import io.camunda.eventbridge.broker.logstreams.EventStreamReader;
-import io.camunda.eventbridge.broker.transport.RequestHandler;
 import io.camunda.eventbridge.protocol.ErrorCode;
 import io.camunda.eventbridge.protocol.EventBridgeBatchIterator;
 import io.camunda.eventbridge.protocol.request.PollRequest;
 import io.camunda.eventbridge.protocol.request.PollResponse;
 import io.camunda.eventbridge.protocol.request.PollResponse.PollEvent;
+import io.camunda.eventbridge.transport.RequestHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -18,7 +18,7 @@ import io.camunda.eventbridge.broker.partitioning.steps.LogStorageStep;
 import io.camunda.eventbridge.broker.partitioning.steps.PollRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.PublishRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.TopologyStep;
-import io.camunda.eventbridge.broker.transport.RequestHandlerRegistry;
+import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;

@@ -9,15 +9,13 @@ package io.camunda.eventbridge.broker.partitioning;
 
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.eventbridge.broker.coordinator.CoordinationManager;
 import io.camunda.eventbridge.broker.fetch.FetchPurgatory;
 import io.camunda.eventbridge.broker.logstreams.EventBridgeEventStream;
-import io.camunda.eventbridge.broker.transport.RequestHandlerRegistry;
-import io.camunda.eventbridge.broker.transport.coordinator.CoordinationRequestHandler;
 import io.camunda.eventbridge.broker.transport.fetch.FetchRequestHandler;
 import io.camunda.eventbridge.broker.transport.publish.PublishRequestCorrelator;
 import io.camunda.eventbridge.broker.transport.publish.PublishRequestHandler;
 import io.camunda.eventbridge.broker.watermark.HighWatermark;
+import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
@@ -38,8 +36,6 @@ public final class PartitionContext {
   private LogStorage logStorage;
   private PublishRequestCorrelator correlator;
   private EventBridgeEventStream eventStream;
-  private CoordinationManager coordinationManager;
-  private CoordinationRequestHandler coordinationRequestHandler;
   private PublishRequestHandler publishRequestHandler;
   private FetchRequestHandler fetchRequestHandler;
   private RequestHandlerRegistry requestHandlerRegistry;
@@ -115,23 +111,6 @@ public final class PartitionContext {
 
   public void setEventStream(final EventBridgeEventStream eventStream) {
     this.eventStream = eventStream;
-  }
-
-  public CoordinationManager getCoordinationManager() {
-    return coordinationManager;
-  }
-
-  public void setCoordinationManager(final CoordinationManager coordinationManager) {
-    this.coordinationManager = coordinationManager;
-  }
-
-  public CoordinationRequestHandler getCoordinationRequestHandler() {
-    return coordinationRequestHandler;
-  }
-
-  public void setCoordinationRequestHandler(
-      final CoordinationRequestHandler coordinationRequestHandler) {
-    this.coordinationRequestHandler = coordinationRequestHandler;
   }
 
   public PublishRequestHandler getPublishRequestHandler() {

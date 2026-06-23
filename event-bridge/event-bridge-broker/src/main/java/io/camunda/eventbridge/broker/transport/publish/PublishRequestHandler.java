@@ -9,8 +9,8 @@ package io.camunda.eventbridge.broker.transport.publish;
 
 import io.camunda.eventbridge.broker.logstreams.EventStreamWriter;
 import io.camunda.eventbridge.broker.publish.PublishResponse;
-import io.camunda.eventbridge.broker.transport.RequestHandler;
 import io.camunda.eventbridge.protocol.RejectionReason;
+import io.camunda.eventbridge.transport.RequestHandler;
 import java.util.concurrent.CompletableFuture;
 
 public final class PublishRequestHandler implements RequestHandler {

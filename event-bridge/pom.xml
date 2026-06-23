@@ -22,10 +22,12 @@
 
   <modules>
     <module>event-bridge-core</module>
+    <module>event-bridge-protocol</module>
+    <module>event-bridge-transport</module>
+    <module>event-bridge-coordinator</module>
     <module>event-bridge-broker</module>
     <module>event-bridge-gateway</module>
     <module>event-bridge-client</module>
-    <module>event-bridge-protocol</module>
   </modules>
 
 </project>

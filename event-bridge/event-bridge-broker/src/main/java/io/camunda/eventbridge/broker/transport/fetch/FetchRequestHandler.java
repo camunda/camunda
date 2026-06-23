@@ -9,7 +9,7 @@ package io.camunda.eventbridge.broker.transport.fetch;
 
 import io.atomix.cluster.messaging.ManagedPayload;
 import io.camunda.eventbridge.broker.fetch.EventStreamFetcher;
-import io.camunda.eventbridge.broker.transport.RequestHandler;
+import io.camunda.eventbridge.transport.RequestHandler;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 
