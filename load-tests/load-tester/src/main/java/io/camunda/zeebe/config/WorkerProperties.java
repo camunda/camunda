@@ -21,6 +21,7 @@ public class WorkerProperties {
   private boolean sendMessage = false;
   private String messageName = "messageName";
   private String correlationKeyVariableName = "correlationKey-var";
+  private double incidentRatio = 0;
 
   public Duration getCompletionDelay() {
     return completionDelay;
@@ -60,5 +61,19 @@ public class WorkerProperties {
 
   public void setCorrelationKeyVariableName(final String correlationKeyVariableName) {
     this.correlationKeyVariableName = correlationKeyVariableName;
+  }
+
+  /**
+   * The fraction of jobs the worker deliberately fails with zero retries in order to mint incidents
+   * (the {@code incident generation ratio}). {@code 0} (the default) disables incident generation;
+   * {@code 0.01} mirrors the reported customer shape (~1%); higher values force a backlog faster
+   * during bring-up. The failing fraction is selected deterministically per job key.
+   */
+  public double getIncidentRatio() {
+    return incidentRatio;
+  }
+
+  public void setIncidentRatio(final double incidentRatio) {
+    this.incidentRatio = incidentRatio;
   }
 }

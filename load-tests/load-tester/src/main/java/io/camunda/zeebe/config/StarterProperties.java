@@ -26,6 +26,10 @@ public class StarterProperties {
   private int durationLimit = 0;
   private boolean startViaMessage = false;
   private String msgName = "msg";
+  private boolean monitorIncidentResolution = false;
+  private Duration incidentResolutionInterval = Duration.ofSeconds(2);
+  private Duration incidentResolutionWatchCap = Duration.ofMinutes(20);
+  private double incidentResolutionCancelRate = 20;
 
   public String getProcessId() {
     return processId;
@@ -150,5 +154,52 @@ public class StarterProperties {
 
   public void setMsgName(final String msgName) {
     this.msgName = msgName;
+  }
+
+  /**
+   * Whether the starter runs the {@code IncidentResolutionMeter}, which measures
+   * incident-resolution latency (creation → first observed {@code ACTIVE}) and surfaces the pending
+   * backlog per partition. Disabled by default.
+   */
+  public boolean isMonitorIncidentResolution() {
+    return monitorIncidentResolution;
+  }
+
+  public void setMonitorIncidentResolution(final boolean monitorIncidentResolution) {
+    this.monitorIncidentResolution = monitorIncidentResolution;
+  }
+
+  /** How often the incident-resolution meter discovers and confirms incidents. */
+  public Duration getIncidentResolutionInterval() {
+    return incidentResolutionInterval;
+  }
+
+  public void setIncidentResolutionInterval(final Duration incidentResolutionInterval) {
+    this.incidentResolutionInterval = incidentResolutionInterval;
+  }
+
+  /**
+   * The watch cap for a pending incident: once an incident has been pending longer than this, the
+   * meter records the capped elapsed time, increments the timeout counter, and drops it from the
+   * watch-map (survivorship-safe stuck handling).
+   */
+  public Duration getIncidentResolutionWatchCap() {
+    return incidentResolutionWatchCap;
+  }
+
+  public void setIncidentResolutionWatchCap(final Duration incidentResolutionWatchCap) {
+    this.incidentResolutionWatchCap = incidentResolutionWatchCap;
+  }
+
+  /**
+   * The maximum number of stuck process instances cancelled per second by the cancel-after-
+   * measurement drain. Bounds the cleanup load on the cluster.
+   */
+  public double getIncidentResolutionCancelRate() {
+    return incidentResolutionCancelRate;
+  }
+
+  public void setIncidentResolutionCancelRate(final double incidentResolutionCancelRate) {
+    this.incidentResolutionCancelRate = incidentResolutionCancelRate;
   }
 }

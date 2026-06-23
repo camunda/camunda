@@ -15,12 +15,17 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.IncidentResolutionMeter;
+import io.camunda.zeebe.metrics.IncidentResolutionMeter.IncidentSnapshot;
+import io.camunda.zeebe.metrics.IncidentResolutionMeter.IncidentSource;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
@@ -42,9 +47,11 @@ import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -95,6 +102,7 @@ public class Starter implements CommandLineRunner {
   private Counter processInstancesStartedCounter;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
+  private IncidentResolutionMeter incidentResolutionMeter;
   private DataReadMeter dataReadMeter;
   private OptimizeReportEvaluator optimizeReportEvaluator;
 
@@ -147,6 +155,10 @@ public class Starter implements CommandLineRunner {
       setupDataAvailabilityMeter();
     }
 
+    if (starterCfg.isMonitorIncidentResolution()) {
+      setupIncidentResolutionMeter();
+    }
+
     if (properties.isPerformReadBenchmarks()) {
       setupDataReadMeter();
     }
@@ -197,6 +209,9 @@ public class Starter implements CommandLineRunner {
     if (processInstanceStartMeter != null) {
       processInstanceStartMeter.close();
     }
+    if (incidentResolutionMeter != null) {
+      incidentResolutionMeter.close();
+    }
     if (dataReadMeter != null) {
       dataReadMeter.close();
     }
@@ -229,6 +244,64 @@ public class Starter implements CommandLineRunner {
                           .toList());
             });
     processInstanceStartMeter.start();
+  }
+
+  private void setupIncidentResolutionMeter() {
+    LOG.info("Monitor incident-resolution latency of generated incidents");
+    incidentResolutionMeter =
+        new IncidentResolutionMeter(
+            System::nanoTime,
+            Instant::now,
+            registry,
+            Executors.newScheduledThreadPool(1),
+            starterCfg.getIncidentResolutionInterval(),
+            starterCfg.getIncidentResolutionWatchCap(),
+            starterCfg.getIncidentResolutionCancelRate(),
+            new IncidentSource() {
+              @Override
+              public CompletionStage<List<IncidentSnapshot>> discover(
+                  final OffsetDateTime createdAtOrAfter, final int from, final int limit) {
+                return client
+                    .newIncidentSearchRequest()
+                    .filter(
+                        f ->
+                            f.creationTime(d -> d.gte(createdAtOrAfter))
+                                .state(s -> s.in(IncidentState.PENDING, IncidentState.ACTIVE)))
+                    .sort(s -> s.creationTime().asc())
+                    .page(p -> p.from(from).limit(limit))
+                    .send()
+                    .thenApply(
+                        response -> response.items().stream().map(this::toSnapshot).toList());
+              }
+
+              @Override
+              public CompletionStage<List<IncidentSnapshot>> lookup(final List<Long> incidentKeys) {
+                return client
+                    .newIncidentSearchRequest()
+                    .filter(f -> f.incidentKey(k -> k.in(incidentKeys)))
+                    .page(p -> p.limit(incidentKeys.size()))
+                    .send()
+                    .thenApply(
+                        response -> response.items().stream().map(this::toSnapshot).toList());
+              }
+
+              @Override
+              public CompletionStage<Void> cancel(final long processInstanceKey) {
+                return client
+                    .newCancelInstanceCommand(processInstanceKey)
+                    .send()
+                    .thenApply(ignored -> null);
+              }
+
+              private IncidentSnapshot toSnapshot(final Incident incident) {
+                return new IncidentSnapshot(
+                    incident.getIncidentKey(),
+                    incident.getProcessInstanceKey(),
+                    incident.getCreationTime(),
+                    incident.getState());
+              }
+            });
+    incidentResolutionMeter.start();
   }
 
   private void setupOptimizeReportEvaluator() {

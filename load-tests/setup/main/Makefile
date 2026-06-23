@@ -19,7 +19,7 @@ helm_chart_platform := camunda-platform-helm/charts/$(helm_chart)
 helm_chart_load_tests := camunda-load-tests/camunda-load-tests
 
 # Scenario: controls the workload profile for the load test.
-# Options: latency, realistic, typical, max, archiver
+# Options: latency, realistic, typical, max, archiver, incidents
 # Use named targets (make max) or pass directly: make install scenario=max
 scenario ?=
 
@@ -37,6 +37,15 @@ _scenario_load_test_flags := --set starter.rate=300
 _scenario_platform_flags  := --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags := --set starter.rate=1 --set starter.rateDuration=10m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0
+_scenario_platform_flags  :=
+else ifeq ($(scenario),incidents)
+# Reproduce incidents stuck in PENDING: a typical-derived workload at ~80 PI/s with large sustained
+# volume, where the worker fails a fraction of jobs (incident generation ratio) to mint incidents and
+# the starter runs the incident-resolution meter. Start the ratio at 0.5 to confirm reproduction, then
+# dial toward 0.01 for customer fidelity (~1%).
+# NOTE: reproduction depends on the cluster keeping the production default ignoreMissingData=false, so
+# head-of-line blocking can manifest — no platform override is applied here.
+_scenario_load_test_flags := --set starter.rate=80 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn --set workers.worker.replicas=6 --set global.extraConfig.load-tester.worker.incident-ratio=0.5 --set global.extraConfig.load-tester.starter.monitor-incident-resolution=true
 _scenario_platform_flags  :=
 else
 _scenario_load_test_flags :=
@@ -288,7 +297,7 @@ print-scenario:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+.PHONY: latency realistic typical max archiver incidents
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -299,6 +308,8 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+incidents:
+	$(MAKE) install scenario=incidents
 
 .PHONY: clean
 clean:

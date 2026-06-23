@@ -35,6 +35,9 @@ public class Worker {
   private static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private static final int REQUEST_FUTURES_CAPACITY = 10_000;
+  // Bucket count used to select the deterministic failing fraction per job key. A ratio of 0.01
+  // fails keys landing in buckets [0, 100); 0.5 fails [0, 5000).
+  private static final long INCIDENT_RATIO_BUCKETS = 10_000;
 
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
@@ -87,6 +90,21 @@ public class Worker {
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
 
+    if (shouldGenerateIncident(job.getKey())) {
+      // Deliberately fail the job with zero retries so the engine raises an incident on a real
+      // service-task failure (the incident generation ratio). These incidents are never resolved;
+      // they accumulate so the load test can measure incident-resolution latency. The same
+      // completion delay as the success path is applied so failing jobs do not re-poll faster.
+      final var failCommand =
+          jobClient
+              .newFailCommand(job.getKey())
+              .retries(0)
+              .errorMessage("load-test: deliberate incident generation");
+      addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
+      trackRequest(failCommand.send());
+      return;
+    }
+
     if (workerCfg.isSendMessage()) {
       final var correlationKey =
           job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
@@ -117,15 +135,32 @@ public class Worker {
 
     final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
-    if (!requestFutures.offer(command.send())) {
+    trackRequest(command.send());
+  }
+
+  private void trackRequest(final Future<?> future) {
+    if (!requestFutures.offer(future)) {
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
-      // completion rather than stalling the job handler thread (which would cascade into
+      // request rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
       // the operator can notice sustained backpressure without flooding the log.
       THROTTLED_LOGGER.warn(
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
     }
+  }
+
+  private boolean shouldGenerateIncident(final long jobKey) {
+    final double ratio = workerCfg.getIncidentRatio();
+    if (ratio <= 0) {
+      return false;
+    }
+    if (ratio >= 1) {
+      return true;
+    }
+    // Deterministic per-job selection: job keys carry a per-partition sequence in their low bits,
+    // so floorMod spreads them evenly across the bucket range; fail the first `ratio` fraction.
+    return Math.floorMod(jobKey, INCIDENT_RATIO_BUCKETS) < ratio * INCIDENT_RATIO_BUCKETS;
   }
 
   private boolean publishMessage(final String correlationKey) {
