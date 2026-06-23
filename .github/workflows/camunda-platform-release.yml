@@ -96,8 +96,18 @@ jobs:
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
-        # This step generates a GitHub App token to be used in Git operations as a workaround  for
-        # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+      - name: Parse Release Version
+        run: |
+          if [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "RELEASE_MAJOR=${BASH_REMATCH[1]}" >> "$GITHUB_ENV"
+            echo "RELEASE_MINOR=${BASH_REMATCH[2]}" >> "$GITHUB_ENV"
+            echo "RELEASE_PATCH=${BASH_REMATCH[3]}" >> "$GITHUB_ENV"
+            echo "IS_STABLE_VERSION=true" >> "$GITHUB_ENV"
+          else
+            echo "IS_STABLE_VERSION=false" >> "$GITHUB_ENV"
+          fi
+      # This step generates a GitHub App token to be used in Git operations as a workaround  for
+      # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
       - name: Generate GitHub token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
@@ -297,15 +307,26 @@ jobs:
           retention-days: 5
       - name: Update Compat Version
         run: |
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
+          if [[ "$IS_STABLE_VERSION" != "true" ]]; then
+            echo "Skipping: ${RELEASE_VERSION} is not a stable version"
             exit 0
           fi
 
-          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}" -P\!include-optimize
+          if [[ "$RELEASE_PATCH" == "0" ]]; then
+            PREV_MINOR=$((RELEASE_MINOR - 1))
+            if [[ "$PREV_MINOR" -lt 0 ]]; then
+              echo "ERROR: Cannot compute previous minor for ${RELEASE_VERSION} (MINOR=0). Set the 'backwards.compat.version' property in parent/pom.xml to the last stable minor baseline (e.g. 8.X.0) before re-running."
+              exit 1
+            fi
+            COMPAT_VERSION="${RELEASE_MAJOR}.${PREV_MINOR}.0"
+            ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${COMPAT_VERSION}" -P\!include-optimize
+          else
+            echo "Patch release: backwards.compat.version not updated (stays at minor baseline)"
+          fi
+
           FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout -P\!include-optimize)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
-          git commit -am "build(project): update java compat versions"
+          git diff --quiet HEAD || git commit -am "build(project): update java compat versions"
       - name: Delete version-specific allowed API breaking changes
         run: |
           IFS=$'\n' readarray -t files <<< "$(find . -name 'ignored-changes.json')"
