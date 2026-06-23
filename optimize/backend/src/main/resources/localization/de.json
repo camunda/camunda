@@ -1597,7 +1597,9 @@
       "agenticKpiDurationP95Name": "P95-Ausführungsdauer",
       "agenticKpiDurationP95Description": "95. Perzentil der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
       "agenticFailureRateByVersionName": "Vorfallsrate nach Prozessversion",
-      "agenticFailureRateByVersionDescription": "Prozentsatz der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall, aufgeschlüsselt nach Prozessdefinitionsversion."
+      "agenticFailureRateByVersionDescription": "Prozentsatz der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall, aufgeschlüsselt nach Prozessdefinitionsversion.",
+      "agenticKpiToolCallsName": "Tool-Aufrufe gesamt",
+      "agenticKpiToolCallsDescription": "Gesamtzahl der Tool-Aufrufe durch Agenten in abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum."
     }
   },
   "managementDashboard": {

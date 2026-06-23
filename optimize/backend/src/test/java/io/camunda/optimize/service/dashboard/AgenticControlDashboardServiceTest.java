@@ -93,7 +93,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(12);
+    assertThat(saved.getTiles()).hasSize(13);
   }
 
   @Test
@@ -179,7 +179,8 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID,
-            AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID);
+            AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID,
+            AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID);
   }
 
   @Test
@@ -240,7 +241,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(12))
+    verify(reportWriter, times(13))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -345,7 +346,9 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.DURATION_STABILITY_NAME,
               AgenticControlDashboardService.DURATION_STABILITY_DESCRIPTION,
               AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_NAME,
-              AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_DESCRIPTION);
+              AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_DESCRIPTION,
+              AgenticControlDashboardService.KPI_TOOL_CALLS_NAME,
+              AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION);
     }
   }
 
@@ -728,6 +731,68 @@ public class AgenticControlDashboardServiceTest {
             .orElseThrow();
     assertThat(failureRateTile.getConfiguration())
         .isEqualTo(Map.of("section", "reliabilityAndToolCalls", "visibleInL1Only", true));
+  }
+
+  @Test
+  void shouldSeedTotalToolCallsReportAsSummedNumber() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+
+    // when
+    underTest.reconcile();
+
+    // then the report is upserted with the deterministic ID and localization keys
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID),
+            isNull(),
+            dataCaptor.capture(),
+            eq(AgenticControlDashboardService.KPI_TOOL_CALLS_NAME),
+            eq(AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION),
+            isNull());
+
+    final ProcessReportDataDto reportData = dataCaptor.getValue();
+    // view: AGENT_INSTANCE + TOOL_CALLS, summed into a single number with no grouping
+    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_INSTANCE);
+    assertThat(reportData.getView().getProperties()).containsExactly(ViewProperty.TOOL_CALLS);
+    assertThat(reportData.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
+    assertThat(reportData.getVisualization()).isEqualTo(ProcessVisualization.NUMBER);
+    assertThat(reportData.getConfiguration().getAggregationTypes())
+        .extracting(AggregationDto::getType)
+        .containsExactly(AggregationType.SUM);
+    // filters: completedInstancesOnly + hasAgentInstances (scope is applied per-request by the
+    // frontend, so the seeded report carries no definitions)
+    assertThat(reportData.getFilter())
+        .hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
+    assertThat(reportData.getFilter()).hasAtLeastOneElementOfType(HasAgentInstancesFilterDto.class);
+    assertThat(reportData.getDefinitions()).isEmpty();
+    assertThat(reportData.isAgenticControlReport()).isTrue();
+  }
+
+  @Test
+  void shouldPlaceTotalToolCallsTileFullWidthVisibleInBothScopes() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then a single full-width tile in the reliability section, with no L0/L1-only flag, so the
+    // number renders in both the fleet (L0) and drill-down (L1) views
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    final List<DashboardReportTileDto> toolCallsTiles =
+        saved.getTiles().stream()
+            .filter(t -> AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID.equals(t.getId()))
+            .toList();
+    assertThat(toolCallsTiles).hasSize(1);
+
+    final DashboardReportTileDto toolCallsTile = toolCallsTiles.getFirst();
+    assertThat(toolCallsTile.getConfiguration())
+        .isEqualTo(Map.of("section", "reliabilityAndToolCalls"));
+    assertThat(toolCallsTile.getDimensions().getWidth()).isEqualTo(18);
+    assertThat(toolCallsTile.getDimensions().getHeight()).isEqualTo(2);
   }
 
   @SuppressWarnings("unchecked")
