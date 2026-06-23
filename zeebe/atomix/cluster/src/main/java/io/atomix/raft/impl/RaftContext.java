@@ -1331,6 +1331,27 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return fut;
   }
 
+  /**
+   * Compacts the log up to (but not including) the given index, deleting older segments. Runs on
+   * the Raft thread, where the compactor requires to be invoked. Intended for external callers
+   * (e.g. the Event Bridge) that drive retention from a record position they track independently.
+   *
+   * @param index the Raft log index up to which entries may be deleted
+   * @return a future completing with {@code true} if any log entries were deleted
+   */
+  public CompletableFuture<Boolean> compactUpTo(final long index) {
+    final var fut = new CompletableFuture<Boolean>();
+    threadContext.execute(
+        () -> {
+          try {
+            fut.complete(logCompactor.compactUpTo(index));
+          } catch (final Exception e) {
+            fut.completeExceptionally(e);
+          }
+        });
+    return fut;
+  }
+
   /** Raft server state. */
   public enum State {
     ACTIVE,
