@@ -651,8 +651,9 @@ class PhysicalTenantAuthConfigurationsTest {
     // when
     final var result = PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env);
 
-    // then
-    assertThat(result).containsKeys("default", "tenanta", "tenantb");
+    // then — exactly these ids, no extras, and "default" first (documented order)
+    assertThat(result).containsOnlyKeys("default", "tenanta", "tenantb");
+    assertThat(result.keySet().iterator().next()).isEqualTo("default");
     // each entry equals what forPhysicalTenant returns for the same id
     for (final var entry : result.entrySet()) {
       final AuthenticationConfiguration direct =
