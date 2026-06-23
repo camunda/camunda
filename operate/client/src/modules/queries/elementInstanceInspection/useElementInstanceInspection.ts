@@ -12,6 +12,7 @@ import type {
   QueryElementInstanceInspectionResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {searchElementInstanceInspection} from 'modules/api/v2/elementInstanceInspection/searchElementInstanceInspection';
+import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {queryKeys} from '../queryKeys';
 
 const MAX_WAIT_STATES = 1000;
@@ -26,6 +27,7 @@ const useElementInstanceInspection = (
   params: UseElementInstanceInspectionParams,
 ) => {
   const {processInstanceKey, elementInstanceKey, enabled = true} = params;
+  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
   const payload: QueryElementInstanceInspectionRequestBody = {
     filter: {
@@ -49,6 +51,7 @@ const useElementInstanceInspection = (
     },
     enabled: enabled && !!processInstanceKey,
     staleTime: 10000,
+    refetchInterval: () => (isProcessInstanceRunning ? 5000 : undefined),
   });
 };
 

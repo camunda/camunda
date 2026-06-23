@@ -924,8 +924,16 @@ describe('<DetailsTab />', () => {
           elementInstanceKey: '123456789',
           elementId: 'Task_1',
           elementType: 'SERVICE_TASK',
-          waitStateType: 'JOB',
-          details: {jobType: 'customJob'},
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'customJob',
+            jobKind: 'BPMN_ELEMENT',
+            listenerEventType: null,
+            retries: null,
+          },
         },
       ]),
     );
@@ -984,8 +992,16 @@ describe('<DetailsTab />', () => {
           elementInstanceKey: '123456789',
           elementId: 'Task_1',
           elementType: 'SERVICE_TASK',
-          waitStateType: 'JOB',
-          details: {jobType: 'customJob'},
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'customJob',
+            jobKind: 'BPMN_ELEMENT',
+            listenerEventType: null,
+            retries: null,
+          },
         },
       ]),
     );
@@ -996,5 +1012,46 @@ describe('<DetailsTab />', () => {
 
     expect(await screen.findByTestId('waiting-status')).toBeInTheDocument();
     expect(screen.getByText('Waiting for job: customJob')).toBeInTheDocument();
+  });
+
+  it('should render the WaitingStatus before the element instance details', async () => {
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      state: 'ACTIVE',
+      endDate: null,
+    });
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
+        {
+          rootProcessInstanceKey: PROCESS_INSTANCE_ID,
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: '123456789',
+          elementId: 'Task_1',
+          elementType: 'SERVICE_TASK',
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'customJob',
+            jobKind: 'BPMN_ELEMENT',
+            listenerEventType: null,
+            retries: null,
+          },
+        },
+      ]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const waitingStatus = await screen.findByTestId('waiting-status');
+    const elementInstanceKey = await screen.findByText('Element Instance Key');
+
+    expect(
+      waitingStatus.compareDocumentPosition(elementInstanceKey) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
