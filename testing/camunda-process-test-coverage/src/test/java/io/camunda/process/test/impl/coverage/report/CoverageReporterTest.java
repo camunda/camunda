@@ -49,8 +49,14 @@ import org.mockito.MockedStatic;
  * Tests for {@link CoverageReporter}.
  *
  * <p>This test class is in the same package as {@link CoverageReportUtil} so that the
- * package-private {@code installReportDependencies} method can be mocked via {@code
- * Mockito.mockStatic}.
+ * package-private {@code installReportDependencies} method can be verified via {@code
+ * Mockito.mockStatic} when needed.
+ *
+ * <p>Most tests bypass {@code installReportDependencies} by pre-creating the {@code
+ * coverage/static} subdirectory under the {@code @TempDir}, which causes the method to return
+ * immediately (it only copies resources when the directory does not yet exist). The test classpath
+ * provides {@code coverage/index.html} via {@code src/test/resources} so that {@link
+ * CoverageReportUtil#toHtml} can read the template without a full frontend build.
  *
  * <p>{@link CoverageReportCollector} is mocked (Mockito 5 supports mocking {@code final} classes
  * out of the box) so that tests do not require a live Camunda engine.
@@ -184,116 +190,101 @@ class CoverageReporterTest {
 
   @Test
   void shouldWriteJsonReportFileWithCoverageData() throws Exception {
-    // given: installReportDependencies is mocked so the HTML write doesn't fail without resources
-    try (final MockedStatic<CoverageReportUtil> mockedUtil =
-        mockStatic(CoverageReportUtil.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-      mockedUtil
-          .when(() -> CoverageReportUtil.installReportDependencies(any()))
-          .thenAnswer(invocation -> null);
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
 
-      final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
-      final CoverageReportCollector collector =
-          buildCollector(WriteJsonTest.class, "my-process", 0.8, "my-decision", 0.5);
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+    final CoverageReportCollector collector =
+        buildCollector(WriteJsonTest.class, "my-process", 0.8, "my-decision", 0.5);
 
-      // when
-      reporter.createAggregatedReport(Collections.singletonList(collector));
+    // when
+    reporter.createAggregatedReport(Collections.singletonList(collector));
 
-      // then: report.json exists and contains valid JSON with coverage data
-      final File reportJson = new File(tempDir, "report.json");
-      assertThat(reportJson).exists();
+    // then: report.json exists and contains valid JSON with coverage data
+    final File reportJson = new File(tempDir, "report.json");
+    assertThat(reportJson).exists();
 
-      final String json = new String(Files.readAllBytes(reportJson.toPath()));
-      new ObjectMapper().readTree(json); // throws if not valid JSON
+    final String json = new String(Files.readAllBytes(reportJson.toPath()));
+    new ObjectMapper().readTree(json); // throws if not valid JSON
 
-      assertThat(json).contains("\"suites\"");
-      assertThat(json).contains("my-process");
-      assertThat(json).contains("my-decision");
-    }
+    assertThat(json).contains("\"suites\"");
+    assertThat(json).contains("my-process");
+    assertThat(json).contains("my-decision");
   }
 
   @Test
   void shouldWriteJsonReportContainingProcessAndDecisionModels() throws Exception {
-    // given
-    try (final MockedStatic<CoverageReportUtil> mockedUtil =
-        mockStatic(CoverageReportUtil.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-      mockedUtil
-          .when(() -> CoverageReportUtil.installReportDependencies(any()))
-          .thenAnswer(invocation -> null);
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
 
-      final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
 
-      final CoverageSuiteReport suite =
-          ImmutableCoverageSuiteReport.builder()
-              .id(WriteJsonModelsTest.class.getName())
-              .name("WriteJsonModelsTest")
-              .addRuns(ImmutableCoverageRunReport.builder().name("run").build())
-              .build();
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
+            .id(WriteJsonModelsTest.class.getName())
+            .name("WriteJsonModelsTest")
+            .addRuns(ImmutableCoverageRunReport.builder().name("run").build())
+            .build();
 
-      final Collection<ProcessModel> processModels =
-          Collections.singletonList(
-              ImmutableProcessModel.builder()
-                  .processDefinitionId("proc-model")
-                  .totalElementCount(3)
-                  .version("1")
-                  .xml("<bpmn/>")
-                  .build());
+    final Collection<ProcessModel> processModels =
+        Collections.singletonList(
+            ImmutableProcessModel.builder()
+                .processDefinitionId("proc-model")
+                .totalElementCount(3)
+                .version("1")
+                .xml("<bpmn/>")
+                .build());
 
-      final Collection<DecisionModel> decisionModels =
-          Collections.singletonList(
-              ImmutableDecisionModel.builder()
-                  .decisionDefinitionId("dec-model")
-                  .totalRuleCount(2)
-                  .version("1")
-                  .xml("<dmn/>")
-                  .build());
+    final Collection<DecisionModel> decisionModels =
+        Collections.singletonList(
+            ImmutableDecisionModel.builder()
+                .decisionDefinitionId("dec-model")
+                .totalRuleCount(2)
+                .version("1")
+                .xml("<dmn/>")
+                .build());
 
-      final CoverageReportCollector collector = mock(CoverageReportCollector.class);
-      when(collector.getSuite()).thenReturn(suite);
-      when(collector.getModels()).thenReturn(processModels);
-      when(collector.getDecisionModels()).thenReturn(decisionModels);
+    final CoverageReportCollector collector = mock(CoverageReportCollector.class);
+    when(collector.getSuite()).thenReturn(suite);
+    when(collector.getModels()).thenReturn(processModels);
+    when(collector.getDecisionModels()).thenReturn(decisionModels);
 
-      // when
-      reporter.createAggregatedReport(Collections.singletonList(collector));
+    // when
+    reporter.createAggregatedReport(Collections.singletonList(collector));
 
-      // then
-      final File reportJson = new File(tempDir, "report.json");
-      assertThat(reportJson).exists();
-      final String json = new String(Files.readAllBytes(reportJson.toPath()));
-      assertThat(json).contains("\"processModels\"");
-      assertThat(json).contains("proc-model");
-      assertThat(json).contains("\"decisionModels\"");
-      assertThat(json).contains("dec-model");
-    }
+    // then
+    final File reportJson = new File(tempDir, "report.json");
+    assertThat(reportJson).exists();
+    final String json = new String(Files.readAllBytes(reportJson.toPath()));
+    assertThat(json).contains("\"processModels\"");
+    assertThat(json).contains("proc-model");
+    assertThat(json).contains("\"decisionModels\"");
+    assertThat(json).contains("dec-model");
   }
 
   // ── writeHtmlReport tests ────────────────────────────────────────────────────
 
   @Test
   void shouldWriteHtmlReportFileContainingCoverageData() throws Exception {
-    // given: mock installReportDependencies (package-private; accessible from this package)
-    try (final MockedStatic<CoverageReportUtil> mockedUtil =
-        mockStatic(CoverageReportUtil.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-      mockedUtil
-          .when(() -> CoverageReportUtil.installReportDependencies(any()))
-          .thenAnswer(invocation -> null);
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
 
-      final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
-      final CoverageReportCollector collector =
-          buildCollector(WriteHtmlTest.class, "html-process", 0.6, "html-decision", 0.4);
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+    final CoverageReportCollector collector =
+        buildCollector(WriteHtmlTest.class, "html-process", 0.6, "html-decision", 0.4);
 
-      // when
-      reporter.createAggregatedReport(Collections.singletonList(collector));
+    // when
+    reporter.createAggregatedReport(Collections.singletonList(collector));
 
-      // then: report.html exists and contains the serialised coverage data
-      final File reportHtml = new File(tempDir, "report.html");
-      assertThat(reportHtml).exists();
+    // then: report.html exists and contains the serialised coverage data
+    final File reportHtml = new File(tempDir, "report.html");
+    assertThat(reportHtml).exists();
 
-      final String html = new String(Files.readAllBytes(reportHtml.toPath()));
-      assertThat(html).contains("<!DOCTYPE html>");
-      assertThat(html).contains("\"suites\"");
-      assertThat(html).contains("html-process");
-      assertThat(html).contains("html-decision");
-    }
+    final String html = new String(Files.readAllBytes(reportHtml.toPath()));
+    assertThat(html).contains("<!DOCTYPE html>");
+    assertThat(html).contains("\"suites\"");
+    assertThat(html).contains("html-process");
+    assertThat(html).contains("html-decision");
   }
 
   @Test
@@ -338,26 +329,21 @@ class CoverageReporterTest {
 
   @Test
   void shouldReturnAggregatedReportFromMultipleCollectors() throws Exception {
-    // given
-    try (final MockedStatic<CoverageReportUtil> mockedUtil =
-        mockStatic(CoverageReportUtil.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-      mockedUtil
-          .when(() -> CoverageReportUtil.installReportDependencies(any()))
-          .thenAnswer(invocation -> null);
+    // given: pre-create static dir so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
 
-      final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
-      final CoverageReportCollector collectorA =
-          buildCollector(AggregatedCollectorTestA.class, "process-a", 1.0, "decision-a", 1.0);
-      final CoverageReportCollector collectorB =
-          buildCollector(AggregatedCollectorTestB.class, "process-b", 0.5, "decision-b", 0.5);
+    final CoverageReporter reporter = new CoverageReporter(tempDir.getAbsolutePath(), s -> {});
+    final CoverageReportCollector collectorA =
+        buildCollector(AggregatedCollectorTestA.class, "process-a", 1.0, "decision-a", 1.0);
+    final CoverageReportCollector collectorB =
+        buildCollector(AggregatedCollectorTestB.class, "process-b", 0.5, "decision-b", 0.5);
 
-      // when
-      final CoverageReport report =
-          reporter.createAggregatedReport(Arrays.asList(collectorA, collectorB));
+    // when
+    final CoverageReport report =
+        reporter.createAggregatedReport(Arrays.asList(collectorA, collectorB));
 
-      // then: the aggregated report includes both suites
-      assertThat(report.getSuites()).hasSize(2);
-    }
+    // then: the aggregated report includes both suites
+    assertThat(report.getSuites()).hasSize(2);
   }
 
   // ── JSON serialisation test (migrated from CoverageReportUtilTest) ───────────

@@ -241,11 +241,13 @@ class CoverageReportCollectorBuilderTest {
     // when
     final CoverageReport report = coverageCollector.generateReport(GenerateReportFixture.class);
 
-    // then: print stream contains the suite name and process coverage percentage
+    // then: print stream contains the suite name, process id, coverage percentage and HTML link
     assertThat(captured).hasSize(1);
     final String message = captured.get(0);
     assertThat(message).contains(GenerateReportFixture.class.getName());
     assertThat(message).contains("generate-report-process");
+    assertThat(message).contains("%");
+    assertThat(message).contains("report.html");
 
     // and the returned aggregated report includes the fixture suite
     assertThat(report.getSuites())
@@ -276,6 +278,8 @@ class CoverageReportCollectorBuilderTest {
 
     final String json = new java.lang.String(java.nio.file.Files.readAllBytes(reportJson.toPath()));
     assertThat(json).contains("\"suites\"");
+    assertThat(json).contains(GenerateReportJsonFixture.class.getName());
+    assertThat(json).contains("shouldWriteJson");
   }
 
   private CoverageTestData createProcessCoverageTestData(
