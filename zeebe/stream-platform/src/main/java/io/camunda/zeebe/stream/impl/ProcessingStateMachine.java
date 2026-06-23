@@ -62,11 +62,11 @@ import org.slf4j.Logger;
  *
  * <pre>
  *
- * +------------------+            +--------------------+
- * |                  |            |                    |      exception
+ * +-----------------------+            +--------------------+
+ * |                       |            |                    |      exception
  * | tryToReadNextRecord() |----------->|  processCommand()  |------------------+
- * |                  |            |                    |                  v
- * +------------------+            +--------------------+            +---------------+
+ * |                       |            |                    |                  v
+ * +-----------------------+            +--------------------+       +---------------+
  *           ^                             |                         |               |------+
  *           |                             |         +-------------->|   onError()   |      | exception
  *           |                             |         |  exception    |               |<-----+
@@ -555,7 +555,7 @@ public final class ProcessingStateMachine {
     updateErrorHandlingPhase(nextPhase);
   }
 
-  private void tryRejectingIfUserCommand(final String errorMessage) {
+  private void tryRejectingIfUserCommand(final String errorMessage) throws Exception {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
         new BufferedProcessingResultBuilder(
@@ -592,7 +592,8 @@ public final class ProcessingStateMachine {
     pendingWrites = currentProcessingResult.getRecordBatch().entries();
     pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
 
-    finalizeCommandProcessing();
+    zeebeDbTransaction = transactionContext.getCurrentTransaction();
+    zeebeDbTransaction.run(this::finalizeCommandProcessing);
     writeRecords();
   }
 
