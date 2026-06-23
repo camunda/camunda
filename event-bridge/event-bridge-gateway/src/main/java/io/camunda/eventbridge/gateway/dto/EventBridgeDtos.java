@@ -111,6 +111,26 @@ public final class EventBridgeDtos {
   public record TopicDto(String name, int partitionCount, int replicationFactor, String status) {}
 
   // -------------------------------------------------------------------------
+  // Topology
+
+  /**
+   * Cluster topology as currently assigned: which brokers exist, and for each topic, how its
+   * partitions are placed across them. Reflects the coordinator's registry (the desired
+   * assignment).
+   */
+  public record TopologyResponse(List<Integer> brokers, List<TopicTopology> topics) {}
+
+  public record TopicTopology(
+      String name,
+      int partitionCount,
+      int replicationFactor,
+      String status,
+      List<PartitionTopology> partitions) {}
+
+  /** A single topic partition and the broker node ids that replicate it. */
+  public record PartitionTopology(int partitionId, List<Integer> replicas) {}
+
+  // -------------------------------------------------------------------------
   // Latest position
 
   public record ErrorResponse(String error, String message) {}

@@ -59,6 +59,11 @@ public record TopicMetadata(
         + encodeAssignment(assignment);
   }
 
+  /** The assignment encoded as {@code pid=n1,n2|...} (for payloads outside this package). */
+  public String encodedAssignment() {
+    return encodeAssignment(assignment);
+  }
+
   static TopicMetadata decode(final String encoded) {
     final var parts = encoded.split(";", 4);
     return new TopicMetadata(

@@ -102,7 +102,9 @@ public class TopicController {
       if (line.isBlank()) {
         continue;
       }
-      final var parts = line.split(";", 4);
+      // name;partitionCount;replicationFactor;status[;assignment] — assignment is used by the
+      // topology endpoint, ignored here.
+      final var parts = line.split(";", 5);
       topics.add(
           new TopicDto(parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), parts[3]));
     }

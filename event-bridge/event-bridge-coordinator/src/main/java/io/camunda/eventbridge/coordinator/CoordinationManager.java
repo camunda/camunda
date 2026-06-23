@@ -206,6 +206,8 @@ public class CoordinationManager extends Actor {
                     .append(meta.replicationFactor())
                     .append(';')
                     .append(meta.status().name())
+                    .append(';')
+                    .append(meta.encodedAssignment())
                     .append('\n'));
     return new ListTopicsResponse().setErrorCode(NONE).setPayload(sb.toString());
   }
