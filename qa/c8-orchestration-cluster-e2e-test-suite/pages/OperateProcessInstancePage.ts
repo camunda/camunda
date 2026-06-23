@@ -1042,21 +1042,6 @@ class OperateProcessInstancePage {
       await expect(incidentRow).toBeVisible({timeout: 30000});
     }
   }
-
-  // The variables list loads the next page only when its scroll container
-  // (the variables-list element) is scrolled to the bottom, tripping the
-  // infinite-scroll observer. Mouse-wheel events can land on an ancestor and
-  // never move this container, so scroll it directly to its bottom and repeat
-  // until the expected row count is reached.
-  async scrollVariablesListUntilRowCount(expectedRowCount: number) {
-    const rows = this.variablesList.getByRole('row');
-    await expect(async () => {
-      await this.variablesList.evaluate((el) => {
-        el.scrollTo(0, el.scrollHeight);
-      });
-      await expect(rows).toHaveCount(expectedRowCount, {timeout: 1000});
-    }).toPass({timeout: 60000});
-  }
 }
 
 export {OperateProcessInstancePage};
