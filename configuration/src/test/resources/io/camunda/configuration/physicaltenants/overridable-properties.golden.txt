@@ -68,6 +68,7 @@ data.primary-storage.backup.s3.force-path-style-access
 data.primary-storage.backup.s3.max-concurrent-connections
 data.primary-storage.backup.s3.region
 data.primary-storage.backup.s3.secret-key
+data.primary-storage.backup.s3.ssec-key
 data.primary-storage.backup.s3.support-legacy-md5
 data.primary-storage.backup.schedule
 data.primary-storage.backup.store
