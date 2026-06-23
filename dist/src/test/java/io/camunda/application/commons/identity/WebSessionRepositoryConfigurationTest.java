@@ -8,6 +8,7 @@
 package io.camunda.application.commons.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -81,6 +82,13 @@ class WebSessionRepositoryConfigurationTest {
               assertThat(ctx)
                   .getBean(SessionStorePort.class)
                   .isInstanceOf(SessionStoreAdapter.class);
+              final var provider =
+                  ctx.getBean(PhysicalTenantScopedPersistentWebSessionClient.class);
+              assertThat(provider.withPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+                  .as("provider must resolve the configured default physical tenant")
+                  .isNotNull();
+              assertThatThrownBy(() -> provider.withPhysicalTenant("unknown-pt"))
+                  .isInstanceOf(IllegalStateException.class);
             });
   }
 
@@ -114,6 +122,13 @@ class WebSessionRepositoryConfigurationTest {
               assertThat(ctx)
                   .getBean(SessionStorePort.class)
                   .isInstanceOf(SessionStoreAdapter.class);
+              final var provider =
+                  ctx.getBean(PhysicalTenantScopedPersistentWebSessionClient.class);
+              assertThat(provider.withPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+                  .as("provider must resolve the configured default physical tenant")
+                  .isNotNull();
+              assertThatThrownBy(() -> provider.withPhysicalTenant("unknown-pt"))
+                  .isInstanceOf(IllegalStateException.class);
             });
   }
 }
