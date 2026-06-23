@@ -273,6 +273,7 @@ const queryKeys = {
     ],
   },
   elementInstanceInspection: {
+    base: () => ['elementInstanceInspectionSearch'],
     search: (payload: QueryElementInstanceInspectionRequestBody) => [
       'elementInstanceInspectionSearch',
       payload,

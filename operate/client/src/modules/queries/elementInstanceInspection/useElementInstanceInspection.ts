@@ -17,6 +17,16 @@ import {queryKeys} from '../queryKeys';
 
 const MAX_WAIT_STATES = 1000;
 
+const EMPTY_RESPONSE: QueryElementInstanceInspectionResponseBody = {
+  items: [],
+  page: {
+    totalItems: 0,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
+};
+
 type UseElementInstanceInspectionParams = {
   processInstanceKey: string;
   elementInstanceKey?: string;
@@ -29,6 +39,8 @@ const useElementInstanceInspection = (
   const {processInstanceKey, elementInstanceKey, enabled = true} = params;
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
+  const isEnabled = enabled && !!processInstanceKey;
+
   const payload: QueryElementInstanceInspectionRequestBody = {
     filter: {
       processInstanceKey,
@@ -37,7 +49,11 @@ const useElementInstanceInspection = (
     page: {limit: MAX_WAIT_STATES},
   };
 
-  return useQuery<QueryElementInstanceInspectionResponseBody>({
+  return useQuery<
+    QueryElementInstanceInspectionResponseBody,
+    Error,
+    QueryElementInstanceInspectionResponseBody
+  >({
     queryKey: queryKeys.elementInstanceInspection.search(payload),
     queryFn: async ({signal}) => {
       const {response, error} = await searchElementInstanceInspection(
@@ -49,9 +65,12 @@ const useElementInstanceInspection = (
       }
       throw error;
     },
-    enabled: enabled && !!processInstanceKey,
+    enabled: isEnabled,
     staleTime: 10000,
     refetchInterval: () => (isProcessInstanceRunning ? 5000 : undefined),
+    // React Query keeps the last fetched data after `enabled` flips to false;
+    // return an empty result so disabled consumers don't render stale wait states.
+    select: (data) => (isEnabled ? data : EMPTY_RESPONSE),
   });
 };
 

@@ -225,7 +225,12 @@ const TopPanel: React.FC = observer(() => {
     return isExecutionCountVisible
       ? allElementStateOverlays
       : notCompletedElementStateOverlays;
-  }, [statistics, businessObjects, isExecutionCountVisible]);
+  }, [
+    statistics,
+    businessObjects,
+    isExecutionCountVisible,
+    inspectionData?.items,
+  ]);
 
   const allWaitingStateOverlays = useMemo(() => {
     if (!inspectionData?.items?.length) {
