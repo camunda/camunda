@@ -144,6 +144,7 @@ class PhysicalTenantResolverTest {
             "camunda.document.aws.aws1.bucket-name", "root-bucket",
             "camunda.data.secondary-storage.elasticsearch.index-prefix", "default",
             "camunda.physical-tenants.tenanta.document.aws.aws1.bucket-name", "tenant-bucket",
+            "camunda.physical-tenants.tenanta.document.assigned[0]", "aws1",
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
                 "tenanta"),
         "tenanta");

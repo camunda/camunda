@@ -227,6 +227,7 @@ data.secondary-storage.retention
 data.secondary-storage.type
 data.snapshot-period
 data.wait-states.enabled
+document.assigned
 document.default-store-id
 document.thread-pool-size
 expression.timeout
