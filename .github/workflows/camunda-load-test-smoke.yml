@@ -68,7 +68,7 @@ jobs:
     steps:
       - id: sanitize-author
         name: Sanitize author name
-        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
         with:
           branch: ${{ github.event.pull_request.user.login || github.actor }}
           max_length: 10
