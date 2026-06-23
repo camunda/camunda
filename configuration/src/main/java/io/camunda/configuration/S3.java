@@ -166,6 +166,14 @@ public class S3 {
    */
   private String basePath;
 
+  /**
+   * Base64-encoded 32-byte AES-256 key. When set, all backup objects are written and read using S3
+   * server-side encryption with a caller-provided key (SSE-C). The same key must be configured on
+   * the brokers and on the restore application; S3 does not store the key and cannot decrypt
+   * objects without it.
+   */
+  private String ssecKey;
+
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".bucket-name",
@@ -320,5 +328,13 @@ public class S3 {
 
   public void setBasePath(final String basePath) {
     this.basePath = basePath;
+  }
+
+  public String getSsecKey() {
+    return ssecKey;
+  }
+
+  public void setSsecKey(final String ssecKey) {
+    this.ssecKey = ssecKey;
   }
 }
