@@ -79,9 +79,21 @@ function hashmod_zone() {
 }
 
 function get_existing_secret() {
-  jsonObject=$1
-  key=$2
-  existing_secret=$(echo "$jsonObject" | jq --raw-output --arg key "$key" '.[$key] // empty' | base64 -d)
+  local jsonObject="$1"
+  local key="$2"
+
+  detect_os
+  local base64_decode_flag="-d"
+  if [ "${GO_OS}" == "darwin" ]; then
+    base64_decode_flag="-D"
+  fi
+
+  local existing_secret
+  existing_secret="$(echo "$jsonObject" | jq --raw-output --arg key "$key" '.[$key] // empty' | base64 "$base64_decode_flag")" || {
+    echo "ERROR: failed to decode key '$key' from existing camunda-credentials secret."
+    exit 1
+  }
+
   if [ -z "$existing_secret" ]; then
     echo "ERROR: existing camunda-credentials secret is missing key '$key'."
     exit 1
