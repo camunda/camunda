@@ -10,6 +10,7 @@ package io.camunda.eventbridge.coordinator.stream;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 /**
@@ -48,6 +49,18 @@ public final class TopicRecord extends UnifiedRecordValue {
         .declareProperty(statusProp)
         .declareProperty(assignmentProp)
         .declareProperty(targetProp);
+  }
+
+  /**
+   * The reused {@link ValueType} this record rides on its dedicated Raft partition. {@link
+   * UnifiedRecordValue#valueType()} resolves via the engine's class→type map, which doesn't know
+   * this event-bridge record (it would return {@code null}); the StreamProcessor's result builder
+   * reads <em>this</em> to stamp appended follow-up events, so it must be set explicitly or the
+   * event is never written (and followers never replay it).
+   */
+  @Override
+  public ValueType valueType() {
+    return EventBridgeRecordValues.TOPIC_VALUE_TYPE;
   }
 
   public String getName() {

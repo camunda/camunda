@@ -228,10 +228,13 @@ final class PartitionBootstrapper {
     coordinatorPartitions.add(coordinatorPartition);
     actorScheduler.submitActor(coordinatorPartition);
 
-    created
-        .raftPartition()
-        .addRoleChangeListener((role, term) -> coordinatorPartition.onRoleChange(role, term));
-
+    // Bootstrap the Raft partition FIRST, then register the role-change listener — mirroring
+    // Zeebe's
+    // partition startup (RaftBootstrapStep before ZeebePartitionStep). The listener replays the
+    // current role on registration, so we don't miss the initial transition. If we registered
+    // before bootstrap, the StreamProcessor (and its committed log reader) would be created while
+    // the journal is still being initialized/reset, pinning the reader to a segment that bootstrap
+    // then closes — so followers would never replay (their reader stays SEGMENT-NOT-OPEN).
     created
         .raftPartition()
         .bootstrap(managementService, created.snapshotStore())
@@ -241,6 +244,10 @@ final class PartitionBootstrapper {
                 LOG.error("Failed to bootstrap coordinator raft partition {}", partitionId, error);
               } else {
                 LOG.info("Coordinator raft partition {} bootstrapped", partitionId);
+                created
+                    .raftPartition()
+                    .addRoleChangeListener(
+                        (role, term) -> coordinatorPartition.onRoleChange(role, term));
               }
             });
   }
@@ -320,10 +327,10 @@ final class PartitionBootstrapper {
     metadataPartitions.add(metadataPartition);
     actorScheduler.submitActor(metadataPartition);
 
-    created
-        .raftPartition()
-        .addRoleChangeListener((role, term) -> metadataPartition.onRoleChange(role, term));
-
+    // Bootstrap FIRST, then register the role-change listener (replays the current role) — see the
+    // note in bootstrapCoordinatorPartition. Registering before bootstrap would create the
+    // StreamProcessor's committed reader against the still-initializing journal, pinning it to a
+    // segment that bootstrap closes, so followers would never replay the topic registry.
     created
         .raftPartition()
         .bootstrap(managementService, created.snapshotStore())
@@ -333,6 +340,10 @@ final class PartitionBootstrapper {
                 LOG.error("Failed to bootstrap metadata raft partition {}", partitionId, error);
               } else {
                 LOG.info("Metadata raft partition {} bootstrapped", partitionId);
+                created
+                    .raftPartition()
+                    .addRoleChangeListener(
+                        (role, term) -> metadataPartition.onRoleChange(role, term));
               }
             });
   }

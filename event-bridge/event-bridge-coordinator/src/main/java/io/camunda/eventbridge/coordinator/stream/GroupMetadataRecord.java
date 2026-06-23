@@ -9,6 +9,7 @@ package io.camunda.eventbridge.coordinator.stream;
 
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 /**
@@ -25,6 +26,18 @@ public final class GroupMetadataRecord extends UnifiedRecordValue {
     super(2);
     declareProperty(groupIdProp);
     declareProperty(payloadProp);
+  }
+
+  /**
+   * The reused {@link ValueType} this record rides on the coordinator's dedicated Raft partition.
+   * {@link UnifiedRecordValue#valueType()} resolves via the engine's class→type map, which doesn't
+   * know this event-bridge record (it would return {@code null}); the StreamProcessor's result
+   * builder reads <em>this</em> to stamp appended follow-up events, so it must be set explicitly or
+   * the GROUP_METADATA_COMMITTED event is never written (and followers never replay it).
+   */
+  @Override
+  public ValueType valueType() {
+    return EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE;
   }
 
   public String getGroupId() {
