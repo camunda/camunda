@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/esutil"
+	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/elasticsearch"
 	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/operate"
 	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/optimize"
 )
@@ -47,6 +48,7 @@ func Run(ctx context.Context, cfg Config, logger *zap.Logger) error {
 	modules := []Module{
 		optimize.New(esClient, logger.Named("optimize"), reg),
 		operate.New(esClient, logger.Named("operate"), reg),
+		elasticsearch.New(esClient, logger.Named("index"), reg),
 	}
 
 	collector := NewCollector(modules, cfg.ScrapeInterval, logger, reg)

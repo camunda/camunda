@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/esutil"
+	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/indices"
 	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/operate"
 	"github.com/camunda/camunda/load-tests/metrics-exporter/internal/optimize"
 )
@@ -81,6 +82,84 @@ camunda_loadtest_operate_root_process_instances_completed 3
 				"camunda_loadtest_operate_root_process_instances_completed",
 			); err != nil {
 				t.Error(err)
+			}
+		})
+	}
+}
+
+func TestIndicesCollector_shouldExposeShardConfiguration(t *testing.T) {
+	for _, backend := range backends {
+		backend := backend
+		t.Run(backend.name, func(t *testing.T) {
+			// given: a fresh cluster with two test indices with distinct shard configs.
+			// replica=0 avoids yellow health on single-node clusters.
+			baseURL := startSearchContainer(t, backend)
+			createIndex(t, baseURL, "test-shards-alpha", `{
+				"settings": {
+					"number_of_shards": 3,
+					"number_of_replicas": 0
+				}
+			}`)
+			createIndex(t, baseURL, "test-shards-beta", `{
+				"settings": {
+					"number_of_shards": 5,
+					"number_of_replicas": 2
+				}
+			}`)
+
+			reg := prometheus.NewRegistry()
+			c := indices.New(esutil.NewClient(baseURL), zap.NewNop(), reg)
+
+			// when
+			if err := c.Collect(context.Background()); err != nil {
+				t.Fatalf("Collect returned error: %v", err)
+			}
+
+			// then: scan gathered metrics for our test indices; other system indices may
+			// also be present so we do a partial check rather than exact comparison.
+			gathered, err := reg.Gather()
+			if err != nil {
+				t.Fatalf("Gather returned error: %v", err)
+			}
+
+			type shardInfo struct{ primary, replica string }
+			found := map[string]shardInfo{}
+			for _, mf := range gathered {
+				if mf.GetName() != "camunda_loadtest_index_shards" {
+					continue
+				}
+				for _, m := range mf.GetMetric() {
+					var idx, pri, rep string
+					for _, lp := range m.GetLabel() {
+						switch lp.GetName() {
+						case "index":
+							idx = lp.GetValue()
+						case "primary":
+							pri = lp.GetValue()
+						case "replica":
+							rep = lp.GetValue()
+						}
+					}
+					found[idx] = shardInfo{pri, rep}
+				}
+			}
+
+			want := map[string]shardInfo{
+				"test-shards-alpha": {"3", "0"},
+				"test-shards-beta":  {"5", "2"},
+			}
+			for name, cfg := range want {
+				got, ok := found[name]
+				if !ok {
+					t.Errorf("index %q not found in metrics; got: %v", name, found)
+					continue
+				}
+				if got.primary != cfg.primary {
+					t.Errorf("index %q: primary = %q, want %q", name, got.primary, cfg.primary)
+				}
+				if got.replica != cfg.replica {
+					t.Errorf("index %q: replica = %q, want %q", name, got.replica, cfg.replica)
+				}
 			}
 		})
 	}

@@ -34,6 +34,7 @@ curl -s http://localhost:9600/metrics | grep "^camunda_loadtest"
 | `camunda_loadtest_operate_root_process_instances`                   | Number of Operate root process instance documents.                                 | gauge   |
 | `camunda_loadtest_optimize_process_instances_completed`             | Number of completed Optimize process instance documents (endDate field present).   | gauge   |
 | `camunda_loadtest_optimize_process_instances`                       | Number of all Optimize process instance documents.                                 | gauge   |
+| `camunda_loadtest_index_shards`                                     | Shard configuration per index, with `index`, `primary`, and `replica` as labels.   | gauge   |
 
 ## Notes
 
