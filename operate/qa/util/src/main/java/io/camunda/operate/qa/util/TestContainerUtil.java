@@ -348,7 +348,7 @@ public class TestContainerUtil {
       final String dockerImageName, final String version, final TestContext testContext) {
     operateContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
-            .withExposedPorts(8080)
+            .withExposedPorts(8080, 9600)
             .withNetwork(testContext.getNetwork())
             .withExtraHost("host.testcontainers.internal", "host-gateway")
             .withCopyFileToContainer(
@@ -356,7 +356,7 @@ public class TestContainerUtil {
                 "/usr/local/operate/config/application.properties")
             .waitingFor(
                 new HttpWaitStrategy()
-                    .forPort(8080)
+                    .forPort(9600)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));

@@ -117,7 +117,8 @@ public class BackupRestoreTest {
             .withEnv("CAMUNDA_TASKLIST_FEATUREFLAG_ALLOWNONSELFASSIGNMENT", "true")
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
             .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
-            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
+            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+            .withEnv("CAMUNDA_TASKLIST_V2_MODE_ENABLED", "false");
 
     startTasklist();
   }
