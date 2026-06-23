@@ -24,6 +24,7 @@ import {
   WAITING_BADGE,
   AGENT_STATUS_TAG,
   AGENT_SHINE,
+  WAITING_BADGE_NARROW,
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
@@ -82,6 +83,19 @@ const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
 const OVERLAY_TYPE_WAITING_STATE = 'waitingState';
 const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
 const OVERLAY_TYPE_AGENT_SHINE = 'agentShine';
+
+// Gateways and events are narrow (~36px) symbols.
+const NARROW_WAIT_STATE_ELEMENT_TYPES = new Set<string>([
+  'EXCLUSIVE_GATEWAY',
+  'PARALLEL_GATEWAY',
+  'INCLUSIVE_GATEWAY',
+  'EVENT_BASED_GATEWAY',
+  'START_EVENT',
+  'END_EVENT',
+  'INTERMEDIATE_CATCH_EVENT',
+  'INTERMEDIATE_THROW_EVENT',
+  'BOUNDARY_EVENT',
+]);
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -236,10 +250,13 @@ const TopPanel: React.FC = observer(() => {
     for (const [elementId, waitStates] of waitStatesByElement) {
       const label = getWaitStateLabel(waitStates);
       if (label) {
+        const isNarrowElement = waitStates.some((waitState) =>
+          NARROW_WAIT_STATE_ELEMENT_TYPES.has(waitState.elementType),
+        );
         overlays.push({
           elementId,
           type: OVERLAY_TYPE_WAITING_STATE,
-          position: WAITING_BADGE,
+          position: isNarrowElement ? WAITING_BADGE_NARROW : WAITING_BADGE,
           payload: {label},
         });
       }
