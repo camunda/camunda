@@ -22,7 +22,8 @@ type Props = {
 
 const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
 	const {t} = useTranslation();
-	const isCollapsed = (getStateLocally('operate.panelStates')?.[localStorageKey] as boolean | undefined) ?? false;
+	const storedState = getStateLocally('operate.panelStates')?.[localStorageKey];
+	const isCollapsed = typeof storedState === 'boolean' ? storedState : false;
 	const [panelState, setPanelState] = useState<'expanded' | 'collapsed'>(isCollapsed ? 'collapsed' : 'expanded');
 
 	useEffect(() => {
