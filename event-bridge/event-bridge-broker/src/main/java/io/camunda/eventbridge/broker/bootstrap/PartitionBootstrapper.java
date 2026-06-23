@@ -58,6 +58,12 @@ final class PartitionBootstrapper {
   private final List<LogRetentionCompactor> retentionCompactors = new ArrayList<>();
   private final List<CoordinatorPartition> coordinatorPartitions = new ArrayList<>();
 
+  // Initialized in start(); reused by runtime topic-group provisioning after boot.
+  private PartitionFactory factory;
+  private DefaultPartitionManagementService managementService;
+  private MessagingService brokerMessagingService;
+  private MemberId localMemberId;
+
   PartitionBootstrapper(
       final AtomixCluster cluster,
       final ActorSchedulingService actorScheduler,
@@ -80,7 +86,8 @@ final class PartitionBootstrapper {
       final MessagingService brokerMessagingService) {
 
     final var membershipService = cluster.getMembershipService();
-    final var localMemberId = membershipService.getLocalMember().id();
+    localMemberId = membershipService.getLocalMember().id();
+    this.brokerMessagingService = brokerMessagingService;
 
     // Start the partitions assigned to this node (members include the local member), exactly like
     // Zeebe's PartitionManagerImpl derives placement from the cluster configuration.
@@ -92,20 +99,16 @@ final class PartitionBootstrapper {
         localPartitions.stream().map(p -> p.id().id()).sorted().toList(),
         localMemberId);
 
-    final var factory = new PartitionFactory(properties, actorScheduler);
-
-    final var managementService =
+    factory = new PartitionFactory(properties, actorScheduler);
+    managementService =
         new DefaultPartitionManagementService(membershipService, cluster.getCommunicationService());
 
     for (final var partition : localPartitions) {
-      bootstrapPartition(
+      provisionDataPartition(
+          PartitionFactory.GROUP_NAME,
           partition.id().id(),
           Set.copyOf(partition.members()),
-          localMemberId,
-          factory,
-          managementService,
-          topologyManager,
-          brokerMessagingService);
+          topologyManager);
     }
 
     bootstrapCoordinator(
@@ -255,17 +258,20 @@ final class PartitionBootstrapper {
     createdPartitions.clear();
   }
 
-  private void bootstrapPartition(
+  /**
+   * Provisions a data-style partition (event log) for an arbitrary Raft group and bootstraps it.
+   * Used for the default data group at boot and for per-topic groups provisioned at runtime — the
+   * sequence (create raft components, wire lifecycle + retention + role listener, bootstrap) is
+   * identical; only the group name, members, and topology manager differ.
+   */
+  void provisionDataPartition(
+      final String groupName,
       final int partitionId,
       final Set<MemberId> members,
-      final MemberId localMemberId,
-      final PartitionFactory factory,
-      final DefaultPartitionManagementService managementService,
-      final TopologyManagerImpl topologyManager,
-      final MessagingService brokerMessagingService) {
+      final TopologyManagerImpl topologyManager) {
 
     // 1. Create raft-level components
-    final var created = factory.create(partitionId, members, localMemberId);
+    final var created = factory.createData(groupName, partitionId, members, localMemberId);
     createdPartitions.add(created);
 
     // 2. Create lifecycle actor

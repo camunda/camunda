@@ -46,7 +46,15 @@ public final class PartitionFactory {
   /** Dedicated Raft group for the consumer-group coordinator (separate from data partitions). */
   public static final String COORDINATOR_GROUP_NAME = "event-bridge-coordinator";
 
+  /** Prefix for per-topic Raft groups: each topic is its own group {@code <prefix><name>}. */
+  public static final String TOPIC_GROUP_PREFIX = "event-bridge-topic-";
+
   private static final Logger LOG = LoggerFactory.getLogger(PartitionFactory.class);
+
+  /** The Raft group name hosting a topic's partitions. Each topic is its own group. */
+  public static String topicGroupName(final String topic) {
+    return TOPIC_GROUP_PREFIX + topic;
+  }
 
   private final EventBridgeProperties properties;
   private final ActorSchedulingService actorScheduler;
@@ -57,15 +65,28 @@ public final class PartitionFactory {
     this.actorScheduler = actorScheduler;
   }
 
-  /** Creates the raft partition and snapshot store. The raft partition is not bootstrapped yet. */
+  /** Creates a data partition in the default data group. The raft partition is not bootstrapped. */
   public CreatedPartition create(
       final int partitionId, final Set<MemberId> members, final MemberId localMemberId) {
-    final var partitionDir = getPartitionDirectory(GROUP_NAME, partitionId);
+    return createData(GROUP_NAME, partitionId, members, localMemberId);
+  }
+
+  /**
+   * Creates a data-style partition (event log + marker snapshot store) in an arbitrary Raft group.
+   * Used both for the default data group at boot and for per-topic groups ({@code
+   * event-bridge-topic-<name>}) provisioned at runtime. The raft partition is not bootstrapped yet.
+   */
+  public CreatedPartition createData(
+      final String groupName,
+      final int partitionId,
+      final Set<MemberId> members,
+      final MemberId localMemberId) {
+    final var partitionDir = getPartitionDirectory(groupName, partitionId);
     ensureDirectoryExists(partitionDir, partitionId);
 
     final var raftPartition =
         createRaftPartition(
-            GROUP_NAME,
+            groupName,
             partitionId,
             members,
             localMemberId,
@@ -88,8 +109,7 @@ public final class PartitionFactory {
             new SimpleMeterRegistry());
     actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound());
 
-    LOG.info(
-        "Partition {}/{} — raft partition and snapshot store created", GROUP_NAME, partitionId);
+    LOG.info("Partition {}/{} — raft partition and snapshot store created", groupName, partitionId);
     return new CreatedPartition(partitionId, raftPartition, snapshotStore);
   }
 
