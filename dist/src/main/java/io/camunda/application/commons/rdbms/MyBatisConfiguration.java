@@ -33,7 +33,6 @@ import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
@@ -74,27 +73,16 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public RdbmsDatabaseIdProvider databaseIdProvider(
-      @Value("${camunda.data.secondary-storage.rdbms.database-vendor-id:}") final String vendorId) {
-    return new RdbmsDatabaseIdProvider(vendorId);
-  }
-
-  @Bean
-  public RdbmsDataSources rdbmsDataSources(
-      final PhysicalTenantResolver physicalTenantResolver,
-      final RdbmsDatabaseIdProvider databaseIdProvider)
+  public RdbmsDataSources rdbmsDataSources(final PhysicalTenantResolver physicalTenantResolver)
       throws IOException {
     return RdbmsDataSources.of(
         physicalTenantResolver.mapValues(
-            camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
-        databaseIdProvider);
+            camunda -> camunda.getData().getSecondaryStorage().getRdbms()));
   }
 
   @Bean
   public Map<String, SqlSessionFactory> sqlSessionFactories(
-      final RdbmsDataSources rdbmsDataSources,
-      final PhysicalTenantResolver physicalTenantResolver,
-      final DatabaseIdProvider databaseIdProvider)
+      final RdbmsDataSources rdbmsDataSources, final PhysicalTenantResolver physicalTenantResolver)
       throws Exception {
     final var factories = new LinkedHashMap<String, SqlSessionFactory>();
     for (final var tenantId : rdbmsDataSources.physicalTenantIds()) {
@@ -109,7 +97,7 @@ public class MyBatisConfiguration {
           tenantId,
           buildSqlSessionFactory(
               rdbmsDataSources.dataSourceFor(tenantId),
-              databaseIdProvider,
+              rdbmsDataSources.databaseIdProviderFor(tenantId),
               rdbmsDataSources.vendorPropertiesFor(tenantId),
               prefix));
     }

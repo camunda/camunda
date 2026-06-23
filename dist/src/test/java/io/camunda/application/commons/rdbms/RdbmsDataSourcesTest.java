@@ -9,11 +9,9 @@ package io.camunda.application.commons.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.configuration.Rdbms;
@@ -23,14 +21,11 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 class RdbmsDataSourcesTest {
-
-  private static final RdbmsDatabaseIdProvider DATABASE_ID_PROVIDER =
-      new RdbmsDatabaseIdProvider(null);
 
   private static Rdbms h2Rdbms() {
     final var rdbms = new Rdbms();
@@ -45,8 +40,7 @@ class RdbmsDataSourcesTest {
   void shouldBuildDataSourceForSinglePhysicalTenant() throws Exception {
     final var rdbms = h2Rdbms();
     try (final var registry =
-        RdbmsDataSources.of(
-            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms), DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
 
       // then
       final var ds =
@@ -71,8 +65,7 @@ class RdbmsDataSourcesTest {
     rdbms.setConnectionPool(pool);
 
     try (final var registry =
-        RdbmsDataSources.of(
-            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms), DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
 
       final var ds =
           (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -91,7 +84,7 @@ class RdbmsDataSourcesTest {
     configs.put("tenant-a", h2Rdbms());
     configs.put("tenant-b", h2Rdbms());
 
-    try (final var registry = RdbmsDataSources.of(configs, DATABASE_ID_PROVIDER)) {
+    try (final var registry = RdbmsDataSources.of(configs)) {
       assertThat(registry.dataSourceFor("tenant-a")).isNotNull();
       assertThat(registry.dataSourceFor("tenant-b")).isNotNull();
       assertThat(registry.vendorPropertiesFor("tenant-a")).isNotNull();
@@ -102,9 +95,7 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantDataSource() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(
-            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()),
-            DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()))) {
       assertThatThrownBy(() -> registry.dataSourceFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
@@ -114,9 +105,7 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantVendorProperties() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(
-            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()),
-            DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()))) {
       assertThatThrownBy(() -> registry.vendorPropertiesFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
@@ -131,7 +120,7 @@ class RdbmsDataSourcesTest {
 
     final HikariDataSource dsA;
     final HikariDataSource dsB;
-    try (final var registry = RdbmsDataSources.of(configs, DATABASE_ID_PROVIDER)) {
+    try (final var registry = RdbmsDataSources.of(configs)) {
       dsA = (HikariDataSource) registry.dataSourceFor("tenant-a");
       dsB = (HikariDataSource) registry.dataSourceFor("tenant-b");
       assertThat(dsA.isClosed()).isFalse();
@@ -143,28 +132,30 @@ class RdbmsDataSourcesTest {
   }
 
   @Test
-  void shouldCloseAlreadyOpenedDataSourcesWhenLaterTenantFails() throws Exception {
-    final var configs = new LinkedHashMap<String, Rdbms>();
-    configs.put("tenant-a", h2Rdbms());
-    configs.put("tenant-b", h2Rdbms());
+  void shouldCloseAlreadyOpenedDataSourcesWhenLaterTenantFails() {
+    try (final MockedStatic<RdbmsDataSources> spy =
+        mockStatic(RdbmsDataSources.class, CALLS_REAL_METHODS)) {
+      // given: tenant-a initialises normally; tenant-b carries an invalid databaseVendorId so that
+      // RdbmsDatabaseIdProvider.getDatabaseId throws, triggering the cleanup path.
+      final var tenantBRdbms = h2Rdbms();
+      tenantBRdbms.setDatabaseVendorId("unsupported");
 
-    // tenant-a → real H2 detection succeeds; tenant-b → throws during databaseId resolution.
-    final var capturingProvider = spy(new RdbmsDatabaseIdProvider(null));
-    doCallRealMethod()
-        .doThrow(new RuntimeException("boom on tenant-b"))
-        .when(capturingProvider)
-        .getDatabaseId(any(DataSource.class));
+      final var configs = new LinkedHashMap<String, Rdbms>();
+      configs.put("tenant-a", h2Rdbms());
+      configs.put("tenant-b", tenantBRdbms);
 
-    assertThatThrownBy(() -> RdbmsDataSources.of(configs, capturingProvider))
-        .isInstanceOf(RuntimeException.class)
-        .hasMessageContaining("boom on tenant-b");
+      // when / then
+      assertThatThrownBy(() -> RdbmsDataSources.of(configs))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("unsupported");
 
-    final var captor = ArgumentCaptor.forClass(DataSource.class);
-    verify(capturingProvider, times(2)).getDatabaseId(captor.capture());
-    for (final var ds : captor.getAllValues()) {
-      assertThat(((HikariDataSource) ds).isClosed())
-          .as("opened HikariDataSource should be closed on failure")
-          .isTrue();
+      final var captor = ArgumentCaptor.forClass(HikariDataSource.class);
+      spy.verify(() -> RdbmsDataSources.closeQuietly(captor.capture()), times(2));
+      for (final var dataSource : captor.getAllValues()) {
+        assertThat(dataSource.isClosed())
+            .as("opened HikariDataSource should be closed on failure")
+            .isTrue();
+      }
     }
   }
 }
