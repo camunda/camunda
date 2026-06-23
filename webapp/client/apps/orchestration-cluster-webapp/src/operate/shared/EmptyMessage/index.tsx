@@ -6,21 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
-import {Message, AdditionalInfo, Stack} from './styled';
-
-type Props = {
-	message: string;
-	additionalInfo?: string;
-};
-
-const EmptyMessage: React.FC<Props> = ({message, additionalInfo, ...props}) => {
-	return (
-		<Stack {...props} gap={3}>
-			<Message>{message}</Message>
-			{additionalInfo && <AdditionalInfo>{additionalInfo}</AdditionalInfo>}
-		</Stack>
-	);
-};
-
-export {EmptyMessage};
+export {EmptyMessage} from "./EmptyMessage";
