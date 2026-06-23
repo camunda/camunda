@@ -7,21 +7,36 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  ElementInstanceInspection,
+  WaitStateDetails,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   getWaitStateLabel,
   getWaitStateStatusItems,
   getEarliestTimerDueDate,
 } from './waitStates';
 
-const baseWaitState: ElementInstanceInspection = {
-  rootProcessInstanceKey: '123',
-  processInstanceKey: '123',
-  elementInstanceKey: '456',
-  elementId: 'task1',
-  elementType: 'SERVICE_TASK',
+function buildWaitState(details: WaitStateDetails): ElementInstanceInspection {
+  return {
+    rootProcessInstanceKey: '123',
+    processInstanceKey: '123',
+    elementInstanceKey: '456',
+    elementId: 'task1',
+    elementType: 'SERVICE_TASK',
+    tenantId: '<default>',
+    bpmnProcessId: 'process-1',
+    details,
+  };
+}
+
+const jobDetails: WaitStateDetails = {
   waitStateType: 'JOB',
-  details: {},
+  jobKey: '789',
+  jobType: 'send-email',
+  jobKind: 'BPMN_ELEMENT',
+  listenerEventType: null,
+  retries: null,
 };
 
 describe('getWaitStateLabel', () => {
@@ -32,11 +47,11 @@ describe('getWaitStateLabel', () => {
   it('should return "Waiting" for non-timer wait states', () => {
     expect(
       getWaitStateLabel([
-        {
-          ...baseWaitState,
+        buildWaitState({
           waitStateType: 'MESSAGE',
-          details: {messageName: 'foo'},
-        },
+          messageName: 'foo',
+          correlationKey: null,
+        }),
       ]),
     ).toBe('Waiting');
   });
@@ -44,11 +59,11 @@ describe('getWaitStateLabel', () => {
   it('should return null when only timer wait states exist', () => {
     expect(
       getWaitStateLabel([
-        {
-          ...baseWaitState,
+        buildWaitState({
           waitStateType: 'TIMER',
-          details: {dueDate: '2026-01-01T00:00:00Z'},
-        },
+          dueDate: Date.parse('2026-01-01T00:00:00Z'),
+          repetitions: null,
+        }),
       ]),
     ).toBeNull();
   });
@@ -56,16 +71,16 @@ describe('getWaitStateLabel', () => {
   it('should return "Waiting" when mixed timer and non-timer wait states exist', () => {
     expect(
       getWaitStateLabel([
-        {
-          ...baseWaitState,
+        buildWaitState({
           waitStateType: 'TIMER',
-          details: {dueDate: '2026-01-01T00:00:00Z'},
-        },
-        {
-          ...baseWaitState,
+          dueDate: Date.parse('2026-01-01T00:00:00Z'),
+          repetitions: null,
+        }),
+        buildWaitState({
           waitStateType: 'MESSAGE',
-          details: {messageName: 'foo'},
-        },
+          messageName: 'foo',
+          correlationKey: null,
+        }),
       ]),
     ).toBe('Waiting');
   });
@@ -78,11 +93,11 @@ describe('getWaitStateStatusItems', () => {
 
   it('should format MESSAGE wait state', () => {
     const items = getWaitStateStatusItems([
-      {
-        ...baseWaitState,
+      buildWaitState({
         waitStateType: 'MESSAGE',
-        details: {messageName: 'order-completion'},
-      },
+        messageName: 'order-completion',
+        correlationKey: null,
+      }),
     ]);
     expect(items).toHaveLength(1);
     expect(items[0]!.text).toBe('Waiting for message: order-completion');
@@ -90,55 +105,61 @@ describe('getWaitStateStatusItems', () => {
 
   it('should format TIMER wait state with due date', () => {
     const items = getWaitStateStatusItems([
-      {
-        ...baseWaitState,
+      buildWaitState({
         waitStateType: 'TIMER',
-        details: {dueDate: '2026-04-14T10:00:00Z'},
-      },
+        dueDate: Date.parse('2026-04-14T10:00:00Z'),
+        repetitions: null,
+      }),
     ]);
     expect(items).toHaveLength(1);
-    expect(items[0]!.text).toContain('Timer due:');
+    expect(items[0]!.text).toContain('Waiting for timer: due date');
   });
 
   it('should format TIMER wait state without due date', () => {
     const items = getWaitStateStatusItems([
-      {...baseWaitState, waitStateType: 'TIMER', details: {}},
+      buildWaitState({
+        waitStateType: 'TIMER',
+        dueDate: null,
+        repetitions: null,
+      }),
     ]);
     expect(items).toHaveLength(1);
     expect(items[0]!.text).toBe('Waiting for timer');
   });
 
   it('should format JOB wait state', () => {
-    const items = getWaitStateStatusItems([
-      {
-        ...baseWaitState,
-        waitStateType: 'JOB',
-        details: {jobType: 'send-email'},
-      },
-    ]);
+    const items = getWaitStateStatusItems([buildWaitState(jobDetails)]);
     expect(items).toHaveLength(1);
     expect(items[0]!.text).toBe('Waiting for job: send-email');
   });
 
   it('should format execution listener JOB wait state', () => {
     const items = getWaitStateStatusItems([
-      {
-        ...baseWaitState,
-        waitStateType: 'JOB',
-        details: {jobType: 'my-listener', jobKind: 'EXECUTION_LISTENER'},
-      },
+      buildWaitState({
+        ...jobDetails,
+        jobType: 'my-listener',
+        jobKind: 'EXECUTION_LISTENER',
+      }),
     ]);
     expect(items).toHaveLength(1);
     expect(items[0]!.text).toBe('Waiting for execution listener: my-listener');
   });
 
+  it('should format USER_TASK wait state', () => {
+    const items = getWaitStateStatusItems([
+      buildWaitState({
+        waitStateType: 'USER_TASK',
+        taskKey: '999',
+        dueDate: null,
+      }),
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0]!.text).toBe('Waiting for task completion');
+  });
+
   it('should format SIGNAL wait state', () => {
     const items = getWaitStateStatusItems([
-      {
-        ...baseWaitState,
-        waitStateType: 'SIGNAL',
-        details: {signalName: 'abort'},
-      },
+      buildWaitState({waitStateType: 'SIGNAL', signalName: 'abort'}),
     ]);
     expect(items).toHaveLength(1);
     expect(items[0]!.text).toBe('Waiting for signal: abort');
@@ -146,32 +167,28 @@ describe('getWaitStateStatusItems', () => {
 
   it('should format CONDITION wait state', () => {
     const items = getWaitStateStatusItems([
-      {...baseWaitState, waitStateType: 'CONDITION', details: {}},
+      buildWaitState({
+        waitStateType: 'CONDITION',
+        expression: '=foo > 1',
+        events: ['bar'],
+      }),
     ]);
     expect(items).toHaveLength(1);
     expect(items[0]!.text).toBe('Waiting for condition');
   });
 
-  it('should format CHILD_INSTANCE wait state', () => {
-    const items = getWaitStateStatusItems([
-      {...baseWaitState, waitStateType: 'CHILD_INSTANCE', details: {}},
-    ]);
-    expect(items).toHaveLength(1);
-    expect(items[0]!.text).toBe('Waiting for child instance to complete');
-  });
-
   it('should handle multiple wait states', () => {
     const items = getWaitStateStatusItems([
-      {
-        ...baseWaitState,
+      buildWaitState({
         waitStateType: 'MESSAGE',
-        details: {messageName: 'msg1'},
-      },
-      {
-        ...baseWaitState,
+        messageName: 'msg1',
+        correlationKey: null,
+      }),
+      buildWaitState({
         waitStateType: 'MESSAGE',
-        details: {messageName: 'msg2'},
-      },
+        messageName: 'msg2',
+        correlationKey: null,
+      }),
     ]);
     expect(items).toHaveLength(2);
     expect(items[0]!.text).toBe('Waiting for message: msg1');
@@ -180,25 +197,25 @@ describe('getWaitStateStatusItems', () => {
 
   it('should collapse multiple TIMER wait states into one status item', () => {
     const items = getWaitStateStatusItems([
-      {
-        ...baseWaitState,
+      buildWaitState({
         waitStateType: 'TIMER',
-        details: {dueDate: '2026-04-15T10:00:00Z'},
-      },
-      {
-        ...baseWaitState,
+        dueDate: Date.parse('2026-04-15T10:00:00Z'),
+        repetitions: null,
+      }),
+      buildWaitState({
         waitStateType: 'TIMER',
-        details: {dueDate: '2026-04-14T10:00:00Z'},
-      },
-      {
-        ...baseWaitState,
+        dueDate: Date.parse('2026-04-14T10:00:00Z'),
+        repetitions: null,
+      }),
+      buildWaitState({
         waitStateType: 'MESSAGE',
-        details: {messageName: 'msg1'},
-      },
+        messageName: 'msg1',
+        correlationKey: null,
+      }),
     ]);
 
     expect(items).toHaveLength(2);
-    expect(items[0]!.text).toContain('Timer due:');
+    expect(items[0]!.text).toContain('Waiting for timer: due date');
     expect(items[1]!.text).toBe('Waiting for message: msg1');
   });
 });
@@ -211,7 +228,11 @@ describe('getEarliestTimerDueDate', () => {
   it('should return null when no timer wait states', () => {
     expect(
       getEarliestTimerDueDate([
-        {...baseWaitState, waitStateType: 'MESSAGE', details: {}},
+        buildWaitState({
+          waitStateType: 'MESSAGE',
+          messageName: 'foo',
+          correlationKey: null,
+        }),
       ]),
     ).toBeNull();
   });
@@ -219,52 +240,39 @@ describe('getEarliestTimerDueDate', () => {
   it('should return the earliest due date', () => {
     expect(
       getEarliestTimerDueDate([
-        {
-          ...baseWaitState,
+        buildWaitState({
           waitStateType: 'TIMER',
-          details: {dueDate: '2026-04-15T10:00:00Z'},
-        },
-        {
-          ...baseWaitState,
+          dueDate: Date.parse('2026-04-15T10:00:00Z'),
+          repetitions: null,
+        }),
+        buildWaitState({
           waitStateType: 'TIMER',
-          details: {dueDate: '2026-04-14T10:00:00Z'},
-        },
-        {
-          ...baseWaitState,
+          dueDate: Date.parse('2026-04-14T10:00:00Z'),
+          repetitions: null,
+        }),
+        buildWaitState({
           waitStateType: 'TIMER',
-          details: {dueDate: '2026-04-16T10:00:00Z'},
-        },
+          dueDate: Date.parse('2026-04-16T10:00:00Z'),
+          repetitions: null,
+        }),
       ]),
-    ).toBe('2026-04-14T10:00:00Z');
+    ).toBe(Date.parse('2026-04-14T10:00:00Z'));
   });
 
   it('should ignore timers without due date', () => {
     expect(
       getEarliestTimerDueDate([
-        {...baseWaitState, waitStateType: 'TIMER', details: {}},
-        {
-          ...baseWaitState,
+        buildWaitState({
           waitStateType: 'TIMER',
-          details: {dueDate: '2026-04-14T10:00:00Z'},
-        },
+          dueDate: null,
+          repetitions: null,
+        }),
+        buildWaitState({
+          waitStateType: 'TIMER',
+          dueDate: Date.parse('2026-04-14T10:00:00Z'),
+          repetitions: null,
+        }),
       ]),
-    ).toBe('2026-04-14T10:00:00Z');
-  });
-
-  it('should compare due dates by parsed timestamp', () => {
-    expect(
-      getEarliestTimerDueDate([
-        {
-          ...baseWaitState,
-          waitStateType: 'TIMER',
-          details: {dueDate: '2026-04-14T10:00:00.100+00:00'},
-        },
-        {
-          ...baseWaitState,
-          waitStateType: 'TIMER',
-          details: {dueDate: '2026-04-14T10:00:00Z'},
-        },
-      ]),
-    ).toBe('2026-04-14T10:00:00Z');
+    ).toBe(Date.parse('2026-04-14T10:00:00Z'));
   });
 });
