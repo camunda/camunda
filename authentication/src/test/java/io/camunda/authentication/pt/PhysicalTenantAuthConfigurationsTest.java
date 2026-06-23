@@ -688,6 +688,23 @@ class PhysicalTenantAuthConfigurationsTest {
     assertThat(result.get("default").getOidc().getClientId()).isEqualTo("explicit-default-client");
   }
 
+  @Test
+  void shouldReturnUnmodifiableMap() {
+    // given
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root"));
+
+    // when
+    final var result = PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env);
+
+    // then — the public cross-module accessor returns an unmodifiable map
+    assertThat(result).isUnmodifiable();
+  }
+
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
