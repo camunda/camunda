@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -93,6 +95,32 @@ public final class PhysicalTenantAuthConfigurations {
   private static final String DEFAULT_SLOT_ASSIGNED_ID = OidcConfiguration.DEFAULT_REGISTRATION_ID;
 
   private PhysicalTenantAuthConfigurations() {}
+
+  /**
+   * Returns a map from physical-tenant id to its resolved {@link AuthenticationConfiguration},
+   * always including the {@code default} tenant even when no PTs are explicitly configured.
+   *
+   * <p>The map contains one entry per explicitly configured physical tenant (discovered via {@link
+   * #discoverExplicitTenantIds}) plus a {@code default} entry. Each value is computed via {@link
+   * #forPhysicalTenant(String, Environment)}. The map is insertion-ordered ({@link LinkedHashMap})
+   * with {@code default} always present; explicit tenant order is discovery order.
+   *
+   * @param environment Spring {@link Environment} used for both discovery and config binding
+   * @return stable, insertion-ordered map of tenant id → merged auth config
+   */
+  public static Map<String, AuthenticationConfiguration> forAllPhysicalTenants(
+      final Environment environment) {
+    final Set<String> tenantIds = discoverExplicitTenantIds(environment);
+    final Map<String, AuthenticationConfiguration> result = new LinkedHashMap<>();
+    result.put(
+        DEFAULT_PHYSICAL_TENANT_ID, forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID, environment));
+    for (final String tenantId : tenantIds) {
+      if (!tenantId.equals(DEFAULT_PHYSICAL_TENANT_ID)) {
+        result.put(tenantId, forPhysicalTenant(tenantId, environment));
+      }
+    }
+    return result;
+  }
 
   /**
    * Walks the {@link Environment} and returns the set of explicitly configured physical-tenant ids
