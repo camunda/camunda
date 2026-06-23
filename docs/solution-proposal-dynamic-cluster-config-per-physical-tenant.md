@@ -131,14 +131,15 @@ POC; will be renamed when the existing `ClusterConfiguration` usages are fully m
 record ClusterConfiguration(
     ClusterMembership clusterMembership,
     Map<String, PartitionGroupConfiguration> partitionGroups,
-    Optional<PhasedChangePlan> phasedChangePlan
+    Optional<PhasedChangePlan> phasedChangePlan,
+    Optional<PartitionDistributorConfig> partitionDistributorConfig // cluster-level partition distribution config
 )
 ```
 
 **`ClusterMembership`** holds every broker in the cluster with its lifecycle state. It does not
 carry partition assignment. Fields: `version`, `members` (all brokers as `BrokerState`, carrying
 only `State state`, `long version`, and `Instant lastUpdated`), `pendingChanges` (for membership
-operations), `lastChange`, `clusterId`, `recovery`.
+operations), `lastChange`, `clusterId`.
 Member lifecycle operations (`MemberJoinOperation`, `MemberLeaveOperation`,
 `MemberRemoveOperation`, `PreScalingOperation`, `PostScalingOperation`) apply exclusively here.
 
@@ -152,12 +153,17 @@ which carries only `SortedMap<Integer, PartitionState> partitions`, `long versio
 `Instant lastUpdated` — no lifecycle `State`. Fields: `version`, `members`,
 `pendingChanges`, `lastChange`, `routingState`, `incarnationNumber`. Partition change operations,
 exporter operations, routing state updates, incarnation number updates, and history-deletion
-operations live here. `clusterId` and `recovery` are absent — those are cluster-wide properties
-that belong exclusively in `ClusterMembership`.
+operations live here. `clusterId` is absent — that is a cluster-wide property that belongs
+exclusively in `ClusterMembership`. `recovery` lives here: Raft recovery is per Raft group, not
+cluster-wide.
 
 **`PhasedChangePlan`** records the coordinator-generated phased execution plan for operations that
 span cluster membership and partition groups. It is present only when such a cross-phase operation
 is in progress. Pure single-group operations do not use it.
+
+**`partitionDistributorConfig`** holds the cluster-level partition distribution configuration
+(zone layout, distribution mode). Absent until explicitly set. Applies across all partition groups.
+Target for: `UpdatePartitionDistributorConfigOperation`.
 
 ### 3.2 Two kinds of operations
 
@@ -301,7 +307,7 @@ wholesale. If equal (concurrent writes during plan execution), they merge field-
   different content throws — protected by coordinator exclusivity.
 - **`incarnationNumber`** (PartitionGroupConfiguration only): `Math.max()`.
 - **`clusterId`** (ClusterMembership only): first non-empty wins.
-- **`recovery`** (ClusterMembership only): OR semantics (either `true` wins).
+- **`recovery`** (PartitionGroupConfiguration only): OR semantics per group (either `true` wins).
 - **`lastChange`**: taken from `this`. Safe because `lastChange` is written only on plan
   completion, which bumps the config version — `lastChange` disagreements only occur at different
   config versions and are resolved by the fast path. **Invariant to preserve: never write
@@ -511,7 +517,6 @@ message ClusterMembership {
   CompletedChange lastChange = 3;
   ClusterChangePlan pendingChanges = 4;
   optional string clusterId = 5;
-  bool recovery = 6;
 }
 
 // Encodes PartitionGroupConfiguration
@@ -522,12 +527,14 @@ message PartitionGroupConfiguration {
   ClusterChangePlan pendingChanges = 4;
   RoutingState routingState = 5;
   int64 incarnationNumber = 6;
+  bool recovery = 7;
 }
 
 message PartitionGroupAwareClusterConfiguration {
   ClusterMembership clusterMembership = 1;
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
+  PartitionDistributorConfig partitionDistributorConfig = 4;
 }
 
 message PhasedChangePlan {
@@ -576,10 +583,12 @@ coordinator would stall waiting for state changes that it never sees.
   `PartitionGroupAwareClusterConfiguration`.
 - If absent (message from an old broker) → read `clusterTopology` (field 1) and migrate via
   `ofDefault()`:
-  - `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped),
-    `clusterId` and `recovery` preserved
+  - `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped);
+    `clusterId` preserved; `recovery` absent (no `recovery` field in `ClusterTopology` proto)
   - `partitionGroups["default"]` = all members as `MemberPartitionState` (partitions extracted,
-    state dropped), `routingState` and `incarnationNumber` preserved
+    state dropped); `routingState` and `incarnationNumber` preserved; `recovery` defaults to
+    `false`
+  - `partitionDistributorConfig` = taken from `ClusterTopology.partitionDistributor` directly
   - `pendingPlan` = absent
 
 **Persistence: header version discriminator.** `PersistedClusterConfiguration` already has a

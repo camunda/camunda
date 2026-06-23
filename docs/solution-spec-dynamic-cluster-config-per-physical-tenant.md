@@ -38,7 +38,8 @@ Module paths:
 record PartitionGroupAwareClusterConfiguration(
     ClusterMembership clusterMembership,               // ALL brokers; BrokerState (lifecycle state only)
     Map<String, PartitionGroupConfiguration> partitionGroups, // one per partition group ID
-    Optional<PhasedChangePlan> pendingPlan             // only for cluster-spanning operations
+    Optional<PhasedChangePlan> pendingPlan,            // only for cluster-spanning operations
+    Optional<PartitionDistributorConfig> partitionDistributorConfig // cluster-level partition distribution config
 )
 ```
 
@@ -46,7 +47,7 @@ record PartitionGroupAwareClusterConfiguration(
 - Holds every broker with its lifecycle state (`JOINING → ACTIVE → LEAVING → LEFT`).
 - Each member is a `BrokerState`: only `State state`, `long version`, `Instant lastUpdated` —
 no partition assignments.
-- `clusterId` and `recovery` live here.
+- `clusterId` lives here.
 - Target for: `MemberJoinOperation`, `MemberLeaveOperation`, `MemberRemoveOperation`,
 `PreScalingOperation`, `PostScalingOperation`.
 
@@ -56,7 +57,7 @@ no partition assignments.
 - Each entry includes only the members hosting partitions in that group.
 - Each member is a `MemberPartitionState`: only `SortedMap<Integer, PartitionState> partitions`,
 `long version`, `Instant lastUpdated` — no lifecycle `State`.
-- `incarnationNumber` tracked per group (each group has its own Raft history).
+- `incarnationNumber` and `recovery` tracked per group (each group has its own independent Raft history).
 - Partition change plans, routing state, exporter state, and history-management operations live here.
 - Target for: `UpdateIncarnationNumberOperation`, `DeleteHistoryOperation`,
 `PartitionBootstrapOperation`, `PartitionJoinOperation`, `PartitionLeaveOperation`,
@@ -68,6 +69,11 @@ no partition assignments.
 - Present only during cluster-spanning operations (those requiring member join/leave).
 - Absent for single-group operations (exporter changes, per-group routing updates, etc.).
 
+**`partitionDistributorConfig`** — `Optional<PartitionDistributorConfig>`
+- Cluster-level partition distribution configuration (zone layout, distribution mode).
+- Absent until explicitly configured; applies across all partition groups.
+- Target for: `UpdatePartitionDistributorConfigOperation`.
+
 ### `ClusterMembership` fields
 
 ```java
@@ -76,8 +82,7 @@ record ClusterMembership(
     SortedMap<MemberId, BrokerState> members,  // lifecycle state only, no partition assignments
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges,
-    Optional<String> clusterId,
-    boolean recovery
+    Optional<String> clusterId
 )
 
 record BrokerState(
@@ -96,7 +101,8 @@ record PartitionGroupConfiguration(
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges,
     Optional<RoutingState> routingState,
-    long incarnationNumber
+    long incarnationNumber,
+    boolean recovery
 )
 
 record MemberPartitionState(
@@ -247,8 +253,11 @@ PartitionGroupAwareClusterConfiguration merge(PartitionGroupAwareClusterConfigur
         mergedGroups.merge(groupId, config, PartitionGroupConfiguration::merge));
 
     final var mergedPlan = mergePlan(pendingPlan, other.pendingPlan);
+    // Non-empty wins; if both present, this wins (coordinator is the sole writer).
+    final var mergedDistributorConfig =
+        partitionDistributorConfig.or(() -> other.partitionDistributorConfig);
     return new PartitionGroupAwareClusterConfiguration(
-        mergedMembership, Map.copyOf(mergedGroups), mergedPlan);
+        mergedMembership, Map.copyOf(mergedGroups), mergedPlan, mergedDistributorConfig);
 }
 ```
 
@@ -263,7 +272,7 @@ never removed by a merge.** (Deletion of tenants must be handled in a later iter
 
 - If versions differ: higher version wins wholesale.
 - If equal: members merged element-wise by `BrokerState.version`; `ClusterChangePlan` by plan
-  version; `recovery` field: OR semantics (once set, stays set).
+  version.
 - `clusterId`: non-empty value wins over empty.
 - `lastChange` invariant: never write `lastChange` without bumping the membership version.
 
@@ -298,7 +307,8 @@ as `MemberState.version` in the existing code. Only the member itself ever write
 Each group's `PartitionGroupConfiguration` merges using version-based semantics:
 - If versions differ: higher version wins wholesale.
 - If equal: members merged element-wise by `MemberPartitionState.version`; `ClusterChangePlan` by
-plan version; `RoutingState` by routing version; `incarnationNumber` by `Math.max()`.
+plan version; `RoutingState` by routing version; `incarnationNumber` by `Math.max()`; `recovery`
+field: OR semantics (once set, stays set).
 - `lastChange` invariant: never write `lastChange` without bumping the config version.
 
 ### Phase activation idempotency
@@ -343,7 +353,6 @@ message ClusterMembership {
   CompletedChange lastChange = 3;
   ClusterChangePlan pendingChanges = 4;
   optional string clusterId = 5;
-  bool recovery = 6;
 }
 
 // Encodes PartitionGroupConfiguration: per-group partition assignment state.
@@ -354,12 +363,14 @@ message PartitionGroupConfiguration {
   ClusterChangePlan pendingChanges = 4;
   RoutingState routingState = 5;
   int64 incarnationNumber = 6;
+  bool recovery = 7;
 }
 
 message PartitionGroupAwareClusterConfiguration {
   ClusterMembership clusterMembership = 1;
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
+  PartitionDistributorConfig partitionDistributorConfig = 4;
 }
 
 message PhasedChangePlan {
@@ -391,7 +402,8 @@ message PartitionGroupOperationList {
 ```
 
 Existing messages used unchanged: `ClusterChangePlan`, `CompletedChange`, `RoutingState`,
-`PartitionState`, `TopologyChangeOperation` (and all operation sub-messages), `State` enum.
+`PartitionState`, `TopologyChangeOperation` (and all operation sub-messages), `State` enum,
+`PartitionDistributorConfig` (reused directly in `PartitionGroupAwareClusterConfiguration` field 4).
 `ClusterTopology` and `MemberState` are kept for the legacy `GossipState` field 1 migration path
 and must not be removed.
 
@@ -408,9 +420,12 @@ message GossipState {
 **Migration** — on decoding a `GossipState`, check field 2 first:
 - If `partitionGroupAwareClusterConfiguration` (field 2) is present → decode directly.
 - If absent (old broker or pre-upgrade snapshot) → read `clusterTopology` (field 1) and migrate:
-- `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped)
+- `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped);
+`clusterId` preserved; `recovery` absent (no `recovery` field in `ClusterTopology` proto)
 - `partitionGroups["default"]` = original members as `MemberPartitionState` (partitions
-extracted, state dropped); `routingState` and `incarnationNumber` preserved
+extracted, state dropped); `routingState` and `incarnationNumber` preserved; `recovery` defaults
+to `false`
+- `partitionDistributorConfig` = taken from `ClusterTopology.partitionDistributor` directly
 - `pendingPlan` = absent
 
 ---
