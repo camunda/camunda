@@ -67,6 +67,9 @@ final class PartitionBootstrapper {
   private MessagingService brokerMessagingService;
   private MemberId localMemberId;
   private TopicAssignmentGossip.Publisher topicAssignmentPublisher;
+  private java.util.concurrent.atomic.AtomicReference<
+          java.util.function.BiConsumer<String, java.util.List<Integer>>>
+      provisionedSinkRef;
 
   PartitionBootstrapper(
       final AtomixCluster cluster,
@@ -88,12 +91,16 @@ final class PartitionBootstrapper {
       final TopologyManagerImpl topologyManager,
       final TopologyManagerImpl coordinatorTopologyManager,
       final MessagingService brokerMessagingService,
-      final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
+      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
+      final java.util.concurrent.atomic.AtomicReference<
+              java.util.function.BiConsumer<String, java.util.List<Integer>>>
+          provisionedSinkRef) {
 
     final var membershipService = cluster.getMembershipService();
     localMemberId = membershipService.getLocalMember().id();
     this.brokerMessagingService = brokerMessagingService;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
+    this.provisionedSinkRef = provisionedSinkRef;
 
     // Start the partitions assigned to this node (members include the local member), exactly like
     // Zeebe's PartitionManagerImpl derives placement from the cluster configuration.
@@ -196,7 +203,8 @@ final class PartitionBootstrapper {
             runtimeDirectory,
             (ConstructableSnapshotStore) created.snapshotStore(),
             coordinatorTopologyManager,
-            topicAssignmentPublisher);
+            topicAssignmentPublisher,
+            provisionedSinkRef);
     coordinatorPartitions.add(coordinatorPartition);
     actorScheduler.submitActor(coordinatorPartition);
 

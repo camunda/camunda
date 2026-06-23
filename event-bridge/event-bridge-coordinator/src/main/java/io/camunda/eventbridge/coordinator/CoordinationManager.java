@@ -39,9 +39,15 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,19 +78,30 @@ public class CoordinationManager extends Actor {
   private static final Duration TOPIC_BROADCAST_INTERVAL = Duration.ofSeconds(2);
   private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
 
+  // Brokers report provisioned partitions here; the registry-shard leader registers itself as the
+  // sink so the broker-side subscription can deliver reports. Per-topic covered partition ids drive
+  // the CREATING -> ACTIVE transition. Both are leader-only / registry-shard-only state.
+  private final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef;
+  private final Map<String, Set<Integer>> provisionedPartitions = new HashMap<>();
+  // Topics already flipped to ACTIVE, to suppress duplicate stream writes while the first ACTIVE
+  // write is still in flight (the registry snapshot reads CREATING until it commits).
+  private final Set<String> activated = new HashSet<>();
+
   public CoordinationManager(
       final int partitionId,
       final int partitionCount,
       final int clusterSize,
       final InstantSource clock,
       final CoordinatorStream coordinatorStream,
-      final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
+      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
+      final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clusterSize = clusterSize;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
+    this.provisionedSinkRef = provisionedSinkRef;
     registry = new ConsumerGroupRegistry(new HashMap<>());
     validator = new CoordinationValidator(registry);
     idGenerator = new SnowflakeIdGenerator(1L);
@@ -443,6 +460,47 @@ public class CoordinationManager extends Actor {
     restoreGroups();
     scheduleConsumerEviction();
     scheduleTopicBroadcast();
+    if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD && provisionedSinkRef != null) {
+      // Become the registry's provisioning sink: broker reports are delivered here while this is
+      // the registry-shard leader. Hop onto the actor so accumulation/flip is single-threaded.
+      provisionedSinkRef.set(
+          (topic, partitions) -> actor.run(() -> onTopicProvisioned(topic, partitions)));
+    }
+  }
+
+  @Override
+  protected void onActorClosing() {
+    if (provisionedSinkRef != null) {
+      provisionedSinkRef.set(null);
+    }
+  }
+
+  /**
+   * Records partitions a broker reported as provisioned and advances the topic to {@code ACTIVE}
+   * once every partition is covered. Idempotent: replayed/duplicate reports only re-add ids, and
+   * the flip is skipped if the topic is not (still) {@code CREATING}.
+   */
+  private void onTopicProvisioned(final String topic, final List<Integer> partitions) {
+    final var meta = coordinatorStream.topicsSnapshot().get(topic);
+    if (meta == null || meta.status() != TopicMetadata.TopicStatus.CREATING) {
+      return;
+    }
+    final var covered = provisionedPartitions.computeIfAbsent(topic, t -> new HashSet<>());
+    covered.addAll(partitions);
+    final var allCovered =
+        IntStream.rangeClosed(1, meta.partitionCount()).allMatch(covered::contains);
+    if (allCovered && activated.add(topic)) {
+      LOG.info(
+          "Topic {} fully provisioned ({} partitions) — marking ACTIVE",
+          topic,
+          meta.partitionCount());
+      coordinatorStream.registerTopic(
+          topic,
+          meta.partitionCount(),
+          meta.replicationFactor(),
+          TopicMetadata.TopicStatus.ACTIVE,
+          meta.assignment());
+    }
   }
 
   /**

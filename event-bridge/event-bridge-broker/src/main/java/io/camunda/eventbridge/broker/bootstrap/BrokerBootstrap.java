@@ -12,6 +12,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
+import io.camunda.eventbridge.coordinator.stream.TopicProvisionedGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -21,6 +22,9 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -130,15 +134,47 @@ public final class BrokerBootstrap {
             idGenerator,
             executorService);
     final var localMemberId = cluster.getMembershipService().getLocalMember().id();
+    final var comm = cluster.getCommunicationService();
+
+    // Reverse channel: brokers report provisioned partitions; the registry-shard coordinator leader
+    // registers itself as the sink (via this ref) and advances the topic CREATING -> ACTIVE once
+    // all
+    // partitions are covered. Broadcast excludes the sender, so the publisher also self-delivers.
+    final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef =
+        new AtomicReference<>();
+    final TopicProvisionedGossip.Publisher provisionedPublisher =
+        (topic, partitions) -> {
+          comm.broadcast(
+              TopicProvisionedGossip.SUBJECT,
+              TopicProvisionedGossip.encode(topic, partitions),
+              Function.identity(),
+              true);
+          final var sink = provisionedSinkRef.get();
+          if (sink != null) {
+            sink.accept(topic, partitions);
+          }
+        };
+    comm.consume(
+        TopicProvisionedGossip.SUBJECT,
+        Function.identity(),
+        payload -> {
+          final var report = TopicProvisionedGossip.decode(payload);
+          final var sink = provisionedSinkRef.get();
+          if (sink != null) {
+            sink.accept(report.topic(), report.partitions());
+          }
+        },
+        executorService);
+
     final var topicReconciler =
-        new TopicReconciler(partitionBootstrapper, topologySetup, localMemberId);
+        new TopicReconciler(
+            partitionBootstrapper, topologySetup, localMemberId, provisionedPublisher);
 
     // 4b. Wire the topic-registry propagation channel (Option 1: the registry-shard coordinator
     // leader broadcasts the registry; every broker reconciles its local topic Raft groups from it).
     // The local node also needs the registry, but cluster broadcast excludes the sender, so the
     // publisher additionally delivers to the local sink. The subscriber receives broadcasts from
     // remote registry leaders.
-    final var comm = cluster.getCommunicationService();
     final Consumer<byte[]> registrySink =
         payload -> topicReconciler.reconcile(TopicAssignmentGossip.decode(payload));
     comm.consume(TopicAssignmentGossip.SUBJECT, Function.identity(), registrySink, executorService);
@@ -154,7 +190,8 @@ public final class BrokerBootstrap {
         topologyManager,
         topologySetup.getCoordinatorTopologyManager(),
         brokerMessagingService,
-        topicAssignmentPublisher);
+        topicAssignmentPublisher,
+        provisionedSinkRef);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
   }

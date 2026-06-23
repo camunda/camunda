@@ -76,6 +76,9 @@ public final class CoordinatorPartition extends Actor {
   private final RequestHandlerRegistry requestHandlerRegistry;
   private final TopologyManagerImpl coordinatorTopologyManager;
   private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
+  private final java.util.concurrent.atomic.AtomicReference<
+          java.util.function.BiConsumer<String, java.util.List<Integer>>>
+      provisionedSinkRef;
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Role currentRole;
@@ -102,7 +105,10 @@ public final class CoordinatorPartition extends Actor {
       final Path runtimeDirectory,
       final ConstructableSnapshotStore snapshotStore,
       final TopologyManagerImpl coordinatorTopologyManager,
-      final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
+      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
+      final java.util.concurrent.atomic.AtomicReference<
+              java.util.function.BiConsumer<String, java.util.List<Integer>>>
+          provisionedSinkRef) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clusterSize = clusterSize;
@@ -113,6 +119,7 @@ public final class CoordinatorPartition extends Actor {
     this.snapshotStore = snapshotStore;
     this.coordinatorTopologyManager = coordinatorTopologyManager;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
+    this.provisionedSinkRef = provisionedSinkRef;
     requestHandlerRegistry = new RequestHandlerRegistry(partitionId, messagingService);
     dbFactory =
         new ZeebeRocksDbFactory<>(
@@ -251,7 +258,8 @@ public final class CoordinatorPartition extends Actor {
             clusterSize,
             clock,
             coordinatorStream,
-            topicAssignmentPublisher);
+            topicAssignmentPublisher,
+            provisionedSinkRef);
     actorScheduler.submitActor(coordinationManager);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),

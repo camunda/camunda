@@ -10,7 +10,8 @@ package io.camunda.eventbridge.broker.bootstrap;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
-import java.util.HashSet;
+import io.camunda.eventbridge.coordinator.stream.TopicProvisionedGossip;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +39,7 @@ final class TopicReconciler {
   private final TopologySetup topologySetup;
   private final MemberId localMemberId;
   private final int localNodeId;
+  private final TopicProvisionedGossip.Publisher provisionedPublisher;
 
   // Topics whose local partitions have already been provisioned (idempotency guard).
   private final Set<String> provisioned = ConcurrentHashMap.newKeySet();
@@ -45,10 +47,12 @@ final class TopicReconciler {
   TopicReconciler(
       final PartitionBootstrapper partitionBootstrapper,
       final TopologySetup topologySetup,
-      final MemberId localMemberId) {
+      final MemberId localMemberId,
+      final TopicProvisionedGossip.Publisher provisionedPublisher) {
     this.partitionBootstrapper = partitionBootstrapper;
     this.topologySetup = topologySetup;
     this.localMemberId = localMemberId;
+    this.provisionedPublisher = provisionedPublisher;
     localNodeId = parseNodeId(localMemberId.id());
   }
 
@@ -86,7 +90,7 @@ final class TopicReconciler {
 
     final var topologyManager =
         topologySetup.createTopicTopologyManager(groupName, meta.partitionCount());
-    final var startedIds = new HashSet<Integer>();
+    final var startedIds = new ArrayList<Integer>();
     for (final var partition : localPartitions) {
       final var members =
           partition.getValue().stream()
@@ -97,6 +101,12 @@ final class TopicReconciler {
       startedIds.add(partition.getKey());
     }
     LOG.info("Provisioned topic {} (group {}) local partitions {}", name, groupName, startedIds);
+
+    // Report back so the coordinator can advance the topic CREATING -> ACTIVE once all partitions
+    // are covered across the cluster.
+    if (provisionedPublisher != null) {
+      provisionedPublisher.publish(name, startedIds);
+    }
   }
 
   private static int parseNodeId(final String memberId) {
