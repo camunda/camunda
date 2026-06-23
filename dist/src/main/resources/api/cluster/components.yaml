@@ -401,10 +401,6 @@ schemas:
         $ref: "components.yaml#/schemas/ExporterId"
       partitionDistributionConfig:
         $ref: "components.yaml#/schemas/PartitionDistributionConfig"
-      physicalTenantId:
-        type: string
-        description: Physical tenant id subject to the operation
-
 
   BrokerState:
     title: BrokerState

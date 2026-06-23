@@ -124,8 +124,7 @@ enum Mode {
 }
 
 message ModeChangeOperation {
-  string physicalTenantId = 1;
-  Mode mode = 2;
+  Mode mode = 1;
 }
 
 message CompletedTopologyChangeOperation {

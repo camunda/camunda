@@ -479,8 +479,8 @@ final class ClusterApiUtilsTest {
         new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
 
         // Mode change operations
-        new ModeChangeOperation(memberId1, "default", Mode.RECOVERING),
-        new ModeChangeOperation(memberId1, "default", Mode.PROCESSING));
+        new ModeChangeOperation(memberId1, Mode.RECOVERING),
+        new ModeChangeOperation(memberId1, Mode.PROCESSING));
   }
 
   /** Provides all ClusterConfigurationChangeOperation implementations as test arguments. */

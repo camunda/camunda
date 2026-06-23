@@ -121,17 +121,15 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
-  record ModeChangeRequest(String physicalTenantId, Mode mode, boolean dryRun)
+  record ModeChangeRequest(Mode mode, boolean dryRun)
       implements ClusterConfigurationManagementRequest {
 
-    public static ModeChangeRequest recovering(
-        final String physicalTenantId, final boolean dryRun) {
-      return new ModeChangeRequest(physicalTenantId, Mode.RECOVERING, dryRun);
+    public static ModeChangeRequest recovering(final boolean dryRun) {
+      return new ModeChangeRequest(Mode.RECOVERING, dryRun);
     }
 
-    public static ModeChangeRequest processing(
-        final String physicalTenantId, final boolean dryRun) {
-      return new ModeChangeRequest(physicalTenantId, Mode.PROCESSING, dryRun);
+    public static ModeChangeRequest processing(final boolean dryRun) {
+      return new ModeChangeRequest(Mode.PROCESSING, dryRun);
     }
   }
 }

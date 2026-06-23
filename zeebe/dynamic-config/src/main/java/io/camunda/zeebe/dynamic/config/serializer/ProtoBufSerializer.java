@@ -548,7 +548,6 @@ public class ProtoBufSerializer
       case final ModeChangeOperation modeChangeOperation ->
           builder.setModeChange(
               Topology.ModeChangeOperation.newBuilder()
-                  .setPhysicalTenantId(modeChangeOperation.physicalTenantId())
                   .setMode(toProtoTopologyMode(modeChangeOperation.mode()))
                   .build());
     }
@@ -875,10 +874,7 @@ public class ProtoBufSerializer
                       "UpdatePartitionDistributorConfig operation has empty config"));
     } else if (topologyChangeOperation.hasModeChange()) {
       final var modeChangeProto = topologyChangeOperation.getModeChange();
-      return new ModeChangeOperation(
-          memberId,
-          modeChangeProto.getPhysicalTenantId(),
-          fromProtoTopologyMode(modeChangeProto.getMode()));
+      return new ModeChangeOperation(memberId, fromProtoTopologyMode(modeChangeProto.getMode()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -1385,7 +1381,6 @@ public class ProtoBufSerializer
   @Override
   public byte[] encodeModeChangeRequest(final ModeChangeRequest recoveryModeRequest) {
     return Requests.ModeChangeRequest.newBuilder()
-        .setPhysicalTenantId(recoveryModeRequest.physicalTenantId())
         .setMode(toProtoRequestMode(recoveryModeRequest.mode()))
         .setDryRun(recoveryModeRequest.dryRun())
         .build()
@@ -1396,8 +1391,7 @@ public class ProtoBufSerializer
   public ModeChangeRequest decodeModeChangeRequest(final byte[] encodedRequest) {
     try {
       final var request = Requests.ModeChangeRequest.parseFrom(encodedRequest);
-      return new ModeChangeRequest(
-          request.getPhysicalTenantId(), toMode(request.getMode()), request.getDryRun());
+      return new ModeChangeRequest(toMode(request.getMode()), request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

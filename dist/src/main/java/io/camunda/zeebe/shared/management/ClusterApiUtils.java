@@ -289,13 +289,11 @@ final class ClusterApiUtils {
             case RECOVERING ->
                 new Operation()
                     .operation(OperationEnum.ENTER_RECOVERY)
-                    .brokerId(brokerIdValue(modeChange.memberId()))
-                    .physicalTenantId(modeChange.physicalTenantId());
+                    .brokerId(brokerIdValue(modeChange.memberId()));
             case PROCESSING ->
                 new Operation()
                     .operation(OperationEnum.EXIT_RECOVERY)
-                    .brokerId(brokerIdValue(modeChange.memberId()))
-                    .physicalTenantId(modeChange.physicalTenantId());
+                    .brokerId(brokerIdValue(modeChange.memberId()));
           };
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
@@ -632,13 +630,11 @@ final class ClusterApiUtils {
                 case RECOVERING ->
                     new TopologyChangeCompletedInner()
                         .operation(TopologyChangeCompletedInner.OperationEnum.ENTER_RECOVERY)
-                        .brokerId(brokerIdValue(modeChange.memberId()))
-                        .physicalTenantId(modeChange.physicalTenantId());
+                        .brokerId(brokerIdValue(modeChange.memberId()));
                 case PROCESSING ->
                     new TopologyChangeCompletedInner()
                         .operation(TopologyChangeCompletedInner.OperationEnum.EXIT_RECOVERY)
-                        .brokerId(brokerIdValue(modeChange.memberId()))
-                        .physicalTenantId(modeChange.physicalTenantId());
+                        .brokerId(brokerIdValue(modeChange.memberId()));
               };
           default ->
               new TopologyChangeCompletedInner()

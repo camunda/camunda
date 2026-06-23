@@ -98,9 +98,8 @@ enum Mode {
 }
 
 message ModeChangeRequest {
-  string physicalTenantId = 1;
-  Mode mode = 2;
-  bool dryRun = 3;
+  Mode mode = 1;
+  bool dryRun = 2;
 }
 
 message CancelTopologyChangeRequest {

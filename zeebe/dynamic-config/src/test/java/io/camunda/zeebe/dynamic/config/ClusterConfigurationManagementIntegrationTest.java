@@ -18,6 +18,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
+import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
@@ -232,9 +233,9 @@ class ClusterConfigurationManagementIntegrationTest {
             ignore ->
                 Either.right(
                     List.of(
-                        new ModeChangeOperation(MemberId.from("0"), "default", Mode.RECOVERING),
-                        new ModeChangeOperation(MemberId.from("1"), "default", Mode.RECOVERING),
-                        new ModeChangeOperation(MemberId.from("2"), "default", Mode.RECOVERING))))
+                        new ModeChangeOperation(MemberId.from("0"), Mode.RECOVERING),
+                        new ModeChangeOperation(MemberId.from("1"), Mode.RECOVERING),
+                        new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING))))
         .join();
 
     // then
@@ -379,8 +380,8 @@ class ClusterConfigurationManagementIntegrationTest {
           (ignore, error) -> {
             if (error == null) {
               service.registerPartitionChangeExecutors(
-                  new NoopPartitionChangeExecutor(),
-                  new NoopPartitionScalingChangeExecutor());
+                  new NoopPartitionChangeExecutor(), new NoopPartitionScalingChangeExecutor());
+              service.registerModeChangeExecutor(new NoopModeChangeExecutor());
             }
           },
           Runnable::run);
