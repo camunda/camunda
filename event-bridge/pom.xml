@@ -24,6 +24,7 @@
     <module>event-bridge-core</module>
     <module>event-bridge-protocol</module>
     <module>event-bridge-transport</module>
+    <module>event-bridge-pubsub</module>
     <module>event-bridge-coordinator</module>
     <module>event-bridge-broker</module>
     <module>event-bridge-gateway</module>

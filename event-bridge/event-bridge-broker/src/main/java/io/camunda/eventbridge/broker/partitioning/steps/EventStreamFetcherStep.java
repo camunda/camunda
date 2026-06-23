@@ -7,14 +7,14 @@
  */
 package io.camunda.eventbridge.broker.partitioning.steps;
 
-import static io.camunda.eventbridge.broker.transport.fetch.FetchRequestHandler.topicName;
+import static io.camunda.eventbridge.pubsub.transport.fetch.FetchRequestHandler.topicName;
 
-import io.camunda.eventbridge.broker.fetch.EventStreamFetcher;
-import io.camunda.eventbridge.broker.flowcontrol.SemaphoreFlowControl;
-import io.camunda.eventbridge.broker.logstreams.EventStreamReader;
 import io.camunda.eventbridge.broker.partitioning.PartitionContext;
 import io.camunda.eventbridge.broker.partitioning.PartitionStartupStep;
-import io.camunda.eventbridge.broker.transport.fetch.FetchRequestHandler;
+import io.camunda.eventbridge.pubsub.fetch.EventStreamFetcher;
+import io.camunda.eventbridge.pubsub.flowcontrol.SemaphoreFlowControl;
+import io.camunda.eventbridge.pubsub.stream.EventStreamReader;
+import io.camunda.eventbridge.pubsub.transport.fetch.FetchRequestHandler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.InstantSource;

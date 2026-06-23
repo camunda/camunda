@@ -9,7 +9,7 @@ package io.camunda.eventbridge.broker.partitioning.steps;
 
 import io.camunda.eventbridge.broker.partitioning.PartitionContext;
 import io.camunda.eventbridge.broker.partitioning.PartitionStartupStep;
-import io.camunda.eventbridge.broker.watermark.CommittedByteWatermark;
+import io.camunda.eventbridge.pubsub.watermark.CommittedByteWatermark;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
