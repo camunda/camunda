@@ -269,6 +269,8 @@ paths:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1error'
   /jobs/{jobKey}/failure:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1failure'
+  /jobs/batch-update:
+    $ref: 'jobs.yaml#/paths/~1jobs~1batch-update'
 
   # Job metrics endpoints
   /jobs/statistics/global:

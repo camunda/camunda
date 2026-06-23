@@ -14,12 +14,14 @@ import io.camunda.gateway.mapping.http.RequestMapper.CompleteJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.ErrorJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.FailJobRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateJobRequest;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.protocol.model.JobBatchUpdateRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQuery;
@@ -39,6 +41,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.JobServices.BatchUpdateJobRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
@@ -127,6 +130,17 @@ public class JobController {
       @RequestBody final JobUpdateRequest jobUpdateRequest) {
     return RequestMapper.toJobUpdateRequest(jobUpdateRequest, jobKey)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, r -> updateJob(physicalTenantId, r));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/batch-update")
+  public CompletableFuture<ResponseEntity<Object>> updateJobsBatchOperation(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final JobBatchUpdateRequest request) {
+    return RequestMapper.toJobBatchUpdateRequest(request)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped -> updateJobsBatchOperation(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -262,6 +276,17 @@ public class JobController {
                 updateJobRequest.operationReference(),
                 updateJobRequest.changeset(),
                 authenticationProvider.getCamundaAuthentication()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> updateJobsBatchOperation(
+      final String physicalTenantId, final BatchUpdateJobRequest request) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            jobServices.updateJobsBatchOperation(
+                request, authenticationProvider.getCamundaAuthentication()),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   private ResponseEntity<JobSearchQueryResult> search(

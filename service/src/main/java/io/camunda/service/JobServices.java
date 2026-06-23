@@ -16,6 +16,7 @@ import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobQuery;
@@ -31,14 +32,18 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
 import java.util.Map;
@@ -230,6 +235,29 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
                 .getJobErrorStatistics(query));
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> updateJobsBatchOperation(
+      final BatchUpdateJobRequest request, final CamundaAuthentication authentication) {
+    final var plan = new BatchOperationJobUpdatePlan();
+    if (request.changeset().retries() != null) {
+      plan.setRetries(request.changeset().retries());
+    }
+    if (request.changeset().timeout() != null) {
+      plan.setTimeout(request.changeset().timeout());
+    }
+    if (request.changeset().priority() != null) {
+      plan.setPriority(request.changeset().priority());
+    }
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(request.filter())
+            .setJobUpdatePlan(plan)
+            .setBatchOperationType(BatchOperationType.UPDATE_JOB)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
   public record ActivateJobsRequest(
       String type,
       int maxJobsToActivate,
@@ -241,4 +269,6 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       long requestTimeout) {}
 
   public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}
+
+  public record BatchUpdateJobRequest(JobFilter filter, UpdateJobChangeset changeset) {}
 }
