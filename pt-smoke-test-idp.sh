@@ -2,19 +2,16 @@
 #
 # INTERIM — drop before review. Part of the local PT API smoke harness.
 #
-# Boots two Keycloak realms and one Elasticsearch node for the physical-tenant API smoke
-# harness:
+# Boots three Keycloak realms for the physical-tenant API smoke harness:
 #   - "default" realm on :8081  (issuer: http://localhost:8081/realms/default)
 #   - "tenanta" realm on :8082  (issuer: http://localhost:8082/realms/tenanta)
-#   - Elasticsearch on :9200    (single-node, no auth, no TLS)
+#   - "tenantb" realm on :8083  (issuer: http://localhost:8083/realms/tenantb)
 #
-# Elasticsearch is required because PhysicalTenantSearchClientReadersConfiguration is
-# @ConditionalOnSecondaryStorageType(elasticsearch, opensearch) — with rdbms as secondary
-# storage the multi-PT search readers do not activate and OC fails to start with more than
-# one physical tenant ("Unknown physical tenant: 'tenanta'. Known tenants: [default]").
+# Secondary storage is in-memory H2 (RDBMS), configured per physical tenant in the
+# application-pt-smoke-test*.yaml profiles — no external datastore is needed, so this
+# harness only provides the IdPs.
 #
-# Requires Docker (with enough memory for ES — at least 4 GB recommended).
-# First invocation pulls the Keycloak and ES images; subsequent runs start in ~20s.
+# Requires Docker. First invocation pulls the Keycloak image; subsequent runs start in ~20s.
 # Leave this running while ./pt-smoke-test-oc.sh and ./pt-smoke-test-api.sh are active.
 # Press Ctrl-C to stop all containers.
 #
@@ -28,31 +25,16 @@ REALM_DIR="$SCRIPT_DIR/dist/src/test/resources/pt-smoke-test"
 
 KC_IMAGE="quay.io/keycloak/keycloak:26.2"
 KC_OPTS="start-dev --health-enabled=true"
-ES_IMAGE="docker.elastic.co/elasticsearch/elasticsearch:8.19.13"
 
 cleanup() {
   echo
   echo "Stopping containers..."
-  docker rm -f pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-kc-tenantb pt-smoke-test-es 2>/dev/null || true
+  docker rm -f pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-kc-tenantb 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
 # Remove any leftover containers from a previous run
-docker rm -f pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-kc-tenantb pt-smoke-test-es 2>/dev/null || true
-
-echo "Starting Elasticsearch (port 9200)..."
-# Disable the disk-based shard allocation decider. On Colima/Docker-Desktop the ES container
-# sees the (small, often nearly-full) VM disk, so the flood-stage watermark trips and ES marks
-# all indices read-only — a false positive for this local smoke harness. Disabling the decider
-# avoids the spurious read-only block; this is a throwaway single-node dev node, never production.
-docker run -d \
-  --name pt-smoke-test-es \
-  -p 9200:9200 \
-  -e discovery.type=single-node \
-  -e xpack.security.enabled=false \
-  -e "cluster.routing.allocation.disk.threshold_enabled=false" \
-  -e "ES_JAVA_OPTS=-Xms1g -Xmx1g" \
-  "$ES_IMAGE"
+docker rm -f pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-kc-tenantb 2>/dev/null || true
 
 echo "Starting default realm (port 8081)..."
 docker run -d \
@@ -84,31 +66,6 @@ docker run -d \
   "$KC_IMAGE" \
   start-dev --import-realm --health-enabled=true
 
-echo "Waiting for Elasticsearch to become ready..."
-for i in $(seq 1 60); do
-  STATUS=$(curl -fsS "http://localhost:9200/_cluster/health" 2>/dev/null \
-    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || true)
-  if [ "$STATUS" = "green" ] || [ "$STATUS" = "yellow" ]; then
-    echo "  pt-smoke-test-es ready (cluster status: $STATUS)"
-    # Safety net (in addition to the disk.threshold_enabled=false start-up setting): disable the
-    # disk decider via the cluster settings API and clear any flood-stage read-only block, in case
-    # the Colima/Docker VM disk already tripped the watermark on a reused volume. Idempotent.
-    curl -fsS -X PUT "http://localhost:9200/_cluster/settings" \
-      -H 'Content-Type: application/json' \
-      -d '{"persistent":{"cluster.routing.allocation.disk.threshold_enabled":false}}' \
-      >/dev/null 2>&1 || true
-    curl -fsS -X PUT "http://localhost:9200/_all/_settings" \
-      -H 'Content-Type: application/json' \
-      -d '{"index.blocks.read_only_allow_delete":null}' >/dev/null 2>&1 || true
-    break
-  fi
-  if [ "$i" -eq 60 ]; then
-    echo "  ERROR: pt-smoke-test-es did not become ready within 120s" >&2
-    exit 1
-  fi
-  sleep 2
-done
-
 echo "Waiting for Keycloak realms to become ready..."
 # Keycloak 26 serves /health on the management port (9000), not the app port, so we
 # probe the realm's OIDC discovery document on the app port instead — this confirms both
@@ -129,8 +86,7 @@ for entry in "pt-smoke-test-kc-default:8081:default" "pt-smoke-test-kc-tenanta:8
 done
 
 echo
-echo "=== PT smoke-test local IdPs + ES ready ==="
-echo "Elasticsearch:    http://localhost:9200"
+echo "=== PT smoke-test local IdPs ready ==="
 echo "default issuer:   http://localhost:8081/realms/default"
 echo "tenanta issuer:   http://localhost:8082/realms/tenanta"
 echo "tenantb issuer:   http://localhost:8083/realms/tenantb   (Scenario D — two non-default tenants)"
@@ -153,5 +109,5 @@ echo "Press Ctrl-C to stop."
 #    command returns, so Ctrl-C wouldn't clean up promptly.
 # Running `docker wait` in the background and blocking on the `wait` BUILTIN fixes both:
 # the builtin is interruptible by the trap, so Ctrl-C tears the containers down at once.
-docker wait pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-es >/dev/null 2>&1 &
+docker wait pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-kc-tenantb >/dev/null 2>&1 &
 wait $! || true

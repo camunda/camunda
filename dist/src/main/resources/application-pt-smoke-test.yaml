@@ -1,22 +1,20 @@
 camunda:
   data:
     secondary-storage:
-      # type defaults to elasticsearch in code; declared explicitly for clarity.
-      type: elasticsearch
-      elasticsearch:
-        # Local single-node dev ES — no auth, no TLS.
-        url: http://localhost:9200
-        # Single-node cluster: replicas must be 0 or indices go yellow/unassigned.
-        number-of-replicas: 0
-        create-schema: true
-        # Give the root/default tenant its own index prefix so its indices don't
-        # collide with tenanta's when the exporter writes to the same ES node.
-        index-prefix: ptdefault
+      # RDBMS secondary storage: the per-PT RDBMS path (#52027) auto-creates each tenant's schema
+      # via per-tenant Liquibase migration on startup, so each PT is isolated and provisioned without
+      # the ES schema-init gap (#51996). Default/root tenant gets its own in-memory H2 database.
+      type: rdbms
+      rdbms:
+        # DB_CLOSE_DELAY=-1 keeps the in-memory DB alive for the JVM lifetime.
+        url: jdbc:h2:mem:ptdefault;DB_CLOSE_DELAY=-1
+        username: sa
+        password:
   security:
     # Authorizations enabled, with alice and bob granted the admin role via the initialization
     # block below. Their usernames resolve from the OIDC `preferred_username` claim (see
     # `username-claim` on the providers) — the default `sub` claim would be the Keycloak UUID.
-    # NOTE: authorization grants are read from secondary storage (ES); they only take effect once
+    # NOTE: authorization grants are read from secondary storage (RDBMS); they only take effect once
     # the broker exporter is healthy and the initialization data has been exported.
     authorizations:
       enabled: true
@@ -77,9 +75,11 @@ camunda:
     tenanta:
       data:
         secondary-storage:
-          elasticsearch:
-            # tenanta uses a distinct prefix to isolate its indices from default's.
-            index-prefix: pttenanta
+          rdbms:
+            # tenanta gets its own in-memory H2 database, isolated from default's.
+            url: jdbc:h2:mem:pttenanta;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
       security:
         # Required: every non-default PT must declare its own initialization block so that
         # the PhysicalTenantRequiredOverrideValidation passes. bob is the tenanta realm user.
