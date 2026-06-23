@@ -19,8 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -179,5 +181,81 @@ final class MemberIdTest {
   private void assertEncodeDecode(final MemberId memberId) {
     final var decoded = MemberId.from(memberId.id());
     assertThat(decoded).isEqualTo(memberId).returns(memberId.hashCode(), MemberId::hashCode);
+  }
+
+  @Nested
+  class IdComparatorTest {
+
+    @Test
+    void shouldOrderNumericallyNotLexicographically() {
+      // given — lexicographic order would give "10" < "2", but numerical gives "2" < "10"
+      final var member2 = MemberId.from("2");
+      final var member10 = MemberId.from("10");
+
+      // when / then
+      assertThat(MemberId.ID_COMPARATOR.compare(member2, member10)).isNegative();
+      assertThat(MemberId.ID_COMPARATOR.compare(member10, member2)).isPositive();
+    }
+
+    @Test
+    void shouldOrderZoneAwareMembersByNodeIdxFirst() {
+      // given — us_0 has nodeIdx=0, eu_1 has nodeIdx=1; nodeIdx wins regardless of zone
+      final var usZone0 = MemberId.from("us", 0);
+      final var euZone1 = MemberId.from("eu", 1);
+
+      // when / then
+      assertThat(MemberId.ID_COMPARATOR.compare(usZone0, euZone1)).isNegative();
+    }
+
+    @Test
+    void shouldUseZoneAsSecondaryKeyWhenNodeIdxTies() {
+      // given — eu_0 and us_0 both have nodeIdx=0; zone breaks the tie alphabetically
+      final var euZone0 = MemberId.from("eu", 0);
+      final var usZone0 = MemberId.from("us", 0);
+
+      // when / then — "eu" < "us"
+      assertThat(MemberId.ID_COMPARATOR.compare(euZone0, usZone0)).isNegative();
+      assertThat(MemberId.ID_COMPARATOR.compare(usZone0, euZone0)).isPositive();
+    }
+
+    @Test
+    void shouldOrderNonZonedBeforeZonedWhenNodeIdxTies() {
+      // given — null zone (non-zoned) sorts before any named zone (nullsFirst)
+      final var bare = MemberId.from("0");
+      final var zoned = MemberId.from("eu", 0);
+
+      // when / then
+      assertThat(MemberId.ID_COMPARATOR.compare(bare, zoned)).isNegative();
+    }
+
+    @Test
+    void shouldOrderAnonymousMembersAfterIndexedMembers() {
+      // given — anonymous members have no nodeIdx and sort last (nullsLast)
+      final var indexed = MemberId.from("0");
+      final var anonymous = MemberId.anonymous();
+
+      // when / then
+      assertThat(MemberId.ID_COMPARATOR.compare(indexed, anonymous)).isNegative();
+    }
+
+    @Test
+    void shouldProduceStableTotalOrderForMixedCluster() {
+      // given — a mix of zoned and non-zoned members with various nodeIdx values
+      final var bare0 = MemberId.from("0");
+      final var bare2 = MemberId.from("2");
+      final var bare10 = MemberId.from("10");
+      final var eu0 = MemberId.from("eu", 0);
+      final var us0 = MemberId.from("us", 0);
+      final var eu1 = MemberId.from("eu", 1);
+
+      final var members = List.of(bare10, us0, eu1, bare2, eu0, bare0);
+
+      // when
+      final var sorted = members.stream().sorted(MemberId.ID_COMPARATOR).toList();
+
+      // then — bare0 first (nodeIdx=0, no zone), then eu0 (nodeIdx=0, "eu"), then us0 (nodeIdx=0,
+      // "us"), then eu1, bare2, bare10
+      assertThat(sorted).containsExactly(bare0, eu0, us0, eu1, bare2, bare10);
+    }
   }
 }
