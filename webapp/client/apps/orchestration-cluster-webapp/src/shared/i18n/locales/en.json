@@ -445,6 +445,17 @@
 			},
 			"batchOperations": {
 				"title": "Batch Operations"
+			},
+			"shared": {
+				"errorMessage": {
+					"message": "Data could not be fetched",
+					"additionalInfo": "Refresh the page to try again"
+				},
+				"panelHeader": {
+					"resultCount_one": "{{count}} result",
+					"resultCount_other": "{{count}} results",
+					"resultCountMore": "{{count}}+ results"
+				}
 			}
 		}
 	}

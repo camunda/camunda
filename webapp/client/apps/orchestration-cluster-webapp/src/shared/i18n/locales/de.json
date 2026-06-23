@@ -431,6 +431,17 @@
 			},
 			"batchOperations": {
 				"title": "Stapeloperationen"
+			},
+			"shared": {
+				"errorMessage": {
+					"message": "Daten konnten nicht abgerufen werden",
+					"additionalInfo": "Laden Sie die Seite neu, um es erneut zu versuchen"
+				},
+				"panelHeader": {
+					"resultCount_one": "{{count}} Ergebnis",
+					"resultCount_other": "{{count}} Ergebnisse",
+					"resultCountMore": "{{count}}+ Ergebnisse"
+				}
 			}
 		}
 	}

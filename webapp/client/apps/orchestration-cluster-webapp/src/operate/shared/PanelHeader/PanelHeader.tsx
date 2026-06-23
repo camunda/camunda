@@ -7,9 +7,9 @@
  */
 
 import React, {forwardRef} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Header} from './styled';
 import {PanelTitle} from '../PanelTitle';
-import {pluralSuffix} from '../utils/pluralSuffix';
 
 type Props = {
 	title?: string;
@@ -23,6 +23,7 @@ type Props = {
 
 const PanelHeader = forwardRef<HTMLElement, Props>(
 	({title, count = 0, hasMoreTotalItems = false, children, className, size = 'md'}, ref) => {
+		const {t} = useTranslation();
 		return (
 			<Header className={className} ref={ref} $size={size}>
 				<PanelTitle>
@@ -30,7 +31,9 @@ const PanelHeader = forwardRef<HTMLElement, Props>(
 					{count > 0 && (
 						<>
 							{title === undefined ? null : <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;</>}
-							{hasMoreTotalItems ? `${count}+ results` : pluralSuffix(count, 'result')}
+							{hasMoreTotalItems
+								? t('operate.shared.panelHeader.resultCountMore', {count})
+								: t('operate.shared.panelHeader.resultCount', {count})}
 						</>
 					)}
 				</PanelTitle>
