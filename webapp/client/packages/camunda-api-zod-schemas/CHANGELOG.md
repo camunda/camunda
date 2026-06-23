@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.75
+
+### 🚀 Enhancements
+
+- Align element instance wait state (inspection) schemas with the OpenAPI definition for 8.10 ([#55099](https://github.com/camunda/camunda/issues/55099))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.74
 
 ### 🚀 Enhancements
