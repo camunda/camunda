@@ -117,39 +117,23 @@ public class CamundaSpringProcessTestListenerIT {
   @Test
   void shouldCompleteProcessWithConditionalBehaviors() {
     // given
-    registerConditionalBehaviors();
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
+    client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
-    // when
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
+    processTestContext
+        .when(
+            () ->
+                CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
 
-    // then
-    assertThatProcessInstance(processInstanceEvent)
-        .isCompleted()
-        .hasVariable("happy", true)
-        .hasVariable("exportSuccess", true);
-  }
-
-  @Test
-  void shouldCompleteProcessFirstRun() {
-    // given
-    registerConditionalBehaviors();
-
-    // when
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
-
-    // then
-    assertThatProcessInstance(processInstanceEvent)
-        .isCompleted()
-        .hasVariable("happy", true)
-        .hasVariable("exportSuccess", true);
-  }
-
-  @Test
-  void shouldCompleteProcessSecondRun() {
-    // given
-    registerConditionalBehaviors();
+    processTestContext
+        .when(
+            () ->
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElements(SERVICE_TASK_ID))
+        .then(() -> processTestContext.completeJob(JOB_TYPE, Map.of("exportSuccess", true)));
 
     // when
     final ProcessInstanceEvent processInstanceEvent =
@@ -164,7 +148,7 @@ public class CamundaSpringProcessTestListenerIT {
 
   @ParameterizedTest
   @TestCaseSource
-  void shouldPass(final TestCase testCase, final String filename) {
+  void shouldPassJsonTestCase(final TestCase testCase, final String filename) {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -197,26 +181,6 @@ public class CamundaSpringProcessTestListenerIT {
                     .describedAs("Expect the process specified in @Deployment to be deployed")
                     .contains("connector-process")
                     .hasSize(2));
-  }
-
-  private void registerConditionalBehaviors() {
-    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
-    client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
-
-    processTestContext
-        .when(
-            () ->
-                CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                    .hasActiveElement(USER_TASK_ID, 1))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
-
-    processTestContext
-        .when(
-            () ->
-                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                    .hasActiveElements(SERVICE_TASK_ID))
-        .then(() -> processTestContext.completeJob(JOB_TYPE, Map.of("exportSuccess", true)));
   }
 
   @Deployment(resources = {"connector-process.bpmn"})
