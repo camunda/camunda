@@ -11,6 +11,12 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,30 +28,38 @@ import org.slf4j.LoggerFactory;
  * consumer can never pin the log and exhaust disk; a consumer that falls behind the retained window
  * resumes via its {@code OffsetResetPolicy}.
  *
- * <p>This runs on <b>every</b> replica (leader and followers), not just the leader. Compaction is a
- * purely local operation that deletes an already-committed log prefix; since Raft guarantees the
- * committed prefix is identical on every replica, each node trimming its own prefix is safe and
- * never causes divergence — replicas may differ only in how far back they retain, never in the
- * content they share. Each node reads its own committed log tail to decide the bound, so followers
- * (which have no leader-side high-watermark) compact independently and reclaim disk without waiting
- * for promotion.
+ * <p>Rather than deleting segments directly, it takes an empty <b>marker snapshot</b> at the
+ * retention bound. A data partition is a pure event log with no state machine, so the snapshot
+ * carries no state — only its log index matters. Persisting it goes through Raft's normal snapshot
+ * machinery, which (a) compacts the log up to that index and (b) lets the leader catch up a replica
+ * that fell behind the retained window via {@code InstallSnapshot} instead of leaving it stuck with
+ * no recoverable history.
+ *
+ * <p>This runs on <b>every</b> replica (leader and followers): each reads its own committed log
+ * tail and snapshots/compacts independently. That is safe and cannot diverge — compaction only
+ * removes an already-committed prefix, which Raft guarantees is identical on every replica, so
+ * nodes differ only in how far back they retain, never in shared content.
  */
 public final class LogRetentionCompactor extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(LogRetentionCompactor.class);
+  private static final String MARKER_FILE = "retention";
 
   private final int partitionId;
   private final RaftPartition raftPartition;
+  private final ConstructableSnapshotStore snapshotStore;
   private final long maxRecords;
   private final Duration interval;
 
   public LogRetentionCompactor(
       final int partitionId,
       final RaftPartition raftPartition,
+      final ConstructableSnapshotStore snapshotStore,
       final long maxRecords,
       final Duration interval) {
     this.partitionId = partitionId;
     this.raftPartition = raftPartition;
+    this.snapshotStore = snapshotStore;
     this.maxRecords = maxRecords;
     this.interval = interval;
   }
@@ -82,26 +96,73 @@ public final class LogRetentionCompactor extends Actor {
       return; // position not yet indexed / already compacted away
     }
 
-    final long compactableIndex = entry.get().index();
-    server
-        .compactUpTo(compactableIndex)
-        .whenComplete(
-            (deleted, error) -> {
-              if (error != null) {
+    takeMarkerSnapshot(entry.get().index(), entry.get().term(), retainFromPosition, lastPosition);
+  }
+
+  /**
+   * Takes and persists an empty snapshot pinned to {@code index}. Raft's snapshot listener then
+   * compacts the log up to it (and exposes it for InstallSnapshot). A non-advancing bound is
+   * rejected by the store (a snapshot at this or a newer index already exists) and simply skipped.
+   */
+  private void takeMarkerSnapshot(
+      final long index, final long term, final long retainFromPosition, final long lastPosition) {
+    final var transientSnapshot =
+        snapshotStore.newTransientSnapshot(index, term, retainFromPosition, 0, false);
+    if (transientSnapshot.isLeft()) {
+      LOG.trace(
+          "Partition {} — no new retention snapshot at index {}: {}",
+          partitionId,
+          index,
+          transientSnapshot.getLeft().getMessage());
+      return;
+    }
+
+    final var snapshot = transientSnapshot.get();
+    snapshot
+        .take(this::writeMarker)
+        .onComplete(
+            (taken, takeError) -> {
+              if (takeError != null) {
                 LOG.warn(
-                    "Partition {} — retention compaction up to index {} failed",
-                    partitionId,
-                    compactableIndex,
-                    error);
-              } else if (Boolean.TRUE.equals(deleted)) {
-                LOG.debug(
-                    "Partition {} — compacted log up to index {} (retaining last {} records behind position {})",
-                    partitionId,
-                    compactableIndex,
-                    maxRecords,
-                    lastPosition);
+                    "Partition {} — failed to take retention snapshot", partitionId, takeError);
+                snapshot.abort();
+                return;
               }
-            });
+              snapshot
+                  .persist()
+                  .onComplete(
+                      (persisted, persistError) -> {
+                        if (persistError != null) {
+                          LOG.warn(
+                              "Partition {} — failed to persist retention snapshot",
+                              partitionId,
+                              persistError);
+                        } else {
+                          LOG.debug(
+                              "Partition {} — took retention snapshot at index {} (retaining last {} records behind position {})",
+                              partitionId,
+                              index,
+                              maxRecords,
+                              lastPosition);
+                        }
+                      },
+                      actor);
+            },
+            actor);
+  }
+
+  /**
+   * Writes the marker file into the snapshot directory. A snapshot with an empty directory is
+   * rejected as invalid, so the single marker is what makes the (state-less) snapshot well-formed.
+   */
+  private void writeMarker(final Path directory) {
+    try {
+      Files.createDirectories(directory);
+      Files.writeString(
+          directory.resolve(MARKER_FILE), "event-bridge-retention", StandardCharsets.UTF_8);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to write retention marker snapshot", e);
+    }
   }
 
   /**

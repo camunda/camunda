@@ -20,6 +20,7 @@ import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -71,12 +72,24 @@ public final class PartitionFactory {
             partitionDir,
             new ApplicationEntryCursorAdapter());
 
-    // Data partitions don't snapshot yet (consumers read the full log); compaction follows the
-    // coordinator's committed offsets in a later step.
-    final var snapshotStore = new NoopSnapshotStore(partitionId);
-    actorScheduler.submitActor(snapshotStore);
+    // Data partitions are pure event logs with no state machine, but they still use a real snapshot
+    // store: retention takes an empty marker snapshot at the compaction bound, which both drives
+    // log
+    // compaction and gives Raft an InstallSnapshot fallback to catch up a replica that fell behind
+    // the retained window. A no-op checksum provider is used since there is no RocksDB state to
+    // checksum (the store still CRCs the marker file itself).
+    final CRC32CChecksumProvider noStateChecksums = path -> Map.of();
+    final var snapshotStore =
+        new FileBasedSnapshotStore(
+            parseNodeId(localMemberId),
+            partitionId,
+            partitionDir,
+            noStateChecksums,
+            new SimpleMeterRegistry());
+    actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound());
 
-    LOG.info("Partition {}/{} — raft partition created", GROUP_NAME, partitionId);
+    LOG.info(
+        "Partition {}/{} — raft partition and snapshot store created", GROUP_NAME, partitionId);
     return new CreatedPartition(partitionId, raftPartition, snapshotStore);
   }
 

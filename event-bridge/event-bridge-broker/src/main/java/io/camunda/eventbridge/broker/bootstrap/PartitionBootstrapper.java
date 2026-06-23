@@ -244,7 +244,7 @@ final class PartitionBootstrapper {
       }
 
       try {
-        // Both NoopSnapshotStore and FileBasedSnapshotStore are actors.
+        // The FileBasedSnapshotStore is an actor.
         if (partition.snapshotStore() instanceof final Actor actor) {
           actor.closeAsync();
         }
@@ -287,14 +287,17 @@ final class PartitionBootstrapper {
     // each node trims its own committed log prefix independently. This is safe — Raft guarantees an
     // identical committed prefix everywhere, so replicas differ only in how far back they retain,
     // never in shared content — and it bounds disk on followers without waiting for promotion.
-    final var retentionCompactor =
-        new LogRetentionCompactor(
-            partitionId,
-            created.raftPartition(),
-            properties.retention().maxRecordsPerPartition(),
-            Duration.ofMillis(properties.retention().compactionIntervalMs()));
-    retentionCompactors.add(retentionCompactor);
-    actorScheduler.submitActor(retentionCompactor);
+    if (properties.retention().maxRecordsPerPartition() > 0) {
+      final var retentionCompactor =
+          new LogRetentionCompactor(
+              partitionId,
+              created.raftPartition(),
+              (ConstructableSnapshotStore) created.snapshotStore(),
+              properties.retention().maxRecordsPerPartition(),
+              Duration.ofMillis(properties.retention().compactionIntervalMs()));
+      retentionCompactors.add(retentionCompactor);
+      actorScheduler.submitActor(retentionCompactor);
+    }
 
     // 3. Wire raft role changes to lifecycle — before bootstrap so no events are lost
     created.raftPartition().addRoleChangeListener((role, term) -> lifecycle.onRoleChange(role));

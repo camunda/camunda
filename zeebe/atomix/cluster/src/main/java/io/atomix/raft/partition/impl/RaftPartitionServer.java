@@ -407,18 +407,6 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.getContext().getTailSegments(index);
   }
 
-  /**
-   * Compacts the log up to (but not including) the given index, deleting older segments. Used by
-   * the Event Bridge to enforce record-retention on data partitions, where the log itself is the
-   * data and compaction is driven by a retained-record bound rather than by snapshots.
-   *
-   * @param index the Raft log index up to which entries may be deleted
-   * @return a future completing with {@code true} if any log entries were deleted
-   */
-  public CompletableFuture<Boolean> compactUpTo(final long index) {
-    return server.getContext().compactUpTo(index);
-  }
-
   private String getPartitionNameWithTenantPrefix() {
     final var tenantName = config.getTenantName();
     final var partitionId = partition.id().id();
