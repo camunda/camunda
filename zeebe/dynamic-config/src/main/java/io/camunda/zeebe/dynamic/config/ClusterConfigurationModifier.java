@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * After the configuration is initialized, we can use a {@link ClusterConfigurationModifier} to
@@ -22,6 +26,10 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
  */
 public interface ClusterConfigurationModifier {
 
+  default ExecutionFilter filter() {
+    return new ExecutionFilter(false, null);
+  }
+
   /**
    * Modifies the given configuration and returns the modified configuration.
    *
@@ -29,4 +37,34 @@ public interface ClusterConfigurationModifier {
    * @return modified configuration
    */
   ActorFuture<ClusterConfiguration> modify(ClusterConfiguration configuration);
+
+  record ExecutionFilter(boolean coordinatorOnly, MemberId localMemberId) {
+    public boolean canRunInitializer(final Collection<MemberId> clusterMembers) {
+      if (!coordinatorOnly) {
+        return true;
+      }
+      final var coordinator =
+          ClusterConfigurationCoordinatorSupplier.ofMembers(Set.copyOf(clusterMembers))
+              .getDefaultCoordinator();
+      return coordinator.equals(localMemberId);
+    }
+
+    public boolean canRunInitializer(final ClusterConfiguration configuration) {
+      return canRunInitializer(configuration.members().keySet());
+    }
+  }
+
+  abstract class CoordinatorOnly implements ClusterConfigurationModifier {
+
+    private final ExecutionFilter filter;
+
+    CoordinatorOnly(final MemberId localMemberId) {
+      filter = new ExecutionFilter(true, localMemberId);
+    }
+
+    @Override
+    public ExecutionFilter filter() {
+      return filter;
+    }
+  }
 }

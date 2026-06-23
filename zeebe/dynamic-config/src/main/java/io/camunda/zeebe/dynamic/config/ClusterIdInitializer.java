@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -23,12 +24,13 @@ import org.slf4j.LoggerFactory;
  * configured partition counts match).
  */
 @NullMarked
-public class ClusterIdInitializer implements ClusterConfigurationModifier {
+public class ClusterIdInitializer extends ClusterConfigurationModifier.CoordinatorOnly {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterIdInitializer.class);
   private final String clusterId;
 
-  public ClusterIdInitializer(@Nullable final String clusterId) {
+  public ClusterIdInitializer(@Nullable final String clusterId, final MemberId memberId) {
+    super(memberId);
     // if not cluster id is configured a new one is generated.
     this.clusterId = Optional.ofNullable(clusterId).orElse(UUID.randomUUID().toString());
   }

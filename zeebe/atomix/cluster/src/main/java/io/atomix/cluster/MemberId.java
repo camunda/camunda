@@ -20,6 +20,7 @@ import static io.camunda.zeebe.util.MemberIdUtil.validateZone;
 
 import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
@@ -28,6 +29,21 @@ import org.jspecify.annotations.Nullable;
 /** Controller cluster identity. */
 @NullMarked
 public class MemberId extends NodeId {
+
+  /**
+   * Comparator that orders {@link MemberId} instances numerically by {@link #nodeIdx}, using {@link
+   * #zone} as a secondary key and the raw id string as a final stable tie-breaker. This avoids the
+   * lexicographic pitfalls of the inherited {@link NodeId#compareTo} (e.g. "10" < "2") and should
+   * be preferred wherever a deterministic ordering of members is required.
+   *
+   * <p>Members without a {@code nodeIdx} (e.g. anonymous members) sort after all indexed members.
+   * Members without a {@code zone} sort before zoned members that share the same {@code nodeIdx}.
+   */
+  public static final Comparator<MemberId> ID_COMPARATOR =
+      Comparator.<MemberId, Integer>comparing(
+              m -> m.nodeIdx, Comparator.nullsLast(Comparator.naturalOrder()))
+          .thenComparing(m -> m.zone, Comparator.nullsFirst(Comparator.naturalOrder()))
+          .thenComparing(MemberId::id);
 
   /**
    * Null when the member is anonymous When a zone is present, this is the node index in the local

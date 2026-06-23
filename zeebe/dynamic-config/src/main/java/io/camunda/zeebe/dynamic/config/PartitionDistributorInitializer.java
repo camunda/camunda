@@ -24,13 +24,14 @@ import org.slf4j.LoggerFactory;
  * to static configuration.
  */
 @NullMarked
-public class PartitionDistributorInitializer implements ClusterConfigurationModifier {
+public class PartitionDistributorInitializer extends ClusterConfigurationModifier.CoordinatorOnly {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionDistributorInitializer.class);
 
   private final StaticConfiguration staticConfiguration;
 
   public PartitionDistributorInitializer(final StaticConfiguration staticConfiguration) {
+    super(staticConfiguration.localMemberId());
     this.staticConfiguration = staticConfiguration;
   }
 
