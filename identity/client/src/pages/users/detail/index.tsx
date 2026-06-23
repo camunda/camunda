@@ -8,13 +8,13 @@
 
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api";
+import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-found";
 import { OverflowMenu, OverflowMenuItem, Section } from "@carbon/react";
 import { StackPage } from "src/components/layout/Page";
 import PageHeadline from "src/components/layout/PageHeadline";
-import { getUserDetails } from "src/utility/api/users";
 import UserDetails from "./UserDetailsTab";
 import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
@@ -27,18 +27,14 @@ const Details: FC = () => {
   const { t } = useTranslate("users");
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
-  const {
-    data: userSearchResults,
-    loading,
-    reload,
-  } = useApi(getUserDetails, {
-    username: id,
-  });
-  const [editUser, editUserModal] = useEntityModal(EditModal, reload);
+  const { data: userSearchResults, isLoading: loading } = useQuery(
+    userQueries.detail(id),
+  );
+  const [editUser, editUserModal] = useEntityModal(EditModal, () => {});
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
-  const user = userSearchResults !== null ? userSearchResults.items[0] : null;
+  const user = userSearchResults ? userSearchResults.items[0] : null;
   if (!loading && !user) return <NotFound />;
 
   return (

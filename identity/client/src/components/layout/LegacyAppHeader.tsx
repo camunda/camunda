@@ -9,9 +9,6 @@
 import { C3Navigation } from "@camunda/camunda-composite-components";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import { Link } from "react-router-dom";
-import { useApi } from "src/utility/api";
-import { checkLicense } from "src/utility/api/headers";
-import { getAuthentication } from "src/utility/api/authentication";
 import { ArrowRight } from "@carbon/react/icons";
 import { logout } from "src/utility/auth";
 import { useState } from "react";
@@ -21,14 +18,17 @@ import useTranslate from "src/utility/localization";
 import type { License } from "@camunda/camunda-api-zod-schemas/8.10";
 import { observer } from "mobx-react-lite";
 import { themeStore, isThemeOption } from "src/common/theme/theme";
+import { useQuery } from "@tanstack/react-query";
+import { authenticationQueries } from "src/utility/api/authentication/queries.ts";
+import { licenseQueries } from "src/utility/api/headers/queries.ts";
 
 const LOGOUT_DELAY = 1000;
 
 const LegacyAppHeader = observer(
   ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     const routes = useGlobalRoutes();
-    const { data: license } = useApi(checkLicense);
-    const { data: camundaUser } = useApi(getAuthentication);
+    const { data: license } = useQuery(licenseQueries.current());
+    const { data: camundaUser } = useQuery(authenticationQueries.me());
     const [isAppBarOpen, setIsAppBarOpen] = useState(false);
     const { enqueueNotification } = useNotifications();
     const { t } = useTranslate("authentication");
@@ -134,8 +134,8 @@ const LegacyAppHeader = observer(
   },
 );
 
-function getLicenseTag(license: License | null) {
-  if (license === null) {
+function getLicenseTag(license: License | null | undefined) {
+  if (!license) {
     return {
       show: true,
       isProductionLicense: false,

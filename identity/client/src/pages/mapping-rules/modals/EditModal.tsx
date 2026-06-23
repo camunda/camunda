@@ -10,10 +10,10 @@ import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Stack } from "@carbon/react";
 import TextField from "src/components/form/TextField";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { updateMappingRule } from "src/utility/api/mapping-rules";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import {
   CustomStack,
   EqualSignContainer,
@@ -30,12 +30,12 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
 }) => {
   const { t } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const [callUpdateMappingRule, { loading, error }] = useApiCall(
-    updateMappingRule,
-    {
-      suppressErrorNotification: true,
-    },
-  );
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(mappingRuleMutations.update(qc));
   type FormData = Pick<
     MappingRule,
     "mappingRuleId" | "name" | "claimName" | "claimValue"
@@ -50,23 +50,25 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
     mode: "all",
   });
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await callUpdateMappingRule({
-      mappingRuleId: data.mappingRuleId,
-      name: data.name,
-      claimName: data.claimName,
-      claimValue: data.claimValue,
-    });
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("mappingRuleUpdated"),
-        subtitle: t("mappingRuleUpdatedSuccessfully", {
-          name: data.name,
-        }),
-      });
-      onSuccess();
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        mappingRuleId: data.mappingRuleId,
+        name: data.name,
+        claimName: data.claimName,
+        claimValue: data.claimValue,
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("mappingRuleUpdated"),
+            subtitle: t("mappingRuleUpdatedSuccessfully", { name: data.name }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

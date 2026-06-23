@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiPromise } from "src/utility/api/request";
 
 const POLL_INTERVAL_MS = 1000;
 const POLL_TIMEOUT_MS = 10_000;
@@ -21,8 +20,10 @@ type UsePollingReloadResult = {
   isPolling: boolean;
 };
 
+type RefetchResult<T> = { data?: T; isSuccess: boolean };
+
 const usePollingReload = <T>(
-  reload: () => ApiPromise<T>,
+  reload: () => Promise<RefetchResult<T>>,
   compare: (current: T) => boolean,
 ): UsePollingReloadResult => {
   const [pollingStatus, setPollingStatus] = useState<PollingStatus>("idle");
@@ -51,7 +52,7 @@ const usePollingReload = <T>(
     const poll = async () => {
       const result = await reload();
 
-      if (result.success && result.data) {
+      if (result.isSuccess && result.data) {
         if (compare(result.data)) {
           stopPolling();
           setPollingStatus("idle");

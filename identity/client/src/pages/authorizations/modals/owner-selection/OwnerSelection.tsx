@@ -7,8 +7,10 @@
  */
 
 import { ComboBox, TextInputSkeleton } from "@carbon/react";
-import { SearchResponse, useApi } from "src/utility/api";
-import { ApiDefinition } from "src/utility/api/request";
+import { useQuery } from "@tanstack/react-query";
+import { SearchResponse } from "src/utility/api";
+import { ApiDefinition, unwrap } from "src/utility/api/request";
+import { getApiBaseUrl } from "src/configuration/urlConfig";
 import useTranslate from "src/utility/localization";
 
 type OwnerSelectionProps<T> = {
@@ -31,7 +33,10 @@ const OwnerSelection = <T,>({
   isEmpty = false,
 }: OwnerSelectionProps<T>) => {
   const { t } = useTranslate("authorizations");
-  const { data, loading } = useApi(searchFn);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["ownerSelection", searchFn.name],
+    queryFn: () => unwrap(searchFn(undefined)(getApiBaseUrl())),
+  });
 
   if (loading) {
     return <TextInputSkeleton />;

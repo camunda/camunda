@@ -34,6 +34,42 @@ export type ApiResult<R> =
 
 export type ApiPromise<R> = Promise<ApiResult<R>>;
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly body: ErrorResponse | null;
+
+  constructor(status: number, body: ErrorResponse | null) {
+    super(
+      body && isDetailedError(body)
+        ? body.title || `Request failed with status ${status}`
+        : `Request failed with status ${status}`,
+    );
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+export function isDetailedError(
+  error: ErrorResponse,
+): error is ErrorResponse<"detailed"> {
+  return (
+    typeof error === "object" &&
+    "detail" in error &&
+    "instance" in error &&
+    "title" in error &&
+    "type" in error
+  );
+}
+
+export async function unwrap<R>(promise: ApiPromise<R>): Promise<R> {
+  const result = await promise;
+  if (result.success) {
+    return result.data;
+  }
+  throw new ApiError(result.status, result.error);
+}
+
 export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 type ApiRequestParams<P> = {
@@ -69,24 +105,6 @@ const requestUrl = (baseUrl: string, path: string, params?: unknown) => {
 
   return `${clearedBaseUrl}${path}${encodedParams}`;
 };
-
-type Handler = (response: Response) => void | Promise<void>;
-const handlers: Handler[] = [];
-
-export function addHandler(fct: Handler) {
-  if (typeof fct === "function") {
-    handlers.push(fct);
-  } else {
-    throw new Error("Handler must be a function");
-  }
-}
-
-export function removeHandler(fct: Handler) {
-  const index = handlers.indexOf(fct);
-  if (index !== -1) {
-    handlers.splice(index, 1);
-  }
-}
 
 const apiRequest: <R, P>(
   options: ApiRequestParams<P>,
@@ -134,10 +152,6 @@ const apiRequest: <R, P>(
       data = await response.json();
     } catch {
       // body is empty
-    }
-
-    for (const handler of handlers) {
-      await handler(response);
     }
 
     if (response.ok) {

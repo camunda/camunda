@@ -8,20 +8,23 @@
 
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
-import { createGroup } from "src/utility/api/groups";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import { useNotifications } from "src/components/notifications";
 import { getIdPattern, isValidId } from "src/utility/validate.ts";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
-  const [callAddGroup, { loading, error }] = useApiCall(createGroup, {
-    suppressErrorNotification: true,
-  });
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(groupMutations.create(qc));
   type FormData = {
     groupId: string;
     groupName: string;
@@ -37,23 +40,26 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     mode: "all",
   });
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await callAddGroup({
-      name: data.groupName,
-      groupId: data.groupId,
-      description: data.description,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("groupCreated"),
-        subtitle: t("groupCreatedSuccessfully", {
-          groupName: data.groupName,
-        }),
-      });
-      onSuccess();
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        name: data.groupName,
+        groupId: data.groupId,
+        description: data.description,
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("groupCreated"),
+            subtitle: t("groupCreatedSuccessfully", {
+              groupName: data.groupName,
+            }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

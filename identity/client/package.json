@@ -23,6 +23,7 @@
     "@carbon/elements": "11.90.0",
     "@carbon/react": "1.108.0",
     "@monaco-editor/react": "4.7.0",
+    "@tanstack/react-query": "^5.100.14",
     "date-fns": "4.4.0",
     "fuse.js": "7.4.0",
     "i18next": "26.3.0",

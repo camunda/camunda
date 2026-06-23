@@ -9,11 +9,11 @@
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
 import TextField from "src/components/form/TextField";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { createMappingRule } from "src/utility/api/mapping-rules";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import {
   CustomStack,
   EqualSignContainer,
@@ -36,9 +36,12 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
 }) => {
   const { t } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, error }] = useApiCall(createMappingRule, {
-    suppressErrorNotification: true,
-  });
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(mappingRuleMutations.create(qc));
 
   const {
     control,
@@ -54,24 +57,27 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
     mode: "all",
   });
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await apiCall({
-      mappingRuleId: data.mappingRuleId,
-      name: data.mappingRuleName,
-      claimName: data.claimName,
-      claimValue: data.claimValue,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("mappingRuleCreated"),
-        subtitle: t("mappingRuleCreatedSuccessfully", {
-          name: data.mappingRuleName,
-        }),
-      });
-      onSuccess();
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        mappingRuleId: data.mappingRuleId,
+        name: data.mappingRuleName,
+        claimName: data.claimName,
+        claimValue: data.claimValue,
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("mappingRuleCreated"),
+            subtitle: t("mappingRuleCreatedSuccessfully", {
+              name: data.mappingRuleName,
+            }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

@@ -12,8 +12,9 @@ import {
 } from "@camunda/camunda-api-zod-schemas/8.10";
 import { useMemo } from "react";
 import { z } from "zod";
-import { useApi, usePagination } from "src/utility/api";
-import { searchMessageSubscriptions } from "src/utility/api/message-subscriptions";
+import { usePagination } from "src/utility/api";
+import { useQuery } from "@tanstack/react-query";
+import { messageSubscriptionQueries } from "src/utility/api/message-subscriptions/queries";
 
 type Sort = NonNullable<QueryMessageSubscriptionsRequestBody["sort"]>;
 const DEFAULT_SORT: Sort = [{ field: "toolName", order: "asc" }];
@@ -74,19 +75,21 @@ export const useMcpProcessTools = () => {
     return { toolName: { $like: `*${term}*` } };
   }, [pageParams.filter]);
 
-  const { data, ...apiRest } = useApi(searchMessageSubscriptions, {
-    sort: (pageParams.sort ?? DEFAULT_SORT) as Sort,
-    filter: {
-      messageSubscriptionType: "START_EVENT",
-      messageSubscriptionState: { $neq: "DELETED" },
-      toolName: { $exists: true },
-      ...searchTermsFilter,
-    },
-    page: {
-      from: pageParams.page.from,
-      limit: pageParams.page.limit,
-    },
-  });
+  const { data, ...apiRest } = useQuery(
+    messageSubscriptionQueries.search({
+      sort: (pageParams.sort ?? DEFAULT_SORT) as Sort,
+      filter: {
+        messageSubscriptionType: "START_EVENT",
+        messageSubscriptionState: { $neq: "DELETED" },
+        toolName: { $exists: true },
+        ...searchTermsFilter,
+      },
+      page: {
+        from: pageParams.page.from,
+        limit: pageParams.page.limit,
+      },
+    }),
+  );
 
   const processTools = useMemo<McpProcessTool[]>(() => {
     if (!data?.items || data.items.length === 0) {

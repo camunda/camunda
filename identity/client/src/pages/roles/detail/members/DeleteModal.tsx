@@ -7,14 +7,14 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignRoleMember } from "src/utility/api/membership";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveRoleMemberModalProps = UseEntityModalCustomProps<
@@ -34,22 +34,25 @@ const DeleteModal: FC<RemoveRoleMemberModalProps> = ({
   const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMember, { loading }] = useApiCall(unassignRoleMember);
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    membershipMutations.unassignRoleMember(qc),
+  );
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (roleId && user) {
-      const { success } = await callUnassignMember({
-        roleId,
-        username: user.username,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("roleMemberRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { roleId, username: user.username },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("roleMemberRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

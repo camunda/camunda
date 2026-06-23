@@ -8,13 +8,13 @@
 
 import { FC } from "react";
 import { Stack, UnorderedList, ListItem } from "@carbon/react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { deleteAuthorization } from "src/utility/api/authorizations";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authorizationMutations } from "src/utility/api/authorizations/mutations";
 import { useNotifications } from "src/components/notifications";
 import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -32,18 +32,24 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
 }) => {
   const { t } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteAuthorization);
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    authorizationMutations.delete(qc),
+  );
 
-  const handleSubmit = async () => {
-    const { success } = await apiCall({ authorizationKey });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("authorizationDeleted"),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { authorizationKey },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("authorizationDeleted"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

@@ -9,9 +9,10 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
-import { getMappingRulesByGroupId } from "src/utility/api/groups";
+import { usePagination } from "src/utility/api";
+import { groupQueries } from "src/utility/api/groups/queries";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/mapping-rules/DeleteModal";
@@ -24,23 +25,22 @@ type MappingRulesProps = {
 
 const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
+  const noop = () => {};
 
+  const { pageParams, page, ...paginationCallbacks } = usePagination();
   const {
     data: mappingRules,
-    loading,
-    success,
-    reload,
-    ...paginationProps
-  } = usePaginatedApi(getMappingRulesByGroupId, {
-    groupId: groupId,
-  });
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(groupQueries.mappingRules(groupId, pageParams));
 
   const isMappingRulesListEmpty =
     !mappingRules || mappingRules.items?.length === 0;
 
   const [assignMappingRules, assignMappingRulesModal] = useEntityModal(
     AssignMappingRulesModal,
-    reload,
+    noop,
     {
       assignedMappingRules: mappingRules?.items || [],
     },
@@ -48,7 +48,7 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
   const openAssignModal = () => assignMappingRules({ id: groupId });
   const [unassignMappingRule, unassignMappingRuleModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     {
       groupId,
     },
@@ -61,7 +61,12 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
         description={t("unableToLoadResource", {
           resourceType: t("mappingRule").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        button={{
+          label: t("retry"),
+          onClick: () => {
+            void reload();
+          },
+        }}
       />
     );
 
@@ -104,7 +109,8 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
             onClick: unassignMappingRule,
           },
         ]}
-        {...paginationProps}
+        page={{ ...page, ...mappingRules?.page }}
+        {...paginationCallbacks}
       />
       {assignMappingRulesModal}
       {unassignMappingRuleModal}

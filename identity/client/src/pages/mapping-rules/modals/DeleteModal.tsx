@@ -7,8 +7,8 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
-import { deleteMappingRule } from "src/utility/api/mapping-rules";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
@@ -25,21 +25,25 @@ const DeleteMappingRulesModal: FC<UseEntityModalProps<MappingRule>> = ({
 }) => {
   const { t, Translate } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteMappingRule);
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    mappingRuleMutations.delete(qc),
+  );
 
-  const handleSubmit = async () => {
-    const { success } = await apiCall({ mappingRuleId: mappingRuleId });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("mappingRuleDeleted"),
-        subtitle: t("deleteMappingRuleSuccess", {
-          name,
-        }),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { mappingRuleId },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("mappingRuleDeleted"),
+            subtitle: t("deleteMappingRuleSuccess", { name }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

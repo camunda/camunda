@@ -9,10 +9,11 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { assignRoleMember } from "src/utility/api/membership";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api";
-import { searchUser } from "src/utility/api/users";
+import { useQuery } from "@tanstack/react-query";
+import { userQueries } from "src/utility/api/users/queries";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -44,12 +45,15 @@ const AssignMembersModal: FC<
 
   const {
     data: userSearchResults,
-    loading,
-    reload,
+    isLoading: loading,
+    refetch: reload,
     error,
-  } = useApi(searchUser, search);
+  } = useQuery(userQueries.search(search));
 
-  const [callAssignUser] = useApiCall(assignRoleMember);
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignUser } = useMutation(
+    membershipMutations.assignRoleMember(qc),
+  );
 
   const unassignedFilter = useCallback(
     ({ username }: User) =>
@@ -76,15 +80,17 @@ const AssignMembersModal: FC<
     if (!canSubmit) return;
 
     setLoadingAssignUser(true);
-
-    const results = await Promise.all(
-      selectedUsers.map(({ username }) => callAssignUser({ username, roleId })),
-    );
-
-    setLoadingAssignUser(false);
-
-    if (results.every(({ success }) => success)) {
+    try {
+      await Promise.all(
+        selectedUsers.map(({ username }) =>
+          callAssignUser({ username, roleId }),
+        ),
+      );
       onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignUser(false);
     }
   };
 
@@ -135,7 +141,12 @@ const AssignMembersModal: FC<
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("usersCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </FormModal>
