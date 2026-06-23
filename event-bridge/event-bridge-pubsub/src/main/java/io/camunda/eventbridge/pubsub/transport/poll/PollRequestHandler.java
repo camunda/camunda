@@ -61,23 +61,25 @@ public final class PollRequestHandler implements RequestHandler {
       reader.seek(fromPosition <= 0 ? Long.MIN_VALUE : fromPosition);
       final var batchIterator = new EventBridgeBatchIterator();
 
+      // The reader yields whole batches, starting with the one that *contains* fromPosition —
+      // batches are never split. seek()/next() leave the current batch loaded, so the loop is
+      // read-current-then-advance. The boundary batch is returned in full (it may include entries
+      // before fromPosition); skipping already-processed entries within it is the consumer's job,
+      // which also keeps maxRecords correct when it splits a multi-entry batch.
       outer:
       while (reader.hasNext()) {
-        reader.next();
         batchIterator.wrap(reader.batchBuffer(), reader.batchOffset(), reader.batchTotalSize());
 
         while (batchIterator.hasNext()) {
           final var entry = batchIterator.next();
-          final long position = entry.getPosition();
-          if (fromPosition > 0 && position < fromPosition) {
-            continue;
-          }
-          events.add(new PollEvent(position, entry.getValueCopy()));
-          nextPosition = position + 1;
+          events.add(new PollEvent(entry.getPosition(), entry.getValueCopy()));
+          nextPosition = entry.getPosition() + 1;
           if (events.size() >= maxRecords) {
             break outer;
           }
         }
+
+        reader.next();
       }
     } catch (final RuntimeException e) {
       return CompletableFuture.failedFuture(e);

@@ -522,6 +522,12 @@ public final class Consumer {
           (List<Map<String, Object>>) response.getOrDefault("events", List.of());
       for (final Map<String, Object> evt : events) {
         final long position = ((Number) evt.get("position")).longValue();
+        // The broker returns whole batches starting with the one containing fromPosition, so the
+        // first batch may include entries we have already processed. Skip them here — entry-level
+        // skipping is the consumer's responsibility.
+        if (fromPosition > 0 && position < fromPosition) {
+          continue;
+        }
         final byte[] payload = Base64.getDecoder().decode((String) evt.get("payload"));
         allEvents.add(new Event(position, partitionId, payload));
       }

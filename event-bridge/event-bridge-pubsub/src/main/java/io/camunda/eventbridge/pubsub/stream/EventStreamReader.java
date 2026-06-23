@@ -151,7 +151,22 @@ public final class EventStreamReader implements AutoCloseable {
   }
 
   /**
-   * Returns {@code true} if there is another batch to read.
+   * Returns {@code true} if a batch is currently loaded and ready to read.
+   *
+   * <p><b>Iteration contract — read current, then advance.</b> After a seek the first matching
+   * batch is already loaded, so callers must read the current batch <em>before</em> calling {@link
+   * #next()}:
+   *
+   * <pre>{@code
+   * reader.seek(position);
+   * while (reader.hasNext()) {
+   *   // read current batch via position()/batchBuffer()/...
+   *   reader.next();
+   * }
+   * }</pre>
+   *
+   * <p>Advancing before reading (calling {@code next()} at the top of the loop) skips the first
+   * batch and re-reads the last.
    *
    * @throws IllegalStateException if the reader has not been initialized via a seek method
    */
