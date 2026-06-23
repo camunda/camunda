@@ -122,14 +122,15 @@ public class TasklistAPICaller {
   public TakeBackupResponseDto backup(final Long backupId) {
     final TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
     return mgmtRestTemplate.postForObject(
-        mgmtRestTemplate.getURL("actuator/backups"),
+        mgmtRestTemplate.getURL("actuator/backupHistory"),
         takeBackupRequest,
         TakeBackupResponseDto.class);
   }
 
   public GetBackupStateResponseDto getBackupState(final Long backupId) {
     return mgmtRestTemplate.getForObject(
-        mgmtRestTemplate.getURL("actuator/backups/" + backupId), GetBackupStateResponseDto.class);
+        mgmtRestTemplate.getURL("actuator/backupHistory/" + backupId),
+        GetBackupStateResponseDto.class);
   }
 
   @Retryable(maxRetries = 10, delay = 2000, includes = TasklistRuntimeException.class)

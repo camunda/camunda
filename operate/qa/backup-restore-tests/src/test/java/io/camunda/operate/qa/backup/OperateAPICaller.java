@@ -81,12 +81,15 @@ public class OperateAPICaller {
   public TakeBackupResponseDto backup(final Long backupId) {
     final TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
     return restTemplate.postForObject(
-        restTemplate.getURL("/actuator/backups"), takeBackupRequest, TakeBackupResponseDto.class);
+        restTemplate.getURL("/actuator/backupHistory"),
+        takeBackupRequest,
+        TakeBackupResponseDto.class);
   }
 
   public GetBackupStateResponseDto getBackupState(final Long backupId) {
     return restTemplate.getForObject(
-        restTemplate.getURL("/actuator/backups/" + backupId), GetBackupStateResponseDto.class);
+        restTemplate.getURL("/actuator/backupHistory/" + backupId),
+        GetBackupStateResponseDto.class);
   }
 
   boolean createOperation(final Long processInstanceKey, final OperationType operationType) {

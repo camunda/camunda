@@ -348,7 +348,7 @@ public class TestContainerUtil {
       final String dockerImageName, final String version, final TestContext testContext) {
     operateContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
-            .withExposedPorts(8080)
+            .withExposedPorts(8080, 9600)
             .withNetwork(testContext.getNetwork())
             .withExtraHost("host.testcontainers.internal", "host-gateway")
             .withCopyFileToContainer(
@@ -356,7 +356,7 @@ public class TestContainerUtil {
                 "/usr/local/operate/config/application.properties")
             .waitingFor(
                 new HttpWaitStrategy()
-                    .forPort(8080)
+                    .forPort(9600)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));
@@ -383,7 +383,7 @@ public class TestContainerUtil {
     operateContainer
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", getElasticURL(testContext))
-        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
+        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth, operate")
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
