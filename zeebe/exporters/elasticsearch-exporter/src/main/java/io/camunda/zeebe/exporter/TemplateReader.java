@@ -21,9 +21,11 @@ import java.util.Map;
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
 final class TemplateReader {
   @SuppressWarnings("java:S1075") // not an actual URI
-  private static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
+  private static final String INDEX_TEMPLATE_FILENAME_PATTERN =
+      "/elasticsearch/zeebe-record-%s-template.json";
 
-  private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
+  private static final String ZEEBE_RECORD_TEMPLATE_JSON =
+      "/elasticsearch/zeebe-record-template.json";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final ElasticsearchExporterConfiguration config;
