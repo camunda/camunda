@@ -44,6 +44,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRespons
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UserTaskProperties;
@@ -173,6 +174,11 @@ public final class ResponseMapper {
   public static UpdateJobTimeoutResponse toUpdateJobTimeoutResponse(
       final long key, final JobRecord brokerResponse) {
     return UpdateJobTimeoutResponse.getDefaultInstance();
+  }
+
+  public static UpdateJobPriorityResponse toUpdateJobPriorityResponse(
+      final long key, final JobRecord brokerResponse) {
+    return UpdateJobPriorityResponse.getDefaultInstance();
   }
 
   public static FailJobResponse toFailJobResponse(final long key, final JobRecord brokerResponse) {
