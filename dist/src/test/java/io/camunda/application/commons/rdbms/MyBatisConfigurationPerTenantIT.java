@@ -28,8 +28,6 @@ import org.springframework.mock.env.MockEnvironment;
 class MyBatisConfigurationPerTenantIT {
 
   private static final MyBatisConfiguration MY_BATIS = new MyBatisConfiguration();
-  private static final RdbmsDatabaseIdProvider DATABASE_ID_PROVIDER =
-      new RdbmsDatabaseIdProvider(null);
 
   @BeforeAll
   @AfterAll
@@ -104,10 +102,8 @@ class MyBatisConfigurationPerTenantIT {
     env.getPropertySources().addFirst(new MapPropertySource("test", props));
     final var resolver = PhysicalTenantResolver.of(env, new Camunda());
     final var dataSources =
-        RdbmsDataSources.of(
-            resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()),
-            DATABASE_ID_PROVIDER);
-    final var factories = MY_BATIS.sqlSessionFactories(dataSources, resolver, DATABASE_ID_PROVIDER);
+        RdbmsDataSources.of(resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()));
+    final var factories = MY_BATIS.sqlSessionFactories(dataSources, resolver);
     final var bundles = MY_BATIS.rdbmsMapperBundles(factories, dataSources);
     return new TenantFixture(dataSources, factories, bundles);
   }

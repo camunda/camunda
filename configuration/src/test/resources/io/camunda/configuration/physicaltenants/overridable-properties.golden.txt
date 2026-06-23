@@ -190,6 +190,7 @@ data.secondary-storage.rdbms.connection-pool.leak-detection-threshold
 data.secondary-storage.rdbms.connection-pool.max-lifetime
 data.secondary-storage.rdbms.connection-pool.maximum-pool-size
 data.secondary-storage.rdbms.connection-pool.minimum-idle
+data.secondary-storage.rdbms.database-vendor-id
 data.secondary-storage.rdbms.ddl-lock-wait-timeout
 data.secondary-storage.rdbms.export-batch-operation-items-on-creation
 data.secondary-storage.rdbms.flush-interval
