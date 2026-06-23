@@ -24,7 +24,12 @@ public enum EventBridgeColumnFamilies implements EnumValue, ScopedColumnFamily {
   CONSUMER_OFFSETS(1, ColumnFamilyScope.PARTITION_LOCAL),
 
   /** Replicated consumer-group metadata keyed by {@code groupId} → encoded members/assignment. */
-  GROUP_METADATA(2, ColumnFamilyScope.PARTITION_LOCAL);
+  GROUP_METADATA(2, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Topic registry (desired state) keyed by {@code topicName} → encoded partition/replica config.
+   */
+  TOPIC_REGISTRY(3, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

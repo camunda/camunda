@@ -22,7 +22,15 @@ public enum CoordinatorIntent implements Intent {
   /** Command: persist a group's membership/assignment after a rebalance. */
   REBALANCE_GROUP((short) 2, false),
   /** Event: the group metadata has been committed to replicated state. */
-  GROUP_METADATA_COMMITTED((short) 3, true);
+  GROUP_METADATA_COMMITTED((short) 3, true),
+  /** Command: register (create or update) a topic's desired configuration. */
+  REGISTER_TOPIC((short) 4, false),
+  /** Event: the topic has been registered in replicated state. */
+  TOPIC_REGISTERED((short) 5, true),
+  /** Command: remove a topic from the registry. */
+  DELETE_TOPIC((short) 6, false),
+  /** Event: the topic has been removed from replicated state. */
+  TOPIC_DELETED((short) 7, true);
 
   private final short value;
   private final boolean isEvent;
@@ -38,6 +46,10 @@ public enum CoordinatorIntent implements Intent {
       case 1 -> OFFSET_COMMITTED;
       case 2 -> REBALANCE_GROUP;
       case 3 -> GROUP_METADATA_COMMITTED;
+      case 4 -> REGISTER_TOPIC;
+      case 5 -> TOPIC_REGISTERED;
+      case 6 -> DELETE_TOPIC;
+      case 7 -> TOPIC_DELETED;
       default -> Intent.UNKNOWN;
     };
   }

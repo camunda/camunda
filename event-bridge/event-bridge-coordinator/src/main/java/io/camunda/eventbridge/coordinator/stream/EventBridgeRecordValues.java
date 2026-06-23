@@ -29,11 +29,20 @@ import java.util.Map;
  */
 public final class EventBridgeRecordValues {
 
-  // Opaque tags for the two coordinator record kinds on the dedicated coordinator partition (no
-  // engine runs there, so reusing these ValueTypes is safe; the StreamProcessor dispatches by the
-  // deserialized value type / RecordType, not by intent).
+  // Opaque tags for the coordinator's own record kinds on its dedicated Raft partition. No engine
+  // runs there, so the log never carries real CHECKPOINT/CLOCK/SCALE records — reusing those
+  // ValueTypes as local deserialization keys cannot collide. The chosen constants are arbitrary;
+  // they carry no engine meaning here (e.g. TOPIC is not a "scale" record). The StreamProcessor
+  // dispatches by ValueType + RecordType, not by intent.
+  //
+  // TODO(event-bridge): borrowing engine ValueTypes is a PoC shortcut. The shared zeebe-protocol
+  // ValueType enum cannot cleanly host event-bridge-specific constants (it would be an engine ->
+  // event-bridge layering violation), so the real graduation is for the coordinator to own its
+  // record (de)serialization instead of riding the engine's ValueType-keyed RecordValues. Until
+  // then these tags are safe but deliberately misleading by name.
   public static final ValueType OFFSET_VALUE_TYPE = ValueType.CHECKPOINT;
   public static final ValueType GROUP_METADATA_VALUE_TYPE = ValueType.CLOCK;
+  public static final ValueType TOPIC_VALUE_TYPE = ValueType.SCALE;
 
   private EventBridgeRecordValues() {}
 
@@ -42,6 +51,7 @@ public final class EventBridgeRecordValues {
         new HashMap<>(UnifiedRecordValue.allRecordsMap());
     values.put(OFFSET_VALUE_TYPE, new OffsetCommitRecord());
     values.put(GROUP_METADATA_VALUE_TYPE, new GroupMetadataRecord());
+    values.put(TOPIC_VALUE_TYPE, new TopicRecord());
     return new RecordValues(values);
   }
 }

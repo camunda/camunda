@@ -77,6 +77,7 @@ public final class CoordinatorStream {
   private LogStream logStream;
   private DbOffsetState offsetState;
   private DbGroupMetadataState groupMetadataState;
+  private DbTopicState topicState;
   private StreamProcessor streamProcessor;
   private LogStreamWriter writer;
 
@@ -121,6 +122,7 @@ public final class CoordinatorStream {
 
     offsetState = new DbOffsetState(zeebeDb, zeebeDb.createContext());
     groupMetadataState = new DbGroupMetadataState(zeebeDb, zeebeDb.createContext());
+    topicState = new DbTopicState(zeebeDb, zeebeDb.createContext());
 
     final var builder =
         StreamProcessor.builder()
@@ -132,7 +134,8 @@ public final class CoordinatorStream {
             .recordProcessors(
                 List.of(
                     new OffsetCommitProcessor(offsetState),
-                    new GroupMetadataProcessor(groupMetadataState)))
+                    new GroupMetadataProcessor(groupMetadataState),
+                    new TopicProcessor(topicState)))
             .recordValues(EventBridgeRecordValues::create)
             .commandResponseWriter(new NoopCommandResponseWriter())
             .partitionCommandSender(new NoopInterPartitionCommandSender())
@@ -219,6 +222,53 @@ public final class CoordinatorStream {
   /** All groups' replicated metadata ({@code groupId → encoded payload}) for failover rebuild. */
   public Map<String, String> groupMetadataSnapshot() {
     return groupMetadataState.readAll();
+  }
+
+  /**
+   * Registers (creates or updates) a topic's desired configuration in the replicated registry.
+   * Leader only.
+   */
+  public void registerTopic(
+      final String name,
+      final int partitionCount,
+      final int replicationFactor,
+      final TopicMetadata.TopicStatus status) {
+    final var command =
+        new TopicRecord()
+            .setName(name)
+            .setOp(TopicRecord.OP_REGISTER)
+            .setPartitionCount(partitionCount)
+            .setReplicationFactor(replicationFactor)
+            .setStatus(status);
+    writeTopicCommand(name, command, CoordinatorIntent.REGISTER_TOPIC);
+  }
+
+  /** Removes a topic from the replicated registry. Leader only. */
+  public void deleteTopic(final String name) {
+    final var command = new TopicRecord().setName(name).setOp(TopicRecord.OP_DELETE);
+    writeTopicCommand(name, command, CoordinatorIntent.DELETE_TOPIC);
+  }
+
+  /** All registered topics ({@code topicName → metadata}) for failover rebuild / listing. */
+  public Map<String, TopicMetadata> topicsSnapshot() {
+    return topicState.readAll();
+  }
+
+  private void writeTopicCommand(
+      final String name, final TopicRecord command, final CoordinatorIntent intent) {
+    if (writer == null) {
+      return;
+    }
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .valueType(EventBridgeRecordValues.TOPIC_VALUE_TYPE)
+            .intent(intent);
+    final var result =
+        writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
+    if (result.isLeft()) {
+      LOG.warn("Failed to write topic command {} for {}: {}", intent, name, result.getLeft());
+    }
   }
 
   /** The underlying stream processor, e.g. for the snapshot director. */
