@@ -40,8 +40,37 @@ public record JobFilter(
     List<Operation<String>> typeOperations,
     List<Operation<String>> workerOperations,
     List<Operation<OffsetDateTime>> creationTimeOperations,
-    List<Operation<OffsetDateTime>> lastUpdateTimeOperations)
+    List<Operation<OffsetDateTime>> lastUpdateTimeOperations,
+    Integer partitionId)
     implements FilterBase {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .deadlineOperations(deadlineOperations)
+        .deniedReasonOperations(deniedReasonOperations)
+        .elementInstanceKeyOperations(elementInstanceKeyOperations)
+        .elementIdOperations(elementIdOperations)
+        .endTimeOperations(endTimeOperations)
+        .errorCodeOperations(errorCodeOperations)
+        .errorMessageOperations(errorMessageOperations)
+        .hasFailedWithRetriesLeft(hasFailedWithRetriesLeft)
+        .isDenied(isDenied)
+        .jobKeyOperations(jobKeyOperations)
+        .kindOperations(kindOperations)
+        .listenerEventTypeOperations(listenerEventTypeOperations)
+        .processDefinitionKeyOperations(processDefinitionKeyOperations)
+        .processDefinitionIdOperations(processDefinitionIdOperations)
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .retriesOperations(retriesOperations)
+        .priorityOperations(priorityOperations)
+        .stateOperations(stateOperations)
+        .tenantIdOperations(tenantIdOperations)
+        .typeOperations(typeOperations)
+        .workerOperations(workerOperations)
+        .creationTimeOperations(creationTimeOperations)
+        .lastUpdateTimeOperations(lastUpdateTimeOperations)
+        .partitionId(partitionId);
+  }
 
   public static final class Builder implements ObjectBuilder<JobFilter> {
     private List<Operation<OffsetDateTime>> deadlineOperations;
@@ -67,6 +96,7 @@ public record JobFilter(
     private List<Operation<Long>> elementInstanceKeyOperations;
     private List<Operation<OffsetDateTime>> creationTimeOperations;
     private List<Operation<OffsetDateTime>> lastUpdateTimeOperations;
+    private Integer partitionId;
 
     public Builder deadlineOperations(final List<Operation<OffsetDateTime>> operations) {
       deadlineOperations = addValuesToList(deadlineOperations, operations);
@@ -393,6 +423,11 @@ public record JobFilter(
       return lastUpdateTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
+    public Builder partitionId(final Integer value) {
+      partitionId = value;
+      return this;
+    }
+
     @Override
     public JobFilter build() {
       return new JobFilter(
@@ -418,7 +453,8 @@ public record JobFilter(
           Objects.requireNonNullElse(typeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(workerOperations, Collections.emptyList()),
           Objects.requireNonNullElse(creationTimeOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(lastUpdateTimeOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(lastUpdateTimeOperations, Collections.emptyList()),
+          partitionId);
     }
   }
 }

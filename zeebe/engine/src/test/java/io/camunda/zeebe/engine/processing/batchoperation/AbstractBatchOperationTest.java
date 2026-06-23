@@ -15,11 +15,14 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.DecisionInstanceFilter;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -27,6 +30,7 @@ import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -69,6 +73,7 @@ abstract class AbstractBatchOperationTest {
           UUID.randomUUID().toString());
 
   protected static final int DEFAULT_QUERY_PAGE_SIZE = 10000;
+  protected static final String DEFAULT_JOB_TYPE = "fake-job-type";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -289,6 +294,60 @@ abstract class AbstractBatchOperationTest {
         .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
+  }
+
+  protected long createNewUpdateJobBatchOperation(
+      final Set<Long> itemKeys,
+      final BatchOperationJobUpdatePlan plan,
+      final Map<String, Object> claims) {
+    final var result =
+        new SearchQueryResult.Builder<JobEntity>()
+            .items(itemKeys.stream().map(this::fakeJobEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+
+    when(searchClientsProxy.searchJobs(Mockito.any(JobQuery.class))).thenReturn(result);
+
+    final var filterBuffer =
+        convertToBuffer(new JobFilter.Builder().types(DEFAULT_JOB_TYPE).build());
+
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
+    }
+
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.UPDATE_JOB)
+        .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
+        .withJobUpdatePlan(plan)
+        .create(DEFAULT_USER.username())
+        .getValue()
+        .getBatchOperationKey();
+  }
+
+  protected JobEntity fakeJobEntity(final long jobKey) {
+    final var now = java.time.OffsetDateTime.now();
+    return new JobEntity.Builder()
+        .jobKey(jobKey)
+        .type(DEFAULT_JOB_TYPE)
+        .worker("fake-worker")
+        .state(JobEntity.JobState.CREATED)
+        .kind(JobEntity.JobKind.BPMN_ELEMENT)
+        .listenerEventType(JobEntity.ListenerEventType.UNSPECIFIED)
+        .retries(3)
+        .hasFailedWithRetriesLeft(false)
+        .processDefinitionId("fake-process-def-id")
+        .processDefinitionKey(-1L)
+        .processInstanceKey(-1L)
+        .elementId("fake-element-id")
+        .elementInstanceKey(-1L)
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .creationTime(now)
+        .lastUpdateTime(now)
+        .build();
   }
 
   protected long createDeleteProcessInstanceBatchOperation(

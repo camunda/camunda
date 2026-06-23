@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
@@ -3881,6 +3882,7 @@ final class JsonSerializableToJsonTest {
                   "partitionIds": [1, 2, 3],
                   "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
                   "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
+                  "jobUpdatePlan":{"timeout":null,"retries":null,"priority":null,"changedAttributes":[],"empty":false,"encodedLength":48},
                   "authenticationBuffer": {"expandable":false},
                   "authorizationCheckBuffer": {"expandable":false},
                   "followUpCommand": {
@@ -3996,6 +3998,14 @@ final class JsonSerializableToJsonTest {
                      "empty": false,
                      "encodedLength": 265
                    },
+                   "jobUpdatePlan": {
+                     "retries": null,
+                     "timeout": null,
+                     "priority": null,
+                     "changedAttributes": [],
+                     "empty": false,
+                     "encodedLength": 48
+                   },
                    "authenticationBuffer": {
                      "expandable": false
                    },
@@ -4014,6 +4024,42 @@ final class JsonSerializableToJsonTest {
                       }
                     }
                  }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// UpdateJob BatchOperationCreationRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UpdateJob BatchOperationCreationRecord",
+        (Supplier<BatchOperationCreationRecord>)
+            () ->
+                new BatchOperationCreationRecord()
+                    .setBatchOperationKey(12345L)
+                    .setPartitionIds(List.of(1, 2, 3))
+                    .setBatchOperationType(BatchOperationType.UPDATE_JOB)
+                    .setEntityFilter(toMessagePack("{'type': 'myJobType'}"))
+                    .setJobUpdatePlan(
+                        new BatchOperationJobUpdatePlan().setPriority(80).setRetries(5)),
+        """
+                {
+                  "batchOperationKey": 12345,
+                  "batchOperationType": "UPDATE_JOB",
+                  "entityFilterBuffer": {"expandable":false},
+                  "entityFilter": "{\\"type\\":\\"myJobType\\"}",
+                  "partitionIds": [1, 2, 3],
+                  "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
+                  "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
+                  "jobUpdatePlan":{"retries":5,"timeout":null,"priority":80,"changedAttributes":["retries","priority"],"empty":false,"encodedLength":65},
+                  "authenticationBuffer": {"expandable":false},
+                  "authorizationCheckBuffer": {"expandable":false},
+                  "followUpCommand": {
+                    "valueType": "NULL_VAL",
+                    "intent": "UNKNOWN",
+                    "recordValue": null
+                  }
+                }
                 """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////

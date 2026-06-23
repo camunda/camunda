@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -49,6 +50,8 @@ public final class BatchOperationCreationCreateProcessor
 
   private static final String EMPTY_JSON_OBJECT = "{}";
   private static final String MESSAGE_GIVEN_FILTER_IS_EMPTY = "Given filter is empty";
+  private static final String MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY =
+      "Expected to create a batch operation of type 'UPDATE_JOB' with a changeset containing at least one of [retries, timeout, priority], but none were provided";
   private static final String BATCH_OPERATION_ALREADY_EXISTS =
       "Expected to create a batch operation with key: '%d', but a batch operation command with this key already exists";
 
@@ -88,6 +91,14 @@ public final class BatchOperationCreationCreateProcessor
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
+      return;
+    }
+
+    if (isEmptyJobUpdateChangeset(command)) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY);
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY);
       return;
     }
 
@@ -200,6 +211,7 @@ public final class BatchOperationCreationCreateProcessor
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE;
             case DELETE_DECISION_INSTANCE ->
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE;
+            case UPDATE_JOB -> PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB;
           };
       return authCheckBehavior.isAuthorized(
           AuthorizationRequest.builder()
@@ -216,5 +228,15 @@ public final class BatchOperationCreationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
     return command.getValue().getEntityFilter() == null
         || command.getValue().getEntityFilter().equalsIgnoreCase(EMPTY_JSON_OBJECT);
+  }
+
+  private static boolean isEmptyJobUpdateChangeset(
+      final TypedRecord<BatchOperationCreationRecord> command) {
+    if (command.getValue().getBatchOperationType() != BatchOperationType.UPDATE_JOB) {
+      return false;
+    }
+    final var plan = command.getValue().getJobUpdatePlan();
+    return plan == null
+        || (plan.getRetries() == null && plan.getTimeout() == null && plan.getPriority() == null);
   }
 }

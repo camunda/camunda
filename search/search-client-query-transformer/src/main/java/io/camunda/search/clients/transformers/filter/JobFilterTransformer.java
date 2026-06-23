@@ -33,6 +33,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_TYP
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LISTENER_EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
@@ -100,6 +101,7 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
     ofNullable(filter.hasFailedWithRetriesLeft())
         .ifPresent(f -> queries.add(term(JOB_FAILED_WITH_RETRIES_LEFT, f)));
     ofNullable(filter.isDenied()).ifPresent(f -> queries.add(term(JOB_DENIED, f)));
+    ofNullable(filter.partitionId()).ifPresent(f -> queries.add(term(PARTITION_ID, f)));
 
     return and(queries);
   }

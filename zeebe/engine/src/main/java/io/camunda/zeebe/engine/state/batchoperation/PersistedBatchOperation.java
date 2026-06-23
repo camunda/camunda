@@ -27,9 +27,11 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationJobUpdatePlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -76,6 +78,13 @@ public class PersistedBatchOperation extends UnpackedObject
    */
   private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
+
+  /**
+   * An optional job update plan for the batch operation. Usually only filled for the batch
+   * operation type <code>UPDATE_JOB</code>.
+   */
+  private final ObjectProperty<BatchOperationJobUpdatePlan> jobUpdatePlanProp =
+      new ObjectProperty<>("jobUpdatePlan", new BatchOperationJobUpdatePlan());
 
   /**
    * A flag indicating whether the batch operation has been initialized. This flag should be true
@@ -135,13 +144,14 @@ public class PersistedBatchOperation extends UnpackedObject
       new ObjectProperty<>("followUpCommand", new NestedRecord());
 
   public PersistedBatchOperation() {
-    super(17);
+    super(18);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
+        .declareProperty(jobUpdatePlanProp)
         .declareProperty(chunkKeysProp)
         .declareProperty(initializedProp)
         .declareProperty(initializationSearchCursorProp)
@@ -162,6 +172,7 @@ public class PersistedBatchOperation extends UnpackedObject
     setEntityFilter(record.getEntityFilterBuffer());
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
+    setJobUpdatePlan(record.getJobUpdatePlan());
     setAuthentication(record.getAuthenticationBuffer());
     setPartitions(record.getPartitionIds());
     setFollowUpCommand(record.getFollowUpCommand());
@@ -317,6 +328,16 @@ public class PersistedBatchOperation extends UnpackedObject
   public PersistedBatchOperation setMigrationPlan(
       final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
     migrationPlanProp.getValue().wrap(migrationPlan);
+    return this;
+  }
+
+  public BatchOperationJobUpdatePlan getJobUpdatePlan() {
+    return jobUpdatePlanProp.getValue();
+  }
+
+  public PersistedBatchOperation setJobUpdatePlan(
+      final BatchOperationJobUpdatePlanValue jobUpdatePlan) {
+    jobUpdatePlanProp.getValue().wrap(jobUpdatePlan);
     return this;
   }
 

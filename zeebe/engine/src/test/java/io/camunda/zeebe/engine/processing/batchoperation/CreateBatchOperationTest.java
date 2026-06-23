@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
@@ -20,6 +21,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -83,6 +85,94 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
 
     assertThat(result.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(result.getIntent()).isEqualTo(BatchOperationIntent.CREATE);
+  }
+
+  @Test
+  public void shouldRejectUpdateJobWithEmptyChangeset() {
+    // when
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.UPDATE_JOB)
+            .withFilter(convertToBuffer(new JobFilter.Builder().types("myJobType").build()))
+            .withJobUpdatePlan(new BatchOperationJobUpdatePlan())
+            .expectRejection()
+            .create()
+            .getValue()
+            .getBatchOperationKey();
+
+    // then
+    final var result =
+        RecordingExporter.batchOperationCreationRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(result.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(result.getIntent()).isEqualTo(BatchOperationIntent.CREATE);
+  }
+
+  @Test
+  public void shouldRejectUpdateJobWithEmptyFilter() {
+    // when
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.UPDATE_JOB)
+            .withFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}")))
+            .withJobUpdatePlan(new BatchOperationJobUpdatePlan().setPriority(80))
+            .expectRejection()
+            .create()
+            .getValue()
+            .getBatchOperationKey();
+
+    // then
+    final var result =
+        RecordingExporter.batchOperationCreationRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(result.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(result.getIntent()).isEqualTo(BatchOperationIntent.CREATE);
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToCreateUpdateJobWithoutSpecificPermission() {
+    // given
+    final var user = createUser();
+
+    // when
+    final var batchOperationRecord =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.UPDATE_JOB)
+            .withFilter(convertToBuffer(new JobFilter.Builder().types("myJobType").build()))
+            .withJobUpdatePlan(new BatchOperationJobUpdatePlan().setPriority(80))
+            .expectRejection()
+            .create(user.getUsername());
+
+    // then
+    assertThat(batchOperationRecord.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreateUpdateJobWithSpecificPermission() {
+    // given
+    final var user = createUser();
+    addPermissionsToUser(user, PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB);
+
+    // when
+    final var batchOperationRecord =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.UPDATE_JOB)
+            .withFilter(convertToBuffer(new JobFilter.Builder().types("myJobType").build()))
+            .withJobUpdatePlan(new BatchOperationJobUpdatePlan().setPriority(80))
+            .create(user.getUsername());
+
+    // then
+    assertThat(batchOperationRecord.getRejectionType()).isEqualTo(RejectionType.NULL_VAL);
   }
 
   @Test

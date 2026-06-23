@@ -30,6 +30,7 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
       PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
       PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+      PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB,
       PermissionType.READ,
       PermissionType.UPDATE),
   COMPONENT(PermissionType.ACCESS),
