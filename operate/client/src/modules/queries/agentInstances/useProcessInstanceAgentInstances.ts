@@ -6,16 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useAgentInstancesSearch} from './useAgentInstancesSearch';
-
-const ACTIVE_STATUSES: AgentInstance['status'][] = [
-  'INITIALIZING',
-  'TOOL_DISCOVERY',
-  'THINKING',
-  'TOOL_CALLING',
-];
+import {ACTIVE_STATUSES_ARRAY} from './agentInstanceStatus';
 
 const useProcessInstanceAgentInstances = () => {
   const {processInstanceId} = useProcessInstancePageParams();
@@ -24,7 +17,7 @@ const useProcessInstanceAgentInstances = () => {
     {
       filter: {
         processInstanceKey: processInstanceId ?? '',
-        status: {$in: ACTIVE_STATUSES},
+        status: {$in: ACTIVE_STATUSES_ARRAY},
       },
     },
     {
