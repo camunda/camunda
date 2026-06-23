@@ -29,6 +29,7 @@ zeebe:
           redistributionInterval: 60s
           maxBackoffDuration: 20m
         maxProcessDepth: 2000
+        maxVariableNestingDepth: 500
         globalListeners:
           userTask:
             - type: test1

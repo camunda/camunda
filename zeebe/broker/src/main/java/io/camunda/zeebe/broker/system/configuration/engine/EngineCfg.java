@@ -22,6 +22,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+  private int maxVariableNestingDepth = EngineConfiguration.DEFAULT_MAX_VARIABLE_NESTING_DEPTH;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
@@ -107,6 +108,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.maxProcessDepth = maxProcessDepth;
   }
 
+  public int getMaxVariableNestingDepth() {
+    return maxVariableNestingDepth;
+  }
+
+  public void setMaxVariableNestingDepth(final int maxVariableNestingDepth) {
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
+  }
+
   public GlobalListenersCfg getGlobalListeners() {
     return globalListeners;
   }
@@ -170,6 +179,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + distribution
         + ", maxProcessDepth="
         + maxProcessDepth
+        + ", maxVariableNestingDepth="
+        + maxVariableNestingDepth
         + ", expression="
         + expression
         + ", processInstanceCreation="
@@ -216,6 +227,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth())
+        .setMaxVariableNestingDepth(getMaxVariableNestingDepth())
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
         .setExpressionEvaluationTimeout(expression.getTimeout())
         .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())

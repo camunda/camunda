@@ -43,6 +43,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE);
     assertThat(configuration.getMaxProcessDepth())
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH);
+    assertThat(configuration.getMaxVariableNestingDepth())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_VARIABLE_NESTING_DEPTH);
     assertThat(configuration.getCommandRedistributionInterval())
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     assertThat(configuration.getCommandRedistributionMaxBackoff())
@@ -92,6 +94,7 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(1000);
     assertThat(configuration.getValidatorsResultsOutputMaxSize()).isEqualTo(2000);
     assertThat(configuration.getMaxProcessDepth()).isEqualTo(2000);
+    assertThat(configuration.getMaxVariableNestingDepth()).isEqualTo(500);
     assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(Duration.ofMinutes(20));
