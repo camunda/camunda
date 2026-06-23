@@ -9,20 +9,27 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
+import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantHandlerRegistry;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +40,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -68,6 +76,11 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final int maxVariableNameLength;
   private final PhysicalTenantIds physicalTenantIds;
 
+  // #55754/#55752 (spike) wiring inputs for the per-PT handler registry.
+  private final Environment environment;
+  private final ServiceRegistry serviceRegistry;
+  private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+
   private Gateway gateway;
 
   @Autowired
@@ -85,7 +98,13 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry,
       final GatewayRestConfiguration gatewayRestConfiguration,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final Environment environment,
+      @Autowired(required = false) final ServiceRegistry serviceRegistry,
+      @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory) {
+    this.environment = environment;
+    this.serviceRegistry = serviceRegistry;
+    this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
     this.configuration = configuration;
     this.engineSecurityConfig =
         new EngineSecurityConfig(
@@ -126,6 +145,10 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     // topology to be set up, otherwise the callback may be lost
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
+    // #55753/#55754 (spike): build the per-PT AuthenticationHandler registry and use the additive
+    // Gateway ctor. The registry covers every PT id from forAllPhysicalTenants (incl. default).
+    final Map<String, AuthenticationHandler> ptHandlerRegistry = buildPtHandlerRegistry();
+
     gateway =
         new Gateway(
             configuration.shutdownTimeout(),
@@ -134,13 +157,10 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            userServices,
-            passwordEncoder,
-            jwtDecoder,
-            oidcClaimsProvider,
             meterRegistry,
             maxVariableNameLength,
-            physicalTenantIds);
+            physicalTenantIds,
+            ptHandlerRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
@@ -154,6 +174,34 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     LOGGER.info("Standalone gateway is started!");
 
     return gateway;
+  }
+
+  /**
+   * #55753 spike: build the per-PT {@link AuthenticationHandler} registry from the per-PT auth
+   * config map (#55751). OIDC decoders come from the CSL {@link ScopedJwtDecoderFactory}; BASIC
+   * user services from the {@link ServiceRegistry}.
+   *
+   * <p>STUB: the per-PT {@link OidcClaimsProvider} factory does not exist in CSL yet (#55752 —
+   * needs a new ScopedOidcClaimsProviderFactory). Here we fall back to the JWT-only no-op claims
+   * provider so the seam compiles. The real implementation MUST replace this with a per-PT,
+   * userinfo-aware provider built from the PT's AuthenticationConfiguration.
+   */
+  private Map<String, AuthenticationHandler> buildPtHandlerRegistry() {
+    final Map<String, AuthenticationConfiguration> authConfigsByTenantId =
+        PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment);
+    final boolean authEnabled = !engineSecurityConfig.getAuthentication().isUnprotectedApi();
+
+    // STUB for #55752 — replace with CSL ScopedOidcClaimsProviderFactory.buildClaimsProvider(cfg).
+    final java.util.function.Function<AuthenticationConfiguration, OidcClaimsProvider>
+        claimsProviderFactory = cfg -> (jwtClaims, tokenValue) -> jwtClaims;
+
+    return PhysicalTenantHandlerRegistry.build(
+        authConfigsByTenantId,
+        authEnabled,
+        cfg -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(cfg),
+        claimsProviderFactory,
+        ptId -> serviceRegistry.userServices(ptId),
+        passwordEncoder);
   }
 
   @Override

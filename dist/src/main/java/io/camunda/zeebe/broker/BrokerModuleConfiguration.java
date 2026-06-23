@@ -72,6 +72,11 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
 
+  // #55755 (spike): per-PT handler registry build inputs for the embedded gateway path.
+  private final org.springframework.core.env.Environment environment;
+  private final io.camunda.service.registry.ServiceRegistry serviceRegistry;
+  private final io.camunda.security.spring.oidc.ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+
   private Broker broker;
 
   @Autowired
@@ -92,7 +97,15 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       final NodeIdProvider nodeIdProvider,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final org.springframework.core.env.Environment environment,
+      @Autowired(required = false)
+          final io.camunda.service.registry.ServiceRegistry serviceRegistry,
+      @Autowired(required = false)
+          final io.camunda.security.spring.oidc.ScopedJwtDecoderFactory scopedJwtDecoderFactory) {
+    this.environment = environment;
+    this.serviceRegistry = serviceRegistry;
+    this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -132,6 +145,14 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean(destroyMethod = "close")
   public Broker broker(final ExporterRepository exporterRepository) {
+    // #55755 (spike): build the per-PT handler registry here (Spring has Environment,
+    // ServiceRegistry,
+    // ScopedJwtDecoderFactory, passwordEncoder) and thread it through SystemContext to the embedded
+    // Gateway. This proves the SAME registry reaches both construction sites without a fat shared
+    // change — the standalone path (GatewayModuleConfiguration) builds it identically.
+    final java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+        ptHandlerRegistry = buildPtHandlerRegistry();
+
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
@@ -149,7 +170,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             searchClientsProxy,
             new BrokerRequestAuthorizationConverter(engineSecurityConfig),
             nodeIdProvider,
-            physicalTenantIds);
+            physicalTenantIds,
+            ptHandlerRegistry);
     springBrokerBridge.registerShutdownHelper(
         (errorCode, reason) -> shutdownHelper.initiateShutdown(errorCode, reason));
     broker =
@@ -162,6 +184,33 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     startBroker();
 
     return broker;
+  }
+
+  /**
+   * #55755 spike: identical to GatewayModuleConfiguration#buildPtHandlerRegistry (see #55752 stub
+   * note).
+   */
+  private java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+      buildPtHandlerRegistry() {
+    final java.util.Map<String, io.camunda.security.api.model.config.AuthenticationConfiguration>
+        authConfigsByTenantId =
+            io.camunda.authentication.pt.PhysicalTenantAuthConfigurations.forAllPhysicalTenants(
+                environment);
+    final boolean authEnabled = !engineSecurityConfig.getAuthentication().isUnprotectedApi();
+
+    // STUB for #55752 — replace with CSL ScopedOidcClaimsProviderFactory.
+    final java.util.function.Function<
+            io.camunda.security.api.model.config.AuthenticationConfiguration,
+            io.camunda.security.api.context.OidcClaimsProvider>
+        claimsProviderFactory = cfg -> (jwtClaims, tokenValue) -> jwtClaims;
+
+    return io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantHandlerRegistry.build(
+        authConfigsByTenantId,
+        authEnabled,
+        cfg -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(cfg),
+        claimsProviderFactory,
+        ptId -> serviceRegistry.userServices(ptId),
+        passwordEncoder);
   }
 
   protected void startBroker() {

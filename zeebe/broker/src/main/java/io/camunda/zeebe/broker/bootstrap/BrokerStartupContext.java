@@ -154,6 +154,9 @@ public interface BrokerStartupContext {
 
   OidcClaimsProvider getOidcClaimsProvider();
 
+  java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+      getPtHandlerRegistry();
+
   SnapshotApiRequestHandler getSnapshotApiRequestHandler();
 
   void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);

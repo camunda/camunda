@@ -44,10 +44,15 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final JwtDecoder jwtDecoder,
       final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+          ptHandlerRegistry) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
+    // #55755 (spike): embedded path uses the additive registry-based Gateway ctor. The legacy
+    // single-tenant deps (userServices/passwordEncoder/jwtDecoder/oidcClaimsProvider) are no longer
+    // passed here — the handlers in the registry carry them per-PT.
     gateway =
         new Gateway(
             shutdownTimeout,
@@ -56,13 +61,10 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            userServices,
-            passwordEncoder,
-            jwtDecoder,
-            oidcClaimsProvider,
             meterRegistry,
             configuration.getExperimental().getEngine().getValidators().getMaxNameFieldLength(),
-            physicalTenantIds);
+            physicalTenantIds,
+            ptHandlerRegistry);
   }
 
   @Override

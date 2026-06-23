@@ -139,6 +139,9 @@ public final class SystemContext {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
+  private final java.util.Map<
+          String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+      ptHandlerRegistry;
   private final GlobalListenerValidator globalListenerValidator;
 
   public SystemContext(
@@ -157,7 +160,10 @@ public final class SystemContext {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+          ptHandlerRegistry) {
+    this.ptHandlerRegistry = ptHandlerRegistry;
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -735,6 +741,11 @@ public final class SystemContext {
 
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
+  }
+
+  public java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+      getPtHandlerRegistry() {
+    return ptHandlerRegistry;
   }
 
   public PhysicalTenantIds getPhysicalTenantIds() {

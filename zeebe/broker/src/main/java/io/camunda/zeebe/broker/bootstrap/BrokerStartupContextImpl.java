@@ -76,6 +76,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
+  private final java.util.Map<
+          String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+      ptHandlerRegistry;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
@@ -114,8 +117,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+          ptHandlerRegistry) {
 
+    this.ptHandlerRegistry = ptHandlerRegistry;
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
@@ -383,6 +389,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public OidcClaimsProvider getOidcClaimsProvider() {
     return oidcClaimsProvider;
+  }
+
+  @Override
+  public java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
+      getPtHandlerRegistry() {
+    return ptHandlerRegistry;
   }
 
   @Override

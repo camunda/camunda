@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantAuthInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
@@ -66,6 +67,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -108,6 +110,11 @@ public final class Gateway implements CloseableSilently {
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
   private final PhysicalTenantIds physicalTenantIds;
+
+  // #55754 (spike): per-PT handler registry. When non-null, the merged PT-aware interceptor is used
+  // instead of the legacy PhysicalTenantInterceptor + AuthenticationInterceptor pair. Additive so
+  // the legacy ctor path still works until #55755 deletes it.
+  private final Map<String, AuthenticationHandler> ptHandlerRegistry;
 
   @VisibleForTesting
   public Gateway(
@@ -163,6 +170,45 @@ public final class Gateway implements CloseableSilently {
     this.meterRegistry = meterRegistry;
     this.maxVariableNameLength = maxVariableNameLength;
     this.physicalTenantIds = physicalTenantIds;
+    ptHandlerRegistry = null;
+
+    healthManager = new GatewayHealthManagerImpl();
+  }
+
+  /**
+   * Additive constructor (#55754, spike) that takes a pre-built per-PT {@link
+   * AuthenticationHandler} registry (#55753). When present, the gateway uses the merged {@link
+   * PhysicalTenantAuthInterceptor} for both PT-id stamping and authentication, dropping the legacy
+   * standalone {@link PhysicalTenantInterceptor}. The legacy decoder / claimsProvider /
+   * userServices args are no longer needed on this path (they are baked into the handlers in the
+   * registry).
+   */
+  public Gateway(
+      final Duration shutdownDuration,
+      final GatewayCfg gatewayCfg,
+      final EngineSecurityConfig securityConfiguration,
+      final BrokerClient brokerClient,
+      final ActorSchedulingService actorSchedulingService,
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final MeterRegistry meterRegistry,
+      final int maxVariableNameLength,
+      final PhysicalTenantIds physicalTenantIds,
+      final Map<String, AuthenticationHandler> ptHandlerRegistry) {
+    shutdownTimeout = shutdownDuration;
+    this.gatewayCfg = gatewayCfg;
+    this.securityConfiguration = securityConfiguration;
+    this.brokerClient = brokerClient;
+    this.actorSchedulingService = actorSchedulingService;
+    this.jobStreamer = jobStreamer;
+    // Legacy single-tenant auth deps are unused on the registry path; null them out.
+    userServices = null;
+    passwordEncoder = null;
+    jwtDecoder = null;
+    oidcClaimsProvider = (jwtClaims, tokenValue) -> jwtClaims;
+    this.meterRegistry = meterRegistry;
+    this.maxVariableNameLength = maxVariableNameLength;
+    this.physicalTenantIds = physicalTenantIds;
+    this.ptHandlerRegistry = Objects.requireNonNull(ptHandlerRegistry);
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -431,18 +477,32 @@ public final class Gateway implements CloseableSilently {
     // chain
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
-    interceptors.add(new PhysicalTenantInterceptor(physicalTenantIds));
 
-    if (!securityConfiguration.getAuthentication().isUnprotectedApi()) {
-      final var authMethod = securityConfiguration.getAuthentication().getMethod();
+    final var authConfig = securityConfiguration.getAuthentication();
+    final var authEnabled = !authConfig.isUnprotectedApi();
+
+    if (ptHandlerRegistry != null) {
+      // #55754 path: merged PT-aware interceptor (stamp + authenticate). Drops the standalone
+      // PhysicalTenantInterceptor below.
+      interceptors.add(
+          new PhysicalTenantAuthInterceptor(
+              physicalTenantIds.known(),
+              ptHandlerRegistry,
+              authEnabled,
+              new AuthenticationMetrics(meterRegistry, authConfig.getMethod())));
+      return ServerInterceptors.intercept(service, interceptors);
+    }
+
+    // Legacy single-tenant path (kept additive until #55755).
+    interceptors.add(new PhysicalTenantInterceptor(physicalTenantIds));
+    if (authEnabled) {
+      final var authMethod = authConfig.getMethod();
       final var handler =
           switch (authMethod) {
             case BASIC -> basicAuth();
             case OIDC ->
                 new AuthenticationHandler.Oidc(
-                    jwtDecoder,
-                    oidcClaimsProvider,
-                    securityConfiguration.getAuthentication().getOidc());
+                    jwtDecoder, oidcClaimsProvider, authConfig.getOidc());
           };
       interceptors.add(
           new AuthenticationInterceptor(
