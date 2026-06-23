@@ -77,6 +77,8 @@
     <version.msgpack>0.9.8</version.msgpack>
     <version.netty>4.1.135.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
+    <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
+    <version.opentelemetry>1.62.0</version.opentelemetry>
     <version.opensearch>2.9.0</version.opensearch>
     <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
@@ -991,6 +993,18 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
         <version>${version.jetty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!--
+        Override Spring Boot's opentelemetry version to address CVE-2026-45292.
+        Must be declared before spring-boot-dependencies so this version wins.
+      -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${version.opentelemetry}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
