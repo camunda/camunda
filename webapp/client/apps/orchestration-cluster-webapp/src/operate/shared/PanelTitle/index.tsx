@@ -6,4 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {Title as PanelTitle} from './styled';
+export {PanelTitle} from "./PanelTitle";
