@@ -734,26 +734,14 @@ jobs:
         id: ran-jobs
         shell: bash
         env:
-          GENERAL_UT: ${{ needs.general-unit-tests.result }}
-          DATABASE_IT: ${{ needs.database-integration-tests.result }}
           DOCKER_CHECKS: ${{ needs.docker-checks.result }}
-          HISTORY: ${{ needs.history-tests.result }}
-          IDENTITY: ${{ needs.identity-tests.result }}
           INTEGRATION: ${{ needs.integration-tests.result }}
-          RDBMS: ${{ needs.rdbms-integration-tests.result }}
-          ZEEBE: ${{ needs.zeebe-unit-tests.result }}
           ARCHUNIT: ${{ needs.archunit-tests.result }}
         run: |
           set -euo pipefail
           declare -A jobs=(
-            ["general-unit-tests"]="$GENERAL_UT"
-            ["database-integration-tests"]="$DATABASE_IT"
             ["docker-checks"]="$DOCKER_CHECKS"
-            ["history-tests"]="$HISTORY"
-            ["identity-tests"]="$IDENTITY"
             ["integration-tests"]="$INTEGRATION"
-            ["rdbms-integration-tests"]="$RDBMS"
-            ["zeebe-unit-tests"]="$ZEEBE"
             ["archunit-tests"]="$ARCHUNIT"
           )
           ran=()
