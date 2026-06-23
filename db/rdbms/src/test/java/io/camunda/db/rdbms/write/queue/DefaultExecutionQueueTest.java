@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import java.sql.Connection;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -37,13 +38,16 @@ class DefaultExecutionQueueTest {
   private DefaultExecutionQueue executionQueue;
 
   @BeforeEach
-  public void beforeEach() {
+  public void beforeEach() throws Exception {
     session = mock(SqlSession.class);
     sqlSessionFactory = mock(SqlSessionFactory.class);
     metrics = mock(RdbmsWriterMetrics.class);
     when(sqlSessionFactory.openSession(
             ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
         .thenReturn(session);
+    final var connection = mock(Connection.class);
+    when(connection.getAutoCommit()).thenReturn(false);
+    when(session.getConnection()).thenReturn(connection);
 
     executionQueue =
         new DefaultExecutionQueue(sqlSessionFactory, 1, 10, 0, metrics, TransactionRunner.noop());
