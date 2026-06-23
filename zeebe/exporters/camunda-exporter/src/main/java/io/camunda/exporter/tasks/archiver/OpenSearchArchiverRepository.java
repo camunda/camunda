@@ -468,6 +468,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
     final Builder requestBuilder =
         new Builder()
+            .trackTotalHits(t -> t.enabled(false))
             .index(sourceIndexName)
             .requestCache(false)
             .allowNoIndices(true)
