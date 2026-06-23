@@ -156,7 +156,7 @@ jobs:
           variables=$(echo "$substituted_variables" | jq -c .)
 
           # Run the curl command with expanded variables
-          curl -L -X POST "${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances" \
+          curl --fail-with-body -L -X POST "${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances" \
             -H "Authorization: Bearer $access_token" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json" \
