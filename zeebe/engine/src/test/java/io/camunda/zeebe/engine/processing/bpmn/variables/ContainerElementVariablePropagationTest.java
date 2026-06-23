@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -48,6 +49,45 @@ public final class ContainerElementVariablePropagationTest {
                         .startEvent()
                         .intermediateThrowEvent("nestedElement")
                         .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, "loopCounter");
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/camunda/issues/55491")
+  public void
+      shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnMultiInstanceSubProcess() {
+    // given
+    final var processId = "processId";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sp",
+                sp ->
+                    sp.multiInstance(
+                            mi ->
+                                mi.zeebeInputCollectionExpression("= [1]")
+                                    .zeebeInputElement("inputElement")
+                                    .zeebeOutputCollection("output")
+                                    .zeebeOutputElementExpression("outputElement"))
+                        .zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent("nestedElement")
+                        // Note output expression value is the same as the existing variable in the
+                        // container element
+                        .zeebeOutputExpression("= \"foo\"", LOCAL_VAR)
                         .endEvent())
             .endEvent()
             .done();
@@ -127,6 +167,37 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/55491")
+  public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnSubProcess() {
+    // given
+    final var processId = "processId";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sp",
+                sp ->
+                    sp.zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent("nestedElement")
+                        // Note output expression value is the same as the existing variable in the
+                        // container element
+                        .zeebeOutputExpression("= \"foo\"", LOCAL_VAR)
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
   public void shouldPropagateLocalVariablesIfOutputMappingOnSubProcess() {
     // given
     final var processId = "processId";
@@ -183,6 +254,36 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/55491")
+  public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnAdHocSubProcess() {
+    // given
+    final var processId = "processId";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .adHocSubProcess(
+                "ahsp",
+                ahsp -> {
+                  ahsp.zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+                      .zeebeActiveElementsCollectionExpression("[\"nestedElement\"]");
+                  ahsp.intermediateThrowEvent("nestedElement")
+                      // Note output expression value is the same as the existing variable in the
+                      // container element
+                      .zeebeOutputExpression("= \"foo\"", LOCAL_VAR);
+                })
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
   public void shouldPropagateLocalVariablesIfOutputMappingOnAdHocSubProcess() {
     // given
     final var processId = "processId";
@@ -223,6 +324,43 @@ public final class ContainerElementVariablePropagationTest {
         .signal("signal")
         .intermediateThrowEvent("nestedElement")
         .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
+        .endEvent();
+    final var process =
+        processBuilder
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("task"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withBpmnProcessId(processId)
+        .await();
+    ENGINE.signal().withSignalName("signal").broadcast();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/camunda/issues/55491")
+  public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnEventSubProcess() {
+    // given
+    final var processId = "processId";
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(processId);
+    processBuilder
+        .eventSubProcess("eventSubProcess")
+        .zeebeInputExpression("= \"foo\"", LOCAL_VAR)
+        .startEvent()
+        .interrupting(true)
+        .signal("signal")
+        .intermediateThrowEvent("nestedElement")
+        // Note output expression value is the same as the existing variable in the
+        // container element
+        .zeebeOutputExpression("= \"foo\"", LOCAL_VAR)
         .endEvent();
     final var process =
         processBuilder
