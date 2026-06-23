@@ -16,22 +16,22 @@ import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.1
 import { useCallback } from "react";
 import { Link } from "react-router-dom";
 
-import { useApi } from "src/utility/api";
-import { checkLicense } from "src/utility/api/headers";
-import { getAuthentication } from "src/utility/api/authentication";
 import { logout } from "src/utility/auth";
 import { useNotifications } from "src/components/notifications";
 import useTranslate from "src/utility/localization";
 
 import { useSidebarChildren } from "./useSidebarChildren";
 import { useCamundaToolsConfig } from "./useCamundaToolsConfig";
+import { licenseQueries } from "src/utility/api/headers/queries.ts";
+import { useQuery } from "@tanstack/react-query";
+import { authenticationQueries } from "src/utility/api/authentication/queries.ts";
 
 const SKIP_TO_CONTENT_TARGET_ID = "main-content";
 const LOGOUT_DELAY = 1000;
 
 const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
-  const { data: license } = useApi(checkLicense);
-  const { data: camundaUser } = useApi(getAuthentication);
+  const { data: license } = useQuery(licenseQueries.current());
+  const { data: camundaUser } = useQuery(authenticationQueries.me());
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("authentication");
   const { t: tNav } = useTranslate("navigation");
