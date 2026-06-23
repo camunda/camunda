@@ -50,7 +50,8 @@ public class EventTriggerBehavior {
       final Writers writers,
       final ProcessingState processingState,
       final BpmnStateBehavior stateBehavior,
-      final BpmnConditionalBehavior conditionalBehavior) {
+      final BpmnConditionalBehavior conditionalBehavior,
+      final int maxVariableNestingDepth) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
@@ -61,7 +62,11 @@ public class EventTriggerBehavior {
 
     variableBehavior =
         new VariableBehavior(
-            processingState.getVariableState(), writers.state(), conditionalBehavior, keyGenerator);
+            processingState.getVariableState(),
+            writers.state(),
+            conditionalBehavior,
+            keyGenerator,
+            maxVariableNestingDepth);
     this.stateBehavior = stateBehavior;
   }
 

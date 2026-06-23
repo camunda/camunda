@@ -37,6 +37,7 @@ public final class VariableBehavior {
   private final StateWriter stateWriter;
   private final BpmnConditionalBehavior conditionalBehavior;
   private final KeyGenerator keyGenerator;
+  private final int maxVariableNestingDepth;
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
@@ -46,11 +47,13 @@ public final class VariableBehavior {
       final VariableState variableState,
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final int maxVariableNestingDepth) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
     variableSourceRecord = VariableSourceRecord.none();
   }
 
@@ -59,17 +62,24 @@ public final class VariableBehavior {
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator,
+      final int maxVariableNestingDepth,
       final VariableSourceRecord variableSourceRecord) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
     this.variableSourceRecord = variableSourceRecord;
   }
 
   public VariableBehavior withVariableSource(final VariableSourceRecord source) {
     return new VariableBehavior(
-        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
+        variableState,
+        stateWriter,
+        conditionalBehavior,
+        keyGenerator,
+        maxVariableNestingDepth,
+        source);
   }
 
   /**
@@ -98,6 +108,7 @@ public final class VariableBehavior {
     if (indexedDocument.isEmpty()) {
       return;
     }
+    validateNestingDepth(document);
 
     variableRecord
         .setScopeKey(scopeKey)
@@ -151,6 +162,7 @@ public final class VariableBehavior {
     if (indexedDocument.isEmpty()) {
       return;
     }
+    validateNestingDepth(document);
 
     long currentScope = scopeKey;
     long parentScope;
@@ -271,5 +283,12 @@ public final class VariableBehavior {
     variableRecordCopy.copyFrom(variableRecord);
 
     return variableRecordCopy;
+  }
+
+  private void validateNestingDepth(final DirectBuffer document) {
+    final var result = VariableNestingDepthValidator.validate(document, maxVariableNestingDepth);
+    if (result.isLeft()) {
+      throw new IllegalArgumentException(result.getLeft().reason());
+    }
   }
 }
