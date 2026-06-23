@@ -164,8 +164,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers,
             processingState,
             stateBehavior,
-            conditionalBehavior,
-            config.getMaxVariableNestingDepth());
+            variableBehavior);
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(
@@ -181,11 +180,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(
-            expressionProcessor,
-            processingState,
-            variableBehavior,
-            eventTriggerBehavior,
-            config.getMaxVariableNestingDepth());
+            expressionProcessor, processingState, variableBehavior, eventTriggerBehavior);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(

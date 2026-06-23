@@ -75,21 +75,17 @@ public final class VariableNestingDepthValidator {
     final var reader = new MsgPackReader();
     reader.wrap(buffer, 0, buffer.capacity());
 
-    // Each stack entry holds the number of tokens that still remain at the parent depth level once
-    // we finish the current container. We track this per-level so that ascending back to the parent
-    // restores the correct remaining count.
+    // Stack entries save the parent's remaining token count so we can restore it when ascending.
     final Deque<Long> stack = new ArrayDeque<>();
     long remaining = 1; // one root token to read
     int depth = 0;
 
-    while (true) {
-      // Ascend past any fully-consumed levels.
-      while (remaining == 0) {
-        if (stack.isEmpty()) {
-          return false;
-        }
+    while (remaining > 0 || !stack.isEmpty()) {
+      if (remaining == 0) {
+        // Ascend one level; outer condition re-checks until a non-empty level is found.
         remaining = stack.pop();
         depth--;
+        continue;
       }
 
       remaining--;
@@ -118,6 +114,7 @@ public final class VariableNestingDepthValidator {
         }
       }
     }
+    return false;
   }
 
   private static boolean isEmpty(final DirectBuffer buffer) {

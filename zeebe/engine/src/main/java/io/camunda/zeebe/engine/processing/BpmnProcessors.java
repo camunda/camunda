@@ -257,8 +257,7 @@ public final class BpmnProcessors {
             writers,
             userTaskState,
             asyncRequestBehavior,
-            authCheckBehavior,
-            config.getMaxVariableNestingDepth()));
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
@@ -280,8 +279,7 @@ public final class BpmnProcessors {
             processingState.getBannedInstanceState(),
             authCheckBehavior,
             bpmnBehaviors,
-            config.isBusinessIdUniquenessEnabled(),
-            config.getMaxVariableNestingDepth());
+            config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
             keyGenerator, writers, metrics, processInstanceCreationHelper);
