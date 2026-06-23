@@ -16,6 +16,7 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_OUTLIER_BANDS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_TREND_REPORT_ID;
@@ -1369,6 +1370,74 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
+  // Total tool calls (single number, scoped by fleet view vs process drill-down)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldSumToolCallsAcrossAllCompletedAgenticInstances() {
+    // given completed agentic instances with known tool-call totals across two processes
+    final ProcessInstanceDto a = agenticInstanceWithToolCalls(PROC_KEY, 5L).build();
+    final ProcessInstanceDto b = agenticInstanceWithToolCalls(PROC_KEY, 10L).build();
+    final ProcessInstanceDto c = agenticInstanceWithToolCalls("other-agent-process", 15L).build();
+    // running agentic — excluded by completedInstancesOnly
+    final ProcessInstanceDto running =
+        agenticInstanceWithToolCalls(PROC_KEY, 100L)
+            .state(ProcessInstanceConstants.ACTIVE_STATE)
+            .endDate(null)
+            .duration(null)
+            .build();
+    // completed non-agentic — excluded by hasAgentInstances
+    final ProcessInstanceDto nonAgentic = completedInstance(PROC_KEY).build();
+
+    persistProcessInstances(List.of(a, b, c, running, nonAgentic));
+
+    // fleet view (L0, no definition scope): 5 + 10 + 15 = 30
+    assertThat(evaluateNumber(KPI_TOOL_CALLS_REPORT_ID, noExtraFilters())).isEqualTo(30.0);
+  }
+
+  @Test
+  void shouldScopeToolCallsToSelectedProcessDefinition() {
+    final String procKeyA = "proc-tools-a";
+    final String procKeyB = "proc-tools-b";
+
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithToolCalls(procKeyA, 7L).build(),
+            agenticInstanceWithToolCalls(procKeyA, 8L).build(),
+            agenticInstanceWithToolCalls(procKeyB, 100L).build()));
+
+    // drill-down (L1) to procKeyA only: 7 + 8 = 15 (procKeyB excluded)
+    assertThat(
+            evaluateNumber(
+                KPI_TOOL_CALLS_REPORT_ID,
+                withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
+        .isEqualTo(15.0);
+  }
+
+  @Test
+  void shouldScopeToolCallsByDateFilter() {
+    // capture one reference point so the window math stays deterministic across clock boundaries
+    final OffsetDateTime now = OffsetDateTime.now();
+    // within last-1-day window
+    final ProcessInstanceDto recent =
+        agenticInstanceWithToolCalls(PROC_KEY, 12L)
+            .startDate(now.minusHours(3))
+            .endDate(now.minusHours(2))
+            .build();
+    // outside the window — must not be added to the total
+    final ProcessInstanceDto old =
+        agenticInstanceWithToolCalls(PROC_KEY, 999L)
+            .startDate(now.minusDays(10))
+            .endDate(now.minusDays(9))
+            .build();
+
+    persistProcessInstances(List.of(recent, old));
+
+    assertThat(evaluateNumber(KPI_TOOL_CALLS_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
+        .isEqualTo(12.0);
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
@@ -1414,6 +1483,16 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   private ProcessInstanceDto.ProcessInstanceDtoBuilder agenticInstanceWithDuration(
       final String processDefinitionKey, final long duration) {
     return agenticInstanceWithTokens(processDefinitionKey, 0L, 0L).duration(duration);
+  }
+
+  /**
+   * Builds a completed agentic {@link ProcessInstanceDto} with the given total tool-call count. The
+   * TOOL_CALLS view property sums the per-instance rollup {@code agentTotalToolCalls}, which the
+   * exporter computes across the instance's agent instances — so the test sets it directly.
+   */
+  private ProcessInstanceDto.ProcessInstanceDtoBuilder agenticInstanceWithToolCalls(
+      final String processDefinitionKey, final long toolCalls) {
+    return agenticInstanceWithTokens(processDefinitionKey, 0L, 0L).agentTotalToolCalls(toolCalls);
   }
 
   /**
