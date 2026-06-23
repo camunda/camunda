@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.coordinator.transport;
 
 import io.camunda.eventbridge.coordinator.CoordinationManager;
+import io.camunda.eventbridge.coordinator.MetadataManager;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
@@ -15,6 +16,7 @@ import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
+import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
 import io.camunda.eventbridge.transport.RequestHandler;
 import java.util.concurrent.CompletableFuture;
 
@@ -31,11 +33,15 @@ public final class CoordinationRequestHandler implements RequestHandler {
 
   private final int partitionId;
   private final CoordinationManager coordinationManager;
+  private final MetadataManager metadataManager;
 
   public CoordinationRequestHandler(
-      final int partitionId, final CoordinationManager coordinationManager) {
+      final int partitionId,
+      final CoordinationManager coordinationManager,
+      final MetadataManager metadataManager) {
     this.partitionId = partitionId;
     this.coordinationManager = coordinationManager;
+    this.metadataManager = metadataManager;
   }
 
   @Override
@@ -95,30 +101,26 @@ public final class CoordinationRequestHandler implements RequestHandler {
   private CompletableFuture<byte[]> handleCreateTopic(final CoordinationRequest request) {
     final var create = new CreateTopicRequest();
     create.wrap(request.value());
-    return toFuture(
-        coordinationManager.handleCreateTopic(create), CoordinationResponseEncoder::encode);
+    return toFuture(metadataManager.handleCreateTopic(create), CoordinationResponseEncoder::encode);
   }
 
   private CompletableFuture<byte[]> handleDeleteTopic(final CoordinationRequest request) {
     final var delete = new DeleteTopicRequest();
     delete.wrap(request.value());
-    return toFuture(
-        coordinationManager.handleDeleteTopic(delete), CoordinationResponseEncoder::encode);
+    return toFuture(metadataManager.handleDeleteTopic(delete), CoordinationResponseEncoder::encode);
   }
 
   private CompletableFuture<byte[]> handleReassignTopic(final CoordinationRequest request) {
-    final var reassign =
-        new io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest();
+    final var reassign = new ReassignTopicRequest();
     reassign.wrap(request.value());
     return toFuture(
-        coordinationManager.handleReassignTopic(reassign), CoordinationResponseEncoder::encode);
+        metadataManager.handleReassignTopic(reassign), CoordinationResponseEncoder::encode);
   }
 
   private CompletableFuture<byte[]> handleListTopics(final CoordinationRequest request) {
     final var list = new ListTopicsRequest();
     list.wrap(request.value());
-    return toFuture(
-        coordinationManager.handleListTopics(list), CoordinationResponseEncoder::encode);
+    return toFuture(metadataManager.handleListTopics(list), CoordinationResponseEncoder::encode);
   }
 
   /**

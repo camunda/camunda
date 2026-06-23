@@ -13,6 +13,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.eventbridge.coordinator.CoordinationManager;
+import io.camunda.eventbridge.coordinator.MetadataManager;
 import io.camunda.eventbridge.coordinator.transport.CoordinationRequestHandler;
 import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
@@ -95,6 +96,7 @@ public final class CoordinatorPartition extends Actor {
   private CoordinatorStream coordinatorStream;
   private AsyncSnapshotDirector snapshotDirector;
   private CoordinationManager coordinationManager;
+  private MetadataManager metadataManager;
 
   public CoordinatorPartition(
       final int partitionId,
@@ -257,19 +259,20 @@ public final class CoordinatorPartition extends Actor {
 
   private void startCoordination() {
     coordinationManager =
-        new CoordinationManager(
+        new CoordinationManager(partitionId, partitionCount, clock, coordinatorStream);
+    actorScheduler.submitActor(coordinationManager);
+    metadataManager =
+        new MetadataManager(
             partitionId,
-            partitionCount,
             clusterSize,
-            clock,
             coordinatorStream,
             topicAssignmentPublisher,
             provisionedSinkRef,
             reconfigurationExecutor);
-    actorScheduler.submitActor(coordinationManager);
+    actorScheduler.submitActor(metadataManager);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),
-        new CoordinationRequestHandler(partitionId, coordinationManager));
+        new CoordinationRequestHandler(partitionId, coordinationManager, metadataManager));
   }
 
   private void startSnapshotDirector(
@@ -316,6 +319,10 @@ public final class CoordinatorPartition extends Actor {
       requestHandlerRegistry.unregister(CoordinationRequestHandler.topicName(partitionId));
       coordinationManager.closeAsync();
       coordinationManager = null;
+    }
+    if (metadataManager != null) {
+      metadataManager.closeAsync();
+      metadataManager = null;
     }
     if (snapshotDirector != null) {
       if (server != null) {

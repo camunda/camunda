@@ -11,30 +11,17 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.REBALANCE_IN_PROGRESS;
 
 import io.camunda.eventbridge.coordinator.assignor.PartitionAssignment.ReconciliationResult;
-import io.camunda.eventbridge.coordinator.placement.PlacementStrategy;
-import io.camunda.eventbridge.coordinator.placement.RoundRobinPlacement;
-import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
-import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorStream;
 import io.camunda.eventbridge.coordinator.stream.GroupMetadataCodec;
-import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
-import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
-import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
-import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.CreateTopicResponse;
-import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicResponse;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
-import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
-import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -42,15 +29,8 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,14 +38,11 @@ import org.slf4j.LoggerFactory;
 public class CoordinationManager extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinationManager.class);
-  private static final Pattern TOPIC_NAME = Pattern.compile("[a-zA-Z0-9._-]{1,249}");
 
   private final int partitionId;
   private final ConsumerGroupRegistry registry;
   private final CoordinationValidator validator;
   private final int partitionCount;
-  private final int clusterSize;
-  private final PlacementStrategy placement = new RoundRobinPlacement();
   private final SnowflakeIdGenerator idGenerator;
   private final InstantSource clock;
 
@@ -77,44 +54,15 @@ public class CoordinationManager extends Actor {
   private final Duration heartbeatTimeout;
   private final Duration heartbeatCheckInterval;
 
-  // Anti-entropy broadcast of the topic registry to brokers (registry-shard leader only). Null on
-  // non-registry shards and when no transport is wired (e.g. unit tests).
-  private static final Duration TOPIC_BROADCAST_INTERVAL = Duration.ofSeconds(2);
-  private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
-
-  // Brokers report provisioned partitions here; the registry-shard leader registers itself as the
-  // sink so the broker-side subscription can deliver reports. Per-topic covered partition ids drive
-  // the CREATING -> ACTIVE transition. Both are leader-only / registry-shard-only state.
-  private final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef;
-  private final Map<String, Set<Integer>> provisionedPartitions = new HashMap<>();
-  // Topics already flipped to ACTIVE, to suppress duplicate stream writes while the first ACTIVE
-  // write is still in flight (the registry snapshot reads CREATING until it commits).
-  private final Set<String> activated = new HashSet<>();
-
-  // Change-coordinator: drives committed -> target one safe Raft step at a time (registry-shard
-  // leader only). RECONFIG_INTERVAL is the kickoff/retry/anti-entropy tick; within a reassignment,
-  // steps chain on completion. `reconfiguring` guards against driving the same topic concurrently.
-  private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
-  private final ReconfigurationExecutor reconfigurationExecutor;
-  private final Set<String> reconfiguring = new HashSet<>();
-
   public CoordinationManager(
       final int partitionId,
       final int partitionCount,
-      final int clusterSize,
       final InstantSource clock,
-      final CoordinatorStream coordinatorStream,
-      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
-      final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
-      final ReconfigurationExecutor reconfigurationExecutor) {
+      final CoordinatorStream coordinatorStream) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
-    this.clusterSize = clusterSize;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
-    this.topicAssignmentPublisher = topicAssignmentPublisher;
-    this.provisionedSinkRef = provisionedSinkRef;
-    this.reconfigurationExecutor = reconfigurationExecutor;
     registry = new ConsumerGroupRegistry(new HashMap<>());
     validator = new CoordinationValidator(registry);
     idGenerator = new SnowflakeIdGenerator(1L);
@@ -173,118 +121,6 @@ public class CoordinationManager extends Actor {
     final CompletableActorFuture<CommitOffsetResponse> result = new CompletableActorFuture<>();
     actor.run(() -> commit(request, result));
     return result;
-  }
-
-  public ActorFuture<CreateTopicResponse> handleCreateTopic(final CreateTopicRequest request) {
-    return actor.call(() -> createTopic(request));
-  }
-
-  public ActorFuture<DeleteTopicResponse> handleDeleteTopic(final DeleteTopicRequest request) {
-    return actor.call(() -> deleteTopic(request));
-  }
-
-  public ActorFuture<io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse>
-      handleReassignTopic(
-          final io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest request) {
-    return actor.call(() -> reassignTopic(request));
-  }
-
-  public ActorFuture<ListTopicsResponse> handleListTopics(final ListTopicsRequest request) {
-    return actor.call(this::listTopics);
-  }
-
-  /**
-   * The broker node ids the coordinator may place partitions on. Bootstrap seam: derived from the
-   * configured cluster size today; this is the single point that becomes a live, advertised broker
-   * set when dynamic membership (brokers joining and advertising capacity) is added — placement and
-   * the change-coordinator consume this list and are otherwise membership-agnostic.
-   */
-  private List<Integer> availableBrokers() {
-    return IntStream.range(0, clusterSize).boxed().toList();
-  }
-
-  private io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse reassignTopic(
-      final io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest request) {
-    final var response =
-        new io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse();
-    final var name = request.getName();
-    final var meta = coordinatorStream.topicsSnapshot().get(name);
-    if (meta == null) {
-      return response.setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
-    }
-    if (request.getReplicationFactor() < 1) {
-      return response.setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
-    }
-    // Compute the new target placement centrally; the change-coordinator drives committed -> target
-    // one safe Raft step at a time. A no-op (already at target) just clears to NONE.
-    final var target =
-        placement.assign(meta.partitionCount(), request.getReplicationFactor(), availableBrokers());
-    if (!target.equals(meta.assignment())) {
-      coordinatorStream.registerTopic(
-          name,
-          new TopicMetadata(
-              meta.partitionCount(),
-              request.getReplicationFactor(),
-              meta.status(),
-              meta.assignment(),
-              target));
-    }
-    return response.setErrorCode(NONE);
-  }
-
-  private CreateTopicResponse createTopic(final CreateTopicRequest request) {
-    final var name = request.getName();
-    if (name == null || !TOPIC_NAME.matcher(name).matches()) {
-      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
-    }
-    if (request.getPartitionCount() < 1 || request.getReplicationFactor() < 1) {
-      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
-    }
-    if (coordinatorStream.topicsSnapshot().containsKey(name)) {
-      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_ALREADY_EXISTS);
-    }
-    // Decide placement centrally and store it as data, so brokers obey it (rather than deriving it)
-    // and a future rebalance can rewrite it. Register the desired state as CREATING; provisioning
-    // and the advance to ACTIVE follow (later increment). The write is replicated through the
-    // stream.
-    final var assignment =
-        placement.assign(
-            request.getPartitionCount(), request.getReplicationFactor(), availableBrokers());
-    coordinatorStream.registerTopic(
-        name,
-        request.getPartitionCount(),
-        request.getReplicationFactor(),
-        TopicMetadata.TopicStatus.CREATING,
-        assignment);
-    return new CreateTopicResponse().setErrorCode(NONE);
-  }
-
-  private DeleteTopicResponse deleteTopic(final DeleteTopicRequest request) {
-    final var name = request.getName();
-    if (!coordinatorStream.topicsSnapshot().containsKey(name)) {
-      return new DeleteTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
-    }
-    coordinatorStream.deleteTopic(name);
-    return new DeleteTopicResponse().setErrorCode(NONE);
-  }
-
-  private ListTopicsResponse listTopics() {
-    final var sb = new StringBuilder();
-    coordinatorStream
-        .topicsSnapshot()
-        .forEach(
-            (name, meta) ->
-                sb.append(name)
-                    .append(';')
-                    .append(meta.partitionCount())
-                    .append(';')
-                    .append(meta.replicationFactor())
-                    .append(';')
-                    .append(meta.status().name())
-                    .append(';')
-                    .append(meta.encodedAssignment())
-                    .append('\n'));
-    return new ListTopicsResponse().setErrorCode(NONE).setPayload(sb.toString());
   }
 
   private void commit(
@@ -517,142 +353,6 @@ public class CoordinationManager extends Actor {
     // replicated group metadata so consumers re-attach after a coordinator failover.
     restoreGroups();
     scheduleConsumerEviction();
-    scheduleTopicBroadcast();
-    if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD && provisionedSinkRef != null) {
-      // Become the registry's provisioning sink: broker reports are delivered here while this is
-      // the registry-shard leader. Hop onto the actor so accumulation/flip is single-threaded.
-      provisionedSinkRef.set(
-          (topic, partitions) -> actor.run(() -> onTopicProvisioned(topic, partitions)));
-    }
-    if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD) {
-      scheduleReconfiguration();
-    }
-  }
-
-  /**
-   * Kickoff/retry/anti-entropy tick for the change-coordinator: starts driving any topic that has
-   * an in-flight target and isn't already being driven. After a failover the new leader picks up
-   * here from the persisted committed/target in the registry.
-   */
-  protected void scheduleReconfiguration() {
-    if (reconfigurationExecutor != null) {
-      coordinatorStream
-          .topicsSnapshot()
-          .forEach(
-              (name, meta) -> {
-                if (meta.hasTarget() && reconfiguring.add(name)) {
-                  driveReconfiguration(name);
-                }
-              });
-    }
-    schedule(RECONFIG_INTERVAL, this::scheduleReconfiguration);
-  }
-
-  /** Executes the next single step toward a topic's target, chaining until committed == target. */
-  private void driveReconfiguration(final String name) {
-    final var meta = coordinatorStream.topicsSnapshot().get(name);
-    if (meta == null || !meta.hasTarget()) {
-      reconfiguring.remove(name);
-      return;
-    }
-    final var committed = meta.assignment();
-    final var target = meta.target();
-    final var op = ReconfigurationPlanner.nextOp(name, committed, target);
-    if (op.isEmpty()) {
-      // Converged: drop the target, keeping the (now == target) committed assignment.
-      LOG.info("Reassignment of topic {} complete", name);
-      coordinatorStream.registerTopic(
-          name,
-          new TopicMetadata(
-              meta.partitionCount(), meta.replicationFactor(), meta.status(), committed, Map.of()));
-      reconfiguring.remove(name);
-      return;
-    }
-
-    final var step = op.get();
-    final var advanced = ReconfigurationPlanner.apply(committed, step);
-    final var partitionMembers = advanced.getOrDefault(step.partitionId(), List.of());
-    reconfigurationExecutor
-        .execute(step, partitionMembers, meta.partitionCount())
-        .whenComplete(
-            (ok, error) ->
-                actor.run(
-                    () -> {
-                      if (error != null) {
-                        LOG.warn(
-                            "Reassignment step {} for topic {} failed; retrying",
-                            step,
-                            name,
-                            error);
-                        reconfiguring.remove(name); // retried on the next tick from persisted state
-                        return;
-                      }
-                      // Persist the one-step advance, then continue with the next step.
-                      coordinatorStream.registerTopic(
-                          name,
-                          new TopicMetadata(
-                              meta.partitionCount(),
-                              meta.replicationFactor(),
-                              meta.status(),
-                              advanced,
-                              target));
-                      driveReconfiguration(name);
-                    }));
-  }
-
-  @Override
-  protected void onActorClosing() {
-    if (provisionedSinkRef != null) {
-      provisionedSinkRef.set(null);
-    }
-  }
-
-  /**
-   * Records partitions a broker reported as provisioned and advances the topic to {@code ACTIVE}
-   * once every partition is covered. Idempotent: replayed/duplicate reports only re-add ids, and
-   * the flip is skipped if the topic is not (still) {@code CREATING}.
-   */
-  private void onTopicProvisioned(final String topic, final List<Integer> partitions) {
-    final var meta = coordinatorStream.topicsSnapshot().get(topic);
-    if (meta == null || meta.status() != TopicMetadata.TopicStatus.CREATING) {
-      return;
-    }
-    final var covered = provisionedPartitions.computeIfAbsent(topic, t -> new HashSet<>());
-    covered.addAll(partitions);
-    final var allCovered =
-        IntStream.rangeClosed(1, meta.partitionCount()).allMatch(covered::contains);
-    if (allCovered && activated.add(topic)) {
-      LOG.info(
-          "Topic {} fully provisioned ({} partitions) — marking ACTIVE",
-          topic,
-          meta.partitionCount());
-      coordinatorStream.registerTopic(
-          topic,
-          meta.partitionCount(),
-          meta.replicationFactor(),
-          TopicMetadata.TopicStatus.ACTIVE,
-          meta.assignment());
-    }
-  }
-
-  /**
-   * Periodically broadcasts the topic registry to all brokers so each can reconcile its local topic
-   * Raft groups. Only the registry shard's leader broadcasts (this manager runs on the leader
-   * only), so there is exactly one broadcaster cluster-wide. Re-asserting the full registry on an
-   * interval is the anti-entropy that lets a broker that missed an update still converge.
-   */
-  protected void scheduleTopicBroadcast() {
-    if (topicAssignmentPublisher == null
-        || partitionId != CoordinatorRouting.TOPIC_REGISTRY_SHARD) {
-      return;
-    }
-    try {
-      topicAssignmentPublisher.publish(
-          TopicAssignmentGossip.encode(coordinatorStream.topicsSnapshot()));
-    } catch (final Exception e) {
-      LOG.warn("Failed to broadcast topic registry", e);
-    }
-    schedule(TOPIC_BROADCAST_INTERVAL, this::scheduleTopicBroadcast);
   }
 
   private String generateMemberId() {
