@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import {useTranslation} from 'react-i18next';
 import {Loading} from '@carbon/react';
 import {Container, LoadingContainer, EmptyMessage, ErrorMessage} from './styled';
 import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage';
@@ -23,47 +24,50 @@ type WithEmptyMessageProps = {
 	messagePosition?: 'top' | 'center';
 };
 
-const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children, status, ...props}) => (
-	<Container data-testid="diagram-body" tabIndex={0}>
-		{(() => {
-			if (status === 'content') {
-				return children;
-			}
+const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children, status, ...props}) => {
+	const {t} = useTranslation();
+	return (
+		<Container data-testid="diagram-body" tabIndex={0}>
+			{(() => {
+				if (status === 'content') {
+					return children;
+				}
 
-			if (status === 'loading') {
-				return (
-					<>
-						<LoadingContainer>
-							<Loading data-testid="diagram-spinner" withOverlay={false} />
-						</LoadingContainer>
-						{children}
-					</>
-				);
-			}
+				if (status === 'loading') {
+					return (
+						<>
+							<LoadingContainer>
+								<Loading data-testid="diagram-spinner" withOverlay={false} />
+							</LoadingContainer>
+							{children}
+						</>
+					);
+				}
 
-			if (status === 'empty' && 'emptyMessage' in props) {
-				return <EmptyMessage $position={props.messagePosition} {...props.emptyMessage} />;
-			}
+				if (status === 'empty' && 'emptyMessage' in props) {
+					return <EmptyMessage $position={props.messagePosition} {...props.emptyMessage} />;
+				}
 
-			if (status === 'forbidden') {
-				const position = 'messagePosition' in props ? props.messagePosition : 'top';
-				return (
-					<ErrorMessage
-						$position={position}
-						message="Missing permissions to view the Definition"
-						additionalInfo="Please contact your organization owner or admin to give you the necessary permissions to read this definition"
-					/>
-				);
-			}
+				if (status === 'forbidden') {
+					const position = 'messagePosition' in props ? props.messagePosition : 'top';
+					return (
+						<ErrorMessage
+							$position={position}
+							message={t('operate.shared.diagramShell.forbiddenMessage')}
+							additionalInfo={t('operate.shared.diagramShell.forbiddenAdditionalInfo')}
+						/>
+					);
+				}
 
-			if (status === 'error') {
-				const position = 'messagePosition' in props ? props.messagePosition : 'top';
-				return <ErrorMessage $position={position} />;
-			}
+				if (status === 'error') {
+					const position = 'messagePosition' in props ? props.messagePosition : 'top';
+					return <ErrorMessage $position={position} />;
+				}
 
-			return null;
-		})()}
-	</Container>
-);
+				return null;
+			})()}
+		</Container>
+	);
+};
 
 export {DiagramShell};

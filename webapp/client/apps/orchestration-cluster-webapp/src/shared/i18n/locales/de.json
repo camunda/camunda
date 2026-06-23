@@ -441,6 +441,10 @@
 					"resultCount_one": "{{count}} Ergebnis",
 					"resultCount_other": "{{count}} Ergebnisse",
 					"resultCountMore": "{{count}}+ Ergebnisse"
+				},
+				"diagramShell": {
+					"forbiddenMessage": "Fehlende Berechtigungen zum Anzeigen der Definition",
+					"forbiddenAdditionalInfo": "Bitte wenden Sie sich an den Eigentümer oder Administrator Ihrer Organisation, um die erforderlichen Leseberechtigungen zu erhalten"
 				}
 			}
 		}

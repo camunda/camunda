@@ -455,6 +455,10 @@
 					"resultCount_one": "{{count}} result",
 					"resultCount_other": "{{count}} results",
 					"resultCountMore": "{{count}}+ results"
+				},
+				"diagramShell": {
+					"forbiddenMessage": "Missing permissions to view the Definition",
+					"forbiddenAdditionalInfo": "Please contact your organization owner or admin to give you the necessary permissions to read this definition"
 				}
 			}
 		}
