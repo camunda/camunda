@@ -13,6 +13,8 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import io.camunda.eventbridge.coordinator.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.coordinator.placement.PlacementStrategy;
 import io.camunda.eventbridge.coordinator.placement.RoundRobinPlacement;
+import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
+import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorStream;
 import io.camunda.eventbridge.coordinator.stream.GroupMetadataCodec;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
@@ -89,6 +91,13 @@ public class CoordinationManager extends Actor {
   // write is still in flight (the registry snapshot reads CREATING until it commits).
   private final Set<String> activated = new HashSet<>();
 
+  // Change-coordinator: drives committed -> target one safe Raft step at a time (registry-shard
+  // leader only). RECONFIG_INTERVAL is the kickoff/retry/anti-entropy tick; within a reassignment,
+  // steps chain on completion. `reconfiguring` guards against driving the same topic concurrently.
+  private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
+  private final ReconfigurationExecutor reconfigurationExecutor;
+  private final Set<String> reconfiguring = new HashSet<>();
+
   public CoordinationManager(
       final int partitionId,
       final int partitionCount,
@@ -96,7 +105,8 @@ public class CoordinationManager extends Actor {
       final InstantSource clock,
       final CoordinatorStream coordinatorStream,
       final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
-      final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef) {
+      final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
+      final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clusterSize = clusterSize;
@@ -104,6 +114,7 @@ public class CoordinationManager extends Actor {
     this.coordinatorStream = coordinatorStream;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
     this.provisionedSinkRef = provisionedSinkRef;
+    this.reconfigurationExecutor = reconfigurationExecutor;
     registry = new ConsumerGroupRegistry(new HashMap<>());
     validator = new CoordinationValidator(registry);
     idGenerator = new SnowflakeIdGenerator(1L);
@@ -478,6 +489,80 @@ public class CoordinationManager extends Actor {
       provisionedSinkRef.set(
           (topic, partitions) -> actor.run(() -> onTopicProvisioned(topic, partitions)));
     }
+    if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD) {
+      scheduleReconfiguration();
+    }
+  }
+
+  /**
+   * Kickoff/retry/anti-entropy tick for the change-coordinator: starts driving any topic that has
+   * an in-flight target and isn't already being driven. After a failover the new leader picks up
+   * here from the persisted committed/target in the registry.
+   */
+  protected void scheduleReconfiguration() {
+    if (reconfigurationExecutor != null) {
+      coordinatorStream
+          .topicsSnapshot()
+          .forEach(
+              (name, meta) -> {
+                if (meta.hasTarget() && reconfiguring.add(name)) {
+                  driveReconfiguration(name);
+                }
+              });
+    }
+    schedule(RECONFIG_INTERVAL, this::scheduleReconfiguration);
+  }
+
+  /** Executes the next single step toward a topic's target, chaining until committed == target. */
+  private void driveReconfiguration(final String name) {
+    final var meta = coordinatorStream.topicsSnapshot().get(name);
+    if (meta == null || !meta.hasTarget()) {
+      reconfiguring.remove(name);
+      return;
+    }
+    final var committed = meta.assignment();
+    final var target = meta.target();
+    final var op = ReconfigurationPlanner.nextOp(name, committed, target);
+    if (op.isEmpty()) {
+      // Converged: drop the target, keeping the (now == target) committed assignment.
+      LOG.info("Reassignment of topic {} complete", name);
+      coordinatorStream.registerTopic(
+          name,
+          new TopicMetadata(
+              meta.partitionCount(), meta.replicationFactor(), meta.status(), committed, Map.of()));
+      reconfiguring.remove(name);
+      return;
+    }
+
+    final var step = op.get();
+    final var advanced = ReconfigurationPlanner.apply(committed, step);
+    final var partitionMembers = advanced.getOrDefault(step.partitionId(), List.of());
+    reconfigurationExecutor
+        .execute(step, partitionMembers)
+        .whenComplete(
+            (ok, error) ->
+                actor.run(
+                    () -> {
+                      if (error != null) {
+                        LOG.warn(
+                            "Reassignment step {} for topic {} failed; retrying",
+                            step,
+                            name,
+                            error);
+                        reconfiguring.remove(name); // retried on the next tick from persisted state
+                        return;
+                      }
+                      // Persist the one-step advance, then continue with the next step.
+                      coordinatorStream.registerTopic(
+                          name,
+                          new TopicMetadata(
+                              meta.partitionCount(),
+                              meta.replicationFactor(),
+                              meta.status(),
+                              advanced,
+                              target));
+                      driveReconfiguration(name);
+                    }));
   }
 
   @Override

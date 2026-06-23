@@ -79,6 +79,8 @@ public final class CoordinatorPartition extends Actor {
   private final java.util.concurrent.atomic.AtomicReference<
           java.util.function.BiConsumer<String, java.util.List<Integer>>>
       provisionedSinkRef;
+  private final io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor
+      reconfigurationExecutor;
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Role currentRole;
@@ -108,7 +110,9 @@ public final class CoordinatorPartition extends Actor {
       final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
       final java.util.concurrent.atomic.AtomicReference<
               java.util.function.BiConsumer<String, java.util.List<Integer>>>
-          provisionedSinkRef) {
+          provisionedSinkRef,
+      final io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor
+          reconfigurationExecutor) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clusterSize = clusterSize;
@@ -120,6 +124,7 @@ public final class CoordinatorPartition extends Actor {
     this.coordinatorTopologyManager = coordinatorTopologyManager;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
     this.provisionedSinkRef = provisionedSinkRef;
+    this.reconfigurationExecutor = reconfigurationExecutor;
     requestHandlerRegistry = new RequestHandlerRegistry(partitionId, messagingService);
     dbFactory =
         new ZeebeRocksDbFactory<>(
@@ -259,7 +264,8 @@ public final class CoordinatorPartition extends Actor {
             clock,
             coordinatorStream,
             topicAssignmentPublisher,
-            provisionedSinkRef);
+            provisionedSinkRef,
+            reconfigurationExecutor);
     actorScheduler.submitActor(coordinationManager);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),

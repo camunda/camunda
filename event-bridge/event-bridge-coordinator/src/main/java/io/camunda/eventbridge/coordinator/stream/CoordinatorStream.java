@@ -234,14 +234,20 @@ public final class CoordinatorStream {
       final int replicationFactor,
       final TopicMetadata.TopicStatus status,
       final java.util.Map<Integer, java.util.List<Integer>> assignment) {
+    registerTopic(name, new TopicMetadata(partitionCount, replicationFactor, status, assignment));
+  }
+
+  /** Registers a topic's full desired configuration (committed assignment + in-flight target). */
+  public void registerTopic(final String name, final TopicMetadata metadata) {
     final var command =
         new TopicRecord()
             .setName(name)
             .setOp(TopicRecord.OP_REGISTER)
-            .setPartitionCount(partitionCount)
-            .setReplicationFactor(replicationFactor)
-            .setStatus(status)
-            .setAssignment(TopicMetadata.encodeAssignment(assignment));
+            .setPartitionCount(metadata.partitionCount())
+            .setReplicationFactor(metadata.replicationFactor())
+            .setStatus(metadata.status())
+            .setAssignment(TopicMetadata.encodeAssignment(metadata.assignment()))
+            .setTarget(TopicMetadata.encodeAssignment(metadata.target()));
     writeTopicCommand(name, command, CoordinatorIntent.REGISTER_TOPIC);
   }
 

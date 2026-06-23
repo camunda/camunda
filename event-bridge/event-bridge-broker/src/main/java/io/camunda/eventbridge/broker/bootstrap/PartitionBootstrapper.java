@@ -70,6 +70,8 @@ final class PartitionBootstrapper {
   private java.util.concurrent.atomic.AtomicReference<
           java.util.function.BiConsumer<String, java.util.List<Integer>>>
       provisionedSinkRef;
+  private io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor
+      reconfigurationExecutor;
 
   PartitionBootstrapper(
       final AtomixCluster cluster,
@@ -94,13 +96,16 @@ final class PartitionBootstrapper {
       final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
       final java.util.concurrent.atomic.AtomicReference<
               java.util.function.BiConsumer<String, java.util.List<Integer>>>
-          provisionedSinkRef) {
+          provisionedSinkRef,
+      final io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor
+          reconfigurationExecutor) {
 
     final var membershipService = cluster.getMembershipService();
     localMemberId = membershipService.getLocalMember().id();
     this.brokerMessagingService = brokerMessagingService;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
     this.provisionedSinkRef = provisionedSinkRef;
+    this.reconfigurationExecutor = reconfigurationExecutor;
 
     // Start the partitions assigned to this node (members include the local member), exactly like
     // Zeebe's PartitionManagerImpl derives placement from the cluster configuration.
@@ -204,7 +209,8 @@ final class PartitionBootstrapper {
             (ConstructableSnapshotStore) created.snapshotStore(),
             coordinatorTopologyManager,
             topicAssignmentPublisher,
-            provisionedSinkRef);
+            provisionedSinkRef,
+            reconfigurationExecutor);
     coordinatorPartitions.add(coordinatorPartition);
     actorScheduler.submitActor(coordinatorPartition);
 

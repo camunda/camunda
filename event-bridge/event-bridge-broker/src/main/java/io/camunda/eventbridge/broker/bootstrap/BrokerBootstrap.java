@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
+import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.coordinator.stream.TopicProvisionedGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
@@ -184,6 +185,20 @@ public final class BrokerBootstrap {
           registrySink.accept(payload);
         };
 
+    // Change-coordinator executor: CC-2 stub that confirms immediately (no real Raft membership
+    // change yet). CC-3 replaces it with a broker-side executor that runs RaftPartition join/leave.
+    final ReconfigurationExecutor reconfigurationExecutor =
+        (op, members) -> {
+          LOG.info(
+              "(stub) reconfiguration {} topic={} partition={} member={} -> members {}",
+              op.kind(),
+              op.topic(),
+              op.partitionId(),
+              op.member(),
+              members);
+          return java.util.concurrent.CompletableFuture.completedFuture(null);
+        };
+
     // 5. Start partitions — raft + lifecycle actors (uses broker messaging service)
     partitionBootstrapper.start(
         distribution,
@@ -191,7 +206,8 @@ public final class BrokerBootstrap {
         topologySetup.getCoordinatorTopologyManager(),
         brokerMessagingService,
         topicAssignmentPublisher,
-        provisionedSinkRef);
+        provisionedSinkRef,
+        reconfigurationExecutor);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
   }

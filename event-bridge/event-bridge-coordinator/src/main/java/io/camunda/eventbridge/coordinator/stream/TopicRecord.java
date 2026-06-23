@@ -36,15 +36,18 @@ public final class TopicRecord extends UnifiedRecordValue {
 
   // Centrally-decided placement (partition id -> replica node ids), encoded by TopicMetadata.
   private final StringProperty assignmentProp = new StringProperty("assignment", "");
+  // In-flight reassignment target (same encoding); empty when no reconfiguration is in progress.
+  private final StringProperty targetProp = new StringProperty("target", "");
 
   public TopicRecord() {
-    super(6);
+    super(7);
     declareProperty(nameProp)
         .declareProperty(opProp)
         .declareProperty(partitionCountProp)
         .declareProperty(replicationFactorProp)
         .declareProperty(statusProp)
-        .declareProperty(assignmentProp);
+        .declareProperty(assignmentProp)
+        .declareProperty(targetProp);
   }
 
   public String getName() {
@@ -105,12 +108,22 @@ public final class TopicRecord extends UnifiedRecordValue {
     return this;
   }
 
+  public String getTarget() {
+    return BufferUtil.bufferAsString(targetProp.getValue());
+  }
+
+  public TopicRecord setTarget(final String target) {
+    targetProp.setValue(target);
+    return this;
+  }
+
   /** The register payload as {@link TopicMetadata} (only meaningful for {@code op == register}). */
   public TopicMetadata toMetadata() {
     return new TopicMetadata(
         getPartitionCount(),
         getReplicationFactor(),
         TopicMetadata.TopicStatus.valueOf(getStatus()),
-        TopicMetadata.decodeAssignment(getAssignment()));
+        TopicMetadata.decodeAssignment(getAssignment()),
+        TopicMetadata.decodeAssignment(getTarget()));
   }
 }

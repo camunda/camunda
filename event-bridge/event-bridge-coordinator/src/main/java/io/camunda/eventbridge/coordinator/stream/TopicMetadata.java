@@ -25,18 +25,37 @@ import java.util.stream.Collectors;
  * @param partitionCount number of partitions in the topic's Raft group
  * @param replicationFactor number of replicas per partition
  * @param status lifecycle status of the topic
- * @param assignment partition id (1-based) &rarr; ordered replica broker node ids
+ * @param assignment committed placement: partition id (1-based) &rarr; ordered replica node ids —
+ *     what exists now and what brokers reconcile/provision
+ * @param target in-flight reassignment goal (empty when none); the change-coordinator drives {@code
+ *     assignment} toward this one safe Raft step at a time. Coordinator-internal — brokers ignore
+ *     it and act only on {@code assignment}.
  */
 public record TopicMetadata(
     int partitionCount,
     int replicationFactor,
     TopicStatus status,
-    Map<Integer, List<Integer>> assignment) {
+    Map<Integer, List<Integer>> assignment,
+    Map<Integer, List<Integer>> target) {
 
   /** Convenience for callers/tests that don't carry an assignment (defaults to empty). */
   public TopicMetadata(
       final int partitionCount, final int replicationFactor, final TopicStatus status) {
-    this(partitionCount, replicationFactor, status, Map.of());
+    this(partitionCount, replicationFactor, status, Map.of(), Map.of());
+  }
+
+  /** Convenience for callers that carry a committed assignment but no in-flight target. */
+  public TopicMetadata(
+      final int partitionCount,
+      final int replicationFactor,
+      final TopicStatus status,
+      final Map<Integer, List<Integer>> assignment) {
+    this(partitionCount, replicationFactor, status, assignment, Map.of());
+  }
+
+  /** Whether a reassignment is in flight. */
+  public boolean hasTarget() {
+    return target != null && !target.isEmpty();
   }
 
   /** Lifecycle of a topic as it is provisioned, served, and torn down. */
@@ -56,21 +75,26 @@ public record TopicMetadata(
         + ";"
         + status.name()
         + ";"
-        + encodeAssignment(assignment);
+        + encodeAssignment(assignment)
+        + ";"
+        + encodeAssignment(target);
   }
 
-  /** The assignment encoded as {@code pid=n1,n2|...} (for payloads outside this package). */
+  /**
+   * The committed assignment encoded as {@code pid=n1,n2|...} (for payloads outside this package).
+   */
   public String encodedAssignment() {
     return encodeAssignment(assignment);
   }
 
   static TopicMetadata decode(final String encoded) {
-    final var parts = encoded.split(";", 4);
+    final var parts = encoded.split(";", 5);
     return new TopicMetadata(
         Integer.parseInt(parts[0]),
         Integer.parseInt(parts[1]),
         TopicStatus.valueOf(parts[2]),
-        parts.length > 3 ? decodeAssignment(parts[3]) : Map.of());
+        parts.length > 3 ? decodeAssignment(parts[3]) : Map.of(),
+        parts.length > 4 ? decodeAssignment(parts[4]) : Map.of());
   }
 
   /**
