@@ -48,6 +48,12 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonProperty("xLabel")
   private String xLabel = "";
 
+  // Optional subtitle override for single-value (Number) visualizations. When set, it replaces the
+  // auto-derived subtitle. For system-generated reports it holds a localization key that is
+  // resolved server-side (see ReportRestMapper#localizeReportData), mirroring xLabel/yLabel.
+  @JsonProperty("subtitle")
+  private String subtitle = "";
+
   private Boolean alwaysShowRelative = false;
   private Boolean alwaysShowAbsolute = false;
   private Boolean showGradientBars = true;
@@ -253,6 +259,15 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonProperty("xLabel")
   public void setXLabel(final String xLabel) {
     this.xLabel = xLabel;
+  }
+
+  public String getSubtitle() {
+    return subtitle;
+  }
+
+  @JsonProperty("subtitle")
+  public void setSubtitle(final String subtitle) {
+    this.subtitle = subtitle;
   }
 
   public Boolean getAlwaysShowRelative() {
