@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
+import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
@@ -117,6 +120,23 @@ public final class BrokerBootstrap {
     executorServiceSetup = new ExecutorServiceSetup(executorServiceFactory);
     final var executorService = executorServiceSetup.start();
 
+    // 3b. Wire the topic-registry propagation channel (Option 1: the registry-shard coordinator
+    // leader broadcasts the registry; every broker reconciles from it). The local node also needs
+    // the registry, but cluster broadcast excludes the sender, so the publisher additionally
+    // delivers to the local sink. The subscriber receives broadcasts from remote registry leaders.
+    final var comm = cluster.getCommunicationService();
+    final Consumer<byte[]> registrySink =
+        payload ->
+            LOG.info(
+                "Received topic registry broadcast: {}",
+                TopicAssignmentGossip.decode(payload).keySet());
+    comm.consume(TopicAssignmentGossip.SUBJECT, Function.identity(), registrySink, executorService);
+    final TopicAssignmentGossip.Publisher topicAssignmentPublisher =
+        payload -> {
+          comm.broadcast(TopicAssignmentGossip.SUBJECT, payload, Function.identity(), true);
+          registrySink.accept(payload);
+        };
+
     // 4. Start partitions — raft + lifecycle actors (uses broker messaging service)
     partitionBootstrapper =
         new PartitionBootstrapper(
@@ -130,7 +150,8 @@ public final class BrokerBootstrap {
         distribution,
         topologyManager,
         topologySetup.getCoordinatorTopologyManager(),
-        brokerMessagingService);
+        brokerMessagingService,
+        topicAssignmentPublisher);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
   }

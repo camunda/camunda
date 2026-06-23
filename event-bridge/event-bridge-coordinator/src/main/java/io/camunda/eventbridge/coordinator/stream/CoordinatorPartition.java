@@ -74,6 +74,7 @@ public final class CoordinatorPartition extends Actor {
   private final ZeebeDbFactory<EventBridgeColumnFamilies> dbFactory;
   private final RequestHandlerRegistry requestHandlerRegistry;
   private final TopologyManagerImpl coordinatorTopologyManager;
+  private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Role currentRole;
@@ -98,7 +99,8 @@ public final class CoordinatorPartition extends Actor {
       final InstantSource clock,
       final Path runtimeDirectory,
       final ConstructableSnapshotStore snapshotStore,
-      final TopologyManagerImpl coordinatorTopologyManager) {
+      final TopologyManagerImpl coordinatorTopologyManager,
+      final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.raftPartition = raftPartition;
@@ -107,6 +109,7 @@ public final class CoordinatorPartition extends Actor {
     this.runtimeDirectory = runtimeDirectory;
     this.snapshotStore = snapshotStore;
     this.coordinatorTopologyManager = coordinatorTopologyManager;
+    this.topicAssignmentPublisher = topicAssignmentPublisher;
     requestHandlerRegistry = new RequestHandlerRegistry(partitionId, messagingService);
     dbFactory =
         new ZeebeRocksDbFactory<>(
@@ -239,7 +242,8 @@ public final class CoordinatorPartition extends Actor {
 
   private void startCoordination() {
     coordinationManager =
-        new CoordinationManager(partitionId, partitionCount, clock, coordinatorStream);
+        new CoordinationManager(
+            partitionId, partitionCount, clock, coordinatorStream, topicAssignmentPublisher);
     actorScheduler.submitActor(coordinationManager);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),

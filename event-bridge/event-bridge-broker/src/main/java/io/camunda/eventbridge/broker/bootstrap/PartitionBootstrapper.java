@@ -18,6 +18,7 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartit
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorPartition;
+import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
@@ -63,6 +64,7 @@ final class PartitionBootstrapper {
   private DefaultPartitionManagementService managementService;
   private MessagingService brokerMessagingService;
   private MemberId localMemberId;
+  private TopicAssignmentGossip.Publisher topicAssignmentPublisher;
 
   PartitionBootstrapper(
       final AtomixCluster cluster,
@@ -83,11 +85,13 @@ final class PartitionBootstrapper {
       final Set<PartitionMetadata> distribution,
       final TopologyManagerImpl topologyManager,
       final TopologyManagerImpl coordinatorTopologyManager,
-      final MessagingService brokerMessagingService) {
+      final MessagingService brokerMessagingService,
+      final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
 
     final var membershipService = cluster.getMembershipService();
     localMemberId = membershipService.getLocalMember().id();
     this.brokerMessagingService = brokerMessagingService;
+    this.topicAssignmentPublisher = topicAssignmentPublisher;
 
     // Start the partitions assigned to this node (members include the local member), exactly like
     // Zeebe's PartitionManagerImpl derives placement from the cluster configuration.
@@ -188,7 +192,8 @@ final class PartitionBootstrapper {
             clock,
             runtimeDirectory,
             (ConstructableSnapshotStore) created.snapshotStore(),
-            coordinatorTopologyManager);
+            coordinatorTopologyManager,
+            topicAssignmentPublisher);
     coordinatorPartitions.add(coordinatorPartition);
     actorScheduler.submitActor(coordinatorPartition);
 

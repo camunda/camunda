@@ -30,6 +30,13 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public final class CoordinatorRouting {
 
+  /**
+   * The coordinator shard that owns the global topic registry. Unlike consumer groups (sharded by
+   * group id), topics are a single cluster-wide namespace, so all topic management and the registry
+   * broadcast are anchored on one shard. Partition ids are 1-based, so this is the first shard.
+   */
+  public static final int TOPIC_REGISTRY_SHARD = 1;
+
   private CoordinatorRouting() {}
 
   /**

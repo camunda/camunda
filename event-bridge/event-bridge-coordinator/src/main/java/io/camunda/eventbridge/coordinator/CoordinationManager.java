@@ -13,7 +13,9 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import io.camunda.eventbridge.coordinator.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorStream;
 import io.camunda.eventbridge.coordinator.stream.GroupMetadataCodec;
+import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
+import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -63,15 +65,22 @@ public class CoordinationManager extends Actor {
   private final Duration heartbeatTimeout;
   private final Duration heartbeatCheckInterval;
 
+  // Anti-entropy broadcast of the topic registry to brokers (registry-shard leader only). Null on
+  // non-registry shards and when no transport is wired (e.g. unit tests).
+  private static final Duration TOPIC_BROADCAST_INTERVAL = Duration.ofSeconds(2);
+  private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
+
   public CoordinationManager(
       final int partitionId,
       final int partitionCount,
       final InstantSource clock,
-      final CoordinatorStream coordinatorStream) {
+      final CoordinatorStream coordinatorStream,
+      final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
+    this.topicAssignmentPublisher = topicAssignmentPublisher;
     registry = new ConsumerGroupRegistry(new HashMap<>());
     validator = new CoordinationValidator(registry);
     idGenerator = new SnowflakeIdGenerator(1L);
@@ -421,6 +430,27 @@ public class CoordinationManager extends Actor {
     // replicated group metadata so consumers re-attach after a coordinator failover.
     restoreGroups();
     scheduleConsumerEviction();
+    scheduleTopicBroadcast();
+  }
+
+  /**
+   * Periodically broadcasts the topic registry to all brokers so each can reconcile its local topic
+   * Raft groups. Only the registry shard's leader broadcasts (this manager runs on the leader
+   * only), so there is exactly one broadcaster cluster-wide. Re-asserting the full registry on an
+   * interval is the anti-entropy that lets a broker that missed an update still converge.
+   */
+  protected void scheduleTopicBroadcast() {
+    if (topicAssignmentPublisher == null
+        || partitionId != CoordinatorRouting.TOPIC_REGISTRY_SHARD) {
+      return;
+    }
+    try {
+      topicAssignmentPublisher.publish(
+          TopicAssignmentGossip.encode(coordinatorStream.topicsSnapshot()));
+    } catch (final Exception e) {
+      LOG.warn("Failed to broadcast topic registry", e);
+    }
+    schedule(TOPIC_BROADCAST_INTERVAL, this::scheduleTopicBroadcast);
   }
 
   private String generateMemberId() {
