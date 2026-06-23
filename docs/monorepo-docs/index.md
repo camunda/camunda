@@ -38,6 +38,33 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 - ChatOps commands and flaky test handling
 - Comprehensive troubleshooting guide
 
+### CI Runbooks
+
+**[CI Runbooks](./ci-runbooks.md)** - Runbooks for responding to CI incidents and alerts including:
+
+- Incident runbooks: checking status pages, disabling flaky tests, bypassing the merge queue
+- Alert runbooks for merge queue failures, high job runtimes, self-hosted runner disconnects
+- Snapshot artifact staleness and missing artifact alerts
+- Helm chart integration test failures and preview environment smoke test failures
+
+### Infrastructure Services
+
+**[Infrastructure Services](./infrastructure-services.md)** - Overview of the infrastructure services
+used by the monorepo, owned by the Infrastructure team (`#ask-infra`):
+
+- Secret management with Hashicorp Vault
+- Self-hosted GitHub Actions runners (GCP/AWS, autoscaled)
+- Dependency management with Renovate
+- CI analytics monitoring with BigQuery, Prometheus, and Grafana
+- Infra Global GitHub Actions reusable workflows and composite actions
+
+### Processes
+
+**[Processes](./processes.md)** - Processes we follow in the Monorepo, including:
+
+- Renovate PR Handling
+- (CI) Incident Management Process
+
 ### Release Process
 
 **[Release Process](./release)** - Complete software release procedures and guidelines including:

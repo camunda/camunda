@@ -717,9 +717,14 @@ We should aim to have all tests consistently passing, avoid introducing new flak
 
 GitHub Action workflows with Maven testing Java code should use the [flaky-test-extractor-maven-plugin](#flaky-test-extractor-maven-plugin) and report the resulting [detailed flaky test statistics](https://github.com/camunda/camunda/issues/26930) to our [CI health](#ci-health-metrics) database.
 
+Please use the [CI stress testing functionality](#stress-testing) to avoid introducing new flaky tests.
+
+The [**Flaky Test Gate**](./flaky-test-gate.md) blocks PRs that introduce new flaky tests not already known on `main`/`stable/*`. Once a test is flagged on a PR the alert is **sticky** — it remains until either the method body is modified and 3 subsequent CI runs observe the test clean in the affected job, or the `ci:flaky-test-bypass` label is applied. A re-run that happens to pass does not silence the alert. See the [Flaky Test Gate reference](./flaky-test-gate.md) for the full rules, comment templates, and operational concerns.
+
 Related resources:
 
-* [the Flaky tests dashboard (internal)](https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo)
+* [Flaky tests dashboard (internal)](https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo)
+* [Flaky Test Gate reference](./flaky-test-gate.md)
 
 ### flaky-test-extractor-maven-plugin
 
