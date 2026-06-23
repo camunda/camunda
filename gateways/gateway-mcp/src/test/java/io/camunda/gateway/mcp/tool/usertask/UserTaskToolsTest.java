@@ -301,7 +301,15 @@ class UserTaskToolsTest extends OperationalToolsTest {
                   .arguments(
                       Map.of(
                           "filter",
-                          Map.of("state", "CREATED", "assignee", "john.doe", "priority", 50),
+                          Map.of(
+                              "state",
+                              "CREATED",
+                              "assignee",
+                              "john.doe",
+                              "businessId",
+                              "order-42",
+                              "priority",
+                              50),
                           "sort",
                           List.of(Map.of("field", "creationDate", "order", "DESC")),
                           "page",
@@ -334,6 +342,10 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(filter.assigneeOperations())
           .extracting(Operation::operator, Operation::value)
           .containsExactly(tuple(Operator.EQUALS, "john.doe"));
+
+      assertThat(filter.businessIdOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, "order-42"));
 
       assertThat(filter.priorityOperations())
           .extracting(Operation::operator, Operation::value)

@@ -523,6 +523,13 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The assignee of the user task.
+        businessId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: >
+            The business ID of the owning process instance the user task belongs to. This only
+            works for user tasks created with 8.10 and onwards. Tasks from prior versions don't
+            contain this data and cannot be found.
         priority:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
@@ -622,6 +629,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: tags
           addedInVersion: "8.9"
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     UserTaskSearchQueryResult:
       description: User task search query response.
