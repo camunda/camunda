@@ -25,6 +25,8 @@ import org.junit.rules.TestWatcher;
 public final class ContainerElementVariablePropagationTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String AD_HOC_SUB_PROCESS_ELEMENTS = "adHocSubProcessElements";
+  private static final String LOOP_COUNTER = "loopCounter";
   private static final String LOCAL_VAR = "localVar";
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
@@ -59,7 +61,7 @@ public final class ContainerElementVariablePropagationTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, "loopCounter");
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOOP_COUNTER);
     assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
   }
 
@@ -98,7 +100,7 @@ public final class ContainerElementVariablePropagationTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, "loopCounter");
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOOP_COUNTER);
     assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
   }
 
@@ -134,7 +136,7 @@ public final class ContainerElementVariablePropagationTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, "loopCounter");
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOOP_COUNTER);
     assertVariableIsPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
   }
 
@@ -251,6 +253,7 @@ public final class ContainerElementVariablePropagationTest {
 
     // then
     assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, AD_HOC_SUB_PROCESS_ELEMENTS);
   }
 
   @Test
@@ -281,6 +284,7 @@ public final class ContainerElementVariablePropagationTest {
 
     // then
     assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, AD_HOC_SUB_PROCESS_ELEMENTS);
   }
 
   @Test
@@ -309,6 +313,7 @@ public final class ContainerElementVariablePropagationTest {
 
     // then
     assertVariableIsPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, AD_HOC_SUB_PROCESS_ELEMENTS);
   }
 
   @Test
@@ -456,6 +461,44 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
+  public void shouldNotPropagateLocalVariablesWithSameValueIfNoOutputMappingOnCallActivity() {
+    // given
+    final var parentProcessId = "parentProcessId";
+    final var childProcessId = "childProcessId";
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId(childProcessId)
+                        .zeebePropagateAllChildVariables(false)
+                        .zeebeInputExpression("= \"foo\"", LOCAL_VAR))
+            .endEvent()
+            .done();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .intermediateThrowEvent("nestedElement")
+            .zeebeOutputExpression("= \"foo\"", LOCAL_VAR)
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
   public void shouldPropagateLocalVariablesIfOutputMappingOnCallActivity() {
     // given
     final var parentProcessId = "parentProcessId";
@@ -502,7 +545,7 @@ public final class ContainerElementVariablePropagationTest {
                 .variableRecords()
                 .withIntent(VariableIntent.CREATED)
                 .withScopeKey(processInstanceKey)
-                .filter(v -> v.getValue().getName().equalsIgnoreCase(variableName))
+                .withName(variableName)
                 .exists())
         .isFalse();
   }
@@ -515,7 +558,7 @@ public final class ContainerElementVariablePropagationTest {
                 .variableRecords()
                 .withIntent(VariableIntent.CREATED)
                 .withScopeKey(processInstanceKey)
-                .filter(v -> v.getValue().getName().equalsIgnoreCase(variableName))
+                .withName(variableName)
                 .exists())
         .isTrue();
   }
