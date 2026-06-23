@@ -458,7 +458,6 @@ camunda-platform:
         operator: "Exists"
         effect: "NoSchedule"
 
-
 # Infra-managed Gateway API plumbing (Gateway + Vouch Middleware + wildcard-cert
 # TLS termination) rendered into the preview namespace. Replaces the former
 # `infra-preview-environments-ingress` dependency. The HTTPRoutes are

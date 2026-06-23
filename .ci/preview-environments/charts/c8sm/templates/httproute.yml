@@ -21,9 +21,9 @@
 ---
 {{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
 {{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
-{{- $gateway := index .Values "infra-preview-environments-gateway-api" -}}
-{{- $gatewayName := $gateway.gateway.name -}}
-{{- $vouchMiddleware := $gateway.auth.middlewareName -}}
+{{- $gateway := required "infra-preview-environments-gateway-api values block must be set" (index .Values "infra-preview-environments-gateway-api") -}}
+{{- $gatewayName := required "infra-preview-environments-gateway-api.gateway.name must be set so the HTTPRoutes can attach to the infra-managed Gateway" $gateway.gateway.name -}}
+{{- $vouchMiddleware := required "infra-preview-environments-gateway-api.auth.middlewareName must be set so the HTTPRoute filters can reference the Vouch Middleware" $gateway.auth.middlewareName -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
