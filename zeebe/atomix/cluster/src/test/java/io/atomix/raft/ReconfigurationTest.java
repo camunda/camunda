@@ -334,6 +334,47 @@ final class ReconfigurationTest {
     }
 
     @Test
+    void shouldJoinAsPassiveObserver(@TempDir final Path tmp) {
+      // given - a cluster with 3 active members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+
+      // when - a new member joins as a passive observer
+      final var id4 = MemberId.from("4");
+      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      m4.join(List.of(id1, id2, id3), Type.PASSIVE).join();
+
+      // then - every member sees 3 active voters and member 4 as a non-voting (passive) observer
+      Awaitility.await("Member 4 is a passive observer on all members")
+          .untilAsserted(
+              () ->
+                  assertThat(List.of(m1, m2, m3, m4))
+                      .allSatisfy(
+                          member -> {
+                            final var cluster = member.cluster();
+                            assertThat(cluster.getMember(id1).getType()).isEqualTo(Type.ACTIVE);
+                            assertThat(cluster.getMember(id2).getType()).isEqualTo(Type.ACTIVE);
+                            assertThat(cluster.getMember(id3).getType()).isEqualTo(Type.ACTIVE);
+                            assertThat(cluster.getMember(id4).getType()).isEqualTo(Type.PASSIVE);
+                          }));
+
+      // and - an entry appended by the leader replicates to the passive observer
+      final var leader = awaitLeader(m1, m2, m3);
+      final var index = appendEntry(leader).write().join();
+      Awaitility.await("Passive observer replicated the committed entry")
+          .untilAsserted(() -> assertThat(m4.getContext().getCommitIndex()).isEqualTo(index));
+    }
+
+    @Test
     void shouldCommitOnAllMembers(@TempDir final Path tmp) {
       // given - a cluster with 3 members and one new member joining
       final var id1 = MemberId.from("1");

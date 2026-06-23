@@ -103,6 +103,12 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
+  public CompletableFuture<RaftServer> join(
+      final Collection<MemberId> cluster, final Type joinType) {
+    return start(() -> cluster().join(cluster, joinType));
+  }
+
+  @Override
   public CompletableFuture<RaftServer> leave() {
     return new ReconfigurationHelper(context).leave().thenApply(v -> this);
   }

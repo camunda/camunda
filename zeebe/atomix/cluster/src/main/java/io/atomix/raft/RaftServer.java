@@ -300,6 +300,19 @@ public interface RaftServer {
   CompletableFuture<RaftServer> join(Collection<MemberId> cluster);
 
   /**
+   * Starts this raft server by joining an existing replication group as a member of the given type.
+   * A {@link io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster.
+   * {@link RaftMember.Type#PASSIVE} joins as a non-voting observer (receives replication and
+   * snapshots, never participates in elections or quorum); {@link RaftMember.Type#ACTIVE} is a
+   * voting member (equivalent to {@link #join(Collection)}).
+   *
+   * @param cluster a list of member ids that are part of the cluster and assist in joining.
+   * @param joinType the membership type to join as.
+   * @return A completable future to be completed once the server has joined the cluster.
+   */
+  CompletableFuture<RaftServer> join(Collection<MemberId> cluster, RaftMember.Type joinType);
+
+  /**
    * Starts this raft server by joining an existing replication group. A {@link
    * io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster.
    *

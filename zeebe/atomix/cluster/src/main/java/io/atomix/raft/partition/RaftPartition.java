@@ -128,6 +128,19 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return server.join().thenApply(v -> this);
   }
 
+  /**
+   * Joins this partition's Raft group as a non-voting observer (see {@link
+   * RaftPartitionServer#joinAsPassive()}): the local server receives replication and snapshots but
+   * never votes or counts toward quorum. Use this to observe a group's replicated state without
+   * affecting the availability of its voting members.
+   */
+  public CompletableFuture<RaftPartition> joinAsPassive(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore) {
+    initServer(managementService, snapshotStore);
+    return server.joinAsPassive().thenApply(v -> this);
+  }
+
   public CompletableFuture<RaftPartition> leave() {
     return server.leave().thenApply(v -> this);
   }

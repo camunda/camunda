@@ -55,6 +55,17 @@ public final class ReconfigurationHelper {
   }
 
   public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
+    return join(clusterMembers, Type.ACTIVE);
+  }
+
+  /**
+   * Joins the cluster as a member of the given type. Use {@link Type#ACTIVE} for a voting member
+   * (the default), or {@link Type#PASSIVE} for a non-voting observer that receives replication and
+   * snapshots but never participates in elections or quorum — so adding/removing it can never
+   * affect availability of the existing voters.
+   */
+  public CompletableFuture<Void> join(
+      final Collection<MemberId> clusterMembers, final Type joinType) {
     final var result = new CompletableFuture<Void>();
     threadContext.execute(
         () -> {
@@ -81,10 +92,12 @@ public final class ReconfigurationHelper {
           }
 
           // We don't know if the latest configuration loaded from the log is valid. So we will
-          // retry join any way.
+          // retry join any way. The joining member's declared type is honored by the leader (see
+          // LeaderRole#onJoin "Override local member with the new type"), so a PASSIVE joiner is
+          // added as a non-voting observer.
           final var joining =
               new DefaultRaftMember(
-                  raftContext.getCluster().getLocalMember().memberId(), Type.ACTIVE, Instant.now());
+                  raftContext.getCluster().getLocalMember().memberId(), joinType, Instant.now());
           final var assistingMembers =
               clusterMembers.stream()
                   .filter(memberId -> !memberId.equals(joining.memberId()))

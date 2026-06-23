@@ -138,6 +138,17 @@ public interface RaftCluster {
   CompletableFuture<Void> join(Collection<MemberId> cluster);
 
   /**
+   * Joins the cluster as a member of the given type. {@link RaftMember.Type#ACTIVE} joins as a
+   * voting member (equivalent to {@link #join(Collection)}); {@link RaftMember.Type#PASSIVE} joins
+   * as a non-voting observer that receives replication but never affects quorum.
+   *
+   * @param cluster a list of member ids that are part of the cluster and assist in joining.
+   * @param joinType the membership type to join as.
+   * @return A completable future to be completed once the server has joined the cluster.
+   */
+  CompletableFuture<Void> join(Collection<MemberId> cluster, RaftMember.Type joinType);
+
+  /**
    * Returns a member by ID.
    *
    * <p>The returned {@link RaftMember} is referenced by the unique {@link RaftMember#memberId()}.

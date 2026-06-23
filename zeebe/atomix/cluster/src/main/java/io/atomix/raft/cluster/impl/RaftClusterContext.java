@@ -92,8 +92,14 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> join(final Collection<MemberId> cluster) {
+    return join(cluster, RaftMember.Type.ACTIVE);
+  }
+
+  @Override
+  public CompletableFuture<Void> join(
+      final Collection<MemberId> cluster, final RaftMember.Type joinType) {
     return new ReconfigurationHelper(raft)
-        .join(cluster)
+        .join(cluster, joinType)
         // Usually the transition is triggered by `onConfigure` when the leader sends the updated
         // configuration. If the join is attempted again, it can be accepted without a configuration
         // change and nothing triggers the transition.

@@ -154,11 +154,24 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public CompletableFuture<RaftPartitionServer> join() {
+    return join(Type.ACTIVE);
+  }
+
+  /**
+   * Joins the partition's Raft group as a non-voting observer: the server receives replication and
+   * snapshots but never votes or counts toward quorum, so adding (or removing) it cannot affect the
+   * availability of the existing voting members.
+   */
+  public CompletableFuture<RaftPartitionServer> joinAsPassive() {
+    return join(Type.PASSIVE);
+  }
+
+  private CompletableFuture<RaftPartitionServer> join(final Type joinType) {
     final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
-    LOGGER.info("Server joining partition {}", partition.id());
+    LOGGER.info("Server joining partition {} as {}", partition.id(), joinType);
     return server
-        .join(partitionMetadata.members())
+        .join(partitionMetadata.members(), joinType)
         .whenComplete(
             (r, e) -> {
               if (e == null) {
