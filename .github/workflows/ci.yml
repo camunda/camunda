@@ -1738,7 +1738,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check for vulnerable dependencies
-        uses: camunda/infra-global-github-actions/dependency-vuln-check@5d109398b8e6b977dfac8e4ab463bba3e798f462 # main
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
