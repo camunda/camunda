@@ -116,9 +116,9 @@
     <version.feel-scala>1.21.0</version.feel-scala>
     <version.dmn-scala>1.12.0</version.dmn-scala>
     <version.rest-assured>6.0.0</version.rest-assured>
-    <version.spring>7.0.7</version.spring>
+    <version.spring>7.0.8</version.spring>
     <version.spring-security>7.0.6</version.spring-security>
-    <version.spring-boot>4.0.6</version.spring-boot>
+    <version.spring-boot>4.0.7</version.spring-boot>
     <version.spring-ai>2.0.0-M7</version.spring-ai>
     <version.mcp-sdk>2.0.0-M3</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
