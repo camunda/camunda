@@ -27,7 +27,7 @@ const MetricCard: React.FC<MetricCardProps> = ({title, value, children}) => {
   return (
     <MetricCardContainer aria-labelledby={id}>
       <MetricCardTitle id={id}>{title}</MetricCardTitle>
-      <MetricCardValue>{value}</MetricCardValue>
+      <MetricCardValue>{value.toLocaleString()}</MetricCardValue>
       {children}
     </MetricCardContainer>
   );
@@ -56,7 +56,9 @@ const LimitIndicator: React.FC<LimitIndicatorProps> = ({current, limit}) => {
         aria-valuenow={clampedUsage}
         aria-valuetext={`${current} of ${limit} limit (${usage.toFixed(0)}%)`}
       ></LimitMeter>
-      <MetricHelperText aria-hidden="true">of {limit} limit</MetricHelperText>
+      <MetricHelperText aria-hidden="true">
+        of {limit.toLocaleString()} limit
+      </MetricHelperText>
     </LimitMeterContainer>
   );
 };

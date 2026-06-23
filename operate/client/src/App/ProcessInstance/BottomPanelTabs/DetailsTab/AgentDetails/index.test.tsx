@@ -219,7 +219,7 @@ describe('<AgentDetails />', () => {
     const tokensUsed = section.getByRole('article', {name: 'Tokens Used'});
     expect(tokensUsed).toBeInTheDocument();
     expect(within(tokensUsed).getByText('150')).toBeInTheDocument();
-    expect(within(tokensUsed).getByText('of 1000 limit')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('of 1,000 limit')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('Input')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('100')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('Output')).toBeInTheDocument();
