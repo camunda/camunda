@@ -19,6 +19,7 @@
 	},
 	"dependencies": {
 		"@bpmn-io/element-template-icon-renderer": "1.0.0",
+		"@devbookhq/splitter": "1.4.2",
 		"@camunda/camunda-api-zod-schemas": "0.0.75",
 		"@camunda/camunda-composite-components": "0.24.0",
 		"@carbon/react": "1.109.0",
