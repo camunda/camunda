@@ -11,6 +11,7 @@ import {TableContainer as CarbonTableContainer} from '@carbon/react';
 
 const TableContainer = styled(CarbonTableContainer)`
 	position: relative;
+	background-color: var(--cds-layer);
 `;
 
 const LoadingOverlay = styled.div`

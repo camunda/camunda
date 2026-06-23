@@ -6,21 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
+import {Tooltip} from '@carbon/react';
+import {Checkmark, CircleDash, ErrorOutline, Pending} from '@carbon/react/icons';
 import styled from 'styled-components';
 
 const ItemGroup = styled.div`
 	display: flex;
 	align-items: center;
-	gap: var(--cds-spacing-02);
+	gap: var(--cds-spacing-04);
 `;
 
 const Item = styled.span<{$color?: string}>`
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-02);
+	cursor: default;
+	min-width: 3rem;
 	color: ${({$color}) => $color ?? 'inherit'};
-	font-size: var(--cds-body-short-01-font-size);
 `;
 
-const fmt = new Intl.NumberFormat('en', {notation: 'compact'});
+const formatCount = (count: number): string =>
+	Intl.NumberFormat('en', {notation: 'compact', maximumFractionDigits: 1}).format(count);
 
 type Props = {
 	totalCount: number;
@@ -29,23 +35,42 @@ type Props = {
 };
 
 const BatchItemsCount: React.FC<Props> = ({totalCount, completedCount, failedCount}) => {
-	const pendingCount = Math.max(0, totalCount - completedCount - failedCount);
+	const pendingCount = totalCount - completedCount - failedCount;
+	const hasAnyProgress = completedCount > 0 || failedCount > 0;
+
+	if (!hasAnyProgress && pendingCount > 0) {
+		const description = 'not started';
+		return (
+			<Tooltip description={description} align="bottom">
+				<Item $color="var(--cds-status-gray)" aria-label={description}>
+					<CircleDash aria-hidden="true" focusable="false" /> 0
+				</Item>
+			</Tooltip>
+		);
+	}
+
+	const statusConfig = [
+		{key: 'successful', count: completedCount, label: 'successful', Icon: Checkmark, color: 'var(--cds-status-green)'},
+		{key: 'failed', count: failedCount, label: 'failed', Icon: ErrorOutline, color: 'var(--cds-status-red)'},
+		{key: 'pending', count: pendingCount, label: 'pending', Icon: Pending, color: 'var(--cds-status-gray)'},
+	];
 
 	return (
-		<Stack as="span" orientation="horizontal" gap={3}>
-			<ItemGroup title={`${completedCount} completed`}>
-				<Item $color="var(--cds-support-success)">{fmt.format(completedCount)}</Item>
-				<span>completed</span>
-			</ItemGroup>
-			<ItemGroup title={`${failedCount} failed`}>
-				<Item $color="var(--cds-support-error)">{fmt.format(failedCount)}</Item>
-				<span>failed</span>
-			</ItemGroup>
-			<ItemGroup title={`${pendingCount} pending`}>
-				<Item>{fmt.format(pendingCount)}</Item>
-				<span>pending</span>
-			</ItemGroup>
-		</Stack>
+		<ItemGroup>
+			{statusConfig
+				.filter(({count}) => count > 0)
+				.map(({key, count, label, Icon, color}) => {
+					const description = `${count.toLocaleString()} ${label}`;
+					return (
+						<Tooltip key={key} description={description} align="bottom">
+							<Item role="status" aria-label={description}>
+								<Icon color={color} aria-hidden="true" focusable="false" />
+								{formatCount(count)}
+							</Item>
+						</Tooltip>
+					);
+				})}
+		</ItemGroup>
 	);
 };
 

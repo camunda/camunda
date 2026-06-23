@@ -16,9 +16,10 @@ type Props = {
 	label: string;
 	isDefault?: boolean;
 	defaultOrder?: SortOrder;
+	onSort?: (sortKey: string, order: SortOrder) => void;
 };
 
-const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defaultOrder = 'desc'}) => {
+const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defaultOrder = 'desc', onSort}) => {
 	const navigate = useNavigate();
 	const search = useSearch({strict: false}) as {sort?: string};
 
@@ -30,6 +31,7 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defau
 	const handleSort = () => {
 		const newOrder: SortOrder =
 			isActive && activeOrder === 'asc' ? 'desc' : isActive && activeOrder === 'desc' ? 'asc' : defaultOrder;
+		onSort?.(sortKey, newOrder);
 		void navigate({to: '.', search: (prev) => ({...prev, sort: `${sortKey}+${newOrder}`})});
 	};
 

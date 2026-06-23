@@ -9,6 +9,7 @@
 import {createFileRoute} from '@tanstack/react-router';
 import {z} from 'zod';
 import {BatchOperations} from '#/operate/pages/BatchOperations/BatchOperations';
+import {batchOperationsOptions} from '#/operate/pages/BatchOperations/batchOperations.queries';
 
 const batchOperationsSearchSchema = z.object({
 	page: z.number().int().positive().default(1),
@@ -18,6 +19,8 @@ const batchOperationsSearchSchema = z.object({
 
 export const Route = createFileRoute('/_auth/operate/batch-operations')({
 	validateSearch: batchOperationsSearchSchema,
+	loaderDeps: ({search}) => ({...search}),
+	loader: ({context: {queryClient}, deps}) => queryClient.ensureQueryData(batchOperationsOptions(deps)),
 	component: function BatchOperationsRoute() {
 		const {page, pageSize, sort} = Route.useSearch();
 		return <BatchOperations page={page} pageSize={pageSize} sort={sort} />;

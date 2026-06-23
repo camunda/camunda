@@ -6,35 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CheckmarkFilled, CheckmarkOutline, CloseFilled, Pause, Pending, Renew, Warning} from '@carbon/react/icons';
+import {
+	CheckmarkFilled,
+	CircleDash,
+	ErrorFilled,
+	Incomplete,
+	InProgress,
+	MisuseOutline,
+	PauseOutlineFilled,
+	type CarbonIconType,
+} from '@carbon/react/icons';
 import styled from 'styled-components';
 import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
 
-const Container = styled.span<{$color: string}>`
-	display: inline-flex;
-	align-items: center;
-	gap: var(--cds-spacing-02);
-	color: ${({$color}) => $color};
+const Container = styled.div`
+	display: flex;
+
+	svg {
+		align-self: center;
+		margin-inline-end: var(--cds-spacing-03);
+	}
 `;
 
 type Config = {
-	icon: React.ReactNode;
+	Icon: CarbonIconType;
 	color: string;
 	label: string;
 };
 
 const STATE_CONFIG: Record<BatchOperationState, Config> = {
-	COMPLETED: {icon: <CheckmarkFilled size={16} />, color: 'var(--cds-support-success)', label: 'Completed'},
-	PARTIALLY_COMPLETED: {
-		icon: <CheckmarkOutline size={16} />,
-		color: 'var(--cds-support-warning)',
-		label: 'Partially completed',
-	},
-	ACTIVE: {icon: <Renew size={16} />, color: 'var(--cds-link-primary)', label: 'Active'},
-	CREATED: {icon: <Pending size={16} />, color: 'var(--cds-link-primary)', label: 'Created'},
-	SUSPENDED: {icon: <Pause size={16} />, color: 'var(--cds-support-warning)', label: 'Suspended'},
-	FAILED: {icon: <Warning size={16} />, color: 'var(--cds-support-error)', label: 'Failed'},
-	CANCELED: {icon: <CloseFilled size={16} />, color: 'var(--cds-text-secondary)', label: 'Canceled'},
+	COMPLETED: {Icon: CheckmarkFilled, color: 'var(--cds-status-green)', label: 'Completed'},
+	ACTIVE: {Icon: InProgress, color: 'var(--cds-status-blue)', label: 'Active'},
+	SUSPENDED: {Icon: PauseOutlineFilled, color: 'var(--cds-status-gray)', label: 'Suspended'},
+	CANCELED: {Icon: MisuseOutline, color: 'var(--cds-status-red)', label: 'Canceled'},
+	FAILED: {Icon: ErrorFilled, color: 'var(--cds-status-red)', label: 'Failed'},
+	CREATED: {Icon: CircleDash, color: 'var(--cds-status-gray)', label: 'Created'},
+	PARTIALLY_COMPLETED: {Icon: Incomplete, color: 'var(--cds-status-blue)', label: 'Partially completed'},
 };
 
 type Props = {
@@ -42,11 +49,11 @@ type Props = {
 };
 
 const BatchStateIndicator: React.FC<Props> = ({state}) => {
-	const {icon, color, label} = STATE_CONFIG[state];
+	const {Icon, color, label} = STATE_CONFIG[state];
 	return (
-		<Container $color={color}>
-			{icon}
-			<span>{label}</span>
+		<Container role="status" aria-label={`Batch operation status: ${label}`}>
+			<Icon style={{color}} aria-hidden="true" focusable="false" />
+			{label}
 		</Container>
 	);
 };

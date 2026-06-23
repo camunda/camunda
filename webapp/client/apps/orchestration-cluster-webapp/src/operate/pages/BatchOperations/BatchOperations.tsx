@@ -6,25 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link, Pagination} from '@carbon/react';
-import {useQuery, keepPreviousData} from '@tanstack/react-query';
+import {Pagination} from '@carbon/react';
+import {format, parseISO} from 'date-fns';
+import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
-import {queries} from '#/shared/http/queries';
-import {ForbiddenError} from '#/shared/errors';
+import {tracking} from '#/shared/tracking';
 import {SortableTable} from '#/operate/shared/SortableTable';
 import {BatchItemsCount} from '#/operate/shared/BatchItemsCount';
 import {BatchStateIndicator} from '#/operate/shared/BatchStateIndicator';
-import {PageContainer, PanelHeader} from './styled';
+import {batchOperationsOptions} from './batchOperations.queries';
+import {PageContainer, PanelHeader, Title, TableContainer, VisuallyHiddenH1, OperationLink} from './styled';
 import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.10';
-
-const MAX_OPERATIONS_PER_REQUEST = 20;
-const DEFAULT_SORT = 'endDate+desc';
 
 function formatOperationType(type: string): string {
 	return type
 		.split('_')
 		.map((word) => word.charAt(0) + word.slice(1).toLowerCase())
 		.join(' ');
+}
+
+function formatStartDate(startDate: string | null | undefined): string {
+	return startDate ? format(parseISO(startDate), 'yyyy-MM-dd HH:mm:ss') : '--';
 }
 
 type Props = {
@@ -34,8 +36,8 @@ type Props = {
 };
 
 const COLUMNS = [
-	{key: 'operationType', label: 'Operation type', sortKey: 'operationType', defaultOrder: 'desc' as const},
-	{key: 'state', label: 'State', sortKey: 'state', defaultOrder: 'desc' as const},
+	{key: 'operationType', label: 'Operation', sortKey: 'operationType', defaultOrder: 'desc' as const},
+	{key: 'state', label: 'Batch state', sortKey: 'state', defaultOrder: 'desc' as const},
 	{key: 'items', label: 'Items'},
 	{key: 'actor', label: 'Actor', sortKey: 'actorId', defaultOrder: 'desc' as const},
 	{key: 'startDate', label: 'Start date', sortKey: 'startDate', defaultOrder: 'desc' as const},
@@ -43,24 +45,8 @@ const COLUMNS = [
 
 const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 	const navigate = useNavigate();
-	const [sortField, sortOrder] = (sort ?? DEFAULT_SORT).split('+');
 
-	const body = {
-		sort: [{field: sortField as 'endDate', order: (sortOrder ?? 'desc') as 'asc' | 'desc'}],
-		page: {from: (page - 1) * pageSize, limit: pageSize},
-	};
-
-	// useQuery with keepPreviousData preserves rows during page transitions rather than
-	// suspending on each page change. Revisit once the Suspense pattern settles from #55411.
-	const {data, isLoading, isFetching, error} = useQuery({
-		...queries.queryBatchOperations(body),
-		placeholderData: keepPreviousData,
-	});
-
-	// Let the /_auth/operate route errorComponent handle ForbiddenError → ForbiddenPage
-	if (error instanceof ForbiddenError) {
-		throw error;
-	}
+	const {data, isFetching} = useSuspenseQuery(batchOperationsOptions({page, pageSize, sort}));
 
 	const columns = COLUMNS.map((col) => ({
 		...col,
@@ -68,9 +54,18 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 			switch (col.key) {
 				case 'operationType':
 					return (
-						<Link href={`/operate/batch-operations/${row.batchOperationKey}`}>
+						<OperationLink
+							href={`/operate/batch-operations/${row.batchOperationKey}`}
+							onClick={() => {
+								tracking.track({
+									eventName: 'operate:batch-operation-details-opened',
+									batchOperationType: row.batchOperationType,
+									batchOperationState: row.state,
+								});
+							}}
+						>
 							{formatOperationType(row.batchOperationType)}
-						</Link>
+						</OperationLink>
 					);
 				case 'state':
 					return <BatchStateIndicator state={row.state} />;
@@ -83,36 +78,41 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 						/>
 					);
 				case 'actor':
-					return row.actorId ?? '';
+					return row.actorId ?? '--';
 				case 'startDate':
-					return row.startDate;
+					return formatStartDate(row.startDate);
 				default:
 					return null;
 			}
 		},
 	}));
 
-	const totalItems = data?.page.totalItems ?? 0;
+	const totalItems = data.page.totalItems;
 
 	return (
 		<PageContainer>
+			<VisuallyHiddenH1>Batch Operations</VisuallyHiddenH1>
 			<PanelHeader>
-				<h1>Batch operations</h1>
+				<Title>Batch Operations</Title>
 			</PanelHeader>
-			<SortableTable
-				columns={columns}
-				rows={data?.items ?? []}
-				rowKey={(row) => row.batchOperationKey}
-				isLoading={isLoading}
-				isFetching={isFetching && !isLoading}
-				emptyState={<span>No batch operations found</span>}
-				data-testid="batch-operations-table"
-			/>
-			{!isLoading && (
+			<TableContainer>
+				<SortableTable
+					columns={columns}
+					rows={data.items}
+					rowKey={(row) => row.batchOperationKey}
+					isFetching={isFetching}
+					emptyState={<span>No batch operations found</span>}
+					onSort={(sortBy, sortOrder) => {
+						tracking.track({eventName: 'operate:batch-operations-sorted', sortBy, sortOrder});
+					}}
+					data-testid="batch-operations-table"
+				/>
+			</TableContainer>
+			{totalItems > pageSize && (
 				<Pagination
 					totalItems={totalItems}
 					pageSize={pageSize}
-					pageSizes={[MAX_OPERATIONS_PER_REQUEST]}
+					pageSizes={[20, 50, 100]}
 					page={page}
 					onChange={({page: newPage, pageSize: newPageSize}) => {
 						void navigate({

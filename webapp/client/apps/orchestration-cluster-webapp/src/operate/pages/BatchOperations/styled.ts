@@ -7,16 +7,50 @@
  */
 
 import styled from 'styled-components';
+import {styles} from '@carbon/type';
+import {Link} from '@carbon/react';
 
 const PageContainer = styled.main`
-	padding: var(--cds-spacing-05);
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	box-sizing: border-box;
+	padding-top: var(--cds-spacing-09);
+	overflow: hidden;
+	background-color: var(--cds-layer);
 `;
 
 const PanelHeader = styled.div`
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: var(--cds-spacing-05);
+	padding: var(--cds-spacing-05) var(--cds-spacing-07) 0;
 `;
 
-export {PageContainer, PanelHeader};
+const Title = styled.h3`
+	${styles.productiveHeading04};
+	margin: 0 0 var(--cds-spacing-05);
+`;
+
+const TableContainer = styled.div`
+	flex: 1;
+	overflow: auto;
+	padding: 0 var(--cds-spacing-05);
+`;
+
+const VisuallyHiddenH1 = styled.h1`
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+`;
+
+const OperationLink = styled(Link)`
+	&& {
+		text-decoration: underline;
+	}
+`;
+
+export {PageContainer, PanelHeader, Title, TableContainer, VisuallyHiddenH1, OperationLink};

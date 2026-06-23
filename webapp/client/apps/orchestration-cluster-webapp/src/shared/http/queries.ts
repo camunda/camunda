@@ -19,10 +19,7 @@ import type {
 	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
-	QueryBatchOperationsRequestBody,
-	QueryBatchOperationsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {ForbiddenError} from '#/shared/errors';
 import {request} from './request';
 import {endpoints} from './endpoints';
 
@@ -160,21 +157,6 @@ const queries = {
 			queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
 				const {response, error} = await request(endpoints.getIncidentProcessInstanceStatisticsByError(body));
 				if (error !== null) {
-					throw error;
-				}
-				return response.json();
-			},
-		}),
-
-	queryBatchOperations: (body: QueryBatchOperationsRequestBody) =>
-		queryOptions({
-			queryKey: ['batchOperations', body],
-			queryFn: async (): Promise<QueryBatchOperationsResponseBody> => {
-				const {response, error} = await request(endpoints.queryBatchOperations(body));
-				if (error !== null) {
-					if (error.variant === 'failed-response' && error.response.status === 403) {
-						throw new ForbiddenError();
-					}
 					throw error;
 				}
 				return response.json();

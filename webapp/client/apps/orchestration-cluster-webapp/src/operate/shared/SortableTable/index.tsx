@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DataTableSkeleton, Table, TableBody, TableCell, TableHead, TableRow} from '@carbon/react';
+import {DataTableSkeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@carbon/react';
 import {TableContainer, LoadingOverlay, EmptyStateContainer} from './styled';
 import {ColumnHeader} from './ColumnHeader';
+
+type TableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 type Column<TRow> = {
 	key: string;
@@ -23,9 +25,11 @@ type Props<TRow> = {
 	columns: Column<TRow>[];
 	rows: TRow[];
 	rowKey: (row: TRow) => string;
-	isLoading: boolean;
-	isFetching: boolean;
+	size?: TableSize;
+	isLoading?: boolean;
+	isFetching?: boolean;
 	emptyState?: React.ReactNode;
+	onSort?: (sortKey: string, order: 'asc' | 'desc') => void;
 	'data-testid'?: string;
 };
 
@@ -33,9 +37,11 @@ function SortableTable<TRow>({
 	columns,
 	rows,
 	rowKey,
-	isLoading,
-	isFetching,
+	size = 'md',
+	isLoading = false,
+	isFetching = false,
 	emptyState,
+	onSort,
 	'data-testid': dataTestId,
 }: Props<TRow>) {
 	if (isLoading) {
@@ -45,7 +51,7 @@ function SortableTable<TRow>({
 	return (
 		<TableContainer data-testid={dataTestId}>
 			{isFetching && <LoadingOverlay aria-hidden />}
-			<Table>
+			<Table size={size} isSortable>
 				<TableHead>
 					<TableRow>
 						{columns.map((col) =>
@@ -56,11 +62,12 @@ function SortableTable<TRow>({
 									label={col.label}
 									isDefault={col.isDefault}
 									defaultOrder={col.defaultOrder}
+									onSort={onSort}
 								/>
 							) : (
-								<th key={col.key} scope="col">
+								<TableHeader key={col.key} isSortable={false}>
 									{col.label}
-								</th>
+								</TableHeader>
 							),
 						)}
 					</TableRow>

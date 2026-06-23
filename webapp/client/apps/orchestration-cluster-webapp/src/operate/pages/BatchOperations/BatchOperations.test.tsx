@@ -8,13 +8,14 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
 import {mockQueryBatchOperationsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {
 	createBatchOperation,
 	createQueryBatchOperationsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
+import {tracking} from '#/shared/tracking';
 import {BatchOperations} from './BatchOperations';
 
 const EMPTY_RESPONSE = HttpResponse.json(createQueryBatchOperationsResponse());
@@ -42,6 +43,13 @@ const RESPONSE_WITH_OPERATIONS = HttpResponse.json(
 			}),
 		],
 		page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+	}),
+);
+
+const RESPONSE_EXCEEDING_PAGE_SIZE = HttpResponse.json(
+	createQueryBatchOperationsResponse({
+		items: [createBatchOperation({batchOperationKey: 'op-1', batchOperationType: 'RESOLVE_INCIDENT'})],
+		page: {totalItems: 25, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 	}),
 );
 
@@ -95,14 +103,60 @@ describe('<BatchOperations />', () => {
 
 		const screen = await renderPage();
 
-		await expect.element(screen.getByText('5')).toBeVisible();
+		await expect.element(screen.getByText('5', {exact: true})).toBeVisible();
 	});
 
-	it('should render pagination with total item count', async ({worker}) => {
+	it('should not render pagination when all items fit on one page', async ({worker}) => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_OPERATIONS}));
 
 		const screen = await renderPage();
 
-		await expect.element(screen.getByText('1–2 of 2 items')).toBeVisible();
+		await expect.element(screen.getByText('Resolve Incident')).toBeVisible();
+		await expect.element(screen.getByText('Items per page:')).not.toBeInTheDocument();
+	});
+
+	it('should render pagination when items exceed the page size', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_EXCEEDING_PAGE_SIZE}));
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
+	});
+
+	it('should track when an operation detail link is opened', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_OPERATIONS}));
+		const trackSpy = vi.spyOn(tracking, 'track');
+
+		const screen = await renderPage();
+
+		// The detail route is not migrated yet, so the link is a hard anchor; prevent the
+		// browser test harness from following it while still letting the click handler fire.
+		document.addEventListener('click', (event) => event.preventDefault(), {capture: true, once: true});
+		await screen.getByRole('link', {name: 'Cancel Process Instance'}).click();
+
+		expect(trackSpy).toHaveBeenCalledWith({
+			eventName: 'operate:batch-operation-details-opened',
+			batchOperationType: 'CANCEL_PROCESS_INSTANCE',
+			batchOperationState: 'COMPLETED',
+		});
+
+		trackSpy.mockRestore();
+	});
+
+	it('should track when a column is sorted', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_OPERATIONS}));
+		const trackSpy = vi.spyOn(tracking, 'track');
+
+		const screen = await renderPage();
+
+		await screen.getByRole('button', {name: 'Operation'}).click();
+
+		expect(trackSpy).toHaveBeenCalledWith({
+			eventName: 'operate:batch-operations-sorted',
+			sortBy: 'operationType',
+			sortOrder: 'desc',
+		});
+
+		trackSpy.mockRestore();
 	});
 });
