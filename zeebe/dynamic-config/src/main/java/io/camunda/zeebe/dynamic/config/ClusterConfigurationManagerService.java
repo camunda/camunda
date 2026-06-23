@@ -140,9 +140,13 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
-    // This initializer does not set the cluster ID, as it is not required for non-coordinators.
-    // Non-coordinators will receive the cluster ID from the coordinator via gossip.
+        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
+        // Must be initialized by the coordinator only. However, we still define it here because the
+        // actual coordinator might be different from what is provided in the static configuration.
+        // These initializers will be skipped if they are not running on the latest coordinator
+        // based on the initialized configuration.
+        .andThen(new PartitionDistributorInitializer(staticConfiguration))
+        .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
   }
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
@@ -193,11 +197,7 @@ public final class ClusterConfigurationManagerService
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
     final var coordinatorMemberId =
-        staticConfiguration.clusterMembers().stream()
-            .sorted(MemberId.ID_COMPARATOR)
-            .toList()
-            .stream()
-            .findFirst();
+        staticConfiguration.clusterMembers().stream().min(MemberId.ID_COMPARATOR);
     final var isCoordinator = coordinatorMemberId.map(id -> id.equals(localMemberId)).orElse(false);
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
         isCoordinator
