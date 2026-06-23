@@ -52,6 +52,8 @@
     <apache.http5-core.version>5.3.6</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
     <spring.boot.version>3.5.15</spring.boot.version>
+    <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
+    <opentelemetry.version>1.62.0</opentelemetry.version>
     <spring.version>6.2.19</spring.version>
     <spring.security.version>6.5.11</spring.security.version>
     <version.tomcat>10.1.55</version.tomcat>
@@ -115,6 +117,14 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-bom</artifactId>
         <version>${log4j2.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
