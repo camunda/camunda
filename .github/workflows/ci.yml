@@ -965,6 +965,25 @@ jobs:
       test-type: "identity-tests"
       test-type-label: "Identity"
 
+  physical-tenant-acceptance-tests:
+    name: "Physical Tenant Acceptance Tests / H2"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "h2"
+      database-name: "H2"
+      # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that skip
+      # RDBMS-incompatible tests.
+      it-database-type: "rdbms_h2"
+      physical-tenant: "tenanta"
+      # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
+      # physical-tenant profile.
+      maven-profiles: "physical-tenant"
+      test-type: "physical-tenant-acceptance-tests"
+      test-type-label: "Physical Tenant Acceptance"
+
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
@@ -2111,6 +2130,7 @@ jobs:
       - openapi-x-added-in-version-check
       - operate-ci
       - optimize-ci
+      - physical-tenant-acceptance-tests
       - pin-check
       - pr-maven-snapshot
       - pr-vuln-check

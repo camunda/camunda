@@ -24,6 +24,7 @@ import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 class ResourceDeployIT {
@@ -165,6 +166,10 @@ class ResourceDeployIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = "test.integration.camunda.physical-tenant",
+      matches = ".+",
+      disabledReason = "bypasses the tenant-scoped client; see #55498")
   void shouldReturnBinaryContentBytesExactlyForPngResource() throws Exception {
     // given
     final URI restUri =
