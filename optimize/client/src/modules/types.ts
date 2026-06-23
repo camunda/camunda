@@ -297,6 +297,7 @@ export interface SingleReportConfiguration {
   logScale: boolean;
   yLabel: string;
   xLabel: string;
+  subtitle?: string;
 }
 
 interface SingleReportData {
