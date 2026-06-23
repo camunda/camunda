@@ -25,11 +25,13 @@ public class UpdateJobPriorityTest extends GatewayTest {
     // given
     final UpdateJobPriorityStub stub = new UpdateJobPriorityStub();
     stub.registerWith(brokerClient);
+    final long operationReference = 123L;
     final int priority = 5;
     final UpdateJobPriorityRequest request =
         UpdateJobPriorityRequest.newBuilder()
             .setJobKey(stub.getKey())
             .setPriority(priority)
+            .setOperationReference(operationReference)
             .build();
 
     // when
@@ -43,6 +45,7 @@ public class UpdateJobPriorityTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.JOB);
     final JobRecord brokerRequestValue = (JobRecord) brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getPriority()).isEqualTo(priority);
+    assertThat(brokerRequest.getOperationReference()).isEqualTo(operationReference);
     assertThat(brokerRequestValue.getChangedAttributes()).contains(JobRecord.PRIORITY);
   }
 }
