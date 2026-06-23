@@ -9,7 +9,7 @@
 import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
 import {Header} from './Header';
-import {CustomFiltersModal, FilterNameModal, DeleteFilterModal} from './CustomFiltersModal.page';
+import {CustomFiltersModal, FilterNameModal, DeleteFilterModal} from './CustomFiltersModal';
 
 class TasklistIndexPage extends BasePage {
 	readonly header: Header;
@@ -25,8 +25,13 @@ class TasklistIndexPage extends BasePage {
 		this.deleteFilterModal = new DeleteFilterModal(page);
 	}
 
-	async goto() {
-		return this.page.goto('/tasklist');
+	async goto(search?: string) {
+		return this.page.goto(`/tasklist${search ?? ''}`);
+	}
+
+	async seedCustomFilters(filters: Record<string, Record<string, unknown>>) {
+		const serialized = JSON.stringify(filters);
+		await this.page.addInitScript(`localStorage.setItem('tasklist.customFilters', ${JSON.stringify(serialized)})`);
 	}
 
 	tasksPanelHeading(filterName: 'All open tasks' | 'Assigned to me' | 'Unassigned' | 'Completed' | (string & {})) {

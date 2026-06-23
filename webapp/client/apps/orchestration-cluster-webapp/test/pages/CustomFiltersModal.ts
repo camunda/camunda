@@ -6,17 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type Page} from '@playwright/test';
 import {View} from './BasePage';
 
-type AssigneeOption = 'All' | 'Unassigned' | 'Me' | 'User and group';
 type StatusOption = 'All' | 'Open' | 'Completed';
+type AssigneeOption = 'All' | 'Unassigned' | 'Me' | 'User and group';
 
 class CustomFiltersModal extends View {
-	constructor(page: Page) {
-		super(page);
-	}
-
 	get dialog() {
 		return this.page.getByRole('dialog', {name: /custom filters modal/i});
 	}
@@ -37,16 +32,20 @@ class CustomFiltersModal extends View {
 		return this.dialog.getByRole('combobox', {name: /process/i});
 	}
 
-	processOption(name: string) {
-		return this.processSelect.getByRole('option', {name: new RegExp(name, 'i')});
+	get assignedToInput() {
+		return this.dialog.getByRole('textbox', {name: /assigned to user/i});
 	}
 
 	statusRadio(name: StatusOption) {
 		return this.statusGroup.getByLabel(name, {exact: true});
 	}
 
-	assigneeRadio(name: AssigneeOption) {
-		return this.assigneeGroup.getByLabel(name, {exact: true});
+	statusOption(name: StatusOption) {
+		return this.statusGroup.getByText(name, {exact: true});
+	}
+
+	assigneeOption(name: AssigneeOption) {
+		return this.assigneeGroup.getByText(name, {exact: true});
 	}
 
 	get applyButton() {
@@ -56,35 +55,11 @@ class CustomFiltersModal extends View {
 	get saveButton() {
 		return this.dialog.getByRole('button', {name: /^save$/i});
 	}
-
-	get cancelButton() {
-		return this.dialog.getByRole('button', {name: /cancel/i});
-	}
-
-	async selectStatus(option: StatusOption) {
-		await this.statusGroup.getByText(option, {exact: true}).click();
-	}
-
-	async selectAssignee(option: AssigneeOption) {
-		await this.assigneeGroup.getByText(option, {exact: true}).click();
-	}
-
-	async apply() {
-		await this.applyButton.click();
-	}
-
-	async save() {
-		await this.saveButton.click();
-	}
 }
 
 class FilterNameModal extends View {
-	constructor(page: Page) {
-		super(page);
-	}
-
 	get dialog() {
-		return this.page.getByRole('dialog', {name: /save/i});
+		return this.page.getByRole('dialog', {name: /save filter/i});
 	}
 
 	get nameInput() {
@@ -94,31 +69,15 @@ class FilterNameModal extends View {
 	get saveAndApplyButton() {
 		return this.page.getByRole('button', {name: /save and apply/i});
 	}
-
-	async fillName(name: string) {
-		await this.nameInput.fill(name);
-	}
-
-	async saveAndApply() {
-		await this.saveAndApplyButton.click();
-	}
 }
 
 class DeleteFilterModal extends View {
-	constructor(page: Page) {
-		super(page);
-	}
-
 	get dialog() {
 		return this.page.getByRole('dialog', {name: /delete filter/i});
 	}
 
 	get confirmButton() {
 		return this.dialog.getByRole('button', {name: /confirm deletion/i});
-	}
-
-	async confirm() {
-		await this.confirmButton.click();
 	}
 }
 
