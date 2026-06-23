@@ -441,6 +441,10 @@
 					"resultCount_one": "{{count}} resultado",
 					"resultCount_other": "{{count}} resultados",
 					"resultCountMore": "{{count}}+ resultados"
+				},
+				"diagramShell": {
+					"forbiddenMessage": "Permisos insuficientes para ver la definición",
+					"forbiddenAdditionalInfo": "Póngase en contacto con el propietario o administrador de su organización para obtener los permisos necesarios"
 				}
 			}
 		}
