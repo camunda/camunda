@@ -16,17 +16,8 @@ import {
 	PauseOutlineFilled,
 	type CarbonIconType,
 } from '@carbon/react/icons';
-import styled from 'styled-components';
 import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.10';
-
-const Container = styled.div`
-	display: flex;
-
-	svg {
-		align-self: center;
-		margin-inline-end: var(--cds-spacing-03);
-	}
-`;
+import {Container} from './styled';
 
 type Config = {
 	Icon: CarbonIconType;

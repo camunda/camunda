@@ -7,7 +7,6 @@
  */
 
 import {Pagination} from '@carbon/react';
-import {format, parseISO} from 'date-fns';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {tracking} from '#/shared/tracking';
@@ -15,19 +14,9 @@ import {SortableTable} from '#/operate/shared/SortableTable';
 import {BatchItemsCount} from '#/operate/shared/BatchItemsCount';
 import {BatchStateIndicator} from '#/operate/shared/BatchStateIndicator';
 import {batchOperationsOptions} from './batchOperations.queries';
+import {formatOperationType, formatStartDate} from './utils';
 import {PageContainer, PanelHeader, Title, TableContainer, VisuallyHiddenH1, OperationLink} from './styled';
 import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.10';
-
-function formatOperationType(type: string): string {
-	return type
-		.split('_')
-		.map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-		.join(' ');
-}
-
-function formatStartDate(startDate: string | null | undefined): string {
-	return startDate ? format(parseISO(startDate), 'yyyy-MM-dd HH:mm:ss') : '--';
-}
 
 type Props = {
 	page: number;

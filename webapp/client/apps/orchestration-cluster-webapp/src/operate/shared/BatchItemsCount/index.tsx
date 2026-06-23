@@ -8,22 +8,7 @@
 
 import {Tooltip} from '@carbon/react';
 import {Checkmark, CircleDash, ErrorOutline, Pending} from '@carbon/react/icons';
-import styled from 'styled-components';
-
-const ItemGroup = styled.div`
-	display: flex;
-	align-items: center;
-	gap: var(--cds-spacing-04);
-`;
-
-const Item = styled.span<{$color?: string}>`
-	display: flex;
-	align-items: center;
-	gap: var(--cds-spacing-02);
-	cursor: default;
-	min-width: 3rem;
-	color: ${({$color}) => $color ?? 'inherit'};
-`;
+import {ItemGroup, Item} from './styled';
 
 const formatCount = (count: number): string =>
 	Intl.NumberFormat('en', {notation: 'compact', maximumFractionDigits: 1}).format(count);
