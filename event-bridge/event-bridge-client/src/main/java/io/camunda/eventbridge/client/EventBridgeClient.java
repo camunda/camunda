@@ -12,9 +12,11 @@ import io.camunda.eventbridge.protocol.EventBridgeBatchBuilder;
 import io.camunda.eventbridge.protocol.EventBridgeEntryBuilder;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -196,6 +198,97 @@ public final class EventBridgeClient implements AutoCloseable {
     final var consumer = new Consumer(groupId, consumerId, this);
     return consumer.joinGroup().handle((ignore, error) -> consumer);
   }
+
+  /**
+   * Creates a topic. Completes when the coordinator has accepted the request (the topic's Raft
+   * group is provisioned asynchronously, so it is reported {@code CREATING} until ready).
+   */
+  public CompletableFuture<Void> createTopic(
+      final String name, final int partitionCount, final int replicationFactor) {
+    final String body;
+    try {
+      body =
+          objectMapper.writeValueAsString(
+              Map.<String, Object>of(
+                  "name", name,
+                  "partitionCount", partitionCount,
+                  "replicationFactor", replicationFactor));
+    } catch (final IOException e) {
+      throw new EventBridgeException("Failed to serialize createTopic request", e);
+    }
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(gatewayUrl + "/v1/topics"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build();
+    return httpClient
+        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        .thenApply(
+            response -> {
+              if (response.statusCode() != 201) {
+                throw new EventBridgeException(
+                    "createTopic failed: HTTP " + response.statusCode() + " — " + response.body());
+              }
+              return null;
+            });
+  }
+
+  /** Deletes a topic. Completes when the coordinator has accepted the request. */
+  public CompletableFuture<Void> deleteTopic(final String name) {
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(
+                URI.create(
+                    gatewayUrl + "/v1/topics/" + URLEncoder.encode(name, StandardCharsets.UTF_8)))
+            .DELETE()
+            .build();
+    return httpClient
+        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        .thenApply(
+            response -> {
+              if (response.statusCode() != 204) {
+                throw new EventBridgeException(
+                    "deleteTopic failed: HTTP " + response.statusCode() + " — " + response.body());
+              }
+              return null;
+            });
+  }
+
+  /** Lists the registered topics. */
+  public CompletableFuture<List<TopicInfo>> listTopics() {
+    final var request =
+        HttpRequest.newBuilder().uri(URI.create(gatewayUrl + "/v1/topics")).GET().build();
+    return httpClient
+        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        .thenApply(
+            response -> {
+              if (response.statusCode() != 200) {
+                throw new EventBridgeException(
+                    "listTopics failed: HTTP " + response.statusCode() + " — " + response.body());
+              }
+              try {
+                @SuppressWarnings("unchecked")
+                final List<Map<String, Object>> raw =
+                    objectMapper.readValue(response.body(), List.class);
+                final List<TopicInfo> topics = new ArrayList<>(raw.size());
+                for (final var t : raw) {
+                  topics.add(
+                      new TopicInfo(
+                          (String) t.get("name"),
+                          ((Number) t.get("partitionCount")).intValue(),
+                          ((Number) t.get("replicationFactor")).intValue(),
+                          (String) t.get("status")));
+                }
+                return topics;
+              } catch (final IOException e) {
+                throw new EventBridgeException("Failed to parse listTopics response", e);
+              }
+            });
+  }
+
+  /** A topic as reported by the registry. */
+  public record TopicInfo(String name, int partitionCount, int replicationFactor, String status) {}
 
   /**
    * Shuts down the client's scheduler and HTTP client. After close, scheduled consumer heartbeats

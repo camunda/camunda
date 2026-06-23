@@ -32,7 +32,7 @@ final class CoordinationResponseEncoder {
     return encode(response);
   }
 
-  private static byte[] encode(final BufferWriter response) {
+  static byte[] encode(final BufferWriter response) {
     final var valueLength = response.getLength();
     final var byteArray = new byte[valueLength];
     final var valueBuffer = new UnsafeBuffer(byteArray);

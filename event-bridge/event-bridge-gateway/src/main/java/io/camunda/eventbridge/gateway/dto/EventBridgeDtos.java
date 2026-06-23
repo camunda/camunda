@@ -101,6 +101,16 @@ public final class EventBridgeDtos {
   public record LatestPositionResponse(long position) {}
 
   // -------------------------------------------------------------------------
+  // Topics
+
+  /** Body for {@code POST /v1/topics}. */
+  public record CreateTopicRequest(
+      String name, Integer partitionCount, Integer replicationFactor) {}
+
+  /** A topic as held in the registry. */
+  public record TopicDto(String name, int partitionCount, int replicationFactor, String status) {}
+
+  // -------------------------------------------------------------------------
   // Latest position
 
   public record ErrorResponse(String error, String message) {}

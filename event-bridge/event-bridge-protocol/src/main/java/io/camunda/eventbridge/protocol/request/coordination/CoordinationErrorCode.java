@@ -18,6 +18,11 @@ public enum CoordinationErrorCode {
 
   REBALANCE_IN_PROGRESS("rebalance_in_progress"),
 
+  // Topic management.
+  INVALID_TOPIC("invalid_topic"),
+  TOPIC_ALREADY_EXISTS("topic_already_exists"),
+  TOPIC_NOT_FOUND("topic_not_found"),
+
   UNKNOWN("unknown");
 
   private final String id;

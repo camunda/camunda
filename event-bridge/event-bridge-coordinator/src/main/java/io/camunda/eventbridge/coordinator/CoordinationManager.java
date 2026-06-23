@@ -13,15 +13,22 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import io.camunda.eventbridge.coordinator.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorStream;
 import io.camunda.eventbridge.coordinator.stream.GroupMetadataCodec;
+import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
+import io.camunda.eventbridge.protocol.request.coordination.CreateTopicResponse;
+import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
+import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicResponse;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
+import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
+import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -31,6 +38,7 @@ import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +46,7 @@ import org.slf4j.LoggerFactory;
 public class CoordinationManager extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinationManager.class);
+  private static final Pattern TOPIC_NAME = Pattern.compile("[a-zA-Z0-9._-]{1,249}");
 
   private final int partitionId;
   private final ConsumerGroupRegistry registry;
@@ -121,6 +130,65 @@ public class CoordinationManager extends Actor {
     final CompletableActorFuture<CommitOffsetResponse> result = new CompletableActorFuture<>();
     actor.run(() -> commit(request, result));
     return result;
+  }
+
+  public ActorFuture<CreateTopicResponse> handleCreateTopic(final CreateTopicRequest request) {
+    return actor.call(() -> createTopic(request));
+  }
+
+  public ActorFuture<DeleteTopicResponse> handleDeleteTopic(final DeleteTopicRequest request) {
+    return actor.call(() -> deleteTopic(request));
+  }
+
+  public ActorFuture<ListTopicsResponse> handleListTopics(final ListTopicsRequest request) {
+    return actor.call(this::listTopics);
+  }
+
+  private CreateTopicResponse createTopic(final CreateTopicRequest request) {
+    final var name = request.getName();
+    if (name == null || !TOPIC_NAME.matcher(name).matches()) {
+      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
+    }
+    if (request.getPartitionCount() < 1 || request.getReplicationFactor() < 1) {
+      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
+    }
+    if (coordinatorStream.topicsSnapshot().containsKey(name)) {
+      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_ALREADY_EXISTS);
+    }
+    // Register the desired state as CREATING; the change-coordinator provisions the Raft group and
+    // advances it to ACTIVE (later increment). The registry write is replicated through the stream.
+    coordinatorStream.registerTopic(
+        name,
+        request.getPartitionCount(),
+        request.getReplicationFactor(),
+        TopicMetadata.TopicStatus.CREATING);
+    return new CreateTopicResponse().setErrorCode(NONE);
+  }
+
+  private DeleteTopicResponse deleteTopic(final DeleteTopicRequest request) {
+    final var name = request.getName();
+    if (!coordinatorStream.topicsSnapshot().containsKey(name)) {
+      return new DeleteTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
+    }
+    coordinatorStream.deleteTopic(name);
+    return new DeleteTopicResponse().setErrorCode(NONE);
+  }
+
+  private ListTopicsResponse listTopics() {
+    final var sb = new StringBuilder();
+    coordinatorStream
+        .topicsSnapshot()
+        .forEach(
+            (name, meta) ->
+                sb.append(name)
+                    .append(';')
+                    .append(meta.partitionCount())
+                    .append(';')
+                    .append(meta.replicationFactor())
+                    .append(';')
+                    .append(meta.status().name())
+                    .append('\n'));
+    return new ListTopicsResponse().setErrorCode(NONE).setPayload(sb.toString());
   }
 
   private void commit(

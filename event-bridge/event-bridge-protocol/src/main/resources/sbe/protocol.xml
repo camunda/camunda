@@ -62,6 +62,9 @@
       <validValue name="JOIN_GROUP">1</validValue>
       <validValue name="LEAVE_GROUP">2</validValue>
       <validValue name="COMMIT">3</validValue>
+      <validValue name="CREATE_TOPIC">4</validValue>
+      <validValue name="DELETE_TOPIC">5</validValue>
+      <validValue name="LIST_TOPICS">6</validValue>
     </enum>
 
     <enum name="PublishResponseStatus" encodingType="uint8"
