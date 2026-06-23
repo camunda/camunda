@@ -1,0 +1,8 @@
+apiVersion: v2
+name: load-test-setup
+description: Deploy all resources for load testing Camunda
+type: application
+# TODO: bump to 1.0.0 once we have finished the "load-test-setup" Helm Chart migration
+version: "0.1.0"
+
+dependencies: []
