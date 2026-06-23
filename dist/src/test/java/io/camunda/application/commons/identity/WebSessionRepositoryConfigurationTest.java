@@ -10,14 +10,18 @@ package io.camunda.application.commons.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.camunda.authentication.config.spi.SessionStoreAdapter;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.security.core.port.out.SessionStorePort;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -71,6 +75,39 @@ class WebSessionRepositoryConfigurationTest {
   void shouldWirePerTenantClientProviderForRdbms() {
     runner
         .withPropertyValues("camunda.security.session.persistent.enabled=true")
+        .run(
+            ctx -> {
+              assertThat(ctx).hasSingleBean(PhysicalTenantScopedPersistentWebSessionClient.class);
+              assertThat(ctx)
+                  .getBean(SessionStorePort.class)
+                  .isInstanceOf(SessionStoreAdapter.class);
+            });
+  }
+
+  @Test
+  void shouldWirePerTenantClientProviderForElasticsearch() {
+    // given — a search client stub that implements both read and write interfaces
+    final var searchClient =
+        mock(
+            DocumentBasedSearchClient.class,
+            withSettings().extraInterfaces(DocumentBasedWriteClient.class));
+    final var descriptors = new IndexDescriptors("test", /* isElasticsearch= */ true);
+
+    new WebApplicationContextRunner()
+        .withBean(ConnectConfiguration.class, ConnectConfiguration::new)
+        .withBean(
+            "physicalTenantDocumentSearchClients",
+            Map.class,
+            () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, searchClient))
+        .withBean(
+            "physicalTenantScopedIndexDescriptors",
+            Map.class,
+            () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, descriptors))
+        .withBean(PhysicalTenantIds.class, () -> PhysicalTenantIds.DEFAULT)
+        .withUserConfiguration(WebSessionRepositoryConfiguration.class)
+        .withPropertyValues(
+            "camunda.data.secondary-storage.type=elasticsearch",
+            "camunda.security.session.persistent.enabled=true")
         .run(
             ctx -> {
               assertThat(ctx).hasSingleBean(PhysicalTenantScopedPersistentWebSessionClient.class);

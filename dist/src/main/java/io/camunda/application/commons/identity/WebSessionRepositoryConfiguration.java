@@ -94,11 +94,16 @@ public class WebSessionRepositoryConfiguration {
             throw new IllegalStateException(
                 "Missing IndexDescriptors for physical tenant '" + tenantId + "'");
           }
+          if (!(client instanceof final DocumentBasedWriteClient writeClient)) {
+            throw new IllegalStateException(
+                "Search client for physical tenant '"
+                    + tenantId
+                    + "' does not implement DocumentBasedWriteClient: "
+                    + client.getClass().getName());
+          }
           final var descriptor = descriptors.get(PersistentWebSessionIndexDescriptor.class);
           byTenant.put(
-              tenantId,
-              new PersistentWebSessionSearchImpl(
-                  client, (DocumentBasedWriteClient) client, descriptor));
+              tenantId, new PersistentWebSessionSearchImpl(client, writeClient, descriptor));
         });
     return new PhysicalTenantScopedPersistentWebSessionClient(Map.copyOf(byTenant));
   }

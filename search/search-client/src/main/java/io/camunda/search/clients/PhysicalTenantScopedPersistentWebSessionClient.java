@@ -10,6 +10,12 @@ package io.camunda.search.clients;
 import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import java.util.Map;
 
+/**
+ * Immutable {@link PhysicalTenantScoped} provider that resolves a {@link
+ * PersistentWebSessionClient} by physical tenant id from a pre-built, per-tenant client map.
+ *
+ * @throws IllegalStateException if the requested physical tenant has no registered client
+ */
 public final class PhysicalTenantScopedPersistentWebSessionClient
     implements PhysicalTenantScoped<PersistentWebSessionClient> {
 
