@@ -1597,7 +1597,9 @@
       "agenticKpiDurationP95Name": "P95 execution duration",
       "agenticKpiDurationP95Description": "95th percentile execution duration of completed agentic process instances in the selected period.",
       "agenticFailureRateByVersionName": "Failure rate by process version",
-      "agenticFailureRateByVersionDescription": "Percentage of completed agentic process instances that encountered a resolved incident, broken down by process definition version."
+      "agenticFailureRateByVersionDescription": "Percentage of completed agentic process instances that encountered a resolved incident, broken down by process definition version.",
+      "agenticKpiToolCallsName": "Total tool calls",
+      "agenticKpiToolCallsDescription": "Total number of tool calls made by agents in completed agentic process instances in the selected period."
     }
   },
   "managementDashboard": {

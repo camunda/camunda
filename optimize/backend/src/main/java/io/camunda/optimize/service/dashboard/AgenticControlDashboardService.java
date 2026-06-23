@@ -106,6 +106,8 @@ public class AgenticControlDashboardService {
   public static final String FAILURE_RATE_BY_VERSION_NAME = "agenticFailureRateByVersionName";
   public static final String FAILURE_RATE_BY_VERSION_DESCRIPTION =
       "agenticFailureRateByVersionDescription";
+  public static final String KPI_TOOL_CALLS_NAME = "agenticKpiToolCallsName";
+  public static final String KPI_TOOL_CALLS_DESCRIPTION = "agenticKpiToolCallsDescription";
 
   public static final String DURATION_STABILITY_NAME = "agenticDurationStabilityName";
   public static final String DURATION_STABILITY_DESCRIPTION = "agenticDurationStabilityDescription";
@@ -143,6 +145,9 @@ public class AgenticControlDashboardService {
   public static final String FAILURE_RATE_BY_VERSION_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-failure-rate-by-version".getBytes(StandardCharsets.UTF_8))
           .toString();
+  public static final String KPI_TOOL_CALLS_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-tool-calls-total".getBytes(StandardCharsets.UTF_8))
+          .toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
 
@@ -153,9 +158,12 @@ public class AgenticControlDashboardService {
   // When set, the frontend only renders the tile at the dashboard root (L0) and hides it once a
   // single process is selected, where a per-process breakdown is no longer meaningful.
   private static final String TILE_CONFIG_VISIBLE_IN_L0_ONLY = "visibleInL0Only";
+  // When set, the frontend only renders the tile once a single process is selected (L1).
+  private static final String TILE_CONFIG_VISIBLE_IN_L1_ONLY = "visibleInL1Only";
   // Section values that group tiles within the dashboard layout.
   private static final String TILE_SECTION_TOKEN = "token";
   private static final String TILE_SECTION_DURATION = "duration";
+  private static final String TILE_SECTION_RELIABILITY_AND_TOOL_CALLS = "reliabilityAndToolCalls";
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AgenticControlDashboardService.class);
@@ -201,6 +209,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildP50DurationReport());
     tiles.add(buildP95DurationReport());
     tiles.add(buildFailureRateByVersionReport());
+    tiles.add(buildTotalToolCallsReport());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -629,7 +638,53 @@ public class AgenticControlDashboardService {
         FAILURE_RATE_BY_VERSION_REPORT_ID,
         new PositionDto(0, 8),
         new DimensionDto(18, 2),
-        Map.of("visibleInL1Only", true, "section", "reliabilityAndToolCalls"));
+        Map.of(
+            TILE_CONFIG_VISIBLE_IN_L1_ONLY,
+            true,
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+  }
+
+  // Total tool calls made by agents, rendered as a single full-width number. Reuses the
+  // AGENT_INSTANCE / TOOL_CALLS view property, which sums the per-process-instance rollup
+  // agentTotalToolCalls, so the SUM across instances is the correct total (no double counting). The
+  // tile is visible in both scopes: at L0 it totals across all agent-bearing instances; at L1 the
+  // frontend's process scope narrows it to the selected definition.
+  private DashboardReportTileDto buildTotalToolCallsReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOOL_CALLS))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_TOOL_CALLS_REPORT_ID,
+        null,
+        reportData,
+        KPI_TOOL_CALLS_NAME,
+        KPI_TOOL_CALLS_DESCRIPTION,
+        null);
+    return buildTile(
+        KPI_TOOL_CALLS_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(18, 2),
+        Map.of(TILE_CONFIG_SECTION, TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {
