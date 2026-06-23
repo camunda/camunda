@@ -9,24 +9,22 @@ package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
-import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
-import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Reconciles this broker's local topic Raft groups against the desired topic registry broadcast by
- * the coordinator (the reconcile half of Option 1). The assignment is deterministic: every broker
- * derives the same placement from {@code (topic, partitionCount, replicationFactor, cluster
- * members)} via the same round-robin distributor the data and coordinator groups use, then starts
- * the topic partitions whose members include the local node.
+ * the coordinator (the reconcile half of Option 1). Placement is decided centrally by the
+ * coordinator and carried in the registry as an explicit assignment (partition id &rarr; replica
+ * node ids); this broker simply provisions the partitions whose replica set includes the local
+ * node. It does not derive placement, so the coordinator can rebalance later by rewriting the
+ * assignment.
  *
  * <p>Reconciliation is idempotent — a topic already provisioned is skipped — so re-broadcasts and
  * duplicate deliveries are harmless. Removal of de-provisioned topics is intentionally not handled
@@ -36,29 +34,22 @@ final class TopicReconciler {
 
   private static final Logger LOG = LoggerFactory.getLogger(TopicReconciler.class);
 
-  private final EventBridgeProperties properties;
   private final PartitionBootstrapper partitionBootstrapper;
   private final TopologySetup topologySetup;
   private final MemberId localMemberId;
-  private final List<MemberId> clusterMembers;
+  private final int localNodeId;
 
   // Topics whose local partitions have already been provisioned (idempotency guard).
   private final Set<String> provisioned = ConcurrentHashMap.newKeySet();
 
   TopicReconciler(
-      final EventBridgeProperties properties,
       final PartitionBootstrapper partitionBootstrapper,
       final TopologySetup topologySetup,
       final MemberId localMemberId) {
-    this.properties = properties;
     this.partitionBootstrapper = partitionBootstrapper;
     this.topologySetup = topologySetup;
     this.localMemberId = localMemberId;
-    clusterMembers =
-        IntStream.range(0, properties.cluster().clusterSize())
-            .mapToObj(i -> MemberId.from("broker-" + i))
-            .sorted()
-            .toList();
+    localNodeId = parseNodeId(localMemberId.id());
   }
 
   /**
@@ -77,14 +68,13 @@ final class TopicReconciler {
 
   private void provisionTopic(final String name, final TopicMetadata meta) {
     final var groupName = PartitionFactory.topicGroupName(name);
-    final var replicationFactor =
-        Math.min(meta.replicationFactor(), properties.cluster().clusterSize());
-    final var distribution =
-        new RoundRobinPartitionDistributor(groupName)
-            .distributePartitions(clusterMembers, meta.partitionCount(), replicationFactor);
 
+    // The local partitions are exactly those whose centrally-decided replica set includes this
+    // node.
     final var localPartitions =
-        distribution.stream().filter(p -> p.members().contains(localMemberId)).toList();
+        meta.assignment().entrySet().stream()
+            .filter(e -> e.getValue().contains(localNodeId))
+            .toList();
 
     // Mark provisioned even with no local partitions: nothing to start here, but we must not
     // recompute every broadcast cycle.
@@ -98,10 +88,22 @@ final class TopicReconciler {
         topologySetup.createTopicTopologyManager(groupName, meta.partitionCount());
     final var startedIds = new HashSet<Integer>();
     for (final var partition : localPartitions) {
+      final var members =
+          partition.getValue().stream()
+              .map(id -> MemberId.from("broker-" + id))
+              .collect(Collectors.toSet());
       partitionBootstrapper.provisionDataPartition(
-          groupName, partition.id().id(), Set.copyOf(partition.members()), topologyManager);
-      startedIds.add(partition.id().id());
+          groupName, partition.getKey(), members, topologyManager);
+      startedIds.add(partition.getKey());
     }
     LOG.info("Provisioned topic {} (group {}) local partitions {}", name, groupName, startedIds);
+  }
+
+  private static int parseNodeId(final String memberId) {
+    try {
+      return Integer.parseInt(memberId.replaceAll("[^0-9]", ""));
+    } catch (final NumberFormatException e) {
+      return 0;
+    }
   }
 }

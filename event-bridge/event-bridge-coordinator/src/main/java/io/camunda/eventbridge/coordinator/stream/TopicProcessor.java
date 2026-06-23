@@ -59,7 +59,8 @@ public final class TopicProcessor implements RecordProcessor {
             .setOp(command.getOp())
             .setPartitionCount(command.getPartitionCount())
             .setReplicationFactor(command.getReplicationFactor())
-            .setStatus(TopicMetadata.TopicStatus.valueOf(command.getStatus()));
+            .setStatus(TopicMetadata.TopicStatus.valueOf(command.getStatus()))
+            .setAssignment(command.getAssignment());
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.EVENT)

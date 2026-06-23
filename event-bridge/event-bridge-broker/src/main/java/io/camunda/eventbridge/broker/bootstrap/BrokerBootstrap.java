@@ -131,7 +131,7 @@ public final class BrokerBootstrap {
             executorService);
     final var localMemberId = cluster.getMembershipService().getLocalMember().id();
     final var topicReconciler =
-        new TopicReconciler(properties, partitionBootstrapper, topologySetup, localMemberId);
+        new TopicReconciler(partitionBootstrapper, topologySetup, localMemberId);
 
     // 4b. Wire the topic-registry propagation channel (Option 1: the registry-shard coordinator
     // leader broadcasts the registry; every broker reconciles its local topic Raft groups from it).

@@ -14,6 +14,7 @@ import io.camunda.eventbridge.coordinator.assignor.PartitionAssignment.Reconcili
 import io.camunda.eventbridge.coordinator.stream.CoordinatorStream;
 import io.camunda.eventbridge.coordinator.stream.GroupMetadataCodec;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
+import io.camunda.eventbridge.coordinator.stream.TopicAssignments;
 import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
@@ -54,6 +55,7 @@ public class CoordinationManager extends Actor {
   private final ConsumerGroupRegistry registry;
   private final CoordinationValidator validator;
   private final int partitionCount;
+  private final int clusterSize;
   private final SnowflakeIdGenerator idGenerator;
   private final InstantSource clock;
 
@@ -73,11 +75,13 @@ public class CoordinationManager extends Actor {
   public CoordinationManager(
       final int partitionId,
       final int partitionCount,
+      final int clusterSize,
       final InstantSource clock,
       final CoordinatorStream coordinatorStream,
       final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
+    this.clusterSize = clusterSize;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
@@ -164,13 +168,19 @@ public class CoordinationManager extends Actor {
     if (coordinatorStream.topicsSnapshot().containsKey(name)) {
       return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_ALREADY_EXISTS);
     }
-    // Register the desired state as CREATING; the change-coordinator provisions the Raft group and
-    // advances it to ACTIVE (later increment). The registry write is replicated through the stream.
+    // Decide placement centrally and store it as data, so brokers obey it (rather than deriving it)
+    // and a future rebalance can rewrite it. Register the desired state as CREATING; provisioning
+    // and the advance to ACTIVE follow (later increment). The write is replicated through the
+    // stream.
+    final var assignment =
+        TopicAssignments.roundRobin(
+            request.getPartitionCount(), request.getReplicationFactor(), clusterSize);
     coordinatorStream.registerTopic(
         name,
         request.getPartitionCount(),
         request.getReplicationFactor(),
-        TopicMetadata.TopicStatus.CREATING);
+        TopicMetadata.TopicStatus.CREATING,
+        assignment);
     return new CreateTopicResponse().setErrorCode(NONE);
   }
 

@@ -60,6 +60,20 @@ final class TopicStateAndProcessorTest {
   }
 
   @Test
+  void shouldStoreAndReadTopicAssignment() {
+    // given a centrally-decided placement carried as data
+    final var assignment = java.util.Map.of(1, java.util.List.of(0, 1), 2, java.util.List.of(1, 2));
+    final var metadata = new TopicMetadata(2, 2, TopicStatus.CREATING, assignment);
+
+    // when
+    state.put("orders", metadata);
+
+    // then the assignment round-trips through the encoded registry entry
+    assertThat(state.get("orders")).isEqualTo(metadata);
+    assertThat(state.get("orders").assignment()).isEqualTo(assignment);
+  }
+
+  @Test
   void shouldReturnNullForUnknownTopic() {
     assertThat(state.get("missing")).isNull();
   }

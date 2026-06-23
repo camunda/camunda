@@ -66,6 +66,7 @@ public final class CoordinatorPartition extends Actor {
 
   private final int partitionId;
   private final int partitionCount;
+  private final int clusterSize;
   private final RaftPartition raftPartition;
   private final ActorSchedulingService actorScheduler;
   private final InstantSource clock;
@@ -93,6 +94,7 @@ public final class CoordinatorPartition extends Actor {
   public CoordinatorPartition(
       final int partitionId,
       final int partitionCount,
+      final int clusterSize,
       final RaftPartition raftPartition,
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
@@ -103,6 +105,7 @@ public final class CoordinatorPartition extends Actor {
       final TopicAssignmentGossip.Publisher topicAssignmentPublisher) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
+    this.clusterSize = clusterSize;
     this.raftPartition = raftPartition;
     this.actorScheduler = actorScheduler;
     this.clock = clock;
@@ -243,7 +246,12 @@ public final class CoordinatorPartition extends Actor {
   private void startCoordination() {
     coordinationManager =
         new CoordinationManager(
-            partitionId, partitionCount, clock, coordinatorStream, topicAssignmentPublisher);
+            partitionId,
+            partitionCount,
+            clusterSize,
+            clock,
+            coordinatorStream,
+            topicAssignmentPublisher);
     actorScheduler.submitActor(coordinationManager);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),

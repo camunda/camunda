@@ -232,14 +232,16 @@ public final class CoordinatorStream {
       final String name,
       final int partitionCount,
       final int replicationFactor,
-      final TopicMetadata.TopicStatus status) {
+      final TopicMetadata.TopicStatus status,
+      final java.util.Map<Integer, java.util.List<Integer>> assignment) {
     final var command =
         new TopicRecord()
             .setName(name)
             .setOp(TopicRecord.OP_REGISTER)
             .setPartitionCount(partitionCount)
             .setReplicationFactor(replicationFactor)
-            .setStatus(status);
+            .setStatus(status)
+            .setAssignment(TopicMetadata.encodeAssignment(assignment));
     writeTopicCommand(name, command, CoordinatorIntent.REGISTER_TOPIC);
   }
 

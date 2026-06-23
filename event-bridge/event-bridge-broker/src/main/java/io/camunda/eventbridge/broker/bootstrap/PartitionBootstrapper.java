@@ -188,6 +188,7 @@ final class PartitionBootstrapper {
         new CoordinatorPartition(
             partitionId,
             properties.broker().partitionCount(),
+            properties.cluster().clusterSize(),
             created.raftPartition(),
             actorScheduler,
             brokerMessagingService,
