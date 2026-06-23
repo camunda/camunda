@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
+import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.coordinator.stream.TopicProvisionedGossip;
@@ -185,19 +186,34 @@ public final class BrokerBootstrap {
           registrySink.accept(payload);
         };
 
-    // Change-coordinator executor: CC-2 stub that confirms immediately (no real Raft membership
-    // change yet). CC-3 replaces it with a broker-side executor that runs RaftPartition join/leave.
+    // 4c. Change-coordinator command channel (CC-3). The broker that must act on a reassignment
+    // step
+    // executes the runtime Raft join/leave and replies only once it has completed (the confirm).
+    comm.replyToAsync(
+        ReconfigurationCommand.SUBJECT,
+        ReconfigurationCommand::decode,
+        cmd ->
+            (cmd.kind() == io.camunda.eventbridge.coordinator.reconfig.ReconfigurationOp.Kind.JOIN
+                    ? topicReconciler.join(
+                        cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount())
+                    : topicReconciler.leave(cmd.topic(), cmd.partitionId()))
+                .thenApply(done -> new byte[0]),
+        Function.identity(),
+        executorService);
+
+    // The executor sends each step to the broker that must act (op.member()) and completes when
+    // that
+    // broker confirms; the change-coordinator advances committed only then, and retries on failure.
     final ReconfigurationExecutor reconfigurationExecutor =
-        (op, members) -> {
-          LOG.info(
-              "(stub) reconfiguration {} topic={} partition={} member={} -> members {}",
-              op.kind(),
-              op.topic(),
-              op.partitionId(),
-              op.member(),
-              members);
-          return java.util.concurrent.CompletableFuture.completedFuture(null);
-        };
+        (op, members, partitionCount) ->
+            comm.send(
+                ReconfigurationCommand.SUBJECT,
+                new ReconfigurationCommand(
+                    op.kind(), op.topic(), op.partitionId(), op.member(), partitionCount, members),
+                ReconfigurationCommand::encode,
+                reply -> (Void) null,
+                MemberId.from("broker-" + op.member()),
+                java.time.Duration.ofSeconds(30));
 
     // 5. Start partitions — raft + lifecycle actors (uses broker messaging service)
     partitionBootstrapper.start(

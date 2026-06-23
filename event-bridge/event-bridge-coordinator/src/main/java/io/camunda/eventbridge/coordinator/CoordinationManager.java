@@ -183,6 +183,12 @@ public class CoordinationManager extends Actor {
     return actor.call(() -> deleteTopic(request));
   }
 
+  public ActorFuture<io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse>
+      handleReassignTopic(
+          final io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest request) {
+    return actor.call(() -> reassignTopic(request));
+  }
+
   public ActorFuture<ListTopicsResponse> handleListTopics(final ListTopicsRequest request) {
     return actor.call(this::listTopics);
   }
@@ -195,6 +201,35 @@ public class CoordinationManager extends Actor {
    */
   private List<Integer> availableBrokers() {
     return IntStream.range(0, clusterSize).boxed().toList();
+  }
+
+  private io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse reassignTopic(
+      final io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest request) {
+    final var response =
+        new io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse();
+    final var name = request.getName();
+    final var meta = coordinatorStream.topicsSnapshot().get(name);
+    if (meta == null) {
+      return response.setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
+    }
+    if (request.getReplicationFactor() < 1) {
+      return response.setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
+    }
+    // Compute the new target placement centrally; the change-coordinator drives committed -> target
+    // one safe Raft step at a time. A no-op (already at target) just clears to NONE.
+    final var target =
+        placement.assign(meta.partitionCount(), request.getReplicationFactor(), availableBrokers());
+    if (!target.equals(meta.assignment())) {
+      coordinatorStream.registerTopic(
+          name,
+          new TopicMetadata(
+              meta.partitionCount(),
+              request.getReplicationFactor(),
+              meta.status(),
+              meta.assignment(),
+              target));
+    }
+    return response.setErrorCode(NONE);
   }
 
   private CreateTopicResponse createTopic(final CreateTopicRequest request) {
@@ -538,7 +573,7 @@ public class CoordinationManager extends Actor {
     final var advanced = ReconfigurationPlanner.apply(committed, step);
     final var partitionMembers = advanced.getOrDefault(step.partitionId(), List.of());
     reconfigurationExecutor
-        .execute(step, partitionMembers)
+        .execute(step, partitionMembers, meta.partitionCount())
         .whenComplete(
             (ok, error) ->
                 actor.run(

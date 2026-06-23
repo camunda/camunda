@@ -105,6 +105,19 @@ public class CoordinatorService {
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
+  public CompletableFuture<
+          io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse>
+      reassignTopic(
+          final io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest request) {
+    final var brokerRequest =
+        new io.camunda.eventbridge.broker.request.coordination.BrokerReassignTopicRequest()
+            .wrapRequest(request);
+    brokerRequest.setPartitionId(TOPIC_REGISTRY_SHARD);
+    return brokerClient
+        .sendRequest(brokerRequest)
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
+  }
+
   public CompletableFuture<ListTopicsResponse> listTopics() {
     final var brokerRequest = new BrokerListTopicsRequest();
     brokerRequest.setPartitionId(TOPIC_REGISTRY_SHARD);

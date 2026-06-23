@@ -61,6 +61,18 @@ final class PartitionBootstrapper {
   private final List<LogRetentionCompactor> retentionCompactors = new CopyOnWriteArrayList<>();
   private final List<CoordinatorPartition> coordinatorPartitions = new CopyOnWriteArrayList<>();
 
+  // Per-(group, partition) lookup for runtime join/leave and the reconciler's "already running?"
+  // check. The lists above remain the stop() inventory; this map is the addressable index.
+  private final java.util.Map<String, Provisioned> dataPartitions =
+      new java.util.concurrent.ConcurrentHashMap<>();
+
+  private record Provisioned(
+      CreatedPartition created, PartitionLifecycle lifecycle, LogRetentionCompactor compactor) {}
+
+  private static String key(final String groupName, final int partitionId) {
+    return groupName + "#" + partitionId;
+  }
+
   // Initialized in start(); reused by runtime topic-group provisioning after boot.
   private PartitionFactory factory;
   private DefaultPartitionManagementService managementService;
@@ -291,6 +303,82 @@ final class PartitionBootstrapper {
       final int partitionId,
       final Set<MemberId> members,
       final TopologyManagerImpl topologyManager) {
+    startDataPartition(groupName, partitionId, members, topologyManager, false);
+  }
+
+  /**
+   * Joins an already-running Raft group as a new replica at runtime (reassignment add). Same setup
+   * as {@link #provisionDataPartition} but the Raft server joins the existing cluster (catching up
+   * via the leader) instead of bootstrapping a new one.
+   */
+  java.util.concurrent.CompletableFuture<Void> joinDataPartition(
+      final String groupName,
+      final int partitionId,
+      final Set<MemberId> members,
+      final TopologyManagerImpl topologyManager) {
+    return startDataPartition(groupName, partitionId, members, topologyManager, true);
+  }
+
+  /** Whether this broker currently runs a replica of {@code (groupName, partitionId)}. */
+  boolean isRunning(final String groupName, final int partitionId) {
+    return dataPartitions.containsKey(key(groupName, partitionId));
+  }
+
+  /**
+   * Whether this broker has on-disk data for {@code (groupName, partitionId)} (restart recovery).
+   */
+  boolean hasData(final String groupName, final int partitionId) {
+    final var dir = factory.getPartitionDirectory(groupName, partitionId);
+    try (final var entries = java.nio.file.Files.list(dir)) {
+      return entries.findAny().isPresent();
+    } catch (final java.io.IOException e) {
+      return false;
+    }
+  }
+
+  /** Leaves and tears down a runtime replica (reassignment remove). Idempotent. */
+  java.util.concurrent.CompletableFuture<Void> leaveDataPartition(
+      final String groupName, final int partitionId) {
+    final var provisioned = dataPartitions.remove(key(groupName, partitionId));
+    if (provisioned == null) {
+      return java.util.concurrent.CompletableFuture.completedFuture(null);
+    }
+    lifecycles.remove(provisioned.lifecycle());
+    createdPartitions.remove(provisioned.created());
+    try {
+      provisioned.lifecycle().closeAsync();
+    } catch (final Exception e) {
+      LOG.warn("Error closing lifecycle for {}/{}", groupName, partitionId, e);
+    }
+    if (provisioned.compactor() != null) {
+      retentionCompactors.remove(provisioned.compactor());
+      provisioned.compactor().closeAsync();
+    }
+    return provisioned
+        .created()
+        .raftPartition()
+        .leave()
+        .whenComplete(
+            (rp, error) -> {
+              if (error != null) {
+                LOG.warn("Error leaving raft partition {}/{}", groupName, partitionId, error);
+              } else {
+                LOG.info("Left raft partition {}/{}", groupName, partitionId);
+              }
+            })
+        .thenApply(rp -> null);
+  }
+
+  private java.util.concurrent.CompletableFuture<Void> startDataPartition(
+      final String groupName,
+      final int partitionId,
+      final Set<MemberId> members,
+      final TopologyManagerImpl topologyManager,
+      final boolean join) {
+
+    if (isRunning(groupName, partitionId)) {
+      return java.util.concurrent.CompletableFuture.completedFuture(null); // idempotent
+    }
 
     // 1. Create raft-level components
     final var created = factory.createData(groupName, partitionId, members, localMemberId);
@@ -323,8 +411,9 @@ final class PartitionBootstrapper {
     // each node trims its own committed log prefix independently. This is safe — Raft guarantees an
     // identical committed prefix everywhere, so replicas differ only in how far back they retain,
     // never in shared content — and it bounds disk on followers without waiting for promotion.
+    LogRetentionCompactor retentionCompactor = null;
     if (properties.retention().maxRecordsPerPartition() > 0) {
-      final var retentionCompactor =
+      retentionCompactor =
           new LogRetentionCompactor(
               partitionId,
               created.raftPartition(),
@@ -335,20 +424,48 @@ final class PartitionBootstrapper {
       actorScheduler.submitActor(retentionCompactor);
     }
 
-    // 3. Wire raft role changes to lifecycle — before bootstrap so no events are lost
+    dataPartitions.put(
+        key(groupName, partitionId), new Provisioned(created, lifecycle, retentionCompactor));
+
+    // 3. Wire raft role changes to lifecycle — before start so no events are lost
     created.raftPartition().addRoleChangeListener((role, term) -> lifecycle.onRoleChange(role));
 
-    // 4. Bootstrap raft — elections fire via the listener above
-    created
-        .raftPartition()
-        .bootstrap(managementService, created.snapshotStore())
+    // 4. Start raft — bootstrap a new group, or join an existing one for a reassignment add.
+    final var started =
+        join
+            ? created.raftPartition().join(managementService, created.snapshotStore())
+            : created.raftPartition().bootstrap(managementService, created.snapshotStore());
+    final var lifecycleRef = lifecycle;
+    final var compactorRef = retentionCompactor;
+    return started
         .whenComplete(
             (rp, error) -> {
               if (error != null) {
-                LOG.error("Failed to bootstrap raft partition {}", partitionId, error);
+                LOG.error(
+                    "Failed to {} raft partition {}/{}",
+                    join ? "join" : "bootstrap",
+                    groupName,
+                    partitionId,
+                    error);
+                // Roll back tracking so a retry genuinely re-attempts and committed state is not
+                // advanced on a failed join (it would otherwise look "running" and no-op the
+                // retry).
+                dataPartitions.remove(key(groupName, partitionId));
+                createdPartitions.remove(created);
+                lifecycles.remove(lifecycleRef);
+                lifecycleRef.closeAsync();
+                if (compactorRef != null) {
+                  retentionCompactors.remove(compactorRef);
+                  compactorRef.closeAsync();
+                }
               } else {
-                LOG.info("Raft partition {} bootstrapped", partitionId);
+                LOG.info(
+                    "Raft partition {}/{} {}",
+                    groupName,
+                    partitionId,
+                    join ? "joined" : "bootstrapped");
               }
-            });
+            })
+        .thenApply(rp -> null);
   }
 }

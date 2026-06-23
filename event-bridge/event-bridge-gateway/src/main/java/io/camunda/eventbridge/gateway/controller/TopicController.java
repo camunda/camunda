@@ -76,6 +76,25 @@ public class TopicController {
             });
   }
 
+  @PostMapping("/{name}/reassign")
+  public CompletableFuture<ResponseEntity<Object>> reassignTopic(
+      @PathVariable final String name,
+      @org.springframework.web.bind.annotation.RequestParam final int replicationFactor) {
+    final var request =
+        new io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest()
+            .setName(name)
+            .setReplicationFactor(replicationFactor);
+    return coordinatorService
+        .reassignTopic(request)
+        .handleAsync(
+            (res, error) -> {
+              if (error != null) {
+                return coordinatorUnavailable();
+              }
+              return ResponseEntity.status(deleteStatus(res.getErrorCode())).build();
+            });
+  }
+
   @GetMapping
   public CompletableFuture<ResponseEntity<Object>> listTopics() {
     return coordinatorService

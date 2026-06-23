@@ -204,6 +204,9 @@ public final class PartitionFactory {
     config.setSendOnLegacySubject(false);
     config.setReceiveOnLegacySubject(false);
     config.setEntryValidator(new NoopEntryValidator());
+    // Runtime membership changes (join/leave) send their RPCs with this timeout; it has no default
+    // and would otherwise be null, NPE-ing the join. Needed for the change-coordinator's joins.
+    config.setConfigurationChangeTimeout(java.time.Duration.ofSeconds(10));
     return config;
   }
 

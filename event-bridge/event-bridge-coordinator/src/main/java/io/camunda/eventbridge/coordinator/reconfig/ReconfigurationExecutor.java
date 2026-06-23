@@ -28,6 +28,9 @@ public interface ReconfigurationExecutor {
    * @param op the membership change to apply
    * @param partitionMembers the partition's replica node ids after this op (for a join, the set the
    *     joining broker must configure its Raft partition with)
+   * @param partitionCount the topic's partition count (the joining broker needs it to set up the
+   *     topic's routing topology)
    */
-  CompletableFuture<Void> execute(ReconfigurationOp op, List<Integer> partitionMembers);
+  CompletableFuture<Void> execute(
+      ReconfigurationOp op, List<Integer> partitionMembers, int partitionCount);
 }

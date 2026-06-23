@@ -49,6 +49,7 @@ public final class CoordinationRequestHandler implements RequestHandler {
       case COMMIT -> handleCommit(request);
       case CREATE_TOPIC -> handleCreateTopic(request);
       case DELETE_TOPIC -> handleDeleteTopic(request);
+      case REASSIGN_TOPIC -> handleReassignTopic(request);
       case LIST_TOPICS -> handleListTopics(request);
       default ->
           CompletableFuture.failedFuture(
@@ -103,6 +104,14 @@ public final class CoordinationRequestHandler implements RequestHandler {
     delete.wrap(request.value());
     return toFuture(
         coordinationManager.handleDeleteTopic(delete), CoordinationResponseEncoder::encode);
+  }
+
+  private CompletableFuture<byte[]> handleReassignTopic(final CoordinationRequest request) {
+    final var reassign =
+        new io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest();
+    reassign.wrap(request.value());
+    return toFuture(
+        coordinationManager.handleReassignTopic(reassign), CoordinationResponseEncoder::encode);
   }
 
   private CompletableFuture<byte[]> handleListTopics(final CoordinationRequest request) {

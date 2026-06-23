@@ -65,6 +65,7 @@
       <validValue name="CREATE_TOPIC">4</validValue>
       <validValue name="DELETE_TOPIC">5</validValue>
       <validValue name="LIST_TOPICS">6</validValue>
+      <validValue name="REASSIGN_TOPIC">7</validValue>
     </enum>
 
     <enum name="PublishResponseStatus" encodingType="uint8"
