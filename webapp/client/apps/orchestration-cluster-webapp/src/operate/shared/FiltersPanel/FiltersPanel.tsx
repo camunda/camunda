@@ -7,6 +7,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {CollapsablePanel} from '../CollapsablePanel';
 import {Button} from '@carbon/react';
@@ -20,6 +21,7 @@ type Props = {
 };
 
 const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
+	const {t} = useTranslation();
 	const isCollapsed = (getStateLocally('operate.panelStates')?.[localStorageKey] as boolean | undefined) ?? false;
 	const [panelState, setPanelState] = useState<'expanded' | 'collapsed'>(isCollapsed ? 'collapsed' : 'expanded');
 
@@ -32,7 +34,7 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 
 	return (
 		<CollapsablePanel
-			label="Filter"
+			label={t('operate.shared.filtersPanel.label')}
 			panelPosition="LEFT"
 			maxWidth={320}
 			isCollapsed={panelState === 'collapsed'}
@@ -48,7 +50,7 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 			footer={
 				<Footer>
 					<Button kind="ghost" size="sm" disabled={isResetButtonDisabled} type="reset" onClick={onResetClick}>
-						Reset filters
+						{t('operate.shared.filtersPanel.resetFilters')}
 					</Button>
 				</Footer>
 			}
