@@ -10,6 +10,7 @@ import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {buildUrl, jsonHeaders} from 'utils/http';
@@ -720,9 +721,18 @@ test.describe
     await loginPage.login(aliceUser.username, aliceUser.password);
     await expect(page).toHaveURL('/tasklist');
 
-    await taskPanelPage.goToTaskDetails(userTaskKey);
-
-    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
+    // The assignment and authorization granted in beforeAll may not have
+    // propagated to the read model yet, so the Complete Task button can be
+    // missing on the first load. Reload until the task detail reflects them.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPage.goToTaskDetails(userTaskKey);
+        await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
 
     await taskDetailsPage.clickCompleteTaskButton();
 
