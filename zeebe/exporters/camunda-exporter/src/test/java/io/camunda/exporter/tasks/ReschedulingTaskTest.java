@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -203,7 +204,10 @@ final class ReschedulingTaskTest {
     future.complete(1);
 
     // then - DEBUG log for shutdown rejection, no ERROR log
-    verify(mockLogger, timeout(5_000).atLeastOnce()).debug(anyString(), any(Object.class));
+    verify(mockLogger, timeout(5_000).times(1))
+        .debug(
+            eq("Task {} was rejected because executor is shutting down; not retrying"),
+            any(Object.class));
     verify(mockLogger, never()).error(anyString(), any(Object.class), any(Throwable.class));
   }
 
