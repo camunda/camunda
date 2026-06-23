@@ -136,7 +136,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             <SectionTitle icon={<MeterAlt size={16} />}>
               Usage
               <Tag type="gray" size="sm">
-                {metrics.modelCalls} model calls
+                {metrics.modelCalls.toLocaleString()} model calls
               </Tag>
               <Tag type="gray" size="sm">
                 {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}

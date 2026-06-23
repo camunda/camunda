@@ -460,15 +460,22 @@ describe('<ConversationHistory />', () => {
     );
 
     const message = within(screen.getByTestId('conversation-message-1'));
-    expect(message.getByText('150 tokens')).toBeInTheDocument();
-    expect(message.getByText('1.23s')).toBeInTheDocument();
+    expect(message.getByTestId('message-token-metric')).toHaveTextContent(
+      '150 tokens',
+    );
+    expect(message.getByTestId('message-duration-metric')).toHaveTextContent(
+      '1.23s',
+    );
     expect(message.getByText('Input: 100 · Output: 50')).toBeInTheDocument();
 
-    const noMetricsMessage = within(
+    const messageNoMetrics = within(
       screen.getByTestId('conversation-message-2'),
     );
-    expect(noMetricsMessage.queryByText(/tokens/)).not.toBeInTheDocument();
-    expect(noMetricsMessage.queryByText(/ s$/)).not.toBeInTheDocument();
-    expect(noMetricsMessage.queryByText(/ ms$/)).not.toBeInTheDocument();
+    expect(
+      messageNoMetrics.queryByTestId('message-token-metric'),
+    ).not.toBeInTheDocument();
+    expect(
+      messageNoMetrics.queryByTestId('message-duration-metric'),
+    ).not.toBeInTheDocument();
   });
 });

@@ -93,12 +93,12 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
               description={`Input: ${metrics.inputTokens.toLocaleString()} · Output: ${metrics.outputTokens.toLocaleString()}`}
               align="bottom"
             >
-              <Tag type="gray" size="sm">
+              <Tag data-testid="message-token-metric" type="gray" size="sm">
                 {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}
                 &nbsp;tokens
               </Tag>
             </Tooltip>
-            <Tag type="gray" size="sm">
+            <Tag data-testid="message-duration-metric" type="gray" size="sm">
               {formatDuration(metrics.durationMs)}
             </Tag>
           </MetricsContainer>
