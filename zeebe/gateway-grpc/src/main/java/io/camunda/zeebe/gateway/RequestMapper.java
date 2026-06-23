@@ -170,6 +170,10 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerUpdateJobRequest toUpdateJobPriorityRequest(
       final UpdateJobPriorityRequest grpcRequest) {
+    if (!grpcRequest.hasPriority()) {
+      throw new IllegalArgumentException(
+          "Expected to update job priority, but priority must be provided");
+    }
     final var brokerRequest =
         new BrokerUpdateJobRequest(grpcRequest.getJobKey(), null, null, grpcRequest.getPriority());
     if (grpcRequest.hasOperationReference()) {

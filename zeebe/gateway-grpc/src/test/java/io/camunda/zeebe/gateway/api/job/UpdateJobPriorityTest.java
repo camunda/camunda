@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.api.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
@@ -16,6 +17,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResp
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.junit.Test;
 
 public class UpdateJobPriorityTest extends GatewayTest {
@@ -47,5 +50,18 @@ public class UpdateJobPriorityTest extends GatewayTest {
     assertThat(brokerRequestValue.getPriority()).isEqualTo(priority);
     assertThat(brokerRequest.getOperationReference()).isEqualTo(operationReference);
     assertThat(brokerRequestValue.getChangedAttributes()).contains(JobRecord.PRIORITY);
+  }
+
+  @Test
+  public void shouldRejectWhenPriorityIsNotProvided() {
+    // given
+    final UpdateJobPriorityRequest request =
+        UpdateJobPriorityRequest.newBuilder().setJobKey(1L).build();
+
+    // when / then
+    assertThatThrownBy(() -> client.updateJobPriority(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
+        .isEqualTo(Status.INVALID_ARGUMENT.getCode());
   }
 }
