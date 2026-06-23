@@ -167,4 +167,36 @@ final class ExtendedConfigurationBuilderTest {
         .noneMatch(k -> k.endsWith(".prefix"))
         .noneMatch(k -> k.endsWith(".database-name"));
   }
+
+  @Test
+  void shouldEmitKeysUnderProvidedPrefix() {
+    // given
+    final var config = new Camunda();
+    config.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
+
+    // when — flattened under a physical-tenant prefix instead of the top-level `camunda` header
+    final var flat =
+        ExtendedConfigurationBuilder.flatPropertiesFor(config, "camunda.physical-tenants.tenanta");
+
+    // then — every key carries the given prefix and none leak under the root `camunda.data.*` form
+    assertThat(flat)
+        .containsEntry("camunda.physical-tenants.tenanta.data.secondary-storage.type", "rdbms");
+    assertThat(flat.keySet()).noneMatch(k -> k.startsWith("camunda.data."));
+  }
+
+  @Test
+  void shouldNotEmitNodeIdForPhysicalTenantConfig() {
+    // given — physical-tenant configs carry storage/security only and never a node id, which is a
+    // root-config concern
+    final var config = new Camunda();
+    config.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
+
+    // when — flattened under a physical-tenant prefix
+    final var flat =
+        ExtendedConfigurationBuilder.flatPropertiesFor(config, "camunda.physical-tenants.tenanta");
+
+    // then — with no node id set neither the fixed nor the legacy node-id key is emitted, which is
+    // why legacy-node-id mirroring needs no prefix-specific special-casing
+    assertThat(flat.keySet()).noneMatch(k -> k.contains("node-id"));
+  }
 }
