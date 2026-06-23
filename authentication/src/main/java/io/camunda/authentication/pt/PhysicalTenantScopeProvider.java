@@ -14,16 +14,10 @@ import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
-import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
 import org.springframework.core.env.Environment;
 
 /**
@@ -60,17 +54,6 @@ import org.springframework.core.env.Environment;
 public final class PhysicalTenantScopeProvider implements CamundaSecurityScopeProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(PhysicalTenantScopeProvider.class);
-  private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
-  private static final ConfigurationPropertyName PREFIX_NAME =
-      ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
-
-  // Valid tenant id: lowercase alphanumeric, no dashes — so the yaml form
-  // (camunda.physical-tenants.<id>.*) and its relaxed-binding env-var form address the same tenant.
-  // Intentionally duplicated from PhysicalTenantResolver (configuration module): it is a one-line
-  // rule, and no module that both 'configuration' and 'authentication' depend on fits a plain-Java
-  // validator (spring-utils is Spring-specific; depending on 'configuration' would invert the
-  // dependency). Keep the two in sync.
-  private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
   private final Environment environment;
   private final List<ScopedSecurityDescriptor> descriptors;
@@ -161,36 +144,7 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
     return String.join(", ", parts);
   }
 
-  /**
-   * Walks the {@link Environment} and returns the set of explicitly configured physical-tenant ids
-   * (those with at least one key under {@code camunda.physical-tenants.<id>.*}).
-   *
-   * <p>Tenant ids must be lowercase alphanumeric ({@code [a-z0-9]+}) — no dashes. This matches the
-   * constraint enforced by {@code PhysicalTenantResolver} to keep yaml and env-var forms addressing
-   * the same tenant.
-   */
   private static Set<String> discoverExplicitTenantIds(final Environment environment) {
-    final Set<String> tenants = new LinkedHashSet<>();
-    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
-      if (source instanceof final IterableConfigurationPropertySource iter) {
-        iter.stream()
-            .filter(PREFIX_NAME::isAncestorOf)
-            .forEach(
-                name -> {
-                  if (name.getNumberOfElements() > PREFIX_NAME.getNumberOfElements()) {
-                    final String tenantId =
-                        name.getElement(
-                            PREFIX_NAME.getNumberOfElements(),
-                            ConfigurationPropertyName.Form.UNIFORM);
-                    if (tenantId != null
-                        && !tenantId.isEmpty()
-                        && VALID_TENANT_ID.matcher(tenantId).matches()) {
-                      tenants.add(tenantId);
-                    }
-                  }
-                });
-      }
-    }
-    return tenants;
+    return PhysicalTenantAuthConfigurations.discoverExplicitTenantIds(environment);
   }
 }
