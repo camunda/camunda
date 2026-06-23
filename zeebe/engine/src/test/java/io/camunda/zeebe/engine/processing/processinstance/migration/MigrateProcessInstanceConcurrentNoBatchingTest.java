@@ -1355,9 +1355,12 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
         RecordToWrite.event()
             .processInstance(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, sequenceFlowRecord)
             .key(sequenceFlowKey),
+        // causedBy(2) = caused by SEQUENCE_FLOW_TAKEN (index 2), matching production behavior where
+        // ACTIVATE_ELEMENT is always a follow-up command with sourceEventPosition >= 0
         RecordToWrite.command()
             .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, multiInstanceRecord)
-            .key(multiInstanceBodyKey),
+            .key(multiInstanceBodyKey)
+            .causedBy(2),
         RecordToWrite.command()
             .migration(
                 new ProcessInstanceMigrationRecord()
