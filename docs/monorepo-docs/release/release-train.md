@@ -68,7 +68,7 @@ Use these as short operational rules that help readers decide what is normal and
 * The C8 Release Train can only proceed once the Monorepo artifacts it depends on are confirmed as released.
 * Patch releases can be done on demand, but they should still be based on the previous generation for that line.
 * Only patch releases can be triggered ad-hoc. Alphas and minors always follow the monthly release cadence — a team requesting an ad-hoc alpha must wait for the next monthly cycle.
-* SaaS generation create/change operations are restricted to `@c8-release-train-manager`, coordinated in [`#c8-release-announcements`](https://camunda.slack.com/archives/C03NFMH4KC6).
+* SaaS generation create/change operations are restricted to `@c8-release-train-manager`, coordinated in [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6).
 * The expected upgrade path for a generation is: to the latest patch of the same minor; if already on the latest patch, to the latest patch of the next minor. Alpha generations cannot be upgraded to — their `updatableFrom` list is expected to be empty.
 * Upgrade path configuration must be consistent across dev, int, and prod. A path configured in one environment but not others is drift and should be investigated.
 * If an already running train needs to switch to a rereleased component version, patch the running train by updating the old version references in the process variables — always `releaseSteps` and the relevant component version vars, plus `baseVersions`.
@@ -98,7 +98,7 @@ Before the SaaS Generation part runs, make sure:
 
 ### Ownership and coordination
 
-SaaS generation create/change operations are restricted to `@c8-release-train-manager` and must be coordinated in [`#c8-release-announcements`](https://camunda.slack.com/archives/C03NFMH4KC6).
+SaaS generation create/change operations are restricted to `@c8-release-train-manager` and must be coordinated in [`#top-c8-release-train`](https://camunda.slack.com/archives/C03NFMH4KC6).
 
 ### What to verify after SaaS Generation
 
