@@ -11,10 +11,11 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.REBALANCE_IN_PROGRESS;
 
 import io.camunda.eventbridge.coordinator.assignor.PartitionAssignment.ReconciliationResult;
+import io.camunda.eventbridge.coordinator.placement.PlacementStrategy;
+import io.camunda.eventbridge.coordinator.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorStream;
 import io.camunda.eventbridge.coordinator.stream.GroupMetadataCodec;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
-import io.camunda.eventbridge.coordinator.stream.TopicAssignments;
 import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
@@ -62,6 +63,7 @@ public class CoordinationManager extends Actor {
   private final CoordinationValidator validator;
   private final int partitionCount;
   private final int clusterSize;
+  private final PlacementStrategy placement = new RoundRobinPlacement();
   private final SnowflakeIdGenerator idGenerator;
   private final InstantSource clock;
 
@@ -174,6 +176,16 @@ public class CoordinationManager extends Actor {
     return actor.call(this::listTopics);
   }
 
+  /**
+   * The broker node ids the coordinator may place partitions on. Bootstrap seam: derived from the
+   * configured cluster size today; this is the single point that becomes a live, advertised broker
+   * set when dynamic membership (brokers joining and advertising capacity) is added — placement and
+   * the change-coordinator consume this list and are otherwise membership-agnostic.
+   */
+  private List<Integer> availableBrokers() {
+    return IntStream.range(0, clusterSize).boxed().toList();
+  }
+
   private CreateTopicResponse createTopic(final CreateTopicRequest request) {
     final var name = request.getName();
     if (name == null || !TOPIC_NAME.matcher(name).matches()) {
@@ -190,8 +202,8 @@ public class CoordinationManager extends Actor {
     // and the advance to ACTIVE follow (later increment). The write is replicated through the
     // stream.
     final var assignment =
-        TopicAssignments.roundRobin(
-            request.getPartitionCount(), request.getReplicationFactor(), clusterSize);
+        placement.assign(
+            request.getPartitionCount(), request.getReplicationFactor(), availableBrokers());
     coordinatorStream.registerTopic(
         name,
         request.getPartitionCount(),

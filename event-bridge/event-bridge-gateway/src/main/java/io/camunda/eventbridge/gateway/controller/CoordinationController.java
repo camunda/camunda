@@ -147,7 +147,7 @@ public class CoordinationController {
       case UNKNOWN_MEMBER_ID, FENCED_MEMBER_EPOCH, FENCED_MEMBER_ACTIVE, NOT_PARTITION_OWNER ->
           HttpStatus.CONFLICT;
       case INVALID_GROUP_ID -> HttpStatus.BAD_REQUEST;
-      case UNKNOWN -> HttpStatus.INTERNAL_SERVER_ERROR;
+      default -> HttpStatus.INTERNAL_SERVER_ERROR;
     };
   }
 
