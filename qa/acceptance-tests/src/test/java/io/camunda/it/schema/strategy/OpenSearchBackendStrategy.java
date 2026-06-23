@@ -8,7 +8,7 @@
 package io.camunda.it.schema.strategy;
 
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
+import static io.camunda.webapps.schema.SupportedVersions.TEST_OPENSEARCH_VERSION;
 
 import io.camunda.application.Profile;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -53,7 +53,7 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
     container =
         new GenericContainer<>(
                 DockerImageName.parse("opensearchproject/opensearch")
-                    .withTag(SUPPORTED_OPENSEARCH_VERSION))
+                    .withTag(TEST_OPENSEARCH_VERSION))
             .withEnv("discovery.type", "single-node")
             .withEnv("DISABLE_SECURITY_PLUGIN", "false")
             .withEnv("plugins.security.ssl.http.enabled", "false")

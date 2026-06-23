@@ -8,7 +8,7 @@
 package io.camunda.it.schema.strategy;
 
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
+import static io.camunda.webapps.schema.SupportedVersions.TEST_ELASTICSEARCH_VERSION;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
@@ -62,7 +62,7 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
     container =
         new ElasticsearchContainer(
                 DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                    .withTag(SUPPORTED_ELASTICSEARCH_VERSION))
+                    .withTag(TEST_ELASTICSEARCH_VERSION))
             .withStartupTimeout(Duration.ofMinutes(5))
             .withEnv("xpack.security.enabled", "true")
             // Configure with allowed repository storage path

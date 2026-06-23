@@ -213,6 +213,26 @@
       "enabled": false
     },
     {
+      "description": "Group ES container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      "matchPackageNames": [
+        "docker.elastic.co/elasticsearch/elasticsearch"
+      ],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "groupName": "elasticsearch container version"
+    },
+    {
+      "description": "Group OS container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      "matchPackageNames": [
+        "opensearchproject/opensearch"
+      ],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "groupName": "opensearch container version"
+    },
+    {
       "description": "Skip lucene major updates to avoid breaking changes.",
       "matchManagers": [
         "maven"
@@ -765,6 +785,16 @@
       ],
       "depNameTemplate": "org.junit.jupiter:junit-jupiter",
       "datasourceTemplate": "maven"
+    },
+    {
+      "description": "Track ES/OS container versions in parent/pom.xml XML comment annotations.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^parent/pom\\.xml$/"
+      ],
+      "matchStrings": [
+        "<!-- renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+) -->\\s*<[^>]+>(?<currentValue>[^<]+)</"
+      ]
     }
   ]
 }

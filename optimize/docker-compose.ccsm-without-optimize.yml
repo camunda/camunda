@@ -93,7 +93,7 @@ services:
       - localhost
   elasticsearch:
     profiles: ["", "elasticsearch"]
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.11}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.16}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
@@ -156,7 +156,7 @@ services:
     networks:
       - localhost
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.19.4}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.19.5}
     profiles: ["opensearch"]
     container_name: opensearch
     environment:
