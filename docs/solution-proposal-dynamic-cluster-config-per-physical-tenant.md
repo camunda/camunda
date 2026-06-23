@@ -124,7 +124,7 @@ assigned to the `default` partition group.
 
 ### 3.1 Data model
 
-The top-level type is `ClusterConfiguration` (named `PartitionGroupClusterConfiguration` in the
+The top-level type is `ClusterConfiguration` (named `PartitionGroupAwareClusterConfiguration` in the
 POC; will be renamed when the existing `ClusterConfiguration` usages are fully migrated):
 
 ```java
@@ -284,8 +284,11 @@ Both `ClusterMembership` and `PartitionGroupConfiguration` use a two-level versi
   `startConfigurationChange()` (plan start) and when the last operation in a plan completes (plan
   end). Between those two events all operation completions keep the config version constant and
   advance only `ClusterChangePlan.version`.
-- **Member version** (`version` on `BrokerState` or `MemberPartitionState`): incremented by each
-  member when it advances its own state. Only the member itself ever writes its own member state.
+- **Member version** (`version` on `BrokerState` or `MemberPartitionState`): incremented on every
+  mutation of the record — any lifecycle transition on `BrokerState` (`toJoining`, `toActive`,
+  `toLeaving`, `toLeft`) or any partition operation on `MemberPartitionState` (`addPartition`,
+  `removePartition`, `updatePartition`). Follows the same pattern as `MemberState.version` in the
+  existing code. Only the member itself ever writes its own member state.
 
 Both types use the config version as a fast path: if versions differ, the higher version wins
 wholesale. If equal (concurrent writes during plan execution), they merge field-by-field:
@@ -365,7 +368,7 @@ plan-internal version and the re-write is silently discarded.
 
 **Required invariant**: plan IDs must be monotonically increasing across coordinator restarts. The
 coordinator must derive the next plan ID from the last ID seen in the persisted or gossiped
-`PartitionGroupClusterConfiguration`, not from a local counter that resets on restart.
+`PartitionGroupAwareClusterConfiguration`, not from a local counter that resets on restart.
 
 #### Phases as read-only templates
 
@@ -521,7 +524,7 @@ message PartitionGroupConfiguration {
   int64 incarnationNumber = 6;
 }
 
-message PartitionGroupClusterTopology {
+message PartitionGroupAwareClusterConfiguration {
   ClusterMembership clusterMembership = 1;
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
@@ -556,7 +559,7 @@ message PartitionGroupOperationList {
 
 message GossipState {
   ClusterTopology clusterTopology = 1;                              // kept; old brokers read/write this field
-  PartitionGroupClusterTopology partitionGroupClusterTopology = 2;  // new; upgraded brokers write this field
+  PartitionGroupAwareClusterConfiguration partitionGroupAwareClusterConfiguration = 2;  // new; upgraded brokers write this field
 }
 ```
 
@@ -564,13 +567,13 @@ message GossipState {
 send. Field 1 (`clusterTopology`) is derived from `partitionGroups["default"]` and
 `clusterMembership` using the existing `ClusterTopology` encoding, so old brokers continue
 receiving live lifecycle and partition updates from upgraded nodes. Field 2
-(`partitionGroupClusterTopology`) carries the full wrapper for new-broker consumers. If field 1
+(`partitionGroupAwareClusterConfiguration`) carries the full wrapper for new-broker consumers. If field 1
 were left unset, old brokers would freeze their view of any upgraded node; an old-broker
 coordinator would stall waiting for state changes that it never sees.
 
 **Receive path:** check field 2 first:
-- If `partitionGroupClusterTopology` (field 2) is present → decode directly as
-  `PartitionGroupClusterConfiguration`.
+- If `partitionGroupAwareClusterConfiguration` (field 2) is present → decode directly as
+  `PartitionGroupAwareClusterConfiguration`.
 - If absent (message from an old broker) → read `clusterTopology` (field 1) and migrate via
   `ofDefault()`:
   - `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped),
@@ -583,8 +586,8 @@ coordinator would stall waiting for state changes that it never sees.
 fixed-size header containing a version field. Use this version to identify the body format:
 - Header version 1 (legacy): body is raw `ClusterTopology` bytes → read via
   `decodeClusterTopology()` + `ofDefault()` migration.
-- Header version 2 (new): body is raw `PartitionGroupClusterTopology` bytes → read via
-  `decodePartitionGroupClusterConfiguration()`.
+- Header version 2 (new): body is raw `PartitionGroupAwareClusterConfiguration` bytes → read via
+  `decodePartitionGroupAwareClusterConfiguration()`.
 
 On first boot after an upgrade the broker reads header version 1, migrates automatically, and
 writes back header version 2. No separate migration step is required.
@@ -612,7 +615,7 @@ writes back header version 2. No separate migration step is required.
   carries only partition assignments — no shared type with conflicting semantics.
 - ~~Partition appliers cannot check `memberState.state() == ACTIVE` on `MemberPartitionState`~~
   Resolved: `PartitionGroupOperationApplier.init()` receives the full
-  `PartitionGroupClusterConfiguration` wrapper so appliers can look up broker lifecycle state from
+  `PartitionGroupAwareClusterConfiguration` wrapper so appliers can look up broker lifecycle state from
   `clusterMembership`. Member removal from a group uses empty-`partitions` semantics (presence in
   map = hosting partitions) rather than a `State.LEFT` flag.
 - ~~`clusterMembership` transitional fragility~~ Resolved: during Issues 10–11, `clusterMembership`
@@ -636,7 +639,7 @@ partition groups; API support for non-default groups comes later.
 | # |                                                                               What                                                                                |                  `default` group behavior                   |
 |---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
 | 1 | `ClusterMembership`, `PartitionGroupConfiguration`, `PhasedChangePlan` data model; proto; serialization; migration                                                | Unchanged                                                   |
-| 2 | `ClusterConfiguration` wrapper (currently `PartitionGroupClusterConfiguration`); gossip and persistence carry new format; compat accessors for existing consumers | Unchanged                                                   |
+| 2 | `ClusterConfiguration` wrapper (currently `PartitionGroupAwareClusterConfiguration`); gossip and persistence carry new format; compat accessors for existing consumers | Unchanged                                                   |
 | 3 | Non-default partition group entries seeded from static config; `PartitionDistribution` derived per-group; `withGroupName()` removed                               | Unchanged                                                   |
 | 4 | Non-default group `PartitionManagerImpl` instances register `PartitionGroupConfigurationChangeAppliers` and update `partitionGroups[id]` on state changes         | Unchanged                                                   |
 | 5 | Coordinator generates `PhasedChangePlan` for default-group-only operations; phase advancement wired                                                               | Identical result, new mechanics; verified by existing tests |

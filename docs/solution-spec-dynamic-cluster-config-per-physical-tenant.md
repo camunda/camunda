@@ -35,7 +35,7 @@ Module paths:
 ## 1. Data model
 
 ```java
-record PartitionGroupClusterConfiguration(
+record PartitionGroupAwareClusterConfiguration(
     ClusterMembership clusterMembership,               // ALL brokers; BrokerState (lifecycle state only)
     Map<String, PartitionGroupConfiguration> partitionGroups, // one per partition group ID
     Optional<PhasedChangePlan> pendingPlan             // only for cluster-spanning operations
@@ -187,7 +187,7 @@ interface PartitionGroupConfigurationChangeAppliers {
     interface PartitionGroupOperationApplier {
         MemberId memberId();
         Either<Exception, UnaryOperator<PartitionGroupConfiguration>> init(
-            PartitionGroupClusterConfiguration wrapper, String groupId);
+            PartitionGroupAwareClusterConfiguration wrapper, String groupId);
         ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply();
     }
 }
@@ -201,7 +201,7 @@ The coordinator is the ACTIVE broker with the lowest member ID, determined from
 `clusterMembership.members`.
 
 ```java
-void onClusterConfigurationUpdated(PartitionGroupClusterConfiguration config) {
+void onClusterConfigurationUpdated(PartitionGroupAwareClusterConfiguration config) {
     if (!isCoordinator(config)) return;
     if (config.pendingPlan().isEmpty()) return;
 
@@ -233,12 +233,12 @@ advances if the current phase is already complete.
 
 ## 6. Merge semantics
 
-### `PartitionGroupClusterConfiguration.merge()`
+### `PartitionGroupAwareClusterConfiguration.merge()`
 
 No outer version — always field-by-field CRDT merge:
 
 ```java
-PartitionGroupClusterConfiguration merge(PartitionGroupClusterConfiguration other) {
+PartitionGroupAwareClusterConfiguration merge(PartitionGroupAwareClusterConfiguration other) {
     final var mergedMembership = clusterMembership.merge(other.clusterMembership);
 
     // Union of keys: group present in only one side is adopted without conflict.
@@ -247,7 +247,7 @@ PartitionGroupClusterConfiguration merge(PartitionGroupClusterConfiguration othe
         mergedGroups.merge(groupId, config, PartitionGroupConfiguration::merge));
 
     final var mergedPlan = mergePlan(pendingPlan, other.pendingPlan);
-    return new PartitionGroupClusterConfiguration(
+    return new PartitionGroupAwareClusterConfiguration(
         mergedMembership, Map.copyOf(mergedGroups), mergedPlan);
 }
 ```
@@ -256,6 +256,10 @@ A group key present in one side but absent in the other is adopted directly. **G
 never removed by a merge.** (Deletion of tenants must be handled in a later iteration.)
 
 ### `ClusterMembership.merge()`
+
+`BrokerState.version` is incremented on every mutation of the record — any lifecycle transition
+(`toJoining()`, `toActive()`, `toLeaving()`, `toLeft()`). Follows the same pattern as
+`MemberState.version` in the existing code. Only the member itself ever writes its own `BrokerState`.
 
 - If versions differ: higher version wins wholesale.
 - If equal: members merged element-wise by `BrokerState.version`; `ClusterChangePlan` by plan
@@ -285,6 +289,11 @@ PhasedChangePlan merge(PhasedChangePlan other) {
 ```
 
 ### `PartitionGroupConfiguration` sub-config merge
+
+`MemberPartitionState.version` is incremented on every mutation of the record — any partition
+operation (`addPartition()`, `removePartition()`, `updatePartition()`). Follows the same pattern
+as `MemberState.version` in the existing code. Only the member itself ever writes its own
+`MemberPartitionState`.
 
 Each group's `PartitionGroupConfiguration` merges using version-based semantics:
 - If versions differ: higher version wins wholesale.
@@ -347,7 +356,7 @@ message PartitionGroupConfiguration {
   int64 incarnationNumber = 6;
 }
 
-message PartitionGroupClusterTopology {
+message PartitionGroupAwareClusterConfiguration {
   ClusterMembership clusterMembership = 1;
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
@@ -386,18 +395,18 @@ Existing messages used unchanged: `ClusterChangePlan`, `CompletedChange`, `Routi
 `ClusterTopology` and `MemberState` are kept for the legacy `GossipState` field 1 migration path
 and must not be removed.
 
-`GossipState` adds a new field for `PartitionGroupClusterTopology`; field 1 is kept unchanged for
+`GossipState` adds a new field for `PartitionGroupAwareClusterConfiguration`; field 1 is kept unchanged for
 backwards compatibility:
 
 ```protobuf
 message GossipState {
   ClusterTopology clusterTopology = 1;                              // kept; old brokers read/write this
-  PartitionGroupClusterTopology partitionGroupClusterTopology = 2;  // new; upgraded brokers write this
+  PartitionGroupAwareClusterConfiguration partitionGroupAwareClusterConfiguration = 2;  // new; upgraded brokers write this
 }
 ```
 
 **Migration** — on decoding a `GossipState`, check field 2 first:
-- If `partitionGroupClusterTopology` (field 2) is present → decode directly.
+- If `partitionGroupAwareClusterConfiguration` (field 2) is present → decode directly.
 - If absent (old broker or pre-upgrade snapshot) → read `clusterTopology` (field 1) and migrate:
 - `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped)
 - `partitionGroups["default"]` = original members as `MemberPartitionState` (partitions
@@ -459,11 +468,11 @@ All four operations run concurrently via independent `PartitionManagerImpl` acto
 
 Issues 1–6 are implemented on branch `dd-poc-cluster-config-per-physical-tenants`.
 
-### Issue 1 — Add proto messages for `PartitionGroupClusterTopology`
+### Issue 1 — Add proto messages for `PartitionGroupAwareClusterConfiguration`
 
 **Description**
 Add ten new proto messages to `topology.proto` (see §7): `BrokerState`, `MemberPartitionState`,
-`ClusterMembership`, `PartitionGroupConfiguration`, `PartitionGroupClusterTopology`,
+`ClusterMembership`, `PartitionGroupConfiguration`, `PartitionGroupAwareClusterConfiguration`,
 `PhasedChangePlan`, `PhasedChangePlanPhase`, `ClusterMembershipPhase`,
 `PartitionGroupParallelPhase`, `PartitionGroupOperationList`. `GossipState` is not changed yet.
 Purely additive; no existing message is modified or removed.
@@ -506,10 +515,10 @@ constructors.
 
 ---
 
-### Issue 3 — Introduce `PartitionGroupClusterConfiguration` record with `merge()`
+### Issue 3 — Introduce `PartitionGroupAwareClusterConfiguration` record with `merge()`
 
 **Description**
-Create `PartitionGroupClusterConfiguration.java` in `dynamic-config/.../state/` as specified in
+Create `PartitionGroupAwareClusterConfiguration.java` in `dynamic-config/.../state/` as specified in
 §1. Fields: `ClusterMembership clusterMembership`, `Map<String, PartitionGroupConfiguration>
 partitionGroups`, `Optional<PhasedChangePlan> pendingPlan`. Implements `merge()` per §6.
 Includes `ofDefault(ClusterConfiguration)` migration factory. No proto, no wiring; state-transition
@@ -520,7 +529,7 @@ Also create `ClusterMembership.java`, `BrokerState.java`, `PartitionGroupConfigu
 
 **Implementation idea**
 - Compact constructors: defensively copy all collections.
-- `PartitionGroupClusterConfiguration.merge()`: field-by-field delegating to
+- `PartitionGroupAwareClusterConfiguration.merge()`: field-by-field delegating to
 `ClusterMembership.merge()` and `PartitionGroupConfiguration.merge()` per group, union semantics
 for group keys.
 - `ofDefault(config)`: wraps each member as a `BrokerState` (lifecycle state extracted) for
@@ -529,7 +538,7 @@ extracted) for `PartitionGroupConfiguration`, placed in `partitionGroups["defaul
 - Add `updatePartitionGroupConfig(groupId, updater)` and `updateClusterMembership(updater)`.
 - Add `withDerivedMembership()`: rebuilds `clusterMembership` as a pure function of
   `partitionGroups["default"]` (state + version extracted from each member entry; partitions
-  dropped). Returns a new `PartitionGroupClusterConfiguration` with the updated membership. Used
+  dropped). Returns a new `PartitionGroupAwareClusterConfiguration` with the updated membership. Used
   by the manager in the transitional period (Issues 10–11) before phased dispatch takes over.
   Does nothing (returns `this`) if `partitionGroups` has no `"default"` entry yet.
 - `PartitionGroupConfiguration.advance()` removes members whose `partitions` map is **empty**
@@ -555,7 +564,7 @@ merge; plan merge delegation; `ofDefault()` correctness.
 ### Issue 4 — Add `initPlan()`, `activateNextPhase()`, `completePlan()`
 
 **Description**
-Add the state-transition methods to `PartitionGroupClusterConfiguration` that the coordinator
+Add the state-transition methods to `PartitionGroupAwareClusterConfiguration` that the coordinator
 uses to drive the phased plan:
 - `initPlan(plan)` — sets `pendingPlan` at `currentPhaseIndex=0`; activates Phase 0 into sub-configs.
 - `activateNextPhase()` — increments index; activates Phase N+1.
@@ -568,12 +577,12 @@ Activation copies phase operations into sub-configs: for `ClusterMembershipPhase
 **Implementation idea**
 
 ```java
-private PartitionGroupClusterConfiguration applyPhase(PhasedChangePlan plan) {
+private PartitionGroupAwareClusterConfiguration applyPhase(PhasedChangePlan plan) {
     return switch (plan.currentPhase()) {
         case ClusterMembershipPhase p -> {
             final var updated = p.operations().isEmpty() ? clusterMembership
                 : clusterMembership.startConfigurationChange(p.operations());
-            yield new PartitionGroupClusterConfiguration(updated, partitionGroups, Optional.of(plan));
+            yield new PartitionGroupAwareClusterConfiguration(updated, partitionGroups, Optional.of(plan));
         }
         case PartitionGroupParallelPhase p -> {
             final var updatedGroups = new HashMap<>(partitionGroups);
@@ -583,7 +592,7 @@ private PartitionGroupClusterConfiguration applyPhase(PhasedChangePlan plan) {
                     return cfg.startConfigurationChange(ops);
                 });
             });
-            yield new PartitionGroupClusterConfiguration(clusterMembership, updatedGroups, Optional.of(plan));
+            yield new PartitionGroupAwareClusterConfiguration(clusterMembership, updatedGroups, Optional.of(plan));
         }
     };
 }
@@ -598,17 +607,17 @@ activates only named groups; `clusterMembership` unchanged when activating a par
 
 ---
 
-### Issue 5 — Serialiser: `PartitionGroupClusterConfiguration` ↔ proto + migration
+### Issue 5 — Serialiser: `PartitionGroupAwareClusterConfiguration` ↔ proto + migration
 
 **Description**
-Add encode/decode methods to `ProtoBufSerializer` for `PartitionGroupClusterConfiguration`.
+Add encode/decode methods to `ProtoBufSerializer` for `PartitionGroupAwareClusterConfiguration`.
 Each Java type maps directly to its dedicated proto message (see §7). No temporary
 `ClusterConfiguration` intermediary; no reuse of `ClusterTopology` for the new types.
 
 **Gossip migration** — two separate paths: encoding (send) and decoding (receive):
 
 *Send (dual-write):* new brokers populate BOTH fields of `GossipState`:
-- Field 2 (`partitionGroupClusterTopology`): the full `PartitionGroupClusterConfiguration` using
+- Field 2 (`partitionGroupAwareClusterConfiguration`): the full `PartitionGroupAwareClusterConfiguration` using
   the new dedicated messages.
 - Field 1 (`clusterTopology`): a legacy `ClusterTopology` derived from `partitionGroups["default"]`
   and `clusterMembership`, using the existing `encodeClusterTopology()` path. This keeps old
@@ -617,8 +626,8 @@ Each Java type maps directly to its dedicated proto message (see §7). No tempor
   or partition changes — stalling any old-broker coordinator.
 
 *Receive:* when decoding a `GossipState`:
-- If field 2 (`partitionGroupClusterTopology`) is present → decode directly as
-  `PartitionGroupClusterConfiguration`.
+- If field 2 (`partitionGroupAwareClusterConfiguration`) is present → decode directly as
+  `PartitionGroupAwareClusterConfiguration`.
 - If absent (message from an old broker) → read `clusterTopology` (field 1) and migrate via
   `ofDefault()`:
   - Each `MemberState` entry → `BrokerState` (state extracted, partitions dropped) for membership
@@ -630,25 +639,25 @@ Each Java type maps directly to its dedicated proto message (see §7). No tempor
 Use this version to identify the body format:
 - Header version 1 (current / legacy): body is raw `ClusterTopology` bytes — read via
   `decodeClusterTopology()` and migrate via `ofDefault()`.
-- Header version 2 (new): body is raw `PartitionGroupClusterTopology` bytes — read via
-  `decodePartitionGroupClusterConfiguration()`.
+- Header version 2 (new): body is raw `PartitionGroupAwareClusterConfiguration` bytes — read via
+  `decodePartitionGroupAwareClusterConfiguration()`.
 
 When writing the new format, bump the header version to 2 and encode the body with
-`encodePartitionGroupClusterConfiguration()`. On first boot after an upgrade the broker reads
+`encodePartitionGroupAwareClusterConfiguration()`. On first boot after an upgrade the broker reads
 header version 1, migrates via `ofDefault()`, and immediately writes back header version 2 with
 the migrated content.
 
 **Implementation idea**
 Add to `ProtoBufSerializer`:
-- `encodePartitionGroupClusterConfiguration(PartitionGroupClusterConfiguration)` → `byte[]`
-  Encodes to `PartitionGroupClusterTopology` proto using the new dedicated messages.
-- `encodeGossipState(PartitionGroupClusterConfiguration)` → `byte[]`
+- `encodePartitionGroupAwareClusterConfiguration(PartitionGroupAwareClusterConfiguration)` → `byte[]`
+  Encodes to `PartitionGroupAwareClusterConfiguration` proto using the new dedicated messages.
+- `encodeGossipState(PartitionGroupAwareClusterConfiguration)` → `byte[]`
   Dual-write: builds a `GossipState` with field 1 derived from the default group (legacy path) and
   field 2 from the full wrapper (new path).
-- `decodeGossipState(byte[])` → `PartitionGroupClusterConfiguration`
+- `decodeGossipState(byte[])` → `PartitionGroupAwareClusterConfiguration`
   Checks field 2 first; if absent migrates from field 1 via `ofDefault()`.
-- `decodePartitionGroupClusterConfiguration(byte[])` → `PartitionGroupClusterConfiguration`
-  Decodes raw `PartitionGroupClusterTopology` bytes (no `GossipState` envelope); used by
+- `decodePartitionGroupAwareClusterConfiguration(byte[])` → `PartitionGroupAwareClusterConfiguration`
+  Decodes raw `PartitionGroupAwareClusterConfiguration` bytes (no `GossipState` envelope); used by
   persistence (header version 2 path).
 - `encodeClusterMembership(ClusterMembership)` → `ClusterMembership` proto — maps
   `BrokerState` per member directly.
@@ -666,8 +675,8 @@ Do not modify any existing serialiser method.
 - Migration test (gossip): decode a raw `ClusterTopology`-based `GossipState` (field 2 absent);
   default group content preserved; `clusterMembership` members have correct `State`.
 - Migration test (persistence): decode a legacy header-v1 file; verify migrated content; verify
-  that the rewritten file has header version 2 and round-trips as `PartitionGroupClusterTopology`.
-- Dual-write test: encode a `PartitionGroupClusterConfiguration` via `encodeGossipState()`; decode
+  that the rewritten file has header version 2 and round-trips as `PartitionGroupAwareClusterConfiguration`.
+- Dual-write test: encode a `PartitionGroupAwareClusterConfiguration` via `encodeGossipState()`; decode
   with old code path (`decode(byte[])`) and confirm `clusterTopology` is non-empty and matches
   the default group.
 - Round-trip test for `PhasedChangePlan` with both phase types.
@@ -706,7 +715,7 @@ using per-group state maps. Default and non-default appliers must be **different
 (each closes over a different update callback).
 
 **Applier `init()` signature:** `PartitionGroupOperationApplier.init()` receives
-`(PartitionGroupClusterConfiguration wrapper, String groupId)` — the full wrapper, not just the
+`(PartitionGroupAwareClusterConfiguration wrapper, String groupId)` — the full wrapper, not just the
 group's config. Appliers that guard on the broker being ACTIVE (e.g., `PartitionJoinApplier`,
 `PartitionBootstrapApplier`) look up the lifecycle state via
 `wrapper.clusterMembership().members().get(memberId)`. The return type
@@ -758,7 +767,7 @@ applier constructors with `updatePartitionGroupConfig` as the update callback.
 3. On shutdown: call `removePartitionGroupAppliers(partitionGroup)` for non-default groups.
 
 The dispatch site in `applyGroupConfigurationChangeOperation()` must pass the full
-`PartitionGroupClusterConfiguration` wrapper and the `groupId` string to every
+`PartitionGroupAwareClusterConfiguration` wrapper and the `groupId` string to every
 `operationApplier.init()` call (per the updated interface; see §4 and Issue 6). The wrapper is
 available from the manager's internal state after Issue 10; in Issue 7 (pre-Issue 10), pass a
 synthesised wrapper containing at least the `clusterMembership` derived from the default group
@@ -849,11 +858,11 @@ Verify no references remain: `grep -r "withGroupName" zeebe/`
 
 ---
 
-### Issue 10 — Migrate manager state to `PartitionGroupClusterConfiguration`; extend persistence
+### Issue 10 — Migrate manager state to `PartitionGroupAwareClusterConfiguration`; extend persistence
 
 **Description**
 Migrate `ClusterConfigurationManagerImpl` and `PersistedClusterConfiguration` to store
-`PartitionGroupClusterConfiguration` instead of bare `ClusterConfiguration`. Remove the
+`PartitionGroupAwareClusterConfiguration` instead of bare `ClusterConfiguration`. Remove the
 in-memory `nonDefaultGroupConfigs` map from Issue 6; all group state lives in the wrapper.
 
 Existing public APIs (`getClusterConfiguration()`, `updateClusterConfiguration()`) continue to
@@ -874,15 +883,15 @@ calling `withDerivedMembership()` before writing; it is never computed at read t
 must NOT be called — `clusterMembership` is the source of truth. Add a `// TODO Issue 12: remove
 withDerivedMembership() once phased dispatch is live` comment at the call site.
 
-Add `ActorFuture<PartitionGroupClusterConfiguration> getMultiTenantConfiguration()` for the
+Add `ActorFuture<PartitionGroupAwareClusterConfiguration> getMultiTenantConfiguration()` for the
 coordinator (used in Issues 12, 13).
 
 **Implementation idea**
 
 1. Update `PersistedClusterConfiguration` to write header version 2 and encode the body with
-   `encodePartitionGroupClusterConfiguration` (from Issue 5). On read, branch on the header
+   `encodePartitionGroupAwareClusterConfiguration` (from Issue 5). On read, branch on the header
    version: version 1 → `decodeClusterTopology()` + `ofDefault()` migration; version 2 →
-   `decodePartitionGroupClusterConfiguration()`. First-boot migration is automatic.
+   `decodePartitionGroupAwareClusterConfiguration()`. First-boot migration is automatic.
 2. In `ClusterConfigurationManagerImpl`:
    - Remove `nonDefaultGroupConfigs` field.
    - Store the wrapper internally; all group reads/writes go through `wrapper.partitionGroups()`.
@@ -907,16 +916,16 @@ coordinator (used in Issues 12, 13).
 
 ---
 
-### Issue 11 — `ClusterConfigurationGossiper` carries `PartitionGroupClusterTopology`
+### Issue 11 — `ClusterConfigurationGossiper` carries `PartitionGroupAwareClusterConfiguration`
 
 **Description**
-Migrate `ClusterConfigurationGossiper` to gossip `PartitionGroupClusterTopology` via the new
-`GossipState.partitionGroupClusterTopology` field (field 2). After this issue, non-default group
+Migrate `ClusterConfigurationGossiper` to gossip `PartitionGroupAwareClusterConfiguration` via the new
+`GossipState.partitionGroupAwareClusterConfiguration` field (field 2). After this issue, non-default group
 state is visible cluster-wide.
 
 Rolling-restart safety: new brokers dual-write both fields of `GossipState` — field 1 carries a
 legacy `ClusterTopology` derived from the default group, field 2 carries the full
-`PartitionGroupClusterTopology`. Old brokers read only field 1 and continue to receive live
+`PartitionGroupAwareClusterConfiguration`. Old brokers read only field 1 and continue to receive live
 updates from new nodes. New brokers read field 2 when present (new broker sender) and fall back
 to field 1 migration when absent (old broker sender). No feature gate is required.
 
@@ -927,16 +936,16 @@ Relevant files:
 - `dynamic-config/.../gossip/ClusterConfigurationGossipState.java`
 
 Steps:
-1. Change gossiper internal state to hold `PartitionGroupClusterConfiguration`.
-2. On send: call `encodeGossipState(PartitionGroupClusterConfiguration)` from Issue 5, which
+1. Change gossiper internal state to hold `PartitionGroupAwareClusterConfiguration`.
+2. On send: call `encodeGossipState(PartitionGroupAwareClusterConfiguration)` from Issue 5, which
 dual-writes field 1 (default-group legacy view) and field 2 (full wrapper). Both fields are
 always populated; old brokers see field 1, new brokers prefer field 2.
 3. On receipt: call `decodeGossipState(byte[])` from Issue 5 — if field 2 is present, decode as
-`PartitionGroupClusterConfiguration`; if absent, decode field 1 and migrate via `ofDefault()`.
-Merge using `PartitionGroupClusterConfiguration.merge()` (from Issue 3).
+`PartitionGroupAwareClusterConfiguration`; if absent, decode field 1 and migrate via `ofDefault()`.
+Merge using `PartitionGroupAwareClusterConfiguration.merge()` (from Issue 3).
 4. `ClusterConfigurationUpdateListener` callbacks: existing listeners receive `ClusterConfiguration`
 (extract default group from `wrapper.partitionGroups().get("default")`). Add a new listener
-shape receiving `PartitionGroupClusterConfiguration` for the coordinator.
+shape receiving `PartitionGroupAwareClusterConfiguration` for the coordinator.
 
 **Acceptance criteria**
 - Two-broker test (both on new code): non-default group state propagates via gossip.
@@ -992,10 +1001,10 @@ if the current phase is already complete.
 
 **Implementation idea**
 
-Register a listener receiving `PartitionGroupClusterConfiguration` (from Issue 11). On each callback:
+Register a listener receiving `PartitionGroupAwareClusterConfiguration` (from Issue 11). On each callback:
 
 ```java
-void onClusterConfigurationUpdated(PartitionGroupClusterConfiguration config) {
+void onClusterConfigurationUpdated(PartitionGroupAwareClusterConfiguration config) {
     if (!isCoordinator(config)) return;
     if (config.pendingPlan().isEmpty()) return;
 
@@ -1011,9 +1020,9 @@ void onClusterConfigurationUpdated(PartitionGroupClusterConfiguration config) {
     if (!complete) return;
 
     if (plan.currentPhaseIndex() + 1 >= plan.phases().size()) {
-        manager.updateMultiConfig(PartitionGroupClusterConfiguration::completePlan);
+        manager.updateMultiConfig(PartitionGroupAwareClusterConfiguration::completePlan);
     } else {
-        manager.updateMultiConfig(PartitionGroupClusterConfiguration::activateNextPhase);
+        manager.updateMultiConfig(PartitionGroupAwareClusterConfiguration::activateNextPhase);
     }
 }
 ```
