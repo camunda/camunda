@@ -13,6 +13,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -82,7 +83,7 @@ public final class PhysicalTenantAuthConfigurations {
 
   // Valid tenant id: lowercase alphanumeric, no dashes — so the yaml form
   // (camunda.physical-tenants.<id>.*) and its relaxed-binding env-var form address the same tenant.
-  static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
+  private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
   /**
    * Reserved {@code providers.assigned} id for the unnamed default slot — CSL's {@link
@@ -102,11 +103,12 @@ public final class PhysicalTenantAuthConfigurations {
    *
    * <p>The map contains one entry per explicitly configured physical tenant (discovered via {@link
    * #discoverExplicitTenantIds}) plus a {@code default} entry. Each value is computed via {@link
-   * #forPhysicalTenant(String, Environment)}. The map is insertion-ordered ({@link LinkedHashMap})
-   * with {@code default} always present; explicit tenant order is discovery order.
+   * #forPhysicalTenant(String, Environment)}. The returned map is unmodifiable and
+   * insertion-ordered with {@code default} always present; explicit tenant order is discovery
+   * order.
    *
    * @param environment Spring {@link Environment} used for both discovery and config binding
-   * @return stable, insertion-ordered map of tenant id → merged auth config
+   * @return unmodifiable, insertion-ordered map of tenant id → merged auth config
    */
   public static Map<String, AuthenticationConfiguration> forAllPhysicalTenants(
       final Environment environment) {
@@ -119,7 +121,7 @@ public final class PhysicalTenantAuthConfigurations {
         result.put(tenantId, forPhysicalTenant(tenantId, environment));
       }
     }
-    return result;
+    return Collections.unmodifiableMap(result);
   }
 
   /**
