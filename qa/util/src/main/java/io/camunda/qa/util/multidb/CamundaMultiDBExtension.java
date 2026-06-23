@@ -11,6 +11,8 @@ import static org.assertj.core.api.Fail.fail;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
 import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -212,6 +215,8 @@ public class CamundaMultiDBExtension
       "test.integration.aurora.aws.password";
   public static final String TEST_INTEGRATION_RDBMS_FAST_INIT =
       "test.integration.camunda.database.fast-init";
+  public static final String TEST_INTEGRATION_PHYSICAL_TENANT =
+      "test.integration.camunda.physical-tenant";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
@@ -234,6 +239,7 @@ public class CamundaMultiDBExtension
   private DatabaseType databaseType;
   private ApplicationUnderTest applicationUnderTest;
   private String testPrefix;
+  private String physicalTenantId;
   private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
@@ -268,6 +274,25 @@ public class CamundaMultiDBExtension
     return databaseType;
   }
 
+  public static String getPhysicalTenant() {
+    final String value = System.getProperty(TEST_INTEGRATION_PHYSICAL_TENANT);
+    return value == null || value.isBlank() ? null : value;
+  }
+
+  private static boolean isRdbms(final DatabaseType type) {
+    return switch (type) {
+      case RDBMS_H2,
+          RDBMS_POSTGRES,
+          RDBMS_MARIADB,
+          RDBMS_MYSQL,
+          RDBMS_ORACLE,
+          RDBMS_MSSQL,
+          RDBMS_AURORA ->
+          true;
+      default -> false;
+    };
+  }
+
   private DatabaseType currentMultiDbDatabaseType(final ExtensionContext context) {
     final String property =
         System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
@@ -283,6 +308,58 @@ public class CamundaMultiDBExtension
                 AnnotationSupport.findAnnotation(testClass, MultiDbTest.class)
                     .map(MultiDbTest::value))
         .orElse(DatabaseType.LOCAL);
+  }
+
+  private void configurePhysicalTenant() {
+    if (!(applicationUnderTest.application
+        instanceof final TestSpringApplication<?> springApplication)) {
+      throw new IllegalStateException(
+          "Physical-tenant mode requires a TestSpringApplication-based application; got "
+              + applicationUnderTest.application.getClass().getName());
+    }
+    final String url =
+        "jdbc:h2:mem:"
+            + physicalTenantId
+            + "-"
+            + UUID.randomUUID()
+            + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+    final var rootSecurity = springApplication.unifiedConfig().getSecurity();
+    springApplication.withPtConfig(
+        physicalTenantId,
+        camunda -> {
+          final var secondaryStorage = camunda.getData().getSecondaryStorage();
+          secondaryStorage.setType(SecondaryStorageType.rdbms);
+          final var rdbms = secondaryStorage.getRdbms();
+          rdbms.setUrl(url);
+          rdbms.setUsername("sa");
+          rdbms.setPassword("");
+          rdbms.setPrefix(testPrefix);
+
+          final var security = camunda.getSecurity();
+          security.getAuthentication().setMethod(rootSecurity.getAuthentication().getMethod());
+          security.getAuthorizations().setEnabled(rootSecurity.getAuthorizations().isEnabled());
+          final var rootInit = rootSecurity.getInitialization();
+          final var init = security.getInitialization();
+          init.setUsers(rootInit.getUsers());
+          init.setRoles(rootInit.getRoles());
+          init.setMappingRules(rootInit.getMappingRules());
+          init.setGroups(rootInit.getGroups());
+          init.setAuthorizations(rootInit.getAuthorizations());
+          init.setTenants(rootInit.getTenants());
+          init.setDefaultRoles(rootInit.getDefaultRoles());
+        });
+  }
+
+  private CamundaClientBuilder applyPhysicalTenant(final CamundaClientBuilder builder) {
+    return physicalTenantId != null ? builder.physicalTenantId(physicalTenantId) : builder;
+  }
+
+  private URI tenantRestAddress(final URI restAddress) {
+    if (physicalTenantId == null) {
+      return restAddress;
+    }
+    final String base = restAddress.toString().replaceAll("/+$", "");
+    return URI.create(base + "/physical-tenants/" + physicalTenantId);
   }
 
   private void setupTestApplication(final Class<?> testClass) {
@@ -325,6 +402,12 @@ public class CamundaMultiDBExtension
     store.put(EXTENSION_COORDINATION_KEY, EXTENSION_NAME);
 
     final var databaseType = getDatabaseType(context);
+    physicalTenantId = getPhysicalTenant();
+    if (physicalTenantId != null && !isRdbms(databaseType)) {
+      throw new IllegalStateException(
+          "Physical-tenant mode (%s) is only supported on RDBMS storage; got %s."
+              .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
+    }
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
@@ -443,8 +526,8 @@ public class CamundaMultiDBExtension
     if (shouldSetupKeycloak) {
       authenticatedClientFactory =
           new OidcCamundaClientTestFactory(
-              applicationUnderTest.application.newClientBuilder(),
-              applicationUnderTest.application.restAddress(),
+              applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+              tenantRestAddress(applicationUnderTest.application.restAddress()),
               applicationUnderTest.application.grpcAddress(),
               testPrefix,
               keycloakContainer.getAuthServerUrl()
@@ -453,8 +536,8 @@ public class CamundaMultiDBExtension
     } else {
       authenticatedClientFactory =
           new BasicAuthCamundaClientTestFactory(
-              applicationUnderTest.application.newClientBuilder(),
-              applicationUnderTest.application.restAddress(),
+              applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+              tenantRestAddress(applicationUnderTest.application.restAddress()),
               applicationUnderTest.application.grpcAddress());
     }
 
@@ -488,6 +571,10 @@ public class CamundaMultiDBExtension
           tenants.addAll(configuredEntities.tenants());
           config.setTenants(tenants);
         });
+
+    if (physicalTenantId != null) {
+      configurePhysicalTenant();
+    }
 
     if (applicationUnderTest.shouldBeManaged) {
       manageApplicationUnderTest();
@@ -536,8 +623,8 @@ public class CamundaMultiDBExtension
                 final var clientFactory =
                     (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
                 clientFactory.createClientForUser(
-                    applicationUnderTest.application.newClientBuilder(),
-                    applicationUnderTest.application.restAddress(),
+                    applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                    tenantRestAddress(applicationUnderTest.application.restAddress()),
                     applicationUnderTest.application.grpcAddress(),
                     user);
               } catch (final ClassCastException e) {
@@ -554,8 +641,8 @@ public class CamundaMultiDBExtension
               try {
                 final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
                 clientFactory.createClientForMappingRule(
-                    applicationUnderTest.application.newClientBuilder(),
-                    applicationUnderTest.application.restAddress(),
+                    applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                    tenantRestAddress(applicationUnderTest.application.restAddress()),
                     applicationUnderTest.application.grpcAddress(),
                     mappingRule);
               } catch (final ClassCastException e) {
@@ -576,8 +663,8 @@ public class CamundaMultiDBExtension
               try {
                 final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
                 clientFactory.createClientForClient(
-                    applicationUnderTest.application.newClientBuilder(),
-                    applicationUnderTest.application.restAddress(),
+                    applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                    tenantRestAddress(applicationUnderTest.application.restAddress()),
                     applicationUnderTest.application.grpcAddress(),
                     client);
               } catch (final ClassCastException e) {
@@ -786,8 +873,8 @@ public class CamundaMultiDBExtension
 
   private CamundaClient getCamundaClient(final Authenticated authenticated) {
     return authenticatedClientFactory.getCamundaClient(
-        applicationUnderTest.application.newClientBuilder(),
-        applicationUnderTest.application.restAddress(),
+        applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+        tenantRestAddress(applicationUnderTest.application.restAddress()),
         authenticated);
   }
 
