@@ -9,10 +9,10 @@ package io.camunda.eventbridge.broker.partitioning.steps;
 
 import io.camunda.eventbridge.broker.partitioning.PartitionContext;
 import io.camunda.eventbridge.broker.partitioning.PartitionStartupStep;
-import io.camunda.eventbridge.pubsub.flowcontrol.CompositeFlowControl;
-import io.camunda.eventbridge.pubsub.flowcontrol.InFlightLimiter;
-import io.camunda.eventbridge.pubsub.stream.EventBridgeEventStream;
-import io.camunda.eventbridge.pubsub.transport.publish.PublishRequestCorrelator;
+import io.camunda.eventbridge.messaging.flowcontrol.CompositeFlowControl;
+import io.camunda.eventbridge.messaging.flowcontrol.InFlightLimiter;
+import io.camunda.eventbridge.messaging.stream.EventBridgeEventStream;
+import io.camunda.eventbridge.messaging.transport.publish.PublishRequestCorrelator;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 

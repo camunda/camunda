@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.broker.bootstrap;
 
-import io.camunda.eventbridge.pubsub.threading.ExecutorServiceFactory;
+import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
 import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

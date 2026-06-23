@@ -38,10 +38,10 @@
       <artifactId>event-bridge-transport</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- Pub/sub data plane (assembled onto data partitions by the lifecycle steps) -->
+    <!-- Messaging data plane (assembled onto data partitions by the lifecycle steps) -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>event-bridge-pubsub</artifactId>
+      <artifactId>event-bridge-messaging</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- Consumer-group coordinator (the broker bootstrap assembles its partitions) -->

@@ -9,8 +9,8 @@ package io.camunda.eventbridge.broker.partitioning.steps;
 
 import io.camunda.eventbridge.broker.partitioning.PartitionContext;
 import io.camunda.eventbridge.broker.partitioning.PartitionStartupStep;
-import io.camunda.eventbridge.pubsub.stream.EventStreamReader;
-import io.camunda.eventbridge.pubsub.transport.poll.PollRequestHandler;
+import io.camunda.eventbridge.messaging.stream.EventStreamReader;
+import io.camunda.eventbridge.messaging.transport.poll.PollRequestHandler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.function.Supplier;

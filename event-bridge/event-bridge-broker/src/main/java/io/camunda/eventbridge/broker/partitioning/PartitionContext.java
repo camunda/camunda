@@ -9,12 +9,12 @@ package io.camunda.eventbridge.broker.partitioning;
 
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.eventbridge.pubsub.fetch.FetchPurgatory;
-import io.camunda.eventbridge.pubsub.stream.EventBridgeEventStream;
-import io.camunda.eventbridge.pubsub.transport.fetch.FetchRequestHandler;
-import io.camunda.eventbridge.pubsub.transport.publish.PublishRequestCorrelator;
-import io.camunda.eventbridge.pubsub.transport.publish.PublishRequestHandler;
-import io.camunda.eventbridge.pubsub.watermark.HighWatermark;
+import io.camunda.eventbridge.messaging.fetch.FetchPurgatory;
+import io.camunda.eventbridge.messaging.stream.EventBridgeEventStream;
+import io.camunda.eventbridge.messaging.transport.fetch.FetchRequestHandler;
+import io.camunda.eventbridge.messaging.transport.publish.PublishRequestCorrelator;
+import io.camunda.eventbridge.messaging.transport.publish.PublishRequestHandler;
+import io.camunda.eventbridge.messaging.watermark.HighWatermark;
 import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
