@@ -13,17 +13,10 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -31,14 +24,12 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +68,6 @@ public final class CoordinatorStream {
   private LogStream logStream;
   private DbOffsetState offsetState;
   private DbGroupMetadataState groupMetadataState;
-  private DbTopicState topicState;
   private StreamProcessor streamProcessor;
   private LogStreamWriter writer;
 
@@ -122,7 +112,6 @@ public final class CoordinatorStream {
 
     offsetState = new DbOffsetState(zeebeDb, zeebeDb.createContext());
     groupMetadataState = new DbGroupMetadataState(zeebeDb, zeebeDb.createContext());
-    topicState = new DbTopicState(zeebeDb, zeebeDb.createContext());
 
     final var builder =
         StreamProcessor.builder()
@@ -134,8 +123,7 @@ public final class CoordinatorStream {
             .recordProcessors(
                 List.of(
                     new OffsetCommitProcessor(offsetState),
-                    new GroupMetadataProcessor(groupMetadataState),
-                    new TopicProcessor(topicState)))
+                    new GroupMetadataProcessor(groupMetadataState)))
             .recordValues(EventBridgeRecordValues::create)
             .commandResponseWriter(new NoopCommandResponseWriter())
             .partitionCommandSender(new NoopInterPartitionCommandSender())
@@ -224,61 +212,6 @@ public final class CoordinatorStream {
     return groupMetadataState.readAll();
   }
 
-  /**
-   * Registers (creates or updates) a topic's desired configuration in the replicated registry.
-   * Leader only.
-   */
-  public void registerTopic(
-      final String name,
-      final int partitionCount,
-      final int replicationFactor,
-      final TopicMetadata.TopicStatus status,
-      final java.util.Map<Integer, java.util.List<Integer>> assignment) {
-    registerTopic(name, new TopicMetadata(partitionCount, replicationFactor, status, assignment));
-  }
-
-  /** Registers a topic's full desired configuration (committed assignment + in-flight target). */
-  public void registerTopic(final String name, final TopicMetadata metadata) {
-    final var command =
-        new TopicRecord()
-            .setName(name)
-            .setOp(TopicRecord.OP_REGISTER)
-            .setPartitionCount(metadata.partitionCount())
-            .setReplicationFactor(metadata.replicationFactor())
-            .setStatus(metadata.status())
-            .setAssignment(TopicMetadata.encodeAssignment(metadata.assignment()))
-            .setTarget(TopicMetadata.encodeAssignment(metadata.target()));
-    writeTopicCommand(name, command, CoordinatorIntent.REGISTER_TOPIC);
-  }
-
-  /** Removes a topic from the replicated registry. Leader only. */
-  public void deleteTopic(final String name) {
-    final var command = new TopicRecord().setName(name).setOp(TopicRecord.OP_DELETE);
-    writeTopicCommand(name, command, CoordinatorIntent.DELETE_TOPIC);
-  }
-
-  /** All registered topics ({@code topicName → metadata}) for failover rebuild / listing. */
-  public Map<String, TopicMetadata> topicsSnapshot() {
-    return topicState.readAll();
-  }
-
-  private void writeTopicCommand(
-      final String name, final TopicRecord command, final CoordinatorIntent intent) {
-    if (writer == null) {
-      return;
-    }
-    final var metadata =
-        new RecordMetadata()
-            .recordType(RecordType.COMMAND)
-            .valueType(EventBridgeRecordValues.TOPIC_VALUE_TYPE)
-            .intent(intent);
-    final var result =
-        writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
-    if (result.isLeft()) {
-      LOG.warn("Failed to write topic command {} for {}: {}", intent, name, result.getLeft());
-    }
-  }
-
   /** The underlying stream processor, e.g. for the snapshot director. */
   public StreamProcessor streamProcessor() {
     return streamProcessor;
@@ -316,72 +249,6 @@ public final class CoordinatorStream {
               processedCommand.getPosition(),
               (pos, existing) -> existing != null ? existing : new CompletableFuture<>())
           .complete(committed);
-    }
-  }
-
-  /**
-   * No-op: the coordinator correlates responses via {@link CommitCompletionListener}, not the
-   * command API.
-   */
-  private static final class NoopCommandResponseWriter implements CommandResponseWriter {
-    @Override
-    public CommandResponseWriter partitionId(final int partitionId) {
-      return this;
-    }
-
-    @Override
-    public CommandResponseWriter key(final long key) {
-      return this;
-    }
-
-    @Override
-    public CommandResponseWriter intent(final Intent intent) {
-      return this;
-    }
-
-    @Override
-    public CommandResponseWriter recordType(final RecordType type) {
-      return this;
-    }
-
-    @Override
-    public CommandResponseWriter valueType(final ValueType valueType) {
-      return this;
-    }
-
-    @Override
-    public CommandResponseWriter rejectionType(final RejectionType rejectionType) {
-      return this;
-    }
-
-    @Override
-    public CommandResponseWriter rejectionReason(final DirectBuffer rejectionReason) {
-      return this;
-    }
-
-    @Override
-    public CommandResponseWriter valueWriter(final BufferWriter value) {
-      return this;
-    }
-
-    @Override
-    public void tryWriteResponse(final int requestStreamId, final long requestId) {
-      // no-op
-    }
-  }
-
-  /** No-op: the coordinator partition does not send inter-partition commands. */
-  private static final class NoopInterPartitionCommandSender
-      implements InterPartitionCommandSender {
-    @Override
-    public void sendCommand(
-        final int receiverPartitionId,
-        final ValueType valueType,
-        final Intent intent,
-        final Long recordKey,
-        final UnifiedRecordValue command,
-        final AuthInfo authInfo) {
-      // no-op
     }
   }
 }

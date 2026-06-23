@@ -22,22 +22,30 @@ public abstract class BrokerExecuteCoordinateRequest<T> extends BrokerRequest<T>
   protected final ExecuteCoordinateRequest request = new ExecuteCoordinateRequest();
   protected final ExecuteCoordinateResponse response = new ExecuteCoordinateResponse();
 
-  // Broker-client routing group for the coordinator's dedicated Raft group. Must match
-  // CoordinationRequestHandler#COORDINATOR_ROUTING_GROUP and the gossiped coordinator BrokerInfo.
+  // Broker-client routing groups for the dedicated coordination Raft groups. Must match
+  // CoordinationRequestHandler#COORDINATOR_ROUTING_GROUP / MetadataRequestHandler#
+  // METADATA_ROUTING_GROUP and the gossiped BrokerInfo of each group. Hardcoded here (rather than
+  // referencing the coordinator-module constants) to avoid a gateway -> coordinator dependency.
   private static final String COORDINATOR_ROUTING_GROUP = "event-bridge-coordinator";
+  protected static final String METADATA_ROUTING_GROUP = "event-bridge-metadata";
 
   // Target coordinator shard, derived from the consumer group id by the gateway service (see
   // CoordinatorRouting). Defaults to 1 (single-shard).
   private int partitionId = 1;
 
   public BrokerExecuteCoordinateRequest(final CoordinateRequestType type) {
+    this(type, COORDINATOR_ROUTING_GROUP);
+  }
+
+  protected BrokerExecuteCoordinateRequest(
+      final CoordinateRequestType type, final String routingGroup) {
     // The super-constructor takes the schema/template of the RESPONSE this request decodes — not
     // the request's. Previously this passed the request decoder's schema and a hardcoded "2".
     super(ExecuteCoordinateResponseDecoder.SCHEMA_ID, ExecuteCoordinateResponseDecoder.TEMPLATE_ID);
     request.setType(type);
-    // Route to the coordinator group's partition leader (resolved from gossip), with NOT_LEADER
-    // retry — instead of a hardcoded node, which broke on coordinator failover.
-    setPartitionGroup(COORDINATOR_ROUTING_GROUP);
+    // Route to the group's partition leader (resolved from gossip), with NOT_LEADER retry —
+    // instead of a hardcoded node, which broke on failover.
+    setPartitionGroup(routingGroup);
   }
 
   @Override

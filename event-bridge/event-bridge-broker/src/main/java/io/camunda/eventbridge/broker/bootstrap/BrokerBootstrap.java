@@ -220,6 +220,7 @@ public final class BrokerBootstrap {
         distribution,
         topologyManager,
         topologySetup.getCoordinatorTopologyManager(),
+        topologySetup.getMetadataTopologyManager(),
         brokerMessagingService,
         topicAssignmentPublisher,
         provisionedSinkRef,

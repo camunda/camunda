@@ -12,8 +12,9 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.camunda.eventbridge.coordinator.CoordinationManager;
-import io.camunda.eventbridge.coordinator.transport.CoordinationRequestHandler;
+import io.camunda.eventbridge.coordinator.MetadataManager;
+import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
+import io.camunda.eventbridge.coordinator.transport.MetadataRequestHandler;
 import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
@@ -38,34 +39,37 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Lifecycle actor for a coordinator Raft partition (one shard of the coordinator group). It runs a
- * {@link CoordinatorStream} ({@code StreamProcessor} over the partition log + {@code ZeebeDb}
- * state):
+ * Lifecycle actor for the metadata Raft partition (the single shard of the {@code
+ * event-bridge-metadata} group that holds the topic registry). It runs a {@link MetadataStream}
+ * ({@code StreamProcessor} over the partition log + {@code ZeebeDb} state):
  *
  * <ul>
- *   <li><b>Leader</b>: {@code PROCESSING} mode + {@code CoordinationManager} + request handler +
- *       snapshot director; serves join/heartbeat/leave/commit and replicates offsets + group
- *       metadata.
+ *   <li><b>Leader</b>: {@code PROCESSING} mode + {@code MetadataManager} + request handler +
+ *       snapshot director; serves topic admin (create/delete/reassign/list), broadcasts the
+ *       registry, runs the {@code CREATING -> ACTIVE} transition and the change-coordinator.
  *   <li><b>Follower</b>: {@code REPLAY} mode (read-only log, no-op appender) — continuously applies
- *       committed offset/metadata events to its own state, so on promotion it only replays the tail
- *       and takes over quickly.
+ *       committed topic events to its own state, so on promotion it only replays the tail and takes
+ *       over quickly.
  * </ul>
  *
- * The {@link StateController}/{@code ZeebeDb} is created once and persists across role changes, so
- * a follower's replayed state is reused on promotion rather than recovered from an old snapshot.
+ * <p>Mirrors {@link CoordinatorPartition}; the two differ only in which stream/manager they run
+ * (registry here, consumer offsets + group coordination there).
  */
-public final class CoordinatorPartition extends Actor {
+public final class MetadataPartition extends Actor {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CoordinatorPartition.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MetadataPartition.class);
   private static final Duration SNAPSHOT_PERIOD = Duration.ofSeconds(30);
   private static final ZeebeLogAppender NOOP_APPENDER = (entry, listener) -> {};
 
   private final int partitionId;
-  private final int partitionCount;
+  private final int clusterSize;
   private final RaftPartition raftPartition;
   private final ActorSchedulingService actorScheduler;
   private final InstantSource clock;
@@ -73,7 +77,10 @@ public final class CoordinatorPartition extends Actor {
   private final ConstructableSnapshotStore snapshotStore;
   private final ZeebeDbFactory<EventBridgeColumnFamilies> dbFactory;
   private final RequestHandlerRegistry requestHandlerRegistry;
-  private final TopologyManagerImpl coordinatorTopologyManager;
+  private final TopologyManagerImpl metadataTopologyManager;
+  private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
+  private final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef;
+  private final ReconfigurationExecutor reconfigurationExecutor;
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Role currentRole;
@@ -85,28 +92,34 @@ public final class CoordinatorPartition extends Actor {
 
   // Rebuilt on each role change.
   private AtomixLogStorage logStorage;
-  private CoordinatorStream coordinatorStream;
+  private MetadataStream metadataStream;
   private AsyncSnapshotDirector snapshotDirector;
-  private CoordinationManager coordinationManager;
+  private MetadataManager metadataManager;
 
-  public CoordinatorPartition(
+  public MetadataPartition(
       final int partitionId,
-      final int partitionCount,
+      final int clusterSize,
       final RaftPartition raftPartition,
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
       final InstantSource clock,
       final Path runtimeDirectory,
       final ConstructableSnapshotStore snapshotStore,
-      final TopologyManagerImpl coordinatorTopologyManager) {
+      final TopologyManagerImpl metadataTopologyManager,
+      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
+      final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
+      final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
-    this.partitionCount = partitionCount;
+    this.clusterSize = clusterSize;
     this.raftPartition = raftPartition;
     this.actorScheduler = actorScheduler;
     this.clock = clock;
     this.runtimeDirectory = runtimeDirectory;
     this.snapshotStore = snapshotStore;
-    this.coordinatorTopologyManager = coordinatorTopologyManager;
+    this.metadataTopologyManager = metadataTopologyManager;
+    this.topicAssignmentPublisher = topicAssignmentPublisher;
+    this.provisionedSinkRef = provisionedSinkRef;
+    this.reconfigurationExecutor = reconfigurationExecutor;
     requestHandlerRegistry = new RequestHandlerRegistry(partitionId, messagingService);
     dbFactory =
         new ZeebeRocksDbFactory<>(
@@ -118,7 +131,7 @@ public final class CoordinatorPartition extends Actor {
 
   @Override
   public String getName() {
-    return "EventBridgeCoordinatorPartition-" + partitionId;
+    return "EventBridgeMetadataPartition-" + partitionId;
   }
 
   @Override
@@ -137,7 +150,7 @@ public final class CoordinatorPartition extends Actor {
     if (role == currentRole) {
       return;
     }
-    LOG.info("Coordinator partition {} — role change {} -> {}", partitionId, currentRole, role);
+    LOG.info("Metadata partition {} — role change {} -> {}", partitionId, currentRole, role);
     tearDownStream();
     currentRole = role;
     currentTerm = term;
@@ -161,15 +174,15 @@ public final class CoordinatorPartition extends Actor {
           logStorage = AtomixLogStorage.ofPartition(server::openReader, appender);
           server.addCommitListener(logStorage);
 
-          coordinatorStream =
-              new CoordinatorStream(
+          metadataStream =
+              new MetadataStream(
                   partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
-          // A leader must only start coordination once the log has been replayed into the state DB
-          // (otherwise restoreGroups() reads empty state and loses the membership on failover). The
-          // stream invokes this once replay completes; followers never trigger it.
+          // A leader must only start topic management once the log has been replayed into the state
+          // DB (otherwise it reads an empty registry and loses topics on failover). The stream
+          // invokes this once replay completes; followers never trigger it.
           final Runnable onRecovered =
               leader ? () -> actor.run(() -> onLeaderRecovered(forRole)) : null;
-          coordinatorStream
+          metadataStream
               .start(mode, onRecovered)
               .onComplete(
                   (ok, error) -> {
@@ -177,14 +190,13 @@ public final class CoordinatorPartition extends Actor {
                       return; // role changed again while starting
                     }
                     if (error != null) {
-                      LOG.error(
-                          "Coordinator partition {} — stream start failed", partitionId, error);
+                      LOG.error("Metadata partition {} — stream start failed", partitionId, error);
                       return;
                     }
                     startSnapshotDirector(forRole, mode, leader, server);
                     if (!leader) {
-                      coordinatorTopologyManager.onBecomingFollower(partitionId, currentTerm);
-                      LOG.info("Coordinator partition {} — follower replaying", partitionId);
+                      metadataTopologyManager.onBecomingFollower(partitionId, currentTerm);
+                      LOG.info("Metadata partition {} — follower replaying", partitionId);
                     }
                   });
         });
@@ -214,7 +226,7 @@ public final class CoordinatorPartition extends Actor {
                 return;
               }
               if (error != null) {
-                LOG.error("Coordinator partition {} — state recovery failed", partitionId, error);
+                LOG.error("Metadata partition {} — state recovery failed", partitionId, error);
                 return;
               }
               zeebeDb = castDb(recoveredDb);
@@ -224,26 +236,32 @@ public final class CoordinatorPartition extends Actor {
 
   /**
    * Invoked on this actor once the stream processor has finished replaying the log into the state
-   * DB — the point at which {@code restoreGroups()} can see the replicated consumer-group metadata.
-   * Wired as the coordinator stream's {@code onRecovered} lifecycle callback, so it only fires for
-   * a leader and exactly once per role activation.
+   * DB — the point at which the topic registry is fully restored. Wired as the metadata stream's
+   * {@code onRecovered} lifecycle callback, so it only fires for a leader and exactly once per role
+   * activation.
    */
   private void onLeaderRecovered(final Role forRole) {
     if (forRole != currentRole) {
       return; // role changed again while replaying
     }
-    startCoordination();
-    coordinatorTopologyManager.onBecomingLeader(partitionId, currentTerm, null, null);
-    LOG.info("Coordinator partition {} — leader ready", partitionId);
+    startMetadataManager();
+    metadataTopologyManager.onBecomingLeader(partitionId, currentTerm, null, null);
+    LOG.info("Metadata partition {} — leader ready", partitionId);
   }
 
-  private void startCoordination() {
-    coordinationManager =
-        new CoordinationManager(partitionId, partitionCount, clock, coordinatorStream);
-    actorScheduler.submitActor(coordinationManager);
+  private void startMetadataManager() {
+    metadataManager =
+        new MetadataManager(
+            partitionId,
+            clusterSize,
+            metadataStream,
+            topicAssignmentPublisher,
+            provisionedSinkRef,
+            reconfigurationExecutor);
+    actorScheduler.submitActor(metadataManager);
     requestHandlerRegistry.register(
-        CoordinationRequestHandler.topicName(partitionId),
-        new CoordinationRequestHandler(partitionId, coordinationManager));
+        MetadataRequestHandler.topicName(partitionId),
+        new MetadataRequestHandler(partitionId, metadataManager));
   }
 
   private void startSnapshotDirector(
@@ -254,7 +272,7 @@ public final class CoordinatorPartition extends Actor {
     snapshotDirector =
         AsyncSnapshotDirector.of(
             partitionId,
-            coordinatorStream.streamProcessor(),
+            metadataStream.streamProcessor(),
             stateController,
             mode,
             SNAPSHOT_PERIOD,
@@ -270,7 +288,7 @@ public final class CoordinatorPartition extends Actor {
               }
               if (leader) {
                 server.addCommittedEntryListener(snapshotDirector);
-                try (final var reader = coordinatorStream.logStream().newLogStreamReader()) {
+                try (final var reader = metadataStream.logStream().newLogStreamReader()) {
                   snapshotDirector.onCommit(reader.seekToEnd());
                 }
               }
@@ -286,10 +304,10 @@ public final class CoordinatorPartition extends Actor {
   private void tearDownStream() {
     final var server = raftPartition.getServer();
 
-    if (coordinationManager != null) {
-      requestHandlerRegistry.unregister(CoordinationRequestHandler.topicName(partitionId));
-      coordinationManager.closeAsync();
-      coordinationManager = null;
+    if (metadataManager != null) {
+      requestHandlerRegistry.unregister(MetadataRequestHandler.topicName(partitionId));
+      metadataManager.closeAsync();
+      metadataManager = null;
     }
     if (snapshotDirector != null) {
       if (server != null) {
@@ -298,9 +316,9 @@ public final class CoordinatorPartition extends Actor {
       snapshotDirector.closeAsync();
       snapshotDirector = null;
     }
-    if (coordinatorStream != null) {
-      coordinatorStream.stop();
-      coordinatorStream = null;
+    if (metadataStream != null) {
+      metadataStream.stop();
+      metadataStream = null;
     }
     if (logStorage != null) {
       if (server != null) {

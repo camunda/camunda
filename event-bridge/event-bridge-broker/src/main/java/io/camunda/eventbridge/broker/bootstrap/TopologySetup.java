@@ -11,6 +11,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.coordinator.transport.CoordinationRequestHandler;
+import io.camunda.eventbridge.coordinator.transport.MetadataRequestHandler;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
@@ -33,6 +34,7 @@ final class TopologySetup {
 
   private TopologyManagerImpl topologyManager;
   private TopologyManagerImpl coordinatorTopologyManager;
+  private TopologyManagerImpl metadataTopologyManager;
   private final java.util.List<TopologyManagerImpl> topicTopologyManagers =
       new java.util.concurrent.CopyOnWriteArrayList<>();
 
@@ -75,6 +77,18 @@ final class TopologySetup {
           (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
     }
 
+    // Separate topology manager for the metadata group (single partition holding the topic
+    // registry): publishes a third BrokerInfo under the metadata group's member-property key so the
+    // gateway resolves the metadata partition's leader independently of the data/coordinator
+    // groups.
+    final var metadataBrokerInfo = createMetadataBrokerInfo(localMemberId);
+    metadataTopologyManager = new TopologyManagerImpl(membershipService, metadataBrokerInfo);
+    actorScheduler.submitActor(metadataTopologyManager);
+    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
+      metadataTopologyManager.addTopologyPartitionListener(
+          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
+    }
+
     LOG.info("Topology managers started for broker {}", localMemberId);
     return topologyManager;
   }
@@ -84,6 +98,11 @@ final class TopologySetup {
    */
   TopologyManagerImpl getCoordinatorTopologyManager() {
     return coordinatorTopologyManager;
+  }
+
+  /** The metadata-group topology manager (used by the metadata partition to gossip its role). */
+  TopologyManagerImpl getMetadataTopologyManager() {
+    return metadataTopologyManager;
   }
 
   /**
@@ -116,6 +135,14 @@ final class TopologySetup {
       }
     }
     topicTopologyManagers.clear();
+    if (metadataTopologyManager != null) {
+      try {
+        metadataTopologyManager.closeAsync().join();
+      } catch (final Exception e) {
+        LOG.warn("Error closing metadata topology manager", e);
+      }
+      metadataTopologyManager = null;
+    }
     if (coordinatorTopologyManager != null) {
       try {
         coordinatorTopologyManager.closeAsync().join();
@@ -168,6 +195,32 @@ final class TopologySetup {
     final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
     brokerInfo
         .setPartitionGroup(CoordinationRequestHandler.COORDINATOR_ROUTING_GROUP)
+        .setClusterSize(clusterCfg.clusterSize())
+        .setPartitionsCount(1)
+        .setReplicationFactor(properties.raft().replicationFactor());
+
+    final var version = VersionUtil.getVersion();
+    if (version != null && !version.isBlank()) {
+      brokerInfo.setVersion(version);
+    }
+
+    return brokerInfo;
+  }
+
+  /**
+   * BrokerInfo for the metadata routing group (single partition holding the topic registry). Tagged
+   * with the metadata partition group so the gateway maintains a separate per-group topology for
+   * it.
+   */
+  private BrokerInfo createMetadataBrokerInfo(final MemberId localMemberId) {
+    final var nodeId = parseNodeId(localMemberId.id());
+    final var clusterCfg = properties.cluster();
+    final var address =
+        Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
+
+    final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
+    brokerInfo
+        .setPartitionGroup(MetadataRequestHandler.METADATA_ROUTING_GROUP)
         .setClusterSize(clusterCfg.clusterSize())
         .setPartitionsCount(1)
         .setReplicationFactor(properties.raft().replicationFactor());

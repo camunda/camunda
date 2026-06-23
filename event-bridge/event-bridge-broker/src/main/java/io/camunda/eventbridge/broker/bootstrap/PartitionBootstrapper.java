@@ -18,6 +18,7 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartit
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorPartition;
+import io.camunda.eventbridge.coordinator.stream.MetadataPartition;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -60,6 +61,7 @@ final class PartitionBootstrapper {
   private final List<PartitionLifecycle> lifecycles = new CopyOnWriteArrayList<>();
   private final List<LogRetentionCompactor> retentionCompactors = new CopyOnWriteArrayList<>();
   private final List<CoordinatorPartition> coordinatorPartitions = new CopyOnWriteArrayList<>();
+  private final List<MetadataPartition> metadataPartitions = new CopyOnWriteArrayList<>();
 
   // Per-(group, partition) lookup for runtime join/leave and the reconciler's "already running?"
   // check. The lists above remain the stop() inventory; this map is the addressable index.
@@ -104,6 +106,7 @@ final class PartitionBootstrapper {
       final Set<PartitionMetadata> distribution,
       final TopologyManagerImpl topologyManager,
       final TopologyManagerImpl coordinatorTopologyManager,
+      final TopologyManagerImpl metadataTopologyManager,
       final MessagingService brokerMessagingService,
       final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
       final java.util.concurrent.atomic.AtomicReference<
@@ -147,6 +150,9 @@ final class PartitionBootstrapper {
         managementService,
         brokerMessagingService,
         coordinatorTopologyManager);
+
+    bootstrapMetadata(
+        localMemberId, factory, managementService, brokerMessagingService, metadataTopologyManager);
   }
 
   /**
@@ -212,17 +218,13 @@ final class PartitionBootstrapper {
         new CoordinatorPartition(
             partitionId,
             properties.broker().partitionCount(),
-            properties.cluster().clusterSize(),
             created.raftPartition(),
             actorScheduler,
             brokerMessagingService,
             clock,
             runtimeDirectory,
             (ConstructableSnapshotStore) created.snapshotStore(),
-            coordinatorTopologyManager,
-            topicAssignmentPublisher,
-            provisionedSinkRef,
-            reconfigurationExecutor);
+            coordinatorTopologyManager);
     coordinatorPartitions.add(coordinatorPartition);
     actorScheduler.submitActor(coordinatorPartition);
 
@@ -239,6 +241,98 @@ final class PartitionBootstrapper {
                 LOG.error("Failed to bootstrap coordinator raft partition {}", partitionId, error);
               } else {
                 LOG.info("Coordinator raft partition {} bootstrapped", partitionId);
+              }
+            });
+  }
+
+  /**
+   * Bootstraps the dedicated metadata Raft group — a single partition (the topic registry is a
+   * cluster-wide namespace, not sharded) replicated across {@code replicationFactor} members. Its
+   * leader runs the {@code MetadataManager} over a {@code MetadataStream}; followers replay the
+   * committed topic log so failover is clean. Mirrors {@link #bootstrapCoordinator} but with a
+   * fixed partition count of 1.
+   */
+  private void bootstrapMetadata(
+      final MemberId localMemberId,
+      final PartitionFactory factory,
+      final DefaultPartitionManagementService managementService,
+      final MessagingService brokerMessagingService,
+      final TopologyManagerImpl metadataTopologyManager) {
+
+    final var clusterSize = properties.cluster().clusterSize();
+    final var members =
+        IntStream.range(0, clusterSize)
+            .mapToObj(i -> MemberId.from("broker-" + i))
+            .sorted()
+            .toList();
+    final var replicationFactor = Math.min(properties.raft().replicationFactor(), clusterSize);
+
+    // Single partition: the topic registry is a cluster-wide namespace, not sharded.
+    final var distribution =
+        new RoundRobinPartitionDistributor(PartitionFactory.METADATA_GROUP_NAME)
+            .distributePartitions(members, 1, replicationFactor);
+
+    distribution.stream()
+        .filter(p -> p.members().contains(localMemberId))
+        .forEach(
+            partition ->
+                bootstrapMetadataPartition(
+                    partition.id().id(),
+                    Set.copyOf(partition.members()),
+                    localMemberId,
+                    factory,
+                    managementService,
+                    brokerMessagingService,
+                    metadataTopologyManager));
+  }
+
+  private void bootstrapMetadataPartition(
+      final int partitionId,
+      final Set<MemberId> members,
+      final MemberId localMemberId,
+      final PartitionFactory factory,
+      final DefaultPartitionManagementService managementService,
+      final MessagingService brokerMessagingService,
+      final TopologyManagerImpl metadataTopologyManager) {
+
+    final var created = factory.createMetadata(partitionId, members, localMemberId);
+    createdPartitions.add(created);
+
+    final var runtimeDirectory =
+        factory
+            .getPartitionDirectory(PartitionFactory.METADATA_GROUP_NAME, partitionId)
+            .resolve("runtime");
+
+    final var metadataPartition =
+        new MetadataPartition(
+            partitionId,
+            properties.cluster().clusterSize(),
+            created.raftPartition(),
+            actorScheduler,
+            brokerMessagingService,
+            clock,
+            runtimeDirectory,
+            (ConstructableSnapshotStore) created.snapshotStore(),
+            metadataTopologyManager,
+            topicAssignmentPublisher,
+            provisionedSinkRef,
+            reconfigurationExecutor);
+    metadataPartitions.add(metadataPartition);
+    actorScheduler.submitActor(metadataPartition);
+
+    created
+        .raftPartition()
+        .addRoleChangeListener((role, term) -> metadataPartition.onRoleChange(role, term));
+
+    created
+        .raftPartition()
+        .bootstrap(managementService, created.snapshotStore())
+        .whenComplete(
+            (rp, error) -> {
+              if (error != null) {
+                LOG.error("Failed to bootstrap metadata raft partition {}", partitionId, error);
+              } else {
+                LOG.info("Metadata raft partition {} bootstrapped", partitionId);
               }
             });
   }
@@ -272,6 +366,15 @@ final class PartitionBootstrapper {
       }
     }
     coordinatorPartitions.clear();
+
+    for (final var metadataPartition : metadataPartitions) {
+      try {
+        metadataPartition.closeAsync();
+      } catch (final Exception e) {
+        LOG.warn("Error closing metadata partition", e);
+      }
+    }
+    metadataPartitions.clear();
 
     for (final var partition : createdPartitions) {
       try {

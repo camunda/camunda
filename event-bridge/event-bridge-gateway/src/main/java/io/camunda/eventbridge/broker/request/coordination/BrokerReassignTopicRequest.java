@@ -20,7 +20,7 @@ public class BrokerReassignTopicRequest
   private final ReassignTopicResponse response = new ReassignTopicResponse();
 
   public BrokerReassignTopicRequest() {
-    super(CoordinateRequestType.REASSIGN_TOPIC);
+    super(CoordinateRequestType.REASSIGN_TOPIC, METADATA_ROUTING_GROUP);
   }
 
   public BrokerReassignTopicRequest wrapRequest(final ReassignTopicRequest req) {

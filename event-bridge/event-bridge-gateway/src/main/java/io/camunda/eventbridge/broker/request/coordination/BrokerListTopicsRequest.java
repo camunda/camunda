@@ -19,7 +19,7 @@ public class BrokerListTopicsRequest extends BrokerExecuteCoordinateRequest<List
   private final ListTopicsResponse response = new ListTopicsResponse();
 
   public BrokerListTopicsRequest() {
-    super(CoordinateRequestType.LIST_TOPICS);
+    super(CoordinateRequestType.LIST_TOPICS, METADATA_ROUTING_GROUP);
   }
 
   @Override

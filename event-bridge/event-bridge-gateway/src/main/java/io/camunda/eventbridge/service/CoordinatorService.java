@@ -39,8 +39,9 @@ import org.springframework.stereotype.Component;
 public class CoordinatorService {
 
   /**
-   * The global topic registry is owned by a single coordinator shard (partition 1), so all topic
-   * management routes there — unlike consumer groups, which shard by group id.
+   * The global topic registry lives in the dedicated single-partition metadata Raft group, so all
+   * topic management routes to its one partition (the broker request sets the metadata routing
+   * group) — unlike consumer groups, which shard by group id across the coordinator group.
    */
   private static final int TOPIC_REGISTRY_SHARD = 1;
 

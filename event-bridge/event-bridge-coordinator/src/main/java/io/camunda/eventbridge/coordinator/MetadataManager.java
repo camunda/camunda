@@ -13,7 +13,7 @@ import io.camunda.eventbridge.coordinator.placement.PlacementStrategy;
 import io.camunda.eventbridge.coordinator.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationPlanner;
-import io.camunda.eventbridge.coordinator.stream.CoordinatorStream;
+import io.camunda.eventbridge.coordinator.stream.MetadataStream;
 import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
@@ -48,8 +48,9 @@ import org.slf4j.LoggerFactory;
  * Raft step at a time. Leader-only; the broadcast/sink/change-coordinator act only on the registry
  * shard ({@link CoordinatorRouting#TOPIC_REGISTRY_SHARD}).
  *
- * <p>Split out of {@code CoordinationManager} (which keeps consumer-group coordination + offsets);
- * this is the metadata control plane and will move to its own Raft group.
+ * <p>This is the metadata control plane: it runs on the dedicated single-partition {@code
+ * event-bridge-metadata} Raft group (its leader), over a {@link MetadataStream}. Consumer-group
+ * coordination + offsets stay in the coordinator group ({@code CoordinationManager}).
  */
 public class MetadataManager extends Actor {
 
@@ -63,7 +64,7 @@ public class MetadataManager extends Actor {
 
   private final int partitionId;
   private final int clusterSize;
-  private final CoordinatorStream coordinatorStream;
+  private final MetadataStream metadataStream;
   private final PlacementStrategy placement = new RoundRobinPlacement();
   private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
 
@@ -80,13 +81,13 @@ public class MetadataManager extends Actor {
   public MetadataManager(
       final int partitionId,
       final int clusterSize,
-      final CoordinatorStream coordinatorStream,
+      final MetadataStream metadataStream,
       final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
       final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
     this.clusterSize = clusterSize;
-    this.coordinatorStream = coordinatorStream;
+    this.metadataStream = metadataStream;
     this.topicAssignmentPublisher = topicAssignmentPublisher;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
@@ -131,13 +132,13 @@ public class MetadataManager extends Actor {
     if (request.getPartitionCount() < 1 || request.getReplicationFactor() < 1) {
       return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
     }
-    if (coordinatorStream.topicsSnapshot().containsKey(name)) {
+    if (metadataStream.topicsSnapshot().containsKey(name)) {
       return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_ALREADY_EXISTS);
     }
     final var assignment =
         placement.assign(
             request.getPartitionCount(), request.getReplicationFactor(), availableBrokers());
-    coordinatorStream.registerTopic(
+    metadataStream.registerTopic(
         name,
         request.getPartitionCount(),
         request.getReplicationFactor(),
@@ -148,17 +149,17 @@ public class MetadataManager extends Actor {
 
   private DeleteTopicResponse deleteTopic(final DeleteTopicRequest request) {
     final var name = request.getName();
-    if (!coordinatorStream.topicsSnapshot().containsKey(name)) {
+    if (!metadataStream.topicsSnapshot().containsKey(name)) {
       return new DeleteTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
     }
-    coordinatorStream.deleteTopic(name);
+    metadataStream.deleteTopic(name);
     return new DeleteTopicResponse().setErrorCode(NONE);
   }
 
   private ReassignTopicResponse reassignTopic(final ReassignTopicRequest request) {
     final var response = new ReassignTopicResponse();
     final var name = request.getName();
-    final var meta = coordinatorStream.topicsSnapshot().get(name);
+    final var meta = metadataStream.topicsSnapshot().get(name);
     if (meta == null) {
       return response.setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
     }
@@ -170,7 +171,7 @@ public class MetadataManager extends Actor {
     final var target =
         placement.assign(meta.partitionCount(), request.getReplicationFactor(), availableBrokers());
     if (!target.equals(meta.assignment())) {
-      coordinatorStream.registerTopic(
+      metadataStream.registerTopic(
           name,
           new TopicMetadata(
               meta.partitionCount(),
@@ -184,7 +185,7 @@ public class MetadataManager extends Actor {
 
   private ListTopicsResponse listTopics() {
     final var sb = new StringBuilder();
-    coordinatorStream
+    metadataStream
         .topicsSnapshot()
         .forEach(
             (name, meta) ->
@@ -232,7 +233,7 @@ public class MetadataManager extends Actor {
     }
     try {
       topicAssignmentPublisher.publish(
-          TopicAssignmentGossip.encode(coordinatorStream.topicsSnapshot()));
+          TopicAssignmentGossip.encode(metadataStream.topicsSnapshot()));
     } catch (final Exception e) {
       LOG.warn("Failed to broadcast topic registry", e);
     }
@@ -244,7 +245,7 @@ public class MetadataManager extends Actor {
    * once every partition is covered. Idempotent.
    */
   private void onTopicProvisioned(final String topic, final List<Integer> partitions) {
-    final var meta = coordinatorStream.topicsSnapshot().get(topic);
+    final var meta = metadataStream.topicsSnapshot().get(topic);
     if (meta == null || meta.status() != TopicMetadata.TopicStatus.CREATING) {
       return;
     }
@@ -257,7 +258,7 @@ public class MetadataManager extends Actor {
           "Topic {} fully provisioned ({} partitions) — marking ACTIVE",
           topic,
           meta.partitionCount());
-      coordinatorStream.registerTopic(
+      metadataStream.registerTopic(
           topic,
           meta.partitionCount(),
           meta.replicationFactor(),
@@ -272,7 +273,7 @@ public class MetadataManager extends Actor {
    */
   protected void scheduleReconfiguration() {
     if (reconfigurationExecutor != null) {
-      coordinatorStream
+      metadataStream
           .topicsSnapshot()
           .forEach(
               (name, meta) -> {
@@ -286,7 +287,7 @@ public class MetadataManager extends Actor {
 
   /** Executes the next single step toward a topic's target, chaining until committed == target. */
   private void driveReconfiguration(final String name) {
-    final var meta = coordinatorStream.topicsSnapshot().get(name);
+    final var meta = metadataStream.topicsSnapshot().get(name);
     if (meta == null || !meta.hasTarget()) {
       reconfiguring.remove(name);
       return;
@@ -296,7 +297,7 @@ public class MetadataManager extends Actor {
     final var op = ReconfigurationPlanner.nextOp(name, committed, target);
     if (op.isEmpty()) {
       LOG.info("Reassignment of topic {} complete", name);
-      coordinatorStream.registerTopic(
+      metadataStream.registerTopic(
           name,
           new TopicMetadata(
               meta.partitionCount(), meta.replicationFactor(), meta.status(), committed, Map.of()));
@@ -322,7 +323,7 @@ public class MetadataManager extends Actor {
                         reconfiguring.remove(name);
                         return;
                       }
-                      coordinatorStream.registerTopic(
+                      metadataStream.registerTopic(
                           name,
                           new TopicMetadata(
                               meta.partitionCount(),

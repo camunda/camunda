@@ -19,7 +19,7 @@ public class BrokerCreateTopicRequest extends BrokerExecuteCoordinateRequest<Cre
   private final CreateTopicResponse response = new CreateTopicResponse();
 
   public BrokerCreateTopicRequest() {
-    super(CoordinateRequestType.CREATE_TOPIC);
+    super(CoordinateRequestType.CREATE_TOPIC, METADATA_ROUTING_GROUP);
   }
 
   public BrokerCreateTopicRequest wrapRequest(final CreateTopicRequest req) {

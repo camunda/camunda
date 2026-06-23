@@ -46,6 +46,9 @@ public final class PartitionFactory {
   /** Dedicated Raft group for the consumer-group coordinator (separate from data partitions). */
   public static final String COORDINATOR_GROUP_NAME = "event-bridge-coordinator";
 
+  /** Dedicated single-partition Raft group for the topic registry (the metadata control plane). */
+  public static final String METADATA_GROUP_NAME = "event-bridge-metadata";
+
   private static final Logger LOG = LoggerFactory.getLogger(PartitionFactory.class);
 
   /** The Raft group name hosting a topic's partitions. Each topic is its own group. */
@@ -137,6 +140,37 @@ public final class PartitionFactory {
     LOG.info(
         "Partition {}/{} — raft partition and file-based snapshot store created",
         COORDINATOR_GROUP_NAME,
+        partitionId);
+    return new CreatedPartition(partitionId, raftPartition, snapshotStore);
+  }
+
+  /**
+   * Creates a metadata Raft partition in its own group, backed by a {@link FileBasedSnapshotStore}
+   * so the topic registry's {@code StreamProcessor} state can be snapshotted, replicated to lagging
+   * followers, and the log compacted. Identical to {@link #createCoordinator} but in the metadata
+   * group (its own tenant name → its own Raft subjects).
+   */
+  public CreatedPartition createMetadata(
+      final int partitionId, final Set<MemberId> members, final MemberId localMemberId) {
+    final var partitionDir = getPartitionDirectory(METADATA_GROUP_NAME, partitionId);
+    ensureDirectoryExists(partitionDir, partitionId);
+
+    final var raftPartition =
+        createRaftPartition(
+            METADATA_GROUP_NAME, partitionId, members, localMemberId, partitionDir, null);
+
+    final var snapshotStore =
+        new FileBasedSnapshotStore(
+            parseNodeId(localMemberId),
+            partitionId,
+            partitionDir,
+            new ChecksumProviderRocksDBImpl(),
+            new SimpleMeterRegistry());
+    actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound());
+
+    LOG.info(
+        "Partition {}/{} — raft partition and file-based snapshot store created",
+        METADATA_GROUP_NAME,
         partitionId);
     return new CreatedPartition(partitionId, raftPartition, snapshotStore);
   }

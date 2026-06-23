@@ -19,7 +19,7 @@ public class BrokerDeleteTopicRequest extends BrokerExecuteCoordinateRequest<Del
   private final DeleteTopicResponse response = new DeleteTopicResponse();
 
   public BrokerDeleteTopicRequest() {
-    super(CoordinateRequestType.DELETE_TOPIC);
+    super(CoordinateRequestType.DELETE_TOPIC, METADATA_ROUTING_GROUP);
   }
 
   public BrokerDeleteTopicRequest wrapRequest(final DeleteTopicRequest req) {
