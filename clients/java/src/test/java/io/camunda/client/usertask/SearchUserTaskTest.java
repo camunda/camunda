@@ -103,6 +103,17 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchUserTaskSortByBusinessId() {
+    // when
+    client.newUserTaskSearchRequest().sort(s -> s.businessId().desc()).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getBodyAsString())
+        .contains("\"sort\":[{\"field\":\"businessId\",\"order\":\"DESC\"}]");
+  }
+
+  @Test
   void shouldSearchUserTaskByName() {
     // when
     client.newUserTaskSearchRequest().filter(f -> f.name("myTask")).send().join();

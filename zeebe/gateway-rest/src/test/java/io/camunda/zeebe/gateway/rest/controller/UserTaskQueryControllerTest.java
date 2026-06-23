@@ -556,6 +556,44 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchUserTasksWithBusinessIdSorting() {
+    // given
+    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+                {
+                    "sort": [
+                        {
+                            "field": "businessId",
+                            "order": "asc"
+                        }
+                    ]
+                }""";
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .search(
+            eq(
+                new UserTaskQuery.Builder()
+                    .sort(new UserTaskSort.Builder().businessId().asc().build())
+                    .build()),
+            any());
+  }
+
+  @Test
   void shouldInvalidateUserTasksSearchQueryWithEmptyLocalVariableFilter() {
     // given
     final var request =
@@ -791,7 +829,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "Bad Request",
                           "status": 400,
-                          "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name]",
+                          "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name, businessId]",
                           "instance": "%s"
                         }""",
             USER_TASKS_SEARCH_URL);

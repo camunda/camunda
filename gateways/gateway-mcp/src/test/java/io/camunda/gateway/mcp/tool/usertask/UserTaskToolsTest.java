@@ -88,7 +88,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           23L,
           42L,
           null,
-          null,
+          "businessId-123",
           17L,
           "tenantId",
           null,
@@ -149,6 +149,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     assertThat(userTask.getName()).isEqualTo("Task Name");
     assertThat(userTask.getState()).isEqualTo(UserTaskStateEnum.CREATED);
     assertThat(userTask.getAssignee()).isEqualTo("john.doe");
+    assertThat(userTask.getBusinessId()).isEqualTo("businessId-123");
     assertThat(userTask.getElementId()).isEqualTo("elementId");
     assertThat(userTask.getCandidateGroups()).containsExactly("group1", "group2");
     assertThat(userTask.getCandidateUsers()).containsExactly("user1", "user2");
