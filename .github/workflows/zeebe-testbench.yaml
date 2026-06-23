@@ -100,10 +100,28 @@ jobs:
       - name: Start Test
         shell: bash
         run: |
+<<<<<<< HEAD
           curl -LO https://github.com/camunda/camunda/releases/download/8.5.7/zbctl
           chmod +x zbctl
           variables=$(echo "${{ inputs.variables }}" | envsubst)
           ./zbctl create instance ${{ inputs.processId }} --variables "$variables"
+=======
+          # Substitute environment variables in the JSON payload
+          substituted_variables=$(echo '${{ inputs.variables }}' | envsubst)
+
+          # Format the JSON to ensure it’s correct
+          variables=$(echo "$substituted_variables" | jq -c .)
+
+          # Run the curl command with expanded variables
+          curl --fail-with-body -L -X POST "${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances" \
+            -H "Authorization: Bearer $access_token" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            --data-raw "{
+              \"processDefinitionId\": \"${{ inputs.processId }}\",
+              \"variables\": $variables
+            }"
+>>>>>>> b1d2da5d (ci: fail testbench curl on HTTP error responses)
         env:
           IMAGE: zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
