@@ -6,28 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
-import {FrameContainer, FrameHeader} from './styled';
-
-type FrameProps = {
-	headerTitle: string;
-	isVisible?: boolean;
-};
-
-const Frame: React.FC<{frame?: FrameProps; children: React.ReactNode}> = ({frame, children}) => {
-	if (frame === undefined) {
-		return <>{children}</>;
-	}
-
-	const {isVisible = true, headerTitle} = frame;
-
-	return (
-		<FrameContainer $hasBorder={isVisible} data-testid="frame-container">
-			{isVisible && <FrameHeader>{headerTitle}</FrameHeader>}
-			{children}
-		</FrameContainer>
-	);
-};
-
-export {Frame};
-export type {FrameProps};
+export {Frame} from './Frame';
+export type {FrameProps} from './Frame';

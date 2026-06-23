@@ -10,7 +10,6 @@ import styled, {css} from 'styled-components';
 import {RowCollapse as BaseRowCollapse, RowExpand as BaseRowExpand} from '@carbon/react/icons';
 import {IconButton as BaseIconButton} from '@carbon/react';
 import {Header as BaseHeader} from '../PanelHeader/styled';
-import {COLLAPSABLE_PANEL_MIN_WIDTH, zOverlayCollapsable} from '../constants';
 
 type CollapsableProps = {
 	$isCollapsed: boolean;
@@ -29,7 +28,7 @@ const Collapsable = styled.section<CollapsableProps>`
 
 			${$isCollapsed
 				? css`
-						min-width: ${COLLAPSABLE_PANEL_MIN_WIDTH};
+						min-width: var(--cds-spacing-09);
 					`
 				: css`
 						min-width: ${$maxWidth}px;
@@ -39,7 +38,7 @@ const Collapsable = styled.section<CollapsableProps>`
 			${$isOverlay
 				? css`
 						position: absolute;
-						z-index: ${zOverlayCollapsable};
+						z-index: 7999; /* just below Carbon's app header z-index (8000) */
 						${isRight
 							? css`
 									right: 0;
