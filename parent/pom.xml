@@ -82,6 +82,8 @@
     <version.msgpack>0.9.12</version.msgpack>
     <version.netty>4.2.15.Final</version.netty>
     <version.objenesis>3.5</version.objenesis>
+    <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
+    <version.opentelemetry>1.62.0</version.opentelemetry>
     <version.opensearch>2.17.1</version.opensearch>
     <version.opensearch-java>3.5.0</version.opensearch-java>
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
@@ -1208,6 +1210,15 @@
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-bom</artifactId>
         <version>${version.protobuf}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${version.opentelemetry}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
