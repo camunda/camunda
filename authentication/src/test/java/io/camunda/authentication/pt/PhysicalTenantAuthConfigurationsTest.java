@@ -622,9 +622,7 @@ class PhysicalTenantAuthConfigurationsTest {
 
     // then
     final AuthenticationConfiguration fromMap = result.get("default");
-    assertThat(fromMap.getMethod()).isEqualTo(direct.getMethod());
-    assertThat(fromMap.getOidc().getClientId()).isEqualTo(direct.getOidc().getClientId());
-    assertThat(fromMap.getOidc().getIssuerUri()).isEqualTo(direct.getOidc().getIssuerUri());
+    assertThat(fromMap).usingRecursiveComparison().isEqualTo(direct);
   }
 
   @Test
@@ -658,11 +656,7 @@ class PhysicalTenantAuthConfigurationsTest {
     for (final var entry : result.entrySet()) {
       final AuthenticationConfiguration direct =
           PhysicalTenantAuthConfigurations.forPhysicalTenant(entry.getKey(), env);
-      assertThat(entry.getValue().getMethod()).isEqualTo(direct.getMethod());
-      assertThat(entry.getValue().getOidc().getClientId())
-          .isEqualTo(direct.getOidc().getClientId());
-      assertThat(entry.getValue().getOidc().getIssuerUri())
-          .isEqualTo(direct.getOidc().getIssuerUri());
+      assertThat(entry.getValue()).usingRecursiveComparison().isEqualTo(direct);
     }
   }
 
