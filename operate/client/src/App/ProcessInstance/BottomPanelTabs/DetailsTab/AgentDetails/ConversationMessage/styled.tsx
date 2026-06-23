@@ -63,7 +63,7 @@ const MessageActions = styled.div`
 const MessageBlock = styled.div`
   display: flex;
   gap: var(--cds-spacing-03);
-  max-height: 160px;
+  max-height: 360px;
 
   &:hover ${MessageActions} {
     opacity: 1;
