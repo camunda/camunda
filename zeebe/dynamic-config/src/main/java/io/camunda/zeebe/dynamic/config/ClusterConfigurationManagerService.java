@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.Initializ
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -197,8 +198,9 @@ public final class ClusterConfigurationManagerService
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
     final var coordinatorMemberId =
-        staticConfiguration.clusterMembers().stream().min(MemberId.ID_COMPARATOR);
-    final var isCoordinator = coordinatorMemberId.map(id -> id.equals(localMemberId)).orElse(false);
+        ClusterConfigurationCoordinatorSupplier.ofMembers(staticConfiguration.clusterMembers())
+            .getDefaultCoordinator();
+    final var isCoordinator = coordinatorMemberId.equals(localMemberId);
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
         isCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
