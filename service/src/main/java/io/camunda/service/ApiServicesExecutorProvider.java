@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.camunda.spring.utils.PhysicalTenantPropagatingExecutorService;
 import java.util.Objects;
 import java.util.concurrent.*;
 
@@ -22,13 +23,21 @@ public final class ApiServicesExecutorProvider {
       final long keepAliveSeconds,
       final int queueCapacity) {
     executor =
-        Objects.requireNonNull(
-            create(corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds, queueCapacity),
-            "REST API Executor Service must not be null");
+        new PhysicalTenantPropagatingExecutorService(
+            Objects.requireNonNull(
+                create(
+                    corePoolSizeMultiplier, maxPoolSizeMultiplier, keepAliveSeconds, queueCapacity),
+                "REST API Executor Service must not be null"));
   }
 
+  /**
+   * Pass a raw (unwrapped) executor: the provider adds the physical-tenant propagating decorator
+   * itself, so a pre-wrapped executor would only get a redundant second layer.
+   */
   public ApiServicesExecutorProvider(final ExecutorService executor) {
-    this.executor = Objects.requireNonNull(executor, "REST API Executor Service must not be null");
+    this.executor =
+        new PhysicalTenantPropagatingExecutorService(
+            Objects.requireNonNull(executor, "REST API Executor Service must not be null"));
   }
 
   public ExecutorService getExecutor() {
