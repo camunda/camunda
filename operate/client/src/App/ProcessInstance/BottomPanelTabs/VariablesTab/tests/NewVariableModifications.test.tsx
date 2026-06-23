@@ -32,7 +32,7 @@ import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -91,7 +91,7 @@ const editLastNewVariableValue = async (
 
 const TestSelectionControls: React.FC = () => {
   const {selectElementInstance, selectElement, clearSelection} =
-    useProcessInstanceElementSelection();
+    useProcessInstanceElementSelectActions();
   return (
     <>
       <button

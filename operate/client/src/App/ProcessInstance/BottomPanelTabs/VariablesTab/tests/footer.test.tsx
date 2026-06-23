@@ -17,7 +17,7 @@ import {mockVariables} from './index.setup';
 import {VariablesTab} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {useEffect} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -27,7 +27,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const TestSelectionControls: React.FC = () => {
-  const {selectElementInstance} = useProcessInstanceElementSelection();
+  const {selectElementInstance} = useProcessInstanceElementSelectActions();
   return (
     <button
       type="button"

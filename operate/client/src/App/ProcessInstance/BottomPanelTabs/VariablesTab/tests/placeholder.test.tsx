@@ -21,11 +21,11 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const TestSelectionControls: React.FC = () => {
   const {selectElement, selectElementInstance} =
-    useProcessInstanceElementSelection();
+    useProcessInstanceElementSelectActions();
 
   return (
     <>

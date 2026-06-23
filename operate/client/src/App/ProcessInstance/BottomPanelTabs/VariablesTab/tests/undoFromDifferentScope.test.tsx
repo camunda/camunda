@@ -18,7 +18,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 
@@ -82,7 +82,7 @@ const editLastNewVariableValue = async (user: UserEvent, value: string) => {
 
 const TestSelectionControls: React.FC = () => {
   const {selectElementInstance, clearSelection} =
-    useProcessInstanceElementSelection();
+    useProcessInstanceElementSelectActions();
   return (
     <>
       <button
