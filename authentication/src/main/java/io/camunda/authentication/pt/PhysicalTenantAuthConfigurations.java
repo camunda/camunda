@@ -83,6 +83,10 @@ public final class PhysicalTenantAuthConfigurations {
 
   // Valid tenant id: lowercase alphanumeric, no dashes — so the yaml form
   // (camunda.physical-tenants.<id>.*) and its relaxed-binding env-var form address the same tenant.
+  // Intentionally duplicated from PhysicalTenantResolver (configuration module): it is a one-line
+  // rule, and no module that both 'configuration' and 'authentication' depend on fits a plain-Java
+  // validator (spring-utils is Spring-specific; depending on 'configuration' would invert the
+  // dependency). Keep the two in sync.
   private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
   /**
@@ -131,6 +135,9 @@ public final class PhysicalTenantAuthConfigurations {
    * <p>Tenant ids must be lowercase alphanumeric ({@code [a-z0-9]+}) — no dashes. This matches the
    * constraint enforced by {@code PhysicalTenantResolver} to keep yaml and env-var forms addressing
    * the same tenant.
+   *
+   * <p>Package-private so {@code PhysicalTenantScopeProvider} can delegate to it; must not be
+   * tightened to {@code private}.
    */
   static Set<String> discoverExplicitTenantIds(final Environment environment) {
     final Set<String> tenants = new LinkedHashSet<>();
