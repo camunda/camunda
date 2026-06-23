@@ -113,8 +113,7 @@ public final class BpmnProcessors {
         writers,
         processingState.getUserTaskState(),
         asyncRequestBehavior,
-        authCheckBehavior,
-        config);
+        authCheckBehavior);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
         processingState,
@@ -245,8 +244,7 @@ public final class BpmnProcessors {
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final EngineConfiguration config) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,

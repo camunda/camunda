@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -108,8 +110,6 @@ public final class VariableBehavior {
     if (indexedDocument.isEmpty()) {
       return;
     }
-    validateNestingDepth(document);
-
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
@@ -162,8 +162,6 @@ public final class VariableBehavior {
     if (indexedDocument.isEmpty()) {
       return;
     }
-    validateNestingDepth(document);
-
     long currentScope = scopeKey;
     long parentScope;
     final List<VariableEvent> variableEvents = new ArrayList<>();
@@ -285,10 +283,15 @@ public final class VariableBehavior {
     return variableRecordCopy;
   }
 
-  private void validateNestingDepth(final DirectBuffer document) {
-    final var result = VariableNestingDepthValidator.validate(document, maxVariableNestingDepth);
-    if (result.isLeft()) {
-      throw new IllegalArgumentException(result.getLeft().reason());
-    }
+  /**
+   * Validates that the given document does not exceed the configured maximum nesting depth.
+   *
+   * @return {@link Either#right(Object)} with the given document if it is valid; otherwise, {@link
+   *     Either#left(Object)} with a {@link Failure} describing the error
+   */
+  public Either<Failure, DirectBuffer> validateDocument(
+      final long scopeKey, final DirectBuffer document) {
+    return VariableNestingDepthValidator.validate(scopeKey, document, maxVariableNestingDepth)
+        .map(unused -> document);
   }
 }

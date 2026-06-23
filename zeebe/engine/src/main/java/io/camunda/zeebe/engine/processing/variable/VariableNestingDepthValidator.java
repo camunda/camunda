@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -38,28 +39,31 @@ public final class VariableNestingDepthValidator {
    * Validates that the given msgpack document does not exceed {@code maxNestingDepth} levels of
    * container nesting.
    *
+   * @param scopeKey the scope key to use in the failure if the validation fails
    * @param variablesBuffer the msgpack document to validate
    * @param maxNestingDepth the maximum allowed nesting depth (inclusive)
    * @return {@link Either#right(Object)} when within the limit; {@link Either#left(Object)} with a
    *     {@link RejectionType#INVALID_ARGUMENT} rejection when the limit is exceeded
    */
-  public static Either<Rejection, Void> validate(
-      final DirectBuffer variablesBuffer, final int maxNestingDepth) {
+  public static Either<Failure, Void> validate(
+      final long scopeKey, final DirectBuffer variablesBuffer, final int maxNestingDepth) {
     if (isEmpty(variablesBuffer)) {
       return Either.right(null);
     }
     try {
       if (exceedsMaxDepth(variablesBuffer, maxNestingDepth)) {
         return Either.left(
-            new Rejection(
-                RejectionType.INVALID_ARGUMENT,
-                NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(maxNestingDepth)));
+            new Failure(
+                NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(maxNestingDepth),
+                ErrorType.IO_MAPPING_ERROR,
+                scopeKey));
       }
     } catch (final RuntimeException exception) {
       return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              INVALID_VARIABLES_MSGPACK_ERROR_MESSAGE.formatted(exception.getMessage())));
+          new Failure(
+              INVALID_VARIABLES_MSGPACK_ERROR_MESSAGE.formatted(exception.getMessage()),
+              ErrorType.IO_MAPPING_ERROR,
+              scopeKey));
     }
     return Either.right(null);
   }

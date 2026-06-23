@@ -68,6 +68,7 @@ public final class BpmnVariableMappingBehavior {
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
+          .flatMap(result -> variableBehavior.validateDocument(scopeKey, result))
           .map(
               result -> {
                 variableBehavior.mergeLocalDocument(
@@ -118,6 +119,13 @@ public final class BpmnVariableMappingBehavior {
           context.getTenantId(),
           elementInstanceKey,
           element.getId());
+    }
+
+    // validate variables
+    final Either<Failure, DirectBuffer> validation =
+        variableBehavior.validateDocument(scopeKey, variables);
+    if (validation.isLeft()) {
+      return Either.left(validation.getLeft());
     }
 
     if (outputMappingExpression.isPresent()) {

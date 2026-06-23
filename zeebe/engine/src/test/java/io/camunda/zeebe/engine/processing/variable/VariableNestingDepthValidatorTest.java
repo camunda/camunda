@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -58,7 +58,7 @@ public final class VariableNestingDepthValidatorTest {
   @Test
   void shouldReturnRightForNullBuffer() {
     // when
-    final var result = VariableNestingDepthValidator.validate(null, 1000);
+    final var result = VariableNestingDepthValidator.validate(-1, null, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -70,7 +70,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = new UnsafeBuffer(new byte[0]);
 
     // when
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -82,7 +82,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(1000));
 
     // when
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -94,12 +94,12 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(1001));
 
     // when
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
 
     // then
     assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(result.getLeft().reason())
+    assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+    assertThat(result.getLeft().getMessage())
         .isEqualTo(
             VariableNestingDepthValidator.NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(1000));
   }
@@ -110,10 +110,11 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(50_000));
 
     // when / then — must not throw
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
 
     assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
   }
 
   /**
