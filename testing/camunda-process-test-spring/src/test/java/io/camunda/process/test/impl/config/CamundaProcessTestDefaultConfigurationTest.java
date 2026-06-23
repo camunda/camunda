@@ -64,6 +64,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 })
 public class CamundaProcessTestDefaultConfigurationTest {
 
+  private static CamundaClientConfiguration buildConfiguration(
+      final CamundaClientBuilderFactory clientBuilderFactory) {
+    final CamundaClientBuilder builder = clientBuilderFactory.get();
+    try (final CamundaClient client = builder.build()) {
+      return client.getConfiguration();
+    }
+  }
+
   @Configuration
   static class CustomJsonMapperConfig {
     @Bean
@@ -243,10 +251,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     }
 
     private CamundaClientConfiguration buildConfiguration() {
-      final CamundaClientBuilder builder = clientBuilderFactory.get();
-      try (final CamundaClient client = builder.build()) {
-        return client.getConfiguration();
-      }
+      return CamundaProcessTestDefaultConfigurationTest.buildConfiguration(clientBuilderFactory);
     }
   }
 
@@ -280,10 +285,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     }
 
     private CamundaClientConfiguration buildConfiguration() {
-      final CamundaClientBuilder builder = clientBuilderFactory.get();
-      try (final CamundaClient client = builder.build()) {
-        return client.getConfiguration();
-      }
+      return CamundaProcessTestDefaultConfigurationTest.buildConfiguration(clientBuilderFactory);
     }
   }
 
@@ -310,10 +312,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     }
 
     private CamundaClientConfiguration buildConfiguration() {
-      final CamundaClientBuilder builder = clientBuilderFactory.get();
-      try (final CamundaClient client = builder.build()) {
-        return client.getConfiguration();
-      }
+      return CamundaProcessTestDefaultConfigurationTest.buildConfiguration(clientBuilderFactory);
     }
   }
 
@@ -388,10 +387,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     }
 
     private CamundaClientConfiguration buildConfiguration() {
-      final CamundaClientBuilder builder = clientBuilderFactory.get();
-      try (final CamundaClient client = builder.build()) {
-        return client.getConfiguration();
-      }
+      return CamundaProcessTestDefaultConfigurationTest.buildConfiguration(clientBuilderFactory);
     }
   }
 
@@ -414,10 +410,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
     }
 
     private CamundaClientConfiguration buildConfiguration() {
-      final CamundaClientBuilder builder = clientBuilderFactory.get();
-      try (final CamundaClient client = builder.build()) {
-        return client.getConfiguration();
-      }
+      return CamundaProcessTestDefaultConfigurationTest.buildConfiguration(clientBuilderFactory);
     }
   }
 }
