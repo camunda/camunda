@@ -25,7 +25,7 @@ That premise does not hold against the implementation. Membership is **lazy** (i
 ```java
 // UsageMetricsServices.search(...) — request thread builds the security context, then:
 CompletableFuture.supplyAsync(() ->                 // common ForkJoinPool
-    authClient.usageMetricStatistics(query));        // RAC fires the lazy membership supplier HERE
+    authClient.usageMetricStatistics(query));        // the ResourceAccessController (RAC) fires the lazy membership supplier HERE
 ```
 
 The chain that fails:
