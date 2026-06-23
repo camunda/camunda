@@ -37,12 +37,29 @@ public class FetchService {
       final int maxBytes,
       final int minBytes,
       final long maxWaitMs) {
+    return fetch(null, partitionId, offset, maxBytes, minBytes, maxWaitMs);
+  }
+
+  /**
+   * Fetches from a partition of a specific routing group: a per-topic Raft group ({@code
+   * event-bridge-topic-<name>}) for topic fetches, or {@code null} for the default data partitions.
+   */
+  public CompletableFuture<FetchResponse> fetch(
+      final String partitionGroup,
+      final int partitionId,
+      final long offset,
+      final int maxBytes,
+      final int minBytes,
+      final long maxWaitMs) {
 
     // "From start" sentinel (<= 0): positions begin at 1 and scanning from 0 is out-of-range, so
     // clamp to the first position. (POC: assumes the earliest entries are not retention-trimmed.)
     final long readOffset = offset <= 0 ? 1 : offset;
 
     final var request = new BrokerFetchRequest();
+    if (partitionGroup != null) {
+      request.setPartitionGroup(partitionGroup);
+    }
     request.setup(partitionId, readOffset, maxBytes, minBytes, maxWaitMs);
 
     return brokerClient.sendRequest(request).thenApplyAsync(BrokerResponse::getResponse, executor);

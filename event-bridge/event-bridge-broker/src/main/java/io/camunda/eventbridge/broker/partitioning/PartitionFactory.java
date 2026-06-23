@@ -46,14 +46,11 @@ public final class PartitionFactory {
   /** Dedicated Raft group for the consumer-group coordinator (separate from data partitions). */
   public static final String COORDINATOR_GROUP_NAME = "event-bridge-coordinator";
 
-  /** Prefix for per-topic Raft groups: each topic is its own group {@code <prefix><name>}. */
-  public static final String TOPIC_GROUP_PREFIX = "event-bridge-topic-";
-
   private static final Logger LOG = LoggerFactory.getLogger(PartitionFactory.class);
 
   /** The Raft group name hosting a topic's partitions. Each topic is its own group. */
   public static String topicGroupName(final String topic) {
-    return TOPIC_GROUP_PREFIX + topic;
+    return io.camunda.eventbridge.core.topic.TopicGroups.name(topic);
   }
 
   private final EventBridgeProperties properties;

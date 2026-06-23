@@ -7,12 +7,12 @@
  */
 package io.camunda.eventbridge.messaging.transport.poll;
 
+import io.camunda.eventbridge.messaging.stream.EventStreamReader;
 import io.camunda.eventbridge.protocol.ErrorCode;
 import io.camunda.eventbridge.protocol.EventBridgeBatchIterator;
 import io.camunda.eventbridge.protocol.request.PollRequest;
 import io.camunda.eventbridge.protocol.request.PollResponse;
 import io.camunda.eventbridge.protocol.request.PollResponse.PollEvent;
-import io.camunda.eventbridge.messaging.stream.EventStreamReader;
 import io.camunda.eventbridge.transport.RequestHandler;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +28,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public final class PollRequestHandler implements RequestHandler {
 
-  // Must match the topic the gateway BrokerClient sends to (default partition group).
-  private static final String TOPIC_FORMAT = "default-poll-api-%d";
+  // "{partitionGroup}-poll-api-{id}": "default" for data partitions, the topic group for topics.
+  private static final String TOPIC_FORMAT = "%s-poll-api-%d";
   private static final int DEFAULT_MAX_RECORDS = 1024;
 
   private final int partitionId;
@@ -103,7 +103,7 @@ public final class PollRequestHandler implements RequestHandler {
     return out;
   }
 
-  public static String topicName(final int partitionId) {
-    return String.format(TOPIC_FORMAT, partitionId);
+  public static String topicName(final String routingGroup, final int partitionId) {
+    return String.format(TOPIC_FORMAT, routingGroup, partitionId);
   }
 }

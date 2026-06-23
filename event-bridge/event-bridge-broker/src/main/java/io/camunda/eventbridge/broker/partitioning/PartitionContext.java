@@ -26,6 +26,7 @@ public final class PartitionContext {
 
   private final int partitionId;
   private final int partitionCount;
+  private final String routingGroup;
   private final RaftPartition raftPartition;
   private final ActorSchedulingService actorScheduler;
   private final MessagingService messagingService;
@@ -45,6 +46,7 @@ public final class PartitionContext {
   public PartitionContext(
       final int partitionId,
       final int partitionCount,
+      final String routingGroup,
       final RaftPartition raftPartition,
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
@@ -53,6 +55,7 @@ public final class PartitionContext {
       final ExecutorService executorService) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
+    this.routingGroup = routingGroup;
     this.raftPartition = raftPartition;
     this.actorScheduler = actorScheduler;
     this.messagingService = messagingService;
@@ -67,6 +70,11 @@ public final class PartitionContext {
 
   public int getPartitionCount() {
     return partitionCount;
+  }
+
+  /** The gateway routing group whose request subjects this partition's handlers register under. */
+  public String getRoutingGroup() {
+    return routingGroup;
   }
 
   public RaftPartition getRaftPartition() {

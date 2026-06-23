@@ -34,12 +34,26 @@ public class PublishService {
    * @return a future with the decoded response
    */
   public CompletableFuture<PublishBatchResponse> publish(final int partitionId, final byte[] body) {
+    return publish(null, partitionId, body);
+  }
+
+  /**
+   * Publishes to a partition of a specific routing group. {@code partitionGroup} is a per-topic
+   * Raft group ({@code event-bridge-topic-<name>}) for topic publishes, or {@code null} for the
+   * default data partitions. The BrokerClient resolves that group's partition leader from gossiped
+   * topology.
+   */
+  public CompletableFuture<PublishBatchResponse> publish(
+      final String partitionGroup, final int partitionId, final byte[] body) {
     final var validation = EventBridgeBatchValidator.validate(body);
     if (!validation.valid()) {
       return CompletableFuture.failedFuture(new IllegalArgumentException(validation.error()));
     }
 
     final var request = new BrokerPublishRequest();
+    if (partitionGroup != null) {
+      request.setPartitionGroup(partitionGroup);
+    }
     request.partitionId(partitionId);
     request.wrapBatch(body);
 

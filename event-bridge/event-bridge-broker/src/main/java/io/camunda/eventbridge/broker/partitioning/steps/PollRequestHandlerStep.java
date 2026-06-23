@@ -30,7 +30,7 @@ public final class PollRequestHandlerStep implements PartitionStartupStep {
     final var handler = new PollRequestHandler(partitionId, readerFactory);
     context
         .getRequestHandlerRegistry()
-        .register(PollRequestHandler.topicName(partitionId), handler);
+        .register(PollRequestHandler.topicName(context.getRoutingGroup(), partitionId), handler);
     return CompletableActorFuture.completed(null);
   }
 
@@ -39,7 +39,8 @@ public final class PollRequestHandlerStep implements PartitionStartupStep {
     if (context.getRequestHandlerRegistry() != null) {
       context
           .getRequestHandlerRegistry()
-          .unregister(PollRequestHandler.topicName(context.getPartitionId()));
+          .unregister(
+              PollRequestHandler.topicName(context.getRoutingGroup(), context.getPartitionId()));
     }
     return CompletableActorFuture.completed(null);
   }

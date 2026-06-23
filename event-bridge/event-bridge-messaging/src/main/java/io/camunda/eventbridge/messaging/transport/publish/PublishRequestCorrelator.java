@@ -7,9 +7,9 @@
  */
 package io.camunda.eventbridge.messaging.transport.publish;
 
-import io.camunda.eventbridge.protocol.RejectionReason;
 import io.camunda.eventbridge.messaging.publish.PublishResponse;
 import io.camunda.eventbridge.messaging.stream.EventStreamListener;
+import io.camunda.eventbridge.protocol.RejectionReason;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.agrona.concurrent.IdGenerator;

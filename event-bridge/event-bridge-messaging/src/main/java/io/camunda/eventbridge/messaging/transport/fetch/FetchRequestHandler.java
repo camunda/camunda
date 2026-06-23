@@ -26,7 +26,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public final class FetchRequestHandler implements RequestHandler {
 
-  private static final String TOPIC_FORMAT = "default-fetch-api-%d";
+  // "{partitionGroup}-fetch-api-{id}": "default" for data partitions, the topic group for topics.
+  private static final String TOPIC_FORMAT = "%s-fetch-api-%d";
   private static final String CONSUMER_ID = "gateway";
 
   private final int partitionId;
@@ -75,7 +76,7 @@ public final class FetchRequestHandler implements RequestHandler {
     return responseFuture;
   }
 
-  public static String topicName(final int partitionId) {
-    return String.format(TOPIC_FORMAT, partitionId);
+  public static String topicName(final String routingGroup, final int partitionId) {
+    return String.format(TOPIC_FORMAT, routingGroup, partitionId);
   }
 }

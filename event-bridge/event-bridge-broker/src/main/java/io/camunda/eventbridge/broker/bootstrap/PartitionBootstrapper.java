@@ -290,11 +290,19 @@ final class PartitionBootstrapper {
     final var created = factory.createData(groupName, partitionId, members, localMemberId);
     createdPartitions.add(created);
 
+    // The gateway routing group: data partitions use the BrokerClient's default group, topic groups
+    // route under their own Raft group name (so handler subjects don't collide across groups).
+    final var routingGroup =
+        PartitionFactory.GROUP_NAME.equals(groupName)
+            ? io.camunda.zeebe.protocol.Protocol.DEFAULT_PARTITION_GROUP_NAME
+            : groupName;
+
     // 2. Create lifecycle actor
     final var lifecycle =
         new PartitionLifecycle(
             partitionId,
             properties.broker().partitionCount(),
+            routingGroup,
             created.raftPartition(),
             actorScheduler,
             brokerMessagingService,

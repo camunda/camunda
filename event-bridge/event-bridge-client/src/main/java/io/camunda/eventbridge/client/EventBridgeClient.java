@@ -181,6 +181,34 @@ public final class EventBridgeClient implements AutoCloseable {
         .thenApply(response -> FetchResult.parse(response.statusCode(), response.body()));
   }
 
+  /** Fetches batches from a partition of a topic ({@code GET /v1/topics/{topic}/.../fetch}). */
+  public CompletableFuture<FetchResult> fetchFromTopic(
+      final String topic, final int partitionId, final long offset, final int maxBytes) {
+    final var uri =
+        URI.create(
+            gatewayUrl
+                + "/v1/topics/"
+                + topic
+                + "/partitions/"
+                + partitionId
+                + "/fetch?offset="
+                + offset
+                + "&maxBytes="
+                + maxBytes);
+
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(uri)
+            .header("Accept", "application/octet-stream")
+            .timeout(Duration.ofSeconds(10))
+            .GET()
+            .build();
+
+    return httpClient
+        .sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+        .thenApply(response -> FetchResult.parse(response.statusCode(), response.body()));
+  }
+
   // -------------------------------------------------------------------------
   // Consume (consumer groups)
 
@@ -381,6 +409,25 @@ public final class EventBridgeClient implements AutoCloseable {
       final var request =
           HttpRequest.newBuilder()
               .uri(URI.create(gatewayUrl + "/v1/events/" + partitionId))
+              .header("Content-Type", "application/octet-stream")
+              .timeout(Duration.ofSeconds(10))
+              .POST(HttpRequest.BodyPublishers.ofByteArray(batchBuilder.build()))
+              .build();
+
+      return httpClient
+          .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+          .thenApply(EventBridgeClient.this::parsePublishResponse);
+    }
+
+    /** Publishes the batch to a partition of a topic ({@code POST /v1/topics/{topic}/...}). */
+    public CompletableFuture<List<Long>> publishToTopic(final String topic, final int partitionId) {
+      if (batchBuilder.getEntryCount() == 0) {
+        return CompletableFuture.failedFuture(new IllegalStateException("Batch is empty"));
+      }
+
+      final var request =
+          HttpRequest.newBuilder()
+              .uri(URI.create(gatewayUrl + "/v1/topics/" + topic + "/partitions/" + partitionId))
               .header("Content-Type", "application/octet-stream")
               .timeout(Duration.ofSeconds(10))
               .POST(HttpRequest.BodyPublishers.ofByteArray(batchBuilder.build()))

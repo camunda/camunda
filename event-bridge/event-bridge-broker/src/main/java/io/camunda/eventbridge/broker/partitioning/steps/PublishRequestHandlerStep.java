@@ -29,7 +29,8 @@ public final class PublishRequestHandlerStep implements PartitionStartupStep {
             context.getCorrelator());
     context.setPublishRequestHandler(handler);
 
-    final var topic = PublishRequestHandler.topicName(context.getPartitionId());
+    final var topic =
+        PublishRequestHandler.topicName(context.getRoutingGroup(), context.getPartitionId());
     context.getRequestHandlerRegistry().register(topic, handler);
 
     return CompletableActorFuture.completed(null);
@@ -37,7 +38,8 @@ public final class PublishRequestHandlerStep implements PartitionStartupStep {
 
   @Override
   public ActorFuture<Void> deactivate(final PartitionContext context) {
-    final var topic = PublishRequestHandler.topicName(context.getPartitionId());
+    final var topic =
+        PublishRequestHandler.topicName(context.getRoutingGroup(), context.getPartitionId());
     if (context.getRequestHandlerRegistry() != null) {
       context.getRequestHandlerRegistry().unregister(topic);
     }

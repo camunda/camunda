@@ -48,6 +48,7 @@ public final class PartitionLifecycle extends Actor {
   public PartitionLifecycle(
       final int partitionId,
       final int partitionCount,
+      final String routingGroup,
       final RaftPartition raftPartition,
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
@@ -59,6 +60,7 @@ public final class PartitionLifecycle extends Actor {
         new PartitionContext(
             partitionId,
             partitionCount,
+            routingGroup,
             raftPartition,
             actorScheduler,
             messagingService,

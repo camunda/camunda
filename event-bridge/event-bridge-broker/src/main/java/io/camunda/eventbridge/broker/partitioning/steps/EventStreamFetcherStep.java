@@ -45,7 +45,7 @@ public class EventStreamFetcherStep implements PartitionStartupStep {
             4 * 1024 * 1024);
     final var partitionId = context.getPartitionId();
     final var requestHandler = new FetchRequestHandler(partitionId, eventStreamFetcher);
-    final var topicName = topicName(partitionId);
+    final var topicName = topicName(context.getRoutingGroup(), partitionId);
 
     context.getFetchPurgatory().setFetchDispatcher(eventStreamFetcher::dispatchFetch);
     context.getFetchPurgatory().setTimeoutHandler(eventStreamFetcher::dispatchFetch);
@@ -56,7 +56,7 @@ public class EventStreamFetcherStep implements PartitionStartupStep {
 
   @Override
   public ActorFuture<Void> deactivate(final PartitionContext context) {
-    final var topicName = topicName(context.getPartitionId());
+    final var topicName = topicName(context.getRoutingGroup(), context.getPartitionId());
     if (context.getRequestHandlerRegistry() != null) {
       context.getRequestHandlerRegistry().unregister(topicName);
     }

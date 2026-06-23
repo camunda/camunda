@@ -7,17 +7,18 @@
  */
 package io.camunda.eventbridge.messaging.transport.publish;
 
-import io.camunda.eventbridge.protocol.RejectionReason;
 import io.camunda.eventbridge.messaging.publish.PublishResponse;
 import io.camunda.eventbridge.messaging.stream.EventStreamWriter;
+import io.camunda.eventbridge.protocol.RejectionReason;
 import io.camunda.eventbridge.transport.RequestHandler;
 import java.util.concurrent.CompletableFuture;
 
 public final class PublishRequestHandler implements RequestHandler {
 
-  // Must match the topic the gateway BrokerClient sends to: "{partitionGroup}-{type}-api-{id}"
-  // with the default partition group.
-  private static final String TOPIC_FORMAT = "default-publish-api-%d";
+  // Must match the topic the gateway BrokerClient sends to: "{partitionGroup}-{type}-api-{id}".
+  // The group is "default" for data partitions and the topic group name for topic partitions, so
+  // partitions with the same id in different groups don't collide on the messaging subject.
+  private static final String TOPIC_FORMAT = "%s-publish-api-%d";
 
   private final int partitionId;
   private final EventStreamWriter writer;
@@ -56,7 +57,7 @@ public final class PublishRequestHandler implements RequestHandler {
     return registration.future();
   }
 
-  public static String topicName(final int partitionId) {
-    return String.format(TOPIC_FORMAT, partitionId);
+  public static String topicName(final String routingGroup, final int partitionId) {
+    return String.format(TOPIC_FORMAT, routingGroup, partitionId);
   }
 }
