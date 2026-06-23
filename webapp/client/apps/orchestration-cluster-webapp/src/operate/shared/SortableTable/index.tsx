@@ -74,11 +74,11 @@ function SortableTable<TRow>({
 				</TableHead>
 				<TableBody>
 					{rows.length === 0 && emptyState !== undefined ? (
-						<tr>
-							<td colSpan={columns.length}>
+						<TableRow>
+							<TableCell colSpan={columns.length}>
 								<EmptyStateContainer>{emptyState}</EmptyStateContainer>
-							</td>
-						</tr>
+							</TableCell>
+						</TableRow>
 					) : (
 						rows.map((row) => (
 							<TableRow key={rowKey(row)}>
