@@ -8,7 +8,9 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -53,6 +55,14 @@ public class Document {
 
   /** In-memory document stores keyed by store id. */
   @NestedConfigurationProperty private Map<String, InMemoryStore> inMemory = new LinkedHashMap<>();
+
+  /**
+   * Optional per-tenant restriction: a flat list of store ids that narrows the inherited catalog to
+   * a subset for this physical tenant (least privilege). Meaningful only on a tenant overlay
+   * ({@code camunda.physical-tenants.<id>.document.assigned}); ignored at the root. An empty list
+   * means "no restriction" — the tenant keeps the full union of inherited and private stores.
+   */
+  private List<String> assigned = new ArrayList<>();
 
   public String getDefaultStoreId() {
     final String value =
@@ -120,6 +130,14 @@ public class Document {
 
   public void setInMemory(final Map<String, InMemoryStore> inMemory) {
     this.inMemory = inMemory;
+  }
+
+  public List<String> getAssigned() {
+    return assigned;
+  }
+
+  public void setAssigned(final List<String> assigned) {
+    this.assigned = assigned;
   }
 
   public static class AwsStore {
