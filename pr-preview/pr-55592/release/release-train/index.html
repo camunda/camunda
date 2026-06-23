@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Release Train | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55592/release/release-train/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Train | Camunda Platform"><meta data-rh="true" name="description" content="Scope and Boundaries"><meta data-rh="true" property="og:description" content="Scope and Boundaries"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55592/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55592/release/release-train/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/release/release-train/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55592/release/release-train/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-55592/release/"},{"@type":"ListItem","position":2,"name":"Release Train","item":"https://camunda.github.io/camunda/pr-preview/pr-55592/release/release-train"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-55592/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.3f418437.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55592/assets/js/main.f7b0a885.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/runtime~main.720db922.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55592/assets/js/main.059f0ae0.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -70,7 +70,7 @@
 <li class="">The C8 Release Train can only proceed once the Monorepo artifacts it depends on are confirmed as released.</li>
 <li class="">Patch releases can be done on demand, but they should still be based on the previous generation for that line.</li>
 <li class="">Only patch releases can be triggered ad-hoc. Alphas and minors always follow the monthly release cadence — a team requesting an ad-hoc alpha must wait for the next monthly cycle.</li>
-<li class="">SaaS generation create/change operations are restricted to <code>@c8-release-train-manager</code>, coordinated in <a href="https://camunda.slack.com/archives/C03NFMH4KC6" target="_blank" rel="noopener noreferrer" class=""><code>#c8-release-announcements</code></a>.</li>
+<li class="">SaaS generation create/change operations are restricted to <code>@c8-release-train-manager</code>, coordinated in <a href="https://camunda.slack.com/archives/C03NFMH4KC6" target="_blank" rel="noopener noreferrer" class=""><code>#top-c8-release-train</code></a>.</li>
 <li class="">The expected upgrade path for a generation is: to the latest patch of the same minor; if already on the latest patch, to the latest patch of the next minor. Alpha generations cannot be upgraded to — their <code>updatableFrom</code> list is expected to be empty.</li>
 <li class="">Upgrade path configuration must be consistent across dev, int, and prod. A path configured in one environment but not others is drift and should be investigated.</li>
 <li class="">If an already running train needs to switch to a rereleased component version, patch the running train by updating the old version references in the process variables — always <code>releaseSteps</code> and the relevant component version vars, plus <code>baseVersions</code>.</li>
@@ -92,7 +92,7 @@
 <li class="">Support notification was enabled when the train was started.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ownership-and-coordination">Ownership and coordination<a href="#ownership-and-coordination" class="hash-link" aria-label="Direct link to Ownership and coordination" title="Direct link to Ownership and coordination" translate="no">​</a></h3>
-<p>SaaS generation create/change operations are restricted to <code>@c8-release-train-manager</code> and must be coordinated in <a href="https://camunda.slack.com/archives/C03NFMH4KC6" target="_blank" rel="noopener noreferrer" class=""><code>#c8-release-announcements</code></a>.</p>
+<p>SaaS generation create/change operations are restricted to <code>@c8-release-train-manager</code> and must be coordinated in <a href="https://camunda.slack.com/archives/C03NFMH4KC6" target="_blank" rel="noopener noreferrer" class=""><code>#top-c8-release-train</code></a>.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="what-to-verify-after-saas-generation">What to verify after SaaS Generation<a href="#what-to-verify-after-saas-generation" class="hash-link" aria-label="Direct link to What to verify after SaaS Generation" title="Direct link to What to verify after SaaS Generation" translate="no">​</a></h3>
 <p>After the generation is created and the rollout proceeds, verify:</p>
 <ul>
