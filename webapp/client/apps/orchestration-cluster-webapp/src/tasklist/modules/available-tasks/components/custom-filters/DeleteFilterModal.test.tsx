@@ -42,8 +42,7 @@ describe('<DeleteFilterModal />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: /confirm deletion/i}));
 
-		expect(mockOnDelete).toHaveBeenCalledOnce();
-		expect(mockOnDelete).toHaveBeenCalledWith('filter-1');
+		expect(mockOnDelete).toHaveBeenCalledExactlyOnceWith('filter-1');
 	});
 
 	it('should call onClose on cancel', async () => {

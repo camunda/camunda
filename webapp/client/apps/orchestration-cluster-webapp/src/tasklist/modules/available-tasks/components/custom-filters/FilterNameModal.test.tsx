@@ -20,8 +20,7 @@ describe('<FilterNameModal />', () => {
 		await userEvent.fill(screen.getByRole('textbox', {name: /filter name/i}), 'My filter');
 		await userEvent.click(screen.getByRole('button', {name: /save and apply/i}));
 
-		expect(mockOnApply).toHaveBeenCalledOnce();
-		expect(mockOnApply).toHaveBeenCalledWith('My filter');
+		expect(mockOnApply).toHaveBeenCalledExactlyOnceWith('My filter');
 	});
 
 	it('should show a validation error when submitting with an empty name', async () => {
