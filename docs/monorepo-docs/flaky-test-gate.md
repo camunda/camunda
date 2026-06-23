@@ -14,11 +14,11 @@ The sticky design closes that loophole. The trade-off is friction: real flaky-te
 
 An alert entry stays `active` until one of these conditions is met:
 
-| Path | Trigger | Resulting status |
-|------|---------|------------------|
-| **Method fix** | The flagged test's method body is modified, AND the originally affected job runs clean (no Maven retries) for at least **3** subsequent gate runs. | `cleared_via_fix` |
-| **Bypass label** | The `ci:flaky-test-bypass` label is applied to the PR. | `cleared_via_bypass` |
-| **Force-push drop** | The PR is rewritten so the original flagging commit is no longer reachable, AND the test does not flake in the new history. | `dropped_force_push` |
+|        Path         |                                                                      Trigger                                                                       |   Resulting status   |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
+| **Method fix**      | The flagged test's method body is modified, AND the originally affected job runs clean (no Maven retries) for at least **3** subsequent gate runs. | `cleared_via_fix`    |
+| **Bypass label**    | The `ci:flaky-test-bypass` label is applied to the PR.                                                                                             | `cleared_via_bypass` |
+| **Force-push drop** | The PR is rewritten so the original flagging commit is no longer reachable, AND the test does not flake in the new history.                        | `dropped_force_push` |
 
 "Clean run" has a strict definition (Def-2):
 - The test was actually observed in this run (the job wasn't skipped/cancelled), AND
@@ -62,11 +62,11 @@ flaky on `main`, `stable/*`, or in any other open PR.
 ### Active alert after a fix attempt
 
 ```
-  - State:
-    - First flagged at: `abc1234`
-    - Method last modified at: `def5678`
-    - Clean re-runs since fix: 2 / 3
-    - Last observed: 2026-06-03 10:21:00 UTC
+- State:
+  - First flagged at: `abc1234`
+  - Method last modified at: `def5678`
+  - Clean re-runs since fix: 2 / 3
+  - Last observed: 2026-06-03 10:21:00 UTC
 ```
 
 The counter advances each time CI runs and the test passes cleanly in the originally affected job.
@@ -275,3 +275,4 @@ This keeps the sticky logic and comments but stops the gate from failing `check-
 - [CI & Automation › Flaky tests](./ci.md#flaky-tests) — broader context on how Maven test reruns and flaky-test-extractor classify results.
 - [CI Runbooks](./ci-runbooks.md) — what to do when CI alerts fire.
 - [CI Health metrics](./ci.md#ci-health-metrics) — the BigQuery analytics layer the gate queries.
+
