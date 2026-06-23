@@ -16,7 +16,6 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
@@ -54,13 +53,8 @@ public interface PartitionManager {
    */
   Collection<ZeebePartition> getZeebePartitions();
 
-  void start();
-
-  ActorFuture<Void> transition();
-
-  void transitionFactory(PartitionManager.Factory transitionPartitionFactory);
-
-  void postTransition(final Consumer<PartitionManager> partitionManager);
+  /** Starts the partitions managed by this partition manager in its mode. */
+  ActorFuture<Void> start();
 
   /** Stops partitions managed by this partition manager. */
   ActorFuture<Void> stop();
@@ -112,10 +106,5 @@ public interface PartitionManager {
         brokerStartupContext.getActorSchedulingService(),
         brokerStartupContext.getMeterRegistry(),
         topologyManager);
-  }
-
-  @FunctionalInterface
-  interface Factory {
-    PartitionManager create(String physicalTenantId, TopologyManagerImpl topologyManager);
   }
 }

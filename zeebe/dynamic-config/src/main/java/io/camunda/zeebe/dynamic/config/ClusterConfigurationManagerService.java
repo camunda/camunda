@@ -61,6 +61,7 @@ public final class ClusterConfigurationManagerService
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final MemberId localMemberId;
+  private ModeChangeExecutor modeChangeExecutor;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -245,19 +246,26 @@ public final class ClusterConfigurationManagerService
 
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
-      final ModeChangeExecutor recoveryModeChangeExecutor) {
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     clusterConfigurationManager.registerTopologyChangeAppliers(
         new ConfigurationChangeAppliersImpl(
             partitionChangeExecutor,
             new NoopClusterMembershipChangeExecutor(),
             partitionScalingChangeExecutor,
             clusterChangeExecutor,
-            recoveryModeChangeExecutor));
+            modeChangeExecutor));
   }
 
   public void removePartitionChangeExecutor() {
     clusterConfigurationManager.removeTopologyChangeAppliers();
+  }
+
+  public void registerModeChangeExecutor(final ModeChangeExecutor modeChangeExecutor) {
+    this.modeChangeExecutor = modeChangeExecutor;
+  }
+
+  public void removeModeChangeExecutor() {
+    modeChangeExecutor = null;
   }
 
   public void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {

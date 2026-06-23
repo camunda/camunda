@@ -11,13 +11,13 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import org.slf4j.Logger;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
@@ -26,6 +26,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   private final String physicalTenantId;
   private TopologyManagerImpl topologyManager;
+  private PartitionModeHandler modeHandler;
 
   PartitionManagerStep(final String physicalTenantId) {
     this.physicalTenantId = physicalTenantId;
@@ -48,6 +49,10 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         new TopologyManagerImpl(
             brokerStartupContext.getClusterServices().getMembershipService(),
             brokerInfo.withPartitionGroup(physicalTenantId));
+
+    modeHandler = new PartitionModeHandler(brokerStartupContext, physicalTenantId, topologyManager);
+    modeHandler.register();
+
     try {
       final var partitionStartupFuture =
           brokerStartupContext
@@ -56,8 +61,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
               .thenApply((ignore) -> buildPartitionManager(brokerStartupContext, topologyManager))
               .thenAccept(
                   (partitionManager) -> {
-                    partitionManager.start();
                     brokerStartupContext.addPartitionManager(physicalTenantId, partitionManager);
+
+                    partitionManager.start();
                   });
 
       concurrencyControl.runOnCompletion(
@@ -85,12 +91,10 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
-      brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
-    }
-
     concurrencyControl.runOnCompletion(
-        partitionManager.stop().andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
+        stopModeChangeHandler()
+            .andThen(ignore -> partitionManager.stop(), concurrencyControl)
+            .andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
         (ok, error) -> {
           brokerShutdownContext.removePartitionManager(physicalTenantId);
           if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
@@ -127,60 +131,12 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
     if (isRecovering(brokerStartupContext, memberId)) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
-      return recoveryPartitionManager(brokerStartupContext, topologyManager);
+      return PartitionManager.createRecoveryPartitionManager(
+          brokerStartupContext, physicalTenantId, topologyManager);
     } else {
-      return partitionManager(brokerStartupContext, topologyManager);
+      return PartitionManager.createPartitionManager(
+          brokerStartupContext, physicalTenantId, topologyManager);
     }
-  }
-
-  PartitionManager partitionManager(
-      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-    final var partitionManager =
-        PartitionManager.createPartitionManager(
-            brokerStartupContext, physicalTenantId, topologyManager);
-    wireNormalPartitionManager(partitionManager, brokerStartupContext);
-    return partitionManager;
-  }
-
-  PartitionManager recoveryPartitionManager(
-      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-    final var rm =
-        PartitionManager.createRecoveryPartitionManager(
-            brokerStartupContext, physicalTenantId, topologyManager);
-    wireRecoveryPartitionManager(rm, brokerStartupContext);
-    return rm;
-  }
-
-  /**
-   * Factory provider for the transition from {@link PartitionManagerImpl} to {@link
-   * RecoveryPartitionManager}
-   */
-  private void wireNormalPartitionManager(
-      final PartitionManagerImpl partitionManager, final BrokerStartupContext ctx) {
-    partitionManager.transitionFactory(
-        (tenantId, topologyManager) -> {
-          final var recoveryPartitionManager =
-              PartitionManager.createRecoveryPartitionManager(ctx, tenantId, topologyManager);
-          wireRecoveryPartitionManager(recoveryPartitionManager, ctx);
-          return recoveryPartitionManager;
-        });
-    partitionManager.postTransition(manager -> ctx.addPartitionManager(physicalTenantId, manager));
-  }
-
-  /**
-   * Factory provider for the transition from {@link RecoveryPartitionManager} to {@link
-   * PartitionManagerImpl}
-   */
-  private void wireRecoveryPartitionManager(
-      final RecoveryPartitionManager partitionManager, final BrokerStartupContext ctx) {
-    partitionManager.transitionFactory(
-        (tenantId, tm) -> {
-          final var pm = PartitionManager.createPartitionManager(ctx, tenantId, tm);
-          wireNormalPartitionManager(pm, ctx);
-          return pm;
-        });
-    partitionManager.postTransition(
-        newManager -> ctx.addPartitionManager(physicalTenantId, newManager));
   }
 
   private void shutdownOnInconsistentTopology(
@@ -211,5 +167,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
     final var memberState = clusterConfiguration.getMember(memberId);
     return memberState != null && State.RECOVERING == memberState.state();
+  }
+
+  private ActorFuture<Void> stopModeChangeHandler() {
+    return modeHandler != null ? modeHandler.closeAsync() : CompletableActorFuture.completed(null);
   }
 }

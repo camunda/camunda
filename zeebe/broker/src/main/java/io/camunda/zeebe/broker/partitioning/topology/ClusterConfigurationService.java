@@ -26,10 +26,13 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   void registerPartitionChangeExecutors(
       PartitionChangeExecutor partitionChangeExecutor,
-      PartitionScalingChangeExecutor partitionScalingChangeExecutor,
-      ModeChangeExecutor recoveryModeChangeExecutor);
+      PartitionScalingChangeExecutor partitionScalingChangeExecutor);
 
   void removePartitionChangeExecutor();
+
+  void registerModeChangeExecutor(ModeChangeExecutor recoveryModeChangeExecutor);
+
+  void removeModeChangeExecutor();
 
   ActorFuture<Void> start(BrokerStartupContext brokerStartupContext);
 

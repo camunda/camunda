@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,43 +146,23 @@ final class RecoveryPartitionManagerTest {
   }
 
   @Nested
-  class TransitionToRecovery {
+  class Start {
 
-    private AtomicReference<ActorFuture<Void>> transitionFuture;
+    private AtomicReference<ActorFuture<Void>> startFuture;
 
     @BeforeEach
     void setUp() {
-      transitionFuture = new AtomicReference<>();
+      startFuture = new AtomicReference<>();
     }
 
     @Test
-    void shouldCompleteTransitionFutureOnSuccess() {
+    void shouldCompleteStartFutureOnSuccess() {
       // when
-      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
 
       // then
-      awaitTransition();
-      assertThat(transitionFuture.get().isCompletedExceptionally()).isFalse();
-    }
-
-    @Test
-    void shouldDeactivateLocalPartitionsOnTransition() {
-      // when
-      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
-      awaitTransition();
-
-      // then
-      await()
-          .untilAsserted(
-              () -> {
-                final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
-                assertThat(publishedInfos)
-                    .anySatisfy(
-                        info ->
-                            assertThat(info.getPartitionRoles())
-                                .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
-                                .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
-              });
+      awaitStart();
+      assertThat(startFuture.get().isCompletedExceptionally()).isFalse();
     }
 
     @Test
@@ -191,46 +170,28 @@ final class RecoveryPartitionManagerTest {
       // given
       when(clusterConfigurationService.getPartitionDistribution())
           .thenReturn(new PartitionDistribution(Set.of()));
-      final var callbackInvoked = new AtomicBoolean(false);
-      partitionManager.postTransition(pm -> callbackInvoked.set(true));
 
       // when
-      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
 
       // then
       await()
           .atMost(Duration.ofSeconds(1))
-          .until(() -> transitionFuture.get() != null && transitionFuture.get().isDone());
-      assertThat(transitionFuture.get().isCompletedExceptionally()).isFalse();
-      assertThat(callbackInvoked).isFalse();
+          .until(() -> startFuture.get() != null && startFuture.get().isDone());
+      assertThat(startFuture.get().isCompletedExceptionally()).isFalse();
     }
 
     @Test
-    void shouldFailTransitionWhenDeactivationFails() {
+    void shouldFailStartWhenDeactivationFails() {
       // given
       topologyManager.closeAsync().join();
 
       // when
-      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
 
       // then
-      awaitTransition();
-      assertThat(transitionFuture.get().isCompletedExceptionally()).isTrue();
-    }
-
-    @Test
-    void shouldNotInvokePostTransitionOnDeactivationFailure() {
-      // given
-      topologyManager.closeAsync().join();
-      final var callbackInvoked = new AtomicBoolean(false);
-      partitionManager.postTransition(pm -> callbackInvoked.set(true));
-
-      // when
-      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
-      awaitTransition();
-
-      // then
-      assertThat(callbackInvoked).isFalse();
+      awaitStart();
+      assertThat(startFuture.get().isCompletedExceptionally()).isTrue();
     }
 
     @Test
@@ -239,18 +200,18 @@ final class RecoveryPartitionManagerTest {
       topologyManager.closeAsync().join();
 
       // when
-      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
-      awaitTransition();
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
+      awaitStart();
 
       // then
-      assertThat(transitionFuture.get().isCompletedExceptionally()).isTrue();
+      assertThat(startFuture.get().isCompletedExceptionally()).isTrue();
       assertThat(partitionManager.stop()).succeedsWithin(Duration.ofSeconds(5));
     }
 
-    private void awaitTransition() {
+    private void awaitStart() {
       await()
           .atMost(Duration.ofSeconds(10))
-          .until(() -> transitionFuture.get() != null && transitionFuture.get().isDone());
+          .until(() -> startFuture.get() != null && startFuture.get().isDone());
     }
   }
 }

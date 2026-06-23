@@ -16,7 +16,6 @@ import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -35,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,15 +47,10 @@ import org.slf4j.LoggerFactory;
  * mirroring the normal {@link Partition} bootstrapping approach.
  */
 public final class RecoveryPartitionManager
-    implements PartitionManager,
-        PartitionChangeExecutor,
-        PartitionScalingChangeExecutor,
-        ModeChangeExecutor {
+    implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryPartitionManager.class);
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
-  private PartitionManager.Factory transitionFactory;
-  private Consumer<PartitionManager> postTransition;
   private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
   private final ActorSchedulingService actorSchedulingService;
@@ -102,48 +95,34 @@ public final class RecoveryPartitionManager
   }
 
   @Override
-  public void start() {
+  public ActorFuture<Void> start() {
+    LOG.info("Recovering partitions for partition group {}", partitionGroup);
+    final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
-          final var localPartitions = localPartitions();
-          if (localPartitions.isEmpty()) {
-            LOG.info("No local partitions to recover for partition group {}", partitionGroup);
-            return;
-          }
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-            clusterConfigurationService.registerPartitionChangeExecutors(this, this, this);
+            clusterConfigurationService.registerPartitionChangeExecutors(this, this);
           }
-          localPartitions.forEach(this::startPartition);
+          startInternal(result);
         });
-  }
-
-  @Override
-  public ActorFuture<Void> transition() {
-    LOG.info("Transitioning to recovery mode for partition group {}", partitionGroup);
-    final var result = concurrencyControl.<Void>createFuture();
-    concurrencyControl.run(() -> transitionInternal(result));
     return result;
-  }
-
-  @Override
-  public void transitionFactory(final PartitionManager.Factory transitionFactory) {
-    this.transitionFactory = transitionFactory;
-  }
-
-  @Override
-  public void postTransition(final Consumer<PartitionManager> postTransition) {
-    this.postTransition = postTransition;
   }
 
   @Override
   public ActorFuture<Void> stop() {
     LOG.info("Stopping RecoveryPartitionManager");
     final var result = concurrencyControl.<Void>createFuture();
-    concurrencyControl.run(() -> stopInternal(result));
+    concurrencyControl.run(
+        () -> {
+          if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
+            clusterConfigurationService.removePartitionChangeExecutor();
+          }
+          stopInternal(result);
+        });
     return result;
   }
 
-  private void transitionInternal(final ActorFuture<Void> result) {
+  private void startInternal(final ActorFuture<Void> result) {
     final var localPartitions = localPartitions();
     if (localPartitions.isEmpty()) {
       LOG.info("No local partitions to recover for partition group {}", partitionGroup);
@@ -219,30 +198,6 @@ public final class RecoveryPartitionManager
         });
   }
 
-  private void startPartition(final PartitionMetadata partitionMetadata) {
-    final var partitionId = partitionMetadata.id();
-    final var context = startupContext(partitionMetadata);
-
-    final var partition = RecoveryPartition.recovering(context);
-    recoveryPartitions.add(partition);
-    LOG.info("Recovering partition {}", partitionId);
-    concurrencyControl.runOnCompletion(
-        partition.start(),
-        (started, error) -> {
-          if (error != null) {
-            LOG.error("Failed to start partition {} in recovery mode", partitionId, error);
-            recoveryPartitions.remove(partition);
-            return;
-          }
-          LOG.info("Partition {} in recovery, marking it inactive", partitionId);
-          deactivatePartition(partitionId);
-        });
-  }
-
-  private void deactivatePartition(final PartitionId partitionId) {
-    topologyManager.setInactive(partitionId.id());
-  }
-
   private Path partitionDirectory(final PartitionId partitionId) {
     return RaftPartitionFactory.getPartitionDirectory(partitionId, dataDirectory);
   }
@@ -267,20 +222,6 @@ public final class RecoveryPartitionManager
         .stream()
         .filter(p -> p.members().contains(localMemberId))
         .toList();
-  }
-
-  @Override
-  public ActorFuture<Void> enterRecovery() {
-    return CompletableActorFuture.completedExceptionally(
-        new IllegalStateException(
-            "Cannot enter recovery from RecoveryPartitionManager — already in recovery mode"));
-  }
-
-  @Override
-  public ActorFuture<Void> exitRecovery() {
-    // TODO: stop recovery partitions and transition back to normal
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("exitRecovery not yet implemented"));
   }
 
   @Override

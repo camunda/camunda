@@ -44,11 +44,10 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   @Override
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
-      final ModeChangeExecutor recoveryModeChangeExecutor) {
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerPartitionChangeExecutors(
-          partitionChangeExecutor, partitionScalingChangeExecutor, recoveryModeChangeExecutor);
+          partitionChangeExecutor, partitionScalingChangeExecutor);
     } else {
       throw new IllegalStateException(
           "Cannot register change executor before the topology manager is started");
@@ -59,6 +58,23 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   public void removePartitionChangeExecutor() {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removePartitionChangeExecutor();
+    }
+  }
+
+  @Override
+  public void registerModeChangeExecutor(final ModeChangeExecutor recoveryModeChangeExecutor) {
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.registerModeChangeExecutor(recoveryModeChangeExecutor);
+    } else {
+      throw new IllegalStateException(
+          "Cannot register mode change executor before the topology manager is started");
+    }
+  }
+
+  @Override
+  public void removeModeChangeExecutor() {
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.removeModeChangeExecutor();
     }
   }
 
