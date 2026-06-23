@@ -189,7 +189,7 @@ final class ReschedulingTaskTest {
   }
 
   @Test
-  void shouldLogDebugNotErrorWhenRejectedDuringShutdown() throws InterruptedException {
+  void shouldLogDebugNotErrorWhenRejectedDuringShutdown() {
     // given
     final var future = new CompletableFuture<Integer>();
     when(archiverJob.execute()).thenReturn(future);
