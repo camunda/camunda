@@ -23,6 +23,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -161,7 +163,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private void rebuildGroupTopology(final String group) {
     final var groupMembers = memberPropertiesPerGroup.getOrDefault(group, Map.of()).values();
-    final var configuredState = currentConfiguredState();
+    final var configuredState = configuredStateForGroup(group, groupMembers);
     final var newGroupTopology =
         BrokerClientTopologyImpl.fromMemberProperties(groupMembers, configuredState);
 
@@ -175,11 +177,41 @@ public final class BrokerTopologyManagerImpl extends Actor
     }
   }
 
-  private ConfiguredClusterState currentConfiguredState() {
-    return topologyPerGroup.values().stream()
-        .findFirst()
-        .map(BrokerClientTopologyImpl::configuredClusterState)
-        .orElse(BrokerClientTopologyImpl.uninitialized().configuredClusterState());
+  /**
+   * The configured cluster state (partition count + ids) for a partition group. The default group
+   * is driven by the authoritative dynamic {@link ClusterConfiguration} (set via {@link
+   * #onClusterConfigurationUpdated}); other groups (e.g. the coordinator group, or a per-topic Raft
+   * group) have no dynamic config, so their partition set is derived from the group's own gossiped
+   * {@link BrokerInfo}. This keeps groups with different partition counts independent rather than
+   * collapsing them onto one shared configuration.
+   */
+  private ConfiguredClusterState configuredStateForGroup(
+      final String group, final Collection<BrokerInfo> members) {
+    if (Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(group)) {
+      final var defaultTopology = topologyPerGroup.get(Protocol.DEFAULT_PARTITION_GROUP_NAME);
+      return defaultTopology != null
+          ? defaultTopology.configuredClusterState()
+          : BrokerClientTopologyImpl.uninitialized().configuredClusterState();
+    }
+    return configuredStateFromMembers(members);
+  }
+
+  private static ConfiguredClusterState configuredStateFromMembers(
+      final Collection<BrokerInfo> members) {
+    var partitionCount = 0;
+    var clusterSize = 0;
+    var replicationFactor = 0;
+    for (final var info : members) {
+      partitionCount = Math.max(partitionCount, info.getPartitionsCount());
+      clusterSize = Math.max(clusterSize, info.getClusterSize());
+      replicationFactor = Math.max(replicationFactor, info.getReplicationFactor());
+    }
+    final List<Integer> partitionIds = new ArrayList<>(partitionCount);
+    for (var partition = 1; partition <= partitionCount; partition++) {
+      partitionIds.add(partition);
+    }
+    return new ConfiguredClusterState(
+        clusterSize, partitionCount, replicationFactor, partitionIds, 0L, "", 0L);
   }
 
   @Override
@@ -257,22 +289,26 @@ public final class BrokerTopologyManagerImpl extends Actor
         topologyPerGroup.getOrDefault(
             Protocol.DEFAULT_PARTITION_GROUP_NAME, BrokerClientTopologyImpl.uninitialized());
     final var updatedDefault = updateConfiguredClusterState(clusterTopology, oldDefault);
-    final var newConfiguredState = updatedDefault.configuredClusterState();
 
     final Map<String, BrokerClientTopologyImpl> allGroups = new HashMap<>(topologyPerGroup);
     allGroups.put(Protocol.DEFAULT_PARTITION_GROUP_NAME, updatedDefault);
 
-    // temp: apply the same configured state to all other known groups. This must be revisited when
-    // we add support for group-specific cluster configurations.
+    // The dynamic ClusterConfiguration only describes the default (data) group. Other groups keep
+    // their own configured state derived from their gossiped BrokerInfo, so a group with a
+    // different
+    // partition count is not clobbered by the default group's configuration.
     memberPropertiesPerGroup.keySet().stream()
         .filter(group -> !group.equals(Protocol.DEFAULT_PARTITION_GROUP_NAME))
         .forEach(
             group -> {
               final var oldGroup =
                   topologyPerGroup.getOrDefault(group, BrokerClientTopologyImpl.uninitialized());
+              final var groupMembers =
+                  memberPropertiesPerGroup.getOrDefault(group, Map.of()).values();
               allGroups.put(
                   group,
-                  new BrokerClientTopologyImpl(oldGroup.liveClusterState(), newConfiguredState));
+                  new BrokerClientTopologyImpl(
+                      oldGroup.liveClusterState(), configuredStateFromMembers(groupMembers)));
             });
 
     topologyPerGroup = Map.copyOf(allGroups);
