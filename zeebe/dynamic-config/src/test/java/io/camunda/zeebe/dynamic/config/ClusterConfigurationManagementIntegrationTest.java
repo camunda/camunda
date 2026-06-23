@@ -379,9 +379,9 @@ class ClusterConfigurationManagementIntegrationTest {
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {
+              service.registerModeChangeExecutor(new NoopModeChangeExecutor());
               service.registerPartitionChangeExecutors(
                   new NoopPartitionChangeExecutor(), new NoopPartitionScalingChangeExecutor());
-              service.registerModeChangeExecutor(new NoopModeChangeExecutor());
             }
           },
           Runnable::run);

@@ -239,6 +239,7 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
       testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
+      testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
 
       testBrokerStartupContext.setClusterConfigurationService(
           mock(ClusterConfigurationService.class));
