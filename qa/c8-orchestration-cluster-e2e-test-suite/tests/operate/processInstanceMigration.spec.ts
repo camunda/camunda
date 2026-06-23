@@ -320,10 +320,24 @@ test.describe.serial('Process Instance Migration', () => {
           await validateURL(page, /operationId=/);
         },
       });
-      await expect(
-        operateProcessesPage.getVersionCells(targetVersion),
-      ).toHaveCount(6, {
-        timeout: 30000,
+
+      // The "6 results" header updates as soon as the operationId filter
+      // resolves, but the operationId-filtered list does not refetch on its
+      // own, so the target-version row cells can stay stale (0 elements) until
+      // the importer finishes re-indexing the migrated instances. Reload
+      // between attempts to force a fresh fetch until all 6 reflect the target
+      // version — same reload-retry pattern used by the manual mapping test.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.getVersionCells(targetVersion),
+          ).toHaveCount(6, {timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+          await validateURL(page, /operationId=/);
+        },
+        maxRetries: 5,
       });
     });
   });
