@@ -431,6 +431,17 @@
 			},
 			"batchOperations": {
 				"title": "Operaciones en lote"
+			},
+			"shared": {
+				"errorMessage": {
+					"message": "No se pudieron recuperar los datos",
+					"additionalInfo": "Actualice la página para intentarlo de nuevo"
+				},
+				"panelHeader": {
+					"resultCount_one": "{{count}} resultado",
+					"resultCount_other": "{{count}} resultados",
+					"resultCountMore": "{{count}}+ resultados"
+				}
 			}
 		}
 	}

@@ -434,6 +434,17 @@
 			},
 			"batchOperations": {
 				"title": "Opérations par lots"
+			},
+			"shared": {
+				"errorMessage": {
+					"message": "Les données n'ont pas pu être récupérées",
+					"additionalInfo": "Actualisez la page pour réessayer"
+				},
+				"panelHeader": {
+					"resultCount_one": "{{count}} résultat",
+					"resultCount_other": "{{count}} résultats",
+					"resultCountMore": "{{count}}+ résultats"
+				}
 			}
 		}
 	}

@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import {useTranslation} from 'react-i18next';
 import {EmptyMessage} from '../EmptyMessage';
 
 type Props = {
@@ -14,13 +15,13 @@ type Props = {
 	additionalInfo?: string;
 };
 
-const DEFAULT_ERROR = {
-	message: 'Data could not be fetched',
-	additionalInfo: 'Refresh the page to try again',
-};
-
 const ErrorMessage: React.FC<Props> = (props) => {
-	return <EmptyMessage {...DEFAULT_ERROR} {...props} />;
+	const {t} = useTranslation();
+	const defaultError = {
+		message: t('operate.shared.errorMessage.message'),
+		additionalInfo: t('operate.shared.errorMessage.additionalInfo'),
+	};
+	return <EmptyMessage {...defaultError} {...props} />;
 };
 
 export {ErrorMessage};

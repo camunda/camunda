@@ -6,4 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {EmptyMessage} from "./EmptyMessage";
+export {EmptyMessage} from './EmptyMessage';
