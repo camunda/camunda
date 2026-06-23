@@ -9,13 +9,20 @@
 import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
 import {Header} from './Header';
+import {CustomFiltersModal, FilterNameModal, DeleteFilterModal} from './CustomFiltersModal.page';
 
 class TasklistIndexPage extends BasePage {
 	readonly header: Header;
+	readonly customFiltersModal: CustomFiltersModal;
+	readonly filterNameModal: FilterNameModal;
+	readonly deleteFilterModal: DeleteFilterModal;
 
 	constructor(page: Page) {
 		super(page);
 		this.header = new Header(page, 'Camunda Tasklist');
+		this.customFiltersModal = new CustomFiltersModal(page);
+		this.filterNameModal = new FilterNameModal(page);
+		this.deleteFilterModal = new DeleteFilterModal(page);
 	}
 
 	async goto() {
@@ -62,8 +69,20 @@ class TasklistIndexPage extends BasePage {
 		return this.page.getByRole('navigation', {name: 'Filter controls'});
 	}
 
-	filterLink(name: 'All open tasks' | 'Assigned to me' | 'Unassigned' | 'Completed') {
+	filterLink(name: 'All open tasks' | 'Assigned to me' | 'Unassigned' | 'Completed' | (string & {})) {
 		return this.page.getByRole('link', {name});
+	}
+
+	customFilterLink(name: string) {
+		return this.page.getByRole('link', {name, exact: true});
+	}
+
+	get customFilterActionsButton() {
+		return this.page.getByRole('button', {name: /custom filter actions/i});
+	}
+
+	customFilterOverflowItem(name: 'Edit' | 'Delete') {
+		return this.page.getByRole('menuitem', {name});
 	}
 
 	async expandFilters() {
