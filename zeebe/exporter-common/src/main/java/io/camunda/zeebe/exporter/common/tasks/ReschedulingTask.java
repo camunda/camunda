@@ -12,6 +12,7 @@ import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -82,6 +83,12 @@ public final class ReschedulingTask implements RunnableTask {
         .thenAccept(unused -> executionCounter.incrementAndGet())
         .exceptionally(
             error -> {
+              final var cause = error.getCause() != null ? error.getCause() : error;
+              if (closed && cause instanceof RejectedExecutionException) {
+                logger.debug(
+                    "Task {} was rejected because executor is shutting down; not retrying", task);
+                return null;
+              }
               logger.error(
                   "Unexpected error occurred while rescheduling task {} (bug in error handling code?);"
                       + " task will NOT be retried",
