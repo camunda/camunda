@@ -160,6 +160,7 @@ public final class PartitionFactory {
   private RaftStorageConfig buildStorageConfig() {
     final var config = new RaftStorageConfig();
     config.setFlusherFactory(RaftLogFlusher.Factory::direct);
+    config.setSegmentSize(properties.retention().segmentSizeBytes());
     return config;
   }
 

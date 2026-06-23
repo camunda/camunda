@@ -267,7 +267,9 @@ final class PartitionBootstrapper {
             clock,
             idGenerator,
             topologyManager,
-            executorService);
+            executorService,
+            properties.retention().maxRecordsPerPartition(),
+            properties.retention().compactionIntervalMs());
     lifecycles.add(lifecycle);
     actorScheduler.submitActor(lifecycle);
 

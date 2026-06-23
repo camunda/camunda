@@ -48,7 +48,7 @@ public record EventBridgeProperties(
       publish = new PublishProperties(1_000, 1_048_576, 10_485_760);
     }
     if (retention == null) {
-      retention = new RetentionProperties(1_000_000);
+      retention = new RetentionProperties(1_000_000, 60_000, 32 * 1024 * 1024);
     }
     if (raft == null) {
       raft = new RaftProperties(1);
@@ -176,12 +176,22 @@ public record EventBridgeProperties(
       @DefaultValue("10485760") int maxBatchBytes) {}
 
   /**
-   * Log retention configuration.
+   * Log retention configuration. Retention is Kafka-style: each data-partition leader keeps the
+   * most recent records and compacts older log segments on a timer, independent of consumer
+   * progress. A consumer that falls behind the retained window resumes via its {@code
+   * OffsetResetPolicy}.
    *
-   * @param maxRecordsPerPartition maximum number of records to retain per partition (default
-   *     1000000)
+   * @param maxRecordsPerPartition maximum number of most-recent records to retain per partition;
+   *     older log segments are eligible for compaction (default 1000000)
+   * @param compactionIntervalMs how often (in milliseconds) a data-partition leader re-evaluates
+   *     and applies retention compaction (default 60000)
+   * @param segmentSizeBytes Raft log segment size; compaction is segment-granular, so this is the
+   *     unit by which the retained window is rounded (default 32 MiB)
    */
-  public record RetentionProperties(@DefaultValue("1000000") long maxRecordsPerPartition) {}
+  public record RetentionProperties(
+      @DefaultValue("1000000") long maxRecordsPerPartition,
+      @DefaultValue("60000") long compactionIntervalMs,
+      @DefaultValue("33554432") long segmentSizeBytes) {}
 
   /**
    * RAFT consensus configuration.
