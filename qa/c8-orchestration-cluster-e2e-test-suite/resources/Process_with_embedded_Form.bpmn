@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="ed15ad4" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="Process_with_embedded_form" name="Process with embedded Form" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:userTaskForm id="UserTaskForm_03numc9">{
+"id": "start_form_start",
+"type": "default",
+"schemaVersion": 19,
+  "components": [
+    {
+      "key": "name",
+      "label": "Name",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "key": "email",
+      "label": "E-Mail",
+      "type": "textfield",
+      "validate": {
+        "required": true,
+        "pattern": "^\\S+@\\S+\\.\\S+$"
+      }
+    },
+    {
+      "key": "subscribe",
+      "label": "Newsletter abonnieren?",
+      "type": "checkbox",
+      "defaultValue": false
+    },
+    {
+      "key": "comments",
+      "label": "Kommentar",
+      "type": "textarea",
+      "description": "Optional – falls du noch etwas ergänzen möchtest."
+    },
+    {
+      "type": "button",
+      "label": "Absenden",
+      "action": "submit",
+      "key": "submit"
+    }
+  ]
+}</zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:endEvent id="Event_0z5j74w" name="Ende">
+      <bpmn:incoming>Flow_1np5e7s</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1np5e7s" sourceRef="StartEvent_1" targetRef="Event_0z5j74w" />
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:UserTaskForm_03numc9" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1np5e7s</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_with_embedded_form">
+      <bpmndi:BPMNShape id="Event_0z5j74w_di" bpmnElement="Event_0z5j74w">
+        <dc:Bounds x="242" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="247" y="143" width="26" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="157" y="143" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1np5e7s_di" bpmnElement="Flow_1np5e7s">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="242" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

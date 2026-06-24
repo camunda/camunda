@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_03iaqpl" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.11.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+  <bpmn:process id="inclusiveGatewayProcess" name="Inclusive gateway" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Place order">
+      <bpmn:outgoing>Flow_0n4bkf8</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0n4bkf8" sourceRef="StartEvent_1" targetRef="Gateway_1e9r6qi" />
+    <bpmn:inclusiveGateway id="Gateway_1e9r6qi">
+      <bpmn:incoming>Flow_0n4bkf8</bpmn:incoming>
+      <bpmn:outgoing>Flow_0jkg15m</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0ys32jy</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0jkg15m" name="Pasta ordered" sourceRef="Gateway_1e9r6qi" targetRef="cookPastaTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=pastaOrdered=true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1266oxv" sourceRef="cookSaladTask" targetRef="Gateway_0t3b7zi" />
+    <bpmn:inclusiveGateway id="Gateway_0t3b7zi">
+      <bpmn:incoming>Flow_1266oxv</bpmn:incoming>
+      <bpmn:incoming>Flow_0x5iv02</bpmn:incoming>
+      <bpmn:outgoing>Flow_1qekdyx</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0x5iv02" sourceRef="cookPastaTask" targetRef="Gateway_0t3b7zi" />
+    <bpmn:sequenceFlow id="Flow_1qekdyx" sourceRef="Gateway_0t3b7zi" targetRef="Activity_10ii89l" />
+    <bpmn:endEvent id="Event_10rmcc3">
+      <bpmn:incoming>Flow_0jhairx</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0jhairx" sourceRef="Activity_10ii89l" targetRef="Event_10rmcc3" />
+    <bpmn:serviceTask id="Activity_10ii89l" name="Eat">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="eatTask" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1qekdyx</bpmn:incoming>
+      <bpmn:outgoing>Flow_0jhairx</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0ys32jy" name="Salad ordered" sourceRef="Gateway_1e9r6qi" targetRef="cookSaladTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=saladOrdered=true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:manualTask id="cookSaladTask" name="Cook salad">
+      <bpmn:incoming>Flow_0ys32jy</bpmn:incoming>
+      <bpmn:outgoing>Flow_1266oxv</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:manualTask id="cookPastaTask" name="Cook pasta">
+      <bpmn:incoming>Flow_0jkg15m</bpmn:incoming>
+      <bpmn:outgoing>Flow_0x5iv02</bpmn:outgoing>
+    </bpmn:manualTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="inclusiveGatewayProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="182" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="171" y="202" width="58" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0cxikt5_di" bpmnElement="Gateway_1e9r6qi">
+        <dc:Bounds x="295" y="152" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_04puelp_di" bpmnElement="Gateway_0t3b7zi">
+        <dc:Bounds x="635" y="152" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_10rmcc3_di" bpmnElement="Event_10rmcc3">
+        <dc:Bounds x="902" y="159" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_01zh8pd_di" bpmnElement="Activity_10ii89l">
+        <dc:Bounds x="740" y="137" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0xs8u0p_di" bpmnElement="cookSaladTask">
+        <dc:Bounds x="440" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1tbzo07_di" bpmnElement="cookPastaTask">
+        <dc:Bounds x="440" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0n4bkf8_di" bpmnElement="Flow_0n4bkf8">
+        <di:waypoint x="218" y="177" />
+        <di:waypoint x="295" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jkg15m_di" bpmnElement="Flow_0jkg15m">
+        <di:waypoint x="320" y="202" />
+        <di:waypoint x="320" y="260" />
+        <di:waypoint x="440" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="335" y="243" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1266oxv_di" bpmnElement="Flow_1266oxv">
+        <di:waypoint x="540" y="100" />
+        <di:waypoint x="660" y="100" />
+        <di:waypoint x="660" y="152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0x5iv02_di" bpmnElement="Flow_0x5iv02">
+        <di:waypoint x="540" y="260" />
+        <di:waypoint x="660" y="260" />
+        <di:waypoint x="660" y="202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1qekdyx_di" bpmnElement="Flow_1qekdyx">
+        <di:waypoint x="685" y="177" />
+        <di:waypoint x="740" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jhairx_di" bpmnElement="Flow_0jhairx">
+        <di:waypoint x="840" y="177" />
+        <di:waypoint x="902" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ys32jy_di" bpmnElement="Flow_0ys32jy">
+        <di:waypoint x="320" y="152" />
+        <di:waypoint x="320" y="100" />
+        <di:waypoint x="440" y="100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="335" y="103" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

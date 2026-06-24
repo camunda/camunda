@@ -1,0 +1,52 @@
+version: '3'
+
+volumes:
+    grafana: {}
+    prometheus: {}
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.12.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+
+  grafana:
+    image: grafana/grafana:13.0.1
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana:/var/lib/grafana
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+      - ./grafana/zeebe.json/:/var/lib/grafana/dashboards/zeebe.json
+      - ./grafana/zeebe-overview.json/:/var/lib/grafana/dashboards/zeebe-overview.json
+      - ./grafana/dashboards/core-features/overview.json:/var/lib/grafana/dashboards/overview.json
+      - ./grafana/dashboards/core-features/rest.json:/var/lib/grafana/dashboards/rest.json
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=camunda
+      - GF_USERS_ALLOW_SIGN_UP=false
+
+  zeebe:
+    image: camunda/camunda:${CAMUNDA_VERSION:-SNAPSHOT}
+    container_name: zeebe
+    environment:
+      - SPRING_PROFILES_ACTIVE=broker
+      # Use an in-memory RDBMS backend so the broker starts without an external database.
+      # This stack is only used for Prometheus/Grafana monitoring of the Zeebe engine metrics.
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms
+      - CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda;DB_CLOSE_DELAY=-1
+      - ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter
+    ports:
+      - 9600:9600

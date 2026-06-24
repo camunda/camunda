@@ -1,0 +1,61 @@
+name: "Sign & Notarize macOS code"
+description: "Signs with Developer ID App certificate and notarizes the resulting zip file."
+
+inputs:
+  p12-base64:
+    description: "Base64-encoded .p12 Developer ID cert"
+    required: true
+  p12-password:
+    description: "Password for the .p12 certificate"
+    required: false
+  developer-id-cert-name:
+    description: "Full name of your Developer ID Application cert, e.g., 'Developer ID Application: My Company (TEAMID)'"
+    required: true
+  apple-id:
+    description: "Apple ID for notarization"
+    required: true
+  app-password:
+    description: "Apple app-specific password for notarization"
+    required: true
+  team-id:
+    description: "Apple Developer Team ID"
+    required: true
+  path:
+    description: "Path to folder/binary that needs signing"
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Import Developer ID .p12
+      shell: bash
+      run: |
+        #brew install coreutils
+        echo -n "$APPLE_CERTIFICATE" | base64 --decode > dev_id.p12
+        security create-keychain -p "" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "" build.keychain
+        security set-keychain-settings -t 3600 -u build.keychain
+        security import dev_id.p12 -k ~/Library/Keychains/build.keychain -f pkcs12 -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
+        security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
+        security default-keychain -s build.keychain
+        security find-identity -p codesigning -v
+        chmod +x ./.github/actions/sign-and-notarize/sign_and_notarize.sh
+
+    - name: Sign distribution
+      shell: bash
+      run: |
+        ./.github/actions/sign-and-notarize/sign_and_notarize.sh \
+          "$INPUT_PATH" \
+          "$APPLE_COMMON_NAME" \
+          "$INPUT_APPLE_ID" \
+          "$INPUT_APP_PASSWORD" \
+          "$INPUT_TEAM_ID"
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_APPLE_ID: ${{ inputs.apple-id }}
+        INPUT_APP_PASSWORD: ${{ inputs.app-password }}
+        INPUT_TEAM_ID: ${{ inputs.team-id }}
+

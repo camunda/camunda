@@ -1,0 +1,18 @@
+{
+  "action": "opened",
+  "pull_request": {
+    "number": 12346,
+    "draft": false,
+    "head": {
+      "ref": "fix/backport-stable",
+      "repo": {
+        "owner": {
+          "login": "test-user"
+        }
+      }
+    },
+    "base": {
+      "ref": "stable/8.9"
+    }
+  }
+}

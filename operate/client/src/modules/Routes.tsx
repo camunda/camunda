@@ -1,0 +1,125 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type {To} from 'react-router-dom';
+import type {DecisionsFilter} from 'modules/utils/filter/decisionsFilter';
+import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+
+const Paths = {
+  login() {
+    return '/login';
+  },
+  dashboard() {
+    return '/';
+  },
+  processes() {
+    return '/processes';
+  },
+  processesVariables() {
+    return '/processes/filters/variables';
+  },
+  processInstance(
+    processInstanceId: string | null = ':processInstanceId',
+    isParent = false,
+  ) {
+    const path = `/processes/${processInstanceId}`;
+
+    if (isParent) {
+      return `${path}/*`;
+    }
+
+    return `/processes/${processInstanceId}`;
+  },
+  processInstanceDetails: getRelativeProcessInstancePathHandler('details'),
+  processInstanceIncidents: getRelativeProcessInstancePathHandler('incidents'),
+  processInstanceInputMappings:
+    getRelativeProcessInstancePathHandler('input-mappings'),
+  processInstanceOutputMappings:
+    getRelativeProcessInstancePathHandler('output-mappings'),
+  processInstanceVariables: getRelativeProcessInstancePathHandler('variables'),
+  processInstanceListeners: getRelativeProcessInstancePathHandler('listeners'),
+  processInstanceOperationsLog:
+    getRelativeProcessInstancePathHandler('operations-log'),
+  processInstanceHistory:
+    getRelativeProcessInstancePathHandler('instance-history'),
+  decisions() {
+    return '/decisions';
+  },
+  decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
+    return `/decisions/${decisionInstanceId}`;
+  },
+  operationsLog() {
+    return '/operations-log';
+  },
+  forbidden() {
+    return '/forbidden';
+  },
+  batchOperations() {
+    return '/batch-operations';
+  },
+  batchOperation(batchOperationKey: string | null = ':batchOperationKey') {
+    return `/batch-operations/${batchOperationKey}`;
+  },
+} as const;
+
+function getRelativeProcessInstancePathHandler(path: string) {
+  return (
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) => {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return path;
+    }
+
+    return `/processes/${processInstanceId}/${path}`;
+  };
+}
+
+const Locations = {
+  processes(filters?: ProcessInstanceFilters): To {
+    const params = new URLSearchParams();
+
+    if (filters !== undefined) {
+      Object.entries(filters).forEach(([key, value]) => {
+        params.set(key, value.toString());
+      });
+    } else {
+      params.set('active', 'true');
+      params.set('incidents', 'true');
+    }
+
+    return {
+      pathname: Paths.processes(),
+      search: params.toString(),
+    };
+  },
+  decisions(filters?: DecisionsFilter): To {
+    const params = new URLSearchParams();
+
+    if (filters !== undefined) {
+      Object.entries(filters).forEach(([key, value]) => {
+        params.set(key, value.toString());
+      });
+    } else {
+      params.set('evaluated', 'true');
+      params.set('failed', 'true');
+    }
+
+    return {
+      pathname: Paths.decisions(),
+      search: params.toString(),
+    };
+  },
+} as const;
+
+export {Paths, Locations};

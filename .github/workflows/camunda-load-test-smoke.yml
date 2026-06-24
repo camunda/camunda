@@ -1,0 +1,167 @@
+# description: Smoke-tests the load-test setup on every push that touches load-test infra.
+#              Deploys a minimal load test from the PR head ref, for supported secondary storages,
+#              waits for pod readiness and gateway connectivity, then deletes the namespace.
+# calls: camunda-load-test.yml (scenario: realistic),
+#        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace)
+# notifications: Slack (#reliability-testing-alerts) on failure only
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Smoke Load Test
+on:
+  workflow_call:
+    inputs:
+      target-version:
+        description: 'Setup version subfolder (main, stable-89, stable-88, stable-87)'
+        type: string
+        default: "main"
+        required: false
+      orchestration-tag:
+        description: 'Docker Hub image tag to use (e.g. SNAPSHOT, 8.9-SNAPSHOT)'
+        type: string
+        default: "SNAPSHOT"
+        required: false
+      ref:
+        description: 'Git ref to checkout (branch or SHA). Defaults to PR head.'
+        type: string
+        default: ""
+        required: false
+  workflow_dispatch:
+    inputs:
+      target-version:
+        description: 'Setup version subfolder (main, stable-89, stable-88, stable-87)'
+        type: string
+        default: "main"
+        required: false
+      orchestration-tag:
+        description: 'Docker Hub image tag to use (e.g. SNAPSHOT, 8.9-SNAPSHOT)'
+        type: string
+        default: "SNAPSHOT"
+        required: false
+      ref:
+        description: 'Git ref to checkout for the smoke test (branch or SHA)'
+        type: string
+        default: ""
+        required: false
+
+concurrency:
+  group: smoke-load-test-${{ github.event.pull_request.id || inputs.ref }}-${{ inputs.target-version || 'main' }}
+  cancel-in-progress: true
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  sanitize-branch-name:
+    name: Sanitize Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
+    steps:
+      - id: sanitize-author
+        name: Sanitize author name
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event.pull_request.user.login || github.actor }}
+          max_length: 10
+      - id: compute-namespace
+        name: Compute safe namespace from PR author, number and version
+        run: |
+          author="${{ steps.sanitize-author.outputs.branch_name || github.actor }}"
+          pr_number="${{ github.event.pull_request.number || github.run_id }}"
+          version_slug="${{ inputs.target-version || 'main' }}"
+          version_slug_sanitized="${version_slug//-/}"
+          echo "namespace=c8-smoke-${author}-${pr_number}-${version_slug_sanitized}" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  smoke-install:
+    name: Smoke Install
+    needs: sanitize-branch-name
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
+      ttl: 1
+      target-version: ${{ inputs.target-version || 'main' }}
+      # We make use of the official docker image (SNAPSHOT TAG) this is to reduce CI runtime and feedback cycle.
+      # Setting the focus only on the installation and connectivity part of the load test.
+      # Issues with the load test applications, should ideally catched with integration tests.
+      orchestration-tag: ${{ inputs.orchestration-tag || 'SNAPSHOT' }}
+
+  verify-install:
+    name: Verify Install
+    needs: [sanitize-branch-name, smoke-install]
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+
+  # This is to validate whether the load test can be updated successfully, without issues in the update process itself.
+  # To prevent regressions like regenerating credentials on every update, which can cause downtime and failed updates.
+  smoke-update:
+    name: Smoke update
+    needs: [sanitize-branch-name, verify-install]
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
+      ttl: 1
+      target-version: ${{ inputs.target-version || 'main' }}
+      # We make use of the official docker image (SNAPSHOT TAG) this is to reduce CI runtime and feedback cycle.
+      # Setting the focus only on the installation and connectivity part of the load test.
+      # Issues with the load test applications, should ideally catched with integration tests.
+      orchestration-tag: ${{ inputs.orchestration-tag || 'SNAPSHOT' }}
+
+  verify-update:
+    name: Verify update
+    needs: [sanitize-branch-name, smoke-update]
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+
+  cleanup:
+    name: Cleanup
+    needs: [sanitize-branch-name, verify-update]
+    if: always()
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}

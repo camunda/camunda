@@ -1,0 +1,1684 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client;
+
+import static io.camunda.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE;
+import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
+import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
+import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
+import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
+import static io.camunda.client.ClientProperties.MAX_HTTP_CONNECTIONS;
+import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
+import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
+import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
+import static io.camunda.client.ClientProperties.REST_ADDRESS;
+import static io.camunda.client.ClientProperties.STREAM_ENABLED;
+import static io.camunda.client.ClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING;
+import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TTL;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.worker.JobExceptionHandler;
+import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
+import io.camunda.client.impl.CamundaClientEnvironmentVariables;
+import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.client.impl.util.AddressUtil;
+import io.camunda.client.impl.util.Environment;
+import io.camunda.client.impl.util.EnvironmentExtension;
+import io.grpc.ClientInterceptor;
+import java.io.FileNotFoundException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+@ExtendWith(EnvironmentExtension.class)
+public final class CamundaClientTest {
+
+  @Test
+  public void shouldNotFailIfClosedTwice() {
+    final CamundaClient client = CamundaClient.newClient();
+    client.close();
+    client.close();
+  }
+
+  @Test
+  public void shouldHaveDefaultValues() {
+    // given
+    try (final CamundaClient client = CamundaClient.newClient()) {
+      // when
+      final CamundaClientConfiguration configuration = client.getConfiguration();
+
+      // then
+      assertThat(configuration.getGrpcAddress()).isEqualTo(DEFAULT_GRPC_ADDRESS);
+      assertThat(configuration.getRestAddress()).isEqualTo(DEFAULT_REST_ADDRESS);
+      assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
+      assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
+      assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
+      assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
+      assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
+      assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(DEFAULT_MESSAGE_TTL);
+      assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
+      assertThat(configuration.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofSeconds(1));
+      assertThat(configuration.getMaxMessageSize()).isEqualTo(5 * 1024 * 1024);
+      assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * 1024);
+      assertThat(configuration.getOverrideAuthority()).isNull();
+      assertThat(configuration.getDefaultTenantId())
+          .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
+      assertThat(configuration.getDefaultJobWorkerTenantIds())
+          .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(configuration.preferRestOverGrpc()).isTrue();
+      assertThat(configuration.getMaxHttpConnections()).isEqualTo(DEFAULT_MAX_HTTP_CONNECTIONS);
+      assertThat(configuration.jobHandlingExecutor()).isNull();
+      assertThat(configuration.jobWorkerSchedulingExecutor()).isNull();
+    }
+  }
+
+  @Test
+  public void shouldFailIfCertificateDoesNotExist() {
+    assertThatThrownBy(
+            () ->
+                CamundaClient.newClientBuilder()
+                    .grpcAddress(URI.create("https://localhost:10000"))
+                    .caCertificatePath("/wrong/path")
+                    .build())
+        .hasCauseInstanceOf(FileNotFoundException.class);
+  }
+
+  @Test
+  public void shouldFailWithEmptyCertificatePath() {
+    assertThatThrownBy(
+            () ->
+                CamundaClient.newClientBuilder()
+                    .grpcAddress(URI.create("https://localhost:10000"))
+                    .caCertificatePath("")
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldHaveTlsDisabledByDefault() {
+    assertThat(AddressUtil.isPlaintextConnection(new CamundaClientBuilderImpl().getGrpcAddress()))
+        .isTrue();
+  }
+
+  @ParameterizedTest
+  @CsvSource({PREFER_REST_VAR + "," + PREFER_REST_OVER_GRPC})
+  public void shouldOverridePropertyWithEnvVariable(
+      final String envName, final String propertyName) {
+    // given
+    Environment.system().put(envName, "false");
+    final Properties properties = new Properties();
+    properties.putIfAbsent(propertyName, "true");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.preferRestOverGrpc()).isFalse();
+  }
+
+  @ParameterizedTest
+  @CsvSource({PREFER_REST_VAR + "," + PREFER_REST_OVER_GRPC})
+  public void shouldNotOverridePropertyWithEnvVariableIfOverridingIsDisabled(
+      final String envName, final String propertyName) {
+    // given
+    Environment.system().put(envName, "false");
+    final Properties properties = new Properties();
+    properties.putIfAbsent(propertyName, "true");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.applyEnvironmentVariableOverrides(false);
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.preferRestOverGrpc()).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {STREAM_ENABLED})
+  public void shouldEnableStreamingWithProperty(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    properties.putIfAbsent(propertyName, "true");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerStreamEnabled()).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {CAMUNDA_CLIENT_WORKER_STREAM_ENABLED})
+  public void shouldEnableStreamingWithEnvironmentVariableWhenApplied(final String envName) {
+    // given
+    Environment.system().put(envName, "true");
+
+    final CamundaClientBuilderImpl builder1 = new CamundaClientBuilderImpl();
+    final CamundaClientBuilderImpl builder2 = new CamundaClientBuilderImpl();
+    builder1.applyEnvironmentVariableOverrides(false);
+    builder2.applyEnvironmentVariableOverrides(true);
+
+    // when
+    builder1.build();
+    builder2.build();
+    assertThat(builder1.getDefaultJobWorkerStreamEnabled()).isFalse();
+    assertThat(builder2.getDefaultJobWorkerStreamEnabled()).isTrue();
+  }
+
+  @ParameterizedTest
+  @CsvSource({CAMUNDA_CLIENT_WORKER_STREAM_ENABLED + "," + STREAM_ENABLED})
+  public void environmentVariableShouldOverrideProperty(
+      final String envName, final String propertyName) {
+    // given
+    Environment.system().put(envName, "true");
+    final Properties properties = new Properties();
+    properties.putIfAbsent(propertyName, "false");
+
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties).applyEnvironmentVariableOverrides(true);
+
+    // when
+    builder.build();
+    assertThat(builder.getDefaultJobWorkerStreamEnabled()).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {CA_CERTIFICATE_VAR})
+  public void shouldCaCertificateWithEnvVar(final String envName) {
+    // given
+    final String certPath = getClass().getClassLoader().getResource("ca.cert.pem").getPath();
+    Environment.system().put(envName, certPath);
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getCaCertificatePath()).isEqualTo(certPath);
+  }
+
+  @Test
+  public void shouldSetKeepAlive() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.keepAlive(Duration.ofMinutes(2));
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofMinutes(2));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {KEEP_ALIVE_VAR})
+  public void shouldOverrideKeepAliveWithEnvVar(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.keepAlive(Duration.ofMinutes(2));
+    Environment.system().put(KEEP_ALIVE_VAR, "15000");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofSeconds(15));
+  }
+
+  @Test
+  public void shouldSetAuthority() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.overrideAuthority("virtualhost");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {OVERRIDE_AUTHORITY_VAR})
+  public void shouldOverrideAuthorityWithEnvVar(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.overrideAuthority("localhost");
+    Environment.system().put(envName, "virtualhost");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+  }
+
+  @Test
+  public void shouldSetMaxMessageSize() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.maxMessageSize(10 * 1024 * 1024);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * 1024 * 1024);
+  }
+
+  @Test
+  public void shouldSetMaxMetadataSize() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.maxMetadataSize(10 * 1024);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * 1024);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {MAX_MESSAGE_SIZE})
+  public void shouldSetMaxMessageSizeWithProperty(final String propertyName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, "10MB");
+    builder.withProperties(properties);
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * ONE_MB);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {MAX_METADATA_SIZE})
+  public void shouldSetMaxMetadataSizeWithProperty(final String propertyName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, "10KB");
+    builder.withProperties(properties);
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {KEEP_ALIVE_VAR})
+  public void shouldRejectUnsupportedTimeUnitWithEnvVar(final String envName) {
+    // when/then
+    Environment.system().put(envName, "30d");
+    assertThatThrownBy(() -> new CamundaClientBuilderImpl().build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldRejectNegativeTime() {
+    // when/then
+    assertThatThrownBy(
+            () -> new CamundaClientBuilderImpl().keepAlive(Duration.ofSeconds(-2)).build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {KEEP_ALIVE_VAR})
+  public void shouldRejectNegativeTimeAsEnvVar(final String envName) {
+    // when/then
+    Environment.system().put(envName, "-2s");
+    assertThatThrownBy(() -> new CamundaClientBuilderImpl().build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldCloudBuilderBuildProperClient() {
+    // given
+    final String clusterId = "clusterId";
+    final String region = "asdf-123";
+    final String domain = "dev.ultrawombat.com";
+
+    try (final CamundaClient client =
+        CamundaClient.newCloudClientBuilder()
+            .withClusterId(clusterId)
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .withRegion(region)
+            .withDomain(domain)
+            .build()) {
+      // when
+      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.%s.zeebe.%s", clusterId, region, domain))
+          .hasPort(443)
+          .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost(String.format("%s.zeebe.%s", region, domain))
+          .hasPort(443)
+          .hasPath("/" + clusterId)
+          .hasScheme("https");
+    }
+  }
+
+  @Test
+  public void shouldCloudBuilderBuildProperClientWithDefaultRegionAndDomain() {
+    // given
+    final String clusterId = "clusterId";
+    try (final CamundaClient client =
+        CamundaClient.newCloudClientBuilder()
+            .withClusterId(clusterId)
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build()) {
+      // when
+      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.bru-2.zeebe.camunda.io", clusterId))
+          .hasPort(443)
+          .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost("bru-2.zeebe.camunda.io")
+          .hasPort(443)
+          .hasPath("/" + clusterId)
+          .hasScheme("https");
+    }
+  }
+
+  @Test
+  public void shouldOverrideCloudProperties() {
+    // given
+    final URI grpcAddress = URI.create("https://localhost:10000");
+    final URI restAddress = URI.create("https://localhost:10001");
+    final NoopCredentialsProvider credentialsProvider = new NoopCredentialsProvider();
+    try (final CamundaClient client =
+        CamundaClient.newCloudClientBuilder()
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .grpcAddress(grpcAddress)
+            .restAddress(restAddress)
+            .credentialsProvider(credentialsProvider)
+            .build()) {
+      final CamundaClientConfiguration configuration = client.getConfiguration();
+      assertThat(configuration.getGrpcAddress()).isEqualTo(grpcAddress);
+      assertThat(configuration.getRestAddress()).isEqualTo(restAddress);
+      assertThat(configuration.getCredentialsProvider()).isEqualTo(credentialsProvider);
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {CLOUD_REGION, ClientProperties.CLOUD_REGION})
+  public void shouldCloudBuilderBuildProperClientWithRegionPropertyProvided(
+      final String propertyName) {
+    // given
+    final String region = "asdf-123";
+    final Properties properties = new Properties();
+    properties.putIfAbsent(propertyName, region);
+    try (final CamundaClient client =
+        CamundaClient.newCloudClientBuilder()
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .withProperties(properties)
+            .build()) {
+      // when
+      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", region))
+          .hasPort(443)
+          .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost(String.format("%s.zeebe.camunda.io", region))
+          .hasPort(443)
+          .hasPath("/clusterId")
+          .hasScheme("https");
+    }
+  }
+
+  @Test
+  public void shouldCloudBuilderBuildProperClientWithRegionPropertyNotProvided() {
+    // given
+    final String defaultRegion = "bru-2";
+    try (final CamundaClient client =
+        CamundaClient.newCloudClientBuilder()
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build()) {
+      // when
+      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", defaultRegion))
+          .hasPort(443)
+          .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost(String.format("%s.zeebe.camunda.io", defaultRegion))
+          .hasPort(443)
+          .hasPath("/clusterId")
+          .hasScheme("https");
+    }
+  }
+
+  @Test
+  public void shouldCloseOwnedExecutorOnClose() {
+    // given
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobExecutor = Executors.newSingleThreadExecutor();
+
+    try (final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .jobWorkerSchedulingExecutor(scheduler, true)
+            .jobHandlingExecutor(jobExecutor, true)
+            .build()) {
+      // when
+      client.close();
+
+      // then
+      assertThat(scheduler.isShutdown()).isTrue();
+      assertThat(jobExecutor.isShutdown()).isTrue();
+    }
+  }
+
+  @Test
+  public void shouldNotCloseNotOwnedExecutor() {
+    // given
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobExecutor = Executors.newSingleThreadExecutor();
+    try (final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .jobWorkerSchedulingExecutor(scheduler, false)
+            .jobHandlingExecutor(jobExecutor, false)
+            .build()) {
+      // when
+      client.close();
+
+      // then
+      assertThat(scheduler.isShutdown()).isFalse();
+      assertThat(jobExecutor.isShutdown()).isFalse();
+    }
+
+    scheduler.shutdownNow();
+  }
+
+  @Test
+  public void shouldCloseWhenDifferentExecutorsOwnedAndNotOwned() {
+    // given
+    final ScheduledExecutorService ownedScheduler = Executors.newSingleThreadScheduledExecutor();
+    final ScheduledExecutorService notOwnedScheduler = Executors.newSingleThreadScheduledExecutor();
+    try (final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .jobWorkerSchedulingExecutor(ownedScheduler, true)
+            .jobHandlingExecutor(notOwnedScheduler, false)
+            .build()) {
+      // when
+      client.close();
+
+      // then
+      assertThat(ownedScheduler.isShutdown()).isTrue();
+      assertThat(notOwnedScheduler.isShutdown()).isFalse();
+    }
+
+    notOwnedScheduler.shutdownNow();
+  }
+
+  @Test
+  public void shouldUseCustomScheduledExecutorWithJobWorker() {
+    // given
+    final ScheduledThreadPoolExecutor executor = spy(new ScheduledThreadPoolExecutor(1));
+    final Duration pollInterval = Duration.ZERO;
+    try (final CamundaClient client =
+            CamundaClient.newClientBuilder().jobWorkerSchedulingExecutor(executor).build();
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("type")
+                .handler((c, j) -> {})
+                .pollInterval(pollInterval)
+                .open()) {
+      // when - then
+      verify(executor)
+          .schedule(any(Runnable.class), eq(pollInterval.toMillis()), eq(TimeUnit.MILLISECONDS));
+    }
+  }
+
+  @Test
+  public void shouldNotThrowWhenNumExecutionThreadsIsZero() {
+    assertThatNoException()
+        .isThrownBy(() -> CamundaClient.newClientBuilder().numJobWorkerExecutionThreads(0).build());
+  }
+
+  @Test
+  public void shouldThrowWhenNumExecutionThreadsIsNegative() {
+    // when/then
+    assertThatThrownBy(
+            () -> CamundaClient.newClientBuilder().numJobWorkerExecutionThreads(-1).build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("http://localhost:9090");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.restAddress(restAddress);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {REST_ADDRESS})
+  public void shouldSetRestAddressPortFromPropertyWithClientBuilder(final String propertyName)
+      throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("http://localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, restAddress.toString());
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "localhost",
+        "localhost:9090",
+        "localhost:9090/context",
+        "/some-path/some-other-path",
+      })
+  public void shouldThrowExceptionWhenRestAddressIsNotAbsoluteFromSetterWithClientBuilder(
+      final String uri) throws URISyntaxException {
+    // given
+    final URI restAddress = new URI(uri);
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThatThrownBy(() -> builder.restAddress(restAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'restAddress' must be an absolute URI");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {REST_ADDRESS})
+  public void shouldThrowExceptionWhenRestAddressIsNotAbsoluteFromPropertyWithClientBuilder(
+      final String propertyName) throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, restAddress.toString());
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThatThrownBy(() -> builder.restAddress(restAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'restAddress' must be an absolute URI");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "localhost",
+        "localhost:9090",
+        "localhost:9090/context",
+        "/some-path/some-other-path",
+      })
+  public void shouldThrowExceptionWhenGrpcAddressIsNotAbsoluteFromSetterWithClientBuilder(
+      final String uri) throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI(uri);
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThatThrownBy(() -> builder.grpcAddress(grpcAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'grpcAddress' must be an absolute URI");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {GRPC_ADDRESS})
+  public void shouldThrowExceptionWhenGrpcAddressIsNotAbsoluteFromPropertyWithClientBuilder(
+      final String propertyName) throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, grpcAddress.toString());
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when/then
+    assertThatThrownBy(() -> builder.grpcAddress(grpcAddress))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("'grpcAddress' must be an absolute URI");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {REST_ADDRESS_VAR})
+  public void shouldSetRestAddressPortFromEnvVarWithClientBuilder(final String envName)
+      throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("http://localhost:9090");
+    Environment.system().put(envName, restAddress.toString());
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
+  }
+
+  @Test
+  public void shouldSetGrpcAddressFromSetterWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("https://localhost:9090");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.grpcAddress(grpcAddress);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {GRPC_ADDRESS})
+  public void shouldSetGrpcAddressFromPropertyWithClientBuilder(final String propertyName)
+      throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("https://localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, grpcAddress.toString());
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {GRPC_ADDRESS_VAR})
+  public void shouldSetGrpcAddressFromEnvVarWithClientBuilder(final String envName)
+      throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("https://localhost:9090");
+    Environment.system().put(envName, grpcAddress.toString());
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @Test
+  public void shouldSetPreferRestFromSetterWithClientBuilder() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.preferRestOverGrpc(false);
+
+    // then
+    try (final CamundaClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {PREFER_REST_OVER_GRPC})
+  public void shouldSetPreferRestFromPropertyWithClientBuilder(final String propertyName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, "false");
+
+    // when
+    builder.withProperties(properties);
+
+    // then
+    try (final CamundaClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {PREFER_REST_VAR})
+  public void shouldSetPreferRestFromEnvVarWithClientBuilder(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    Environment.system().put(envName, "false");
+
+    // when
+    builder.preferRestOverGrpc(true);
+
+    // then
+    try (final CamundaClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldUseDefaultTenantId() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId())
+        .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldSetDefaultTenantIdFromSetterWithClientBuilder() {
+    // given
+    final String overrideTenant = "override-tenant";
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.defaultTenantId(overrideTenant);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(overrideTenant);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_TENANT_ID})
+  public void shouldSetDefaultTenantIdFromPropertyWithClientBuilder(final String propertyName) {
+    // given
+    final String tenantId = "test-tenant";
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, tenantId);
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(tenantId);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_TENANT_ID_VAR})
+  public void shouldSetDefaultTenantIdFromEnvVarWithClientBuilder(final String envName) {
+    // given
+    final String overrideTenant = "override-tenant";
+    Environment.system().put(envName, overrideTenant);
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(overrideTenant);
+  }
+
+  @ParameterizedTest
+  @CsvSource({DEFAULT_TENANT_ID_VAR + "," + DEFAULT_TENANT_ID})
+  public void shouldSetFinalDefaultTenantIdFromEnvVarWithClientBuilder(
+      final String envName, final String propertyName) {
+    // given
+    final String propertyTenantId = "test-tenant";
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, propertyTenantId);
+    final String envVarTenantId = "override-tenant";
+    Environment.system().put(envName, envVarTenantId);
+    final String setterTenantId = "setter-tenant";
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties).defaultTenantId(setterTenantId);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(envVarTenantId);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_TENANT_ID})
+  public void shouldNotSetDefaultTenantIdFromPropertyWithCloudClientBuilder(
+      final String propertyName) {
+    // given
+    final String tenantId = "test-tenant";
+    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, tenantId);
+    builder.withProperties(properties);
+
+    // when
+    final CamundaClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build();
+
+    // then
+    // todo(#14106): verify that tenant id is set in the request
+    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo("");
+  }
+
+  @Test
+  public void shouldNotSetDefaultTenantIdFromSetterWithCloudClientBuilder() {
+    // given
+    final String tenantId = "test-tenant";
+    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+
+    // when
+    final CamundaClientCloudBuilderImpl builderWithTenantId =
+        (CamundaClientCloudBuilderImpl) builder.defaultTenantId(tenantId);
+
+    // then
+    // todo(#14106): verify that tenant id is set in the builder
+    assertThat(builderWithTenantId)
+        .describedAs(
+            "This method has no effect on the cloud client builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldUseDefaultJobWorkerTenantIds() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantIdsFromSetterWithClientBuilder() {
+    // given
+    final String overrideTenant = "override-tenant";
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.defaultJobWorkerTenantIds(Arrays.asList(overrideTenant));
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactly(overrideTenant);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_JOB_WORKER_TENANT_IDS})
+  public void shouldSetDefaultJobWorkerTenantIdsFromPropertyWithClientBuilder(
+      final String propertyName) {
+    // given
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, String.join(",", tenantIdList));
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactlyElementsOf(tenantIdList);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_JOB_WORKER_TENANT_IDS_VAR})
+  public void shouldSetDefaultJobWorkerTenantIdsFromEnvVarWithClientBuilder(final String envName) {
+    // given
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    Environment.system().put(envName, String.join(",", tenantIdList));
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactlyElementsOf(tenantIdList);
+  }
+
+  @ParameterizedTest
+  @CsvSource({DEFAULT_JOB_WORKER_TENANT_IDS_VAR + "," + DEFAULT_JOB_WORKER_TENANT_IDS})
+  public void shouldSetFinalDefaultJobWorkerTenantIdsFromEnvVarWithClientBuilder(
+      final String envName, final String propertyName) {
+    // given
+    final String propertyTenantId = "test-tenant";
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, propertyTenantId);
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    Environment.system().put(envName, String.join(",", tenantIdList));
+    final String setterTenantId = "setter-tenant";
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.defaultJobWorkerTenantIds(Arrays.asList(setterTenantId));
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactlyElementsOf(tenantIdList);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    DEFAULT_JOB_WORKER_TENANT_IDS_VAR + "," + DEFAULT_JOB_WORKER_TENANT_IDS,
+  })
+  public void shouldSetEmptyDefaultJobWorkerTenantIdsFromEmptyStringInEnvVarAndProperty(
+      final String envName, final String propertyName) {
+    // given — empty string in environment variable
+    Environment.system().put(envName, "");
+    final CamundaClientBuilderImpl builderEnv = new CamundaClientBuilderImpl();
+
+    // when
+    try (final CamundaClient clientEnv = builderEnv.build()) {
+      // then — environment variable path should return empty list
+      assertThat(builderEnv.getDefaultJobWorkerTenantIds()).isEmpty();
+    }
+
+    // given — empty string in property
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, "");
+    final CamundaClientBuilderImpl builderProp = new CamundaClientBuilderImpl();
+    builderProp.withProperties(properties);
+
+    // when
+    try (final CamundaClient clientProp = builderProp.build()) {
+      // then — property path should also return empty list
+      assertThat(builderProp.getDefaultJobWorkerTenantIds()).isEmpty();
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_JOB_WORKER_TENANT_IDS})
+  public void shouldNotSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder(
+      final String propertyName) {
+    // given
+    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+    final Properties properties = new Properties();
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    properties.setProperty(propertyName, String.join(",", tenantIdList));
+    builder.withProperties(properties);
+
+    // when
+    final CamundaClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build();
+
+    // then
+    // todo(#14106): verify that tenant ids are set in the request
+    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotSetDefaultJobWorkerTenantIdsFromSetterWithCloudClientBuilder() {
+    // given
+    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+
+    // when
+    final CamundaClientCloudBuilderImpl builderWithTenantId =
+        (CamundaClientCloudBuilderImpl) builder.defaultJobWorkerTenantIds(tenantIdList);
+
+    // then
+    // todo(#14106): verify that tenant id is set in the builder
+    assertThat(builderWithTenantId)
+        .describedAs(
+            "This method has no effect on the cloud client builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterWithCloudClientBuilder() {
+    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+
+    final CamundaClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED)
+            .build();
+
+    assertThat(client.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterWithClientBuilder() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED);
+    final CamundaClient clientBuilder = builder.build();
+
+    // then
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldDefaultToProvidedTenantFilter() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    final CamundaClient clientBuilder = builder.build();
+
+    // then
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.PROVIDED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromPropertyWithClientBuilder() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "ASSIGNED");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarWithClientBuilder() {
+    // given
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "ASSIGNED");
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarCaseInsensitive() {
+    // given
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "assigned");
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarWithWhitespace() {
+    // given
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, " ASSIGNED ");
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromPropertyCaseInsensitive() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "provided");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+  }
+
+  @Test
+  public void shouldSetFinalDefaultJobWorkerTenantFilterFromEnvVarWithClientBuilder() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "PROVIDED");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "ASSIGNED");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.defaultJobWorkerTenantFilter(TenantFilter.PROVIDED);
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldUseDefaultRetryPolicy() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useDefaultRetryPolicy(true);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useDefaultRetryPolicy()).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {USE_DEFAULT_RETRY_POLICY_VAR})
+  public void shouldOverrideDefaultRetryPolicyWithEnvVar(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useDefaultRetryPolicy(true);
+    Environment.system().put(envName, "false");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useDefaultRetryPolicy()).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {USE_DEFAULT_RETRY_POLICY})
+  public void shouldOverrideDefaultRetryPolicyWithProperty(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useDefaultRetryPolicy(true);
+    properties.setProperty(propertyName, "false");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useDefaultRetryPolicy()).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_REQUEST_TIMEOUT})
+  public void shouldSetTimeoutInMillis(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(propertyName, "1000");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(1));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DEFAULT_REQUEST_TIMEOUT_OFFSET})
+  public void shouldSetRequestTimeoutOffset(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(propertyName, "100");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofMillis(100));
+  }
+
+  @Test
+  public void shouldSetMaxHttpConnections() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.maxHttpConnections(1234);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {MAX_HTTP_CONNECTIONS})
+  public void shouldSetMaxHttpConnectionsWithProperty(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(propertyName, "1234");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS})
+  public void shouldSetMaxHttpConnectionsWithEnv(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    Environment.system().put(envName, "1234");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @Test
+  public void shouldUseClientSideLoadBalancing() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useClientSideLoadBalancing(true);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isTrue();
+  }
+
+  @Test
+  public void shouldNotUseClientSideLoadBalancingByDefault() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {USE_CLIENT_SIDE_LOAD_BALANCING_VAR})
+  public void shouldOverrideClientSideLoadBalancingWithEnvVar(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useClientSideLoadBalancing(false);
+    Environment.system().put(envName, "true");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {USE_CLIENT_SIDE_LOAD_BALANCING})
+  public void shouldOverrideClientSideLoadBalancingWithProperty(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useClientSideLoadBalancing(false);
+    properties.setProperty(propertyName, "true");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isTrue();
+  }
+
+  @Test
+  void shouldPreserveConfigurationViaWithConfiguration() {
+    // given — a configuration with every property set to a non-default value
+    final CredentialsProvider credentialsProvider = new NoopCredentialsProvider();
+    final JsonMapper jsonMapper = new CamundaObjectMapper();
+    final ClientInterceptor interceptor = mock(ClientInterceptor.class);
+    final AsyncExecChainHandler chainHandler = mock(AsyncExecChainHandler.class);
+    final ScheduledExecutorService schedulingExecutor =
+        Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService handlingExecutor = Executors.newSingleThreadExecutor();
+    final JobExceptionHandler exceptionHandler = mock(JobExceptionHandler.class);
+
+    try {
+      final CamundaClientConfiguration source =
+          new CamundaClientConfiguration() {
+            @Override
+            public URI getGrpcAddress() {
+              return URI.create("https://custom-grpc:12345");
+            }
+
+            @Override
+            public URI getRestAddress() {
+              return URI.create("https://custom-rest:54321");
+            }
+
+            @Override
+            public String getDefaultTenantId() {
+              return "custom-tenant";
+            }
+
+            @Override
+            public String getPhysicalTenantId() {
+              return "custom-physical-tenant";
+            }
+
+            @Override
+            public List<String> getDefaultJobWorkerTenantIds() {
+              return Arrays.asList("tenant-a", "tenant-b");
+            }
+
+            @Override
+            public TenantFilter getDefaultJobWorkerTenantFilter() {
+              return TenantFilter.ASSIGNED;
+            }
+
+            @Override
+            public int getNumJobWorkerExecutionThreads() {
+              return 7;
+            }
+
+            @Override
+            public int getDefaultJobWorkerMaxJobsActive() {
+              return 99;
+            }
+
+            @Override
+            public String getDefaultJobWorkerName() {
+              return "custom-worker";
+            }
+
+            @Override
+            public Duration getDefaultJobTimeout() {
+              return Duration.ofMinutes(42);
+            }
+
+            @Override
+            public Duration getDefaultJobPollInterval() {
+              return Duration.ofSeconds(3);
+            }
+
+            @Override
+            public Duration getDefaultMessageTimeToLive() {
+              return Duration.ofMinutes(30);
+            }
+
+            @Override
+            public Duration getDefaultRequestTimeout() {
+              return Duration.ofSeconds(77);
+            }
+
+            @Override
+            public Duration getDefaultRequestTimeoutOffset() {
+              return Duration.ofSeconds(5);
+            }
+
+            @Override
+            public String getCaCertificatePath() {
+              return "/custom/ca.pem";
+            }
+
+            @Override
+            public CredentialsProvider getCredentialsProvider() {
+              return credentialsProvider;
+            }
+
+            @Override
+            public Duration getKeepAlive() {
+              return Duration.ofSeconds(90);
+            }
+
+            @Override
+            public List<ClientInterceptor> getInterceptors() {
+              return Collections.singletonList(interceptor);
+            }
+
+            @Override
+            public List<AsyncExecChainHandler> getChainHandlers() {
+              return Collections.singletonList(chainHandler);
+            }
+
+            @Override
+            public JsonMapper getJsonMapper() {
+              return jsonMapper;
+            }
+
+            @Override
+            public String getOverrideAuthority() {
+              return "custom-authority";
+            }
+
+            @Override
+            public int getMaxMessageSize() {
+              return 10 * ONE_MB;
+            }
+
+            @Override
+            public int getMaxMetadataSize() {
+              return 32 * ONE_KB;
+            }
+
+            @Override
+            public ScheduledExecutorService jobWorkerExecutor() {
+              return schedulingExecutor;
+            }
+
+            @Override
+            public boolean ownsJobWorkerExecutor() {
+              return true;
+            }
+
+            @Override
+            public ScheduledExecutorService jobWorkerSchedulingExecutor() {
+              return schedulingExecutor;
+            }
+
+            @Override
+            public boolean ownsJobWorkerSchedulingExecutor() {
+              return true;
+            }
+
+            @Override
+            public ExecutorService jobHandlingExecutor() {
+              return handlingExecutor;
+            }
+
+            @Override
+            public boolean ownsJobHandlingExecutor() {
+              return true;
+            }
+
+            @Override
+            public boolean getDefaultJobWorkerStreamEnabled() {
+              return true;
+            }
+
+            @Override
+            public boolean useDefaultRetryPolicy() {
+              return true;
+            }
+
+            @Override
+            public JobExceptionHandler getDefaultJobWorkerExceptionHandler() {
+              return exceptionHandler;
+            }
+
+            @Override
+            public boolean preferRestOverGrpc() {
+              return false;
+            }
+
+            @Override
+            public int getMaxHttpConnections() {
+              return 42;
+            }
+
+            @Override
+            public boolean useClientSideLoadBalancing() {
+              return true;
+            }
+          };
+
+      // when
+      final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+      builder.applyEnvironmentVariableOverrides(false);
+      builder.withConfiguration(source);
+
+      // then — every property should match the source
+      assertThat(builder.getGrpcAddress()).isEqualTo(source.getGrpcAddress());
+      assertThat(builder.getRestAddress()).isEqualTo(source.getRestAddress());
+      assertThat(builder.getDefaultTenantId()).isEqualTo(source.getDefaultTenantId());
+      assertThat(builder.getPhysicalTenantId()).isEqualTo(source.getPhysicalTenantId());
+      assertThat(builder.getDefaultJobWorkerTenantIds())
+          .isEqualTo(source.getDefaultJobWorkerTenantIds());
+      assertThat(builder.getDefaultJobWorkerTenantFilter())
+          .isEqualTo(source.getDefaultJobWorkerTenantFilter());
+      assertThat(builder.getNumJobWorkerExecutionThreads())
+          .isEqualTo(source.getNumJobWorkerExecutionThreads());
+      assertThat(builder.getDefaultJobWorkerMaxJobsActive())
+          .isEqualTo(source.getDefaultJobWorkerMaxJobsActive());
+      assertThat(builder.getDefaultJobWorkerName()).isEqualTo(source.getDefaultJobWorkerName());
+      assertThat(builder.getDefaultJobTimeout()).isEqualTo(source.getDefaultJobTimeout());
+      assertThat(builder.getDefaultJobPollInterval()).isEqualTo(source.getDefaultJobPollInterval());
+      assertThat(builder.getDefaultMessageTimeToLive())
+          .isEqualTo(source.getDefaultMessageTimeToLive());
+      assertThat(builder.getDefaultRequestTimeout()).isEqualTo(source.getDefaultRequestTimeout());
+      assertThat(builder.getDefaultRequestTimeoutOffset())
+          .isEqualTo(source.getDefaultRequestTimeoutOffset());
+      assertThat(builder.getCaCertificatePath()).isEqualTo(source.getCaCertificatePath());
+      assertThat(builder.getKeepAlive()).isEqualTo(source.getKeepAlive());
+      assertThat(builder.getOverrideAuthority()).isEqualTo(source.getOverrideAuthority());
+      assertThat(builder.getMaxMessageSize()).isEqualTo(source.getMaxMessageSize());
+      assertThat(builder.getMaxMetadataSize()).isEqualTo(source.getMaxMetadataSize());
+      assertThat(builder.getMaxHttpConnections()).isEqualTo(source.getMaxHttpConnections());
+      assertThat(builder.preferRestOverGrpc()).isEqualTo(source.preferRestOverGrpc());
+      assertThat(builder.getDefaultJobWorkerStreamEnabled())
+          .isEqualTo(source.getDefaultJobWorkerStreamEnabled());
+      assertThat(builder.useDefaultRetryPolicy()).isEqualTo(source.useDefaultRetryPolicy());
+      assertThat(builder.useClientSideLoadBalancing())
+          .isEqualTo(source.useClientSideLoadBalancing());
+      // non-property fields
+      assertThat(builder.getCredentialsProvider()).isSameAs(credentialsProvider);
+      assertThat(builder.getJsonMapper()).isSameAs(jsonMapper);
+      assertThat(builder.getInterceptors()).containsExactly(interceptor);
+      assertThat(builder.getChainHandlers()).containsExactly(chainHandler);
+      assertThat(builder.jobWorkerSchedulingExecutor()).isSameAs(schedulingExecutor);
+      assertThat(builder.ownsJobWorkerSchedulingExecutor()).isTrue();
+      assertThat(builder.jobHandlingExecutor()).isSameAs(handlingExecutor);
+      assertThat(builder.ownsJobHandlingExecutor()).isTrue();
+      assertThat(builder.getDefaultJobWorkerExceptionHandler()).isSameAs(exceptionHandler);
+    } finally {
+      schedulingExecutor.shutdown();
+      handlingExecutor.shutdown();
+    }
+  }
+}

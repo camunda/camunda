@@ -1,0 +1,255 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.impl.record.value.deployment;
+
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
+
+public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
+
+  public static final String RESOURCES = "resources";
+  public static final String PROCESSES = "processesMetadata";
+
+  private final ArrayProperty<DeploymentResource> resourcesProp =
+      new ArrayProperty<>(RESOURCES, DeploymentResource::new);
+
+  private final ArrayProperty<ProcessMetadata> processesMetadataProp =
+      new ArrayProperty<>(PROCESSES, ProcessMetadata::new);
+
+  private final ArrayProperty<DecisionRecord> decisionMetadataProp =
+      new ArrayProperty<>("decisionsMetadata", DecisionRecord::new);
+
+  private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
+      new ArrayProperty<>("decisionRequirementsMetadata", DecisionRequirementsMetadataRecord::new);
+
+  private final ArrayProperty<FormMetadataRecord> formMetadataProp =
+      new ArrayProperty<>("formMetadata", FormMetadataRecord::new);
+
+  private final ArrayProperty<ResourceMetadataRecord> resourceMetadataProp =
+      new ArrayProperty<>("resourceMetadata", ResourceMetadataRecord::new);
+
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+
+  private final LongProperty reconstructionKeyProp = new LongProperty("reconstructionKey", -1);
+
+  public DeploymentRecord() {
+    super(8);
+    declareProperty(resourcesProp)
+        .declareProperty(processesMetadataProp)
+        .declareProperty(decisionRequirementsMetadataProp)
+        .declareProperty(decisionMetadataProp)
+        .declareProperty(formMetadataProp)
+        .declareProperty(resourceMetadataProp)
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
+  }
+
+  /**
+   * Create an empty DeploymentRecord that can be used as a starting point for reconstructing
+   * deployments: The tenantId must be set to "", otherwise its default is "<default>" which breaks
+   * /* searching iteratively in RocksDB
+   */
+  public static DeploymentRecord emptyCommandForReconstruction() {
+    return new DeploymentRecord().setTenantId("");
+  }
+
+  public ValueArray<ProcessMetadata> processesMetadata() {
+    return processesMetadataProp;
+  }
+
+  public ValueArray<DeploymentResource> resources() {
+    return resourcesProp;
+  }
+
+  public ValueArray<DecisionRecord> decisionsMetadata() {
+    return decisionMetadataProp;
+  }
+
+  public ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadata() {
+    return decisionRequirementsMetadataProp;
+  }
+
+  public ValueArray<FormMetadataRecord> formMetadata() {
+    return formMetadataProp;
+  }
+
+  public ValueArray<ResourceMetadataRecord> resourceMetadata() {
+    return resourceMetadataProp;
+  }
+
+  @Override
+  public List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
+    final List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
+        new ArrayList<>();
+
+    for (final DeploymentResource resource : resourcesProp) {
+      final DeploymentResource copiedResource = new DeploymentResource();
+      final var copyBuffer = BufferUtil.createCopy(resource);
+      copiedResource.wrap(copyBuffer);
+      resources.add(copiedResource);
+    }
+
+    return resources;
+  }
+
+  @Override
+  public List<ProcessMetadataValue> getProcessesMetadata() {
+    final List<ProcessMetadataValue> processesMeta = new ArrayList<>();
+
+    for (final ProcessMetadata processRecord : processesMetadataProp) {
+      final ProcessMetadata copiedProcessRecord = new ProcessMetadata();
+      final var copyBuffer = BufferUtil.createCopy(processRecord);
+      copiedProcessRecord.wrap(copyBuffer);
+      processesMeta.add(copiedProcessRecord);
+    }
+
+    return processesMeta;
+  }
+
+  @Override
+  public List<DecisionRecordValue> getDecisionsMetadata() {
+    final var metadataList = new ArrayList<DecisionRecordValue>();
+
+    for (final DecisionRecord metadata : decisionMetadataProp) {
+      final var copyRecord = new DecisionRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
+
+    return metadataList;
+  }
+
+  @Override
+  public List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata() {
+    final var metadataList = new ArrayList<DecisionRequirementsMetadataValue>();
+
+    for (final DecisionRequirementsMetadataRecord metadata : decisionRequirementsMetadataProp) {
+      final var copyRecord = new DecisionRequirementsMetadataRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
+
+    return metadataList;
+  }
+
+  @Override
+  public List<FormMetadataValue> getFormMetadata() {
+    final var metadataList = new ArrayList<FormMetadataValue>();
+
+    for (final FormMetadataRecord metadata : formMetadataProp) {
+      final var copyRecord = new FormMetadataRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
+
+    return metadataList;
+  }
+
+  @Override
+  public List<ResourceMetadataValue> getResourceMetadata() {
+    final var metadataList = new ArrayList<ResourceMetadataValue>();
+
+    for (final ResourceMetadataRecord metadata : resourceMetadataProp) {
+      final var copyRecord = new ResourceMetadataRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
+    return metadataList;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public DeploymentRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
+  /**
+   * @return the last key whose Deployment was reconstructed
+   */
+  @JsonIgnore
+  public long getReconstructionKey() {
+    return reconstructionKeyProp.getValue();
+  }
+
+  public DeploymentRecord setReconstructionKey(final long deploymentKey) {
+    reconstructionKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
+  public void resetResources() {
+    resourcesProp.reset();
+  }
+
+  @Override
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public DeploymentRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  /**
+   * Returns {@code true} if every metadata entry in this deployment record has its {@code
+   * duplicate} flag set, {@code false} if at least one entry is marked as new or changed. The
+   * duplicate flag is set during metadata creation by the individual resource transformers.
+   */
+  public boolean hasDuplicatesOnly() {
+    return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
+        && decisionRequirementsMetadata().stream()
+            .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
+        && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate)
+        && resourceMetadata().stream().allMatch(ResourceMetadataValue::isDuplicate);
+  }
+
+  /**
+   * Returns the resource name (filename) of the DRG that contains the given decision. Decisions
+   * don't carry their own resource name — they belong to a decision requirements graph (DRG), and
+   * the DRG carries the resource name.
+   *
+   * @param decision the decision metadata to look up
+   * @return the resource name of the parent DRG, or {@code null} if not found
+   */
+  @JsonIgnore
+  public String getResourceNameForDecision(final DecisionRecordValue decision) {
+    for (final var drg : decisionRequirementsMetadataProp) {
+      if (drg.getDecisionRequirementsKey() == decision.getDecisionRequirementsKey()) {
+        return drg.getResourceName();
+      }
+    }
+    return null;
+  }
+}

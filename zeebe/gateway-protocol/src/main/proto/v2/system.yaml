@@ -1,0 +1,327 @@
+## Endpoint definitions
+
+paths:
+  /system/usage-metrics:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - System
+      operationId: getUsageMetrics
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get usage metrics
+      description: Retrieve the usage metrics based on given criteria.
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          description: The start date for usage metrics, including this date. Value in ISO 8601 format.
+          schema:
+            type: string
+            format: date-time
+            example: "2025-06-07T13:14:15Z"
+        - name: endTime
+          in: query
+          required: true
+          description: The end date for usage metrics, including this date. Value in ISO 8601 format.
+          schema:
+            type: string
+            format: date-time
+            example: "2025-06-07T13:14:15Z"
+        - name: tenantId
+          in: query
+          required: false
+          description: Restrict results to a specific tenant ID. If not provided, results for all tenants are returned.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        - name: withTenants
+          in: query
+          required: false
+          description: Whether to return tenant metrics in addition to the total metrics or not. Default false.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: The usage metrics search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageMetricsResponse'
+              examples:
+                Response without tenants:
+                  value:
+                    processInstances: 5
+                    decisionInstances: 23
+                    activeTenants: 2
+                    assignees: 3
+                    tenants: {}
+                Response with tenants:
+                  value:
+                    processInstances: 5
+                    decisionInstances: 23
+                    activeTenants: 2
+                    assignees: 3
+                    tenants:
+                      tenant1:
+                        processInstances: 1
+                        decisionInstances: 2
+                        assignees: 1
+                      tenant2:
+                        processInstances: 4
+                        decisionInstances: 21
+                        assignees: 3
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+  /system/configuration:
+    get:
+      tags:
+        - System
+      operationId: getSystemConfiguration
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      x-eventually-consistent: false
+      summary: System configuration (alpha)
+      description: |
+        Returns the current system configuration. The response is an envelope
+        that groups settings by feature area.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      responses:
+        "200":
+          description: Current system configuration grouped by feature area.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemConfigurationResponse'
+              examples:
+                example-1:
+                  value:
+                    jobMetrics:
+                      enabled: true
+                      exportInterval: "PT5M"
+                      maxWorkerNameLength: 100
+                      maxJobTypeLength: 100
+                      maxTenantIdLength: 30
+                      maxUniqueKeys: 9500
+                    components:
+                      active: ["operate", "tasklist"]
+                    deployment:
+                      isMultiTenancyEnabled: false
+                      maxRequestSize: 4194304
+                    authentication:
+                      canLogout: true
+                      isLoginDelegated: false
+                    cloud:
+                      stage: "prod"
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.9"
+
+
+## Schema definitions
+
+components:
+  schemas:
+    UsageMetricsResponse:
+      required:
+        - tenants
+        - activeTenants
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/UsageMetricsResponseItem'
+      properties:
+        activeTenants:
+          description: The amount of active tenants.
+          type: integer
+          format: int64
+        tenants:
+          description: The usage metrics by tenants. Only available if request `withTenants` query parameter was `true`.
+          type: object
+          additionalProperties:
+            type: object
+            title: The tenant ID.
+            description: The usage metrics for the specific tenant.
+            allOf:
+              - $ref: '#/components/schemas/UsageMetricsResponseItem'
+
+    UsageMetricsResponseItem:
+      required:
+        - processInstances
+        - decisionInstances
+        - assignees
+      type: object
+      properties:
+        processInstances:
+          description: The amount of created root process instances.
+          type: integer
+          format: int64
+        decisionInstances:
+          description: The amount of executed decision instances.
+          type: integer
+          format: int64
+        assignees:
+          description: The amount of unique active task users.
+          type: integer
+          format: int64
+
+    SystemConfigurationResponse:
+      description: |
+        Envelope for all system configuration sections. Each property
+        represents a feature area.
+      type: object
+      required:
+        - jobMetrics
+        - components
+        - deployment
+        - authentication
+        - cloud
+      properties:
+        jobMetrics:
+          $ref: '#/components/schemas/JobMetricsConfigurationResponse'
+        components:
+          $ref: '#/components/schemas/ComponentsConfigurationResponse'
+        deployment:
+          $ref: '#/components/schemas/DeploymentConfigurationResponse'
+        authentication:
+          $ref: '#/components/schemas/AuthenticationConfigurationResponse'
+        cloud:
+          $ref: '#/components/schemas/CloudConfigurationResponse'
+      x-properties-added-in-version:
+        - propertyName: components
+          addedInVersion: "8.10"
+        - propertyName: deployment
+          addedInVersion: "8.10"
+        - propertyName: authentication
+          addedInVersion: "8.10"
+        - propertyName: cloud
+          addedInVersion: "8.10"
+
+    JobMetricsConfigurationResponse:
+      description: Configuration for job metrics collection and export.
+      type: object
+      required:
+        - enabled
+        - exportInterval
+        - maxWorkerNameLength
+        - maxJobTypeLength
+        - maxTenantIdLength
+        - maxUniqueKeys
+      properties:
+        enabled:
+          description: Whether job metrics export is enabled.
+          type: boolean
+          example: true
+        exportInterval:
+          description: The interval at which job metrics are exported, as an ISO 8601 duration.
+          type: string
+          example: "PT5M"
+        maxWorkerNameLength:
+          description: The maximum length of the worker name used in job metrics labels.
+          type: integer
+          format: int32
+          example: 100
+        maxJobTypeLength:
+          description: The maximum length of the job type used in job metrics labels.
+          type: integer
+          format: int32
+          example: 100
+        maxTenantIdLength:
+          description: The maximum length of the tenant ID used in job metrics labels.
+          type: integer
+          format: int32
+          example: 30
+        maxUniqueKeys:
+          description: The maximum number of unique metric keys tracked for job metrics.
+          type: integer
+          format: int32
+          example: 9500
+
+    ComponentsConfigurationResponse:
+      description: Configuration for active Camunda components in the deployment.
+      type: object
+      required:
+        - active
+      properties:
+        active:
+          description: List of webapp components whose UI is enabled in this deployment.
+          type: array
+          items:
+            $ref: '#/components/schemas/WebappComponent'
+          example: ["operate", "tasklist"]
+
+    DeploymentConfigurationResponse:
+      description: Configuration for deployment characteristics.
+      type: object
+      required:
+        - isMultiTenancyEnabled
+        - maxRequestSize
+      properties:
+        isMultiTenancyEnabled:
+          description: Whether multi-tenancy is enabled.
+          type: boolean
+          example: false
+        maxRequestSize:
+          description: The maximum HTTP request size in bytes.
+          type: integer
+          format: int64
+          example: 4194304
+
+    AuthenticationConfigurationResponse:
+      description: Configuration for authentication and session management.
+      type: object
+      required:
+        - canLogout
+        - isLoginDelegated
+      properties:
+        canLogout:
+          description: Whether users can log out (false for SaaS deployments).
+          type: boolean
+          example: true
+        isLoginDelegated:
+          description: Whether login is delegated to an external identity provider.
+          type: boolean
+          example: false
+
+    CloudConfigurationResponse:
+      description: Configuration for SaaS/cloud-specific settings.
+      type: object
+      required:
+        - stage
+      properties:
+        stage:
+          description: The cloud deployment stage.
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CloudStage'
+          example: "prod"
+
+    WebappComponent:
+      description: A Camunda webapp component name.
+      type: string
+      enum:
+        - operate
+        - tasklist
+        - admin
+
+    CloudStage:
+      description: The cloud deployment stage.
+      type: string
+      enum:
+        - dev
+        - int
+        - prod
+

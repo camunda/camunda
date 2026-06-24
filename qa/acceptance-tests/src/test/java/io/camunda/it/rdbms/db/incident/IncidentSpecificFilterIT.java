@@ -1,0 +1,110 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.rdbms.db.incident;
+
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
+import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
+import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
+import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
+import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.sort.IncidentSort;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
+
+@RdbmsDataJdbcTest
+@TestPropertySource(
+    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
+public class IncidentSpecificFilterIT {
+
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
+
+  private IncidentDbReader incidentDbReader;
+
+  private RdbmsWriters rdbmsWriters;
+
+  @BeforeEach
+  public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsWriters = rdbmsService.createWriter(0L);
+    incidentDbReader = rdbmsService.getIncidentReader();
+  }
+
+  @ParameterizedTest
+  @MethodSource("shouldFindIncidentWithSpecificFilterParameters")
+  public void shouldFindIncidentWithSpecificFilter(final IncidentFilter filter) {
+    createAndSaveRandomIncidents(
+        rdbmsWriters, b -> b.errorType(ErrorType.CONDITION_ERROR).state(IncidentState.RESOLVED));
+    createAndSaveIncident(
+        rdbmsWriters,
+        IncidentFixtures.createRandomized(
+            b ->
+                b.incidentKey(1337L)
+                    .processDefinitionKey(2000L)
+                    .processDefinitionId("sorting-test-process")
+                    .processInstanceKey(3000L)
+                    .flowNodeId("sorting-flow-node")
+                    .flowNodeInstanceKey(4000L)
+                    .errorType(ErrorType.JOB_NO_RETRIES)
+                    .errorMessage("error-message-5000")
+                    .errorMessageHash("error-message-5000".hashCode())
+                    .state(IncidentState.ACTIVE)
+                    .jobKey(6000L)
+                    .creationDate(CommonFixtures.NOW)
+                    .tenantId("sorting-tenant1")));
+
+    final var searchResult =
+        incidentDbReader.search(
+            new IncidentQuery(
+                filter, IncidentSort.of(b -> b), SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().incidentKey()).isEqualTo(1337L);
+  }
+
+  static List<IncidentFilter> shouldFindIncidentWithSpecificFilterParameters() {
+    return List.of(
+        new IncidentFilter.Builder().incidentKeys(1337L).build(),
+        new IncidentFilter.Builder().processDefinitionKeys(2000L).build(),
+        new IncidentFilter.Builder().processDefinitionIds("sorting-test-process").build(),
+        new IncidentFilter.Builder().processInstanceKeys(3000L).build(),
+        new IncidentFilter.Builder().flowNodeIds("sorting-flow-node").build(),
+        new IncidentFilter.Builder().flowNodeInstanceKeys(4000L).build(),
+        new IncidentFilter.Builder().errorTypes(ErrorType.JOB_NO_RETRIES.name()).build(),
+        new IncidentFilter.Builder().errorMessages("error-message-5000").build(),
+        new IncidentFilter.Builder().states(IncidentState.ACTIVE.name()).build(),
+        new IncidentFilter.Builder().jobKeys(6000L).build(),
+        new IncidentFilter.Builder()
+            .creationTimeOperations(
+                Operation.gt(NOW.minus(1, ChronoUnit.MILLIS)),
+                Operation.lt(NOW.plus(1, ChronoUnit.MILLIS)))
+            .build(),
+        new IncidentFilter.Builder().tenantIds("sorting-tenant1").build(),
+        new IncidentFilter.Builder().errorMessageHashes("error-message-5000".hashCode()).build());
+  }
+}

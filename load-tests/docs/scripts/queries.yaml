@@ -1,0 +1,161 @@
+# PromQL query definitions for key metrics of load tests.
+#
+# Each entry defines one metric scraped via the cluster's central Prometheus
+# at end-of-run. Adding a new metric = one block here.
+#
+# Template variables (substituted by the workflow before each query is sent):
+#   $NAMESPACE   the exact test namespace label, e.g. c8-bot-quicker-pr-1234.
+#                Callers that want to compare against a daily-on-main run
+#                must resolve to a concrete namespace first — regex globs are
+#                no longer supported.
+#   $DURATION_S  the run duration with `s` suffix, e.g. 600s
+#
+# Fields per entry:
+#   name              machine key — used as the JSON key in loadTestMetrics.sh
+#                     output and as the lookup key in the render step
+#   description       human label — used as the row label in the job summary
+#   query             PromQL string (multi-line OK; trailing whitespace is fine)
+#   higher_is_better  true when a larger value is better (throughput, instances);
+#                     false when a smaller value is better (backpressure)
+#   format            integer | float | percent  — controls summary cell format
+#   decimals          decimal places for float / percent (default 2)
+#   unit              optional display suffix appended to the formatted value
+
+queries:
+  - name: process-instances-started
+    description: Process instances submitted by the starter
+    query: |
+      sum(increase(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S]))
+    higher_is_better: true
+    format: integer
+
+  - name: process-instances-completed
+    description: Root process instances completed by the engine
+    query: |
+      sum(increase(zeebe_executed_instances_total{
+        action="completed",
+        type="ROOT_PROCESS_INSTANCE",
+        namespace="$NAMESPACE"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: integer
+
+  - name: throughput-per-second
+    description: Client Process Instance Started Rate (avg)
+    query: |
+      sum(rate(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: PI/s
+
+  - name: completed-pi-rate-per-second
+    description: Completion PI rate (avg)
+    query: |
+      sum(rate(zeebe_executed_instances_total{
+        action="completed",
+        type="ROOT_PROCESS_INSTANCE",
+        namespace="$NAMESPACE"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: PI/s
+
+  # Fraction of gateway-accepted submissions that completed end-to-end.
+  # Denominator picks up gRPC and/or HTTP submissions via PromQL `or`. The `!= 0`
+  # guard on the HTTP arm prevents zero-result series from contributing when the
+  # cluster is gRPC-only (or vice versa).
+  - name: completion-ratio
+    description: Completed process instances in %
+    query: |
+      100 * (
+        sum(rate(zeebe_executed_instances_total{
+          action="completed",
+          type="ROOT_PROCESS_INSTANCE",
+          namespace="$NAMESPACE"
+        }[$DURATION_S]))
+        /
+        (
+          sum(rate(grpc_server_processing_duration_seconds_count{
+            method="CreateProcessInstance",
+            namespace="$NAMESPACE"
+          }[$DURATION_S]))
+          or
+          sum(rate(http_server_requests_seconds_count{
+            method="POST",
+            uri="/v2/process-instances",
+            namespace="$NAMESPACE"
+          }[$DURATION_S]) != 0)
+        )
+      )
+    higher_is_better: true
+    format: percent
+    decimals: 2
+    unit: '%'
+
+  - name: backpressure-percent
+    description: Backpressure (rejected / received)
+    query: |
+      100 *
+      sum(increase(zeebe_dropped_request_count_total{namespace="$NAMESPACE"}[$DURATION_S]))
+      /
+      sum(increase(zeebe_received_request_count_total{namespace="$NAMESPACE"}[$DURATION_S]))
+    higher_is_better: false
+    format: percent
+    decimals: 2
+    unit: '%'
+
+  # Gateway-accepted submission rate. Denominator-side counterpart to the
+  # completion-ratio query: gRPC `or` HTTP, with `!= 0` to exclude empty series
+  # on a single-protocol cluster.
+  - name: starter-rate-per-second
+    description: Gateway-accepted submission rate (avg)
+    query: |
+      sum(rate(grpc_server_processing_duration_seconds_count{
+        namespace="$NAMESPACE",
+        method="CreateProcessInstance"
+      }[$DURATION_S]))
+      or
+      sum(rate(http_server_requests_seconds_count{
+        method="POST",
+        namespace="$NAMESPACE",
+        uri="/v2/process-instances"
+      }[$DURATION_S]) != 0)
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: PI/s
+
+  # P99 latency from starter submission to data being durably available. Lower
+  # is better. Baseline is a placeholder until we calibrate against clean main
+  # runs.
+  - name: data-availability
+    description: Data availability latency (P99)
+    query: |
+      histogram_quantile(0.99, sum by (le) (
+        rate(starter_data_availability_latency_seconds_bucket{
+          namespace="$NAMESPACE"
+        }[$DURATION_S])
+      ))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  # P99 of round-trip request-response time as observed by the starter:
+  # client send → gateway processing (incl. processing-queue + auth/authz) →
+  # response received. Threshold per spec: p99 < 5s.
+  - name: request-response-latency
+    description: Request-response latency (P99)
+    query: |
+      histogram_quantile(0.99, sum by (le) (
+        rate(starter_response_latency_seconds_bucket{
+          namespace="$NAMESPACE"
+        }[$DURATION_S])
+      ))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+

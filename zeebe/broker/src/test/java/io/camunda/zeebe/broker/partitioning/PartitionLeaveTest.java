@@ -1,0 +1,253 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.partitioning;
+
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
+import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
+import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
+import io.camunda.zeebe.broker.test.TestClusterFactory;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
+
+@Timeout(120)
+final class PartitionLeaveTest {
+  private static final MeterRegistry METER_REGISTRY = new SimpleMeterRegistry();
+
+  private void initializeClusterCfg(
+      final ClusterCfg clusterCfg,
+      final int nodeId,
+      final int partitionCount,
+      final String contactPoint) {
+    clusterCfg.setClusterSize(2);
+    clusterCfg.setInitialContactPoints(List.of(contactPoint));
+    clusterCfg.setNodeId(nodeId);
+    clusterCfg.setPartitionsCount(partitionCount);
+    clusterCfg.setReplicationFactor(2);
+  }
+
+  @Test
+  void canStillProcessAfterLeaving(@TempDir final Path tmp) {
+    // given -- two brokers replicating partition 1
+    final var broker0 =
+        buildBroker(
+            tmp.resolve("broker-0"),
+            brokerCfg -> {
+              initializeClusterCfg(brokerCfg.getCluster(), 0, 1, "empty");
+            });
+    final var initialContactPoint =
+        broker0.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
+
+    final var broker1 =
+        buildBroker(
+            tmp.resolve("broker-1"),
+            brokerCfg -> {
+              final var clusterCfg = brokerCfg.getCluster();
+              initializeClusterCfg(
+                  clusterCfg,
+                  1,
+                  1,
+                  initialContactPoint.getHostName() + ":" + initialContactPoint.getPort());
+            });
+    CompletableFuture.allOf(
+            CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
+        .join();
+
+    try (final var client =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
+            .grpcAddress(
+                URI.create(
+                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
+            .build()) {
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .isComplete(2, 1, 2));
+
+      // when -- one broker leaves partition 1
+      ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
+
+      // then -- request can still be processed because quorum is still available
+      client.newPublishMessageCommand().messageName("msg").correlationKey("key").send().join();
+    } finally {
+      broker0.close();
+      broker1.close();
+    }
+  }
+
+  @Test
+  void shouldRemoveDataAfterLeaving(@TempDir final Path tmp) {
+    // given -- two brokers replicating partition 1
+    final var broker0 =
+        buildBroker(
+            tmp.resolve("broker-0"),
+            brokerCfg -> {
+              final var clusterCfg = brokerCfg.getCluster();
+              initializeClusterCfg(clusterCfg, 0, 2, "empty");
+            });
+    final var initialContactPoint =
+        broker0.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
+
+    final var broker1 =
+        buildBroker(
+            tmp.resolve("broker-1"),
+            brokerCfg -> {
+              final var clusterCfg = brokerCfg.getCluster();
+              initializeClusterCfg(
+                  clusterCfg,
+                  1,
+                  2,
+                  initialContactPoint.getHostName() + ":" + initialContactPoint.getPort());
+            });
+    CompletableFuture.allOf(
+            CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
+        .join();
+
+    try (final var client =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
+            .grpcAddress(
+                URI.create(
+                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
+            .build()) {
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .isComplete(2, 2, 2));
+
+      // when -- one broker leaves partition 1
+      ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
+
+      // then -- partition-1's data is removed
+      assertThat(tmp.resolve("broker-1/data/default/partitions/1")).doesNotExist();
+      // then -- all other data is still there
+      assertThat(tmp.resolve("broker-1/data/default/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/2")).isNotEmptyDirectory();
+    } finally {
+      broker0.close();
+      broker1.close();
+    }
+  }
+
+  @Test
+  void shouldNotRemoveDataIfLeavingFails(@TempDir final Path tmp) {
+    // given -- two brokers replicating partition 1
+    final var broker0 =
+        buildBroker(
+            tmp.resolve("broker-0"),
+            brokerCfg -> {
+              final var clusterCfg = brokerCfg.getCluster();
+              initializeClusterCfg(clusterCfg, 0, 2, "empty");
+            });
+    final var initialContactPoint =
+        broker0.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
+
+    final var broker1 =
+        buildBroker(
+            tmp.resolve("broker-1"),
+            brokerCfg -> {
+              final var clusterCfg = brokerCfg.getCluster();
+              initializeClusterCfg(
+                  clusterCfg,
+                  1,
+                  2,
+                  initialContactPoint.getHostName() + ":" + initialContactPoint.getPort());
+            });
+    CompletableFuture.allOf(
+            CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
+        .join();
+
+    try (final var client =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(false)
+            .grpcAddress(
+                URI.create(
+                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
+            .build()) {
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .isComplete(2, 2, 2));
+
+      // when -- broker 0 stops and thus broker 1 fails to leave
+      broker0.close();
+      Assertions.assertThatThrownBy(
+          () ->
+              ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager())
+                  .leave(1)
+                  .join());
+
+      // then -- all data remains
+      assertThat(tmp.resolve("broker-1/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/2")).isNotEmptyDirectory();
+    } finally {
+      broker0.close();
+      broker1.close();
+    }
+  }
+
+  private static Broker buildBroker(final Path tmp, final Consumer<BrokerCfg> configure) {
+    final var brokerCfg = new BrokerCfg();
+    assignSocketAddresses(brokerCfg);
+    configure.accept(brokerCfg);
+    brokerCfg.init(tmp.toAbsolutePath().toString());
+    final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, METER_REGISTRY);
+    final var brokerClient =
+        TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
+    final var systemContext =
+        new SystemContext(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
+            brokerCfg,
+            null,
+            actorScheduler,
+            atomixCluster,
+            brokerClient,
+            new SimpleMeterRegistry(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
+            null,
+            null,
+            null,
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+            null,
+            null,
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            PhysicalTenantIds.DEFAULT);
+
+    return new Broker(systemContext, new SpringBrokerBridge(), List.of());
+  }
+}

@@ -1,0 +1,7 @@
+zeebe:
+  broker:
+    exporting:
+      distributionInterval: 5s
+    exporters:
+      elasticsearch:
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter

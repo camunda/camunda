@@ -1,0 +1,108 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/type';
+@use '@carbon/layout';
+
+$spacing: var(--cds-spacing-05);
+$default-border-width: 1px;
+$selected-border-width: 4px;
+$focused-border-width: 2px;
+
+.label {
+	@include type.type-style('label-01');
+	color: var(--cds-text-secondary);
+}
+
+.name {
+	@include type.type-style('body-short-02');
+	color: var(--cds-text-primary);
+}
+
+.flex {
+	min-height: layout.to-rem(20px);
+	display: flex;
+
+	&.flexRow {
+		flex-direction: row;
+		justify-content: space-between;
+	}
+
+	&.flexColumn {
+		flex-direction: column;
+		justify-content: center;
+	}
+
+	&.alignItemsEnd {
+		align-items: flex-end;
+	}
+}
+
+.taskLink {
+	all: unset;
+	height: 100%;
+	display: flex;
+	align-items: stretch;
+	box-sizing: border-box;
+}
+
+.fullWidthAndHeight {
+	width: 100%;
+	height: 100%;
+}
+
+.container {
+	cursor: pointer;
+
+	&.active .taskLink {
+		background-color: var(--cds-layer-selected);
+		border-left: $selected-border-width solid var(--cds-border-interactive);
+		padding: $spacing $spacing $spacing calc(#{$spacing} - #{$selected-border-width});
+	}
+
+	&.active + & .taskLink:not(:focus) {
+		border-top: none;
+		padding: $spacing;
+	}
+
+	&:not(.active) {
+		&:hover .taskLink {
+			background-color: var(--cds-layer-hover);
+		}
+
+		&:last-child .taskLink {
+			border-bottom: $default-border-width solid var(--cds-border-subtle-selected);
+			padding: calc(#{$spacing} - #{$default-border-width}) $spacing;
+		}
+
+		& .taskLink {
+			border-top: $default-border-width solid var(--cds-border-subtle-selected);
+			padding: calc(#{$spacing} - #{$default-border-width}) $spacing $spacing $spacing;
+		}
+	}
+
+	& .taskLink:focus {
+		border: none;
+		padding: $spacing;
+		outline: $focused-border-width solid var(--cds-focus);
+		outline-offset: -$focused-border-width;
+	}
+
+	&:last-child .taskLink:focus {
+		padding: $spacing;
+	}
+
+	&:first-child .taskLink {
+		border-top-color: transparent;
+	}
+}
+
+.inlineIcon {
+	vertical-align: text-bottom;
+	margin-right: var(--cds-spacing-01);
+}

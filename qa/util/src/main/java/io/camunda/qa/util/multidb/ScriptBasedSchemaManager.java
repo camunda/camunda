@@ -1,0 +1,105 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.qa.util.multidb;
+
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.db.rdbms.LiquibaseScriptGenerator;
+import io.camunda.db.rdbms.LiquibaseScriptGenerator.DatabaseVersion;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
+import liquibase.exception.LiquibaseException;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Value;
+
+/**
+ * Bypasses Liquibase by pre-generating DDL SQL once per JVM (cached by databaseId) and executing it
+ * directly. Significantly faster than Liquibase for databases with expensive precondition checks
+ * (e.g. Oracle).
+ */
+public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, InitializingBean {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ScriptBasedSchemaManager.class);
+
+  private static final ConcurrentHashMap<String, String> SCRIPT_CACHE = new ConcurrentHashMap<>();
+
+  private static final String CHANGELOG = "db/changelog/rdbms-exporter/changelog-master.xml";
+  private static final String PREFIX_PLACEHOLDER = "__PREFIX__";
+
+  private final DataSource dataSource;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final String prefix;
+
+  private volatile boolean initialized = false;
+
+  public ScriptBasedSchemaManager(
+      final RdbmsDataSources rdbmsDataSources,
+      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
+    LOGGER.info(
+        "Using 'default' physical tenant DataSource and VendorDatabaseProperties for ScriptBasedSchemaManager");
+    dataSource = rdbmsDataSources.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    vendorDatabaseProperties =
+        rdbmsDataSources.vendorPropertiesFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    this.prefix = prefix;
+  }
+
+  @Override
+  public void afterPropertiesSet() throws Exception {
+    final String databaseId = vendorDatabaseProperties.databaseId();
+    final String template =
+        SCRIPT_CACHE.computeIfAbsent(
+            databaseId,
+            id -> {
+              final DatabaseVersion dbVersion =
+                  LiquibaseScriptGenerator.getDatabaseVersion(databaseId);
+              try {
+                return LiquibaseScriptGenerator.generateSqlScript(
+                    dbVersion,
+                    CHANGELOG,
+                    PREFIX_PLACEHOLDER,
+                    vendorDatabaseProperties.userCharColumnSize(),
+                    vendorDatabaseProperties.errorMessageSize(),
+                    vendorDatabaseProperties.treePathSize());
+              } catch (final LiquibaseException e) {
+                throw new IllegalStateException(
+                    "Failed to generate SQL script for database '" + id + "'", e);
+              }
+            });
+
+    final String sql =
+        template
+            .replace(PREFIX_PLACEHOLDER, StringUtils.trimToEmpty(prefix))
+            .replaceAll("--[^\n]*(\n|$)", ""); // strip single-line comments before splitting
+
+    try (final var conn = dataSource.getConnection()) {
+      for (final String stmt : sql.split(";")) {
+        final String trimmed = stmt.strip();
+        if (!trimmed.isEmpty()) {
+          LOGGER.info(
+              "Executing DDL statement: {}...",
+              trimmed.substring(0, Math.min(trimmed.length(), 50)));
+          conn.createStatement().execute(trimmed);
+          conn.commit();
+        }
+      }
+    }
+
+    initialized = true;
+  }
+
+  @Override
+  public boolean isInitialized(final String physicalTenantId) {
+    // ScriptBasedSchemaManager is a test fixture that runs a single migration for the default
+    // physical tenant; #51921 will plumb real per-tenant routing when needed.
+    return initialized;
+  }
+}

@@ -1,0 +1,1060 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.tasks.archiver;
+
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
+import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
+import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
+import io.camunda.exporter.tasks.util.OpensearchRepository;
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.Timer;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import javax.annotation.WillCloseWhenClosed;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.Conflicts;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Slices;
+import org.opensearch.client.opensearch._types.SlicesCalculation;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.CountRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.opensearch.generic.Response;
+import org.slf4j.Logger;
+
+public final class OpenSearchArchiverRepository extends OpensearchRepository
+    implements ArchiverRepository {
+  private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
+  private static final Slices AUTO_SLICES =
+      Slices.builder().calculation(SlicesCalculation.Auto).build();
+
+  private final int partitionId;
+  private final HistoryConfiguration config;
+  private final IndexTemplateDescriptor listViewTemplateDescriptor;
+  private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
+  private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
+  private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+  private final IndexTemplateDescriptor jobMetricsBatchTemplateDescriptor;
+  private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
+  private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
+  private final CamundaExporterMetrics metrics;
+  private final OpenSearchGenericClient genericClient;
+  private final Cache<String, String> lifeCyclePolicyApplied;
+
+  public OpenSearchArchiverRepository(
+      final int partitionId,
+      final HistoryConfiguration config,
+      final ExporterResourceProvider resourceProvider,
+      @WillCloseWhenClosed final OpenSearchAsyncClient client,
+      final OpenSearchGenericClient genericClient,
+      final Executor executor,
+      final CamundaExporterMetrics metrics,
+      final Logger logger) {
+    super(client, executor, logger);
+    this.partitionId = partitionId;
+    this.config = config;
+    allTemplatesDescriptors = resourceProvider.getIndexTemplateDescriptors();
+    listViewTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    batchOperationTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    usageMetricTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
+    usageMetricTUTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+    jobMetricsBatchTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class);
+    decisionInstanceTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
+    this.metrics = metrics;
+    this.genericClient = genericClient;
+    lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
+  }
+
+  private static Cache<String, String> buildLifeCycleAppliedCache(
+      final RetentionConfiguration config, final Logger logger) {
+    return Caffeine.newBuilder()
+        .maximumSize(200)
+        .expireAfter(
+            Expiry.creating(
+                (k, v) -> {
+                  if (v == null) {
+                    return Duration.ZERO;
+                  }
+                  return DateOfArchivedDocumentsUtil.getRetentionPolicyMinimumAge(
+                          config, v.toString())
+                      .orElseGet(
+                          () -> {
+                            logger.debug(
+                                "Unknown retention policy '{}', using default cache expiration", v);
+                            return Duration.ofHours(1);
+                          });
+                }))
+        .build();
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
+      final int size) {
+    final var request = createFinishedProcessInstancesSearchRequest(size);
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(request, ProcessInstanceForListViewEntity.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            (response) -> createProcessInstanceBatch(response, ListViewTemplate.END_DATE),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch() {
+    final var searchRequest = createFinishedBatchOperationsSearchRequest();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            (response) ->
+                createBasicBatch(
+                    response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTUTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTUTemplate.END_TIME,
+            UsageMetricTUTemplate.PARTITION_ID);
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            response ->
+                createBasicBatch(
+                    response,
+                    UsageMetricTUTemplate.END_TIME,
+                    usageMetricTUTemplateDescriptor,
+                    config.getUsageMetricsRolloverInterval()),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTemplate.END_TIME,
+            UsageMetricTemplate.PARTITION_ID);
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            response ->
+                createBasicBatch(
+                    response,
+                    UsageMetricTemplate.END_TIME,
+                    usageMetricTemplateDescriptor,
+                    config.getUsageMetricsRolloverInterval()),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+    final var searchRequest = createJobBatchMetricsSearchRequest();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            response ->
+                createBasicBatch(
+                    response, JobMetricsBatchTemplate.END_TIME, jobMetricsBatchTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
+    final var searchRequest = createStandaloneDecisionSearchRequest();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            response ->
+                createBasicBatch(
+                    response,
+                    DecisionInstanceTemplate.EVALUATION_DATE,
+                    decisionInstanceTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+    final var retention = config.getRetention();
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var matchingIndexTemplate =
+        allTemplatesDescriptors.stream()
+            .filter(
+                index -> destinationIndexName.matches(index.getAllVersionsIndexNameRegexPattern()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No matching index template found for " + destinationIndexName));
+    final var policyName = getRetentionPolicyName(matchingIndexTemplate.getIndexName(), retention);
+    if (policyName.equals(lifeCyclePolicyApplied.getIfPresent(destinationIndexName))) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    return applyPolicyToIndices(policyName, destinationIndexName)
+        .thenApply(
+            applied -> {
+              // Only cache when the policy was actually applied to a real index. If the dest
+              // didn't exist yet (applied=false), we deliberately skip the cache update so a
+              // later call (after the index is created by reindex) re-applies the policy.
+              if (Boolean.TRUE.equals(applied)) {
+                lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+              }
+              return null;
+            });
+  }
+
+  @Override
+  public CompletableFuture<Void> setLifeCycleToAllIndexes() {
+    final var retention = config.getRetention();
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var requests =
+        allTemplatesDescriptors.stream()
+            .map(
+                template ->
+                    applyPolicyToIndices(
+                        getRetentionPolicyName(template.getIndexName(), retention),
+                        buildHistoricalIndicesPattern(template)))
+            .toList();
+
+    return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]));
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteDocuments(
+      final String sourceIndexName, final Map<String, List<String>> keysByField) {
+    return deleteDocuments(sourceIndexName, keysByField, Map.of());
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteDocuments(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters) {
+    if (keysByField.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var request =
+        new DeleteByQueryRequest.Builder()
+            .index(sourceIndexName)
+            .slices(AUTO_SLICES)
+            .conflicts(Conflicts.Proceed)
+            .query(buildFilterQuery(keysByField, filters))
+            .build();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.deleteByQuery(request))
+        .whenCompleteAsync(
+            (response, error) ->
+                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
+            executor)
+        .thenApplyAsync(DeleteByQueryResponse::total, executor)
+        .thenApplyAsync(ok -> null, executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField) {
+    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of());
+  }
+
+  @Override
+  public CompletableFuture<Void> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters) {
+    if (keysByField.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var request =
+        new ReindexRequest.Builder()
+            .source(src -> src.index(sourceIndexName).query(buildFilterQuery(keysByField, filters)))
+            .dest(dest -> dest.index(destinationIndexName))
+            .conflicts(Conflicts.Proceed)
+            .scroll(REINDEX_SCROLL_TIMEOUT)
+            .slices(AUTO_SLICES)
+            .build();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.reindex(request))
+        .whenCompleteAsync(
+            (response, error) ->
+                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
+            executor)
+        .thenApplyAsync(ignored -> null, executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> moveDocumentsById(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
+
+    final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            sourceIndexName,
+            destinationIndexName,
+            (searchAfter, size) ->
+                getArchiveDocIdsBatch(
+                    sourceIndexName,
+                    keysByField,
+                    inclusionFilters,
+                    exclusionFilters,
+                    searchAfter,
+                    size),
+            this::reindexDocumentsById,
+            this::deleteDocumentsById,
+            executor,
+            metrics,
+            logger);
+
+    final var timer = Timer.start();
+    return AsyncRepeatUntil.repeatUntil(
+            taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
+        .thenComposeAsync(
+            ignored -> {
+              // always trigger set life cycle, which checks whether the policy was previously
+              // applied and, if so, skips it. If nothing moved and the destination index is
+              // not present, we already set .allowNoIndices(true), which prevents it from erroring.
+              // However, if nothing moved because we previously moved them, but the call errored
+              // at the put policy stage, this will reapply the policy and ensure no index is
+              // left without the ILM policy.
+              return setIndexLifeCycle(destinationIndexName);
+            },
+            executor)
+        .thenApply(
+            ignored -> {
+              logger.trace(
+                  "Successfully completed archiving {} to the {} index, moved {} docs in {}s",
+                  sourceIndexName,
+                  destinationIndexName,
+                  taskSupplier.getTotalArchived(),
+                  taskSupplier.getTotalTimeTakenMs() / 1000);
+
+              metrics.measureArchiveIndexDuration(
+                  sourceIndexName, timer, taskSupplier.getTotalArchived());
+              return ignored;
+            })
+        .whenComplete(
+            (val, err) -> {
+              if (err != null) {
+                logger.warn(
+                    "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
+                    sourceIndexName,
+                    destinationIndexName,
+                    taskSupplier.getTotalArchived(),
+                    taskSupplier.getTotalTimeTakenMs() / 1000,
+                    err.getMessage(),
+                    err);
+              }
+            });
+  }
+
+  @Override
+  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
+    final var countRequest =
+        CountRequest.of(
+            cr ->
+                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
+                    .query(
+                        finishedProcessInstancesQuery(
+                            config.getArchivingTimePoint(), partitionId)));
+
+    try {
+      return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  @VisibleForTesting
+  void invalidateLifeCycleCache(final String indexName) {
+    lifeCyclePolicyApplied.invalidate(indexName);
+  }
+
+  @VisibleForTesting
+  CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final List<FieldValue> searchAfter,
+      final int size) {
+    final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
+    final Builder requestBuilder =
+        new Builder()
+            .trackTotalHits(t -> t.enabled(false))
+            .index(sourceIndexName)
+            .requestCache(false)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(query)
+            .size(size)
+            .source(s -> s.fetch(false))
+            .sort(sort -> sort.field(field -> field.field("id").order(SortOrder.Asc)));
+
+    if (searchAfter != null && !searchAfter.isEmpty()) {
+      requestBuilder.searchAfter(searchAfter);
+    }
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(requestBuilder.build(), Object.class))
+        .whenCompleteAsync(
+            (response, error) -> metrics.measureArchiveDocIdsSearchDuration(timer), executor)
+        .thenApply(
+            response -> {
+              final List<Hit<Object>> hits = response.hits().hits();
+              if (hits.isEmpty()) {
+                return ArchiveDocIdsBatch.empty();
+              }
+              return ArchiveDocIdsBatch.from(
+                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.getLast().sort());
+            });
+  }
+
+  @VisibleForTesting
+  CompletableFuture<Long> reindexDocumentsById(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
+      return CompletableFuture.completedFuture(0L);
+    }
+
+    final var docIds = docs.stream().map(IdWithRouting::id).toList();
+    final var query = QueryBuilders.bool().filter(b -> b.ids(id -> id.values(docIds))).build();
+    final var request =
+        new ReindexRequest.Builder()
+            .source(src -> src.index(sourceIndexName).query(query.toQuery()))
+            .dest(dest -> dest.index(destinationIndexName))
+            .conflicts(Conflicts.Proceed)
+            .scroll(REINDEX_SCROLL_TIMEOUT)
+            .slices(AUTO_SLICES)
+            .build();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.reindex(request))
+        .thenApplyAsync(
+            response -> {
+              validateReindexResponse(sourceIndexName, response);
+              return getReindexedDocumentsCount(response);
+            },
+            executor)
+        .whenCompleteAsync(
+            (total, error) -> metrics.measureArchiverReindex(total, timer), executor);
+  }
+
+  private static void validateReindexResponse(
+      final String sourceIndex, final ReindexResponse response) {
+    if (Boolean.TRUE.equals(response.timedOut())) {
+      throw new IllegalStateException("Reindex request from %s timed out".formatted(sourceIndex));
+    }
+    final var failures = response.failures();
+    if (!failures.isEmpty()) {
+      throw new IllegalStateException(
+          "Reindex request from %s index completed with %d failures"
+              .formatted(sourceIndex, failures.size()));
+    }
+  }
+
+  private static long getReindexedDocumentsCount(final ReindexResponse response) {
+    return Math.addExact(
+        Objects.requireNonNullElse(response.created(), 0L),
+        Objects.requireNonNullElse(response.updated(), 0L));
+  }
+
+  @VisibleForTesting
+  CompletableFuture<Long> deleteDocumentsById(
+      final String sourceIndexName, final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
+      return CompletableFuture.completedFuture(0L);
+    }
+
+    final var operations =
+        docs.stream()
+            .map(d -> BulkOperation.of(b -> b.delete(del -> del.id(d.id()).routing(d.routing()))))
+            .toList();
+
+    final BulkRequest request =
+        BulkRequest.of(b -> b.index(sourceIndexName).operations(operations));
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.bulk(request))
+        .thenApplyAsync(response -> getDeletedDocCount(sourceIndexName, response), executor)
+        .whenCompleteAsync(
+            (idsSize, error) -> metrics.measureArchiverDelete(idsSize, timer), executor);
+  }
+
+  private long getDeletedDocCount(final String sourceIndex, final BulkResponse response) {
+    if (response.errors()) {
+      final long errorCount =
+          response.items().stream().filter(item -> item.error() != null).count();
+      throw new IllegalStateException(
+          "Deleting reindexed documents from %s index completed with %d failures"
+              .formatted(sourceIndex, errorCount));
+    }
+
+    // only count DELETE bulk operation where result was `deleted`
+    return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
+  }
+
+  private SearchRequest createUsageMetricSearchRequest(
+      final String indexName, final String endTimeField, final String partitionIdField) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(endTimeField)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build()
+            .toQuery();
+
+    final var boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+
+    if (partitionId == START_PARTITION_ID) {
+      // Include -1 for migrated documents without partitionId
+      final List<FieldValue> partitionIds = List.of(FieldValue.of(-1), FieldValue.of(partitionId));
+      final var termsQ =
+          QueryBuilders.terms()
+              .field(partitionIdField)
+              .terms(t -> t.value(partitionIds))
+              .build()
+              .toQuery();
+      boolBuilder.must(termsQ);
+    } else {
+      final var termQ =
+          QueryBuilders.term()
+              .field(partitionIdField)
+              .value(FieldValue.of(partitionId))
+              .build()
+              .toQuery();
+      boolBuilder.must(termQ);
+    }
+
+    return createSearchRequest(indexName, boolBuilder.build().toQuery(), endTimeField);
+  }
+
+  private Query finishedProcessInstancesQuery(
+      final String archivingTimePoint, final int partitionId) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(ListViewTemplate.END_DATE)
+            .lte(JsonData.of(archivingTimePoint))
+            .build();
+    final var isProcessInstanceQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.JOIN_RELATION)
+            .value(FieldValue.of(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
+            .build();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build();
+
+    final var retentionMode = config.getProcessInstanceRetentionMode();
+    final Query hierarchyQ;
+
+    if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY
+        || retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
+      final var rootExists =
+          QueryBuilders.exists()
+              .field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)
+              .build()
+              .toQuery();
+      final var parentExists =
+          QueryBuilders.exists()
+              .field(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY)
+              .build()
+              .toQuery();
+
+      // (parentPI IS NULL AND rootPI IS NOT NULL) (New hierarchy filter)
+      final var newHierarchy =
+          QueryBuilders.bool().mustNot(parentExists).must(rootExists).build().toQuery();
+
+      if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY) {
+        // (rootPI IS NULL) (Legacy)
+        final var legacy = QueryBuilders.bool().mustNot(rootExists).build().toQuery();
+        hierarchyQ =
+            QueryBuilders.bool()
+                .should(newHierarchy)
+                .should(legacy)
+                .minimumShouldMatch("1")
+                .build()
+                .toQuery();
+      } else {
+        // when IGNORE_LEGACY, only consider new hierarchy filter
+        hierarchyQ = newHierarchy;
+      }
+    } else {
+      hierarchyQ = null;
+    }
+
+    final var builder =
+        QueryBuilders.bool()
+            .filter(endDateQ.toQuery(), isProcessInstanceQ.toQuery(), partitionQ.toQuery());
+
+    if (hierarchyQ != null) {
+      builder.filter(hierarchyQ);
+    }
+
+    return builder.build().toQuery();
+  }
+
+  private CompletableFuture<List<String>> fetchIndexMatchingIndexes(final String indexPattern)
+      throws IOException {
+    return client
+        .indices()
+        .get(b -> b.index(indexPattern))
+        .thenApply(r -> new ArrayList<>(r.result().keySet()));
+  }
+
+  private CompletableFuture<Boolean> applyPolicyToIndices(
+      final String policyName, final String indexNamePattern) {
+
+    // Guard against OS ISM endpoints silently succeeding for non-existent indices. That silent
+    // success would otherwise let the caller mark its cache as "applied" for an index that
+    // hasn't been created yet, and a later real application against the freshly-created index
+    // would be skipped. We only do this check for single-index names — wildcard/multi-index
+    // patterns (used by setLifeCycleToAllIndexes) are not cached and exists semantics with
+    // negation / wildcards are not portable enough to gate on.
+    if (isPattern(indexNamePattern)) {
+      return doApplyIsmPolicy(policyName, indexNamePattern).thenApply(ignored -> true);
+    }
+
+    return sendRequestAsync(() -> client.indices().exists(b -> b.index(indexNamePattern)))
+        .thenComposeAsync(
+            exists -> {
+              if (!exists.value()) {
+                logger.debug(
+                    "Skipping policy '{}' for '{}': index does not exist yet",
+                    policyName,
+                    indexNamePattern);
+                return CompletableFuture.completedFuture(false);
+              }
+              return doApplyIsmPolicy(policyName, indexNamePattern).thenApply(ignored -> true);
+            },
+            executor);
+  }
+
+  private CompletableFuture<Void> doApplyIsmPolicy(
+      final String policyName, final String indexNamePattern) {
+    logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
+    final var jsonpMapper = genericClient._transport().jsonpMapper();
+    return sendRequestAsync(
+            () -> {
+              final var addRequest =
+                  Requests.builder()
+                      .method("POST")
+                      .endpoint("/_plugins/_ism/add/" + indexNamePattern)
+                      .json(new AddPolicyRequestBody(policyName), jsonpMapper)
+                      .build();
+              return genericClient.executeAsync(addRequest);
+            })
+        .thenComposeAsync(
+            resp -> checkIsmResponse(resp, "add", policyName, indexNamePattern), executor)
+        .thenComposeAsync(
+            ignored ->
+                sendRequestAsync(
+                    () -> {
+                      final var changeRequest =
+                          Requests.builder()
+                              .method("POST")
+                              .endpoint("/_plugins/_ism/change_policy/" + indexNamePattern)
+                              .json(new AddPolicyRequestBody(policyName), jsonpMapper)
+                              .build();
+                      return genericClient.executeAsync(changeRequest);
+                    }),
+            executor)
+        .thenComposeAsync(
+            resp -> checkIsmResponse(resp, "change_policy", policyName, indexNamePattern),
+            executor);
+  }
+
+  private static boolean isPattern(final String indexNameOrPattern) {
+    return indexNameOrPattern.indexOf('*') >= 0 || indexNameOrPattern.indexOf(',') >= 0;
+  }
+
+  private CompletableFuture<Void> checkIsmResponse(
+      final Response response,
+      final String operation,
+      final String policyName,
+      final String indexNamePattern) {
+    final var status = response.getStatus();
+
+    // change_policy returns 400 or 404 when no managed indices match the resolved pattern —
+    // both are harmless since there are simply no managed indices to update.
+    if ((status == 400 || status == 404) && "change_policy".equals(operation)) {
+      logger.debug(
+          "No managed indices to update for pattern '{}' (change_policy '{}' returned {})",
+          indexNamePattern,
+          policyName,
+          status);
+      return CompletableFuture.completedFuture(null);
+    }
+
+    if (status >= 400) {
+      return CompletableFuture.failedFuture(
+          new ExporterException(
+              "Failed to "
+                  + operation
+                  + " index lifecycle policy '"
+                  + policyName
+                  + "' for index: "
+                  + indexNamePattern
+                  + ".\nStatus: "
+                  + status
+                  + ", Reason: "
+                  + response.getReason()));
+    }
+    return CompletableFuture.completedFuture(null);
+  }
+
+  private SearchRequest createFinishedProcessInstancesSearchRequest(final int size) {
+    return createSearchRequest(
+        listViewTemplateDescriptor.getFullQualifiedName(),
+        finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        size,
+        ListViewTemplate.END_DATE,
+        ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
+  }
+
+  private SearchRequest createFinishedBatchOperationsSearchRequest() {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(BatchOperationTemplate.END_DATE)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
+
+    return createSearchRequest(
+        batchOperationTemplateDescriptor.getFullQualifiedName(),
+        endDateQ.toQuery(),
+        BatchOperationTemplate.END_DATE);
+  }
+
+  private SearchRequest createJobBatchMetricsSearchRequest() {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(JobMetricsBatchTemplate.END_TIME)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build()
+            .toQuery();
+
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(JobMetricsBatchTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build()
+            .toQuery();
+
+    final var boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+    boolBuilder.must(partitionQ);
+
+    return createSearchRequest(
+        jobMetricsBatchTemplateDescriptor.getFullQualifiedName(),
+        boolBuilder.build().toQuery(),
+        JobMetricsBatchTemplate.END_TIME);
+  }
+
+  private SearchRequest createStandaloneDecisionSearchRequest() {
+    return createSearchRequest(
+        decisionInstanceTemplateDescriptor.getFullQualifiedName(),
+        standaloneDecisionInstancesSearchQuery(config.getArchivingTimePoint(), partitionId),
+        DecisionInstanceTemplate.EVALUATION_DATE);
+  }
+
+  private Query standaloneDecisionInstancesSearchQuery(
+      final String archivingTimePoint, final int partitionId) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(DecisionInstanceTemplate.EVALUATION_DATE)
+            .lte(JsonData.of(archivingTimePoint))
+            .build();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(DecisionInstanceTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build();
+    // standalone decision instances have processInstanceKey = -1
+    final var standaloneDecisionInstanceQ =
+        QueryBuilders.term()
+            .field(DecisionInstanceTemplate.PROCESS_INSTANCE_KEY)
+            .value(FieldValue.of(-1))
+            .build();
+    return QueryBuilders.bool()
+        .filter(endDateQ.toQuery())
+        .filter(partitionQ.toQuery())
+        .filter(standaloneDecisionInstanceQ.toQuery())
+        .build()
+        .toQuery();
+  }
+
+  private ProcessInstanceArchiveBatch createProcessInstanceBatch(
+      final SearchResponse<ProcessInstanceForListViewEntity> response, final String endDateField) {
+    final var hits = response.hits().hits();
+    if (hits.isEmpty()) {
+      return new ProcessInstanceArchiveBatch(null, List.of(), List.of());
+    }
+
+    final String endDate =
+        hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
+
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, config.getRolloverInterval(), config.getElsRolloverDateFormat());
+
+    final var batchHits =
+        hits.stream()
+            .takeWhile(
+                hit ->
+                    hit.fields()
+                        .get(endDateField)
+                        .toJson()
+                        .asJsonArray()
+                        .getString(0)
+                        .equals(endDate))
+            .toList();
+
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    final List<Long> rootProcessInstanceKeys = new ArrayList<>();
+
+    if (config.getProcessInstanceRetentionMode() == ProcessInstanceRetentionMode.PI) {
+      batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
+    } else {
+      for (final var hit : batchHits) {
+        final var rootKey = hit.source().getRootProcessInstanceKey();
+        if (rootKey != null) {
+          rootProcessInstanceKeys.add(rootKey);
+        } else {
+          processInstanceKeys.add(Long.valueOf(hit.id()));
+        }
+      }
+    }
+
+    return new ProcessInstanceArchiveBatch(date, processInstanceKeys, rootProcessInstanceKeys);
+  }
+
+  private <T> BasicArchiveBatch createBasicBatch(
+      final SearchResponse<T> response,
+      final String field,
+      final IndexTemplateDescriptor templateDescriptor) {
+    return createBasicBatch(response, field, templateDescriptor, config.getRolloverInterval());
+  }
+
+  private <T> BasicArchiveBatch createBasicBatch(
+      final SearchResponse<T> response,
+      final String endDateField,
+      final IndexTemplateDescriptor templateDescriptor,
+      final String rolloverInterval) {
+    final var hits = response.hits().hits();
+    if (hits.isEmpty()) {
+      return new BasicArchiveBatch(null, List.of());
+    }
+
+    final String endDate =
+        hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
+
+    final String date =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            endDate, rolloverInterval, config.getElsRolloverDateFormat());
+
+    final var batchHits =
+        hits.stream()
+            .takeWhile(
+                hit ->
+                    hit.fields()
+                        .get(endDateField)
+                        .toJson()
+                        .asJsonArray()
+                        .getString(0)
+                        .equals(endDate))
+            .toList();
+
+    final List<String> ids = batchHits.stream().map(Hit::id).toList();
+    return new BasicArchiveBatch(date, ids);
+  }
+
+  private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
+    return QueryBuilders.terms()
+        .field(idFieldName)
+        .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
+        .build();
+  }
+
+  private Query buildFilterQuery(
+      final Map<String, List<String>> keysByField, final Map<String, String> inclusionFilters) {
+    return buildFilterQuery(keysByField, inclusionFilters, Map.of());
+  }
+
+  private Query buildFilterQuery(
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters) {
+    final var boolBuilder = QueryBuilders.bool();
+
+    // Match any keys
+    if (!keysByField.isEmpty()) {
+      final var keysBoolBuilder = QueryBuilders.bool();
+      for (final var entry : keysByField.entrySet()) {
+        keysBoolBuilder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+      }
+      keysBoolBuilder.minimumShouldMatch("1");
+      boolBuilder.filter(keysBoolBuilder.build().toQuery());
+    }
+
+    // Match all additional inclusion filters
+    for (final var filter : inclusionFilters.entrySet()) {
+      boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    // Exclude all docs matching exclusion filters
+    for (final var filter : exclusionFilters.entrySet()) {
+      boolBuilder.mustNot(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    return boolBuilder.build().toQuery();
+  }
+
+  private <T> CompletableFuture<T> sendRequestAsync(final RequestSender<T> sender) {
+    try {
+      return sender.sendRequest();
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(
+          new ExporterException(
+              "Failed to send request, likely because we failed to parse the request", e));
+    }
+  }
+
+  private SearchRequest createSearchRequest(
+      final String indexName,
+      final Query filterQuery,
+      final String sortField,
+      final String... extraFields) {
+    return createSearchRequest(
+        indexName, filterQuery, config.getRolloverBatchSize(), sortField, extraFields);
+  }
+
+  private SearchRequest createSearchRequest(
+      final String indexName,
+      final Query filterQuery,
+      final int size,
+      final String sortField,
+      final String... extraFields) {
+    logger.trace(
+        "Create search request against index '{}', with filter '{}' and sortField '{}'",
+        indexName,
+        filterQuery.toString(),
+        sortField);
+
+    return new SearchRequest.Builder()
+        .index(indexName)
+        .requestCache(false)
+        .allowNoIndices(true)
+        .ignoreUnavailable(true)
+        .source(
+            source ->
+                extraFields.length > 0
+                    ? source.filter(f -> f.includes(List.of(extraFields)))
+                    : source.fetch(false))
+        .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
+        .query(query -> query.bool(q -> q.filter(filterQuery)))
+        .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
+        .size(size)
+        .build();
+  }
+
+  private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
+
+  @FunctionalInterface
+  private interface RequestSender<T> {
+    CompletableFuture<T> sendRequest() throws IOException;
+  }
+}

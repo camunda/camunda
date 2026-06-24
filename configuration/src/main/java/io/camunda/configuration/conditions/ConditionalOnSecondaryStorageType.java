@@ -1,0 +1,57 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.configuration.conditions;
+
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.Arrays;
+import java.util.Optional;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Conditional(OnSecondaryStorageTypeCondition.class)
+public @interface ConditionalOnSecondaryStorageType {
+
+  SecondaryStorageType[] value();
+
+  class OnSecondaryStorageTypeCondition implements Condition {
+
+    @Override
+    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      final var env = context.getEnvironment();
+      final var strType =
+          Optional.ofNullable(env.getProperty("camunda.data.secondary-storage.type"))
+              .orElse("elasticsearch");
+
+      final var type = SecondaryStorageType.valueOf(strType.toLowerCase());
+
+      final var attributes =
+          metadata.getAnnotationAttributes(ConditionalOnSecondaryStorageType.class.getName());
+      if (attributes == null) {
+        return false;
+      }
+
+      final var value = attributes.get("value");
+      if (value instanceof SecondaryStorageType[] acceptedTypes) {
+        return Arrays.asList(acceptedTypes).contains(type);
+      }
+
+      return false;
+    }
+  }
+}

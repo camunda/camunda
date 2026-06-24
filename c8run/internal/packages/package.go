@@ -1,0 +1,800 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package packages
+
+import (
+	"archive/zip"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"runtime/debug"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/camunda/camunda/c8run/internal/archive"
+	"github.com/camunda/camunda/c8run/internal/jre"
+	"github.com/rs/zerolog/log"
+)
+
+const (
+	bundledJavaMajorVersion = 25
+	helperJavaRelease       = 21
+)
+
+var conservativeJREModules = []string{
+	// jdeps cannot see provider and locale modules loaded indirectly at runtime.
+	"jdk.charsets",
+	"jdk.crypto.ec",
+	"jdk.localedata",
+	"jdk.zipfs",
+}
+
+var runtimeProviderJREModules = []string{
+	// The connectors runtime is a Spring Boot fat JAR. Running jdeps on it is prohibitively slow,
+	// so keep provider modules that are commonly resolved indirectly at runtime explicit.
+	"java.management.rmi",
+	"java.xml.crypto",
+	"jdk.management.agent",
+	"jdk.naming.dns",
+}
+
+func Clean(camundaVersion, connectorJarToKeep string) {
+	// Older C8Run builds extracted Elasticsearch locally. Remove any leftovers so they cannot be
+	// picked up by later packaging runs after Elasticsearch was removed from the distribution.
+	legacyElasticsearchArtifacts, err := filepath.Glob("elasticsearch-*")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to list legacy elasticsearch artifacts")
+	} else {
+		for _, artifact := range legacyElasticsearchArtifacts {
+			if err := os.RemoveAll(artifact); err != nil {
+				log.Error().Err(err).Str("path", artifact).Msg("failed to remove legacy elasticsearch artifact")
+			}
+		}
+	}
+	for _, path := range []string{"elasticsearch.process", "elasticsearch.process.lock"} {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Error().Err(err).Str("path", path).Msg("failed to remove legacy elasticsearch process file")
+		}
+	}
+	legacyComposeArtifacts, err := filepath.Glob("docker-compose-*")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to list legacy docker compose artifacts")
+	} else {
+		for _, artifact := range legacyComposeArtifacts {
+			if err := os.RemoveAll(artifact); err != nil {
+				log.Error().Err(err).Str("path", artifact).Msg("failed to remove legacy docker compose artifact")
+			}
+		}
+	}
+	if err := os.RemoveAll("camunda-zeebe-" + camundaVersion); err != nil {
+		log.Error().Err(err).Msg("failed to remove camunda")
+	}
+	if err := os.RemoveAll("camunda-db-rdbms-schema" + camundaVersion); err != nil {
+		log.Error().Err(err).Msg("failed to remove camunda-db-r-dbms-schema")
+	}
+	if err := os.RemoveAll("rdbms-schema"); err != nil {
+		log.Error().Err(err).Msg("failed to remove rdbms-schema")
+	}
+	if err := os.RemoveAll(jre.DirectoryName); err != nil {
+		log.Error().Err(err).Msg("failed to remove bundled JRE")
+	}
+
+	logFiles := []string{"camunda.log", "connectors.log", "elasticsearch.log"}
+	for _, logFile := range logFiles {
+		_, err := os.Stat(filepath.Join("log", logFile))
+		if !errors.Is(err, os.ErrNotExist) {
+			if err := os.Remove(filepath.Join("log", logFile)); err != nil {
+				log.Error().Err(err).Msg("failed to remove log file")
+			}
+		}
+	}
+
+	connectorJars, err := filepath.Glob("connector-runtime-bundle-*-with-dependencies.jar")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to discover connector jars")
+	} else {
+		for _, jar := range connectorJars {
+			if jar == connectorJarToKeep {
+				continue
+			}
+			if err := os.Remove(jar); err != nil && !errors.Is(err, os.ErrNotExist) {
+				log.Error().Err(err).Str("file", jar).Msg("failed to remove connector jar")
+			}
+		}
+	}
+}
+
+func downloadAndExtract(filePath, url, extractDir string, baseDir string, authToken string, extractFunc func(string, string) error) error {
+	err := archive.DownloadFile(filePath, url, authToken)
+	if err != nil {
+		return fmt.Errorf("downloadAndExtract: failed to download file at url %s\n%w\n%s", url, err, debug.Stack())
+	}
+
+	_, err = os.Stat(extractDir)
+	if errors.Is(err, os.ErrNotExist) {
+		err = extractFunc(filePath, baseDir)
+		if err != nil {
+			return fmt.Errorf("downloadAndExtract: failed to extract from archive at %s\n%w\n%s", filePath, err, debug.Stack())
+		}
+	}
+	return nil
+}
+
+func setOsSpecificValues() (string, string, string, string, func(string, string) error, error) {
+	var architecture string
+	osType := runtime.GOOS
+	var pkgName string
+	var finalOutputExtension string
+	var extractFunc func(string, string) error
+
+	switch osType {
+	case "windows":
+		architecture = "x86_64"
+		pkgName = ".zip"
+		finalOutputExtension = ".zip"
+		extractFunc = archive.UnzipSource
+		return osType, architecture, pkgName, finalOutputExtension, extractFunc, nil
+	case "linux", "darwin":
+		pkgName = ".tar.gz"
+		if osType == "linux" {
+			finalOutputExtension = ".tar.gz"
+		} else {
+			finalOutputExtension = ".zip"
+		}
+		extractFunc = archive.ExtractTarGzArchive
+		switch runtime.GOARCH {
+		case "amd64":
+			architecture = "x86_64"
+		case "arm64":
+			architecture = "aarch64"
+		default:
+			return "", "", "", "", nil, fmt.Errorf("unsupported architecture: %s", runtime.GOARCH)
+		}
+		return osType, architecture, pkgName, finalOutputExtension, extractFunc, nil
+	default:
+		return "", "", "", "", nil, fmt.Errorf("unsupported operating system: %s", osType)
+	}
+}
+
+func rocksdbNativeLibName(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-linux64.so", nil
+		case "aarch64":
+			return "librocksdbjni-linux-aarch64.so", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-osx-x86_64.jnilib", nil
+		case "aarch64":
+			return "librocksdbjni-osx-arm64.jnilib", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-win64.dll", nil
+		}
+	}
+	return "", fmt.Errorf("no RocksDB native lib mapping for os=%s arch=%s", osType, arch)
+}
+
+// isRocksdbNativeLib reports whether name is a RocksDB JNI native library entry.
+// rocksdbjni JARs pack native libs at the JAR root (no directory prefix).
+// Only call this on rocksdbjni-*.jar entries — other JARs may contain unrelated root-level natives.
+func isRocksdbNativeLib(name string) bool {
+	if strings.ContainsRune(name, '/') {
+		return false
+	}
+	return strings.HasSuffix(name, ".so") || strings.HasSuffix(name, ".jnilib") || strings.HasSuffix(name, ".dll")
+}
+
+func copyZipEntry(w *zip.Writer, f *zip.File) error {
+	hdr := f.FileHeader
+	fw, err := w.CreateHeader(&hdr)
+	if err != nil {
+		return fmt.Errorf("failed to create entry %s in temp jar: %w", f.Name, err)
+	}
+	rc, err := f.Open()
+	if err != nil {
+		return fmt.Errorf("failed to read entry %s from jar: %w", f.Name, err)
+	}
+	defer func() {
+		if err := rc.Close(); err != nil {
+			log.Warn().Err(err).Str("entry", f.Name).Msg("failed to close zip entry reader")
+		}
+	}()
+	if _, err := io.Copy(fw, rc); err != nil {
+		return fmt.Errorf("failed to copy entry %s: %w", f.Name, err)
+	}
+	return nil
+}
+
+func rewriteZipKeepingNativeLib(jarPath, libName string) error {
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		return fmt.Errorf("failed to open jar %s: %w", jarPath, err)
+	}
+	// r is closed explicitly before os.Rename — Windows cannot rename over an open file.
+
+	tmpPath := jarPath + ".tmp"
+	tmpFile, err := os.Create(tmpPath)
+	if err != nil {
+		_ = r.Close()
+		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
+	}
+
+	removeTmp := func() {
+		if err := os.Remove(tmpPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Warn().Err(err).Str("path", tmpPath).Msg("failed to remove temp jar")
+		}
+	}
+
+	w := zip.NewWriter(tmpFile)
+	var nativeLibCount int
+	var copyErr error
+
+	for _, f := range r.File {
+		isNativeEntry := isRocksdbNativeLib(f.Name)
+		if isNativeEntry {
+			if f.Name != libName {
+				continue
+			}
+			nativeLibCount++
+		}
+		if err := copyZipEntry(w, f); err != nil {
+			copyErr = err
+			break
+		}
+	}
+
+	if copyErr != nil {
+		_ = w.Close()
+		_ = tmpFile.Close()
+		_ = r.Close()
+		removeTmp()
+		return copyErr
+	}
+	if err := w.Close(); err != nil {
+		_ = tmpFile.Close()
+		_ = r.Close()
+		removeTmp()
+		return fmt.Errorf("failed to finalize temp jar: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		_ = r.Close()
+		removeTmp()
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+	if nativeLibCount != 1 {
+		_ = r.Close()
+		removeTmp()
+		return fmt.Errorf("expected exactly 1 native lib %q in jar, got %d: verify rocksdbNativeLibName mapping", libName, nativeLibCount)
+	}
+	if err := r.Close(); err != nil {
+		removeTmp()
+		return fmt.Errorf("failed to close source jar before rename: %w", err)
+	}
+	if err := os.Rename(tmpPath, jarPath); err != nil {
+		removeTmp()
+		return fmt.Errorf("failed to replace jar with slimmed version: %w", err)
+	}
+	return nil
+}
+
+// stripRocksDbNativeLibs must be called from the c8run working directory:
+// it globs camunda-zeebe-<version>/lib/rocksdbjni-*.jar relative to CWD.
+func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
+	libName, err := rocksdbNativeLibName(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "rocksdbjni-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		return fmt.Errorf("stripRocksDbNativeLibs: no rocksdbjni jar found matching %s", pattern)
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple rocksdbjni jars found; stripping only the first")
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("stripping unused RocksDB native libs")
+	return rewriteZipKeepingNativeLib(jars[0], libName)
+}
+
+func getJavaArtifactsToken() (string, error) {
+	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
+	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
+
+	if javaArtifactsUser == "" || javaArtifactsPassword == "" {
+		return "", fmt.Errorf("JAVA_ARTIFACTS_USER or JAVA_ARTIFACTS_PASSWORD environment variables are not set")
+	}
+
+	token := base64.StdEncoding.EncodeToString([]byte(javaArtifactsUser + ":" + javaArtifactsPassword))
+	return "Basic " + token, nil
+}
+
+func getFilesToArchive(osType, connectorsFilePath, camundaVersion string) []string {
+	commonFiles := []string{
+		filepath.Join("c8run", "README.md"),
+		filepath.Join("c8run", "connectors-application.properties"),
+		filepath.Join("c8run", connectorsFilePath),
+		filepath.Join("c8run", "custom_connectors"),
+		filepath.Join("c8run", "endpoints.txt"),
+		filepath.Join("c8run", "JavaVersion.class"),
+		filepath.Join("c8run", "JavaHome.class"),
+		filepath.Join("c8run", "log"),
+		filepath.Join("c8run", jre.DirectoryName),
+		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
+		filepath.Join("c8run", ".env"),
+		filepath.Join("c8run", "configuration", "application.yaml"),
+	}
+
+	if dirExists("c8run/rdbms-schema") {
+		commonFiles = append(commonFiles, filepath.Join("c8run", "rdbms-schema"))
+	}
+
+	switch osType {
+	case "windows":
+		return append(commonFiles, filepath.Join("c8run", "c8run.exe"), filepath.Join("c8run", "package.bat"))
+	case "linux", "darwin":
+		return append(commonFiles, filepath.Join("c8run", "c8run"), filepath.Join("c8run", "start.sh"), filepath.Join("c8run", "shutdown.sh"), filepath.Join("c8run", "package.sh"))
+	}
+	return nil
+}
+
+func createTarGzArchive(filesToArchive []string, outputPath, sourceRoot, targetRoot string) error {
+	outputArchive, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create empty archive file: %w\n%s", err, debug.Stack())
+	}
+	defer func() {
+		if err := outputArchive.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close output archive")
+		}
+	}()
+
+	if err := archive.CreateTarGzArchive(filesToArchive, outputArchive, sourceRoot, targetRoot); err != nil {
+		return fmt.Errorf("failed to fill camunda archive: %w\n%s", err, debug.Stack())
+	}
+	return nil
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoot string) error {
+	if err := archive.ZipSource(filesToArchive, outputPath, sourceRoot, targetRoot); err != nil {
+		return fmt.Errorf("failed to create c8run package: %w\n%s", err, debug.Stack())
+	}
+	return nil
+}
+
+func BuildJavaScripts() error {
+	for _, javaFile := range []string{"JavaVersion.java", "JavaHome.java"} {
+		if err := compileJavaHelper(javaFile); err != nil {
+			return err
+		}
+		classFile := strings.TrimSuffix(javaFile, ".java") + ".class"
+		if err := verifyClassFileVersion(classFile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func compileJavaHelper(javaFile string) error {
+	javaCmd := exec.Command("javac", buildJavaHelperArgs(javaFile)...)
+	var out strings.Builder
+	var stderr strings.Builder
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return fmt.Errorf("failed to compile %s: %w\n%s", javaFile, err, stderr.String())
+	}
+	return nil
+}
+
+func buildJavaHelperArgs(sourceFile string) []string {
+	return []string{"--release", strconv.Itoa(helperJavaRelease), sourceFile}
+}
+
+func verifyClassFileVersion(classFile string) error {
+	data, err := os.ReadFile(classFile)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", classFile, err)
+	}
+	// Java class file layout: magic 0xCAFEBABE (4 bytes), minor version (2 bytes), major version (2 bytes, big-endian).
+	// Major version = 44 + Java version, e.g. Java 21 → 65.
+	if len(data) < 8 || data[0] != 0xCA || data[1] != 0xFE || data[2] != 0xBA || data[3] != 0xBE {
+		return fmt.Errorf("%s is not a valid Java class file", classFile)
+	}
+	major := int(data[6])<<8 | int(data[7])
+	expected := 44 + helperJavaRelease
+	if major != expected {
+		return fmt.Errorf(
+			"%s compiled for Java %d (class file version %d), expected Java %d (class file version %d); "+
+				"ensure javac is invoked with --release %d",
+			classFile, major-44, major, helperJavaRelease, expected, helperJavaRelease,
+		)
+	}
+	return nil
+}
+
+func BuildJRE(camundaVersion string) error {
+	if err := ensureJLinkVersion(); err != nil {
+		return err
+	}
+
+	modules, err := detectRequiredJREModules(camundaVersion)
+	if err != nil {
+		return err
+	}
+
+	if err := os.RemoveAll(jre.DirectoryName); err != nil {
+		return fmt.Errorf("failed to remove existing bundled JRE: %w", err)
+	}
+
+	args := buildJLinkArgs(modules, jre.DirectoryName)
+	jlinkCmd := exec.Command("jlink", args...)
+	var out strings.Builder
+	var stderr strings.Builder
+	jlinkCmd.Stdout = &out
+	jlinkCmd.Stderr = &stderr
+	if err := jlinkCmd.Run(); err != nil {
+		return fmt.Errorf("failed to build bundled JRE with jlink: %w\n%s", err, stderr.String())
+	}
+
+	if err := materializeSymlinks(jre.DirectoryName); err != nil {
+		return fmt.Errorf("failed to materialize bundled JRE symlinks: %w", err)
+	}
+
+	return nil
+}
+
+func ensureJLinkVersion() error {
+	cmd := exec.Command("jlink", "--version")
+	var out strings.Builder
+	var stderr strings.Builder
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run jlink --version; install a JDK %d or newer to package C8Run: %w\n%s", bundledJavaMajorVersion, err, stderr.String())
+	}
+
+	majorVersion, err := parseJavaMajorVersion(out.String())
+	if err != nil {
+		return fmt.Errorf("failed to parse jlink version %q: %w", strings.TrimSpace(out.String()), err)
+	}
+	if majorVersion < bundledJavaMajorVersion {
+		return fmt.Errorf("jlink version %d is too old; install a JDK %d or newer to package C8Run", majorVersion, bundledJavaMajorVersion)
+	}
+	return nil
+}
+
+func detectRequiredJREModules(camundaVersion string) ([]string, error) {
+	camundaHome := "camunda-zeebe-" + camundaVersion
+	camundaLibDir := filepath.Join(camundaHome, "lib")
+	camundaJar := filepath.Join(camundaLibDir, "camunda-zeebe-"+camundaVersion+".jar")
+
+	if _, err := os.Stat(camundaJar); err != nil {
+		return nil, fmt.Errorf("failed to locate Camunda distribution JAR %s: %w", camundaJar, err)
+	}
+
+	args := []string{
+		"--ignore-missing-deps",
+		"--multi-release",
+		strconv.Itoa(bundledJavaMajorVersion),
+		"--print-module-deps",
+		"--class-path",
+		filepath.Join(camundaLibDir, "*"),
+		camundaJar,
+	}
+	jdepsCmd := exec.Command("jdeps", args...)
+	var out strings.Builder
+	var stderr strings.Builder
+	jdepsCmd.Stdout = &out
+	jdepsCmd.Stderr = &stderr
+	if err := jdepsCmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to determine JRE modules with jdeps: %w\n%s", err, stderr.String())
+	}
+
+	modules := mergeModules(parseJDepsModuleOutput(out.String()), conservativeJREModules, runtimeProviderJREModules)
+	if len(modules) == 0 {
+		return nil, fmt.Errorf("jdeps did not report any JRE modules")
+	}
+	return modules, nil
+}
+
+func parseJavaMajorVersion(version string) (int, error) {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return 0, fmt.Errorf("empty version")
+	}
+
+	firstToken := strings.Fields(version)[0]
+	firstToken = strings.Trim(firstToken, `"`)
+	parts := strings.Split(firstToken, ".")
+	if len(parts) == 0 {
+		return 0, fmt.Errorf("invalid version")
+	}
+
+	majorVersion, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, err
+	}
+	if majorVersion == 1 && len(parts) > 1 {
+		return strconv.Atoi(parts[1])
+	}
+	return majorVersion, nil
+}
+
+func parseJDepsModuleOutput(output string) []string {
+	var modules []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		for _, module := range strings.Split(line, ",") {
+			module = strings.TrimSpace(module)
+			if module != "" {
+				modules = append(modules, module)
+			}
+		}
+	}
+	return mergeModules(modules, nil)
+}
+
+func mergeModules(moduleGroups ...[]string) []string {
+	moduleSet := make(map[string]struct{})
+	for _, modules := range moduleGroups {
+		for _, module := range modules {
+			module = strings.TrimSpace(module)
+			if module != "" {
+				moduleSet[module] = struct{}{}
+			}
+		}
+	}
+
+	mergedModules := make([]string, 0, len(moduleSet))
+	for module := range moduleSet {
+		mergedModules = append(mergedModules, module)
+	}
+	sort.Strings(mergedModules)
+	return mergedModules
+}
+
+func buildJLinkArgs(modules []string, outputDir string) []string {
+	return []string{
+		"--add-modules",
+		strings.Join(modules, ","),
+		"--strip-debug",
+		"--compress",
+		"zip-6",
+		"--no-header-files",
+		"--no-man-pages",
+		"--output",
+		outputDir,
+	}
+}
+
+func materializeSymlinks(root string) error {
+	return filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.Type()&os.ModeSymlink == 0 {
+			return nil
+		}
+
+		targetInfo, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if targetInfo.IsDir() {
+			return materializeDirectorySymlink(path, targetInfo.Mode().Perm())
+		}
+
+		return materializeFileSymlink(path, targetInfo.Mode().Perm())
+	})
+}
+
+func materializeFileSymlink(path string, mode os.FileMode) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	return os.WriteFile(path, content, mode)
+}
+
+func materializeDirectorySymlink(path string, mode os.FileMode) error {
+	targetPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return err
+	}
+
+	tempPath, err := os.MkdirTemp(filepath.Dir(path), "."+filepath.Base(path)+".materialized-*")
+	if err != nil {
+		return err
+	}
+	cleanupTempPath := true
+	defer func() {
+		if cleanupTempPath {
+			_ = os.RemoveAll(tempPath)
+		}
+	}()
+
+	if err := copyDirectoryContents(targetPath, tempPath, make(map[string]struct{})); err != nil {
+		return err
+	}
+	if err := os.Chmod(tempPath, mode); err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return err
+	}
+	cleanupTempPath = false
+	return nil
+}
+
+func copyDirectoryContents(sourcePath, destinationPath string, visitedPaths map[string]struct{}) error {
+	sourcePath, err := filepath.EvalSymlinks(sourcePath)
+	if err != nil {
+		return err
+	}
+	if _, visited := visitedPaths[sourcePath]; visited {
+		return fmt.Errorf("detected symlink cycle while materializing directory: %s", sourcePath)
+	}
+	visitedPaths[sourcePath] = struct{}{}
+	defer delete(visitedPaths, sourcePath)
+
+	entries, err := os.ReadDir(sourcePath)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		sourceEntryPath := filepath.Join(sourcePath, entry.Name())
+		destinationEntryPath := filepath.Join(destinationPath, entry.Name())
+		info, err := os.Stat(sourceEntryPath)
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			if err := os.Mkdir(destinationEntryPath, 0o755); err != nil {
+				return err
+			}
+			if err := copyDirectoryContents(sourceEntryPath, destinationEntryPath, visitedPaths); err != nil {
+				return err
+			}
+			if err := os.Chmod(destinationEntryPath, info.Mode().Perm()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := copyFile(sourceEntryPath, destinationEntryPath, info.Mode().Perm()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyFile(sourcePath, destinationPath string, mode os.FileMode) error {
+	content, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(destinationPath, content, mode)
+}
+
+func New(camundaVersion, connectorsVersion string) error {
+	osType, architecture, pkgName, finalOutputExtension, extractFunc, err := setOsSpecificValues()
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+
+	camundaFilePath := "camunda-zeebe-" + camundaVersion + pkgName
+	camundaUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-zeebe/" + camundaVersion + "/camunda-zeebe-" + camundaVersion + pkgName
+	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
+	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
+	sqlZipFilePath := "camunda-db-rdbms-schema-" + camundaVersion + ".zip"
+	sqlZipUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-db-rdbms-schema/" + camundaVersion + "/" + "camunda-db-rdbms-schema-" + camundaVersion + ".zip"
+
+	// build JavaVersion and JavaHome
+	err = BuildJavaScripts()
+	if err != nil {
+		return fmt.Errorf("failed to build JavaVersion: %w", err)
+	}
+
+	javaArtifactsToken, err := getJavaArtifactsToken()
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+
+	Clean(camundaVersion, connectorsFilePath)
+
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
+	if err != nil {
+		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
+	}
+
+	if err := stripRocksDbNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip RocksDB native libs: %w", osType, err)
+	}
+
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
+	if err != nil {
+		return fmt.Errorf("Package "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
+	}
+
+	err = downloadAndExtract(sqlZipFilePath, sqlZipUrl, "camunda-db-rdbms-schema-"+camundaVersion, "rdbms-schema", javaArtifactsToken, archive.UnzipSource)
+	if err != nil {
+		log.Warn().Msg("Package " + osType + ": failed to download camunda-db-rdbms-schema, continuing without unpacking it")
+		// Continue without unpacking
+	}
+
+	if err := BuildJRE(camundaVersion); err != nil {
+		return fmt.Errorf("package %s: failed to build bundled JRE: %w", osType, err)
+	}
+
+	err = os.Chdir("..")
+	if err != nil {
+		return fmt.Errorf("Package "+osType+": failed to chdir %w", err)
+	}
+
+	sourceRoot := "c8run"
+	archiveRoot := "c8run-" + camundaVersion
+
+	filesToArchive := getFilesToArchive(osType, connectorsFilePath, camundaVersion)
+	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + finalOutputExtension
+	outputPath := filepath.Join(sourceRoot, outputFileName)
+
+	if osType == "linux" {
+		if err := createTarGzArchive(filesToArchive, outputPath, sourceRoot, archiveRoot); err != nil {
+			return fmt.Errorf("package %s: %w", osType, err)
+		}
+	} else {
+		if err := createZipArchive(filesToArchive, outputPath, sourceRoot, archiveRoot); err != nil {
+			return fmt.Errorf("package %s: %w", osType, err)
+		}
+	}
+
+	err = os.Chdir("c8run")
+	if err != nil {
+		return fmt.Errorf("Package "+osType+": failed to chdir %w", err)
+	}
+
+	return nil
+}

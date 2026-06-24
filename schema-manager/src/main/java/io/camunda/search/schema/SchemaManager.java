@@ -1,0 +1,597 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.schema;
+
+import static java.util.Optional.ofNullable;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.SearchEngineException;
+import io.camunda.search.schema.metrics.SchemaManagerMetrics;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
+import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.agrona.LangUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class SchemaManager implements CloseableSilently {
+
+  public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+  private static final String INDICES_MISSING_ALIAS = "Indices missing their expected alias: ";
+  private static final String ALIAS_INTEGRITY_ERR = "Alias '%s' points to more than 1 index: [%s]";
+  private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
+  private final SearchEngineClient searchEngineClient;
+  private final Collection<IndexDescriptor> allIndexDescriptors;
+  private final Collection<IndexDescriptor> indexOnlyDescriptors;
+  private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
+  private final SearchEngineConfiguration config;
+  private final IndexSchemaValidator schemaValidator;
+  private final ExecutorService virtualThreadExecutor;
+  private final RetryDecorator retryDecorator;
+  private final SchemaManagerMetrics schemaManagerMetrics;
+  private final SchemaMetadataStore schemaMetadataStore;
+  private final String currentVersion;
+
+  public SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper) {
+    this(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
+        new IndexSchemaValidator(objectMapper),
+        VersionUtil.getVersion(),
+        null);
+  }
+
+  @VisibleForTesting
+  SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final IndexSchemaValidator schemaValidator,
+      final String currentVersion,
+      final SchemaManagerMetrics schemaManagerMetrics) {
+    virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    this.searchEngineClient = searchEngineClient;
+    this.indexOnlyDescriptors = indexOnlyDescriptors;
+    this.indexTemplateDescriptors = indexTemplateDescriptors;
+    allIndexDescriptors =
+        Stream.concat(indexOnlyDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
+    this.config = config;
+    this.schemaValidator = schemaValidator;
+    retryDecorator =
+        new RetryDecorator(config.schemaManager().getRetry())
+            .withRetryOnException(e -> !(e instanceof IncompatibleVersionException));
+    this.schemaManagerMetrics = schemaManagerMetrics;
+    schemaMetadataStore =
+        new SchemaMetadataStore(
+            searchEngineClient,
+            new MetadataIndex(
+                config.connect().getIndexPrefix(),
+                config.connect().getTypeEnum().isElasticSearch()),
+            LOG);
+    this.currentVersion = currentVersion;
+  }
+
+  public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
+    return new SchemaManager(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
+        schemaValidator,
+        currentVersion,
+        schemaManagerMetrics);
+  }
+
+  /**
+   * This method will retry with exponential backoff until the schema is successfully initialized.
+   * By default, retries are effectively unlimited to prevent pods from crashing when Elasticsearch
+   * is temporarily unavailable during startup.
+   */
+  public void startup() {
+    if (!config.schemaManager().isCreateSchema()) {
+      LOG.info(
+          "Will not make any changes to indices and index templates as [createSchema] is false");
+      return;
+    }
+
+    startSchemaCleanup();
+
+    final var timer =
+        ofNullable(schemaManagerMetrics)
+            .map(SchemaManagerMetrics::startSchemaInitTimer)
+            .orElse(() -> {});
+    // even that initializeSchema does not declare throwing any exception, it may still do sneaky
+    // throws (see #joinOnFutures) which are retried only by
+    // io.github.resilience4j.retry.Retry.decorateCheckedRunnable
+    retryDecorator.decorateCheckedRunnable("init schema", this::initializeSchema);
+    // record the time taken to initialize schema only if it was successful
+    timer.close();
+  }
+
+  private void initializeSchema() {
+    LOG.info("Schema creation is enabled. Start Schema management.");
+    final boolean upgradeSchema;
+    final var previousSchemaVersion = schemaMetadataStore.getSchemaVersion();
+    final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
+    switch (checkResult) {
+      case final Compatible.SameVersion ignored:
+        upgradeSchema = "SNAPSHOT".equals(SemanticVersion.parse(currentVersion).get().preRelease());
+        break;
+      case final Incompatible.PatchDowngrade ignored:
+        return; // no upgrade, no settings update
+      case final Incompatible.MinorDowngrade ignored:
+        return; // no upgrade, no settings update
+      default:
+        LOG.info("Triggering schema upgrade for: {}", checkResult);
+        upgradeSchema = true;
+        break;
+    }
+    // create any missing index templates, it is done even outside an upgrade scenario, to create
+    // missing index templates after a backup restore
+    initialiseIndexTemplates();
+    if (upgradeSchema) {
+      final var newIndexProperties = validateIndices();
+      // create any missing indices
+      initialiseIndices();
+
+      //  used to update existing indices/templates
+      if (!newIndexProperties.isEmpty()) {
+        LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
+        updateSchemaMappings(newIndexProperties);
+      }
+      // Store the current version as schema version after successful initialization
+      schemaMetadataStore.storeSchemaVersion(currentVersion);
+    }
+    updateSchemaSettings();
+    createLifecyclePolicies();
+    LOG.info("Schema management completed.");
+  }
+
+  private CheckResult checkVersionCompatibility(
+      final String previousVersion, final String currentVersion) {
+    final var checkResult = VersionCompatibilityCheck.check(previousVersion, currentVersion);
+    final boolean versionCheckRestrictionEnabled =
+        config.schemaManager().isVersionCheckRestrictionEnabled();
+    switch (checkResult) {
+      case final Indeterminate.PreviousVersionUnknown previousVersionUnknown ->
+          LOG.trace(
+              "Schema is from an unknown version, not checking compatibility with current version: {}",
+              previousVersionUnknown);
+      case final Indeterminate indeterminate ->
+          LOG.warn(
+              "Could not check compatibility of schema with current version: {}", indeterminate);
+      case final Incompatible.UseOfPreReleaseVersion preRelease -> {
+        final String errorMsg =
+            "Cannot upgrade to or from a pre-release version: %s".formatted(preRelease);
+        if (versionCheckRestrictionEnabled) {
+          throw new IncompatibleVersionException(errorMsg);
+        } else {
+          LOG.warn(
+              "Detected issue with schema migration, but ignoring as configured. Details: '{}'",
+              errorMsg);
+        }
+      }
+      case final Incompatible.MinorDowngrade downgrade -> {
+        LOG.debug(
+            "Schema version is higher than app version: {}. This may happen during rolling updates.",
+            downgrade);
+      }
+      case final Incompatible.PatchDowngrade downgrade -> {
+        LOG.debug(
+            "Schema version is higher than app version: {}. This may happen during rolling updates.",
+            downgrade);
+      }
+      case final Incompatible incompatible -> {
+        final String errorMsg =
+            "Schema is not compatible with current version: %s".formatted(incompatible);
+        if (versionCheckRestrictionEnabled) {
+          throw new IncompatibleVersionException(errorMsg);
+        } else {
+          LOG.warn(
+              "Detected issue with schema migration, but ignoring as configured. Details: '{}'",
+              errorMsg);
+        }
+      }
+      case final Compatible.SameVersion sameVersion ->
+          LOG.trace("Schema is from the same version as the current version: {}", sameVersion);
+      case final Compatible compatible ->
+          LOG.debug("Schema is compatible with current version: {}", compatible);
+    }
+    return checkResult;
+  }
+
+  private void createLifecyclePolicies() {
+    final RetentionConfiguration retention = config.retention();
+    if (retention.isEnabled()) {
+      LOG.info(
+          "Retention is enabled. Create ILM policy [name: '{}', retention: '{}']",
+          retention.getPolicyName(),
+          retention.getMinimumAge());
+      searchEngineClient.putIndexLifeCyclePolicy(
+          retention.getPolicyName(), retention.getMinimumAge());
+
+      LOG.info(
+          "Create usage metrics ILM policy [name: '{}', retention: '{}']",
+          retention.getUsageMetricsPolicyName(),
+          retention.getUsageMetricsMinimumAge());
+      searchEngineClient.putIndexLifeCyclePolicy(
+          retention.getUsageMetricsPolicyName(), retention.getUsageMetricsMinimumAge());
+    }
+  }
+
+  private void startSchemaCleanup() {
+    LOG.debug("Starting legacy indexes cleanup...");
+    final boolean performCleanup = config.schemaManager().isPerformCleanup();
+    final SchemaCleanup schemaCleanup = new SchemaCleanup(performCleanup, searchEngineClient);
+    CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
+  }
+
+  private void updateSchemaSettings() {
+    final var futures =
+        allIndexDescriptors.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> updateIndexSettings(descriptor), virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    joinOnFutures(futures);
+  }
+
+  private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
+    final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor.getIndexName());
+    if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
+      searchEngineClient.updateIndexTemplateSettings(
+          indexTemplateDescriptor, indexSettingsFromConfig);
+    }
+    searchEngineClient.putSettings(
+        List.of(indexDescriptor),
+        Map.of(
+            "index.number_of_replicas",
+            String.valueOf(indexSettingsFromConfig.getNumberOfReplicas())));
+  }
+
+  @VisibleForTesting
+  void initialiseIndices() {
+    if (allIndexDescriptors.isEmpty()) {
+      LOG.info("Do not create any indices, as descriptors are missing");
+      return;
+    }
+
+    final var missingIndices = getMissingIndices(allIndexDescriptors);
+    LOG.info("Found '{}' missing indices", missingIndices.size());
+    final var futures =
+        missingIndices.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> {
+                          LOG.debug("Create missing index '{}'", descriptor.getFullQualifiedName());
+                          searchEngineClient.createIndex(
+                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                        },
+                        virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices has been created successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    joinOnFutures(futures);
+  }
+
+  private List<IndexDescriptor> getMissingIndices(
+      final Collection<IndexDescriptor> indexDescriptors) {
+    if (indexDescriptors.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final var existingIndexNames = existingIndexNames(indexDescriptors);
+
+    return indexDescriptors.stream()
+        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .toList();
+  }
+
+  @VisibleForTesting
+  void initialiseIndexTemplates() {
+    if (indexTemplateDescriptors.isEmpty()) {
+      LOG.info("Do not create any index templates, as descriptors are missing");
+      return;
+    }
+    final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
+    LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
+    final var futures =
+        missingIndexTemplates.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> createIndexTemplate(descriptor), virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    // We need to wait for the completion, to make sure all indices and templates have been created
+    // successfully
+    // Doing this in parallel is still speeding up the bootstrap time
+    joinOnFutures(futures);
+  }
+
+  private List<IndexTemplateDescriptor> getMissingIndexTemplates(
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors) {
+    if (indexTemplateDescriptors.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final var existingTemplateNames =
+        searchEngineClient
+            .getMappings(config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
+
+    return indexTemplateDescriptors.stream()
+        .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
+        .toList();
+  }
+
+  /**
+   * Create an index template
+   *
+   * @param descriptor a description of the index template to create
+   */
+  private void createIndexTemplate(final IndexTemplateDescriptor descriptor) {
+    try {
+      searchEngineClient.createIndexTemplate(
+          descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
+      LOG.debug(
+          "Index template '{}', has been created / already exists", descriptor.getTemplateName());
+
+    } catch (final SearchEngineException e) {
+      final var errMsg =
+          String.format("Index template '%s' could not be created", descriptor.getTemplateName());
+      LOG.error(errMsg, e);
+      throw new IllegalStateException(errMsg, e);
+    }
+  }
+
+  /**
+   * Join on given futures with {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as timeout.
+   *
+   * <p>All exceptions, including timeout exception, are rethrown as unchecked exception. To reduce
+   * boilerplate (exception handling), but make sure startup fails.
+   *
+   * @param futures futures that be joined on
+   */
+  private void joinOnFutures(final CompletableFuture<?>[] futures) {
+    try {
+      CompletableFuture.allOf(futures).get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  public void updateSchemaMappings(
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+    for (final var newFieldEntry : newFields.entrySet()) {
+      final var descriptor = newFieldEntry.getKey();
+      final var newProperties = newFieldEntry.getValue();
+
+      if (descriptor instanceof IndexTemplateDescriptor) {
+        LOG.debug(
+            "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
+        searchEngineClient.createIndexTemplate(
+            (IndexTemplateDescriptor) descriptor,
+            getIndexSettingsFromConfig(descriptor.getIndexName()),
+            false);
+      } else {
+        LOG.info(
+            "Index alias: '{}'. New fields will be added '{}'",
+            descriptor.getAlias(),
+            newProperties);
+      }
+      searchEngineClient.putMapping(descriptor, newProperties);
+    }
+  }
+
+  public List<String> truncateIndices() {
+    final var indices =
+        allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    indices.forEach(searchEngineClient::truncateIndex);
+    return indices;
+  }
+
+  public void deleteArchivedIndices() {
+    final var liveIndices =
+        indexTemplateDescriptors.stream()
+            .map(IndexDescriptor::getFullQualifiedName)
+            .collect(Collectors.toSet());
+    final String indexPatterns =
+        indexTemplateDescriptors.stream()
+            .map(IndexTemplateDescriptor::getIndexPattern)
+            .collect(Collectors.joining(","));
+    final var archivedIndices =
+        searchEngineClient.getMappings(indexPatterns, MappingSource.INDEX).keySet().stream()
+            .filter(index -> !liveIndices.contains(index))
+            .toList();
+    archivedIndices.forEach(searchEngineClient::deleteIndex);
+    LOG.debug("Deleted archived indices '{}'", archivedIndices);
+  }
+
+  private IndexConfiguration getIndexSettingsFromConfig(final String indexName) {
+    final var templateReplicas = getNumberOfReplicasFromConfig(indexName);
+    final var templateShards =
+        config
+            .index()
+            .getShardsByIndexName()
+            .getOrDefault(indexName, config.index().getNumberOfShards());
+
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfShards(templateShards);
+    settings.setNumberOfReplicas(templateReplicas);
+    settings.setTemplatePriority(config.index().getTemplatePriority());
+    final var refreshInterval = getRefreshIntervalFromConfig(indexName);
+    settings.setRefreshInterval(refreshInterval);
+    return settings;
+  }
+
+  private int getNumberOfReplicasFromConfig(final String indexName) {
+    return config
+        .index()
+        .getReplicasByIndexName()
+        .getOrDefault(indexName, config.index().getNumberOfReplicas());
+  }
+
+  private String getRefreshIntervalFromConfig(final String indexName) {
+    return config
+        .index()
+        .getRefreshIntervalByIndexName()
+        .getOrDefault(indexName, config.index().getRefreshInterval());
+  }
+
+  public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices() {
+    if (allIndexDescriptors.isEmpty()) {
+      LOG.info("No validation of indices, as there are no descriptors");
+      return Map.of();
+    }
+
+    final var currentIndices =
+        searchEngineClient.getMappings(allIndexNames(allIndexDescriptors), MappingSource.INDEX);
+    LOG.info(
+        "Validate '{}' existing indices based on '{}' descriptors",
+        currentIndices.size(),
+        allIndexDescriptors.size());
+    return schemaValidator.validateIndexMappings(currentIndices, allIndexDescriptors);
+  }
+
+  private Set<String> existingIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
+    final String allIndexNames = allIndexNames(indexDescriptors);
+    return allIndexNames.isBlank()
+        ? Set.of()
+        : searchEngineClient.getMappings(allIndexNames, MappingSource.INDEX).keySet();
+  }
+
+  private String allIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
+
+    // The wildcard is required as without it, requests would fail if the index didn't exist.
+    // this way all descriptors can be retrieved in one request without errors due to not created
+    // indices
+
+    return indexDescriptors.stream()
+        .map(descriptor -> descriptor.getFullQualifiedName() + "*")
+        .collect(Collectors.joining(","));
+  }
+
+  public boolean isSchemaReadyForUse() {
+    if (!config.schemaManager().isCreateSchema()) {
+      return true;
+    }
+
+    return getMissingIndices(allIndexDescriptors).isEmpty()
+        && getMissingIndexTemplates(indexTemplateDescriptors).isEmpty()
+        && validateIndices().isEmpty()
+        && isAliasIntegrityValid(false);
+  }
+
+  public boolean isAllIndicesExist() {
+    return getMissingIndices(allIndexDescriptors).isEmpty();
+  }
+
+  @Override
+  public void close() {
+    virtualThreadExecutor.close();
+  }
+
+  public boolean isAliasIntegrityValid(final boolean throwException) {
+    final List<String> indexNames =
+        allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+
+    final Map<String, Set<String>> aliasByIndex = searchEngineClient.getAliases(indexNames);
+
+    final Set<String> indexesWithMissingAliases = new LinkedHashSet<>();
+    final Map<String, Set<String>> aliasToIndices = new HashMap<>();
+
+    for (final IndexDescriptor indexDescriptor : allIndexDescriptors) {
+      final Set<String> aliases =
+          aliasByIndex.getOrDefault(indexDescriptor.getFullQualifiedName(), Set.of());
+
+      /* index with missing alias */
+      if (!aliases.contains(indexDescriptor.getAlias())) {
+        indexesWithMissingAliases.add(indexDescriptor.getFullQualifiedName());
+      }
+
+      /* alias that points to multiple indexes */
+      for (final String alias : aliases) {
+        aliasToIndices
+            .computeIfAbsent(alias, k -> new HashSet<>())
+            .add(indexDescriptor.getFullQualifiedName());
+      }
+    }
+
+    final var duplicateAliases =
+        aliasToIndices.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    if (indexesWithMissingAliases.isEmpty() && duplicateAliases.isEmpty()) {
+      return true;
+    }
+
+    final StringBuilder sb = new StringBuilder();
+    if (!indexesWithMissingAliases.isEmpty()) {
+      sb.append(INDICES_MISSING_ALIAS)
+          .append(String.join(", ", indexesWithMissingAliases))
+          .append("\n");
+    }
+    duplicateAliases.forEach(
+        (alias, indices) -> {
+          sb.append(String.format(ALIAS_INTEGRITY_ERR, alias, String.join(", ", indices)));
+          sb.append("\n");
+        });
+
+    final String errorMessage =
+        String.format("Errors when validating alias integrity: %s", sb.toString());
+    if (throwException) {
+      throw new IllegalStateException(errorMessage);
+    }
+
+    LOG.warn(errorMessage);
+    return false;
+  }
+}

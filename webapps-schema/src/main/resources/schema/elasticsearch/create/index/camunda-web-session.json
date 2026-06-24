@@ -1,0 +1,24 @@
+{
+  "aliases": {},
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "creationTime": {
+        "type": "long"
+      },
+      "lastAccessedTime": {
+        "type": "long"
+      },
+      "maxInactiveIntervalInSeconds": {
+        "type": "long"
+      },
+      "attributes": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}

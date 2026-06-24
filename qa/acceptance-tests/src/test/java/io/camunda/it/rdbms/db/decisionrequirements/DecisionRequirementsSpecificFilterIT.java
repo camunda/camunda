@@ -1,0 +1,88 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.rdbms.db.decisionrequirements;
+
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveDecisionRequirement;
+import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveRandomDecisionRequirements;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
+import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures;
+import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
+import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.sort.DecisionRequirementsSort;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
+
+@RdbmsDataJdbcTest
+@TestPropertySource(
+    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
+public class DecisionRequirementsSpecificFilterIT {
+
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
+
+  private DecisionRequirementsDbReader decisionRequirementsReader;
+
+  private RdbmsWriters rdbmsWriters;
+
+  @BeforeEach
+  public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsWriters = rdbmsService.createWriter(0L);
+    decisionRequirementsReader = rdbmsService.getDecisionRequirementsReader();
+  }
+
+  @ParameterizedTest
+  @MethodSource("shouldFindWithSpecificFilterParameters")
+  public void shouldFindWithSpecificFilter(final DecisionRequirementsFilter filter) {
+    createAndSaveRandomDecisionRequirements(rdbmsWriters);
+    createAndSaveDecisionRequirement(
+        rdbmsWriters,
+        DecisionRequirementsFixtures.createRandomized(
+            b ->
+                b.decisionRequirementsKey(1337L)
+                    .decisionRequirementsId("sorting-test-requirement")
+                    .name("Sorting Test Requirement")
+                    .version(1337)
+                    .tenantId("sorting-tenant1")));
+
+    final var searchResult =
+        decisionRequirementsReader.search(
+            new DecisionRequirementsQuery(
+                filter,
+                DecisionRequirementsSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5)),
+                null));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().decisionRequirementsKey()).isEqualTo(1337L);
+  }
+
+  static List<DecisionRequirementsFilter> shouldFindWithSpecificFilterParameters() {
+    return List.of(
+        new DecisionRequirementsFilter.Builder().decisionRequirementsKeys(1337L).build(),
+        new DecisionRequirementsFilter.Builder()
+            .decisionRequirementsIds("sorting-test-requirement")
+            .build(),
+        new DecisionRequirementsFilter.Builder().names("Sorting Test Requirement").build(),
+        new DecisionRequirementsFilter.Builder().versions(1337).build(),
+        new DecisionRequirementsFilter.Builder().tenantIds("sorting-tenant1").build());
+  }
+}

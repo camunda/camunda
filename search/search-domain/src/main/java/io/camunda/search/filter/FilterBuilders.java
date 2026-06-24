@@ -1,0 +1,438 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.filter;
+
+import io.camunda.util.ObjectBuilder;
+import java.util.function.Function;
+
+public final class FilterBuilders {
+
+  private FilterBuilders() {}
+
+  public static AgentInstanceFilter.Builder agentInstance() {
+    return new AgentInstanceFilter.Builder();
+  }
+
+  public static AgentInstanceFilter agentInstance(
+      final Function<AgentInstanceFilter.Builder, ObjectBuilder<AgentInstanceFilter>> fn) {
+    return fn.apply(agentInstance()).build();
+  }
+
+  public static AgentInstanceHistoryFilter.Builder agentInstanceHistory() {
+    return new AgentInstanceHistoryFilter.Builder();
+  }
+
+  public static AgentInstanceHistoryFilter agentInstanceHistory(
+      final Function<AgentInstanceHistoryFilter.Builder, ObjectBuilder<AgentInstanceHistoryFilter>>
+          fn) {
+    return fn.apply(agentInstanceHistory()).build();
+  }
+
+  public static UsageMetricsFilter.Builder usageMetrics() {
+    return new UsageMetricsFilter.Builder();
+  }
+
+  public static UsageMetricsFilter usageMetrics(
+      final Function<UsageMetricsFilter.Builder, ObjectBuilder<UsageMetricsFilter>> fn) {
+    return fn.apply(usageMetrics()).build();
+  }
+
+  public static UsageMetricsTUFilter.Builder usageMetricsTU() {
+    return new UsageMetricsTUFilter.Builder();
+  }
+
+  public static UsageMetricsTUFilter usageMetricsTU(
+      final Function<UsageMetricsTUFilter.Builder, ObjectBuilder<UsageMetricsTUFilter>> fn) {
+    return fn.apply(usageMetricsTU()).build();
+  }
+
+  public static ProcessDefinitionFilter.Builder processDefinition() {
+    return new ProcessDefinitionFilter.Builder();
+  }
+
+  public static ProcessDefinitionFilter processDefinition(
+      final Function<ProcessDefinitionFilter.Builder, ObjectBuilder<ProcessDefinitionFilter>> fn) {
+    return fn.apply(processDefinition()).build();
+  }
+
+  public static ProcessDefinitionStatisticsFilter.Builder processDefinitionStatisticsFilter(
+      final long processDefinitionKey) {
+    return new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey);
+  }
+
+  public static ProcessDefinitionStatisticsFilter processDefinitionStatisticsFilter(
+      final long processDefinitionKey,
+      final Function<
+              ProcessDefinitionStatisticsFilter.Builder,
+              ObjectBuilder<ProcessDefinitionStatisticsFilter>>
+          fn) {
+    return fn.apply(processDefinitionStatisticsFilter(processDefinitionKey)).build();
+  }
+
+  public static ProcessInstanceFilter.Builder processInstance() {
+    return new ProcessInstanceFilter.Builder();
+  }
+
+  public static SequenceFlowFilter.Builder sequenceFlow() {
+    return new SequenceFlowFilter.Builder();
+  }
+
+  public static UserTaskFilter.Builder userTask() {
+    return new UserTaskFilter.Builder();
+  }
+
+  public static DecisionDefinitionFilter.Builder decisionDefinition() {
+    return new DecisionDefinitionFilter.Builder();
+  }
+
+  public static DecisionRequirementsFilter.Builder decisionRequirements() {
+    return new DecisionRequirementsFilter.Builder();
+  }
+
+  public static DecisionInstanceFilter.Builder decisionInstance() {
+    return new DecisionInstanceFilter.Builder();
+  }
+
+  public static FlowNodeInstanceFilter.Builder flowNodeInstance() {
+    return new FlowNodeInstanceFilter.Builder();
+  }
+
+  public static FlowNodeInstanceFilter flowNodeInstance(
+      final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
+    return fn.apply(flowNodeInstance()).build();
+  }
+
+  public static UserFilter.Builder user() {
+    return new UserFilter.Builder();
+  }
+
+  public static MappingRuleFilter.Builder mappingRule() {
+    return new MappingRuleFilter.Builder();
+  }
+
+  public static RoleFilter.Builder role() {
+    return new RoleFilter.Builder();
+  }
+
+  public static RoleMemberFilter.Builder roleMember() {
+    return new RoleMemberFilter.Builder();
+  }
+
+  public static TenantFilter.Builder tenant() {
+    return new TenantFilter.Builder();
+  }
+
+  public static TenantMemberFilter.Builder tenantMember() {
+    return new TenantMemberFilter.Builder();
+  }
+
+  public static GroupFilter.Builder group() {
+    return new GroupFilter.Builder();
+  }
+
+  public static GroupMemberFilter.Builder groupMember() {
+    return new GroupMemberFilter.Builder();
+  }
+
+  public static AuthorizationFilter.Builder authorization() {
+    return new AuthorizationFilter.Builder();
+  }
+
+  public static ProcessInstanceFilter processInstance(
+      final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
+    return fn.apply(processInstance()).build();
+  }
+
+  public static SequenceFlowFilter sequenceFlow(
+      final Function<SequenceFlowFilter.Builder, ObjectBuilder<SequenceFlowFilter>> fn) {
+    return fn.apply(sequenceFlow()).build();
+  }
+
+  public static UserTaskFilter userTask(
+      final Function<UserTaskFilter.Builder, ObjectBuilder<UserTaskFilter>> fn) {
+    return fn.apply(userTask()).build();
+  }
+
+  public static DecisionDefinitionFilter decisionDefinition(
+      final Function<DecisionDefinitionFilter.Builder, ObjectBuilder<DecisionDefinitionFilter>>
+          fn) {
+    return fn.apply(decisionDefinition()).build();
+  }
+
+  public static DecisionRequirementsFilter decisionRequirements(
+      final Function<DecisionRequirementsFilter.Builder, ObjectBuilder<DecisionRequirementsFilter>>
+          fn) {
+    return fn.apply(decisionRequirements()).build();
+  }
+
+  public static DecisionInstanceFilter decisionInstance(
+      final Function<DecisionInstanceFilter.Builder, ObjectBuilder<DecisionInstanceFilter>> fn) {
+    return fn.apply(new DecisionInstanceFilter.Builder()).build();
+  }
+
+  public static UserFilter user(final Function<UserFilter.Builder, ObjectBuilder<UserFilter>> fn) {
+    return fn.apply(new UserFilter.Builder()).build();
+  }
+
+  public static MappingRuleFilter mappingRule(
+      final Function<MappingRuleFilter.Builder, ObjectBuilder<MappingRuleFilter>> fn) {
+    return fn.apply(new MappingRuleFilter.Builder()).build();
+  }
+
+  public static RoleFilter role(final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {
+    return fn.apply(new RoleFilter.Builder()).build();
+  }
+
+  public static RoleMemberFilter roleMember(
+      final Function<RoleMemberFilter.Builder, ObjectBuilder<RoleMemberFilter>> fn) {
+    return fn.apply(new RoleMemberFilter.Builder()).build();
+  }
+
+  public static TenantFilter tenant(
+      final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
+    return fn.apply(new TenantFilter.Builder()).build();
+  }
+
+  public static TenantMemberFilter tenantMember(
+      final Function<TenantMemberFilter.Builder, ObjectBuilder<TenantMemberFilter>> fn) {
+    return fn.apply(new TenantMemberFilter.Builder()).build();
+  }
+
+  public static GroupFilter group(
+      final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
+    return fn.apply(new GroupFilter.Builder()).build();
+  }
+
+  public static GroupMemberFilter groupMember(
+      final Function<GroupMemberFilter.Builder, ObjectBuilder<GroupMemberFilter>> fn) {
+    return fn.apply(new GroupMemberFilter.Builder()).build();
+  }
+
+  public static AuthorizationFilter authorization(
+      final Function<AuthorizationFilter.Builder, ObjectBuilder<AuthorizationFilter>> fn) {
+    return fn.apply(new AuthorizationFilter.Builder()).build();
+  }
+
+  public static AuditLogFilter.Builder auditLog() {
+    return new AuditLogFilter.Builder();
+  }
+
+  public static AuditLogFilter auditLog(
+      final Function<AuditLogFilter.Builder, ObjectBuilder<AuditLogFilter>> fn) {
+    return fn.apply(new AuditLogFilter.Builder()).build();
+  }
+
+  public static VariableFilter.Builder variable() {
+    return new VariableFilter.Builder();
+  }
+
+  public static ClusterVariableFilter.Builder clusterVariable() {
+    return new ClusterVariableFilter.Builder();
+  }
+
+  public static VariableFilter variable(
+      final Function<VariableFilter.Builder, ObjectBuilder<VariableFilter>> fn) {
+    return fn.apply(variable()).build();
+  }
+
+  public static ClusterVariableFilter clusterVariable(
+      final Function<ClusterVariableFilter.Builder, ObjectBuilder<ClusterVariableFilter>> fn) {
+    return fn.apply(clusterVariable()).build();
+  }
+
+  public static VariableValueFilter.Builder variableValue() {
+    return new VariableValueFilter.Builder();
+  }
+
+  public static VariableValueFilter variableValue(
+      final Function<VariableValueFilter.Builder, ObjectBuilder<VariableValueFilter>> fn) {
+    return fn.apply(variableValue()).build();
+  }
+
+  public static DateValueFilter.Builder dateValue() {
+    return new DateValueFilter.Builder();
+  }
+
+  public static DateValueFilter dateValue(
+      final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
+    return fn.apply(dateValue()).build();
+  }
+
+  public static IncidentFilter.Builder incident() {
+    return new IncidentFilter.Builder();
+  }
+
+  public static IncidentFilter incident(
+      final Function<IncidentFilter.Builder, ObjectBuilder<IncidentFilter>> fn) {
+    return fn.apply(incident()).build();
+  }
+
+  public static BatchOperationFilter.Builder batchOperation() {
+    return new BatchOperationFilter.Builder();
+  }
+
+  public static BatchOperationFilter batchOperation(
+      final Function<BatchOperationFilter.Builder, ObjectBuilder<BatchOperationFilter>> fn) {
+    return fn.apply(batchOperation()).build();
+  }
+
+  public static BatchOperationItemFilter.Builder batchOperationItem() {
+    return new BatchOperationItemFilter.Builder();
+  }
+
+  public static BatchOperationItemFilter batchOperationItem(
+      final Function<BatchOperationItemFilter.Builder, ObjectBuilder<BatchOperationItemFilter>>
+          fn) {
+    return fn.apply(batchOperationItem()).build();
+  }
+
+  public static FormFilter.Builder form() {
+    return new FormFilter.Builder();
+  }
+
+  public static FormFilter form(final Function<FormFilter.Builder, ObjectBuilder<FormFilter>> fn) {
+    return fn.apply(form()).build();
+  }
+
+  public static JobFilter.Builder job() {
+    return new JobFilter.Builder();
+  }
+
+  public static JobFilter job(final Function<JobFilter.Builder, ObjectBuilder<JobFilter>> fn) {
+    return fn.apply(job()).build();
+  }
+
+  public static MessageSubscriptionFilter.Builder messageSubscription() {
+    return new MessageSubscriptionFilter.Builder();
+  }
+
+  public static MessageSubscriptionFilter messageSubscription(
+      final Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>
+          fn) {
+    return fn.apply(messageSubscription()).build();
+  }
+
+  public static CorrelatedMessageSubscriptionFilter.Builder correlatedMessageSubscription() {
+    return new CorrelatedMessageSubscriptionFilter.Builder();
+  }
+
+  public static CorrelatedMessageSubscriptionFilter correlatedMessageSubscription(
+      final Function<
+              CorrelatedMessageSubscriptionFilter.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionFilter>>
+          fn) {
+    return fn.apply(correlatedMessageSubscription()).build();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsFilter.Builder
+      processDefinitionInstanceVersionStatistics() {
+    return new ProcessDefinitionInstanceVersionStatisticsFilter.Builder();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsFilter
+      processDefinitionInstanceVersionStatistics(
+          final Function<
+                  ProcessDefinitionInstanceVersionStatisticsFilter.Builder,
+                  ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsFilter>>
+              fn) {
+    return fn.apply(processDefinitionInstanceVersionStatistics()).build();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionFilter.Builder
+      incidentProcessInstanceStatisticsByDefinition() {
+    return new IncidentProcessInstanceStatisticsByDefinitionFilter.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionFilter
+      incidentProcessInstanceStatisticsByDefinition(
+          final Function<
+                  IncidentProcessInstanceStatisticsByDefinitionFilter.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionFilter>>
+              fn) {
+    return fn.apply(incidentProcessInstanceStatisticsByDefinition()).build();
+  }
+
+  public static GlobalJobStatisticsFilter.Builder globalJobStatistics() {
+    return new GlobalJobStatisticsFilter.Builder();
+  }
+
+  public static GlobalJobStatisticsFilter globalJobStatistics(
+      final Function<GlobalJobStatisticsFilter.Builder, ObjectBuilder<GlobalJobStatisticsFilter>>
+          fn) {
+    return fn.apply(globalJobStatistics()).build();
+  }
+
+  public static JobTypeStatisticsFilter.Builder jobTypeStatistics() {
+    return new JobTypeStatisticsFilter.Builder();
+  }
+
+  public static JobTypeStatisticsFilter jobTypeStatistics(
+      final Function<JobTypeStatisticsFilter.Builder, ObjectBuilder<JobTypeStatisticsFilter>> fn) {
+    return fn.apply(jobTypeStatistics()).build();
+  }
+
+  public static JobWorkerStatisticsFilter.Builder jobWorkerStatistics() {
+    return new JobWorkerStatisticsFilter.Builder();
+  }
+
+  public static JobWorkerStatisticsFilter jobWorkerStatistics(
+      final Function<JobWorkerStatisticsFilter.Builder, ObjectBuilder<JobWorkerStatisticsFilter>>
+          fn) {
+    return fn.apply(jobWorkerStatistics()).build();
+  }
+
+  public static JobTimeSeriesStatisticsFilter.Builder jobTimeSeriesStatistics() {
+    return new JobTimeSeriesStatisticsFilter.Builder();
+  }
+
+  public static JobTimeSeriesStatisticsFilter jobTimeSeriesStatistics(
+      final Function<
+              JobTimeSeriesStatisticsFilter.Builder, ObjectBuilder<JobTimeSeriesStatisticsFilter>>
+          fn) {
+    return fn.apply(jobTimeSeriesStatistics()).build();
+  }
+
+  public static JobErrorStatisticsFilter.Builder jobErrorStatistics() {
+    return new JobErrorStatisticsFilter.Builder();
+  }
+
+  public static JobErrorStatisticsFilter jobErrorStatistics(
+      final Function<JobErrorStatisticsFilter.Builder, ObjectBuilder<JobErrorStatisticsFilter>>
+          fn) {
+    return fn.apply(jobErrorStatistics()).build();
+  }
+
+  public static GlobalListenerFilter.Builder globalListener() {
+    return new GlobalListenerFilter.Builder();
+  }
+
+  public static GlobalListenerFilter globalListener(
+      final Function<GlobalListenerFilter.Builder, ObjectBuilder<GlobalListenerFilter>> fn) {
+    return fn.apply(globalListener()).build();
+  }
+
+  public static DeployedResourceFilter.Builder deployedResource() {
+    return new DeployedResourceFilter.Builder();
+  }
+
+  public static DeployedResourceFilter deployedResource(
+      final Function<DeployedResourceFilter.Builder, ObjectBuilder<DeployedResourceFilter>> fn) {
+    return fn.apply(deployedResource()).build();
+  }
+
+  public static ElementInstanceWaitStateFilter.Builder elementInstanceWaitState() {
+    return new ElementInstanceWaitStateFilter.Builder();
+  }
+
+  public static ElementInstanceWaitStateFilter elementInstanceWaitState(
+      final Function<
+              ElementInstanceWaitStateFilter.Builder, ObjectBuilder<ElementInstanceWaitStateFilter>>
+          fn) {
+    return fn.apply(elementInstanceWaitState()).build();
+  }
+}

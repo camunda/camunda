@@ -1,0 +1,90 @@
+## Endpoint definitions
+
+paths:
+  /signals/broadcast:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Signal
+      operationId: broadcastSignal
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Broadcast signal
+      description: Broadcasts a signal.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignalBroadcastRequest'
+      responses:
+        "200":
+          description: The signal was broadcast.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalBroadcastResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The signal is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
+
+## Schema definitions
+
+components:
+  schemas:
+    SignalBroadcastRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        signalName:
+          description: The name of the signal to broadcast.
+          type: string
+        variables:
+          additionalProperties: true
+          description: The signal variables as a JSON object.
+          type: object
+        tenantId:
+          description: The ID of the tenant that owns the signal.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      required:
+          - signalName
+
+    SignalBroadcastResult:
+      type: object
+      required:
+        - tenantId
+        - signalKey
+      x-semantic-provider:
+        - signalKey
+      properties:
+        tenantId:
+          description: The tenant ID of the signal that was broadcast.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        signalKey:
+          allOf:
+            - $ref: '#/components/schemas/SignalKey'
+          description: The key of the broadcasted signal.
+
+    ## Keys
+
+    SignalKey:
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+      description: System-generated key for an signal.
+      format: SignalKey
+      x-semantic-type: SignalKey
+      example: "22517998136987467"
+      type: string

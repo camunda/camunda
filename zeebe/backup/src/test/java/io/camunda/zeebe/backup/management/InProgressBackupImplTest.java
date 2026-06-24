@@ -1,0 +1,431 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.backup.management;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.journal.SegmentInfo;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotMetadata;
+import io.camunda.zeebe.snapshots.SnapshotReservation;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalLong;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class InProgressBackupImplTest {
+
+  private static final Path CHECKSUM_PATH = Path.of("snapshot-root/checksum");
+  @TempDir Path snapshotDir;
+  @TempDir Path segmentsDirectory;
+
+  @Mock PersistedSnapshotStore snapshotStore;
+  @Mock JournalInfoProvider metadataProvider;
+  InProgressBackupImpl inProgressBackup;
+  private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
+
+  @BeforeEach
+  void setup() throws IOException {
+    metadataProvider = mock();
+    final var checkpointDescriptor =
+        new BackupDescriptorImpl(10L, 1, "8.1.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+
+    inProgressBackup =
+        new InProgressBackupImpl(
+            snapshotStore,
+            new BackupIdentifierImpl(1, 1, 1),
+            checkpointDescriptor,
+            concurrencyControl,
+            segmentsDirectory,
+            metadataProvider);
+
+    createSegmentFiles();
+  }
+
+  @Test
+  void shouldCompleteFutureWhenNoSnapshotExists() {
+    // given
+    setAvailableSnapshots(Set.of());
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
+  }
+
+  @Test
+  void shouldFailFutureWhenSnapshotIsPastCheckpointPosition() {
+    // given - checkpointPosition < processedPosition <  followupPosition
+    final var invalidSnapshot = snapshotWith(11L, 20L);
+    when(invalidSnapshot.getId()).thenReturn("snapshot-1");
+    setAvailableSnapshots(Set.of(invalidSnapshot));
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(SnapshotNotFoundException.class)
+        .withStackTraceContaining("snapshot-1")
+        .withStackTraceContaining("processedPosition (11) >= checkpointPosition (10)")
+        .withStackTraceContaining("lastFollowupEventPosition (20) >= checkpointPosition (10)");
+  }
+
+  @Test
+  void shouldFailFutureWhenSnapshotOverlapsWithCheckpoint() {
+    // given - processedPosition < checkpointPosition < followupPosition
+    final var invalidSnapshot = snapshotWith(8L, 20L);
+    when(invalidSnapshot.getId()).thenReturn("snapshot-overlap");
+    setAvailableSnapshots(Set.of(invalidSnapshot));
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(SnapshotNotFoundException.class)
+        .withMessageContaining("lastFollowupEventPosition (20) >= checkpointPosition (10)");
+  }
+
+  @Test
+  void shouldReserveSnapshotWhenValidSnapshotExists(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(validSnapshot));
+
+    mockJournalProviderWithNonEmptySegments();
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
+    verify(validSnapshot).reserve();
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenMoreThanOneValidSnapshotExists(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var oldValidSnapshot = snapshotWith(1L, 5L);
+    final var latestValidSnapshot = snapshotWith(2L, 6L);
+    onReserve(oldValidSnapshot, snapshotReservation);
+    onReserve(latestValidSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(oldValidSnapshot, latestValidSnapshot));
+
+    mockJournalProviderWithNonEmptySegments();
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(latestValidSnapshot.getId());
+    verify(latestValidSnapshot).reserve();
+  }
+
+  @Test
+  void shouldFailWhenSnapshotCannotBeReserved() {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    failOnReserve(validSnapshot);
+    final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot);
+    setAvailableSnapshots(snapshots);
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Reservation Failed");
+  }
+
+  @Test
+  void shouldReserveNextSnapshotWhenOneSnapshotFails(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var oldValidSnapshot = snapshotWith(1L, 5L);
+    final var latestValidSnapshot = snapshotWith(2L, 6L);
+
+    mockJournalProviderWithNonEmptySegments();
+    onReserve(oldValidSnapshot, snapshotReservation);
+    failOnReserve(latestValidSnapshot);
+
+    final Set<PersistedSnapshot> snapshots = Set.of(oldValidSnapshot, latestValidSnapshot);
+    setAvailableSnapshots(snapshots);
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).hasValue(oldValidSnapshot.getId());
+    verify(oldValidSnapshot).reserve();
+  }
+
+  @Test
+  void shouldRetryReservationByRediscoveringSnapshots(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given - a snapshot that was deleted between find and reserve (e.g. after leader change)
+    final var deletedSnapshot = snapshotWith(1L, 5L);
+    failOnReserve(deletedSnapshot);
+
+    // a new snapshot becomes available on retry
+    final var newSnapshot = snapshotWith(2L, 6L);
+    onReserve(newSnapshot, snapshotReservation);
+
+    // first discovery returns the soon-to-be-deleted snapshot,
+    // second discovery (after retry) returns the new one
+    when(snapshotStore.getAvailableSnapshots())
+        .thenReturn(TestActorFuture.completedFuture(Set.of(deletedSnapshot)))
+        .thenReturn(TestActorFuture.completedFuture(Set.of(newSnapshot)));
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then - succeeds after re-discovering snapshots
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
+    verify(newSnapshot).reserve();
+    verify(snapshotStore, times(2)).getAvailableSnapshots();
+  }
+
+  @Test
+  void shouldReleaseReservationWhenClosed(@Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, snapshotReservation);
+    final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot);
+    setAvailableSnapshots(snapshots);
+
+    inProgressBackup.reserveSnapshot().join();
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotReservation).release();
+  }
+
+  @Test
+  void shouldCollectSnapshotFilesWhenValidSnapshotIsReserved(
+      @Mock final SnapshotReservation snapshotReservation) throws IOException {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(validSnapshot));
+
+    // create snapshot files
+    final var file1 = Files.createFile(snapshotDir.resolve("file1"));
+    final var file2 = Files.createFile(snapshotDir.resolve("file2"));
+
+    mockJournalProviderWithNonEmptySegments();
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.snapshot().namedFiles())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("file1", file1, "file2", file2, "checksum", CHECKSUM_PATH));
+  }
+
+  @Test
+  void shouldHaveEmptySnapshotFilesWhenNoSnapshot() {
+    // given
+    setAvailableSnapshots(Set.of());
+
+    mockJournalProviderWithNonEmptySegments();
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.snapshot().namedFiles()).isEmpty();
+  }
+
+  @Test
+  void shouldUseLastSnapshotIndexToFindSegments(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var firstSnapshot = snapshotWith(1L, 2L);
+    final var lastSnapshot = snapshotWith(4L, 6L);
+    setAvailableSnapshots(Set.of(firstSnapshot, lastSnapshot));
+
+    final var file1 = segmentsDirectory.resolve("file1.log");
+    final var file2 = segmentsDirectory.resolve("file2.log");
+    // create segment files
+    mockJournalProviderWith(lastSnapshot.getIndex(), List.of(file1, file2), OptionalLong.of(100L));
+    onReserve(lastSnapshot, snapshotReservation);
+    // when
+    final var backup = collectBackupContents();
+
+    verify(metadataProvider).getTailSegments(lastSnapshot.getIndex());
+    // then
+    assertThat(backup.segments().namedFiles())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("file1.log", file1, "file2.log", file2));
+  }
+
+  @Test
+  void shouldIgnoreSnapshotWithExporterPositionTooFarAhead(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
+    final var validExporterPosition = checkpointPosition - 1L;
+    final var invalidExporterPosition = checkpointPosition + 1L;
+
+    final var validSnapshot = snapshotWith(1L, 1L, validExporterPosition);
+    final var invalidSnapshot = snapshotWith(1L, 1L, invalidExporterPosition);
+    onReserve(validSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(validSnapshot, invalidSnapshot));
+
+    // when
+    inProgressBackup.reserveSnapshot().join();
+
+    // then - only the valid snapshot should be reserved
+    verify(validSnapshot).reserve();
+  }
+
+  @Test
+  void shouldReportFullErrorMessageForMultipleInvalidSnapshots() {
+    // given: multiple invalid snapshots with different invalid reasons
+    final var s1 = snapshotWith(11L, 20L); // processed and follow-up past checkpoint
+    final var s2 = snapshotWith(1L, 12L); // only follow-up past checkpoint
+    final var s3 = snapshotWith(1L, 1L, 15L); // only max exported past checkpoint
+
+    when(s1.getId()).thenReturn("11-20");
+    when(s2.getId()).thenReturn("1-12");
+    when(s3.getId()).thenReturn("with-exporter");
+
+    // when - only invalid snapshots are available
+    setAvailableSnapshots(Set.of(s1, s2, s3));
+
+    // then - error message explains all invalid snapshots
+    assertThat(inProgressBackup.reserveSnapshot())
+        .failsWithin(Duration.ofMillis(200))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(SnapshotNotFoundException.class)
+        .havingRootCause()
+        .withMessage(
+            """
+            No valid snapshots found for backup:
+            Snapshot 1-12 is not valid:
+                lastFollowupEventPosition (12) >= checkpointPosition (10)
+
+            Snapshot 11-20 is not valid:
+                processedPosition (11) >= checkpointPosition (10)
+                lastFollowupEventPosition (20) >= checkpointPosition (10)
+
+            Snapshot with-exporter is not valid:
+                maxExportedPosition (15) >= checkpointPosition (10)
+            """);
+  }
+
+  private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {
+    when(snapshotStore.getAvailableSnapshots())
+        .thenReturn(TestActorFuture.completedFuture(snapshots));
+  }
+
+  private Backup collectBackupContents() {
+    inProgressBackup.reserveSnapshot().join();
+    inProgressBackup.findSegmentFiles().join();
+    inProgressBackup.findSnapshotFiles().join();
+    return inProgressBackup.createBackup();
+  }
+
+  private PersistedSnapshot snapshotWith(
+      final long processedPosition, final long followUpPosition) {
+    final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
+    final SnapshotMetadata snapshotMetadata = mock(SnapshotMetadata.class);
+    when(snapshotMetadata.processedPosition()).thenReturn(processedPosition);
+    lenient().when(snapshotMetadata.lastFollowupEventPosition()).thenReturn(followUpPosition);
+
+    when(snapshot.getMetadata()).thenReturn(snapshotMetadata);
+    lenient()
+        .when(snapshot.getId())
+        .thenReturn(String.format("%d-%d", processedPosition, followUpPosition));
+    lenient().when(snapshot.getCompactionBound()).thenReturn(processedPosition);
+
+    lenient().when(snapshot.getPath()).thenReturn(snapshotDir);
+
+    lenient().when(snapshot.getChecksumPath()).thenReturn(CHECKSUM_PATH);
+    return snapshot;
+  }
+
+  private PersistedSnapshot snapshotWith(
+      final long processedPosition, final long followUpPosition, final long maxExportedPosition) {
+    final var snapshotMetadata = mock(SnapshotMetadata.class);
+    when(snapshotMetadata.processedPosition()).thenReturn(processedPosition);
+    when(snapshotMetadata.lastFollowupEventPosition()).thenReturn(followUpPosition);
+    when(snapshotMetadata.maxExportedPosition()).thenReturn(maxExportedPosition);
+
+    final var snapshot = mock(PersistedSnapshot.class);
+    when(snapshot.getId()).thenReturn(String.format("%d-%d", processedPosition, followUpPosition));
+    when(snapshot.getMetadata()).thenReturn(snapshotMetadata);
+    return snapshot;
+  }
+
+  private void onReserve(
+      final PersistedSnapshot snapshot, final SnapshotReservation snapshotReservation) {
+    lenient()
+        .when(snapshot.reserve())
+        .thenReturn(TestActorFuture.completedFuture(snapshotReservation));
+  }
+
+  private void failOnReserve(final PersistedSnapshot snapshot) {
+    lenient()
+        .when(snapshot.reserve())
+        .thenReturn(TestActorFuture.failedFuture(new RuntimeException("Reservation Failed")));
+  }
+
+  private void createSegmentFiles() throws IOException {
+    Files.createFile(segmentsDirectory.resolve("file1.log"));
+    Files.createFile(segmentsDirectory.resolve("file2.log"));
+  }
+
+  private void mockJournalProviderWithNonEmptySegments() {
+    mockJournalProviderWith(
+        null, List.of(segmentsDirectory.resolve("file-1.log")), OptionalLong.of(100L));
+  }
+
+  private void mockJournalProviderWith(
+      final Long expectedIndex, final List<Path> segmentPaths, final OptionalLong firstAsqn) {
+    final var tailSegments = new SegmentInfo(segmentPaths, firstAsqn);
+    when(metadataProvider.getTailSegments(expectedIndex != null ? expectedIndex : anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(tailSegments));
+  }
+}

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0n9iif1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="migration-mip-ahsp_v2" name="Test Ad Hoc Parallel Target" isExecutable="true">
+    <bpmn:extensionElements />
+    <bpmn:startEvent id="Event_1cpdrxy">
+      <bpmn:outgoing>Flow_0lvxhjp</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:adHocSubProcess id="AD_HOC_MULTI_PARALLEL_2" name="Ad Hoc Multi Instance Parallel Target">
+      <bpmn:extensionElements>
+        <zeebe:adHoc activeElementsCollection="=[&#34;D&#34;]" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0lvxhjp</bpmn:incoming>
+      <bpmn:outgoing>Flow_1prlmr0</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=[1, 2]" inputElement="i" outputCollection="miResult" outputElement="=i" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:userTask id="D" name="D">
+        <bpmn:extensionElements>
+          <zeebe:formDefinition formId="Form_ID" />
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:endEvent id="Event_0vtut0q">
+      <bpmn:incoming>Flow_1prlmr0</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0lvxhjp" sourceRef="Event_1cpdrxy" targetRef="AD_HOC_MULTI_PARALLEL_2" />
+    <bpmn:sequenceFlow id="Flow_1prlmr0" sourceRef="AD_HOC_MULTI_PARALLEL_2" targetRef="Event_0vtut0q" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="migration-mip-ahsp_v2">
+      <bpmndi:BPMNShape id="BPMNShape_0y2b7nz" bpmnElement="Event_1cpdrxy">
+        <dc:Bounds x="142" y="172" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_15rjv1h" bpmnElement="Event_0vtut0q">
+        <dc:Bounds x="692" y="172" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_02gzj6h" bpmnElement="AD_HOC_MULTI_PARALLEL_2" isExpanded="true">
+        <dc:Bounds x="270" y="70" width="320" height="240" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1wzc84e" bpmnElement="D">
+        <dc:Bounds x="380" y="150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_0xyijmg" bpmnElement="Flow_0lvxhjp">
+        <di:waypoint x="178" y="190" />
+        <di:waypoint x="270" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0ltqqi1" bpmnElement="Flow_1prlmr0">
+        <di:waypoint x="590" y="190" />
+        <di:waypoint x="692" y="190" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

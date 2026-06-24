@@ -1,0 +1,72 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import useTranslate from "src/utility/localization";
+import {
+  DeleteModal as Modal,
+  UseEntityModalProps,
+} from "src/components/modal";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
+import { useNotifications } from "src/components/notifications";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
+
+const DeleteTenantModal: FC<UseEntityModalProps<Tenant>> = ({
+  open,
+  onClose,
+  onSuccess,
+  entity: { tenantId, name },
+}) => {
+  const { t, Translate } = useTranslate("tenants");
+  const { enqueueNotification } = useNotifications();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    tenantMutations.delete(qc),
+  );
+
+  const handleSubmit = () => {
+    mutate(
+      { tenantId },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("tenantDeleted"),
+            subtitle: t("deleteTenantSuccess", { name }),
+          });
+          onSuccess();
+        },
+      },
+    );
+  };
+
+  return (
+    <Modal
+      open={open}
+      headline={t("deleteTenant")}
+      onSubmit={handleSubmit}
+      loading={loading}
+      loadingDescription={t("deletingTenant")}
+      onClose={onClose}
+      confirmLabel={t("deleteTenant")}
+    >
+      <p>
+        <Translate i18nKey="deleteTenantConfirmationFirstPart">
+          Are you sure you want to delete
+        </Translate>
+        <strong>{tenantId}</strong>
+        <Translate i18nKey="deleteTenantConfirmationSecondPart">
+          ? This action cannot be undone.
+        </Translate>
+      </p>
+    </Modal>
+  );
+};
+
+export default DeleteTenantModal;

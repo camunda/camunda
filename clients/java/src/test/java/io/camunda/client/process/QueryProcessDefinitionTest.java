@@ -1,0 +1,166 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.process;
+
+import static io.camunda.client.util.assertions.SortAssert.assertSort;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.protocol.rest.FormResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionFilter;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
+import io.camunda.client.protocol.rest.SortOrderEnum;
+import io.camunda.client.util.ClientRestTest;
+import java.util.List;
+import java.util.Objects;
+import org.instancio.Instancio;
+import org.junit.jupiter.api.Test;
+
+public class QueryProcessDefinitionTest extends ClientRestTest {
+
+  @Test
+  void shouldGetProcessDefinitionXml() {
+    // when
+    final long processDefinitionKey = 1L;
+    client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl())
+        .isEqualTo("/v2/process-definitions/" + processDefinitionKey + "/xml");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldGetProcessDefinitionForm() {
+    // given
+    final long processDefinitionKey = 1L;
+    gatewayService.onProcessDefinitionFormRequest(
+        processDefinitionKey, Instancio.create(FormResult.class).formKey("2"));
+
+    // when
+    client.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl())
+        .isEqualTo("/v2/process-definitions/" + processDefinitionKey + "/form");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionByKey() {
+    // given
+    final long processDefinitionKey = 123L;
+    gatewayService.onProcessDefinitionRequest(
+        processDefinitionKey,
+        Instancio.create(ProcessDefinitionResult.class).processDefinitionKey("2"));
+
+    // when
+    client.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-definitions/123");
+    assertThat(request.getBodyAsString()).isEmpty();
+  }
+
+  @Test
+  public void shouldSearchProcessDefinitionWithEmptyQuery() {
+    // when
+    client.newProcessDefinitionSearchRequest().send().join();
+
+    // then
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
+    assertThat(request.getFilter()).isNull();
+  }
+
+  @Test
+  public void shouldSearchProcessDefinitionWithFullFilters() {
+    // when
+    client
+        .newProcessDefinitionSearchRequest()
+        .filter(
+            f ->
+                f.processDefinitionKey(5L)
+                    .name(sp -> sp.eq("Order process"))
+                    .resourceName("usertest/complex-process.bpmn")
+                    .version(2)
+                    .versionTag("alpha")
+                    .processDefinitionId(sp -> sp.eq("orderProcess"))
+                    .tenantId("<default>"))
+        .send()
+        .join();
+    // then
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
+    final ProcessDefinitionFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getProcessDefinitionKey()).isEqualTo("5");
+    assertThat(filter.getName().get$Eq()).isEqualTo("Order process");
+    assertThat(filter.getResourceName()).isEqualTo("usertest/complex-process.bpmn");
+    assertThat(filter.getVersion()).isEqualTo(2);
+    assertThat(filter.getVersionTag()).isEqualTo("alpha");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("orderProcess");
+    assertThat(filter.getTenantId()).isEqualTo("<default>");
+  }
+
+  @Test
+  void shouldSearchProcessDefinitionWithFullSorting() {
+    // when
+    client
+        .newProcessDefinitionSearchRequest()
+        .sort(
+            s ->
+                s.processDefinitionKey()
+                    .asc()
+                    .name()
+                    .desc()
+                    .resourceName()
+                    .asc()
+                    .version()
+                    .asc()
+                    .versionTag()
+                    .desc()
+                    .processDefinitionId()
+                    .desc()
+                    .tenantId()
+                    .asc())
+        .send()
+        .join();
+
+    // then
+    final ProcessDefinitionSearchQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromProcessDefinitionSearchQuerySortRequest(
+            Objects.requireNonNull(request.getSort()));
+    assertThat(sorts).hasSize(7);
+    assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "name", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "resourceName", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "version", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "versionTag", SortOrderEnum.DESC);
+    assertSort(sorts.get(5), "processDefinitionId", SortOrderEnum.DESC);
+    assertSort(sorts.get(6), "tenantId", SortOrderEnum.ASC);
+  }
+}

@@ -1,0 +1,57 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.util;
+
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
+
+public class KeyUtil {
+
+  public static String keyToString(final long value) {
+    return String.valueOf(value);
+  }
+
+  public static Long keyToLong(final String key) {
+    return Long.parseLong(key);
+  }
+
+  public static @Nullable String keyToStringOrNull(final @Nullable Long value) {
+    return value != null ? keyToString(value) : null;
+  }
+
+  public static @Nullable Long keyToLongOrNull(final @Nullable String key) {
+    return key != null ? keyToLong(key) : null;
+  }
+
+  public static Function<String, @Nullable Long> mapKeyToLong(
+      final String fieldName, final List<String> validationErrors) {
+    return key -> {
+      if (key == null) {
+        return null;
+      }
+      try {
+        return Long.parseLong(key);
+      } catch (final NumberFormatException e) {
+        validationErrors.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, key));
+        return null;
+      }
+    };
+  }
+
+  public static Optional<Long> tryParseLong(final @Nullable String key) {
+    try {
+      return Optional.ofNullable(keyToLongOrNull(key));
+    } catch (final NumberFormatException e) {
+      return Optional.empty();
+    }
+  }
+}

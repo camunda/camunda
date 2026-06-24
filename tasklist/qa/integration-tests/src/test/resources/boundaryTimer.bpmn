@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0m74m7s" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.10.0">
+  <bpmn:process id="boundaryTimer" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0vyfb4y</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="noTimeToComplete" name="No time to complete">
+      <bpmn:incoming>Flow_0vyfb4y</bpmn:incoming>
+      <bpmn:outgoing>Flow_0wnyva1</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Event_1lirwbf" name="Interrupt after 1s" attachedToRef="noTimeToComplete">
+      <bpmn:outgoing>Flow_0m12tkp</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0stw5br">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_0m12tkp" sourceRef="Event_1lirwbf" targetRef="Event_1fzbp1i" />
+    <bpmn:endEvent id="Event_158trux" name="Completed">
+      <bpmn:incoming>Flow_0wnyva1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0wnyva1" sourceRef="noTimeToComplete" targetRef="Event_158trux" />
+    <bpmn:sequenceFlow id="Flow_0vyfb4y" sourceRef="StartEvent_1" targetRef="noTimeToComplete" />
+    <bpmn:endEvent id="Event_1fzbp1i" name="Canceled">
+      <bpmn:incoming>Flow_0m12tkp</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:error id="Error_1wdrm31" name="Canceled" errorCode="523" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="boundaryTimer">
+      <bpmndi:BPMNEdge id="Flow_0m12tkp_di" bpmnElement="Flow_0m12tkp">
+        <di:waypoint x="540" y="178" />
+        <di:waypoint x="540" y="250" />
+        <di:waypoint x="932" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wnyva1_di" bpmnElement="Flow_0wnyva1">
+        <di:waypoint x="580" y="120" />
+        <di:waypoint x="932" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vyfb4y_di" bpmnElement="Flow_0vyfb4y">
+        <di:waypoint x="198" y="120" />
+        <di:waypoint x="480" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="162" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_158trux_di" bpmnElement="Event_158trux">
+        <dc:Bounds x="932" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="924" y="145" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_17nlmoi_di" bpmnElement="noTimeToComplete">
+        <dc:Bounds x="480" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ugulu0_di" bpmnElement="Event_1fzbp1i">
+        <dc:Bounds x="932" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="926" y="208" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_08xwg5e_di" bpmnElement="Event_1lirwbf">
+        <dc:Bounds x="522" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="559" y="173" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

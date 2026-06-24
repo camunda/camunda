@@ -1,0 +1,89 @@
+# type: Preview Environment
+# owner: @camunda/monorepo-devops-team
+---
+name: Preview Env Clean
+
+on:
+  schedule:
+  - cron: 0 6,22 * * *
+  workflow_call:
+    inputs:
+      pull-request:
+        description: |
+          Limit cleanup to a single pull request (number) and a minimal mode.
+          Useful for quickly eliminating inconsistencies while waiting for the full cleanup cycle to run.
+        required: false
+        type: number
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
+  workflow_dispatch:
+
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
+jobs:
+  preview-env-clean:
+    concurrency:
+      group: clean-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Generate a GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      with:
+        github-app-id-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_ID
+        github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+        github-app-private-key-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_PRIVATE_KEY
+        github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+
+    - uses: camunda/infra-global-github-actions/preview-env/clean@main
+      with:
+        labels: deploy-preview
+        pull-request: ${{ inputs.pull-request }}
+        token: ${{ steps.github-token.outputs.token }}
+        ttl: 21d
+        warning-ttl: 14d
+
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+
+    # Clean up any (remaining) smoke-test preview environments older than 12 hours
+    - uses: camunda/infra-global-github-actions/argocd-delete-applications@main
+      with:
+        argocd-token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        github-token: ${{ github.token }}
+        label-selector: |
+          preview=smoke-test
+          repo=camunda_camunda
+        min-age: 12h
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        job_name: preview-env-clean
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

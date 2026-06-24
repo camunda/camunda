@@ -1,0 +1,107 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+/// <reference types="vitest" />
+/// <reference types="vite/client" />
+
+import {defineConfig, type PluginOption} from 'vite';
+import react from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr';
+import path from 'node:path';
+import sbom from 'rollup-plugin-sbom';
+
+const plugins: PluginOption[] = [react(), svgr()];
+const outDir = 'build';
+
+export default defineConfig(({mode}) => ({
+  base: mode === 'production' ? './' : undefined,
+  plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
+  preview: {
+    port: 3003,
+    open: false,
+    proxy: {},
+  },
+  server: {
+    port: 3000,
+    open: true,
+    proxy: {
+      '/v2': 'http://localhost:8080',
+      '/login': {
+        target: 'http://localhost:8080',
+        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+      },
+      '/logout': {
+        target: 'http://localhost:8080',
+        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+      },
+      '/client-config.js': 'http://localhost:8080/tasklist',
+    },
+  },
+  build: {
+    outDir,
+    sourcemap: mode !== 'sbom',
+    license: {
+      fileName: 'assets/vendor.LICENSE.txt',
+    },
+    rolldownOptions: {
+      output: {
+        postBanner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+      },
+      input: {
+        index:
+          mode === 'visual-regression' ? './index.html' : './index.prod.html',
+      },
+    },
+  },
+  resolve: {
+    tsconfigPaths: true,
+    alias: {
+      src: path.resolve(__dirname, './src'),
+    },
+  },
+  optimizeDeps: {
+    exclude: ['monaco-editor'],
+  },
+  test: {
+    dangerouslyIgnoreUnhandledErrors: true,
+    globals: true,
+    environment: 'jsdom',
+    include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+    setupFiles: ['./src/setupTests.ts'],
+    restoreMocks: true,
+    mockReset: true,
+    retry: process.env.CI ? 3 : 0,
+    fileParallelism: !process.env.CI,
+    maxWorkers: process.env.CI ? 1 : undefined,
+    server: {
+      deps: {
+        // this was necessary due to some issues with styled-components which appeared when bumping C3 on this https://github.com/camunda/camunda/pull/46171
+        inline: ['@camunda/camunda-composite-components'],
+      },
+    },
+    coverage: {
+      provider: 'istanbul',
+      exclude: [
+        'playwright.config.ts',
+        'renameProdIndex.mjs',
+        'public/**',
+        'e2e/**',
+        `${outDir}/**`,
+        'src/modules/mockServer/startBrowserMocking.tsx',
+      ],
+      reporter: ['html', 'default', 'hanging-process'],
+      all: true,
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
+    },
+  },
+}));

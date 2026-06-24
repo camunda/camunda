@@ -1,0 +1,133 @@
+# description: Runs Integration tests on different versions and vendors of RDBMS databases
+# test location: /qa/acceptance-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Rdbms Manual/Scheduled Run Integration Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      notify-slack-on-failure:
+        description: "Whether workflow_dispatch runs should send Slack notifications on failure/cancellation"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+  pull_request:
+    paths:
+      - ".ci/db-versions.yml"
+      - ".github/actions/read-db-versions/**"
+      - ".github/workflows/zeebe-rdbms-integration-tests.yml"
+  schedule:
+    - cron: "0 5 * * Mon-Fri"
+
+env:
+  TEST_OWNER: '@camunda/core-features'
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  trigger-stable-8-9-nightly:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Trigger stable/8.9 nightly run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref stable/8.9 zeebe-rdbms-integration-tests.yml -f notify-slack-on-failure=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Reads all supported RDBMS versions from .ci/db-versions.yml and generates
+  # the test matrix. Add or remove versions there — this workflow updates automatically.
+  generate-matrix:
+    name: "Generate RDBMS matrix"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read-versions.outputs.rdbms-matrix }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read DB versions
+        id: read-versions
+        uses: ./.github/actions/read-db-versions
+
+  rdbms-integration-tests:
+    name: "RDBMS ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: ${{ matrix.it-database-type }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
+
+  rdbms-history-tests:
+    name: "RDBMS History Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "history"
+      test-type: "history-tests"
+      test-type-label: "History"
+      runs-on: "gcp-perf-core-8-default"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
+
+  rdbms-identity-tests:
+    name: "RDBMS Identity Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "identity-tests"
+      test-type: "identity-tests"
+      test-type-label: "Identity"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}

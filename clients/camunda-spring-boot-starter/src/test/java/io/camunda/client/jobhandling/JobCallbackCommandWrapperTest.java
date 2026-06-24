@@ -1,0 +1,571 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.jobhandling;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientHttpException;
+import io.camunda.client.api.command.JobCallbackFinalCommandStep;
+import io.camunda.client.api.worker.BackoffSupplier;
+import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
+import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+
+@SuppressWarnings("unchecked")
+public class JobCallbackCommandWrapperTest {
+
+  private JobCallbackFinalCommandStep<Object> command;
+  private MetricsRecorder metricsRecorder;
+  private CounterMetricsContext metricsContext;
+  private BackoffSupplier backoffSupplier;
+  private ScheduledExecutorService scheduledExecutorService;
+
+  @BeforeEach
+  void setUp() {
+    command = mock(JobCallbackFinalCommandStep.class);
+    metricsRecorder = new DefaultNoopMetricsRecorder();
+    metricsContext = mock(CounterMetricsContext.class);
+    backoffSupplier = mock(BackoffSupplier.class);
+    scheduledExecutorService = mock(ScheduledExecutorService.class);
+  }
+
+  @Test
+  void shouldCompleteOnImmediateSuccess() {
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    assertThat(result).isNotDone();
+
+    final Object response = new Object();
+    sendFuture.complete(response);
+
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Completed.class);
+    final CommandOutcome.Completed completed = (CommandOutcome.Completed) outcome;
+    assertThat(completed.response()).isSameAs(response);
+    assertThat(completed.attempts()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldFailOnImmediateNonRetriableFailure() {
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final StatusRuntimeException error = new StatusRuntimeException(Status.INTERNAL);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Failed.class);
+    final CommandOutcome.Failed failed = (CommandOutcome.Failed) outcome;
+    assertThat(failed.cause()).isSameAs(error);
+  }
+
+  @Test
+  void shouldCompleteWithIgnoredOnNotFound() {
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final StatusRuntimeException error = new StatusRuntimeException(Status.NOT_FOUND);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Ignored.class);
+    final CommandOutcome.Ignored ignored = (CommandOutcome.Ignored) outcome;
+    assertThat(ignored.cause()).isSameAs(error);
+  }
+
+  @Test
+  void shouldCompleteWithCompletedOnRetryThenSuccess() {
+    final CompletableFuture<Object> firstSend = new CompletableFuture<>();
+    final CompletableFuture<Object> secondSend = new CompletableFuture<>();
+    when(command.send())
+        .thenReturn(asCamundaFuture(firstSend))
+        .thenReturn(asCamundaFuture(secondSend));
+
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    // First send fails with retriable error
+    firstSend.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    // Future should still be pending (retry scheduled)
+    assertThat(result).isNotDone();
+
+    // Capture and execute the scheduled retry
+    final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
+    verify(scheduledExecutorService)
+        .schedule(runnableCaptor.capture(), anyLong(), any(TimeUnit.class));
+    runnableCaptor.getValue().run();
+
+    // Second send succeeds
+    final Object response = new Object();
+    secondSend.complete(response);
+
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Completed.class);
+    final CommandOutcome.Completed completed = (CommandOutcome.Completed) outcome;
+    assertThat(completed.response()).isSameAs(response);
+    assertThat(completed.attempts()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldCompleteWithFailedOnRetryExhaustion() {
+    final CompletableFuture<Object> firstSend = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(firstSend));
+
+    // maxRetries=1 means only 1 attempt allowed, no retries
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            1,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    final StatusRuntimeException error = new StatusRuntimeException(Status.UNAVAILABLE);
+    firstSend.completeExceptionally(error);
+
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Failed.class);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  @Test
+  void shouldNotRetryAndFailWhenJobDeadlineExceeded() {
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            0L,
+            metricsRecorder,
+            metricsContext,
+            3,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    sendFuture.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Failed.class);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  @Test
+  void shouldCallMetricsIncreaserOnlyOnSuccess() {
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+
+    final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            increaser,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    final Object response = new Object();
+    sendFuture.complete(response);
+    verify(increaser, times(1)).accept(metricsRecorder, metricsContext);
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
+    assertThat(((CommandOutcome.Completed) result.join()).response()).isSameAs(response);
+  }
+
+  @Test
+  void shouldNotCallMetricsIncreaserOnFailure() {
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+
+    final RuntimeException error = new RuntimeException("fail");
+    final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            increaser,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    sendFuture.completeExceptionally(error);
+    verify(increaser, never()).accept(any(), any());
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Failed.class);
+    assertThat(((CommandOutcome.Failed) result.join()).cause()).isSameAs(error);
+  }
+
+  @Test
+  void shouldThrowIllegalStateExceptionOnDoubleExecute() {
+    when(command.send()).thenReturn(asCamundaFuture(new CompletableFuture<>()));
+
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    wrapper.executeAsync();
+
+    assertThatThrownBy(wrapper::executeAsync).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldCallMetricsIncreaserOnEventualSuccessAfterRetry() {
+    final CompletableFuture<Object> firstSend = new CompletableFuture<>();
+    final CompletableFuture<Object> secondSend = new CompletableFuture<>();
+    when(command.send())
+        .thenReturn(asCamundaFuture(firstSend))
+        .thenReturn(asCamundaFuture(secondSend));
+
+    final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            increaser,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    // First attempt fails
+    firstSend.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
+    verify(increaser, never()).accept(any(), any());
+    // Execute retry
+    final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
+    verify(scheduledExecutorService)
+        .schedule(runnableCaptor.capture(), anyLong(), any(TimeUnit.class));
+    runnableCaptor.getValue().run();
+
+    // Second attempt succeeds
+    secondSend.complete(new Object());
+
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
+    verify(increaser, times(1)).accept(metricsRecorder, metricsContext);
+  }
+
+  @Test
+  void shouldIncreaseBackoffDelayOnConsecutiveRetries() {
+    // given
+    final CompletableFuture<Object> firstSend = new CompletableFuture<>();
+    final CompletableFuture<Object> secondSend = new CompletableFuture<>();
+    final CompletableFuture<Object> thirdSend = new CompletableFuture<>();
+    when(command.send())
+        .thenReturn(asCamundaFuture(firstSend))
+        .thenReturn(asCamundaFuture(secondSend))
+        .thenReturn(asCamundaFuture(thirdSend));
+
+    backoffSupplier = BackoffSupplier.newBackoffBuilder().jitterFactor(0).backoffFactor(2).build();
+
+    // initial delay in JobCallbackCommandWrapper is 50ms
+    final JobCallbackCommandWrapper wrapper =
+        new JobCallbackCommandWrapper(
+            command,
+            Long.MAX_VALUE,
+            metricsRecorder,
+            metricsContext,
+            3,
+            backoffSupplier,
+            scheduledExecutorService);
+
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+
+    // when — first failure triggers retry with delay 50 * 2 = 100ms
+    firstSend.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    // then
+    final ArgumentCaptor<Long> delayCaptor = ArgumentCaptor.forClass(Long.class);
+    final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
+    verify(scheduledExecutorService)
+        .schedule(runnableCaptor.capture(), delayCaptor.capture(), any(TimeUnit.class));
+    assertThat(delayCaptor.getValue()).isEqualTo(100L);
+
+    // when — second failure triggers retry with delay 100 * 2 = 200ms
+    runnableCaptor.getValue().run();
+    secondSend.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    // then
+    verify(scheduledExecutorService, times(2))
+        .schedule(runnableCaptor.capture(), delayCaptor.capture(), any(TimeUnit.class));
+    assertThat(delayCaptor.getValue()).isEqualTo(200L);
+
+    // complete the third attempt successfully
+    runnableCaptor.getValue().run();
+    final Object response = new Object();
+    thirdSend.complete(response);
+
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
+    assertThat(((CommandOutcome.Completed) result.join()).response()).isSameAs(response);
+    assertThat(((CommandOutcome.Completed) result.join()).attempts()).isEqualTo(3);
+  }
+
+  // ---- REST error path tests ----
+
+  @Test
+  void shouldCompleteWithIgnoredOnRestNotFound() {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(404, "Not Found");
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Ignored.class);
+    assertThat(((CommandOutcome.Ignored) outcome).cause()).isSameAs(error);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {429, 502, 503, 504})
+  void shouldRetryOnRestRetriableCode(final int statusCode) {
+    // given
+    final CompletableFuture<Object> firstSend = new CompletableFuture<>();
+    final CompletableFuture<Object> secondSend = new CompletableFuture<>();
+    when(command.send())
+        .thenReturn(asCamundaFuture(firstSend))
+        .thenReturn(asCamundaFuture(secondSend));
+    final ClientHttpException error = new ClientHttpException(statusCode, "Retriable");
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    firstSend.completeExceptionally(error);
+
+    // then — retry must have been scheduled
+    assertThat(result).isNotDone();
+    final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
+    verify(scheduledExecutorService)
+        .schedule(runnableCaptor.capture(), anyLong(), any(TimeUnit.class));
+
+    // when — retry succeeds
+    runnableCaptor.getValue().run();
+    final Object response = new Object();
+    secondSend.complete(response);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Completed.class);
+    assertThat(((CommandOutcome.Completed) outcome).attempts()).isEqualTo(2);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {429, 502, 503, 504})
+  void shouldFailOnRestRetriableCodeWhenRetriesExhausted(final int statusCode) {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(statusCode, "Retriable");
+    // maxRetries=1 → only one attempt allowed
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 1);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Failed.class);
+    assertThat(((CommandOutcome.Failed) outcome).cause()).isSameAs(error);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {400, 401, 403, 409, 500})
+  void shouldFailImmediatelyOnRestNonRetriableCode(final int statusCode) {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(statusCode, "Non-retriable");
+    final JobCallbackCommandWrapper wrapper = buildWrapper(Long.MAX_VALUE, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    final CommandOutcome outcome = result.join();
+    assertThat(outcome).isInstanceOf(CommandOutcome.Failed.class);
+    assertThat(((CommandOutcome.Failed) outcome).cause()).isSameAs(error);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  @Test
+  void shouldNotRetryRestRetriableCodeWhenJobDeadlineExceeded() {
+    // given
+    final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
+    when(command.send()).thenReturn(asCamundaFuture(sendFuture));
+    final ClientHttpException error = new ClientHttpException(429, "Too Many Requests");
+    // deadline=0 means it is already exceeded
+    final JobCallbackCommandWrapper wrapper = buildWrapper(0L, 3);
+
+    // when
+    final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
+    sendFuture.completeExceptionally(error);
+
+    // then
+    assertThat(result).isDone();
+    assertThat(result.join()).isInstanceOf(CommandOutcome.Failed.class);
+    verify(scheduledExecutorService, never())
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+  }
+
+  // ---- helper ----
+
+  private JobCallbackCommandWrapper buildWrapper(final long deadline, final int maxRetries) {
+    return new JobCallbackCommandWrapper(
+        command,
+        deadline,
+        metricsRecorder,
+        metricsContext,
+        maxRetries,
+        backoffSupplier,
+        scheduledExecutorService);
+  }
+
+  private static <T> CamundaFuture<T> asCamundaFuture(final CompletableFuture<T> delegate) {
+    return new TestCamundaFuture<>(delegate);
+  }
+
+  private static class TestCamundaFuture<T> extends CompletableFuture<T>
+      implements CamundaFuture<T> {
+
+    TestCamundaFuture(final CompletableFuture<T> delegate) {
+      delegate.whenComplete(
+          (result, error) -> {
+            if (error != null) {
+              completeExceptionally(error);
+            } else {
+              complete(result);
+            }
+          });
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
+      return cancel(mayInterruptIfRunning);
+    }
+
+    @Override
+    public T join(final long timeout, final TimeUnit unit) {
+      throw new UnsupportedOperationException();
+    }
+  }
+}

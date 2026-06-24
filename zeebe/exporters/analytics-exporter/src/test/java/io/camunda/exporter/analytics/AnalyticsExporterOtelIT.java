@@ -1,0 +1,192 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.analytics;
+
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.HEARTBEAT;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+/**
+ * End-to-end tests: real exporter → real BatchLogRecordProcessor → real OTLP/HTTP → real OTel
+ * Collector. No mocks, no overrides — production code path.
+ */
+@Testcontainers
+class AnalyticsExporterOtelIT {
+
+  private static final int OTLP_PORT = 4318;
+  private static final List<String> COLLECTOR_LOGS = new CopyOnWriteArrayList<>();
+
+  @Container
+  private static final GenericContainer<?> OTEL_COLLECTOR =
+      new GenericContainer<>(
+              DockerImageName.parse("otel/opentelemetry-collector-contrib").withTag("latest"))
+          .withClasspathResourceMapping(
+              "otel-collector-config.yaml", "/etc/otelcol-contrib/config.yaml", BindMode.READ_ONLY)
+          .withLogConsumer(frame -> COLLECTOR_LOGS.add(frame.getUtf8String()))
+          .withExposedPorts(OTLP_PORT);
+
+  private final ProtocolFactory factory = new ProtocolFactory();
+
+  @BeforeEach
+  void clearLogs() {
+    COLLECTOR_LOGS.clear();
+  }
+
+  /**
+   * Heartbeat reaches the collector with the static cluster metadata attributes (broker / exporter
+   * version). The schema URL is delivered automatically via the instrumentation scope, so we don't
+   * attach it as a record attribute.
+   */
+  @Test
+  void shouldDeliverHeartbeatWithVersionAttributes() {
+    // given — short heartbeat interval so the scheduled task fires within the test
+    final var controller = new ExporterTestController();
+    final var exporter =
+        createExporter(
+            new AnalyticsExporterConfig()
+                .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT))
+                .setHeartbeatInterval("PT1S"),
+            controller);
+
+    // when — fire the scheduled heartbeat task
+    controller.runScheduledTasks(Duration.ofSeconds(1));
+    exporter.close();
+
+    // then
+    awaitCollectorLogs(
+        HEARTBEAT,
+        AnalyticsAttributes.Heartbeat.BROKER_VERSION.getKey(),
+        AnalyticsAttributes.Heartbeat.EXPORTER_VERSION.getKey(),
+        // schema URL is part of the instrumentation scope, not a record attribute
+        "ScopeLogs SchemaURL: https://camunda.io/schemas/analytics/v1");
+  }
+
+  /** Events arrive at the collector with correct event name and attributes. */
+  @Test
+  void shouldDeliverEventsWithAttributes() {
+    // given
+    final var exporter = createExporter();
+
+    // when
+    exporter.export(piCreatedEvent());
+    exporter.close();
+
+    // then
+    awaitCollectorLogs(
+        PROCESS_INSTANCE_CREATED,
+        AnalyticsAttributes.CLUSTER_ID.getKey(),
+        "test-cluster",
+        AnalyticsAttributes.Process.BPMN_PROCESS_ID.getKey());
+  }
+
+  /**
+   * Events are delivered in batches, not individually. Sends 500 events with maxBatchSize=100, then
+   * asserts the collector received multiple batch exports containing multiple records each.
+   *
+   * <p>The collector's debug exporter logs each export as a "ResourceLog" block containing
+   * "LogRecord #N" entries. Multiple LogRecord entries in a single export prove batching.
+   */
+  @Test
+  void shouldBatchEventsBeforeExporting() {
+    // given — small batch size and fast push interval to force multiple batches
+    final var exporter =
+        createExporter(
+            new AnalyticsExporterConfig()
+                .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT))
+                .setMaxBatchSize(100)
+                .setPushInterval("PT0.1S"));
+
+    // when — send 500 events (should produce ~5 batches of 100)
+    for (int i = 0; i < 500; i++) {
+      exporter.export(piCreatedEvent());
+    }
+    exporter.close();
+
+    // then — collector received multiple batch exports, each with multiple records
+    Awaitility.await("Collector should receive all events in batches")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              // Count the PI-created records specifically to avoid coupling to other event types.
+              final var piCreatedCount =
+                  COLLECTOR_LOGS.stream()
+                      .filter(l -> l.contains("Str(" + PROCESS_INSTANCE_CREATED + ")"))
+                      .count();
+              assertThat(piCreatedCount).isEqualTo(500);
+
+              // Count export calls (each starts a "ScopeLogs" block)
+              final var exportCount =
+                  COLLECTOR_LOGS.stream().filter(l -> l.contains("ScopeLogs #")).count();
+
+              // With batchSize=100 and 500 events, we expect ~5 exports (not 500)
+              assertThat(exportCount).isGreaterThan(1).isLessThanOrEqualTo(10);
+            });
+  }
+
+  // -- helpers --
+
+  private AnalyticsExporter createExporter() {
+    return createExporter(
+        new AnalyticsExporterConfig()
+            .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT)));
+  }
+
+  private AnalyticsExporter createExporter(final AnalyticsExporterConfig config) {
+    return createExporter(config, new ExporterTestController());
+  }
+
+  private AnalyticsExporter createExporter(
+      final AnalyticsExporterConfig config, final ExporterTestController controller) {
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("analytics-it", config))
+            .setClusterId("test-cluster")
+            .setPartitionId(1)
+            .setLicenseKey("it-test-license-key");
+    final var exporter = new AnalyticsExporter();
+    exporter.configure(context);
+    exporter.open(controller);
+    return exporter;
+  }
+
+  private void awaitCollectorLogs(final String... expectedSubstrings) {
+    Awaitility.await("OTel Collector should receive expected log content")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              for (final var expected : expectedSubstrings) {
+                assertThat(COLLECTOR_LOGS).anyMatch(line -> line.contains(expected));
+              }
+            });
+  }
+
+  private io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
+    return factory.generateRecord(
+        ValueType.PROCESS_INSTANCE_CREATION,
+        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+  }
+}

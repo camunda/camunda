@@ -1,0 +1,826 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.api;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
+import io.camunda.process.test.impl.deployment.TestDeploymentService;
+import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
+import io.camunda.process.test.impl.judge.ChatModelAdapterResolver;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
+import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
+import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
+import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
+import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
+import io.camunda.process.test.impl.testresult.ProcessTestResult;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.platform.commons.util.AnnotationUtils;
+import org.junit.platform.commons.util.ExceptionUtils;
+import org.junit.platform.commons.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * A JUnit extension that provides the runtime for process tests.
+ *
+ * <p>The container runtime starts before any tests have run.
+ *
+ * <p>Before each test method:
+ *
+ * <ul>
+ *   <li>Inject a {@link CamundaClient} to a field in the test class
+ *   <li>Inject a {@link CamundaProcessTestContext} to a field in the test class
+ * </ul>
+ *
+ * <p>After each test method:
+ *
+ * <ul>
+ *   <li>Collect process coverage data
+ *   <li>Close created {@link CamundaClient}s
+ *   <li>Purge the runtime (i.e. delete all data)
+ * </ul>
+ *
+ * <p>After all tests have run:
+ *
+ * <ul>
+ *   <li>Report process coverage (JSON)
+ *   <li>Close container runtime
+ * </ul>
+ */
+public class CamundaProcessTestExtension
+    implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback {
+
+  /** The JUnit extension namespace to store the runtime and context. */
+  public static final Namespace NAMESPACE = Namespace.create(CamundaProcessTestExtension.class);
+
+  /** The JUnit extension store key of the runtime. */
+  public static final String STORE_KEY_RUNTIME = "camunda-process-test-runtime";
+
+  /** The JUnit extension store key of the context. */
+  public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
+
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
+  private static final CamundaAssertAwaitBehavior INSTANT_PROBE = new InstantProbeAwaitBehavior();
+
+  private final List<AutoCloseable> createdClients = new ArrayList<>();
+  private final TestDeploymentService testDeploymentService = new TestDeploymentService();
+
+  private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
+  private final CamundaProcessTestResultPrinter processTestResultPrinter;
+  private final CoverageCollector coverageCollector;
+
+  private CamundaProcessTestRuntime runtime;
+  private CamundaProcessTestResultCollector processTestResultCollector;
+
+  private JudgeConfig judgeConfig;
+  private SemanticSimilarityConfig semanticSimilarityConfig;
+
+  private JsonMapper jsonMapper;
+
+  private CamundaManagementClient camundaManagementClient;
+
+  private CamundaProcessTestContext camundaProcessTestContext;
+  private final ConditionalBehaviorEngine conditionalBehaviorEngine =
+      new ConditionalBehaviorEngine();
+
+  CamundaProcessTestExtension(
+      final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
+      final CoverageCollectorBuilder coverageCollectorBuilder,
+      final Consumer<String> testResultPrintStream) {
+    runtimeBuilder = containerRuntimeBuilder;
+    coverageCollector =
+        coverageCollectorBuilder
+            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
+            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
+            .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
+            .printStream(testResultPrintStream)
+            .build();
+    processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
+  }
+
+  /**
+   * Creates a new instance of the extension. Can be used to configure the runtime.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * public class MyProcessTest {
+   *
+   *   &#064;RegisterExtension
+   *   public CamundaProcessTestExtension extension =
+   *       new CamundaProcessTestExtension().withCamundaVersion("8.6.0");
+   *
+   * }
+   * </pre>
+   */
+  public CamundaProcessTestExtension() {
+    this(
+        CamundaProcessTestContainerRuntime.newBuilder(), CoverageCollector.newBuilder(), LOG::info);
+  }
+
+  @Override
+  public void beforeAll(final ExtensionContext context) {
+    if (!hasProcessTestExtension(context)) {
+      // Skip the initialization for nested process tests. The runtime is initialized in the
+      // top-level process test.
+      return;
+    }
+
+    // create runtime
+    runtime = runtimeBuilder.build();
+    runtime.start();
+
+    camundaManagementClient = createManagementClient();
+
+    camundaProcessTestContext =
+        new CamundaProcessTestContextImpl(
+            runtime,
+            createdClients::add,
+            camundaManagementClient,
+            CamundaAssert::getAwaitBehavior,
+            jsonMapper,
+            conditionalBehaviorEngine);
+
+    // put in store
+    final Store store = context.getStore(NAMESPACE);
+    store.put(STORE_KEY_RUNTIME, runtime);
+    store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+
+    // initializations
+    initializeJsonMapper(jsonMapper);
+    initializeJudgeConfig();
+    initializeAssertions(runtimeBuilder);
+    initializeSemanticSimilarityConfig();
+  }
+
+  private CamundaManagementClient createManagementClient() {
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
+  }
+
+  private void initializeJsonMapper(final JsonMapper jsonMapper) {
+    if (jsonMapper != null) {
+      CamundaAssert.setJsonMapper(jsonMapper);
+    }
+  }
+
+  private void initializeJudgeConfig() {
+    if (judgeConfig != null) {
+      CamundaAssert.setJudgeConfig(judgeConfig);
+      return;
+    }
+
+    if (CamundaAssert.getJudgeConfig() != null) {
+      return;
+    }
+
+    if (!CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.hasProviderConfigured()) {
+      return;
+    }
+
+    ChatModelAdapterResolver.resolve(
+            CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toProviderConfig())
+        .map(
+            adapter ->
+                JudgeConfig.of(
+                        adapter,
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt())
+                    .withAttachDocuments(
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.isAttachDocuments()))
+        .ifPresent(CamundaAssert::setJudgeConfig);
+  }
+
+  private void initializeAssertions(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+    runtimeBuilder.getAssertionTimeout().ifPresent(CamundaAssert::setAssertionTimeout);
+    runtimeBuilder.getAssertionInterval().ifPresent(CamundaAssert::setAssertionInterval);
+  }
+
+  private void initializeSemanticSimilarityConfig() {
+    if (semanticSimilarityConfig != null) {
+      CamundaAssert.setSemanticSimilarityConfig(semanticSimilarityConfig);
+      return;
+    }
+    if (CamundaAssert.getSemanticSimilarityConfig() != null) {
+      return;
+    }
+    final SemanticSimilarityProperties semanticSimilarityProperties =
+        CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES;
+    if (!semanticSimilarityProperties.hasProviderConfigured()) {
+      return;
+    }
+    EmbeddingModelAdapterResolver.resolve(semanticSimilarityProperties.toProviderConfig())
+        .map(
+            adapter -> {
+              SemanticSimilarityConfig config =
+                  SemanticSimilarityConfig.of(adapter, semanticSimilarityProperties.getThreshold());
+              if (!semanticSimilarityProperties.isDefaultPreprocessorsEnabled()) {
+                config = config.withoutPreprocessors();
+              }
+              return config;
+            })
+        .ifPresent(CamundaAssert::setSemanticSimilarityConfig);
+  }
+
+  private boolean hasProcessTestExtension(final ExtensionContext context) {
+    return hasProcessTestAnnotation(context) || hasProcessTestField(context);
+  }
+
+  private static boolean hasProcessTestAnnotation(final ExtensionContext context) {
+    return AnnotationUtils.isAnnotated(context.getTestClass(), CamundaProcessTest.class);
+  }
+
+  private static boolean hasProcessTestField(final ExtensionContext context) {
+    return context
+        .getTestClass()
+        .map(
+            testClass ->
+                ReflectionUtils.findFields(
+                    testClass,
+                    field -> field.getType().isAssignableFrom(CamundaProcessTestExtension.class),
+                    ReflectionUtils.HierarchyTraversalMode.TOP_DOWN))
+        .map(fields -> !fields.isEmpty())
+        .orElse(false);
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext context) throws Exception {
+    if (runtime == null) {
+      throw new IllegalStateException(
+          "The CamundaProcessTestExtension failed to start because the runtime is not created. "
+              + "Make sure that you registering the extension on a static field.");
+    }
+
+    // inject fields
+    try {
+      injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
+      injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
+      injectField(
+          context,
+          TestCaseRunner.class,
+          () -> new CamundaTestCaseRunner(camundaProcessTestContext));
+    } catch (final Exception e) {
+      closeCreatedClients();
+      runtime.close();
+      throw e;
+    }
+
+    // initialize assertions
+    final CamundaDataSource dataSource =
+        new CamundaDataSource(camundaProcessTestContext.createClient());
+    CamundaAssert.initialize(dataSource);
+
+    // initialize result collector
+    processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
+
+    // deploy resources if present
+    testDeploymentService.deployTestResources(
+        context.getRequiredTestMethod(),
+        context.getRequiredTestClass(),
+        camundaProcessTestContext.createClient());
+
+    // set up conditional behavior engine for this test
+    conditionalBehaviorEngine.start(
+        () -> CamundaAssert.initialize(dataSource),
+        evaluation -> CamundaAssert.withAwaitBehaviorOverride(INSTANT_PROBE, evaluation),
+        CamundaAssert.getAwaitBehavior().getAssertionInterval());
+  }
+
+  private <T> void injectField(
+      final ExtensionContext context,
+      final Class<T> injectionType,
+      final Supplier<T> injectionValue) {
+    context
+        .getRequiredTestInstances()
+        .getAllInstances()
+        .forEach(instance -> injectField(instance, injectionType, injectionValue));
+  }
+
+  private <T> void injectField(
+      final Object testInstance, final Class<T> injectionType, final Supplier<T> injectionValue) {
+    ReflectionUtils.findFields(
+            testInstance.getClass(),
+            field -> isNotStatic(field) && field.getType().isAssignableFrom(injectionType),
+            ReflectionUtils.HierarchyTraversalMode.TOP_DOWN)
+        .forEach(
+            field -> {
+              try {
+                field.setAccessible(true);
+                field.set(testInstance, injectionValue.get());
+              } catch (final Throwable t) {
+                ExceptionUtils.throwAsUncheckedException(t);
+              }
+            });
+  }
+
+  private static boolean isNotStatic(final Field field) {
+    return !Modifier.isStatic(field.getModifiers());
+  }
+
+  @Override
+  public void afterEach(final ExtensionContext context) {
+    if (runtime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
+
+    // stop conditional behavior engine before cleanup
+    conditionalBehaviorEngine.stop();
+
+    try {
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(camundaProcessTestContext.createClient());
+      final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
+      coverageCollector.collectTestRunCoverage(
+          context.getRequiredTestClass(),
+          getCoverageTestName(context),
+          getDisplayName(context),
+          coverageData);
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test process coverage, skipping.", t);
+    }
+
+    if (isTestFailed(context)) {
+      printTestResults();
+    }
+    CamundaAssert.reset();
+    closeCreatedClients();
+    // final steps: reset the time and delete data
+    // It's important that the runtime clock is reset before the purge is started, as doing it
+    // the other way around leads to race conditions and inconsistencies in the tests
+    resetRuntimeClock();
+    deleteRuntimeData();
+  }
+
+  private String getCoverageTestName(final ExtensionContext context) {
+    final String testMethodName = context.getRequiredTestMethod().getName();
+    final Class<?> testClass = context.getRequiredTestClass();
+    if (testClass.getEnclosingClass() != null) {
+      return testClass.getSimpleName() + "#" + testMethodName;
+    }
+    return testMethodName;
+  }
+
+  /**
+   * Returns the {@code @DisplayName} annotation value for the test method, or {@code null} if no
+   * explicit display name is set.
+   */
+  private static String getDisplayName(final ExtensionContext context) {
+    return context
+        .getTestMethod()
+        .flatMap(m -> AnnotationUtils.findAnnotation(m, DisplayName.class))
+        .map(DisplayName::value)
+        .orElse(null);
+  }
+
+  private void printTestResults() {
+    try {
+      // collect test results
+      final ProcessTestResult testResult = processTestResultCollector.collect();
+      // print test results
+      processTestResultPrinter.print(testResult);
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test results, skipping.", t);
+    }
+  }
+
+  private void deleteRuntimeData() {
+    try {
+      LOG.debug("Deleting the runtime data");
+      final Instant startTime = Instant.now();
+
+      camundaManagementClient.purgeCluster();
+      final Instant endTime = Instant.now();
+      final Duration duration = Duration.between(startTime, endTime);
+      LOG.debug("Runtime data deleted in {}", duration);
+
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
+    }
+  }
+
+  private void resetRuntimeClock() {
+    try {
+      LOG.debug("Resetting the time");
+      camundaManagementClient.resetTime();
+      LOG.debug("Time reset");
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to reset the time, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
+    }
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) throws Exception {
+    if (runtime == null || !hasProcessTestExtension(context)) {
+      // Skip if the runtime is not created, or if this is a nested process test.
+      return;
+    }
+
+    try {
+      coverageCollector.generateReport(context.getRequiredTestClass());
+    } catch (final Throwable t) {
+      LOG.warn("Failed to report process coverage, skipping.", t);
+    }
+
+    CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
+
+    runtime.close();
+  }
+
+  private static boolean isTestFailed(final ExtensionContext extensionContext) {
+    return extensionContext.getExecutionException().isPresent();
+  }
+
+  // ============ Configuration options =================
+
+  /**
+   * Configure the Camunda version of the runtime.
+   *
+   * @param camundaVersion the version to use
+   * @return the extension builder
+   * @deprecated use withCamundaDockerImageVersion instead.
+   * @since 8.8.0
+   */
+  @Deprecated
+  public CamundaProcessTestExtension withCamundaVersion(final String camundaVersion) {
+    return withCamundaDockerImageVersion(camundaVersion);
+  }
+
+  /**
+   * Configure the Camunda docker image version of the runtime.
+   *
+   * @param camundaDockerImageVersion the version to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaDockerImageVersion(
+      final String camundaDockerImageVersion) {
+
+    runtimeBuilder.withCamundaDockerImageVersion(camundaDockerImageVersion);
+    return this;
+  }
+
+  /**
+   * Configure the Camunda Docker image name of the runtime.
+   *
+   * @param dockerImageName the Docker image name to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaDockerImageName(final String dockerImageName) {
+    runtimeBuilder.withCamundaDockerImageName(dockerImageName);
+    return this;
+  }
+
+  /**
+   * Add environment variables to the Camunda runtime.
+   *
+   * @param envVars environment variables to add
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaEnv(final Map<String, String> envVars) {
+    runtimeBuilder.withCamundaEnv(envVars);
+    return this;
+  }
+
+  /**
+   * Add an environment variable to the Camunda runtime.
+   *
+   * @param name the variable name
+   * @param value the variable value
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaEnv(final String name, final String value) {
+    runtimeBuilder.withCamundaEnv(name, value);
+    return this;
+  }
+
+  /**
+   * Add an exposed port to the Camunda runtime.
+   *
+   * @param port the port to add
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaExposedPort(final int port) {
+    runtimeBuilder.withCamundaExposedPort(port);
+    return this;
+  }
+
+  /**
+   * Enable or disable the Connectors. By default, the Connectors are disabled.
+   *
+   * @param enabled set {@code true} to enable the Connectors
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnabled(final boolean enabled) {
+    runtimeBuilder.withConnectorsEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Configure the Connectors Docker image name of the runtime.
+   *
+   * @param dockerImageName the Docker image name to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsDockerImageName(final String dockerImageName) {
+    runtimeBuilder.withConnectorsDockerImageName(dockerImageName);
+    return this;
+  }
+
+  /**
+   * Configure the Connectors Docker image version of the runtime.
+   *
+   * @param dockerImageVersion the version to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsDockerImageVersion(
+      final String dockerImageVersion) {
+    runtimeBuilder.withConnectorsDockerImageVersion(dockerImageVersion);
+    return this;
+  }
+
+  /**
+   * Add environment variables to the Connectors runtime.
+   *
+   * @param envVars environment variables to add
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnv(final Map<String, String> envVars) {
+    runtimeBuilder.withConnectorsEnv(envVars);
+    return this;
+  }
+
+  /**
+   * Add an environment variable to the Connectors runtime.
+   *
+   * @param name the variable name
+   * @param value the variable value
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnv(final String name, final String value) {
+    runtimeBuilder.withConnectorsEnv(name, value);
+    return this;
+  }
+
+  /**
+   * Add a secret to the Connectors runtime.
+   *
+   * @param name the name of the secret
+   * @param value the value of the secret
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsSecret(final String name, final String value) {
+    runtimeBuilder.withConnectorsSecret(name, value);
+    return this;
+  }
+
+  /**
+   * Configure the mode of the runtime (managed/remote/shared).
+   *
+   * @param runtimeMode the runtime mode to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withRuntimeMode(
+      final CamundaProcessTestRuntimeMode runtimeMode) {
+    runtimeBuilder.withRuntimeMode(runtimeMode);
+    return this;
+  }
+
+  /**
+   * Configure the client builder factory to create the Camunda client. Use this for a full custom
+   * client configuration.
+   *
+   * @param camundaClientBuilderFactory the factory to create the Camunda client builder
+   * @return the extension builder
+   * @since 8.10.0
+   */
+  public CamundaProcessTestExtension withCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+    runtimeBuilder.withCamundaClientBuilderFactory(camundaClientBuilderFactory);
+    return this;
+  }
+
+  /**
+   * Configure the connection to the remote runtime using the given client builder.
+   *
+   * @param camundaClientBuilderFactory the client builder to configure the connection
+   * @return the extension builder
+   * @deprecated use {@link #withCamundaClientBuilderFactory(CamundaClientBuilderFactory)} instead.
+   * @since 8.8.0
+   */
+  @Deprecated
+  public CamundaProcessTestExtension withRemoteCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+    return withCamundaClientBuilderFactory(camundaClientBuilderFactory);
+  }
+
+  /**
+   * Override the existing connection configuration to the Camunda runtime.
+   *
+   * @param camundaClientBuilderOverrides consumer that overrides the client builder's configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaClientBuilderOverrides(
+      final Consumer<CamundaClientBuilder> camundaClientBuilderOverrides) {
+    runtimeBuilder.withCamundaClientBuilderOverrides(camundaClientBuilderOverrides);
+    return this;
+  }
+
+  /**
+   * Configure the address to the remote runtime's monitoring API.
+   *
+   * @param remoteCamundaMonitoringApiAddress the address of the monitoring API
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withRemoteCamundaMonitoringApiAddress(
+      final URI remoteCamundaMonitoringApiAddress) {
+    runtimeBuilder.withRemoteCamundaMonitoringApiAddress(remoteCamundaMonitoringApiAddress);
+    return this;
+  }
+
+  /**
+   * Configure the address to the remote Connectors REST API.
+   *
+   * @param remoteConnectorsRestApiAddress the address of the Connectors REST API
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withRemoteConnectorsRestApiAddress(
+      final URI remoteConnectorsRestApiAddress) {
+    runtimeBuilder.withRemoteConnectorsRestApiAddress(remoteConnectorsRestApiAddress);
+    return this;
+  }
+
+  /**
+   * Configures the coverage report to exclude the given processes.
+   *
+   * @param processDefinitionIds the IDs of the process definitions to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageExcludedProcesses(
+      final String... processDefinitionIds) {
+    runtimeBuilder.withCoverageExcludedProcesses(Arrays.asList(processDefinitionIds));
+    return this;
+  }
+
+  /**
+   * Configures the coverage report to exclude the given decisions.
+   *
+   * @param decisionDefinitionIds the IDs of the decision definitions to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageExcludedDecisions(
+      final String... decisionDefinitionIds) {
+    runtimeBuilder.withCoverageExcludedDecisions(Arrays.asList(decisionDefinitionIds));
+    return this;
+  }
+
+  /**
+   * Configures the output directory for the coverage reports. By default, the directory is {@code
+   * target/coverage-report/}.
+   *
+   * @param reportDirectory the directory to save the reports
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageReportDirectory(final String reportDirectory) {
+    runtimeBuilder.withCoverageReportDirectory(reportDirectory);
+    return this;
+  }
+
+  /**
+   * Enable or disable multi-tenancy in the runtime. By default, multi-tenancy is disabled.
+   *
+   * @param enabled set {@code true} to enable multi-tenancy
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
+    runtimeBuilder.withMultiTenancyEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Configure the judge for LLM-as-a-judge assertions.
+   *
+   * @param judgeConfig the judge configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withJudgeConfig(final JudgeConfig judgeConfig) {
+    this.judgeConfig = judgeConfig;
+    return this;
+  }
+
+  /**
+   * Configure the semantic similarity for semantic similarity assertions.
+   *
+   * @param semanticSimilarityConfig the semantic similarity configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withSemanticSimilarityConfig(
+      final SemanticSimilarityConfig semanticSimilarityConfig) {
+    this.semanticSimilarityConfig = semanticSimilarityConfig;
+    return this;
+  }
+
+  /**
+   * Configure the JSON mapper for the client and the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withJsonMapper(final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+    return this;
+  }
+
+  /**
+   * Add a custom container via the given provider to the runtime. The container will be started
+   * together with the runtime and stopped when the runtime is closed.
+   *
+   * @param containerProvider the provider of the custom container
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withContainerProvider(
+      final CamundaProcessTestContainerProvider containerProvider) {
+    runtimeBuilder.withContainerProvider(containerProvider);
+    return this;
+  }
+
+  /**
+   * Enable or disable the loading of custom container providers via the Java ServiceLoader. By
+   * default, the ServiceLoader is enabled.
+   *
+   * @param enabled whether to load container providers via the Java ServiceLoader or not
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withContainerProvidersServiceLoaderEnabled(
+      final boolean enabled) {
+    runtimeBuilder.withContainerProvidersServiceLoaderEnabled(enabled);
+    return this;
+  }
+
+  private void closeCreatedClients() {
+    for (final AutoCloseable client : createdClients) {
+      try {
+        client.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close client, continue.", e);
+      }
+    }
+    createdClients.clear();
+  }
+}

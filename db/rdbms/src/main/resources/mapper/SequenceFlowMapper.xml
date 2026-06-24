@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.SequenceFlowMapper">
+
+  <resultMap id="SequenceFlowResultMap"
+    type="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
+    <result column="FLOW_NODE_ID" property="flowNodeId" />
+    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" />
+    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" />
+    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" />
+    <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" />
+    <result column="TENANT_ID" property="tenantId" />
+  </resultMap>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.SequenceFlowDbQuery"
+    resultMap="SequenceFlowResultMap">
+    SELECT distinct
+      sf.FLOW_NODE_ID,
+      sf.PROCESS_INSTANCE_KEY,
+      sf.ROOT_PROCESS_INSTANCE_KEY,
+      sf.PROCESS_DEFINITION_KEY,
+      sf.PROCESS_DEFINITION_ID,
+      sf.TENANT_ID
+    FROM ${prefix}SEQUENCE_FLOW sf
+    WHERE sf.PROCESS_INSTANCE_KEY = #{filter.processInstanceKey}
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND sf.PROCESS_DEFINITION_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND sf.TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
+  </select>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId})
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="postgresql">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId})
+    ON CONFLICT DO NOTHING
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mariadb">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId})
+    ON DUPLICATE KEY UPDATE FLOW_NODE_ID = FLOW_NODE_ID -- this will not trigger an update
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mysql">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId})
+    ON DUPLICATE KEY UPDATE FLOW_NODE_ID = FLOW_NODE_ID -- this will not trigger an update
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="h2">
+    MERGE INTO ${prefix}SEQUENCE_FLOW sf
+      USING dual
+      ON (sf.FLOW_NODE_ID = #{flowNodeId} AND sf.PROCESS_INSTANCE_KEY = #{processInstanceKey})
+    WHEN NOT MATCHED THEN
+    INSERT (FLOW_NODE_ID,
+            PROCESS_INSTANCE_KEY,
+            ROOT_PROCESS_INSTANCE_KEY,
+            PROCESS_DEFINITION_KEY,
+            PROCESS_DEFINITION_ID,
+            TENANT_ID,
+            PARTITION_ID)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId})
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="oracle">
+    MERGE INTO ${prefix}SEQUENCE_FLOW sf
+      USING dual
+      ON (sf.FLOW_NODE_ID = #{flowNodeId} AND sf.PROCESS_INSTANCE_KEY = #{processInstanceKey})
+    WHEN NOT MATCHED THEN
+    INSERT (FLOW_NODE_ID,
+            PROCESS_INSTANCE_KEY,
+            ROOT_PROCESS_INSTANCE_KEY,
+            PROCESS_DEFINITION_KEY,
+            PROCESS_DEFINITION_ID,
+            TENANT_ID,
+            PARTITION_ID)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId})
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mssql">
+    MERGE INTO ${prefix}SEQUENCE_FLOW AS target
+    USING (SELECT 1 AS dummy) AS src
+      ON (target.FLOW_NODE_ID = #{flowNodeId} AND target.PROCESS_INSTANCE_KEY = #{processInstanceKey})
+    WHEN NOT MATCHED THEN
+      INSERT (FLOW_NODE_ID,
+              PROCESS_INSTANCE_KEY,
+              ROOT_PROCESS_INSTANCE_KEY,
+              PROCESS_DEFINITION_KEY,
+              PROCESS_DEFINITION_ID,
+              TENANT_ID,
+              PARTITION_ID)
+      VALUES (#{flowNodeId},
+              #{processInstanceKey},
+              #{rootProcessInstanceKey},
+              #{processDefinitionKey},
+              #{processDefinitionId},
+              #{tenantId},
+              #{partitionId});
+  </insert>
+
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'SEQUENCE_FLOW'"/>
+    <bind name="primaryKeyColumn" value="''"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'SEQUENCE_FLOW'"/>
+    <bind name="primaryKeyColumn" value="''"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
+    DELETE FROM ${prefix}SEQUENCE_FLOW
+    WHERE FLOW_NODE_ID = #{flowNodeId}
+      AND PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </delete>
+
+</mapper>

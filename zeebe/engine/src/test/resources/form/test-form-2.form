@@ -1,0 +1,40 @@
+{
+  "components": [
+    {
+      "subtype": "date",
+      "dateLabel": "Date",
+      "label": "Date time",
+      "type": "datetime",
+      "id": "Field_1m1sh95",
+      "key": "field_1j1e7pr"
+    },
+    {
+      "values": [
+        {
+          "label": "Value",
+          "value": "value"
+        }
+      ],
+      "label": "Radio",
+      "type": "radio",
+      "id": "Field_149qb2u",
+      "key": "field_1x6mnd8"
+    },
+    {
+      "action": "submit",
+      "label": "Button",
+      "type": "button",
+      "id": "Field_0ar5etf",
+      "key": "field_0652ks0"
+    }
+  ],
+  "type": "default",
+  "id": "Form_6s1b76p",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.1.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.9.0"
+  },
+  "schemaVersion": 7
+}

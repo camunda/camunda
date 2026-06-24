@@ -1,0 +1,44 @@
+## Endpoint definitions
+
+paths:
+  /setup/user:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Setup
+      operationId: createAdminUser
+      # Bootstrapping endpoint — declared unauthenticated at runtime via
+      # SecurityPathAdapter (uses an anonymous authentication context to
+      # create the initial admin user). `security: []` overrides the
+      # conditional enforcement on the global schemes for this operation.
+      security: []
+      summary: Create admin user
+      description: Creates a new user and assigns the admin role to it. This endpoint is only usable when users are managed in the Orchestration Cluster and while no user is assigned to the admin role.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'users.yaml#/components/schemas/UserRequest'
+        required: true
+      responses:
+        "201":
+          description: The admin user was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'users.yaml#/components/schemas/UserCreateResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: A user with this username already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"

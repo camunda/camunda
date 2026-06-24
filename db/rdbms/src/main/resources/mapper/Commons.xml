@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.Commons">
+
+  <!-- <include refid="io.camunda.db.rdbms.sql.Commons"/> -->
+  <sql id="operationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        = #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        != #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        IS NULL
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN')">
+        &gt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN_EQUALS')">
+        &gt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN')">
+        &lt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN_EQUALS')">
+        &lt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        NOT IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
+      </when>
+    </choose>
+  </sql>
+  <!--
+    Oracle treats empty strings as NULL. When filtering with EQUALS '' or NOT_EQUALS '',
+    we must use IS NULL / IS NOT NULL instead, because NULL = '' evaluates to UNKNOWN in SQL.
+  -->
+  <sql id="operationCondition" databaseId="oracle">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            IS NULL
+          </when>
+          <otherwise>
+            = #{operation.value}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            IS NOT NULL
+          </when>
+          <otherwise>
+            != #{operation.value}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        IS NULL
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN')">
+        &gt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN_EQUALS')">
+        &gt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN')">
+        &lt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN_EQUALS')">
+        &lt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        NOT IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
+      </when>
+    </choose>
+  </sql>
+
+  <sql id="keySetPageFilter">
+    <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">
+      WHERE
+      <foreach collection="page.keySetPagination" item="keySet" open="(" separator=" OR "
+        close=")">
+        <foreach collection="keySet.entries" item="entry" open="(" separator=" AND "
+          close=")">
+          <choose>
+            <when test="entry.fieldValue != null">
+              ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+            </when>
+            <otherwise>
+              ${entry.fieldName} ${entry.operator.symbol}
+            </otherwise>
+          </choose>
+        </foreach>
+      </foreach>
+    </if>
+  </sql>
+
+  <sql id="orderBy">
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        ${item.column} ${item.order}
+      </foreach>
+    </if>
+  </sql>
+  <!--
+    Oracle and PostgreSQL sort NULLs differently from other databases by default:
+    Oracle/PostgreSQL: NULLs LAST for ASC, NULLs FIRST for DESC
+    H2/MySQL/MariaDB: NULLs FIRST for ASC, NULLs LAST for DESC
+    This override ensures consistent NULL ordering across all databases.
+  -->
+  <sql id="orderBy" databaseId="oracle">
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        ${item.column} ${item.order}
+        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
+        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+      </foreach>
+    </if>
+  </sql>
+  <sql id="orderBy" databaseId="postgresql">
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        ${item.column} ${item.order}
+        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
+        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+      </foreach>
+    </if>
+  </sql>
+
+  <sql id="paging">
+    <if test="page != null">
+      <if test="page.keySetPagination == null or page.keySetPagination.isEmpty()">
+        ${paging.after}
+      </if>
+      <if test="page.keySetPagination != null and !page.keySetPagination.isEmpty()">
+        ${keysetPaging.limit}
+      </if>
+    </if>
+  </sql>
+
+  <sql id="variableOperationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
+          VAR_VALUE = #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'LONG'">
+          LONG_VALUE = #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE = #{operation.value}
+        </if>
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
+          VAR_VALUE != #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'LONG'">
+          LONG_VALUE != #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE != #{operation.value}
+        </if>
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN')">
+        <if test="operation.type.toString == 'LONG'">
+          LONG_VALUE &gt; #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE &gt; #{operation.value}
+        </if>
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN_EQUALS')">
+        <if test="operation.type.toString == 'LONG'">
+          LONG_VALUE &gt;= #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE &gt;= #{operation.value}
+        </if>
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN')">
+        <if test="operation.type.toString == 'LONG'">
+          LONG_VALUE &lt; #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE &lt; #{operation.value}
+        </if>
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN_EQUALS')">
+        <if test="operation.type.toString == 'LONG'">
+          LONG_VALUE &lt;= #{operation.value}
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE &lt;= #{operation.value}
+        </if>
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        <if test="operation.type.toString == 'STRING'">
+          VAR_VALUE IN
+        </if>
+        <if test="operation.type.toString == 'LONG'">
+          LONG_VALUE IN
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          DOUBLE_VALUE IN
+        </if>
+        <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        VAR_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
+        OR VAR_FULL_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        VAR_VALUE IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        VAR_VALUE IS NULL
+      </when>
+    </choose>
+  </sql>
+
+  <!--
+  Vendor specific SQLs to delete data from tables
+    - the table name is specified by a <bind /> element without prefix
+    - the table need sto hava a column HISTORY_CLEANUP_DATE containing a timestamp
+  -->
+
+  <sql id="historyCleanup">
+    DELETE
+    FROM ${prefix}${tableName}
+    WHERE PARTITION_ID = #{partitionId}
+          AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+      LIMIT #{limit}
+  </sql>
+  <sql id="historyCleanup" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}${tableName}
+    WHERE PARTITION_ID = #{partitionId}
+      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate, jdbcType=TIMESTAMP}
+  </sql>
+  <!--
+   Special handling for Oracle to delete using row identifiers.
+   We also do not use an IN clause to select the process instance keys,
+   but use XMLTABLE to handle large lists of keys. Oracle has a natural limit of 1000 elements per IN clause.
+ -->
+  <sql id="historyCleanup" databaseId="oracle">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'"/>
+    DELETE
+    FROM ${prefix}${tableName} t1
+    WHERE ${keyColumn} IN (SELECT t2.${keyColumn}
+                           FROM ${prefix}${tableName} t2
+                           WHERE t2.PARTITION_ID = #{partitionId}
+                           AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+                           AND ROWNUM &lt;= #{limit})
+  </sql>
+  <!--
+    Special handling for Oracle to delete using row identifiers.
+    We also do not use an IN clause to select the process instance keys,
+    but use XMLTABLE to handle large lists of keys. Oracle has a natural limit of 1000 elements per IN clause.
+  -->
+  <sql id="historyCleanup" databaseId="postgresql">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'"/>
+    DELETE
+    FROM ${prefix}${tableName} t1
+    USING (SELECT ${keyColumn}
+           FROM ${prefix}${tableName}
+           WHERE PARTITION_ID = #{partitionId}
+           AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+           LIMIT #{limit}) t2
+    WHERE t1.${keyColumn} = t2.${keyColumn}
+  </sql>
+
+  <!-- shared SQL for history deletion and cleanup -->
+  <sql id="historyDeletionByKeys">
+    DELETE
+    FROM ${prefix}${tableName}
+    WHERE ${deletionKeyColumn} IN
+    <foreach collection="deletionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit}
+  </sql>
+  <sql id="historyDeletionByKeys" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}${tableName}
+    WHERE ${deletionKeyColumn} IN
+    <foreach collection="deletionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+  </sql>
+  <!--
+    Special handling for Oracle to delete using row identifiers.
+    We also do not use an IN clause to select the process instance keys,
+    but use XMLTABLE to handle large lists of keys. Oracle has a natural limit of 1000 elements per IN clause.
+  -->
+  <sql id="historyDeletionByKeys" databaseId="oracle">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'"/>
+    DELETE
+    FROM ${prefix}${tableName} t1
+    WHERE ${keyColumn} IN (SELECT t2.${keyColumn}
+    FROM ${prefix}${tableName} t2
+    WHERE t2.${deletionKeyColumn} IN (
+    SELECT COLUMN_VALUE
+    FROM XMLTABLE('/d/r'
+    PASSING XMLTYPE(#{deletionKeys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
+    COLUMNS COLUMN_VALUE NUMBER PATH 'text()')
+    )
+    AND ROWNUM &lt;= #{limit})
+  </sql>
+
+  <!--
+    Special handling for PostgreSQL to delete using ctid or a specified primary key column.
+    This avoids issues with large IN clauses by using ANY with an array parameter.
+    -->
+  <sql id="historyDeletionByKeys" databaseId="postgresql">
+    <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'"/>
+    DELETE
+    FROM ${prefix}${tableName} t1
+    USING (SELECT ${keyColumn}
+    FROM ${prefix}${tableName}
+    WHERE ${deletionKeyColumn} = ANY(#{deletionKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+    LIMIT #{limit}) t2
+    WHERE t1.${keyColumn} = t2.${keyColumn}
+  </sql>
+
+  <!-- history cleanup deletes by root process instance -->
+  <sql id="rootProcessInstanceHistoryDeletion">
+    <bind name="deletionKeys" value="rootProcessInstanceKeys"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletionByKeys">
+        <property name="deletionKeyColumn" value="ROOT_PROCESS_INSTANCE_KEY"/>
+    </include>
+  </sql>
+
+  <!-- history deletion API deletes by process instance -->
+  <sql id="processInstanceHistoryDeletion">
+    <bind name="deletionKeys" value="processInstanceKeys"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletionByKeys">
+      <property name="deletionKeyColumn" value="PROCESS_INSTANCE_KEY"/>
+    </include>
+  </sql>
+
+  <!--
+    Vendor-specific SQL fragment that floors a timestamp column to the nearest bucket boundary.
+    Parameters injected from the enclosing query object:
+      ${timeBucketColumn}   - the column name (e.g. START_TIME), substituted at parse time
+      #{resolutionSeconds}  - the bucket size in seconds, bound at execution time
+    Default dialect: H2 (used in unit tests)
+  -->
+  <sql id="timeBucket">
+    TIMESTAMPADD('SECOND', FLOOR(DATEDIFF('SECOND', TIMESTAMP '1970-01-01 00:00:00', ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds}, TIMESTAMP '1970-01-01 00:00:00')
+  </sql>
+
+  <sql id="timeBucket" databaseId="postgresql">
+    TO_TIMESTAMP(FLOOR(EXTRACT(EPOCH FROM ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mysql">
+    FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mariadb">
+    FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mssql">
+    TODATETIMEOFFSET(DATEADD(SECOND, (DATEDIFF_BIG(SECOND, '1970-01-01', ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds}, '1970-01-01'), 0)
+  </sql>
+
+  <sql id="timeBucket" databaseId="oracle">
+    TIMESTAMP '1970-01-01 00:00:00 UTC' + NUMTODSINTERVAL(FLOOR((EXTRACT(DAY FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 86400 + EXTRACT(HOUR FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 3600 + EXTRACT(MINUTE FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 60 + EXTRACT(SECOND FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00'))) / #{resolutionSeconds}) * #{resolutionSeconds}, 'SECOND')
+  </sql>
+
+  <resultMap id="flowNodeStatisticsResultMap"
+    type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
+    <constructor>
+      <idArg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="COUNT_ACTIVE" javaType="java.lang.Long"/>
+      <arg column="COUNT_CANCELED" javaType="java.lang.Long"/>
+      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long"/>
+      <arg column="COUNT_COMPLETED" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <!--
+    Vendor-specific SQL fragment to let us COALESCE a CLOB column with a non-CLOB column
+     - ${clobColumn} is the name of the CLOB column (e.g. FULL_RESULT)
+     - ${nonClobColumn} is the name of the non-CLOB column (e.g. RESULT) that contains the same data for short values
+  -->
+  <sql id="coalesceCLOB">
+    COALESCE(${clobColumn}, ${nonClobColumn})
+  </sql>
+
+  <sql id="coalesceCLOB" databaseId="oracle">
+    COALESCE(${clobColumn}, TO_CLOB(${nonClobColumn}))
+  </sql>
+
+</mapper>

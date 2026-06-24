@@ -1,0 +1,3 @@
+camunda:
+  client:
+    tenant-id: foo

@@ -1,0 +1,330 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {expect} from '@playwright/test';
+import {publicTest as test} from 'fixtures';
+import {
+  LOGIN_CREDENTIALS,
+  createTestData,
+  createComponentAuthorization,
+  createUserAuthorization,
+} from 'utils/constants';
+import {waitForItemInList} from 'utils/waitForItemInList';
+import {relativizePath, Paths} from 'utils/relativizePath';
+import {captureScreenshot, captureFailureVideo} from '@setup';
+import {verifyAccess} from 'utils/accessVerification';
+import {cleanupRoles} from 'utils/rolesCleanup';
+import {cleanupUsers} from 'utils/usersCleanup';
+
+const createdRoleIds: string[] = [];
+const createdUserIds: string[] = [];
+
+test.describe.serial('component authorizations CRUD', () => {
+  let NEW_USER: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+  let NEW_AUTH_ROLE: {id: string; name: string};
+  let NEW_USER_AUTHORIZATION: NonNullable<
+    ReturnType<typeof createUserAuthorization>
+  >;
+  let NEW_COMPONENT_AUTHORIZATION: NonNullable<
+    ReturnType<typeof createComponentAuthorization>
+  >;
+
+  test.beforeAll(() => {
+    const testData = createTestData({
+      user: true,
+      authRole: true,
+      componentAuth: true,
+    });
+    NEW_USER = testData.user!;
+    NEW_AUTH_ROLE = testData.authRole!;
+    NEW_USER_AUTHORIZATION = createUserAuthorization(NEW_AUTH_ROLE);
+    NEW_COMPONENT_AUTHORIZATION = testData.componentAuth!;
+
+    createdRoleIds.push(NEW_AUTH_ROLE.id);
+    createdUserIds.push(NEW_USER.username);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupUsers(request, createdUserIds);
+  });
+
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('tries to create an authorization with invalid id', async ({
+    identityAuthorizationsPage,
+  }) => {
+    await identityAuthorizationsPage.selectResourceTypeTab(
+      NEW_COMPONENT_AUTHORIZATION.resourceType,
+    );
+    await identityAuthorizationsPage.createAuthorizationButton.click();
+    await identityAuthorizationsPage.selectAuthorizationOwnerType({
+      ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
+    });
+    await identityAuthorizationsPage.selectAuthorizationOwner({
+      ownerId: NEW_COMPONENT_AUTHORIZATION.ownerId,
+    });
+    await identityAuthorizationsPage.fillResourceId('invalid!!%');
+    await expect(
+      identityAuthorizationsPage.createAuthorizationModal,
+    ).toContainText('Please enter a valid Resource ID');
+    await expect(
+      identityAuthorizationsPage.createAuthorizationResourceIdField,
+    ).toHaveAttribute('data-invalid', 'true');
+  });
+
+  test('create user authorization', async ({
+    page,
+    identityUsersPage,
+    identityRolesPage,
+    identityRolesDetailsPage,
+    identityAuthorizationsPage,
+    identityHeader,
+    loginPage,
+  }) => {
+    await test.step(`Create new user`, async () => {
+      await identityUsersPage.navigateToUsers();
+      await identityUsersPage.createUser(NEW_USER);
+    });
+
+    await test.step(`Login as new user and check users list`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(NEW_USER.username, NEW_USER.password);
+      await verifyAccess(page, false);
+    });
+
+    await test.step(`Login as main user and create role and assign the new user to it`, async () => {
+      await identityHeader.logout();
+
+      await loginPage.login(
+        LOGIN_CREDENTIALS.username,
+        LOGIN_CREDENTIALS.password,
+      );
+      await expect(page).toHaveURL(relativizePath(Paths.users()));
+      await identityHeader.navigateToRoles();
+      await expect(page).toHaveURL(relativizePath(Paths.roles()));
+
+      await identityRolesPage.createRole(NEW_AUTH_ROLE);
+      await identityRolesPage.clickRole(NEW_AUTH_ROLE.id);
+
+      await identityRolesDetailsPage.assignUser(NEW_USER);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    });
+
+    await test.step(`Assign authorization to new user`, async () => {
+      await identityAuthorizationsPage.createAuthorization(
+        NEW_USER_AUTHORIZATION,
+      );
+      await identityHeader.logout();
+      await loginPage.login(NEW_USER.username, NEW_USER.password);
+      await verifyAccess(page, false);
+    });
+  });
+
+  test('create component authorization for a role', async ({
+    identityUsersPage,
+    identityAuthorizationsPage,
+    identityHeader,
+    loginPage,
+    page,
+  }) => {
+    const role = NEW_AUTH_ROLE;
+    await identityHeader.navigateToAuthorizations();
+    await identityAuthorizationsPage.createAuthorization({
+      ...NEW_COMPONENT_AUTHORIZATION,
+      ownerId: role.name,
+    });
+    await identityHeader.logout();
+    await loginPage.login(NEW_USER.username, NEW_USER.password);
+    await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
+    await waitForItemInList(page, identityUsersPage.userCell(NEW_USER.email), {
+      clickNext: true,
+      timeout: 30000,
+    });
+  });
+
+  test('delete component authorization for role', async ({
+    page,
+    identityHeader,
+    loginPage,
+    identityUsersPage,
+    identityAuthorizationsPage,
+  }) => {
+    await test.step(`Delete component authorization for role`, async () => {
+      const role = NEW_AUTH_ROLE;
+      await identityHeader.navigateToAuthorizations();
+      const componentAuth = NEW_COMPONENT_AUTHORIZATION;
+      const resourceType = componentAuth.resourceType;
+      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
+      await identityAuthorizationsPage.clickDeleteAuthorizationButton(role.id);
+
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeVisible();
+      await identityAuthorizationsPage.clickDeleteAuthorizationSubButton();
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeHidden();
+
+      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
+      const item = identityAuthorizationsPage.getAuthorizationCell(role.id);
+      await waitForItemInList(page, item, {
+        shouldBeVisible: false,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab(resourceType),
+      });
+    });
+
+    await test.step(`Logout and login with new user and assert authorization`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(NEW_USER.username, NEW_USER.password);
+      await verifyAccess(page, false);
+      await identityHeader.logout();
+    });
+
+    await test.step(`Logout and login with main user and delete created user`, async () => {
+      await loginPage.login(
+        LOGIN_CREDENTIALS.username,
+        LOGIN_CREDENTIALS.password,
+      );
+      await expect(identityUsersPage.usersHeading).toBeVisible();
+      await identityUsersPage.deleteUser(NEW_USER);
+      const userItem = identityUsersPage.userCell(NEW_USER.username);
+      await waitForItemInList(page, userItem, {shouldBeVisible: false});
+    });
+  });
+});
+
+test.describe('authorization scenarios', () => {
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupUsers(request, createdUserIds);
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('create component authorization for a user', async ({
+    page,
+    identityUsersPage,
+    identityAuthorizationsPage,
+    identityHeader,
+    loginPage,
+  }) => {
+    let testUser: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+
+    await test.step(`Create new test user for direct authorization`, async () => {
+      const testData = createTestData({user: true});
+      testUser = testData.user!;
+
+      createdUserIds.push(testUser.username);
+
+      await identityUsersPage.navigateToUsers();
+      await identityUsersPage.createUser(testUser);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    });
+
+    await test.step(`Create component authorization for user`, async () => {
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: testUser.username,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser.username,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: true,
+        timeout: 10000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+        clickNext: true,
+      });
+    });
+
+    await test.step(`Verify user can access Identity after authorization`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser.username, testUser.password);
+      await expect(identityUsersPage.userCell(testUser.email)).toBeVisible();
+    });
+  });
+});
+
+test.describe('create authorization modal — resource type field', () => {
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('prefills resource type from the active tab and disables the dropdown', async ({
+    identityAuthorizationsPage,
+  }) => {
+    await identityAuthorizationsPage.selectResourceTypeTab('Component');
+
+    await identityAuthorizationsPage.createAuthorizationButton.click();
+    await expect(
+      identityAuthorizationsPage.createAuthorizationModal,
+    ).toBeVisible();
+
+    await expect(identityAuthorizationsPage.resourceTypeComboBox).toHaveText(
+      /Component/i,
+    );
+    await expect(
+      identityAuthorizationsPage.resourceTypeComboBox,
+    ).toBeDisabled();
+  });
+});

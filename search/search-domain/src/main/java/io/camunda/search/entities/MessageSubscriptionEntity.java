@@ -1,0 +1,208 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.entities;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record MessageSubscriptionEntity(
+    Long messageSubscriptionKey,
+    String processDefinitionId,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    String flowNodeId,
+    @Nullable Long flowNodeInstanceKey,
+    MessageSubscriptionState messageSubscriptionState,
+    MessageSubscriptionType messageSubscriptionType,
+    // absent on subscriptions that predate the dateTime field being populated by the handler.
+    @Nullable OffsetDateTime dateTime,
+    String messageName,
+    @Nullable String correlationKey,
+    String tenantId,
+    @Nullable String processDefinitionName,
+    @Nullable Integer processDefinitionVersion,
+    Map<String, String> toolProperties,
+    @Nullable String toolName,
+    @Nullable String inboundConnectorType)
+    implements TenantOwnedEntity {
+
+  public MessageSubscriptionEntity {
+    Objects.requireNonNull(messageSubscriptionKey, "messageSubscriptionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(messageSubscriptionState, "messageSubscriptionState");
+    Objects.requireNonNull(messageName, "messageName");
+    Objects.requireNonNull(tenantId, "tenantId");
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
+    toolProperties = toolProperties != null ? toolProperties : new HashMap<>();
+    // Pre-8.10 rows have no messageSubscriptionType stored; default them to PROCESS_EVENT.
+    messageSubscriptionType =
+        messageSubscriptionType != null
+            ? messageSubscriptionType
+            : MessageSubscriptionType.PROCESS_EVENT;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    private @Nullable Long messageSubscriptionKey;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String flowNodeId;
+    private @Nullable Long flowNodeInstanceKey;
+    private @Nullable MessageSubscriptionState messageSubscriptionState;
+    private @Nullable MessageSubscriptionType messageSubscriptionType;
+    private @Nullable OffsetDateTime dateTime;
+    private @Nullable String messageName;
+    private @Nullable String correlationKey;
+    private @Nullable String tenantId;
+    private @Nullable String processDefinitionName;
+    private @Nullable Integer processDefinitionVersion;
+    private @Nullable Map<String, String> toolProperties;
+    private @Nullable String toolName;
+    private @Nullable String inboundConnectorType;
+
+    public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
+      this.messageSubscriptionKey = messageSubscriptionKey;
+      return this;
+    }
+
+    public Builder processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final Long processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public Builder processInstanceKey(final Long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
+    public Builder flowNodeId(final String flowNodeId) {
+      this.flowNodeId = flowNodeId;
+      return this;
+    }
+
+    public Builder flowNodeInstanceKey(final Long flowNodeInstanceKey) {
+      this.flowNodeInstanceKey = flowNodeInstanceKey;
+      return this;
+    }
+
+    public Builder messageSubscriptionState(
+        final MessageSubscriptionState messageSubscriptionState) {
+      this.messageSubscriptionState = messageSubscriptionState;
+      return this;
+    }
+
+    public Builder messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
+      this.messageSubscriptionType = messageSubscriptionType;
+      return this;
+    }
+
+    public Builder processDefinitionName(final String processDefinitionName) {
+      this.processDefinitionName = processDefinitionName;
+      return this;
+    }
+
+    public Builder processDefinitionVersion(final Integer processDefinitionVersion) {
+      this.processDefinitionVersion = processDefinitionVersion;
+      return this;
+    }
+
+    public Builder toolProperties(final Map<String, String> toolProperties) {
+      this.toolProperties = toolProperties;
+      return this;
+    }
+
+    public Builder toolName(final String toolName) {
+      this.toolName = toolName;
+      return this;
+    }
+
+    public Builder inboundConnectorType(final String inboundConnectorType) {
+      this.inboundConnectorType = inboundConnectorType;
+      return this;
+    }
+
+    public Builder dateTime(final OffsetDateTime dateTime) {
+      this.dateTime = dateTime;
+      return this;
+    }
+
+    public Builder messageName(final String messageName) {
+      this.messageName = messageName;
+      return this;
+    }
+
+    public Builder correlationKey(final String correlationKey) {
+      this.correlationKey = correlationKey;
+      return this;
+    }
+
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    @SuppressWarnings("NullAway")
+    public MessageSubscriptionEntity build() {
+      return new MessageSubscriptionEntity(
+          messageSubscriptionKey,
+          processDefinitionId,
+          processDefinitionKey,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          flowNodeId,
+          flowNodeInstanceKey,
+          messageSubscriptionState,
+          messageSubscriptionType,
+          dateTime,
+          messageName,
+          correlationKey,
+          tenantId,
+          processDefinitionName,
+          processDefinitionVersion,
+          toolProperties,
+          toolName,
+          inboundConnectorType);
+    }
+  }
+
+  public enum MessageSubscriptionState {
+    CORRELATED,
+    CREATED,
+    DELETED,
+    MIGRATED
+  }
+
+  public enum MessageSubscriptionType {
+    START_EVENT,
+    PROCESS_EVENT
+  }
+}

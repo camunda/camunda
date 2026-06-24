@@ -1,0 +1,67 @@
+{
+  "components": [
+    {
+      "text": "# Register Passenger\nName: {{passengerName}}\nRoute: DUB to IAD",
+      "label": "Text view",
+      "type": "text",
+      "layout": {
+        "row": "Row_1ien8d7",
+        "columns": null
+      },
+      "id": "Field_1wdldc5"
+    },
+    {
+      "label": "Passport number",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0h7twrz",
+        "columns": null
+      },
+      "id": "Field_06c5xcx",
+      "key": "textfield_98ja3o"
+    },
+    {
+      "values": [
+        {
+          "label": "Standard",
+          "value": "standard"
+        },
+        {
+          "label": "Vegetarian",
+          "value": "veg"
+        },
+        {
+          "label": "Vegan",
+          "value": "vegan"
+        }
+      ],
+      "label": "Meal choice",
+      "type": "select",
+      "layout": {
+        "row": "Row_1p60gdj",
+        "columns": null
+      },
+      "id": "Field_1x80f9g",
+      "key": "select_4xp7bf"
+    },
+    {
+      "label": "Special considerations",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_18r43hv",
+        "columns": null
+      },
+      "id": "Field_04dx95q",
+      "key": "textarea_r76eib"
+    }
+  ],
+  "type": "default",
+  "id": "Form_0ilfls2",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.4.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.20.0"
+  },
+  "schemaVersion": 15
+}

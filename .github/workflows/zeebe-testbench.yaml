@@ -1,0 +1,170 @@
+# description: Starts a test in the testbench cluster: https://console.cloud.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/eeef5734-cfd6-47a5-a2ed-5fe13269e589
+#  This is used to orchestrate several tests for Zeebe that are not part of the regular ci build.
+#  To start a test we create a process instance in Testbench cluster using curl v2/process-instances.
+#  The call itself is not doing any tests. But the process started by it will start different tests
+# against a new camunda cluster with the specified version. This is started daily by the github
+# action zeebe-daily-qa.yml. Github workflows just start the process instance and do not monitor it.
+#  The results of these tests are posted to #zeebe-ci via Testbench workers once the test is completed.
+# called by: zeebe-e2e-testbench.yaml, zeebe-qa-testbench.yaml, zeebe-update-long-running-migrating-benchmark.yaml
+# type: CI
+# owner @camunda/core-features
+name: Start a Zeebe test in Testbench
+
+on:
+  workflow_call:
+    inputs:
+      variables:
+        description: 'Process instance variables'
+        required: true
+        type: string
+      processId:
+        description: 'Id of process to start in testbench (eg:- e2e-testbench-protocol)'
+        required: true
+        type: string
+      branch:
+        description: 'Branch to test'
+        required: true
+        type: string
+
+jobs:
+  testbench:
+    name: Start a test in testbench
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+      - name: Authenticate for zeebe image registry
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        id: auth-zeebe
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Authenticate for saas image registry
+        id: auth-saas
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
+          service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
+      - name: Setup BuildKit
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+      - name: Login to SaaS image registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: europe-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth-saas.outputs.access_token }}
+      - name: Login to Zeebe image registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth-zeebe.outputs.access_token }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - id: image-tag
+        name: Calculate image tag
+        shell: bash
+        run: |
+          # shellcheck disable=SC2153
+          # Replace dots and slashes with dashes
+          branch=${BRANCH//[\/\.]/-}
+          version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
+          echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+        env:
+          BRANCH: ${{ inputs.branch }}
+      - name: Build optimize frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+      - name: Build operate frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
+          package-manager: npm
+      - name: Build tasklist frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: npm
+      - name: Build identity frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./identity/client
+          package-manager: npm
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/camunda
+          version: ${{ steps.image-tag.outputs.image-tag }}
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
+      - name: Build and Push Starter Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
+      - name: Build and Push Worker Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_REST_ADDRESS;
+
+      - name: Get Auth Token
+        uses: fjogeleit/http-request-action@551353b829c3646756b2ec2b3694f819d7957495 # v2.0.0
+        id: authorization
+        with:
+          url: 'https://login.cloud.camunda.io/oauth/token'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/x-www-form-urlencoded"}'
+          data: 'grant_type=client_credentials&audience=zeebe.camunda.io&client_id=Jg9caDRuAWHchvM7JiaVlndL-qVFfp~0&client_secret=${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}'
+
+      - name: Set Auth Token
+        id: token
+        run: |
+          echo "access_token=$(echo '${{ steps.authorization.outputs.response }}' | jq -r '.access_token')" >> "$GITHUB_ENV"
+
+      - name: Start Test
+        shell: bash
+        run: |
+          # Substitute environment variables in the JSON payload
+          substituted_variables=$(echo '${{ inputs.variables }}' | envsubst)
+
+          # Format the JSON to ensure it’s correct
+          variables=$(echo "$substituted_variables" | jq -c .)
+
+          # Run the curl command with expanded variables
+          curl --fail-with-body -L -X POST "${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances" \
+            -H "Authorization: Bearer $access_token" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            --data-raw "{
+              \"processDefinitionId\": \"${{ inputs.processId }}\",
+              \"variables\": $variables
+            }"
+        env:
+          IMAGE: zeebe-io/camunda:${{ steps.image-tag.outputs.image-tag }}
+          access_token: ${{ env.access_token }}
+

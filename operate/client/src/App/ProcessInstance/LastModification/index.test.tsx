@@ -1,0 +1,141 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render, screen} from 'modules/testing-library';
+import {LastModification} from './index';
+import {MemoryRouter} from 'react-router-dom';
+import {modificationsStore} from 'modules/stores/modifications';
+import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {
+  createAddVariableModification,
+  createEditVariableModification,
+} from 'modules/mocks/modifications';
+import {act} from 'react';
+import {cancelAllTokens} from 'modules/utils/modifications';
+
+type Props = {
+  children?: React.ReactNode;
+};
+
+const Wrapper = ({children}: Props) => {
+  return <MemoryRouter>{children}</MemoryRouter>;
+};
+
+describe('LastModification', () => {
+  it('should not display last modification if no modifications applied', () => {
+    render(<LastModification />, {wrapper: Wrapper});
+
+    expect(
+      screen.queryByText(/Last added modification/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display/remove last added modification', async () => {
+    const {user} = render(<LastModification />, {wrapper: Wrapper});
+
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          element: {id: 'service-task-1', name: 'service-task-1'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
+        },
+      });
+    });
+
+    expect(
+      await screen.findByText(/Last added modification/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Add "service-task-1"/)).toBeInTheDocument();
+
+    act(() => {
+      cancelAllTokens('service-task-2', 0, 0, {});
+    });
+
+    expect(
+      await screen.findByText(/Cancel "service-task-2"/),
+    ).toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'MOVE_TOKEN',
+          element: {id: 'service-task-3', name: 'service-task-3'},
+          targetElement: {id: 'service-task-4', name: 'service-task-4'},
+          affectedTokenCount: 2,
+          visibleAffectedTokenCount: 2,
+          scopeIds: [generateUniqueID(), generateUniqueID()],
+          parentScopeIds: {},
+        },
+      });
+    });
+
+    expect(
+      await screen.findByText(/Move "service-task-3" to "service-task-4"/),
+    ).toBeInTheDocument();
+
+    act(() => {
+      createAddVariableModification({
+        id: '1',
+        scopeId: '5',
+        elementName: 'service-task-5',
+        name: 'variableName1',
+        value: 'variableValue1',
+      });
+    });
+
+    expect(
+      await screen.findByText(/Add new variable "variableName1"/),
+    ).toBeInTheDocument();
+
+    act(() => {
+      createEditVariableModification({
+        name: 'variableName2',
+        oldValue: 'variableValue2',
+        newValue: 'editedVariableValue2',
+        scopeId: '5',
+        elementName: 'flowNode6',
+      });
+    });
+
+    expect(
+      await screen.findByText(/Edit variable "variableName2"/),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Undo'}));
+
+    expect(
+      screen.getByText(/Add new variable "variableName1"/),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Undo'}));
+
+    expect(
+      screen.getByText(/Move "service-task-3" to "service-task-4"/),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Undo'}));
+
+    expect(screen.getByText(/Cancel "service-task-2"/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Undo'}));
+
+    expect(screen.getByText(/Add "service-task-1"/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Undo'}));
+
+    expect(
+      screen.queryByText(/Last added modification/),
+    ).not.toBeInTheDocument();
+  });
+});

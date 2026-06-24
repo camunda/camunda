@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" id="force_users" name="Force Users" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.11.0">
+  <decision id="jedi_or_sith" name="Jedi or Sith">
+    <decisionTable id="DecisionTable_14n3bxx">
+      <input id="Input_1" label="Lightsaber color" biodi:width="192">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>lightsaberColor</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Jedi or Sith" name="jedi_or_sith" typeRef="string" biodi:width="192">
+        <outputValues id="UnaryTests_0hj346a">
+          <text>"Jedi","Sith"</text>
+        </outputValues>
+      </output>
+      <rule id="this_is_an_extremely_creative_and_very_long_id_for_a_decision_rule_that_should_exceed_one_hundred_characters_for_testing">
+        <inputEntry id="UnaryTests_0leuxqi">
+          <text>"blue"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0c9vpz8">
+          <text>"Jedi"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="jedi_or_sith">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
+

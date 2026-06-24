@@ -1,0 +1,318 @@
+# Domain file with paths and schemas for testing response-properties-must-be-required.
+# Contains both valid and invalid cases, each at a distinct API path.
+
+## ─── Path definitions ──────────────────────────────────────────────────────────
+
+paths:
+
+  # ── Valid: flat object, all properties required ───────────────────
+  /valid-flat/get:
+    get:
+      tags: [Test]
+      operationId: validFlat
+      summary: Get a thing (valid)
+      description: All properties are listed in required.
+      responses:
+        "200":
+          description: The thing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidFlatResult'
+
+  # ── Valid: allOf composition, all properties required ─────────────
+  /valid-allof/search:
+    post:
+      tags: [Test]
+      operationId: validAllof
+      summary: Search things (valid)
+      description: All properties required with allOf composition.
+      responses:
+        "200":
+          description: The search results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidAllOfResult'
+
+  # ── Valid: allOf with required and properties split across members ─
+  /valid-allof-split/search:
+    post:
+      tags: [Test]
+      operationId: validAllofSplit
+      summary: Search with split allOf (valid)
+      description: required list in one allOf member, properties in another.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidAllOfSplitResult'
+
+  # ── Valid: nested object, all properties required ─────────────────
+  /valid-nested/get:
+    get:
+      tags: [Test]
+      operationId: validNested
+      summary: Get nested (valid)
+      description: Nested object has all properties required.
+      responses:
+        "200":
+          description: Result with nested object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidNestedResult'
+
+  # ── Valid: response with no properties ────────────────────────────
+  /valid-empty/get:
+    get:
+      tags: [Test]
+      operationId: validEmpty
+      summary: Get empty (valid)
+      description: Response schema has no properties.
+      responses:
+        "200":
+          description: Empty result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResult'
+
+  # ── Invalid: one property not in required ─────────────────────────
+  /invalid-missing-one/get:
+    get:
+      tags: [Test]
+      operationId: invalidMissingOne
+      summary: Get thing (invalid - one missing)
+      description: One property is not required.
+      responses:
+        "200":
+          description: The thing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MissingOneResult'
+
+  # ── Invalid: multiple properties not in required ──────────────────
+  /invalid-missing-many/get:
+    get:
+      tags: [Test]
+      operationId: invalidMissingMany
+      summary: Get thing (invalid - many missing)
+      description: Multiple properties are not required.
+      responses:
+        "200":
+          description: The thing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MissingManyResult'
+
+  # ── Invalid: nested object has non-required property ──────────────
+  /invalid-nested/get:
+    get:
+      tags: [Test]
+      operationId: invalidNested
+      summary: Get nested (invalid)
+      description: Nested object has a non-required property.
+      responses:
+        "200":
+          description: Result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNestedResult'
+
+  # ── Invalid: allOf composition with missing required entry ────────
+  /invalid-allof/search:
+    post:
+      tags: [Test]
+      operationId: invalidAllof
+      summary: Search (invalid - allOf)
+      description: allOf composed schema has a property not in required.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidAllOfResult'
+
+  # ── Invalid: array items with non-required property (recursion) ───
+  /invalid-items-recurse/search:
+    post:
+      tags: [Test]
+      operationId: invalidItemsRecurse
+      summary: Search with recursive items (invalid)
+      description: Array items schema contains an object with a non-required property.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemsRecurseResult'
+
+
+## ─── Schema definitions ────────────────────────────────────────────────────────
+
+components:
+  schemas:
+
+    # ── Valid: flat object, all required ──────────────────────────────
+    ValidFlatResult:
+      type: object
+      required:
+        - name
+        - status
+        - count
+      properties:
+        name:
+          type: string
+          description: The name.
+        status:
+          type: string
+          description: The status.
+        count:
+          type: integer
+          description: The count.
+
+    # ── Valid: allOf composition, all required ────────────────────────
+    ValidAllOfResult:
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidFlatResult'
+
+    # ── Valid: allOf split required / properties ──────────────────────
+    ValidAllOfSplitResult:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - items
+        - type: object
+          properties:
+            items:
+              description: The things.
+              type: array
+              items:
+                $ref: '#/components/schemas/ValidFlatResult'
+
+    # ── Valid: nested object, all required ────────────────────────────
+    ValidNestedResult:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          description: Metadata about the thing.
+          required:
+            - label
+            - tags
+          properties:
+            label:
+              type: string
+              description: A label.
+            tags:
+              description: Tags associated with the thing.
+              type: array
+              items:
+                type: string
+
+    # ── Valid: empty schema ───────────────────────────────────────────
+    EmptyResult:
+      type: object
+      description: An empty result.
+
+    # ── Invalid: one property not required ────────────────────────────
+    MissingOneResult:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name.
+        status:
+          type: string
+          description: The status.
+
+    # ── Invalid: multiple properties not required ─────────────────────
+    MissingManyResult:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name.
+        status:
+          type: string
+          description: The status.
+        count:
+          type: integer
+          description: The count.
+
+    # ── Invalid: nested object with non-required property ─────────────
+    InvalidNestedResult:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          description: Metadata about the thing.
+          required:
+            - label
+          properties:
+            label:
+              type: string
+              description: A label.
+            priority:
+              type: integer
+              description: The priority.
+
+    # ── Invalid: allOf with missing required ──────────────────────────
+    InvalidAllOfResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidFlatResult'
+
+    # ── Invalid: array items with non-required property ───────────────
+    ItemsRecurseResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          items:
+            $ref: '#/components/schemas/ThingWithBadFieldResult'
+
+    ThingWithBadFieldResult:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name.
+        category:
+          type: string
+          description: The category.

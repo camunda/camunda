@@ -1,0 +1,32 @@
+# type: Project Management
+# owner: @camunda/monorepo-devops-team
+name: "Opened Issue Labeler"
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+      with:
+        github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
+        github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+        github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
+        github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+    - uses: github/issue-labeler@c1b0f9f52a63158c4adc09425e858e87b32e9685 # v3.4
+      with:
+        configuration-path: .github/opened_issue_labeler.yml
+        enable-versioned-regex: 0
+        repo-token: ${{ steps.github-token.outputs.token }}

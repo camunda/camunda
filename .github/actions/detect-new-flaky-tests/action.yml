@@ -1,0 +1,121 @@
+# owner: @camunda/monorepo-devops-team
+name: Detect New Flaky Tests
+
+description: >
+  Compares flaky tests from the current PR run against known flaky tests from BigQuery
+  and a sticky per-PR state artifact. Once a test is flagged it stays flagged until
+  the method body is modified and 3 subsequent gate runs observe it clean, or until
+  the ci:flaky-test-bypass label is applied. Posts/updates a single PR comment that
+  renders the current state and writes the updated state JSON for upload.
+
+inputs:
+  pr-flaky-tests-data:
+    description: 'JSON array of {job, flaky_tests} from collect-flaky-tests'
+    required: true
+  known-flaky-tests-file:
+    description: 'Path to a JSON file containing an array of {test_class_name, test_name} from BigQuery'
+    required: true
+  pr-number:
+    description: 'Pull request number'
+    required: true
+  blocking:
+    description: 'If true, fail the job when any sticky entry is still active. If false, only post a comment.'
+    required: false
+    default: 'true'
+  ran-jobs-json:
+    description: 'JSON array of parent job names whose result is not "skipped" in this CI run. Used to decide whether a clean run advances the per-test counter.'
+    required: false
+    default: '[]'
+  bypass-label-present:
+    description: '"true" if the PR has the ci:flaky-test-bypass label, otherwise "false".'
+    required: false
+    default: 'false'
+  head-sha:
+    description: 'Current PR head SHA. Used as the modification anchor and for git log -L.'
+    required: true
+  base-ref:
+    description: 'PR base branch (e.g. "main" or "stable/8.7"). Used as a fallback merge-base candidate for git log -L.'
+    required: true
+  base-sha:
+    description: 'PR base commit SHA (github.event.pull_request.base.sha). Preferred merge-base candidate — local main/origin refs are absent in a PR merge-ref checkout.'
+    required: false
+    default: ''
+  repo-root:
+    description: 'Absolute path to the checked-out repo. Defaults to GITHUB_WORKSPACE.'
+    required: false
+    default: ''
+
+outputs:
+  has-new-flaky-tests:
+    description: 'Whether any sticky entries remain active (true/false)'
+    value: ${{ steps.detect.outputs.has-new-flaky-tests }}
+
+runs:
+  using: composite
+  steps:
+    # Discover the most recent non-expired state artifact for this PR across any
+    # prior CI run on this repo. The artifact name is per-PR-number, so this works
+    # across force-pushes and re-runs. Missing/failed download => fresh-state path.
+    - name: Download prior sticky-state artifact
+      id: download-state
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        ARTIFACT_NAME: flaky-gate-state-pr-${{ inputs.pr-number }}
+      run: |
+        set -euo pipefail
+        state_dir="${RUNNER_TEMP}/flaky-gate-state-in"
+        mkdir -p "$state_dir"
+        state_file="${state_dir}/state.json"
+        echo "state_file=${state_file}" >> "$GITHUB_OUTPUT"
+
+        if ! artifact_id=$(gh api -X GET "/repos/${REPO}/actions/artifacts" \
+            -f "name=${ARTIFACT_NAME}" -F per_page=100 \
+            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // ""'); then
+          echo "Artifact list API call failed; continuing with no prior state."
+          exit 0
+        fi
+
+        if [[ -z "$artifact_id" ]]; then
+          echo "No prior sticky-state artifact found; first-run for this PR."
+          exit 0
+        fi
+        echo "Found prior artifact id: $artifact_id"
+
+        if ! gh api "/repos/${REPO}/actions/artifacts/${artifact_id}/zip" \
+                > "${RUNNER_TEMP}/prior-state.zip"; then
+          echo "Artifact download failed; continuing with no prior state."
+          exit 0
+        fi
+        unzip -q -o "${RUNNER_TEMP}/prior-state.zip" -d "$state_dir" || true
+
+    - name: Detect new flaky tests
+      id: detect
+      shell: bash
+      env:
+        PR_FLAKY_TESTS_DATA: ${{ inputs.pr-flaky-tests-data }}
+        KNOWN_FLAKY_TESTS_FILE: ${{ inputs.known-flaky-tests-file }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        BLOCKING: ${{ inputs.blocking }}
+        STATE_FILE_IN: ${{ steps.download-state.outputs.state_file }}
+        STATE_FILE_OUT: ${{ runner.temp }}/flaky-gate-state-out/state.json
+        RAN_JOBS_JSON: ${{ inputs.ran-jobs-json }}
+        BYPASS_LABEL_PRESENT: ${{ inputs.bypass-label-present }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        BASE_REF: ${{ inputs.base-ref }}
+        BASE_SHA: ${{ inputs.base-sha }}
+        REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
+
+    # Persist updated state for the next run. Skipped when the detector wrote
+    # nothing (no flakes + no prior state => no-op, no file to upload).
+    - name: Upload sticky-state artifact
+      if: always() && hashFiles(format('{0}/flaky-gate-state-out/state.json', runner.temp)) != ''
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: flaky-gate-state-pr-${{ inputs.pr-number }}
+        path: ${{ runner.temp }}/flaky-gate-state-out/state.json
+        retention-days: 30
+        overwrite: true

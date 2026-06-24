@@ -1,0 +1,580 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.rdbms;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import java.time.Duration;
+import java.time.InstantSource;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+class ExporterConfigurationTest {
+
+  @Test
+  public void shouldBeOkWithDefaults() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+
+    // when
+    configuration.validate();
+
+    // then
+    // no error
+  }
+
+  @Test
+  public void shouldFailWithAllErrors() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    historyConfiguration.setDefaultHistoryTTL(Duration.ofMillis(-1000));
+    historyConfiguration.setDefaultBatchOperationHistoryTTL(Duration.ofMillis(-1000));
+    historyConfiguration.setMinHistoryCleanupInterval(Duration.ofMillis(-1000));
+    historyConfiguration.setMaxHistoryCleanupInterval(Duration.ofMillis(-2000));
+    historyConfiguration.setUsageMetricsCleanup(Duration.ofMillis(-2000));
+    historyConfiguration.setUsageMetricsTTL(Duration.ofMillis(-2000));
+    historyConfiguration.setJobBatchMetricsCleanup(Duration.ofMillis(-2000));
+    historyConfiguration.setJobBatchMetricsTTL(Duration.ofMillis(-2000));
+    historyConfiguration.setHistoryCleanupBatchSize(-1000);
+    historyConfiguration.setBatchOperationCancelProcessInstanceHistoryTTL(Duration.ofMillis(-1000));
+    historyConfiguration.setBatchOperationMigrateProcessInstanceHistoryTTL(
+        Duration.ofMillis(-1000));
+    historyConfiguration.setBatchOperationModifyProcessInstanceHistoryTTL(Duration.ofMillis(-1000));
+    historyConfiguration.setBatchOperationResolveIncidentHistoryTTL(Duration.ofMillis(-1000));
+    historyConfiguration.setMaxHistoryCleanupUsage(0);
+
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setFlushInterval(Duration.ofMillis(-1000));
+    configuration.setQueueSize(-1000);
+    configuration.setBatchOperationItemInsertBlockSize(-1000);
+    configuration.getBatchOperationCache().setMaxSize(-1000);
+    configuration.getProcessCache().setMaxSize(-1000);
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(-1000);
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(-1000);
+    configuration.setHistory(historyConfiguration);
+
+    // when
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("flushInterval must be")
+        .hasMessageContaining("queueSize must be")
+        .hasMessageContaining("defaultHistoryTTL must be")
+        .hasMessageContaining("defaultBatchOperationHistoryTTL must be")
+        .hasMessageContaining("batchOperationCancelProcessInstanceHistoryTTL must be")
+        .hasMessageContaining("batchOperationMigrateProcessInstanceHistoryTTL must be")
+        .hasMessageContaining("batchOperationModifyProcessInstanceHistoryTTL must be")
+        .hasMessageContaining("batchOperationResolveIncidentHistoryTTL must be")
+        .hasMessageContaining("minHistoryCleanupInterval must be")
+        .hasMessageContaining("maxHistoryCleanupInterval must be a positive duration")
+        .hasMessageContaining("usageMetricsCleanup must be a positive duration")
+        .hasMessageContaining("usageMetricsTTL must be a positive duration")
+        .hasMessageContaining("jobBatchMetricsCleanup must be a positive duration")
+        .hasMessageContaining("jobBatchMetricsTTL must be a positive duration")
+        .hasMessageContaining(
+            "maxHistoryCleanupInterval must be greater than minHistoryCleanupInterval")
+        .hasMessageContaining("historyCleanupBatchSize must be")
+        .hasMessageContaining("batchOperationItemInsertBlockSize must be")
+        .hasMessageContaining("batchOperationCache.maxSize must be")
+        .hasMessageContaining("processCache.maxSize must be")
+        .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be")
+        .hasMessageContaining("insertBatching.maxVariableInsertBatchSize must be")
+        .hasMessageContaining("maxHistoryCleanupUsage must be between");
+  }
+
+  @Test
+  public void shouldFailWithNegativeFlushInterval() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setFlushInterval(Duration.ofMillis(-1000));
+
+    // when
+    assertThatThrownBy(configuration::validate).hasMessageContaining("flushInterval must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeQueueSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setQueueSize(-1000);
+
+    assertThatThrownBy(configuration::validate).hasMessageContaining("queueSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeDefaultHistoryTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setDefaultHistoryTTL(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate).hasMessageContaining("defaultHistoryTTL must be");
+  }
+
+  @Test
+  public void shouldFailWithDefaultHistoryTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setDefaultHistoryTTL(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate).hasMessageContaining("defaultHistoryTTL must be");
+  }
+
+  @Test
+  public void shouldFailWithBatchOperationCancelProcessInstanceHistoryTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setBatchOperationCancelProcessInstanceHistoryTTL(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationCancelProcessInstanceHistoryTTL must be");
+  }
+
+  @Test
+  public void shouldFailWithBatchOperationMigrateProcessInstanceHistoryTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setBatchOperationMigrateProcessInstanceHistoryTTL(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationMigrateProcessInstanceHistoryTTL must be");
+  }
+
+  @Test
+  public void shouldFailWithBatchOperationModifyProcessInstanceHistoryTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setBatchOperationModifyProcessInstanceHistoryTTL(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationModifyProcessInstanceHistoryTTL must be");
+  }
+
+  @Test
+  public void shouldFailWithBatchOperationResolveIncidentHistoryTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setBatchOperationResolveIncidentHistoryTTL(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationResolveIncidentHistoryTTL must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeMinHistoryCleanupInterval() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setMinHistoryCleanupInterval(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("minHistoryCleanupInterval must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroMinHistoryCleanupInterval() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setMinHistoryCleanupInterval(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("minHistoryCleanupInterval must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeMaxHistoryCleanupInterval() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setMaxHistoryCleanupInterval(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("maxHistoryCleanupInterval must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithNegativeUsageMetricsCleanup() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setUsageMetricsCleanup(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("usageMetricsCleanup must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithNegativeUsageMetricsTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setUsageMetricsTTL(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("usageMetricsTTL must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithZeroMaxHistoryCleanupInterval() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setMaxHistoryCleanupInterval(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("maxHistoryCleanupInterval must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithZeroUsageMetricsCleanup() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setUsageMetricsCleanup(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("usageMetricsCleanup must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithZeroUsageMetricsTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setUsageMetricsTTL(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("usageMetricsTTL must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithMaxHistoryCleanupIntervalLesserThanMin() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setMaxHistoryCleanupInterval(Duration.ofSeconds(1));
+    historyConfiguration.setMinHistoryCleanupInterval(Duration.ofSeconds(2));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining(
+            "maxHistoryCleanupInterval must be greater than minHistoryCleanupInterval");
+  }
+
+  @Test
+  public void shouldFailWithNegativeHistoryCleanupBatchSize() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setHistoryCleanupBatchSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("historyCleanupBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroHistoryCleanupBatchSize() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setHistoryCleanupBatchSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("historyCleanupBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeBatchOperationItemInsertBlockSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setBatchOperationItemInsertBlockSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationItemInsertBlockSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroBatchOperationItemInsertBlockSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setBatchOperationItemInsertBlockSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationItemInsertBlockSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeBatchOperationCacheSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getBatchOperationCache().setMaxSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationCache.maxSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroBatchOperationCacheSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getBatchOperationCache().setMaxSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("batchOperationCache.maxSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeProcessCacheSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getProcessCache().setMaxSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("processCache.maxSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroProcessCacheSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getProcessCache().setMaxSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("processCache.maxSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroVariableInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxVariableInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeVariableInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxVariableInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithZeroAuditLogInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(0);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldFailWithNegativeAuditLogInsertBatchSize() {
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(-1);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldUseBatchSizesFromConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(25);
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(50);
+    configuration.getInsertBatching().setMaxJobInsertBatchSize(30);
+    configuration.getInsertBatching().setMaxFlowNodeInsertBatchSize(35);
+
+    // when
+    final var writerConfig =
+        configuration.createRdbmsWriterConfig(1, "mytenant", InstantSource.system());
+
+    // then
+    assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(25);
+    assertThat(writerConfig.insertBatchingConfig().auditLogInsertBatchSize()).isEqualTo(50);
+    assertThat(writerConfig.insertBatchingConfig().jobInsertBatchSize()).isEqualTo(30);
+    assertThat(writerConfig.insertBatchingConfig().flowNodeInsertBatchSize()).isEqualTo(35);
+  }
+
+  @Test
+  public void shouldFailWithNegativeJobMetricsBatchCleanup() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setJobBatchMetricsCleanup(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("jobBatchMetricsCleanup must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithNegativeJobMetricsBatchTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setJobBatchMetricsTTL(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("jobBatchMetricsTTL must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithNaNMaxHistoryCleanupUsage() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setMaxHistoryCleanupUsage(Double.NaN);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("maxHistoryCleanupUsage must be between");
+  }
+
+  @Test
+  public void shouldFailWithInfiniteMaxHistoryCleanupUsage() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setMaxHistoryCleanupUsage(Double.POSITIVE_INFINITY);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("maxHistoryCleanupUsage must be between");
+  }
+
+  // ReplicationConfiguration tests
+
+  @Test
+  public void shouldBeOkWithEnabledReplicationAndValidConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setPollingInterval(Duration.ofSeconds(10));
+    replication.setMinSyncReplicas(1);
+    replication.setMaxLag(Duration.ofMinutes(5));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
+  @Test
+  public void shouldNotFailWhenReplicationDisabledWithCompletelyWrongConfig() {
+    // given - completely invalid configuration, but replication is disabled
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(false);
+    replication.setPollingInterval(Duration.ofMillis(-1000));
+    replication.setMaxLag(Duration.ofMillis(-1000));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error, pollingInterval and maxLag are only validated when replication is enabled
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidReplicationConfigurations")
+  public void shouldFailValidationForReplicationConfiguration(
+      final Consumer<ReplicationConfiguration> configurer, final String expectedMessage) {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    configurer.accept(replication);
+    configuration.setAsyncReplication(replication);
+
+    // when / then
+    assertThatThrownBy(configuration::validate).hasMessageContaining(expectedMessage);
+  }
+
+  static Stream<Arguments> invalidReplicationConfigurations() {
+    return Stream.of(
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setPollingInterval(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setPollingInterval(Duration.ZERO);
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>) r -> r.setMinSyncReplicas(-1),
+            "asyncReplication.minSyncReplicas must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>) r -> r.setMinSyncReplicas(0),
+            "asyncReplication.minSyncReplicas must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMaxLag(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMaxLag(Duration.ZERO);
+                },
+            "asyncReplication.maxLag must be a positive duration"));
+  }
+}

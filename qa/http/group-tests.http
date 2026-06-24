@@ -1,0 +1,268 @@
+### Create Group Unauthenticated
+# @name create-group-unauthenticated
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Content-Type: application/json
+Accept: application/json
+
+{
+  "groupId": "testGroup1",
+  "name": "TestGroup1"
+}
+
+> {%
+  client.test("Group creation should be unsuccessful", function () {
+    client.assert(response.status === 401, "Expected 401, got " + response.status);
+  });
+%}
+
+### Create Group
+# @name create-group
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "groupId": "testGroup1",
+  "name": "TestGroup1"
+}
+
+> {%
+  client.test("Group creation should be successful", function () {
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.global.set("GROUP_ID", response.body.groupId);
+  });
+%}
+
+### Create Group with too long id
+# @name create-group-too-long-id
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "groupId": "000000BCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ThequickbrownfoxjumpsoverthelazydogmultipleTimestoEnsureThatThisStringReachesExactly257CharactersInLengthWithoutAnyIssueOrTruncationABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+  "name": "TestGroup1"
+}
+
+> {%
+  client.test("Group creation should be unsuccessful", function () {
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
+    client.assert(response.body.title === "INVALID_ARGUMENT", "Wrong error title");
+    client.assert(response.body.detail === "The provided groupId exceeds the limit of 256 characters.", "Wrong error message");
+  });
+%}
+
+### Get Group
+# @name get-group
+< {%
+  import {wait} from "../http/js/wait";
+  wait(4);
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  let expectedGroupId = client.global.get("GROUP_ID");
+
+  client.test("Group retrieval should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.body.groupId === expectedGroupId, "GroupId was not found.");
+  });
+%}
+
+###
+# @name create-test-user-without-authorizations
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "admin",
+  "username": "{{USERNAME_NO_AUTHORIZATIONS}}",
+  "name": "admin",
+  "email": "admin@test.com"
+}
+
+> {%
+  client.test("User creation should be successful", function () {
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.global.set("USERNAME_NO_AUTHORIZATIONS", response.body.username);
+  });
+%}
+
+### Get Group Unauthorized
+# @name get-group-unauthorized
+< {%
+  import {wait} from "../http/js/wait";
+  wait(4);
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Accept: application/json
+
+> {%
+  client.test("Group retrieval should be unsuccessful", function () {
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
+    client.assert(response.body.detail === "Unauthorized to perform operation 'READ' on resource 'GROUP'", "Error message is incorrect.");
+  });
+%}
+
+### Update Group
+# @name update-group
+< {%
+  import {wait} from "../http/js/wait";
+  wait(2);
+%}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "TestGroup1 Updated",
+  "description": "An updated test group description."
+}
+
+> {%
+  client.test("Group update should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.body.name === "TestGroup1 Updated", "Name was not updated correctly.");
+    client.assert(response.body.description === "An updated test group description.", "Description was not updated correctly.");
+  });
+%}
+
+### Assign User to Group
+# @name assign-user-to-group
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group assignment should be successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+### Search Users for Group
+# @name search-users-for-group
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/users/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "page": {
+    "from": 0,
+    "limit": 100
+  },
+  "sort": [
+    {
+      "field": "username",
+      "order": "ASC"
+    }
+  ]
+}
+
+> {%
+  client.test("User search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.body.items[0].username === "demo", "Username was not found");
+  });
+%}
+
+### Remove User from Group
+# @name remove-user-from-group
+< {%
+  import {wait} from "../http/js/wait";
+  wait(2);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group removal should be successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+### Assign Client to Group
+# @name assign-client-to-group
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/clients/{{CLIENT}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Client assignment should be successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+### Remove Client from a Group
+# @name remove-client-from-group
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/clients/{{CLIENT}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Client deletion should be successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}
+
+### Search Groups
+# @name search-groups
+< {%
+  import {wait} from "../http/js/wait";
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+    "field": "name",
+    "order": "ASC"
+     }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  let expectedGroupId = client.global.get("GROUP_ID");
+
+  client.test("Group search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.body.items[0].groupId === expectedGroupId, "Group was not found");
+  });
+%}
+
+### Delete Group
+# @name delete-group
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group deletion should be successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+%}

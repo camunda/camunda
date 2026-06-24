@@ -1,0 +1,16 @@
+{
+  "components": [
+    {
+      "label": "Checkbox",
+      "type": "checkbox",
+      "layout": {
+        "row": "Row_1tez7ti",
+        "columns": null
+      },
+      "id": "Field_1psculp",
+      "key": "field_1q27emv"
+    }
+  ],
+  "type": "default",
+  "id": "form_with_checkbox"
+}

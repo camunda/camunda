@@ -1,0 +1,77 @@
+# description: Snapshot-tests the rendered Kubernetes manifests for the load test setup against committed golden files. Fails when `make template` output differs from load-tests/setup/test/golden/.
+# test location: load-tests/setup/test
+# type: ci
+# owner: @camunda/reliability-testing
+---
+name: Load Test Setup - Golden File Tests
+
+on:
+  pull_request:
+    paths:
+      - "load-tests/setup/**"
+  push:
+    branches:
+      - main
+      - "stable/**"
+    paths:
+      - "load-tests/setup/**"
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  golden-test:
+    name: Golden File Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: load-tests/setup/test/go.mod
+          cache-dependency-path: load-tests/setup/test/go.sum
+
+      # Pin Helm to the same version the load test deploy workflows use, so the
+      # rendered manifests match. Installed via asdf because azure/setup-helm is
+      # not in the org's allowed-actions list. The version lives in the repo-root
+      # .tool-versions file (Renovate keeps it updated); asdf reads it from the
+      # checkout root automatically.
+      - name: Set up Helm
+        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+
+      # Renders the platform, load-tester, and umbrella charts via the scaffolded
+      # Makefile's `template*` targets and diffs them against the committed golden
+      # files. `make test` first adds the required Helm repos.
+      - name: Run golden file tests
+        working-directory: load-tests/setup/test
+        run: make test
+
+      - name: How to update golden files
+        if: failure()
+        run: |
+          echo "::notice::Golden files differ from the rendered manifests."
+          echo "If the change is intentional, regenerate and commit them:"
+          echo "  cd load-tests/setup/test"
+          echo "  make update-golden"
+          echo "  git diff golden/    # review the change"
+          echo "  git add golden/ && git commit -m 'test: update golden files'"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

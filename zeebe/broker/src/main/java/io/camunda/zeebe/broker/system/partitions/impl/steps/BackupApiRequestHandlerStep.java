@@ -1,0 +1,90 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.system.partitions.impl.steps;
+
+import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+
+public final class BackupApiRequestHandlerStep implements PartitionTransitionStep {
+
+  @Override
+  public ActorFuture<Void> prepareTransition(
+      final PartitionTransitionContext context, final long term, final Role targetRole) {
+    final BackupApiRequestHandler backupApiRequestHandler = context.getBackupApiRequestHandler();
+    if (backupApiRequestHandler != null) {
+      context.getDiskSpaceUsageMonitor().removeDiskUsageListener(backupApiRequestHandler);
+      final var closeFuture = backupApiRequestHandler.closeAsync();
+      context.setBackupApiRequestHandler(null);
+      return closeFuture;
+    }
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> transitionTo(
+      final PartitionTransitionContext context, final long term, final Role targetRole) {
+    // Only installed during the leader
+    if (targetRole == Role.LEADER) {
+      return installRequestHandler(context);
+    }
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public String getName() {
+    return "BackupApiRequestHandler";
+  }
+
+  private ActorFuture<Void> installRequestHandler(final PartitionTransitionContext context) {
+    final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
+    final var logStreamRecordWriter = context.getLogStream().newLogStreamWriter();
+    createBackupApiRequestHandler(context, installed, logStreamRecordWriter);
+    return installed;
+  }
+
+  private void createBackupApiRequestHandler(
+      final PartitionTransitionContext context,
+      final ActorFuture<Void> installed,
+      final LogStreamWriter logStreamWriter) {
+    final var isBackupEnabled =
+        !context.getBrokerCfg().getData().getBackup().getStore().equals(BackupStoreType.NONE);
+    final var checkpointState =
+        new DbCheckpointState(context.getZeebeDb(), context.getZeebeDb().createContext());
+    final var checkpointMetadataState =
+        new DbCheckpointMetadataState(context.getZeebeDb(), context.getZeebeDb().createContext());
+    final var backupRangeState =
+        new DbBackupRangeState(context.getZeebeDb(), context.getZeebeDb().createContext());
+    final var requestHandler =
+        new BackupApiRequestHandler(
+            context.getGatewayBrokerTransport(),
+            logStreamWriter,
+            context.getBackupManager(),
+            checkpointState,
+            checkpointMetadataState,
+            backupRangeState,
+            context.getRaftPartition().id(),
+            isBackupEnabled);
+    context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);
+    installed.onComplete(
+        (ignore, error) -> {
+          if (error == null) {
+            context.setBackupApiRequestHandler(requestHandler);
+            context.getDiskSpaceUsageMonitor().addDiskUsageListener(requestHandler);
+          }
+        });
+  }
+}

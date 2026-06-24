@@ -1,0 +1,635 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useEffect, useMemo} from 'react';
+import {observer} from 'mobx-react';
+import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
+import {tracking} from 'modules/tracking';
+import {modificationsStore} from 'modules/stores/modifications';
+import {Container, DiagramPanel} from './styled';
+import {
+  CANCELED_BADGE,
+  MODIFICATIONS,
+  ACTIVE_BADGE,
+  INCIDENTS_BADGE,
+  COMPLETED_BADGE,
+  COMPLETED_END_EVENT_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
+  WAITING_BADGE,
+  AGENT_STATUS_TAG,
+  AGENT_SHINE,
+  WAITING_BADGE_NARROW,
+} from 'modules/bpmn-js/badgePositions';
+import {DiagramShell} from 'modules/components/DiagramShell';
+import {computed} from 'mobx';
+import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {Diagram} from 'modules/components/Diagram';
+import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
+import {ModificationInfoBanner} from './ModificationInfoBanner';
+import {ModificationDropdown} from './ModificationDropdown';
+import {AgentStatusOverlay} from './AgentStatusOverlay';
+import {AgentShineOverlay} from './AgentShineOverlay';
+import {StateOverlay} from 'modules/components/StateOverlay';
+import {WaitingStateOverlay} from 'modules/components/WaitingStateOverlay';
+import {useProcessInstanceAgentInstances} from 'modules/queries/agentInstances/useProcessInstanceAgentInstances';
+import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
+import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
+import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
+import {useExecutedElements} from 'modules/queries/elementInstancesStatistics/useExecutedElements';
+import {useModificationsByElement} from 'modules/hooks/modifications';
+import {useModifiableElements} from 'modules/hooks/processInstanceDetailsDiagram';
+import {
+  useTotalRunningInstancesByElement,
+  useTotalRunningInstancesForElement,
+  useTotalRunningInstancesVisibleForElement,
+} from 'modules/queries/elementInstancesStatistics/useTotalRunningInstancesForElement';
+import {
+  finishMovingToken,
+  hasPendingCancelOrMoveModification,
+} from 'modules/utils/modifications';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
+import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
+import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
+import {
+  getWaitStateLabel,
+  isBeforeAllExecutionListenerWaitState,
+} from 'modules/utils/waitStates';
+import type {
+  AgentShinePayload,
+  AgentStatusPayload,
+  ElementState,
+  OverlayData,
+} from 'modules/bpmn-js/overlayTypes';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {isRequestError} from 'modules/request';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
+import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+
+const OVERLAY_TYPE_STATE = 'elementState';
+const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
+const OVERLAY_TYPE_WAITING_STATE = 'waitingState';
+const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
+const OVERLAY_TYPE_AGENT_SHINE = 'agentShine';
+
+// Gateways and events are narrow (~36px) symbols.
+const NARROW_WAIT_STATE_ELEMENT_TYPES = new Set<string>([
+  'EXCLUSIVE_GATEWAY',
+  'PARALLEL_GATEWAY',
+  'INCLUSIVE_GATEWAY',
+  'EVENT_BASED_GATEWAY',
+  'START_EVENT',
+  'END_EVENT',
+  'INTERMEDIATE_CATCH_EVENT',
+  'INTERMEDIATE_THROW_EVENT',
+  'BOUNDARY_EVENT',
+]);
+
+const overlayPositions = {
+  active: ACTIVE_BADGE,
+  incidents: INCIDENTS_BADGE,
+  canceled: CANCELED_BADGE,
+  completed: COMPLETED_BADGE,
+  completedEndEvents: COMPLETED_END_EVENT_BADGE,
+  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
+} as const;
+
+type ModificationBadgePayload = {
+  newTokenCount: number;
+  cancelledTokenCount: number;
+};
+
+const TopPanel: React.FC = observer(() => {
+  const clientConfig = getClientConfig();
+  const {
+    clearSelection,
+    selectedElementId,
+    selectedElementInstanceKey,
+    selectElement,
+    selectedAnchorElementId,
+  } = useProcessInstanceElementSelection();
+  const {processInstanceId = ''} = useProcessInstancePageParams();
+  const {
+    sourceElementIdForMoveOperation,
+    sourceElementInstanceKeyForMoveOperation,
+  } = modificationsStore.state;
+  const {data: statistics} = useElementStatistics();
+  const {data: selectableElements} = useSelectableElements();
+  const {data: executedElements} = useExecutedElements();
+  const {data: totalRunningInstancesByElement} =
+    useTotalRunningInstancesByElement();
+  const {data: businessObjects} = useBusinessObjects();
+  const {data: totalMoveOperationRunningInstances} =
+    useTotalRunningInstancesForElement(
+      sourceElementIdForMoveOperation || undefined,
+    );
+  const {data: totalMoveOperationRunningInstancesVisible} =
+    useTotalRunningInstancesVisibleForElement(
+      sourceElementIdForMoveOperation || undefined,
+    );
+  const {data: processInstance} = useProcessInstance();
+  const {data: inspectionData} = useElementInstanceInspection({
+    processInstanceKey: processInstanceId,
+    enabled:
+      clientConfig.waitStatesEnabled && processInstance?.state === 'ACTIVE',
+  });
+  const {data: agentInstancesData} = useProcessInstanceAgentInstances();
+  const modificationsByElement = useModificationsByElement();
+  const affectedTokenCount = sourceElementInstanceKeyForMoveOperation
+    ? 1
+    : totalMoveOperationRunningInstances || 1;
+  const visibleAffectedTokenCount = sourceElementInstanceKeyForMoveOperation
+    ? 1
+    : totalMoveOperationRunningInstancesVisible || 1;
+
+  const {data: processedSequenceFlowsFromHook} =
+    useProcessSequenceFlows(processInstanceId);
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {isExecutionCountVisible} = executionCountToggleStore.state;
+
+  const {data: selectedElementRunningInstancesCount} =
+    useTotalRunningInstancesForElement(selectedElementId ?? undefined);
+  const hasSelectedElementMultipleRunningInstances =
+    selectedElementInstanceKey === null &&
+    (selectedElementRunningInstancesCount ?? 0) > 1;
+
+  const {
+    data: processDefinitionData,
+    isPending: isXmlFetching,
+    isError: isXmlError,
+    error: xmlError,
+  } = useProcessInstanceXml({processDefinitionKey});
+
+  useEffect(() => {
+    return () => {
+      diagramOverlaysStore.reset();
+    };
+  }, [processInstanceId]);
+
+  const elementStateOverlays = useMemo(() => {
+    const elementIdsWithIncidents = statistics
+      ?.filter(({elementState}) => elementState === 'incidents')
+      ?.map((element) => element.id);
+
+    const selectableElementsWithIncidents = elementIdsWithIncidents?.map(
+      (elementId) => businessObjects?.[elementId],
+    );
+
+    const subprocessOverlays = getSubprocessOverlayFromIncidentElements(
+      selectableElementsWithIncidents,
+    );
+
+    const allElementStateOverlays = [
+      ...(statistics?.map(({elementState, count, id: elementId}) => ({
+        payload: {elementState: elementState, count},
+        type: OVERLAY_TYPE_STATE,
+        elementId,
+        position: overlayPositions[elementState],
+      })) || []),
+      ...subprocessOverlays,
+    ];
+
+    if (inspectionData?.items?.length) {
+      const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
+      for (const item of inspectionData.items) {
+        if (
+          isBeforeAllExecutionListenerWaitState(item) &&
+          !elementIdsInStats.has(item.elementId)
+        ) {
+          allElementStateOverlays.push({
+            payload: {elementState: 'active' as const},
+            type: OVERLAY_TYPE_STATE,
+            elementId: item.elementId,
+            position: overlayPositions.active,
+          });
+        }
+      }
+    }
+
+    const notCompletedElementStateOverlays = allElementStateOverlays?.filter(
+      (stateOverlay) => stateOverlay.payload.elementState !== 'completed',
+    );
+
+    return isExecutionCountVisible
+      ? allElementStateOverlays
+      : notCompletedElementStateOverlays;
+  }, [statistics, businessObjects, isExecutionCountVisible]);
+
+  const allWaitingStateOverlays = useMemo(() => {
+    if (!inspectionData?.items?.length) {
+      return [];
+    }
+
+    // Group wait states by elementId (show only 1 label per element)
+    const waitStatesByElement = new Map<string, typeof inspectionData.items>();
+    for (const item of inspectionData.items) {
+      const existing = waitStatesByElement.get(item.elementId) ?? [];
+      existing.push(item);
+      waitStatesByElement.set(item.elementId, existing);
+    }
+
+    const overlays: Array<{
+      elementId: string;
+      type: string;
+      position: typeof WAITING_BADGE;
+      payload: {label: string};
+    }> = [];
+
+    for (const [elementId, waitStates] of waitStatesByElement) {
+      const label = getWaitStateLabel(waitStates);
+      if (label) {
+        const isNarrowElement = waitStates.some((waitState) =>
+          NARROW_WAIT_STATE_ELEMENT_TYPES.has(waitState.elementType),
+        );
+        overlays.push({
+          elementId,
+          type: OVERLAY_TYPE_WAITING_STATE,
+          position: isNarrowElement ? WAITING_BADGE_NARROW : WAITING_BADGE,
+          payload: {label},
+        });
+      }
+    }
+
+    return overlays;
+  }, [inspectionData]);
+
+  const {agentOverlays, elementsWithAgent} = useMemo(() => {
+    if (!agentInstancesData?.items?.length) {
+      return {agentOverlays: [], elementsWithAgent: new Set<string>()};
+    }
+
+    const elementsWithAgent = new Set<string>();
+
+    const agentOverlays = agentInstancesData.items.flatMap<OverlayData>(
+      (agentInstance) => {
+        // We expect only one active agent instance per element. But there *can* be multiple.
+        // For now, only add an overlay to an element for first matching agent instance.
+        if (elementsWithAgent.has(agentInstance.elementId)) {
+          return [];
+        }
+
+        elementsWithAgent.add(agentInstance.elementId);
+        return [
+          {
+            type: OVERLAY_TYPE_AGENT_STATUS,
+            elementId: agentInstance.elementId,
+            position: AGENT_STATUS_TAG,
+            payload: {
+              status: agentInstance.status,
+              agentInstanceKey: agentInstance.agentInstanceKey,
+            } satisfies AgentStatusPayload,
+          },
+          {
+            type: OVERLAY_TYPE_AGENT_SHINE,
+            elementId: agentInstance.elementId,
+            position: AGENT_SHINE,
+            payload: {
+              agentInstanceKey: agentInstance.agentInstanceKey,
+            } satisfies AgentShinePayload,
+          },
+        ];
+      },
+    );
+    return {agentOverlays, elementsWithAgent};
+  }, [agentInstancesData]);
+
+  const waitingStateOverlays = useMemo(() => {
+    return allWaitingStateOverlays.filter(
+      (overlay) => !elementsWithAgent.has(overlay.elementId),
+    );
+  }, [allWaitingStateOverlays, elementsWithAgent]);
+
+  const selectedElementIds = useMemo(() => {
+    return selectedAnchorElementId
+      ? [selectedAnchorElementId]
+      : selectedElementId
+        ? [selectedElementId]
+        : undefined;
+  }, [selectedElementId, selectedAnchorElementId]);
+
+  const highlightedSequenceFlows = useMemo(() => {
+    const compensationAssociationIds = Object.values(
+      processDefinitionData?.diagramModel.elementsById ?? {},
+    )
+      .filter(isCompensationAssociation)
+      .filter(({targetRef}) => {
+        // check if the target element for the association was executed
+        return executedElements?.find(({elementId, completed}) => {
+          return targetRef?.id === elementId && completed > 0;
+        });
+      })
+      .map(({id}) => id);
+
+    return [
+      ...(processedSequenceFlowsFromHook || []),
+      ...compensationAssociationIds,
+    ];
+  }, [processedSequenceFlowsFromHook, processDefinitionData, executedElements]);
+
+  const highlightedSequenceFlowIds = useMemo(() => {
+    return executedElements?.map(({elementId}) => elementId);
+  }, [executedElements]);
+
+  const modificationBadgesPerElement = computed(() =>
+    Object.entries(modificationsByElement).reduce<
+      {
+        elementId: string;
+        type: string;
+        payload: ModificationBadgePayload;
+        position: OverlayPosition;
+      }[]
+    >((badges, [elementId, tokens]) => {
+      return [
+        ...badges,
+        {
+          elementId,
+          type: OVERLAY_TYPE_MODIFICATIONS_BADGE,
+          position: MODIFICATIONS,
+          payload: {
+            newTokenCount: tokens.newTokens,
+            cancelledTokenCount: tokens.visibleCancelledTokens,
+          },
+        },
+      ];
+    }, []),
+  );
+
+  const stateOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_STATE,
+  );
+  const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
+  );
+  const waitingOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_WAITING_STATE,
+  );
+  const agentStatusOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_AGENT_STATUS,
+  );
+  const agentShineOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_AGENT_SHINE,
+  );
+
+  const modifiableElements = useModifiableElements();
+
+  const {isModificationModeEnabled} = modificationsStore;
+
+  const {handleDrillDown, pendingDrillDownElementId} =
+    useDrillDownNavigation(processInstanceId);
+
+  const customElementClasses = useMemo<
+    [elementId: string, className: string][]
+  >(() => {
+    if (
+      isModificationModeEnabled ||
+      !businessObjects ||
+      !totalRunningInstancesByElement
+    ) {
+      return [];
+    }
+
+    const DRILLDOWN_TYPES = ['bpmn:CallActivity', 'bpmn:BusinessRuleTask'];
+    const drilldownClasses: [string, string][] = Object.entries(businessObjects)
+      .filter(
+        ([elementId, bo]) =>
+          DRILLDOWN_TYPES.includes(bo.$type) &&
+          (totalRunningInstancesByElement[elementId] ?? 0) > 0,
+      )
+      .map(([elementId]) => [elementId, 'op-drilldown'] as const);
+
+    if (pendingDrillDownElementId !== null) {
+      drilldownClasses.push([
+        pendingDrillDownElementId,
+        'op-drilldown-loading',
+      ]);
+    }
+
+    return drilldownClasses;
+  }, [
+    businessObjects,
+    totalRunningInstancesByElement,
+    isModificationModeEnabled,
+    pendingDrillDownElementId,
+  ]);
+
+  useEffect(() => {
+    if (!isModificationModeEnabled) {
+      if (selectedElementId) {
+        tracking.track({eventName: 'metadata-popover-opened'});
+      } else {
+        tracking.track({eventName: 'metadata-popover-closed'});
+      }
+    }
+  }, [isModificationModeEnabled, selectedElementId]);
+
+  const getStatus = () => {
+    if (isXmlFetching) {
+      return 'loading';
+    }
+    if (
+      isRequestError(xmlError) &&
+      xmlError?.response?.status === HTTP_STATUS_FORBIDDEN
+    ) {
+      return 'forbidden';
+    }
+    if (isXmlError) {
+      return 'error';
+    }
+    return 'content';
+  };
+
+  return (
+    <Container>
+      {modificationsStore.state.status === 'moving-token' &&
+        businessObjects && (
+          <ModificationInfoBanner
+            text="Select the target element in the diagram"
+            button={{
+              onClick: () =>
+                finishMovingToken(
+                  affectedTokenCount,
+                  visibleAffectedTokenCount,
+                  businessObjects,
+                  processInstance?.processDefinitionId,
+                ),
+              label: 'Discard',
+            }}
+          />
+        )}
+      <DiagramPanel>
+        <DiagramShell status={getStatus()}>
+          {processDefinitionData?.xml !== undefined &&
+            businessObjects &&
+            processInstance && (
+              <Diagram
+                xml={processDefinitionData?.xml}
+                processDefinitionKey={processDefinitionKey}
+                selectableElements={
+                  isModificationModeEnabled
+                    ? modifiableElements
+                    : selectableElements
+                }
+                selectedElementIds={selectedElementIds}
+                onRootChange={(rootElementId, getSelectionRootId) => {
+                  if (!selectedElementId) {
+                    return;
+                  }
+
+                  if (rootElementId !== getSelectionRootId(selectedElementId)) {
+                    clearSelection();
+                  }
+                }}
+                onElementSelection={(elementId, isMultiInstance) => {
+                  if (modificationsStore.state.status === 'moving-token') {
+                    const ancestorScopeType = getAncestorScopeType(
+                      businessObjects,
+                      sourceElementIdForMoveOperation ?? '',
+                      elementId ?? '',
+                      totalRunningInstancesByElement,
+                    );
+
+                    clearSelection();
+                    finishMovingToken(
+                      affectedTokenCount,
+                      visibleAffectedTokenCount,
+                      businessObjects,
+                      processInstance?.processDefinitionId,
+                      elementId,
+                      ancestorScopeType,
+                    );
+                  } else {
+                    if (modificationsStore.state.status !== 'adding-token') {
+                      if (elementId !== undefined) {
+                        selectElement({
+                          elementId,
+                          isMultiInstanceBody: isMultiInstance,
+                        });
+                      } else {
+                        clearSelection();
+                      }
+                    }
+                  }
+                }}
+                overlaysData={
+                  isModificationModeEnabled
+                    ? [
+                        ...(elementStateOverlays ?? []),
+                        ...modificationBadgesPerElement.get(),
+                      ]
+                    : [
+                        ...(elementStateOverlays ?? []),
+                        ...agentOverlays,
+                        ...waitingStateOverlays,
+                      ]
+                }
+                selectedElementOverlay={
+                  isModificationModeEnabled && <ModificationDropdown />
+                }
+                highlightedSequenceFlows={highlightedSequenceFlows}
+                highlightedElementIds={highlightedSequenceFlowIds}
+                nonSelectableNodeTooltipText={
+                  isModificationModeEnabled
+                    ? 'Modification is not supported for this element.'
+                    : undefined
+                }
+                hasOuterBorderOnSelection={
+                  !isModificationModeEnabled ||
+                  hasSelectedElementMultipleRunningInstances
+                }
+                customElementClasses={customElementClasses}
+                onElementDoubleClick={(elementId) => {
+                  const elementType = businessObjects?.[elementId]?.$type;
+                  if (elementType) {
+                    handleDrillDown(elementId, elementType);
+                  }
+                }}
+              >
+                {stateOverlays.map((overlay) => {
+                  const payload = overlay.payload as {
+                    elementState: ElementState | 'completedEndEvents';
+                    count: number;
+                  };
+
+                  return (
+                    <StateOverlay
+                      key={`${overlay.elementId}-${payload.elementState}`}
+                      state={payload.elementState}
+                      count={payload.count}
+                      container={overlay.container}
+                      isFaded={hasPendingCancelOrMoveModification({
+                        elementId: overlay.elementId,
+                        elementInstanceKey: undefined,
+                        modificationsByElement: modificationsByElement,
+                      })}
+                      title={
+                        payload.elementState === 'completed'
+                          ? 'Execution Count'
+                          : undefined
+                      }
+                    />
+                  );
+                })}
+                {modificationBadgeOverlays?.map((overlay) => {
+                  const payload = overlay.payload as ModificationBadgePayload;
+
+                  return (
+                    <ModificationBadgeOverlay
+                      key={overlay.elementId}
+                      container={overlay.container}
+                      newTokenCount={payload.newTokenCount}
+                      cancelledTokenCount={payload.cancelledTokenCount}
+                    />
+                  );
+                })}
+                {waitingOverlays?.map((overlay) => {
+                  const payload = overlay.payload as {label: string};
+
+                  return (
+                    <WaitingStateOverlay
+                      key={`waiting-${overlay.elementId}`}
+                      container={overlay.container}
+                      label={payload.label}
+                    />
+                  );
+                })}
+                {agentStatusOverlays.map((overlay) => {
+                  const payload = overlay.payload as AgentStatusPayload;
+                  return (
+                    <AgentStatusOverlay
+                      key={`${payload.agentInstanceKey}-status`}
+                      container={overlay.container}
+                      status={payload.status}
+                    />
+                  );
+                })}
+                {agentShineOverlays.map((overlay) => {
+                  const payload = overlay.payload as AgentShinePayload;
+                  return (
+                    <AgentShineOverlay
+                      key={`${payload.agentInstanceKey}-shine`}
+                      container={overlay.container}
+                      elementId={overlay.elementId}
+                    />
+                  );
+                })}
+              </Diagram>
+            )}
+        </DiagramShell>
+      </DiagramPanel>
+    </Container>
+  );
+});
+
+export {TopPanel};

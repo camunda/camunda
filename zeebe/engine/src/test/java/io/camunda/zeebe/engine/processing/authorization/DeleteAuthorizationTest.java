@@ -1,0 +1,129 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.authorization;
+
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
+
+public class DeleteAuthorizationTest {
+
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+
+  @Before
+  public void setup() {
+    engine.user().newUser("ownerId").create();
+  }
+
+  @Test
+  public void shouldDeleteIdBasedAuthorization() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var deletedAuthorization =
+        engine.authorization().deleteAuthorization(authorizationKey).delete().getValue();
+
+    // then
+    Assertions.assertThat(deletedAuthorization).hasAuthorizationKey(authorizationKey);
+  }
+
+  @Test
+  public void shouldDeletePropertyBasedAuthorization() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.COMPLETE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var deletedAuthorization =
+        engine.authorization().deleteAuthorization(authorizationKey).delete().getValue();
+
+    // then
+    Assertions.assertThat(deletedAuthorization).hasAuthorizationKey(authorizationKey);
+  }
+
+  @Test
+  public void shouldRejectTheCommandIfAuthorizationDoesNotExist() {
+    final var userNotFoundRejection =
+        engine.authorization().deleteAuthorization(1L).expectRejection().delete();
+
+    assertThat(userNotFoundRejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete authorization with key 1, but an authorization with this key does not exist");
+  }
+
+  @Test
+  public void shouldRejectDeleteOfAuthorizationOwnedByProtectedRole() {
+    // given
+    final var protectedRoleId = "rpa";
+    engine.role().newRole(protectedRoleId).withName("RPA").create();
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(protectedRoleId)
+            .withOwnerType(AuthorizationOwnerType.ROLE)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var deleteRejection =
+        engine.authorization().deleteAuthorization(authorizationKey).expectRejection().delete();
+
+    // then
+    assertThat(deleteRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to delete authorization with key "
+                + authorizationKey
+                + ", but it belongs to default role '"
+                + protectedRoleId
+                + "' whose authorizations cannot be deleted.");
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "timestampSeconds": {
+    "$resolver": "timestamp",
+    "epoch": {
+      "unit": "secs",
+      "rounded": true
+    }
+  },
+  "timestampNanos": {
+    "$resolver": "timestamp",
+    "epoch": {
+      "unit": "secs.nanos"
+    }
+  },
+  "severity": {
+    "$resolver": "pattern",
+    "pattern": "%level{OFF=DEFAULT, ALL=DEFAULT, TRACE=DEBUG, DEBUG=DEBUG, INFO=INFO, WARN=WARNING, ERROR=ERROR, FATAL=CRITICAL}",
+    "stackTraceEnabled": false
+  },
+  "message": {
+    "$resolver": "pattern",
+    "pattern": "%m",
+    "stackTraceEnabled": false
+  },
+  "logging.googleapis.com/sourceLocation": {
+    "file": {
+      "$resolver": "source",
+      "field": "fileName"
+    },
+    "line": {
+      "$resolver": "source",
+      "field": "lineNumber"
+    },
+    "function": {
+      "$resolver": "pattern",
+      "pattern": "%replace{%C.%M}{^\\?\\.$}{}",
+      "stackTraceEnabled": false
+    }
+  },
+  "logging.googleapis.com/labels": {
+    "$resolver": "mdc"
+  },
+  "threadContext": {
+    "id": {
+      "$resolver": "thread",
+      "field": "id"
+    },
+    "name": {
+      "$resolver": "thread",
+      "field": "name"
+    },
+    "priority": {
+      "$resolver": "thread",
+      "field": "priority"
+    }
+  },
+  "loggerName": {
+    "$resolver": "logger",
+    "field": "name"
+  },
+  "serviceContext": {
+    "service": "${env:LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME:-load-tester}",
+    "version": "${env:LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION:-}"
+  },
+  "exception": {
+    "$resolver": "exception",
+    "field": "stackTrace",
+    "stackTrace": {
+      "stringified": true
+    }
+  }
+}

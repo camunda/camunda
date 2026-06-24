@@ -1,0 +1,32 @@
+{
+  "type": "default",
+  "id": "user_task_form",
+  "components": [
+    {
+      "key": "name",
+      "label": "Name",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "key": "address",
+      "label": "Address",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "key": "age",
+      "label": "Age",
+      "type": "textfield"
+    },
+    {
+      "key": "button1",
+      "label": "Save",
+      "type": "button"
+    }
+  ]
+}

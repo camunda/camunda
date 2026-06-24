@@ -1,0 +1,1013 @@
+## Endpoint definitions
+paths:
+  /groups:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: createGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Create group
+      description: |
+        Create a new group.
+
+        The supplied `groupId` is validated against `^[a-zA-Z0-9_~@.+-]+$`
+        (max 256 characters) by `IdentifierValidator.validateId` in the
+        runtime. This strict validation applies wherever the Groups API
+        is available: in OIDC deployments that set
+        `camunda.security.authentication.oidc.groupsClaim` the Groups
+        API (including this endpoint) is disabled entirely, so group
+        CRUD never sees externally-minted IdP IDs. The BYOG relaxation
+        only loosens validation when a group is referenced *as a member*
+        of a role or tenant (`assignRoleToGroup`,
+        `assignGroupToTenant`); group CRUD itself always uses the strict
+        default-id regex. The constraint is not advertised on the
+        `GroupId` schema so that the same schema can be reused at
+        member-reference sites without falsely rejecting
+        externally-minted IdP group IDs there.
+      x-semantic-establishes:
+        kind: Group
+        identifiedBy:
+          - { in: body, name: groupId, semanticType: GroupId }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCreateRequest'
+      responses:
+        "201":
+          description: The group was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupCreateResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: Group with this id already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+  /groups/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Group
+      operationId: searchGroups
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search groups
+      description: Search for groups based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupSearchQueryRequest'
+      responses:
+        "200":
+          description: The groups search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Group
+      operationId: getGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get group
+      description: Get a group by its ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+      responses:
+        "200":
+          description: The group is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResult'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+    put:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: updateGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Update group
+      description: Update a group with the given ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUpdateRequest'
+      responses:
+        "200":
+          description: The group was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupUpdateResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: deleteGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Delete group
+      description: Deletes the group with the given ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+      responses:
+        "204":
+          description: The group was deleted successfully.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}/users/{username}:
+    put:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: assignUserToGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Assign a user to a group
+      description: |
+        Assigns a user to a group, making the user a member of the group.
+        Group members inherit the group authorizations, roles, and tenant assignments.
+      x-semantic-establishes:
+        kind: GroupUserMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,  semanticType: GroupId }
+          - { in: path, name: username, semanticType: Username }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+        - name: username
+          in: path
+          required: true
+          description: The user username.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/Username'
+      responses:
+        "204":
+          description: The user was assigned successfully to the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group or user with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The user with the given ID is already assigned to the group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: unassignUserFromGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Unassign a user from a group
+      description: |
+        Unassigns a user from a group.
+        The user is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+      x-semantic-requires:
+        kind: GroupUserMembership
+        bind:
+          groupId:  { from: path, name: groupId }
+          username: { from: path, name: username }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+        - name: username
+          in: path
+          required: true
+          description: The user username.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/Username'
+      responses:
+        "204":
+          description: The user was unassigned successfully from the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group or user with the given ID was not found, or the user is not assigned to this group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}/users/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Group
+      operationId: searchUsersForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search group users
+      description: Search users assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserSearchQueryRequest'
+      responses:
+        "200":
+          description: The users assigned to the group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupUserSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}/clients/{clientId}:
+    put:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: assignClientToGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Assign a client to a group
+      description: |
+        Assigns a client to a group, making it a member of the group.
+        Members of the group inherit the group authorizations, roles, and tenant assignments.
+      x-semantic-establishes:
+        kind: GroupClientMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,  semanticType: GroupId }
+          - { in: path, name: clientId, semanticType: ClientId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+        - name: clientId
+          in: path
+          required: true
+          description: The client ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
+      responses:
+        "204":
+          description: The client was assigned successfully to the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The client with the given ID is already assigned to the group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: unassignClientFromGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Unassign a client from a group
+      description: |
+        Unassigns a client from a group.
+        The client is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+      x-semantic-requires:
+        kind: GroupClientMembership
+        bind:
+          groupId:  { from: path, name: groupId }
+          clientId: { from: path, name: clientId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+        - name: clientId
+          in: path
+          required: true
+          description: The client ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
+      responses:
+        "204":
+          description: The client was unassigned successfully from the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group with the given ID was not found, or the client is not assigned to this group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}/clients/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Group
+      operationId: searchClientsForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search group clients
+      description: Search clients assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupClientSearchQueryRequest'
+      responses:
+        "200":
+          description: The clients assigned to the group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupClientSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}/mapping-rules/{mappingRuleId}:
+    put:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: assignMappingRuleToGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Assign a mapping rule to a group
+      description: Assigns a mapping rule to a group.
+      x-semantic-establishes:
+        kind: GroupMappingRuleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,       semanticType: GroupId }
+          - { in: path, name: mappingRuleId, semanticType: MappingRuleId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+        - name: mappingRuleId
+          in: path
+          required: true
+          description: The mapping rule ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
+      responses:
+        "204":
+          description: The mapping rule was assigned successfully to the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group or mapping rule with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The mapping rule with the given ID is already assigned to the group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+    delete:
+      x-eventually-consistent: false
+      tags:
+        - Group
+      operationId: unassignMappingRuleFromGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Unassign a mapping rule from a group
+      description: Unassigns a mapping rule from a group.
+      x-semantic-requires:
+        kind: GroupMappingRuleMembership
+        bind:
+          groupId:       { from: path, name: groupId }
+          mappingRuleId: { from: path, name: mappingRuleId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+        - name: mappingRuleId
+          in: path
+          required: true
+          description: The mapping rule ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
+      responses:
+        "204":
+          description: The mapping rule was unassigned successfully from the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group or mapping rule with the given ID was not found, or the mapping rule is not assigned to this group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}/mapping-rules/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Group
+      operationId: searchMappingRulesForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search group mapping rules
+      description: Search mapping rules assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleSearchQueryRequest'
+      responses:
+        "200":
+          description: The mapping rules assigned to the group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMappingRuleSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+  /groups/{groupId}/roles/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Group
+      operationId: searchRolesForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search group roles
+      description: Search roles assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: 'roles.yaml#/components/schemas/RoleSearchQueryRequest'
+      responses:
+        "200":
+          description: The roles assigned to the group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupRoleSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+## Schema definitions
+
+components:
+  schemas:
+    GroupCreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        groupId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
+          description: The ID of the new group.
+        name:
+          type: string
+          description: The display name of the new group.
+        description:
+          type: string
+          description: The description of the new group.
+      required:
+        - groupId
+        - name
+
+    GroupCreateResult:
+      type: object
+      properties:
+        groupId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
+          description: The ID of the created group.
+        name:
+          description: The display name of the created group.
+          type: string
+        description:
+          description: The description of the created group.
+          nullable: true
+          type: string
+      required:
+        - groupId
+        - name
+        - description
+
+    GroupUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The new name of the group.
+        description:
+          type: string
+          description: The new description of the group.
+      required:
+        - name
+
+    GroupUpdateResult:
+      type: object
+      properties:
+        groupId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
+          description: The unique group ID.
+        name:
+          type: string
+          description: The name of the group.
+        description:
+          type: string
+          nullable: true
+          description: The description of the group.
+      required:
+        - groupId
+        - name
+        - description
+
+    GroupResult:
+      description: Group search response item.
+      type: object
+      properties:
+        name:
+          type: string
+          description: The group name.
+        groupId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
+          description: The group ID.
+        description:
+          type: string
+          nullable: true
+          description: The group description.
+      required:
+        - name
+        - groupId
+        - description
+
+    GroupSearchQuerySortRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - name
+            - groupId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    GroupSearchQueryRequest:
+      description: Group search request.
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/GroupFilter'
+          description: The group search filters.
+
+    GroupFilter:
+      description: Group filter request
+      type: object
+      properties:
+        groupId:
+          description: The group ID search filters.
+          allOf:
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
+        name:
+          description: The group name search filters.
+          type: string
+
+    GroupSearchQueryResult:
+      description: Group search response.
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching groups.
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupResult'
+
+    GroupUserResult:
+      type: object
+      properties:
+        username:
+          $ref: 'identifiers.yaml#/components/schemas/Username'
+      required:
+        - username
+
+    GroupUserSearchResult:
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching members.
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupUserResult'
+
+    GroupUserSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupUserSearchQuerySortRequest'
+
+    GroupUserSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - username
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    GroupClientResult:
+      type: object
+      properties:
+        clientId:
+          description: The ID of the client.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClientId'
+      required:
+        - clientId
+
+    GroupClientSearchResult:
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching client IDs.
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupClientResult'
+
+    GroupClientSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupClientSearchQuerySortRequest'
+
+    GroupMappingRuleSearchResult:
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleResult'
+
+    GroupRoleSearchResult:
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching roles.
+          type: array
+          items:
+            $ref: 'roles.yaml#/components/schemas/RoleResult'
+
+    GroupClientSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - clientId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field

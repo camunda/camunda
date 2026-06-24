@@ -1,0 +1,258 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter.opensearch;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class OpensearchExporter implements Exporter {
+
+  // by default, the bulk request may not be bigger than 100MB
+  private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
+
+  private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
+  private final ObjectMapper exporterMetadataObjectMapper = new ObjectMapper();
+
+  private final OpensearchExporterMetadata exporterMetadata = new OpensearchExporterMetadata();
+  private final PluginRepository pluginRepository = new PluginRepository();
+
+  private Controller controller;
+  private OpensearchExporterConfiguration configuration;
+  private OpensearchClient client;
+  private OpensearchRecordCounters recordCounters;
+  private MeterRegistry meterRegistry;
+  private OpensearchExporterSchemaManager schemaManager;
+
+  private long lastPosition = -1;
+  private ScheduledTask scheduledFlushTask;
+
+  @Override
+  public void configure(final Context context) {
+    log = context.getLogger();
+    configuration = context.getConfiguration().instantiate(OpensearchExporterConfiguration.class);
+    log.debug("Exporter configured with {}", configuration);
+
+    validate(configuration);
+    pluginRepository.load(configuration.getInterceptorPlugins());
+
+    context.setFilter(new DefaultRecordFilter(configuration));
+    meterRegistry = context.getMeterRegistry();
+  }
+
+  @Override
+  public void open(final Controller controller) {
+    this.controller = controller;
+    try {
+      client = createClient();
+      recordCounters =
+          controller
+              .readMetadata()
+              .map(this::deserializeExporterMetadata)
+              .map(OpensearchExporterMetadata::getRecordCountersByValueType)
+              .filter(counters -> !counters.isEmpty())
+              .map(OpensearchRecordCounters::new)
+              .orElse(new OpensearchRecordCounters());
+
+      scheduleDelayedFlush();
+      schemaManager = new OpensearchExporterSchemaManager(client, configuration);
+      log.info("Exporter opened");
+    } catch (final Exception ex) {
+      if (client != null) {
+        try {
+          client.close();
+          client = null;
+        } catch (final Exception e) {
+          log.warn("Failed to close the opensearch client", e);
+        }
+      }
+      throw ex;
+    }
+  }
+
+  @Override
+  public void close() {
+    if (scheduledFlushTask != null) {
+      scheduledFlushTask.cancel();
+      scheduledFlushTask = null;
+    }
+    // the client is only created in some lifecycles, so during others (e.g. validation) it may not
+    // exist, in which case there's no point flushing or doing anything
+    if (client != null) {
+      try {
+        flush();
+        updateLastExportedPosition();
+      } catch (final Exception e) {
+        log.warn("Failed to flush records before closing exporter.", e);
+      }
+
+      try {
+        client.close();
+      } catch (final Exception e) {
+        log.warn("Failed to close opensearch client", e);
+      }
+    }
+
+    try {
+      pluginRepository.close();
+    } catch (final Exception e) {
+      log.warn("Failed to close plugin repository", e);
+    }
+
+    log.info("Exporter closed");
+  }
+
+  @Override
+  public void export(final Record<?> record) {
+
+    if (!shouldExportRecord(record)) {
+      // ignore the record but still update the last exported position
+      // so that we don't block compaction. Don't update the controller yet, this needs to be done
+      // on the next flush.
+      lastPosition = record.getPosition();
+      return;
+    }
+    schemaManager.createSchema(record.getBrokerVersion());
+
+    final var recordSequence = recordCounters.getNextRecordSequence(record);
+    final var isRecordIndexedToBatch = client.index(record, recordSequence);
+    if (isRecordIndexedToBatch) {
+      recordCounters.updateRecordCounters(record, recordSequence);
+    }
+    lastPosition = record.getPosition();
+
+    if (client.shouldFlush()) {
+      flush();
+      updateLastExportedPosition();
+    }
+  }
+
+  /**
+   * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
+   * records to be exported, or if the configuration explicitly enables the export of all records
+   * {@link OpensearchExporterConfiguration#getIsIncludeEnabledRecords()}. For past versions, we
+   * continue to export all records.
+   *
+   * @param record The record to check
+   * @return Whether the record should be exported or not
+   */
+  private boolean shouldExportRecord(final Record<?> record) {
+    final var recordVersion = getVersion(record.getBrokerVersion());
+    if (configuration.getIsIncludeEnabledRecords()
+        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
+      return true;
+    }
+    return configuration.shouldIndexRequiredValueType(record.getValueType());
+  }
+
+  private void validate(final OpensearchExporterConfiguration configuration) {
+    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
+      throw new ExporterException(
+          String.format(
+              "Opensearch prefix must not contain underscore. Current value: %s",
+              configuration.index.prefix));
+    }
+
+    if (configuration.bulk.memoryLimit > RECOMMENDED_MAX_BULK_MEMORY_LIMIT) {
+      log.warn(
+          "The bulk memory limit is set to more than {} bytes. It is recommended to set the limit between 5 to 15 MB.",
+          RECOMMENDED_MAX_BULK_MEMORY_LIMIT);
+    }
+
+    final Integer numberOfShards = configuration.index.getNumberOfShards();
+    if (numberOfShards != null && numberOfShards < 1) {
+      throw new ExporterException(
+          String.format(
+              "Opensearch numberOfShards must be >= 1. Current value: %d", numberOfShards));
+    }
+
+    final Integer numberOfReplicas = configuration.index.getNumberOfReplicas();
+    if (numberOfReplicas != null && numberOfReplicas < 0) {
+      throw new ExporterException(
+          String.format(
+              "Opensearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
+    }
+
+    final int priority = configuration.index.getPriority();
+    if (priority < 0) {
+      throw new ExporterException(
+          "Opensearch index template priority must be >= 0. Current value: %d".formatted(priority));
+    }
+  }
+
+  // TODO: remove this and instead allow client to be inject-able for testing
+  protected OpensearchClient createClient() {
+    return new OpensearchClient(
+        configuration, meterRegistry, OpensearchConnector.of(configuration).createClient());
+  }
+
+  private void flushAndReschedule() {
+    try {
+      flush();
+      updateLastExportedPosition();
+    } catch (final Exception e) {
+      log.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
+    }
+    scheduleDelayedFlush();
+  }
+
+  private void scheduleDelayedFlush() {
+    scheduledFlushTask =
+        controller.scheduleCancellableTask(
+            Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
+  }
+
+  private void flush() {
+    client.flush();
+  }
+
+  private void updateLastExportedPosition() {
+    exporterMetadata.setRecordCountersByValueType(recordCounters.getRecordCounters());
+    final var serializeExporterMetadata = serializeExporterMetadata(exporterMetadata);
+    controller.updateLastExportedRecordPosition(lastPosition, serializeExporterMetadata);
+  }
+
+  private byte[] serializeExporterMetadata(final OpensearchExporterMetadata metadata) {
+    try {
+      return exporterMetadataObjectMapper.writeValueAsBytes(metadata);
+    } catch (final JsonProcessingException e) {
+      throw new OpensearchExporterException("Failed to serialize exporter metadata", e);
+    }
+  }
+
+  private OpensearchExporterMetadata deserializeExporterMetadata(final byte[] metadata) {
+    try {
+      return exporterMetadataObjectMapper.readValue(metadata, OpensearchExporterMetadata.class);
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to deserialize exporter metadata", e);
+    }
+  }
+
+  private SemanticVersion getVersion(final String version) {
+    return SemanticVersion.parse(version)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Unsupported record broker version: ["
+                        + version
+                        + "] Must be a semantic version."));
+  }
+}

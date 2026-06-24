@@ -1,0 +1,70 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.formSkeletonContainer {
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(4, min-content);
+  grid-gap: var(--cds-spacing-04);
+  grid-template-areas:
+    'a b'
+    'c c'
+    'd .'
+    'e f';
+
+  & > :nth-child(1) {
+    grid-area: a;
+  }
+  & > :nth-child(2) {
+    grid-area: b;
+  }
+  & > :nth-child(3) {
+    grid-area: c;
+  }
+  & > :nth-child(4) {
+    grid-area: d;
+  }
+  & > :nth-child(5) {
+    grid-area: e;
+  }
+  & > :nth-child(6) {
+    grid-area: f;
+  }
+}
+
+.inlineNotification {
+  width: 100%;
+}
+
+.formContainer {
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: hidden;
+}
+
+.formScrollContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.formCenterContainer {
+  width: inherit;
+  max-width: 900px;
+}
+
+.inlineErrorContainer {
+  padding-top: var(--cds-spacing-02);
+}

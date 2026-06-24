@@ -1,0 +1,62 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.AgenticControlPlane {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 2rem 0;
+
+  .header {
+    margin-bottom: 1.5rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+  }
+
+  .description {
+    font-size: 0.875rem;
+    color: var(--cds-text-secondary);
+    margin: 0 0 0.5rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 1rem 0 0.25rem;
+    color: var(--cds-text-primary);
+  }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--cds-border-subtle-01, var(--silver-darken-80));
+    margin: 0;
+  }
+
+  .tile-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.25rem;
+
+    &:not(:empty) {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+  }
+
+  .tile-footnote,
+  .tile-topn-notice {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: var(--cds-text-secondary);
+  }
+}

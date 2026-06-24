@@ -1,0 +1,319 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter.opensearch;
+
+import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.zeebe.exporter.opensearch.TestClient.IndexISMPolicyDto;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.opensearch.client.opensearch.cluster.ComponentTemplate;
+import org.opensearch.client.opensearch.cluster.ComponentTemplateSummary;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
+import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
+import org.opensearch.client.opensearch.indices.IndexTemplate;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
+
+public class OpensearchClientIT {
+
+  private static final int PARTITION_ID = 1;
+
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
+
+  @AfterEach
+  void tearDown() {
+    final var maybePolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
+    if (maybePolicy.isPresent()) {
+      SEARCH_DB.client().deleteIndexStateManagementPolicy();
+    }
+  }
+
+  @Test
+  void shouldThrowExceptionIfFailToFlushBulk() {
+    // given - a record with a negative timestamp will not be indexed because its field in ES is a
+    // date, which must be a positive number of milliseconds since the UNIX epoch
+    final var invalidRecord =
+        SEARCH_DB
+            .recordFactory()
+            .generateRecord(
+                ValueType.VARIABLE,
+                b ->
+                    b.withTimestamp(Long.MIN_VALUE)
+                        .withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    SEARCH_DB.client().index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
+    SEARCH_DB.client().putComponentTemplate();
+    SEARCH_DB.client().putIndexTemplate(ValueType.VARIABLE);
+
+    // when/then
+    assertThatThrownBy(SEARCH_DB.client()::flush)
+        .isInstanceOf(OpensearchExporterException.class)
+        .hasMessageContaining(
+            "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request "
+                + "[type: mapper_parsing_exception, reason: failed to parse date "
+                + "field [-9223372036854775808] with format [strict_date_optional_time||epoch_millis]]]");
+  }
+
+  @Test
+  void shouldPutIndexTemplate() {
+    // given
+    final var valueType = ValueType.VARIABLE;
+
+    // required since all index templates are composed with it
+    SEARCH_DB.client().putComponentTemplate();
+
+    // when
+    SEARCH_DB.client().putIndexTemplate(valueType);
+
+    // then
+    final Optional<IndexTemplateItem> maybeIndexTemplateItem =
+        SEARCH_DB.testClient().maybeGetIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+
+    assertThat(maybeIndexTemplateItem)
+        .as("should have created index template for value type %s", valueType)
+        .isPresent();
+
+    final IndexTemplateItem indexTemplateItem = maybeIndexTemplateItem.get();
+
+    final String expectedIndexTemplateName =
+        SEARCH_DB
+            .indexRouter()
+            .indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
+    assertThat(indexTemplateItem.name()).isEqualTo(expectedIndexTemplateName);
+
+    final String expectedIndexTemplateAlias =
+        SEARCH_DB.indexRouter().aliasNameForValueType(valueType);
+    final String expectedSearchPatterns =
+        SEARCH_DB
+            .indexRouter()
+            .searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase());
+    final PutIndexTemplateRequest expectedPutIndexTemplateRequest =
+        SEARCH_DB
+            .templateReader()
+            .getPutIndexTemplateRequest(
+                expectedIndexTemplateName,
+                valueType,
+                expectedSearchPatterns,
+                expectedIndexTemplateAlias);
+
+    assertIndexTemplate(indexTemplateItem.indexTemplate(), expectedPutIndexTemplateRequest);
+  }
+
+  @Test
+  void shouldPutComponentTemplate() {
+    // given
+    SEARCH_DB.client().putComponentTemplate();
+
+    // then
+    final Optional<GetComponentTemplateResponse> maybeGetComponentTemplate =
+        SEARCH_DB.testClient().maybeGetComponentTemplate();
+
+    assertThat(maybeGetComponentTemplate).as("should have created component template").isPresent();
+
+    final GetComponentTemplateResponse componentTemplateResponse = maybeGetComponentTemplate.get();
+
+    final String expectedComponentTemplateName =
+        SEARCH_DB.config().index.prefix + "-" + VersionUtil.getVersionLowerCase();
+
+    final ComponentTemplate firstComponentTemplate =
+        assertThat(componentTemplateResponse)
+            .extracting(GetComponentTemplateResponse::componentTemplates)
+            .asInstanceOf(InstanceOfAssertFactories.list(ComponentTemplate.class))
+            .hasSize(1)
+            .first()
+            .actual();
+
+    assertThat(firstComponentTemplate.name()).isEqualTo(expectedComponentTemplateName);
+
+    // and
+    final PutComponentTemplateRequest componentTemplatePutRequest =
+        SEARCH_DB.templateReader().getComponentTemplatePutRequest(expectedComponentTemplateName);
+
+    assertComponentTemplate(firstComponentTemplate, componentTemplatePutRequest);
+  }
+
+  @Test
+  @DisabledIfSystemProperty(
+      named = PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "AWS OS IT runners currently support only STS-based authentication")
+  void shouldAuthenticateWithBasicAuth() {
+    // given
+    SEARCH_DB.testClient().putUser("user", "^AHq>z@)&l;RJU=\"", List.of("admin"));
+    SEARCH_DB.config().getAuthentication().setUsername("user");
+    SEARCH_DB.config().getAuthentication().setPassword("^AHq>z@)&l;RJU=\"");
+
+    // when
+    // force recreating the client
+    final var authenticatedClient =
+        new OpensearchClient(
+            SEARCH_DB.config(),
+            SEARCH_DB.bulkRequest(),
+            OpensearchConnector.of(SEARCH_DB.config()).createClient(),
+            SEARCH_DB.indexRouter(),
+            SEARCH_DB.templateReader(),
+            new OpensearchMetrics(new SimpleMeterRegistry()));
+    authenticatedClient.putComponentTemplate();
+
+    // then
+    assertThat(SEARCH_DB.testClient().maybeGetComponentTemplate()).isPresent();
+  }
+
+  @Test
+  void shouldCreateIndexStateManagementPolicyWithoutTouchingCamundaExporterIndexes() {
+    // given
+
+    // when
+    SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
+
+    // then
+    final var maybePolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
+    assertThat(maybePolicy).isPresent();
+    final var policy = maybePolicy.get().policy();
+    assertThat(policy.ismTemplate()).isNotEmpty();
+    for (final var ismTemplate : policy.ismTemplate()) {
+      assertThat(ismTemplate.indexPatterns())
+          .as("ISM template should only apply to zeebe indices")
+          .containsOnly(SEARCH_DB.config().index.prefix + "_*");
+    }
+  }
+
+  @Test
+  void shouldBulkAddISMPolicyToAllZeebeIndicesWithoutTouchingCamundaExporterIndexesWithSamePrefix()
+      throws IOException {
+    // given
+    final var config = SEARCH_DB.config();
+    final var indexRouter = SEARCH_DB.indexRouter();
+    final var ownedIndexName =
+        indexRouter.indexPrefixForValueType(ValueType.VARIABLE, VersionUtil.getVersionLowerCase())
+            + "_2024-01-01";
+
+    // camunda exporter indexes have a slightly different format
+    final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
+
+    SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
+
+    final var osClient = SEARCH_DB.testClient().getOsClient();
+    osClient.indices().create(b -> b.index(ownedIndexName));
+    osClient.indices().create(b -> b.index(camundaExporterIndexName));
+
+    // when
+    SEARCH_DB.client().bulkAddISMPolicyToAllZeebeIndices();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              assertThat(SEARCH_DB.testClient().explainIndex(ownedIndexName))
+                  .isPresent()
+                  .get()
+                  .extracting(IndexISMPolicyDto::policyId)
+                  .isEqualTo("zeebe-record-retention-policy");
+              assertThat(SEARCH_DB.testClient().explainIndex(camundaExporterIndexName)).isEmpty();
+            });
+  }
+
+  @Test
+  void shouldBulkRemoveISMPolicyFromAllZeebeIndices() throws IOException {
+    // given
+    final var config = SEARCH_DB.config();
+    final var indexRouter = SEARCH_DB.indexRouter();
+    final var ownedIndexName =
+        indexRouter.indexPrefixForValueType(ValueType.VARIABLE, VersionUtil.getVersionLowerCase())
+            + "_2024-01-01";
+
+    SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
+
+    final var osClient = SEARCH_DB.testClient().getOsClient();
+    osClient.indices().create(b -> b.index(ownedIndexName));
+
+    SEARCH_DB.client().bulkAddISMPolicyToAllZeebeIndices();
+
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(SEARCH_DB.testClient().explainIndex(ownedIndexName))
+                    .isPresent()
+                    .get()
+                    .extracting(IndexISMPolicyDto::policyId)
+                    .isEqualTo("zeebe-record-retention-policy"));
+
+    // when
+    SEARCH_DB.client().bulkRemoveISMPolicyFromAllZeebeIndices();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(SEARCH_DB.testClient().explainIndex(ownedIndexName)).isEmpty());
+  }
+
+  private void assertComponentTemplate(
+      final ComponentTemplate actualTemplate,
+      final PutComponentTemplateRequest putComponentTemplateRequest) {
+    final ComponentTemplateSummary actualComponentTemplate =
+        actualTemplate.componentTemplate().template();
+
+    assertThat(actualTemplate.componentTemplate().version())
+        .isEqualTo(putComponentTemplateRequest.version());
+    assertThat(actualComponentTemplate.mappings())
+        .isEqualTo(putComponentTemplateRequest.template().mappings());
+
+    assertThat(actualComponentTemplate.settings().get("index"))
+        .isEqualTo(putComponentTemplateRequest.template().settings().index());
+  }
+
+  private void waitForIndexStateManagementPolicy() {
+    Awaitility.await()
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(SEARCH_DB.dataAvailabilityTimeout())
+        .untilAsserted(
+            () -> assertThat(SEARCH_DB.client().maybeGetIndexStateManagementPolicy()).isPresent());
+  }
+
+  private void assertIndexTemplate(
+      final IndexTemplate actualTemplate, final PutIndexTemplateRequest putIndexTemplateRequest) {
+    assertThat(actualTemplate.indexPatterns()).isEqualTo(putIndexTemplateRequest.indexPatterns());
+    assertThat(actualTemplate.composedOf()).isEqualTo(putIndexTemplateRequest.composedOf());
+    assertThat(actualTemplate.priority())
+        .isEqualTo(Long.valueOf(putIndexTemplateRequest.priority()));
+    assertThat(actualTemplate.version()).isEqualTo(putIndexTemplateRequest.version());
+    assertThat(actualTemplate.template().aliases())
+        .isEqualTo(putIndexTemplateRequest.template().aliases());
+    assertThat(actualTemplate.template().mappings())
+        .isEqualTo(putIndexTemplateRequest.template().mappings());
+
+    // simply this catches all cases
+    assertThat(actualTemplate.template().settings())
+        .isEqualTo(putIndexTemplateRequest.template().settings());
+
+    // also explicitly check for number_of_shards, number_of_replicas and queries settings, as those
+    // are the ones we set in the template, and we want to make sure they are correctly applied
+    assertThat(actualTemplate.template().settings().index().numberOfShards())
+        .isEqualTo(putIndexTemplateRequest.template().settings().index().numberOfShards());
+    assertThat(actualTemplate.template().settings().index().numberOfReplicas())
+        .isEqualTo(putIndexTemplateRequest.template().settings().index().numberOfReplicas());
+    assertThat(actualTemplate.template().settings().index().queries())
+        .isEqualTo(putIndexTemplateRequest.template().settings().index().queries());
+  }
+}

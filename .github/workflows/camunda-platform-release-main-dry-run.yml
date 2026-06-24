@@ -1,0 +1,176 @@
+# type: Release
+# owner: @camunda/monorepo-devops-team
+---
+name: Camunda Platform Release Dry Run from main
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Specifies the branch, for which the Release Dry Run should be executed'
+        default: 'main'
+        required: false
+        type: string
+      includeOptimize:
+        description: 'Whether to include Optimize in the dry run. Defaults to false.'
+        type: boolean
+        default: false
+  schedule:
+    # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
+    - cron: '0 1 * * 1-5'
+
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
+jobs:
+  setup:
+    name: Resolve release branch
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      branch: ${{ steps.resolve-branch.outputs.branch }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch || 'main' }}
+      - name: Create fake dry-run tags
+        run: |
+          for tag in 0.0.0-dryrun-minor 0.0.0-dryrun-alpha; do
+            git tag -f "$tag"
+            git push origin --force "refs/tags/${tag}"
+            echo "Prepared fake dry-run tag: ${tag}"
+          done
+      - name: Resolve release branch
+        id: resolve-branch
+        run: |
+          # Create a temporary unprotected branch for dry-run push testing.
+          # Any input branch (or main) may be protected, so we always branch off it.
+          SOURCE_BRANCH="${{ inputs.branch || 'main' }}"
+          BRANCH="tmp/dryrun-${SOURCE_BRANCH}-${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "Created temporary branch: ${BRANCH} from ${{ inputs.branch || 'main' }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  dry-run-release:
+    needs: setup
+    name: "${{ matrix.version }} from ${{ inputs.branch || 'main' }}"
+    uses: ./.github/workflows/camunda-platform-release.yml
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        # Uses fake tag for dry run testing without affecting real releases
+        version: [ 0.0.0-dryrun-minor, 0.0.0-dryrun-alpha ]
+        include:
+          - version: 0.0.0-dryrun-minor
+            latest: true
+          - version: 0.0.0-dryrun-alpha
+            latest: false
+    with:
+      releaseBranch: ${{ needs.setup.outputs.branch }}
+      releaseVersion: ${{ matrix.version }}
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      isLatest: ${{ matrix.latest }}
+      dryRun: true
+      includeOptimize: ${{ github.event_name == 'schedule' || inputs.includeOptimize || false }}
+
+  cleanup:
+    name: Delete temporary release branch
+    needs: [setup, dry-run-release]
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Delete temporary release branch
+        if: ${{ needs.dry-run-release.result == 'success' }}
+        run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
+      - name: Delete fake dry-run tags
+        if: ${{ needs.dry-run-release.result == 'success' }}
+        run: |
+          for tag in 0.0.0-dryrun-minor 0.0.0-dryrun-alpha; do
+            git push origin --delete "refs/tags/${tag}" 2>/dev/null || true
+          done
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify:
+    name: Send Slack notification
+    runs-on: ubuntu-slim
+    needs: [dry-run-release]
+    if: always()
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        if: ${{ always() && needs.dry-run-release.result != 'success' && github.event_name == 'schedule' }}
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Release Dry Run* on `${{ inputs.branch || 'main' }}` failed!\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
+                  }
+                }
+              ]
+            }
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

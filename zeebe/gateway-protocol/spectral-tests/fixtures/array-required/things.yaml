@@ -1,0 +1,290 @@
+# Domain file with paths and schemas for testing array-properties-must-be-required.
+# Contains both valid and invalid cases, each at a distinct API path.
+
+## ─── Path definitions ──────────────────────────────────────────────────────────
+
+paths:
+
+  # ── Valid: search with required array + allOf ─────────────────────
+  /valid-search/search:
+    post:
+      tags: [Test]
+      operationId: validSearch
+      summary: Search things (valid)
+      description: Array is required and not nullable, composed via allOf with SearchQueryResponse.
+      responses:
+        "200":
+          description: The search results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidSearchResult'
+
+  # ── Valid: single entity GET, no arrays ───────────────────────────
+  /valid-get/{thingKey}:
+    get:
+      tags: [Test]
+      operationId: validGet
+      summary: Get a thing (valid)
+      description: Response has no array properties.
+      parameters:
+        - name: thingKey
+          in: path
+          required: true
+          description: The key of the thing.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The thing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThingResult'
+
+  # ── Valid: nested object with required array ──────────────────────
+  /valid-nested/get:
+    get:
+      tags: [Test]
+      operationId: validNested
+      summary: Get nested (valid)
+      description: Nested object has a required array property.
+      responses:
+        "200":
+          description: Result with nested arrays.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidNestedResult'
+
+  # ── Valid: allOf with required and properties split across members ─
+  /valid-allof-split/search:
+    post:
+      tags: [Test]
+      operationId: validAllofSplit
+      summary: Search with split allOf (valid)
+      description: required list in one allOf member, properties in another.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllOfSplitResult'
+
+  # ── Invalid: array not in required ────────────────────────────────
+  /invalid-not-required/search:
+    post:
+      tags: [Test]
+      operationId: invalidNotRequired
+      summary: Search (invalid - not required)
+      description: Array property is not listed in required.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotRequiredResult'
+
+  # ── Invalid: array is nullable ────────────────────────────────────
+  /invalid-nullable/search:
+    post:
+      tags: [Test]
+      operationId: invalidNullable
+      summary: Search (invalid - nullable)
+      description: Array property is required but nullable.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NullableResult'
+
+  # ── Invalid: array both not required and nullable ─────────────────
+  /invalid-both/search:
+    post:
+      tags: [Test]
+      operationId: invalidBoth
+      summary: Search (invalid - both)
+      description: Array property is neither required nor non-nullable.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BothResult'
+
+  # ── Invalid: nested object with non-required array ────────────────
+  /invalid-nested/get:
+    get:
+      tags: [Test]
+      operationId: invalidNested
+      summary: Get nested (invalid)
+      description: Nested object has a non-required array property.
+      responses:
+        "200":
+          description: Result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNestedResult'
+
+  # ── Invalid: array items with non-required array (recursion) ──────
+  /invalid-items-recurse/search:
+    post:
+      tags: [Test]
+      operationId: invalidItemsRecurse
+      summary: Search with recursive items (invalid)
+      description: Array items schema contains an object with a non-required array.
+      responses:
+        "200":
+          description: Results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemsRecurseResult'
+
+
+## ─── Schema definitions ────────────────────────────────────────────────────────
+
+components:
+  schemas:
+
+    # ── Shared result schema ──────────────────────────────────────────
+    ThingResult:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name of the thing.
+        thingKey:
+          type: string
+          description: The unique key of the thing.
+
+    # ── Valid: required array with allOf composition ──────────────────
+    ValidSearchResult:
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          items:
+            $ref: '#/components/schemas/ThingResult'
+
+    # ── Invalid: array not in required ────────────────────────────────
+    NotRequiredResult:
+      type: object
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          items:
+            $ref: '#/components/schemas/ThingResult'
+
+    # ── Invalid: array is nullable ────────────────────────────────────
+    NullableResult:
+      required:
+        - items
+      type: object
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ThingResult'
+
+    # ── Invalid: both not required and nullable ───────────────────────
+    BothResult:
+      type: object
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ThingResult'
+
+    # ── Valid: nested object with required array ──────────────────────
+    ValidNestedResult:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          description: Metadata about the thing.
+          required:
+            - tags
+          properties:
+            tags:
+              description: Tags associated with the thing.
+              type: array
+              items:
+                type: string
+
+    # ── Invalid: nested object with non-required array ────────────────
+    InvalidNestedResult:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          description: Metadata about the thing.
+          properties:
+            tags:
+              description: Tags associated with the thing.
+              type: array
+              items:
+                type: string
+
+    # ── Valid: allOf with split required / properties ──────────────────
+    AllOfSplitResult:
+      type: object
+      allOf:
+        - type: object
+          required:
+            - items
+        - type: object
+          properties:
+            items:
+              description: The things.
+              type: array
+              items:
+                $ref: '#/components/schemas/ThingResult'
+
+    # ── Invalid: array items containing object with non-required array ─
+    ItemsRecurseResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          description: The matching things.
+          type: array
+          items:
+            $ref: '#/components/schemas/ThingWithBadArrayResult'
+
+    ThingWithBadArrayResult:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name.
+        labels:
+          description: Labels on the thing.
+          type: array
+          items:
+            type: string

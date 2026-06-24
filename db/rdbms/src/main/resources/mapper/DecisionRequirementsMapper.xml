@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.DecisionRequirementsMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}DECISION_REQUIREMENTS
+      <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT DECISION_REQUIREMENTS_KEY,
+    DECISION_REQUIREMENTS_ID,
+    NAME,
+    TENANT_ID,
+    VERSION,
+    <if test="resultConfig.includeXml">XML,</if>
+    <if test="!resultConfig.includeXml">NULL AS XML,</if>
+    RESOURCE_NAME
+    FROM ${prefix}DECISION_REQUIREMENTS
+    <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND DECISION_REQUIREMENTS_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <!-- basic filters -->
+      <if
+        test="filter.decisionRequirementsKeys != null and !filter.decisionRequirementsKeys.isEmpty()">
+        AND DECISION_REQUIREMENTS_KEY IN
+        <foreach collection="filter.decisionRequirementsKeys" item="value" open="(" separator=", "
+          close=")">#{value}
+        </foreach>
+      </if>
+      <if
+        test="filter.decisionRequirementsIds != null and !filter.decisionRequirementsIds.isEmpty()">
+        AND DECISION_REQUIREMENTS_ID IN
+        <foreach collection="filter.decisionRequirementsIds" item="value" open="(" separator=", "
+          close=")">#{value}
+        </foreach>
+      </if>
+      <if test="filter.names != null and !filter.names.isEmpty()">
+        AND name IN
+        <foreach collection="filter.names" item="value" open="(" separator=", " close=")">#{value}
+        </foreach>
+      </if>
+      <if test="filter.versions != null and !filter.versions.isEmpty()">
+        AND VERSION IN
+        <foreach collection="filter.versions" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.resourceNames != null and !filter.resourceNames.isEmpty()">
+        AND RESOURCE_NAME IN
+        <foreach collection="filter.resourceNames" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionRequirementsEntity">
+    <constructor>
+      <idArg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"/>
+      <arg column="DECISION_REQUIREMENTS_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VERSION" javaType="java.lang.Integer"/>
+      <arg column="RESOURCE_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="XML" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel">
+    INSERT INTO ${prefix}DECISION_REQUIREMENTS (DECISION_REQUIREMENTS_KEY, DECISION_REQUIREMENTS_ID,
+                                                NAME, TENANT_ID, VERSION, RESOURCE_NAME, XML)
+    VALUES (#{decisionRequirementsKey}, #{decisionRequirementsId}, #{name},
+            #{tenantId}, #{version}, #{resourceName}, #{xml})
+  </insert>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}DECISION_REQUIREMENTS
+    WHERE DECISION_REQUIREMENTS_KEY IN
+    <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+</mapper>

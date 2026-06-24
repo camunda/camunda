@@ -1,0 +1,230 @@
+# Entry point for x-semantic-establishes / x-semantic-requires rule tests.
+# Mirrors the real spec structure: paths $ref to a domain file.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — semantic-establishes
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid ─────────────────────────────────────────────────────
+  /valid/widgets:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets'
+  /valid/widgets/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}'
+  /valid/users:
+    $ref: 'widgets.yaml#/paths/~1valid~1users'
+  /valid/widgets/{widgetId}/owners/{username}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1owners~1{username}'
+  /valid/widgets/{widgetId}/owners/search:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1owners~1search'
+
+  # ── Invalid: shape lint ───────────────────────────────────────
+  /invalid/missing-kind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1missing-kind'
+  /invalid/bad-kind-case:
+    $ref: 'widgets.yaml#/paths/~1invalid~1bad-kind-case'
+  /invalid/typoed-key:
+    $ref: 'widgets.yaml#/paths/~1invalid~1typoed-key'
+  /invalid/bad-shape-enum:
+    $ref: 'widgets.yaml#/paths/~1invalid~1bad-shape-enum'
+  /invalid/empty-identified-by:
+    $ref: 'widgets.yaml#/paths/~1invalid~1empty-identified-by'
+  /invalid/identified-by-bad-in:
+    $ref: 'widgets.yaml#/paths/~1invalid~1identified-by-bad-in'
+
+  # ── Invalid: requires shape lint ──────────────────────────────
+  /invalid/requires-missing-bind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-missing-bind'
+
+  # ── Invalid: registry / cross-reference ───────────────────────
+  /invalid/unknown-establishes-kind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1unknown-establishes-kind'
+  /invalid/unknown-requires-kind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1unknown-requires-kind'
+  /invalid/orphan-requires:
+    $ref: 'widgets.yaml#/paths/~1invalid~1orphan-requires'
+
+  # ── Invalid: edge endpoint resolution / derived requires ──────
+  /invalid/widgets/{widgetId}/mystery/{mysteryId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1mystery~1{mysteryId}'
+  /invalid/widgets/{widgetId}/frobs/{frobId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1frobs~1{frobId}'
+
+  # ── External entity (camunda/camunda#52320) ──────────────────
+  /valid/widgets/{widgetId}/external-things/{externalThingId}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1external-things~1{externalThingId}'
+  /valid/widgets/{widgetId}/bimodals/{bimodalId}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1bimodals~1{bimodalId}'
+  /invalid/external-things:
+    $ref: 'widgets.yaml#/paths/~1invalid~1external-things'
+  /invalid/external-things/{externalThingId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1external-things~1{externalThingId}'
+
+  # ── Invalid: binding existence (camunda/camunda#52413) ───────
+  /invalid/establishes-body-no-body:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-no-body'
+  /invalid/establishes-body-missing-prop:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-missing-prop'
+  /invalid/establishes-path-missing/{actuallyDeclared}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-path-missing~1{actuallyDeclared}'
+  /invalid/requires-query-missing:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-query-missing'
+  /invalid/requires-header-missing:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-header-missing'
+  /invalid/requires-body-missing-prop:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-body-missing-prop'
+  /valid/widgets-pathitem/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets-pathitem~1{widgetId}'
+
+  # ── Invalid: shape vs registry ───────────────────────────────
+  /invalid/widgets/{widgetId}/wrong-shape-default/{username}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1wrong-shape-default~1{username}'
+  /invalid/widgets/wrong-shape-explicit:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1wrong-shape-explicit'
+
+  # ── Producer-existence gate (broken producer must not suppress consumer orphan) ──
+  /invalid/broken-establish:
+    $ref: 'widgets.yaml#/paths/~1invalid~1broken-establish'
+  /invalid/broken-establish-consumer/{brokenProducedId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1broken-establish-consumer~1{brokenProducedId}'
+
+  # ── Producer-existence gate (structural-shape branch) ────────
+  /invalid/malformed-empty-identified-by:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-empty-identified-by'
+  /invalid/malformed-missing-identified-by:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-missing-identified-by'
+  /invalid/malformed-typoed-top-level-key:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-typoed-top-level-key'
+  /invalid/malformed-shape-consumer/{malformedShapeId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-shape-consumer~1{malformedShapeId}'
+
+  # ── Binding existence: non-object request body ───────────────
+  /invalid/establishes-body-non-object-scalar:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-non-object-scalar'
+  /invalid/requires-body-non-object-array:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-body-non-object-array'
+
+  # ── Binding existence: closed-object request body ────────────
+  /invalid/establishes-body-closed-object:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-closed-object'
+
+  # ── Bind-key tuple validation ────────────────────────────────
+  /invalid/requires-bind-bogus-key/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-bind-bogus-key~1{widgetId}'
+  /valid/legacy-bind-producer:
+    $ref: 'widgets.yaml#/paths/~1valid~1legacy-bind-producer'
+  /valid/legacy-bind-consumer/{id}:
+    $ref: 'widgets.yaml#/paths/~1valid~1legacy-bind-consumer~1{id}'
+
+  # ── Entity-tuple semanticType validation ─────────────────────
+  /invalid/establishes-bogus-semantic-type:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-bogus-semantic-type'
+  /invalid/isolated-kind-consumer/{isolatedKindId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1isolated-kind-consumer~1{isolatedKindId}'
+
+  # ── Foreign-identifier-without-requires ──────────────────────
+  /invalid/establishes-foreign-id-no-requires/{widgetId}/{foreignBoundName}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-foreign-id-no-requires~1{widgetId}~1{foreignBoundName}'
+  /valid/establishes-foreign-id-with-requires/{widgetId}/{foreignBoundName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1establishes-foreign-id-with-requires~1{widgetId}~1{foreignBoundName}'
+
+  # ── External-entity-foreign-owner (camunda/camunda#52322 review) ──
+  /invalid/establishes-external-id-no-accepts-external/{externalThingId}/{externalBoundName}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-external-id-no-accepts-external~1{externalThingId}~1{externalBoundName}'
+  /valid/establishes-external-id-with-accepts-external/{externalThingId}/{externalBoundName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1establishes-external-id-with-accepts-external~1{externalThingId}~1{externalBoundName}'
+
+  # ── Own-identifier presence (Hole E, camunda/camunda#52322 review) ──
+  /invalid/establishes-only-foreign-id/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-only-foreign-id~1{widgetId}'
+  /invalid/own-id-missing-kind-consumer/{ownIdMissingKindId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1own-id-missing-kind-consumer~1{ownIdMissingKindId}'
+
+  # ── Consumer-bind tuple coverage (Hole F, camunda/camunda#52322 review) ──
+  /valid/composite-bind/{widgetId}/{compositeBindKindName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1composite-bind~1{widgetId}~1{compositeBindKindName}'
+  /invalid/composite-bind-consumer-missing-widget-id/{compositeBindKindName}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1composite-bind-consumer-missing-widget-id~1{compositeBindKindName}'
+  /valid/composite-bind-consumer-full-tuple/{widgetId}/{compositeBindKindName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1composite-bind-consumer-full-tuple~1{widgetId}~1{compositeBindKindName}'
+  /invalid/widget-consumer-empty-bind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widget-consumer-empty-bind'
+
+  # ── Binding existence with $ref'd request body ───────────────
+  # Production specs declare `requestBody.content.*.schema` as a `$ref`
+  # to a top-level component schema, not as an inline object. The
+  # body-member existence check must follow the `$ref` to inspect the
+  # referenced schema's properties; otherwise a regression in Spectral
+  # ref resolution (or in `collectTopLevelBodyProperties`) would
+  # silently disable the check on every real `createX` operation while
+  # every inline-body fixture stayed green. The ops live here in the
+  # entry document so the local `#/components/schemas/...` ref is
+  # resolvable in both bundled and per-file lint passes.
+  /valid/establishes-body-ref-present:
+    post:
+      operationId: establishesBodyRefPresent
+      summary: Establishes from $ref'd body schema (member present)
+      description: Should pass — member exists on the $ref'd component.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWidgetWithIdRequest'
+      responses:
+        '201':
+          description: Created.
+
+  /invalid/establishes-body-ref-missing:
+    post:
+      operationId: establishesBodyRefMissing
+      summary: Establishes from $ref'd body schema (member missing)
+      description: |
+        Should fail — body binding to widgetId, but the $ref'd component
+        only declares `name`. Class-scoped guard: if Spectral ref
+        resolution regressed, the existing inline-body fixtures (#16-21)
+        would still pass and this defect class would silently slip
+        through on the real spec.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWidgetMissingIdRequest'
+      responses:
+        '201':
+          description: Created.
+
+components:
+  schemas:
+    CreateWidgetWithIdRequest:
+      type: object
+      properties:
+        widgetId:
+          type: string
+        name:
+          type: string
+      required:
+        - widgetId
+
+    CreateWidgetMissingIdRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name

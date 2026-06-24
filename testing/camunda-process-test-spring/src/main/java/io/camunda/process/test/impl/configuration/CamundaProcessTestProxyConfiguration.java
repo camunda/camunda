@@ -1,0 +1,69 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.impl.configuration;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.impl.proxy.CamundaClientProxy;
+import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
+import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
+import java.lang.reflect.Proxy;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+
+public class CamundaProcessTestProxyConfiguration {
+
+  @Bean
+  public CamundaClientProxy camundaClientProxy() {
+    return new CamundaClientProxy();
+  }
+
+  @Bean(destroyMethod = "")
+  @Primary
+  public CamundaClient proxiedCamundaClient(final CamundaClientProxy camundaClientProxy) {
+    return (CamundaClient)
+        Proxy.newProxyInstance(
+            getClass().getClassLoader(), new Class[] {CamundaClient.class}, camundaClientProxy);
+  }
+
+  @Bean
+  public CamundaProcessTestContextProxy camundaProcessTestContextProxy() {
+    return new CamundaProcessTestContextProxy();
+  }
+
+  @Bean
+  public CamundaProcessTestContext proxiedCamundaProcessTestContext(
+      final CamundaProcessTestContextProxy camundaProcessTestContextProxy) {
+    return (CamundaProcessTestContext)
+        Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class[] {CamundaProcessTestContext.class},
+            camundaProcessTestContextProxy);
+  }
+
+  @Bean
+  public TestCaseRunnerProxy testCaseRunnerProxy() {
+    return new TestCaseRunnerProxy();
+  }
+
+  @Bean
+  public TestCaseRunner proxiedTestCaseRunner(final TestCaseRunnerProxy testCaseRunnerProxy) {
+    return (TestCaseRunner)
+        Proxy.newProxyInstance(
+            getClass().getClassLoader(), new Class[] {TestCaseRunner.class}, testCaseRunnerProxy);
+  }
+}

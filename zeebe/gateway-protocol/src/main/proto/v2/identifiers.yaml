@@ -1,0 +1,323 @@
+# Common identifier schemas (string-based IDs)
+components:
+  schemas:
+    ProcessDefinitionId:
+      description: Id of a process definition, from the model. Only ids of process definitions that are deployed are useful.
+      format: ProcessDefinitionId
+      type: string
+      x-semantic-type: ProcessDefinitionId
+      minLength: 1
+      pattern: ^[\p{L}_][\p{L}\p{N}_\-\.]*$
+      example: new-account-onboarding-workflow
+
+    ElementId:
+      description: The model-defined id of an element.
+      format: ElementId
+      type: string
+      x-semantic-type: ElementId
+      example: Activity_106kosb
+
+    FormId:
+      description: The user-defined id for the form
+      type: string
+      format: FormId
+      x-semantic-type: FormId
+      example: Form_1nx5hav
+
+    DecisionDefinitionId:
+      description: Id of a decision definition, from the model. Only ids of decision definitions that are deployed are useful.
+      format: DecisionDefinitionId
+      x-semantic-type: DecisionDefinitionId
+      type: string
+      minLength: 1
+      pattern: ^[\p{L}_][\p{L}\p{N}_\-\.]*$
+      example: new-hire-onboarding-workflow
+
+    GlobalListenerId:
+      description: The user-defined id for the global listener
+      type: string
+      format: GlobalListenerId
+      x-semantic-type: GlobalListenerId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # `GlobalListenerRequestValidator` routes `id` through
+      # `IdentifierValidator.validateId` on create/get/update/delete.
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+\-]+$
+      example: GlobalListener_1
+
+    TenantId:
+      example: customer-service
+      description: The unique identifier of the tenant.
+      format: TenantId
+      type: string
+      x-semantic-type: TenantId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 31
+      # Mirrors IdentifierValidator.TENANT_ID_MASK in security-validation
+      # (^[\w\.-]{1,31}$), with the literal `<default>` admitted as the
+      # default-tenant alias the runtime accepts.
+      pattern: ^(<default>|[\w\.\-]{1,31})$
+
+    Username:
+      example: swillis
+      format: Username
+      description: The unique name of a user.
+      x-semantic-type: Username
+      x-semantic-client-minted: true
+      type: string
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # Operator-configurable via `camunda.security.idValidationPattern`
+      # (`SecurityConfiguration#getCompiledIdValidationPattern()`); this
+      # schema describes the default-shipped contract. Operators that
+      # override the pattern accept the wire/runtime divergence — same
+      # trade-off documented for the other DEFAULT_ID_REGEX-derived
+      # identifiers in this file.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    RoleId:
+      example: admin
+      description: The unique identifier of a role.
+      format: RoleId
+      type: string
+      x-semantic-type: RoleId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
+      # (applied by IdentifierValidator at request time).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    GroupId:
+      example: engineering
+      description: The unique identifier of a group.
+      format: GroupId
+      type: string
+      x-semantic-type: GroupId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # No `pattern` constraint: groupId validation is deployment-scoped.
+      # `SecurityConfiguration.getCompiledGroupIdValidationPattern()` returns
+      # `DEFAULT_EXTERNAL_ID_REGEX` (`.*`) when OIDC `groupsClaim` is
+      # configured ("bring your own groups"), and `DEFAULT_ID_REGEX`
+      # (`^[a-zA-Z0-9_~@.+-]+$`) otherwise. Advertising the strict regex
+      # here would falsely reject valid IdP-supplied group IDs in BYOG
+      # deployments. The runtime separately enforces the strict regex on
+      # group CRUD inputs via `IdentifierValidator.validateId` regardless
+      # of deployment, but that constraint is not expressed at the schema
+      # level so the wire contract remains accurate for every deployment
+      # and operation cell.
+
+    MappingRuleId:
+      example: my-mapping-rule
+      description: The unique identifier of a mapping rule.
+      format: MappingRuleId
+      type: string
+      x-semantic-type: MappingRuleId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    ClientId:
+      example: my-application
+      description: |
+        The unique identifier of an OAuth client.
+        Minted outside the Camunda REST API: in SaaS by Console, in Self-Managed
+        with OIDC by the external identity provider (e.g. EntraID, Keycloak,
+        Okta). In Self-Managed with Basic authentication, machine-to-machine
+        applications are modelled as users instead — see the user identifier.
+      format: ClientId
+      type: string
+      x-semantic-type: ClientId
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core,
+      # which is the regex applied to clientId values when they are passed
+      # back into the Camunda API (e.g. assigning a client to a role).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    ClusterVariableName:
+      example: feature-flag-checkout
+      description: The name of a cluster variable. Unique within its scope (global or tenant-specific).
+      format: ClusterVariableName
+      type: string
+      x-semantic-type: ClusterVariableName
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
+      # (ClusterVariableValidator routes through IdentifierValidator.validateId).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    Tag:
+      description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
+      example: business_key:1234
+      format: Tag
+      x-semantic-type: Tag
+      type: string
+      minLength: 1
+      maxLength: 100
+      pattern: ^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$
+
+    TagSet:
+      description: List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
+      type: array
+      format: string<Tag>[]
+      example:
+        - high-touch
+        - remediation
+      items:
+        $ref: '#/components/schemas/Tag'
+      uniqueItems: true
+      maxItems: 10
+
+    BusinessId:
+      description: |
+        An optional, user-defined string identifier that identifies the process instance
+        within the scope of a process definition (scoped by tenant). If provided and uniqueness
+        enforcement is enabled, the engine will reject creation if another root process instance
+        with the same business id is already active for the same process definition.
+        Note that any active child process instances with the same business id are not taken into account.
+      format: BusinessId
+      x-semantic-type: BusinessId
+      type: string
+      minLength: 1
+      maxLength: 256
+      example: order-12345
+
+
+    IterationId:
+      description: |
+        A client-provided sequential integer identifying a logical iteration: one LLM
+        call, its tool dispatches, and their results. Must be a positive integer,
+        increasing with each iteration. Established by the
+        connector when appending the first history item of an iteration.
+      type: integer
+      format: int32
+      minimum: 1
+      x-semantic-type: IterationId
+      x-semantic-client-minted: true
+      example: 1
+
+    ## Filters
+
+    ElementIdFilterProperty:
+      description: ElementId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        - $ref: '#/components/schemas/AdvancedElementIdFilter'
+
+    AdvancedElementIdFilter:
+      title: Advanced filter
+      description: Advanced ElementId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementId'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementId'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.10"
+        - propertyName: "$neq"
+          addedInVersion: "8.10"
+        - propertyName: "$exists"
+          addedInVersion: "8.10"
+        - propertyName: "$in"
+          addedInVersion: "8.10"
+        - propertyName: "$notIn"
+          addedInVersion: "8.10"
+        - propertyName: "$like"
+          addedInVersion: "8.10"
+
+    ProcessDefinitionIdFilterProperty:
+      description: ProcessDefinitionId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+        - $ref: '#/components/schemas/AdvancedProcessDefinitionIdFilter'
+
+    AdvancedProcessDefinitionIdFilter:
+      title: Advanced filter
+      description: Advanced ProcessDefinitionId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionId'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionId'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.10"
+        - propertyName: "$neq"
+          addedInVersion: "8.10"
+        - propertyName: "$exists"
+          addedInVersion: "8.10"
+        - propertyName: "$in"
+          addedInVersion: "8.10"
+        - propertyName: "$notIn"
+          addedInVersion: "8.10"
+        - propertyName: "$like"
+          addedInVersion: "8.10"

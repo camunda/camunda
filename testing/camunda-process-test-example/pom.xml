@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-testing</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-process-test-example</artifactId>
+
+  <name>Camunda Process Test Example</name>
+  <description>An example to demonstrate the usage of Camunda Process Test.</description>
+
+  <properties>
+    <version.java>17</version.java>
+    <version.wiremock-spring-boot>4.2.1</version.wiremock-spring-boot>
+  </properties>
+
+  <dependencies>
+
+    <!-- production (for process application) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-boot-starter</artifactId>
+    </dependency>
+
+    <!-- testing (for process test) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-spring</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wiremock.integrations</groupId>
+      <artifactId>wiremock-spring-boot</artifactId>
+      <version>${version.wiremock-spring-boot}</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Ignore transitive dependencies -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <configuration>
+            <ignoredUsedUndeclaredDependencies>
+              <dependency>com.fasterxml.jackson.core:jackson-databind</dependency>
+              <dependency>io.camunda:camunda-process-test-java</dependency>
+              <dependency>io.camunda:camunda-process-test-json-test-cases</dependency>
+              <dependency>io.camunda:camunda-client-java</dependency>
+              <dependency>org.assertj:assertj-core</dependency>
+              <dependency>org.junit.jupiter:junit-jupiter-api</dependency>
+              <dependency>org.junit.jupiter:junit-jupiter-params</dependency>
+              <dependency>org.springframework.boot:spring-boot-autoconfigure</dependency>
+              <dependency>org.springframework.boot:spring-boot-test</dependency>
+              <dependency>org.springframework:spring-beans</dependency>
+              <dependency>org.springframework:spring-context</dependency>
+              <dependency>org.wiremock:wiremock</dependency>
+              <dependency>org.testcontainers:testcontainers</dependency>
+            </ignoredUsedUndeclaredDependencies>
+            <ignoredNonTestScopedDependencies>
+              <dependency>com.fasterxml.jackson.core:jackson-databind</dependency>
+              <dependency>org.springframework:spring-beans</dependency>
+            </ignoredNonTestScopedDependencies>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- Run tests with failsafe as integration tests -->
+            <exclude>**/*Test.java</exclude>
+            <!-- Exclude nested classes of test classes (compiled as OuterClass$InnerClass.class) -->
+            <exclude>**/*Test$*.class</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <!-- Run all tests as integration tests -->
+            <include>**/*Test.java</include>
+            <include>**/*Test$*.class</include>
+          </includes>
+        </configuration>
+      </plugin>
+
+    </plugins>
+
+  </build>
+
+</project>

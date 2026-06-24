@@ -1,0 +1,457 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.zeebe.model.bpmn.validation;
+
+import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+public class ZeebeExecutionListenersValidationTest {
+  private static final String PROCESS_ID = "process";
+  private static final String SERVICE_TASK_TYPE = "service_task_job";
+  private static final String BEFORE_ALL_EL_TYPE = "before_all_execution_listener_job";
+  private static final String START_EL_TYPE = "start_execution_listener_job";
+  private static final String END_EL_TYPE = "end_execution_listener_job";
+  private static final String CANCEL_EL_TYPE = "cancel_execution_listener_job";
+
+  @Test
+  @DisplayName("element with ExecutionListeners defined without job `type`")
+  void testJobTypeNotDefined() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeJobRetries("6")
+                        .zeebeStartExecutionListener(null /*job type not defined*/))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(ZeebeExecutionListener.class, "Attribute 'type' must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("element with ExecutionListeners defined without `eventType`")
+  void testEventTypeNotDefined() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/ZeebeExecutionListenersValidationTest.testEventTypeNotDefined.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(ZeebeExecutionListener.class, "Attribute 'eventType' must be present"));
+  }
+
+  static Stream<Arguments> taskElementProvider() {
+    return Stream.of(
+        Arguments.of("task", setup(AbstractFlowNodeBuilder::task)),
+        Arguments.of("serviceTask", setup(b -> b.serviceTask().zeebeJobType(SERVICE_TASK_TYPE))),
+        Arguments.of("scriptTask", setup(b -> b.scriptTask().zeebeJobType("script_task_job"))),
+        Arguments.of(
+            "businessRuleTask",
+            setup(b -> b.businessRuleTask().zeebeJobType("business_rule_task_job"))),
+        Arguments.of("manualTask", setup(AbstractFlowNodeBuilder::manualTask)),
+        Arguments.of("sendTask", setup(b -> b.sendTask().zeebeJobType("send_task_job"))),
+        Arguments.of(
+            "receiveTask",
+            setup(
+                b ->
+                    b.receiveTask()
+                        .message(mb -> mb.name("message").zeebeCorrelationKeyExpression("foo")))),
+        Arguments.of("userTask", setup(b -> b.userTask().zeebeFormKey("formKey"))));
+  }
+
+  private static Function<AbstractFlowNodeBuilder<?, ?>, AbstractTaskBuilder<?, ?>> setup(
+      final Function<AbstractFlowNodeBuilder<?, ?>, AbstractTaskBuilder<?, ?>> taskConfigurer) {
+    return taskConfigurer;
+  }
+
+  @ParameterizedTest(
+      name = "validate that ''{0}'' can be configured with execution listeners and pass validation")
+  @MethodSource("taskElementProvider")
+  void validateExecutionListenersSupportedByTaskElements(
+      final String elementType,
+      final Function<StartEventBuilder, AbstractTaskBuilder<?, ?>> taskConfigurer) {
+
+    final BpmnModelInstance process =
+        taskConfigurer
+            .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
+            .id(elementType)
+            .zeebeStartExecutionListener(START_EL_TYPE)
+            .zeebeEndExecutionListener(END_EL_TYPE)
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("validate execution listeners are supported only for specified BPMN elements")
+  void validateExecutionListenersSupportedOnlyForSpecifiedElements() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/ZeebeExecutionListenersValidationTest.testElementThatNotSupportExecutionListeners.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners are not supported for the 'sequenceFlow' element. "
+                + "Currently, only [process, subProcess, callActivity, adHocSubProcess, task, sendTask, serviceTask, "
+                + "scriptTask, userTask, receiveTask, businessRuleTask, manualTask, startEvent, "
+                + "intermediateThrowEvent, intermediateCatchEvent, boundaryEvent, endEvent, "
+                + "exclusiveGateway, inclusiveGateway, parallelGateway, eventBasedGateway] "
+                + "elements can have execution listeners."));
+  }
+
+  @Test
+  @DisplayName(
+      "element with ExecutionListeners defined with the same `type` but different `eventType`")
+  void testExecutionListenersTheSameJobTypeButDifferentEventType() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeStartExecutionListener("type_A")
+                        .zeebeEndExecutionListener("type_A"))
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("element with ExecutionListeners defined with the same `eventType` and `type`")
+  void testExecutionListenersWithTheSameEventTypeAndJobType() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeJobRetries("6")
+                        .zeebeStartExecutionListener("type_A")
+                        .zeebeStartExecutionListener("type_A")
+                        .zeebeEndExecutionListener("type_A")
+                        .zeebeEndExecutionListener("type_b") // unique
+                        .zeebeEndExecutionListener("type_B")
+                        .zeebeEndExecutionListener("type_B")
+                        .zeebeEndExecutionListener("type_B")
+                        .zeebeEndExecutionListener(null)
+                        .zeebeEndExecutionListener(null))
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Found '3' duplicates based on eventType[end] and type[type_B], these combinations should be unique."),
+        expect(
+            ZeebeExecutionListeners.class,
+            "Found '2' duplicates based on eventType[end] and type[null], these combinations should be unique."),
+        expect(
+            ZeebeExecutionListeners.class,
+            "Found '2' duplicates based on eventType[start] and type[type_A], these combinations should be unique."),
+        expect(ZeebeExecutionListener.class, "Attribute 'type' must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on a multi-instance service task passes validation")
+  void shouldAllowBeforeAllListenerOnMultiInstanceServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName(
+      "beforeAll listener on a multi-instance service task combined with start/end listeners passes validation")
+  void shouldAllowBeforeAllWithStartAndEndListenersOnMultiInstanceServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_EL_TYPE)
+                        .zeebeStartExecutionListener(START_EL_TYPE)
+                        .zeebeEndExecutionListener(END_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on a plain (non-multi-instance) service task fails validation")
+  void shouldRejectBeforeAllListenerOnNonMultiInstanceServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
+                + "activities and are not valid on 'serviceTask'"));
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on a gateway fails validation")
+  void shouldRejectBeforeAllListenerOnGateway() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .exclusiveGateway("gateway")
+            .zeebeExecutionListener(
+                l ->
+                    l.eventType(ZeebeExecutionListenerEventType.beforeAll).type(BEFORE_ALL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
+                + "activities and are not valid on 'exclusiveGateway'"));
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on process (non-Activity) fails validation")
+  void shouldRejectBeforeAllListenerOnProcess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeExecutionListener(
+                l ->
+                    l.eventType(ZeebeExecutionListenerEventType.beforeAll).type(BEFORE_ALL_EL_TYPE))
+            .startEvent()
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
+                + "activities and are not valid on 'process'"));
+  }
+
+  @Test
+  @DisplayName("cancel execution listener on process element should pass validation")
+  void testCancelExecutionListenerOnProcessElement() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+            .startEvent()
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("cancel execution listener on service task should fail validation")
+  void testCancelExecutionListenerOnServiceTaskElement() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "The 'cancel' execution listener event type is not supported for the 'serviceTask'"
+                + " element. The 'cancel' event type is only supported on the 'process' element."));
+  }
+
+  private static Stream<Arguments> nonProcessElementsForCancelListener() {
+    return Stream.of(
+        Arguments.of(
+            "userTask",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .userTask("task", t -> t.zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "subProcess",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .subProcess(
+                            "sub",
+                            s ->
+                                s.zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                                    .embeddedSubProcess()
+                                    .startEvent()
+                                    .endEvent())
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "callActivity",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .callActivity(
+                            "call",
+                            c ->
+                                c.zeebeProcessId("child")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "intermediateCatchEvent",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .intermediateCatchEvent(
+                            "catch",
+                            i ->
+                                i.timerWithDuration("PT1S")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "boundaryEvent",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+                        .boundaryEvent(
+                            "boundary",
+                            b ->
+                                b.timerWithDuration("PT1S")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .moveToActivity("task")
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "startEvent",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .eventSubProcess(
+                            "esp",
+                            sub ->
+                                sub.startEvent("esp-start")
+                                    .timerWithDuration("PT1S")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                                    .endEvent())
+                        .startEvent()
+                        .endEvent()
+                        .done()));
+  }
+
+  @ParameterizedTest(name = "cancel execution listener on {0} should fail validation")
+  @MethodSource("nonProcessElementsForCancelListener")
+  void testCancelExecutionListenerOnNonProcessElement(
+      final String elementTypeName, final Function<Void, BpmnModelInstance> builder) {
+    // given
+    final BpmnModelInstance process = builder.apply(null);
+
+    // when/then: validator must reject the cancel listener on the non-process element
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "The 'cancel' execution listener event type is not supported for the '"
+                + elementTypeName
+                + "' element. The 'cancel' event type is only supported on the 'process' element."));
+  }
+}

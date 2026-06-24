@@ -1,0 +1,61 @@
+# description: trigger workflow to run the camunda-spring-boot-starter-compatibility-test.yml workflow on a schedule
+# type: CI
+# owner: @camunda/camundaex
+name: Camunda Spring Boot Starter Compatibility Tests - Trigger
+
+on:
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: "0 2 * * *"
+
+env:
+  TEST_OWNER: '@camunda/camundaex'
+
+jobs:
+  trigger-stable-8-8:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Spring Boot Starter compatibility tests on stable/8.8
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run .github/workflows/camunda-spring-boot-starter-compatibility-test.yml \
+            --ref stable/8.8 \
+            --repo ${{ github.repository }}
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  trigger-stable-8-9:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Spring Boot Starter compatibility tests on stable/8.9
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run .github/workflows/camunda-spring-boot-starter-compatibility-test.yml \
+            --ref stable/8.9 \
+            --repo ${{ github.repository }}
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

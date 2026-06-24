@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "_meta": {
+      "test_key" : "test_value"
+    },
+    "dynamic": "strict",
+    "properties": {
+      "hello": {
+        "type": "text"
+      },
+      "world": {
+        "type": "keyword"
+      }
+    }
+  }
+}

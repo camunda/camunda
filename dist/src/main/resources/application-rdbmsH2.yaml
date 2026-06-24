@@ -1,0 +1,13 @@
+# Local development configuration for Camunda with H2 in-memory database
+
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:camunda
+        username: sa
+        password:
+logging:
+  level:
+    io.camunda.db.rdbms: DEBUG

@@ -1,0 +1,106 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v4
+#
+# This action expects certain secrets to be provided:
+#   - VAULT_ADDR
+#   - VAULT_ROLE_ID
+#   - VAULT_SECRET_ID
+---
+name: Observe Build Status
+
+# owner: @camunda/monorepo-devops-team
+
+description: Records the build status remotely for analytic purposes
+
+inputs:
+  build_status:
+    description: 'The status of the job, one of: success, failure, aborted, cancelled'
+    required: true
+  user_reason:
+    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status.'
+    required: false
+  user_description:
+    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status. When empty, falls back to the TEST_OWNER environment variable.'
+    required: false
+  job_name:
+    description: 'Optional string, the job whose status is being observed; defaults to $GITHUB_JOB when omitted'
+    required: false
+  detailed_junit_tests:
+    description: 'Optional boolean, if true search for TEST-*.xml files and submit their details to dedicated analytics endpoint'
+    required: false
+    default: 'false'
+  secret_vault_address:
+    description: 'Secret vault url'
+    required: false
+  secret_vault_roleId:
+    description: 'Secret vault roleId'
+    required: false
+  secret_vault_secretId:
+    description: 'Secret vault ID'
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      if: |
+        inputs.secret_vault_address != ''
+        && inputs.secret_vault_roleId != ''
+        && inputs.secret_vault_secretId != ''
+      with:
+        url: ${{ inputs.secret_vault_address }}
+        method: approle
+        roleId: ${{ inputs.secret_vault_roleId }}
+        secretId: ${{ inputs.secret_vault_secretId }}
+        exportEnv: false # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+    - name: Check secrets availability
+      if: ${{ steps.secrets.outputs.gcloud_sa_key == '' }}
+      shell: bash
+      run: echo "::warning::Not sending any CI health metrics since no access to GHA secrets!"
+
+    ######################## Calculate build duration #########################
+    - name: Get build duration in milliseconds
+      id: get-build-duration-millis
+      if: ${{ steps.secrets.outputs.gcloud_sa_key != '' }}
+      shell: bash
+      run: |
+        duration=$(expr $(date +'%s') - $(date -r "$GITHUB_ACTION_PATH" +"%s"))
+
+        # only submit plausible durations below 72 hours
+        if [ $duration -le 259200 ]; then
+          echo "result=$(expr $duration \* 1000)" >> $GITHUB_OUTPUT
+        else
+          echo "result=" >> $GITHUB_OUTPUT
+        fi
+    ######################## Report test result #############################
+    - name: Get detailed info on JUnit tests
+      id: get-detailed-junit-tests
+      if: ${{ inputs.detailed_junit_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
+      shell: bash
+      run: |
+        TEST_RESULTS_FILE=$(mktemp --suffix=.jsonl)
+        echo "test_results_file=${TEST_RESULTS_FILE}" >> $GITHUB_OUTPUT
+        find . -iname 'TEST-*.xml' | python3 .ci/scripts/ci/observe-build-status/junit-test-results-to-jsonl.py > "${TEST_RESULTS_FILE}"
+        echo "Generated $(wc -l < "${TEST_RESULTS_FILE}") test results"
+
+    - name: Submit test results
+      uses: camunda/infra-global-github-actions/submit-test-status@main
+      if: ${{ (inputs.detailed_junit_tests == 'true') && steps.secrets.outputs.gcloud_sa_key != '' }}
+      with:
+        test_results_file_path: "${{ steps.get-detailed-junit-tests.outputs.test_results_file }}"
+        job_name_override: "${{ inputs.job_name }}"
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+   ######################## Report build result #############################
+    - uses: camunda/infra-global-github-actions/submit-build-status@main
+      if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
+      with:
+        job_name_override: "${{ inputs.job_name }}"
+        build_status: "${{ inputs.build_status }}"
+        build_duration_millis: "${{ steps.get-build-duration-millis.outputs.result }}"
+        user_reason: "${{ inputs.user_reason }}"
+        user_description: "${{ inputs.user_description != '' && inputs.user_description || env.TEST_OWNER }}"
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"

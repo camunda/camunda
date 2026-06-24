@@ -1,0 +1,37 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
+import {type CarbonIconType, Error, UnknownFilled} from '@carbon/react/icons';
+import type {
+  DecisionInstanceState,
+  ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+
+const stateIconsMap = {
+  FAILED: WarningFilled,
+  INCIDENT: WarningFilled,
+  ACTIVE: RadioButtonChecked,
+  COMPLETED: CheckmarkOutline,
+  EVALUATED: CheckmarkOutline,
+  TERMINATED: Error,
+  UNSPECIFIED: UnknownFilled,
+  UNKNOWN: UnknownFilled,
+} as const satisfies Record<Props['state'], unknown>;
+
+type Props = {
+  state: ProcessInstanceState | DecisionInstanceState | 'INCIDENT';
+  size: React.ComponentProps<CarbonIconType>['size'];
+};
+
+const StateIcon: React.FC<Props> = ({state, ...props}) => {
+  const TargetComponent = stateIconsMap[state];
+  return <TargetComponent data-testid={`${state}-icon`} {...props} />;
+};
+
+export {StateIcon};

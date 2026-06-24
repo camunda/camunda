@@ -1,0 +1,347 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.exporter.metrics;
+
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.micrometer.core.instrument.distribution.ValueAtPercentile;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+
+class MetricsExporterTest {
+  private final ExporterTestContext context = new ExporterTestContext();
+
+  @Test
+  void shouldObserveJobLifetime() throws Exception {
+    // given
+    final var exporter = new MetricsExporter();
+    exporter.configure(context);
+    exporter.open(new ExporterTestController());
+    assertThat(context.getMeterRegistry().getMeters())
+        .describedAs("Expected no metrics to be measured at start")
+        .allSatisfy(
+            meter ->
+                meter.match(
+                    g -> assertThat(g.value()).isZero(),
+                    ignored -> null,
+                    t -> assertThat(t.count()).isZero(),
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null));
+
+    // when
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB)
+            .withIntent(JobIntent.CREATED)
+            .withTimestamp(1651505728460L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .build());
+
+    // pass a job batch activated to simulate the full lifetime
+    final var jobBatch = new JobBatchRecord();
+    jobBatch.jobKeys().add().setValue(Protocol.encodePartitionId(1, 1));
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB_BATCH)
+            .withIntent(JobBatchIntent.ACTIVATED)
+            .withTimestamp(1651505728465L)
+            .withKey(-1)
+            .withValue(jobBatch)
+            .build());
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB)
+            .withIntent(JobIntent.COMPLETED)
+            .withTimestamp(1651505729571L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .build());
+
+    // then
+    final var jobLifeTime = context.getMeterRegistry().timer("zeebe.job.life.time");
+
+    assertThat(jobLifeTime.count())
+        .isOne()
+        .describedAs("Expected exactly 1 observed job_life_time sample counted");
+
+    assertThat(
+            Arrays.stream(jobLifeTime.takeSnapshot().histogramCounts())
+                .anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 2.5 && bucket.count() == 1))
+        .isTrue()
+        .describedAs("Expected the correct job_life_time bucket to have counted the event");
+  }
+
+  @Test
+  void shouldObserveProcessInstanceExecutionTimeWithPercentiles() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var metrics = new ExecutionLatencyMetrics(registry);
+
+    // when
+    metrics.observeProcessInstanceExecutionTime(0L, 2500L);
+
+    // then
+    final var executionTimer = registry.timer("zeebe.process.instance.execution.time");
+
+    assertThat(executionTimer.count()).isOne();
+
+    assertThat(
+            Arrays.stream(executionTimer.takeSnapshot().percentileValues())
+                .map(ValueAtPercentile::percentile)
+                .toList())
+        .describedAs("Expected p50, p90, and p99 percentiles to be published")
+        .containsExactlyInAnyOrder(0.5, 0.9, 0.99);
+
+    assertThat(
+            Arrays.stream(executionTimer.takeSnapshot().histogramCounts())
+                .anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 2.5 && bucket.count() == 1))
+        .isTrue()
+        .describedAs(
+            "Expected SLO histogram buckets to be published (required for zeebe_process_instance_execution_time_seconds_bucket in Prometheus)");
+  }
+
+  @Test
+  void shouldCleanupProcessInstancesWithSameStartTime() throws Exception {
+    // given
+    final var processCache = new TtlKeyCache();
+    final var exporter = new MetricsExporter(processCache, new TtlKeyCache());
+    final var controller = new ExporterTestController();
+    exporter.configure(context);
+    exporter.open(controller);
+    exporter.configure(new ExporterTestContext());
+
+    exporter.export(
+        ImmutableRecord.<ProcessInstanceRecord>builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.PROCESS_INSTANCE)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withTimestamp(1651505728460L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
+            .build());
+    exporter.export(
+        ImmutableRecord.<ProcessInstanceRecord>builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.PROCESS_INSTANCE)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withTimestamp(1651505728460L)
+            .withKey(Protocol.encodePartitionId(1, 2))
+            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
+            .build());
+
+    // when
+    controller.runScheduledTasks(Duration.ofHours(1));
+
+    // then
+    assertThat(processCache.isEmpty()).isTrue();
+  }
+
+  @Test
+  void shouldCleanupJobWithSameStartTime() throws Exception {
+    // given
+    final var jobCache = new TtlKeyCache();
+    final var exporter = new MetricsExporter();
+    final var controller = new ExporterTestController();
+    exporter.configure(context);
+    exporter.open(controller);
+    exporter.configure(new ExporterTestContext());
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB)
+            .withIntent(JobIntent.CREATED)
+            .withTimestamp(1651505729571L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .build());
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB)
+            .withIntent(JobIntent.CREATED)
+            .withTimestamp(1651505729571L)
+            .withKey(Protocol.encodePartitionId(1, 2))
+            .build());
+
+    // when
+    controller.runScheduledTasks(Duration.ofHours(1));
+
+    // then
+    assertThat(jobCache.isEmpty()).isTrue();
+  }
+
+  //
+  @Nested
+  @DisplayName("MetricsExporter should configure a Filter")
+  class FilterTest {
+
+    static Stream<TypeCombination> acceptedCombinations() {
+      return Stream.of(
+          new TypeCombination(RecordType.EVENT, ValueType.JOB),
+          new TypeCombination(RecordType.EVENT, ValueType.JOB_BATCH),
+          new TypeCombination(RecordType.EVENT, ValueType.PROCESS_INSTANCE),
+          new TypeCombination(RecordType.EVENT, ValueType.VARIABLE));
+    }
+
+    /** Returns the inverse of {@link #acceptedCombinations()}. */
+    static Stream<TypeCombination> rejectedCombinations() {
+      return allCombinations().filter(any -> acceptedCombinations().noneMatch(any::equals));
+    }
+
+    static Stream<TypeCombination> allCombinations() {
+      return Arrays.stream(RecordType.values())
+          .flatMap(
+              recordType ->
+                  Arrays.stream(ValueType.values())
+                      .map(valueType -> new TypeCombination(recordType, valueType)));
+    }
+
+    @ParameterizedTest
+    @DisplayName("accepting records of specific RecordType and ValueType")
+    @MethodSource("acceptedCombinations")
+    void shouldConfigureFilterAccepting(final TypeCombination combination) throws Exception {
+      // given
+      final var recordType = combination.recordType();
+      final var valueType = combination.valueType();
+      final var context = new ExporterTestContext();
+
+      // when
+      new MetricsExporter().configure(context);
+
+      // then
+      final var recordFilter = context.getRecordFilter();
+      assertThat(recordFilter.acceptType(recordType) && recordFilter.acceptValue(valueType))
+          .describedAs(
+              "Expect RecordFilter to accept record of RecordType %s and ValueType %s",
+              recordType, valueType)
+          .isTrue();
+    }
+
+    @ParameterizedTest
+    @DisplayName("rejecting records of specific RecordType and ValueType")
+    @MethodSource("rejectedCombinations")
+    void shouldConfigureFilterRejecting(final TypeCombination combination) throws Exception {
+      // given
+      final var recordType = combination.recordType();
+      final var valueType = combination.valueType();
+      final var context = new ExporterTestContext();
+
+      // when
+      new MetricsExporter().configure(context);
+
+      // then
+      final var recordFilter = context.getRecordFilter();
+      assertThat(recordFilter.acceptType(recordType) && recordFilter.acceptValue(valueType))
+          .describedAs(
+              "Expect RecordFilter to reject record of RecordType %s and ValueType %s",
+              recordType, valueType)
+          .isFalse();
+    }
+
+    /** Defines a combination of a RecordType and a ValueType. */
+    record TypeCombination(RecordType recordType, ValueType valueType) {}
+  }
+
+  @Nested
+  @DisplayName("MetricsExporter records variable metrics")
+  class VariableMetricsTest {
+
+    private static final String BPMN_PROCESS_ID = "process";
+    private static final String VARIABLE_NAME = "myVar";
+    private static final int PARTITION_ID = 1;
+
+    private MetricsExporter exporter;
+
+    @BeforeEach
+    void setUp() throws Exception {
+      exporter = new MetricsExporter();
+      exporter.configure(context);
+      exporter.open(new ExporterTestController());
+    }
+
+    @ParameterizedTest
+    @EnumSource(VariableIntent.class)
+    void shouldRecordMetricsOnlyForCreatedVariableEvents(final VariableIntent intent) {
+      // given
+      final var valueBytes = new byte[128];
+      final var variableRecord = newVariableRecord(valueBytes);
+
+      // when
+      exporter.export(
+          ImmutableRecord.builder()
+              .withRecordType(RecordType.EVENT)
+              .withValueType(ValueType.VARIABLE)
+              .withIntent(intent)
+              .withPartitionId(PARTITION_ID)
+              .withValue(variableRecord)
+              .build());
+
+      // then
+      final var summary =
+          context
+              .getMeterRegistry()
+              .find("zeebe.variable.created.size")
+              .tag("bpmnProcessId", BPMN_PROCESS_ID)
+              .summary();
+
+      if (intent == VariableIntent.CREATED) {
+        assertThat(variableRecord.getValueLength()).isEqualTo(valueBytes.length);
+        assertThat(summary)
+            .describedAs("Expected zeebe.variable.created.size summary to be registered on CREATED")
+            .isNotNull();
+        assertThat(summary.count()).isOne();
+        assertThat(summary.totalAmount())
+            .describedAs("Expected summary total to match raw msgpack byte length")
+            .isEqualTo((double) variableRecord.getValueLength());
+      } else {
+        assertThat(summary)
+            .describedAs("Expected no zeebe.variable.created.size summary on %s", intent)
+            .isNull();
+      }
+    }
+
+    private VariableRecord newVariableRecord(final byte[] valueBytes) {
+      final var record = new VariableRecord();
+      record.setValue(new UnsafeBuffer(valueBytes));
+      record.setName(wrapString(VARIABLE_NAME));
+      record.setBpmnProcessId(wrapString(BPMN_PROCESS_ID));
+      return record;
+    }
+  }
+}

@@ -1,0 +1,556 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render, screen, waitFor, within} from 'modules/testing-library';
+import {getWrapper} from './mocks';
+import {
+  createProcessDefinition,
+  createUser,
+  mockProcessXML,
+  searchResult,
+} from 'modules/testUtils';
+import {Filters} from '../index';
+import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
+import {
+  selectElement,
+  selectProcess,
+  selectProcessVersion,
+} from 'modules/testUtils/selectComboBoxOption';
+import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+
+describe('Filters', () => {
+  beforeEach(async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2}),
+        createProcessDefinition({version: 1}),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([createProcessDefinition({version: 2})]),
+    );
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockMe().withSuccess(createUser());
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should load the process and version fields', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+    await selectProcess({user, option: 'Big variable process'});
+
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeEnabled();
+    await selectProcessVersion({user, option: '1'});
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?processDefinitionId=bigVarProcess&processDefinitionVersion=1$/,
+      ),
+    );
+  });
+
+  it.todo('should load values from the URL', async () => {
+    const MOCK_PARAMS = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      processInstanceKey: '2251799813685467',
+      parentProcessInstanceKey: '1954699813693756',
+      errorMessage: 'a random error',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      hasRetriesLeft: 'true',
+    } as const;
+
+    render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+      ),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Name',
+      }),
+    ).toHaveValue('Big variable process');
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toHaveTextContent('1');
+
+    expect(screen.getByLabelText('Element')).toHaveValue('Service Task 1');
+
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.processInstanceKey),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.parentProcessInstanceKey),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.errorMessage),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.batchOperationKey),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', {name: 'Active'})).toBeChecked();
+    expect(screen.getByRole('checkbox', {name: 'Incidents'})).toBeChecked();
+    expect(screen.getByRole('checkbox', {name: 'Completed'})).toBeChecked();
+    expect(screen.getByRole('checkbox', {name: 'Canceled'})).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'Failed job but retries left',
+      }),
+    ).toBeChecked();
+  });
+
+  it('should load values from the URL - date ranges', async () => {
+    const MOCK_PARAMS = {
+      startDateFrom: '2021-02-21 09:00:00',
+      startDateTo: '2021-02-22 10:00:00',
+      endDateFrom: '2021-02-23 11:00:00',
+      endDateTo: '2021-02-24 12:00:00',
+    } as const;
+
+    const initialPath = `/?${new URLSearchParams(
+      Object.entries(MOCK_PARAMS),
+    ).toString()}`;
+
+    render(<Filters />, {
+      wrapper: getWrapper(initialPath),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.endDateFrom),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(MOCK_PARAMS.endDateTo)).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.endDateFrom),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(MOCK_PARAMS.endDateTo)).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.endDateFrom),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(MOCK_PARAMS.endDateTo)).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue('2021-02-23 11:00:00 - 2021-02-24 12:00:00'),
+    ).toBeInTheDocument();
+  });
+
+  it('should set modified values to the URL', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          name: 'New demo process',
+          processDefinitionId: 'demoProcess',
+          version: 3,
+        }),
+      ]),
+    );
+    const MOCK_VALUES = {
+      processDefinitionId: 'demoProcess',
+      processDefinitionVersion: '3',
+      processInstanceKey: '2251799813685462',
+      parentProcessInstanceKey: '1954699813693756',
+      errorMessage: 'an error',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationKey: '90fdfe82-090b-4d84-af31-5db612514191',
+      businessId: 'eq_order-12345',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      hasRetriesLeft: 'true',
+    } as const;
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Element',
+        }),
+      ).toBeEnabled(),
+    );
+
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Name',
+      }),
+    ).toHaveValue('');
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Element',
+      }),
+    ).toHaveValue('');
+    expect(screen.getByRole('checkbox', {name: 'Active'})).not.toBeChecked();
+    expect(screen.getByRole('checkbox', {name: 'Incidents'})).not.toBeChecked();
+    expect(screen.getByRole('checkbox', {name: 'Completed'})).not.toBeChecked();
+    expect(screen.getByRole('checkbox', {name: 'Canceled'})).not.toBeChecked();
+
+    await selectProcess({user, option: 'New demo process'});
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key(s)'));
+    await user.type(
+      screen.getByLabelText(/^process instance key\(s\)$/i),
+      MOCK_VALUES.processInstanceKey,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Parent Process Instance Key'));
+    await user.type(
+      screen.getByLabelText(/^Parent Process Instance Key$/i),
+      MOCK_VALUES.parentProcessInstanceKey,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Error Message'));
+    await user.type(
+      screen.getByLabelText(/^error message$/i),
+      MOCK_VALUES.errorMessage,
+    );
+
+    await selectElement({user, option: 'Service Task 1'});
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Variables'));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Batch Operation Key'));
+    await user.type(
+      screen.getByLabelText(/^batch operation key$/i),
+
+      MOCK_VALUES.batchOperationKey,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Business ID'));
+    await user.type(screen.getByLabelText(/^business id$/i), 'order-12345');
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Failed job but retries left'));
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: 'Failed job but retries left',
+      }),
+    );
+
+    await user.click(screen.getByRole('checkbox', {name: 'Active'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Incidents'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Completed'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Canceled'}));
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual(expect.objectContaining(MOCK_VALUES)),
+    );
+  });
+
+  it('should set modified values to the URL - date ranges', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Element',
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Start Date Range'));
+    await user.click(screen.getByLabelText('Start Date Range'));
+    const startDate = await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '5',
+      toDay: '10',
+    });
+    await user.click(screen.getByText('Apply'));
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('End Date Range'));
+    await user.click(screen.getByLabelText('End Date Range'));
+    const endDate = await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '15',
+      toDay: '20',
+      fromTime: '11:22:33',
+      toTime: '08:59:59',
+    });
+    await user.click(screen.getByText('Apply'));
+
+    const MOCK_VALUES = {
+      startDateFrom: startDate.fromDate,
+      startDateTo: startDate.toDate,
+      endDateFrom: endDate.fromDate,
+      endDateTo: endDate.toDate,
+    } as const;
+
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual(expect.objectContaining(MOCK_VALUES)),
+    );
+  });
+
+  it('should enable the reset button', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&incidents=true'),
+    });
+
+    expect(screen.getByRole('button', {name: /reset filters/i})).toBeDisabled();
+
+    await user.click(screen.getByLabelText('Incidents'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/),
+    );
+
+    expect(screen.getByRole('button', {name: /reset filters/i})).toBeEnabled();
+  });
+
+  it('should not submit an invalid form after deleting an optional filter', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Parent Process Instance Key'));
+    await user.type(
+      screen.getByLabelText(/^parent process instance key$/i),
+      'a',
+    );
+
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
+
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Batch Operation Key'));
+    await removeOptionalFilter({user, screen, label: 'Batch Operation Key'});
+
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+  });
+
+  it('should be able to submit form after deleting an invalid optional filter', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&incidents=true'),
+    });
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?active=true&incidents=true$/,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Parent Process Instance Key'));
+    await user.type(
+      screen.getByLabelText(/^parent process instance key$/i),
+      'a',
+    );
+
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?active=true&incidents=true$/,
+    );
+
+    await removeOptionalFilter({
+      user,
+      screen,
+      label: 'Parent Process Instance Key',
+    });
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Error Message'));
+    await user.type(screen.getByLabelText(/^error message$/i), 'test');
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?active=true&incidents=true&errorMessage=test$/,
+      ),
+    );
+  });
+
+  it('Should order optional filters', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&incidents=true'),
+    });
+
+    const optionalFilters: Array<{name: string; fields: string[]}> = [
+      {name: 'Error Message', fields: ['Error Message']},
+      {
+        name: 'Parent Process Instance Key',
+        fields: ['Parent Process Instance Key'],
+      },
+      {name: 'Variables', fields: ['Variables']},
+      {name: 'Process Instance Key(s)', fields: ['Process Instance Key(s)']},
+      {name: 'Batch Operation Key', fields: ['Batch Operation Key']},
+      {name: 'Business ID', fields: ['Business ID']},
+    ];
+
+    let fieldLabels = optionalFilters.reduce((acc, optionalFilter) => {
+      return [...acc, ...optionalFilter.fields];
+    }, [] as string[]);
+
+    for (const filter of optionalFilters) {
+      await user.click(screen.getByRole('button', {name: 'More Filters'}));
+      await user.click(screen.getByText(filter.name));
+    }
+
+    for (const label of fieldLabels) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+
+    await user.click(screen.getByRole('button', {name: /reset filters/i}));
+
+    for (const label of fieldLabels) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
+
+    optionalFilters.reverse();
+    fieldLabels = optionalFilters.reduce((acc, optionalFilter) => {
+      return [...acc, ...optionalFilter.fields];
+    }, [] as string[]);
+
+    for (const filter of optionalFilters) {
+      await user.click(screen.getByRole('button', {name: 'More Filters'}));
+      await user.click(screen.getByText(filter.name));
+    }
+
+    for (const label of fieldLabels) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  it('should omit all versions option', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([createProcessDefinition({version: 1})]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([createProcessDefinition({version: 1})]),
+    );
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+          }),
+        ).toString()}`,
+      ),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/version/i, {
+          selector: 'button',
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(
+      screen.getByLabelText(/version/i, {
+        selector: 'button',
+      }),
+    );
+
+    const versionDropdownList = screen.getByLabelText(/version/i, {
+      selector: 'ul',
+    });
+
+    expect(
+      within(versionDropdownList).getByRole('option', {
+        name: '1',
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      within(versionDropdownList).queryByRole('option', {
+        name: /all/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+});

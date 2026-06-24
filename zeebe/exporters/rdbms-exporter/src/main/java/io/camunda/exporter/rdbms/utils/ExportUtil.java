@@ -1,0 +1,77 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.rdbms.utils;
+
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ExportUtil {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ExportUtil.class);
+
+  /**
+   * Builds the tree path and level of the flow node instance.
+   *
+   * <pre>
+   *   <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey>
+   * </pre>
+   *
+   * Upper level flowNodeInstanceKeys are typically subprocesses or multi-instance bodies. This
+   * intra tree path shows the position of a flow node instance within a single process instance.
+   * The last entry is used, as we are not interested in upper-level process instance scope
+   * hierarchies.
+   */
+  public static String buildTreePath(
+      final Long key,
+      final Long processInstanceKey,
+      final List<List<Long>> elementInstancePath,
+      final int columnSize) {
+    if (elementInstancePath != null && !elementInstancePath.isEmpty()) {
+      final List<String> treePathEntries =
+          elementInstancePath.getLast().stream().map(String::valueOf).toList();
+      final String treePath = String.join("/", treePathEntries);
+
+      // Apply truncation for extremely deep nesting scenarios
+      if (treePath.length() > columnSize) {
+        final TreePath treePathObj = new TreePath(columnSize);
+        treePathObj.startTreePath(treePathEntries.get(0));
+        for (int i = 1; i < treePathEntries.size(); i++) {
+          treePathObj.appendFlowNodeInstance(treePathEntries.get(i));
+        }
+        return treePathObj.toTruncatedString();
+      }
+      return treePath;
+    } else {
+      LOG.warn(
+          "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
+          key);
+      return processInstanceKey + "/" + key;
+    }
+  }
+
+  public static String tenantOrDefault(final String tenantId) {
+    if (tenantId == null || tenantId.isEmpty()) {
+      return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    }
+    return tenantId;
+  }
+
+  /**
+   * Converts an empty string to {@code null}, leaving non-empty values unchanged.
+   *
+   * <p>Use this when mapping optional string fields from protocol records to DB models. MsgPack
+   * {@code StringProperty} defaults to {@code ""} when a field is not set by the sender, but
+   * nullable DB columns should store {@code null} to correctly represent "absent" rather than an
+   * empty string.
+   */
+  public static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
+  }
+}

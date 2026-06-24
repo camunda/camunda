@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.UserMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}USER_ t
+      <if test="filter.groupId != null">
+        JOIN ${prefix}GROUP_MEMBER gm ON t.USERNAME = gm.ENTITY_ID
+        AND gm.ENTITY_TYPE = 'USER'
+      </if>
+      <if test="filter.roleId != null">
+        JOIN ${prefix}ROLE_MEMBER rm ON t.USERNAME = rm.ENTITY_ID
+        AND rm.ENTITY_TYPE = 'USER'
+      </if>
+        <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.UserMapper.searchResultMap">
+    SELECT
+    * FROM (
+    SELECT USER_KEY,
+    USERNAME,
+    NAME,
+    EMAIL,
+    PASSWORD
+    FROM ${prefix}USER_ t
+    <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND USERNAME IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <!-- basic filters -->
+      <if test="filter.usernameOperations != null and !filter.usernameOperations.isEmpty()">
+        <foreach collection="filter.usernameOperations" item="operation">
+          AND t.USERNAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+        <foreach collection="filter.nameOperations" item="operation">
+          AND t.NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.emailOperations != null and !filter.emailOperations.isEmpty()">
+        <foreach collection="filter.emailOperations" item="operation">
+          AND t.EMAIL
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.tenantId != null">AND username IN (SELECT ENTITY_ID FROM
+        ${prefix}TENANT_MEMBER WHERE ENTITY_TYPE = 'USER' AND TENANT_ID = #{filter.tenantId})
+      </if>
+      <if test="filter.groupId != null">AND username IN (SELECT ENTITY_ID FROM ${prefix}GROUP_MEMBER
+        WHERE ENTITY_TYPE = 'USER' AND GROUP_ID = #{filter.groupId})
+      </if>
+      <if test="filter.roleId != null">AND username IN (SELECT ENTITY_ID FROM ${prefix}ROLE_MEMBER
+        WHERE ENTITY_TYPE = 'USER' AND ROLE_ID = #{filter.roleId})
+      </if>
+    </where>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.UserEntity">
+    <constructor>
+      <idArg column="USER_KEY" javaType="java.lang.Long"/>
+      <arg column="USERNAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="NAME" javaType="java.lang.String"/>
+      <arg column="EMAIL" javaType="java.lang.String"/>
+      <arg column="PASSWORD" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
+    INSERT INTO ${prefix}USER_ (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD)
+    VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password})
+  </insert>
+
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
+    UPDATE ${prefix}USER_
+    SET NAME     = #{name},
+        EMAIL    = #{email},
+        PASSWORD = #{password}
+    WHERE USERNAME = #{username}
+  </update>
+
+  <delete id="delete" parameterType="java.lang.String">
+    DELETE FROM ${prefix}USER_
+    WHERE USERNAME = #{username}
+  </delete>
+
+</mapper>

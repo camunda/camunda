@@ -1,0 +1,13 @@
+# Local development configuration for Camunda with the RDBMS MSSQL database from db/docker-compose.yml
+
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:sqlserver://localhost:1433;Encrypt=false
+        username: sa
+        password: Camunda#8_demo
+logging:
+  level:
+    io.camunda.db.rdbms: DEBUG

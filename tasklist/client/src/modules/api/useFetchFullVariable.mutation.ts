@@ -1,0 +1,73 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {api} from 'modules/api';
+import {
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query';
+import {request} from 'modules/api/request';
+import type {
+  Variable,
+  QueryVariablesByUserTaskResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+import {getAllVariablesQueryKey} from './useQueryAllVariables.query';
+
+type VariablesInfiniteData = InfiniteData<
+  QueryVariablesByUserTaskResponseBody,
+  number
+>;
+
+function useFetchFullVariable() {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {variableKey: string; userTaskKey: string}) => {
+      const {variableKey, userTaskKey} = params;
+      const {response, error} = await request(api.getVariable(variableKey));
+
+      if (response !== null) {
+        const variable = (await response.json()) as Omit<
+          Variable,
+          'isTruncated'
+        >;
+        const variablesQueryKey = getAllVariablesQueryKey(userTaskKey);
+        const allVariables =
+          client.getQueryData<VariablesInfiniteData>(variablesQueryKey);
+        const hasVariable =
+          allVariables?.pages.some((page) =>
+            page.items.some((variable) => variable.variableKey === variableKey),
+          ) ?? false;
+
+        if (hasVariable) {
+          client.setQueryData<VariablesInfiniteData>(variablesQueryKey, {
+            ...allVariables!,
+            pages: allVariables!.pages.map((page) => ({
+              ...page,
+              items: page.items.map((oldVariable) =>
+                oldVariable.variableKey === variableKey
+                  ? {
+                      ...variable,
+                      isTruncated: false,
+                    }
+                  : oldVariable,
+              ),
+            })),
+          });
+        }
+
+        return variable;
+      }
+
+      throw error;
+    },
+  });
+}
+
+export {useFetchFullVariable};

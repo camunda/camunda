@@ -1,0 +1,954 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter;
+
+import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.zeebe.exporter.api.context.StrictConfiguration;
+import io.camunda.zeebe.exporter.filter.FilterConfiguration;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.ArrayList;
+import java.util.List;
+
+@StrictConfiguration
+public class ElasticsearchExporterConfiguration implements FilterConfiguration {
+
+  private static final String DEFAULT_URL = "http://localhost:9200";
+
+  /** Comma-separated Elasticsearch http urls */
+  public String url = DEFAULT_URL;
+
+  /** The request timeout for the elastic search client. The timeout unit is milliseconds. */
+  public int requestTimeoutMs = 30_000;
+
+  public final IndexConfiguration index = new IndexConfiguration();
+  public final BulkConfiguration bulk = new BulkConfiguration();
+  public final RetentionConfiguration retention = new RetentionConfiguration();
+  public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
+  private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  private final ProxyConfiguration proxy = new ProxyConfiguration();
+  private boolean includeEnabledRecords = false;
+
+  public boolean hasAuthenticationPresent() {
+    return getAuthentication().isPresent();
+  }
+
+  public AuthenticationConfiguration getAuthentication() {
+    return authentication;
+  }
+
+  public boolean hasProxyConfigured() {
+    return proxy.isEnabled();
+  }
+
+  public ProxyConfiguration getProxy() {
+    return proxy;
+  }
+
+  public List<PluginConfiguration> getInterceptorPlugins() {
+    return interceptorPlugins;
+  }
+
+  @Override
+  public String toString() {
+    return "ElasticsearchExporterConfiguration{"
+        + "url='"
+        + url
+        + '\''
+        + ", requestTimeoutMs="
+        + requestTimeoutMs
+        + ", index="
+        + index
+        + ", bulk="
+        + bulk
+        + ", retention="
+        + retention
+        + ", authentication="
+        + authentication
+        + ", proxy="
+        + proxy
+        + ", interceptors="
+        + interceptorPlugins
+        + '}';
+  }
+
+  @Override
+  public boolean shouldIndexValueType(final ValueType valueType) {
+    return switch (valueType) {
+      case DEPLOYMENT -> index.deployment;
+      case PROCESS -> index.process;
+      case ERROR -> index.error;
+      case INCIDENT -> index.incident;
+      case JOB -> index.job;
+      case JOB_BATCH -> index.jobBatch;
+      case MESSAGE -> index.message;
+      case MESSAGE_BATCH -> index.messageBatch;
+      case MESSAGE_SUBSCRIPTION -> index.messageSubscription;
+      case VARIABLE -> index.variable;
+      case VARIABLE_DOCUMENT -> index.variableDocument;
+      case PROCESS_INSTANCE -> index.processInstance;
+      case PROCESS_INSTANCE_BATCH -> index.processInstanceBatch;
+      case PROCESS_INSTANCE_CREATION -> index.processInstanceCreation;
+      case PROCESS_INSTANCE_MIGRATION -> index.processInstanceMigration;
+      case PROCESS_INSTANCE_MODIFICATION -> index.processInstanceModification;
+      case PROCESS_MESSAGE_SUBSCRIPTION -> index.processMessageSubscription;
+      case DECISION_REQUIREMENTS -> index.decisionRequirements;
+      case DECISION -> index.decision;
+      case DECISION_EVALUATION -> index.decisionEvaluation;
+      case CHECKPOINT -> index.checkpoint;
+      case TIMER -> index.timer;
+      case MESSAGE_START_EVENT_SUBSCRIPTION -> index.messageStartEventSubscription;
+      case MESSAGE_START_PROCESS_INSTANCE_REQUEST -> index.messageStartProcessInstanceRequest;
+      case MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE ->
+          index.messageStartCorrelationKeyLockRelease;
+      case PROCESS_EVENT -> index.processEvent;
+      case DEPLOYMENT_DISTRIBUTION -> index.deploymentDistribution;
+      case ESCALATION -> index.escalation;
+      case SIGNAL -> index.signal;
+      case SIGNAL_SUBSCRIPTION -> index.signalSubscription;
+      case RESOURCE_DELETION -> index.resourceDeletion;
+      case COMMAND_DISTRIBUTION -> index.commandDistribution;
+      case FORM -> index.form;
+      case USER_TASK -> index.userTask;
+      case COMPENSATION_SUBSCRIPTION -> index.compensationSubscription;
+      case MESSAGE_CORRELATION -> index.messageCorrelation;
+      case AD_HOC_SUB_PROCESS_INSTRUCTION -> index.adHocSubProcessInstruction;
+      case ASYNC_REQUEST -> index.asyncRequest;
+      case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
+      case CLUSTER_VARIABLE -> index.clusterVariable;
+      case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
+      case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
+      case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
+      case GLOBAL_LISTENER -> index.globalListener;
+      case AGENT_INSTANCE -> index.agentInstance;
+      case AGENT_HISTORY -> index.agentHistory;
+      default -> false;
+    };
+  }
+
+  /**
+   * Not all value records are required to be exported from 8.8 onward. The following included
+   * records are required by Optimize and Zeebe-Analytics (and {@code AGENT_INSTANCE} by ad-hoc
+   * sub-process / agent features) so they must continue to be exported by the {@link
+   * ElasticsearchExporter}:
+   *
+   * @param valueType the value type of the record
+   * @return true if the record should be indexed, false otherwise
+   */
+  @Override
+  public boolean shouldIndexRequiredValueType(final ValueType valueType) {
+    return switch (valueType) {
+      case DEPLOYMENT -> index.deployment;
+      case PROCESS -> index.process;
+      case INCIDENT -> index.incident;
+      case VARIABLE -> index.variable;
+      case PROCESS_INSTANCE -> index.processInstance;
+      case USER_TASK -> index.userTask;
+      case JOB -> index.job;
+      case AGENT_INSTANCE -> index.agentInstance;
+      default -> false;
+    };
+  }
+
+  @Override
+  public boolean shouldIndexRecordType(final RecordType recordType) {
+    return switch (recordType) {
+      case EVENT -> index.event;
+      case COMMAND -> index.command;
+      case COMMAND_REJECTION -> index.rejection;
+      default -> false;
+    };
+  }
+
+  @Override
+  public IndexConfig filterIndexConfig() {
+    return index;
+  }
+
+  public boolean getIsIncludeEnabledRecords() {
+    return includeEnabledRecords;
+  }
+
+  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
+    this.includeEnabledRecords = includeEnabledRecords;
+  }
+
+  public static class IndexConfiguration implements IndexConfig {
+
+    private static final int DEFAULT_INDEX_TEMPLATE_PRIORITY = 20;
+    // prefix for index and templates
+    public String prefix = "zeebe-record";
+
+    /**
+     * Suffix for indices. Pattern is used together with the current date, to create a suffix for
+     * the index. Useful to define whether an index should be created per month, day or even hour.
+     *
+     * <p>Example: yyyy-MM-dd -> 2023-12-03
+     *
+     * @see java.time.format.DateTimeFormatter
+     */
+    public String indexSuffixDatePattern = "yyyy-MM-dd";
+
+    // update index template on startup
+    public boolean createTemplate = true;
+
+    // record types to export
+    public boolean command = false;
+    public boolean event = true;
+    public boolean rejection = false;
+
+    // value types to export
+    public boolean decision = true;
+    public boolean decisionEvaluation = true;
+    public boolean decisionRequirements = true;
+    public boolean deployment = true;
+    public boolean error = true;
+    public boolean incident = true;
+    public boolean job = true;
+    public boolean jobBatch = false;
+    public boolean message = true;
+    public boolean messageBatch = false;
+    public boolean messageSubscription = true;
+    public boolean process = true;
+    public boolean processInstance = true;
+    public boolean processInstanceBatch = false;
+    public boolean processInstanceCreation = true;
+    public boolean processInstanceMigration = true;
+    public boolean processInstanceModification = true;
+    public boolean processMessageSubscription = true;
+    public boolean variable = true;
+    public boolean variableDocument = true;
+    public boolean adHocSubProcessInstruction = true;
+
+    public boolean checkpoint = false;
+    public boolean timer = true;
+    public boolean messageStartEventSubscription = true;
+    public boolean messageStartProcessInstanceRequest = true;
+    public boolean messageStartCorrelationKeyLockRelease = true;
+    public boolean processEvent = false;
+    public boolean deploymentDistribution = true;
+    public boolean escalation = true;
+    public boolean signal = true;
+    public boolean signalSubscription = true;
+    public boolean resourceDeletion = true;
+    public boolean commandDistribution = true;
+    public boolean form = true;
+    public boolean userTask = true;
+    public boolean compensationSubscription = true;
+    public boolean messageCorrelation = true;
+    public boolean user = true;
+    public boolean authorization = true;
+    public boolean runtimeInstruction = true;
+
+    public boolean batchOperationCreation = false;
+    public boolean batchOperationChunk = false;
+    public boolean batchOperationExecution = false;
+    public boolean batchOperationLifecycleManagement = false;
+    public boolean batchOperationPartitionLifecycle = false;
+    public boolean batchOperationInitialization = false;
+
+    public boolean asyncRequest = false;
+
+    public boolean usageMetrics = false;
+    public boolean clusterVariable = true;
+    public boolean conditionalSubscription = false;
+    public boolean conditionalEvaluation = false;
+
+    public boolean globalListenerBatch = true;
+    public boolean globalListener = true;
+
+    public boolean agentInstance = true;
+    public boolean agentHistory = true;
+
+    // index settings
+    private Integer numberOfShards = null;
+    private Integer numberOfReplicas = null;
+    private int templatePriority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
+
+    // variable name filters
+    private List<String> variableNameInclusionExact = new ArrayList<>();
+    private List<String> variableNameInclusionStartWith = new ArrayList<>();
+    private List<String> variableNameInclusionEndWith = new ArrayList<>();
+    private List<String> variableNameExclusionExact = new ArrayList<>();
+    private List<String> variableNameExclusionStartWith = new ArrayList<>();
+    private List<String> variableNameExclusionEndWith = new ArrayList<>();
+
+    // variable value type filters
+    private List<String> variableValueTypeInclusion = new ArrayList<>();
+    private List<String> variableValueTypeExclusion = new ArrayList<>();
+
+    // optimize mode
+    private boolean optimizeModeEnabled = false;
+
+    // export local variables flag
+    private boolean exportLocalVariablesEnabled = true;
+
+    // local variable name filters
+    private List<String> localVariableNameInclusionExact = new ArrayList<>();
+    private List<String> localVariableNameInclusionStartWith = new ArrayList<>();
+    private List<String> localVariableNameInclusionEndWith = new ArrayList<>();
+    private List<String> localVariableNameExclusionExact = new ArrayList<>();
+    private List<String> localVariableNameExclusionStartWith = new ArrayList<>();
+    private List<String> localVariableNameExclusionEndWith = new ArrayList<>();
+
+    // local variable value type filters
+    private List<String> localVariableValueTypeInclusion = new ArrayList<>();
+    private List<String> localVariableValueTypeExclusion = new ArrayList<>();
+
+    // root variable name filters
+    private List<String> rootVariableNameInclusionExact = new ArrayList<>();
+    private List<String> rootVariableNameInclusionStartWith = new ArrayList<>();
+    private List<String> rootVariableNameInclusionEndWith = new ArrayList<>();
+    private List<String> rootVariableNameExclusionExact = new ArrayList<>();
+    private List<String> rootVariableNameExclusionStartWith = new ArrayList<>();
+    private List<String> rootVariableNameExclusionEndWith = new ArrayList<>();
+
+    // root variable value type filters
+    private List<String> rootVariableValueTypeInclusion = new ArrayList<>();
+    private List<String> rootVariableValueTypeExclusion = new ArrayList<>();
+
+    // BPMN process id filters
+    private List<String> bpmnProcessIdInclusion = new ArrayList<>();
+    private List<String> bpmnProcessIdExclusion = new ArrayList<>();
+
+    public Integer getNumberOfShards() {
+      return numberOfShards;
+    }
+
+    public void setNumberOfShards(final Integer numberOfShards) {
+      this.numberOfShards = numberOfShards;
+    }
+
+    public Integer getNumberOfReplicas() {
+      return numberOfReplicas;
+    }
+
+    public void setNumberOfReplicas(final Integer numberOfReplicas) {
+      this.numberOfReplicas = numberOfReplicas;
+    }
+
+    public int getTemplatePriority() {
+      return templatePriority;
+    }
+
+    public void setTemplatePriority(final int templatePriority) {
+      this.templatePriority = templatePriority;
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionExact() {
+      return List.copyOf(variableNameInclusionExact);
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionStartWith() {
+      return List.copyOf(variableNameInclusionStartWith);
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionEndWith() {
+      return List.copyOf(variableNameInclusionEndWith);
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionExact() {
+      return List.copyOf(variableNameExclusionExact);
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionStartWith() {
+      return List.copyOf(variableNameExclusionStartWith);
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionEndWith() {
+      return List.copyOf(variableNameExclusionEndWith);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeInclusion() {
+      return List.copyOf(variableValueTypeInclusion);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeExclusion() {
+      return List.copyOf(variableValueTypeExclusion);
+    }
+
+    public void setVariableValueTypeExclusion(final List<String> variableValueTypeExclusion) {
+      this.variableValueTypeExclusion = variableValueTypeExclusion;
+    }
+
+    @Override
+    public List<String> getRootVariableNameInclusionExact() {
+      return List.copyOf(rootVariableNameInclusionExact);
+    }
+
+    public void setRootVariableNameInclusionExact(
+        final List<String> rootVariableNameInclusionExact) {
+      this.rootVariableNameInclusionExact = rootVariableNameInclusionExact;
+    }
+
+    @Override
+    public List<String> getRootVariableNameInclusionStartWith() {
+      return List.copyOf(rootVariableNameInclusionStartWith);
+    }
+
+    public void setRootVariableNameInclusionStartWith(
+        final List<String> rootVariableNameInclusionStartWith) {
+      this.rootVariableNameInclusionStartWith = rootVariableNameInclusionStartWith;
+    }
+
+    @Override
+    public List<String> getRootVariableNameInclusionEndWith() {
+      return List.copyOf(rootVariableNameInclusionEndWith);
+    }
+
+    public void setRootVariableNameInclusionEndWith(
+        final List<String> rootVariableNameInclusionEndWith) {
+      this.rootVariableNameInclusionEndWith = rootVariableNameInclusionEndWith;
+    }
+
+    @Override
+    public List<String> getRootVariableNameExclusionExact() {
+      return List.copyOf(rootVariableNameExclusionExact);
+    }
+
+    public void setRootVariableNameExclusionExact(
+        final List<String> rootVariableNameExclusionExact) {
+      this.rootVariableNameExclusionExact = rootVariableNameExclusionExact;
+    }
+
+    @Override
+    public List<String> getRootVariableNameExclusionStartWith() {
+      return List.copyOf(rootVariableNameExclusionStartWith);
+    }
+
+    public void setRootVariableNameExclusionStartWith(
+        final List<String> rootVariableNameExclusionStartWith) {
+      this.rootVariableNameExclusionStartWith = rootVariableNameExclusionStartWith;
+    }
+
+    @Override
+    public List<String> getRootVariableNameExclusionEndWith() {
+      return List.copyOf(rootVariableNameExclusionEndWith);
+    }
+
+    public void setRootVariableNameExclusionEndWith(
+        final List<String> rootVariableNameExclusionEndWith) {
+      this.rootVariableNameExclusionEndWith = rootVariableNameExclusionEndWith;
+    }
+
+    @Override
+    public List<String> getRootVariableValueTypeInclusion() {
+      return List.copyOf(rootVariableValueTypeInclusion);
+    }
+
+    public void setRootVariableValueTypeInclusion(
+        final List<String> rootVariableValueTypeInclusion) {
+      this.rootVariableValueTypeInclusion = rootVariableValueTypeInclusion;
+    }
+
+    @Override
+    public List<String> getRootVariableValueTypeExclusion() {
+      return List.copyOf(rootVariableValueTypeExclusion);
+    }
+
+    @Override
+    public List<String> getLocalVariableNameInclusionExact() {
+      return List.copyOf(localVariableNameInclusionExact);
+    }
+
+    public void setLocalVariableNameInclusionExact(
+        final List<String> localVariableNameInclusionExact) {
+      this.localVariableNameInclusionExact = localVariableNameInclusionExact;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameInclusionStartWith() {
+      return List.copyOf(localVariableNameInclusionStartWith);
+    }
+
+    public void setLocalVariableNameInclusionStartWith(
+        final List<String> localVariableNameInclusionStartWith) {
+      this.localVariableNameInclusionStartWith = localVariableNameInclusionStartWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameInclusionEndWith() {
+      return List.copyOf(localVariableNameInclusionEndWith);
+    }
+
+    public void setLocalVariableNameInclusionEndWith(
+        final List<String> localVariableNameInclusionEndWith) {
+      this.localVariableNameInclusionEndWith = localVariableNameInclusionEndWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameExclusionExact() {
+      return List.copyOf(localVariableNameExclusionExact);
+    }
+
+    public void setLocalVariableNameExclusionExact(
+        final List<String> localVariableNameExclusionExact) {
+      this.localVariableNameExclusionExact = localVariableNameExclusionExact;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameExclusionStartWith() {
+      return List.copyOf(localVariableNameExclusionStartWith);
+    }
+
+    public void setLocalVariableNameExclusionStartWith(
+        final List<String> localVariableNameExclusionStartWith) {
+      this.localVariableNameExclusionStartWith = localVariableNameExclusionStartWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableNameExclusionEndWith() {
+      return List.copyOf(localVariableNameExclusionEndWith);
+    }
+
+    public void setLocalVariableNameExclusionEndWith(
+        final List<String> localVariableNameExclusionEndWith) {
+      this.localVariableNameExclusionEndWith = localVariableNameExclusionEndWith;
+    }
+
+    @Override
+    public List<String> getLocalVariableValueTypeInclusion() {
+      return List.copyOf(localVariableValueTypeInclusion);
+    }
+
+    public void setLocalVariableValueTypeInclusion(
+        final List<String> localVariableValueTypeInclusion) {
+      this.localVariableValueTypeInclusion = localVariableValueTypeInclusion;
+    }
+
+    @Override
+    public List<String> getLocalVariableValueTypeExclusion() {
+      return List.copyOf(localVariableValueTypeExclusion);
+    }
+
+    @Override
+    public boolean isExportLocalVariablesEnabled() {
+      return exportLocalVariablesEnabled;
+    }
+
+    @Override
+    public List<String> getBpmnProcessIdInclusion() {
+      return List.copyOf(bpmnProcessIdInclusion);
+    }
+
+    @Override
+    public List<String> getBpmnProcessIdExclusion() {
+      return List.copyOf(bpmnProcessIdExclusion);
+    }
+
+    @Override
+    public boolean isOptimizeModeEnabled() {
+      return optimizeModeEnabled;
+    }
+
+    public void setOptimizeModeEnabled(final boolean optimizeModeEnabled) {
+      this.optimizeModeEnabled = optimizeModeEnabled;
+    }
+
+    public void setBpmnProcessIdExclusion(final List<String> bpmnProcessIdExclusion) {
+      this.bpmnProcessIdExclusion = bpmnProcessIdExclusion;
+    }
+
+    public void setBpmnProcessIdInclusion(final List<String> bpmnProcessIdInclusion) {
+      this.bpmnProcessIdInclusion = bpmnProcessIdInclusion;
+    }
+
+    public void setExportLocalVariablesEnabled(final boolean exportLocalVariablesEnabled) {
+      this.exportLocalVariablesEnabled = exportLocalVariablesEnabled;
+    }
+
+    public void setLocalVariableValueTypeExclusion(
+        final List<String> localVariableValueTypeExclusion) {
+      this.localVariableValueTypeExclusion = localVariableValueTypeExclusion;
+    }
+
+    public void setRootVariableValueTypeExclusion(
+        final List<String> rootVariableValueTypeExclusion) {
+      this.rootVariableValueTypeExclusion = rootVariableValueTypeExclusion;
+    }
+
+    public void setVariableValueTypeInclusion(final List<String> variableValueTypeInclusion) {
+      this.variableValueTypeInclusion = variableValueTypeInclusion;
+    }
+
+    public void setVariableNameExclusionEndWith(final List<String> variableNameExclusionEndWith) {
+      this.variableNameExclusionEndWith = variableNameExclusionEndWith;
+    }
+
+    public void setVariableNameExclusionStartWith(
+        final List<String> variableNameExclusionStartWith) {
+      this.variableNameExclusionStartWith = variableNameExclusionStartWith;
+    }
+
+    public void setVariableNameExclusionExact(final List<String> variableNameExclusionExact) {
+      this.variableNameExclusionExact = variableNameExclusionExact;
+    }
+
+    public void setVariableNameInclusionEndWith(final List<String> variableNameInclusionEndWith) {
+      this.variableNameInclusionEndWith = variableNameInclusionEndWith;
+    }
+
+    public void setVariableNameInclusionStartWith(
+        final List<String> variableNameInclusionStartWith) {
+      this.variableNameInclusionStartWith = variableNameInclusionStartWith;
+    }
+
+    public void setVariableNameInclusionExact(final List<String> variableNameInclusionExact) {
+      this.variableNameInclusionExact = variableNameInclusionExact;
+    }
+
+    @Override
+    public String toString() {
+      return "IndexConfiguration{"
+          + "prefix='"
+          + prefix
+          + '\''
+          + ", createTemplate="
+          + createTemplate
+          + ", command="
+          + command
+          + ", event="
+          + event
+          + ", rejection="
+          + rejection
+          + ", decision="
+          + decision
+          + ", decisionEvaluation="
+          + decisionEvaluation
+          + ", decisionRequirements="
+          + decisionRequirements
+          + ", deployment="
+          + deployment
+          + ", error="
+          + error
+          + ", incident="
+          + incident
+          + ", job="
+          + job
+          + ", jobBatch="
+          + jobBatch
+          + ", message="
+          + message
+          + ", messageBatch="
+          + messageBatch
+          + ", messageSubscription="
+          + messageSubscription
+          + ", process="
+          + process
+          + ", processInstance="
+          + processInstance
+          + ", processInstanceBatch="
+          + processInstanceBatch
+          + ", processInstanceCreation="
+          + processInstanceCreation
+          + ", processInstanceMigration="
+          + processInstanceMigration
+          + ", processInstanceModification="
+          + processInstanceModification
+          + ", processMessageSubscription="
+          + processMessageSubscription
+          + ", variable="
+          + variable
+          + ", variableDocument="
+          + variableDocument
+          + ", checkpoint="
+          + checkpoint
+          + ", timer="
+          + timer
+          + ", messageStartEventSubscription="
+          + messageStartEventSubscription
+          + ", messageStartProcessInstanceRequest="
+          + messageStartProcessInstanceRequest
+          + ", messageStartCorrelationKeyLockRelease="
+          + messageStartCorrelationKeyLockRelease
+          + ", processEvent="
+          + processEvent
+          + ", deploymentDistribution="
+          + deploymentDistribution
+          + ", escalation="
+          + escalation
+          + ", signal="
+          + signal
+          + ", signalSubscription="
+          + signalSubscription
+          + ", resourceDeletion="
+          + resourceDeletion
+          + ", adHocSubProcessInstruction="
+          + adHocSubProcessInstruction
+          + ", commandDistribution="
+          + commandDistribution
+          + ", form="
+          + form
+          + ", userTask="
+          + userTask
+          + ", compensationSubscription="
+          + compensationSubscription
+          + ", messageCorrelation="
+          + messageCorrelation
+          + ", user="
+          + user
+          + ", authorization="
+          + authorization
+          + ", asyncRequest="
+          + asyncRequest
+          + ", conditionalSubscription="
+          + conditionalSubscription
+          + ", conditionalEvaluation="
+          + conditionalEvaluation
+          // variable name filters
+          + ", variableNameInclusionExact="
+          + variableNameInclusionExact
+          + ", variableNameInclusionStartWith="
+          + variableNameInclusionStartWith
+          + ", variableNameInclusionEndWith="
+          + variableNameInclusionEndWith
+          + ", variableNameExclusionExact="
+          + variableNameExclusionExact
+          + ", variableNameExclusionStartWith="
+          + variableNameExclusionStartWith
+          + ", variableNameExclusionEndWith="
+          + variableNameExclusionEndWith
+          + ", variableValueTypeInclusion="
+          + variableValueTypeInclusion
+          + ", variableValueTypeExclusion="
+          + variableValueTypeExclusion
+          + ", optimizeModeEnabled="
+          + optimizeModeEnabled
+          + ", exportLocalVariablesEnabled="
+          + exportLocalVariablesEnabled
+          + ", localVariableNameInclusionExact="
+          + localVariableNameInclusionExact
+          + ", localVariableNameInclusionStartWith="
+          + localVariableNameInclusionStartWith
+          + ", localVariableNameInclusionEndWith="
+          + localVariableNameInclusionEndWith
+          + ", localVariableNameExclusionExact="
+          + localVariableNameExclusionExact
+          + ", localVariableNameExclusionStartWith="
+          + localVariableNameExclusionStartWith
+          + ", localVariableNameExclusionEndWith="
+          + localVariableNameExclusionEndWith
+          + ", localVariableValueTypeInclusion="
+          + localVariableValueTypeInclusion
+          + ", localVariableValueTypeExclusion="
+          + localVariableValueTypeExclusion
+          + ", rootVariableNameInclusionExact="
+          + rootVariableNameInclusionExact
+          + ", rootVariableNameInclusionStartWith="
+          + rootVariableNameInclusionStartWith
+          + ", rootVariableNameInclusionEndWith="
+          + rootVariableNameInclusionEndWith
+          + ", rootVariableNameExclusionExact="
+          + rootVariableNameExclusionExact
+          + ", rootVariableNameExclusionStartWith="
+          + rootVariableNameExclusionStartWith
+          + ", rootVariableNameExclusionEndWith="
+          + rootVariableNameExclusionEndWith
+          + ", rootVariableValueTypeInclusion="
+          + rootVariableValueTypeInclusion
+          + ", rootVariableValueTypeExclusion="
+          + rootVariableValueTypeExclusion
+          + ", bpmnProcessIdInclusion="
+          + bpmnProcessIdInclusion
+          + ", bpmnProcessIdExclusion="
+          + bpmnProcessIdExclusion
+          + '}';
+    }
+  }
+
+  public static class BulkConfiguration {
+    // delay before forced flush
+    public int delay = 5;
+    // bulk size before flush
+    public int size = 1_000;
+    // memory limit of the bulk in bytes before flush
+    public int memoryLimit = 10 * 1024 * 1024;
+
+    @Override
+    public String toString() {
+      return "BulkConfiguration{"
+          + "delay="
+          + delay
+          + ", size="
+          + size
+          + ", memoryLimit="
+          + memoryLimit
+          + '}';
+    }
+  }
+
+  public static class AuthenticationConfiguration {
+    private String username;
+    private String password;
+
+    public boolean isPresent() {
+      return (username != null && !username.isEmpty()) && (password != null && !password.isEmpty());
+    }
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(final String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(final String password) {
+      this.password = password;
+    }
+
+    @Override
+    public String toString() {
+      // we don't want to expose this information
+      return "AuthenticationConfiguration{Confidential information}";
+    }
+  }
+
+  public static class RetentionConfiguration {
+
+    private boolean enabled = false;
+    private String minimumAge = "30d";
+    private String policyName = "zeebe-record-retention-policy";
+    private boolean managePolicy = true;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getMinimumAge() {
+      return minimumAge;
+    }
+
+    public void setMinimumAge(final String minimumAge) {
+      this.minimumAge = minimumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
+    }
+
+    public boolean isManagePolicy() {
+      return managePolicy;
+    }
+
+    public void setManagePolicy(final boolean managePolicy) {
+      this.managePolicy = managePolicy;
+    }
+
+    @Override
+    public String toString() {
+      return "RetentionConfiguration{"
+          + "isEnabled="
+          + enabled
+          + ", minimumAge="
+          + minimumAge
+          + ", policyName='"
+          + policyName
+          + '\''
+          + ", managePolicy="
+          + managePolicy
+          + '}';
+    }
+  }
+
+  public static class ProxyConfiguration {
+    private boolean enabled = false;
+    private String host;
+    private Integer port;
+    private boolean sslEnabled = false;
+    private String username;
+    private String password;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getHost() {
+      return host;
+    }
+
+    public void setHost(final String host) {
+      this.host = host;
+    }
+
+    public Integer getPort() {
+      return port;
+    }
+
+    public void setPort(final Integer port) {
+      this.port = port;
+    }
+
+    public boolean isSslEnabled() {
+      return sslEnabled;
+    }
+
+    public void setSslEnabled(final boolean sslEnabled) {
+      this.sslEnabled = sslEnabled;
+    }
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(final String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(final String password) {
+      this.password = password;
+    }
+
+    @Override
+    public String toString() {
+      // we don't want to expose the password
+      return "ProxyConfiguration{"
+          + "enabled="
+          + enabled
+          + ", host='"
+          + host
+          + '\''
+          + ", port="
+          + port
+          + ", sslEnabled="
+          + sslEnabled
+          + ", username='"
+          + username
+          + '\''
+          + '}';
+    }
+  }
+}

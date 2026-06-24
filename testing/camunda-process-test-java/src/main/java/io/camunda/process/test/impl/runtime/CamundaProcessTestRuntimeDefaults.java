@@ -1,0 +1,107 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.impl.runtime;
+
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
+import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
+import java.net.URI;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+public class CamundaProcessTestRuntimeDefaults {
+
+  public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME = "camunda/camunda";
+  public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION = "SNAPSHOT";
+  public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME = "camunda/connectors-bundle";
+  public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "SNAPSHOT";
+  public static final String DEFAULT_ELASTICSEARCH_VERSION = "8.19.16";
+
+  public static final String DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
+
+  public static final String DEFAULT_ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
+  public static final String DEFAULT_CAMUNDA_LOGGER_NAME = "tc.camunda";
+  public static final String DEFAULT_CONNECTORS_LOGGER_NAME = "tc.connectors";
+
+  public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
+      URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
+  public static final URI LOCAL_CONNECTORS_REST_API_ADDRESS = URI.create("http://0.0.0.0:8086");
+
+  public static final Duration DEFAULT_REMOTE_RUNTIME_CONNECTION_TIMEOUT = Duration.ofMinutes(1);
+
+  public static final String DEFAULT_COVERAGE_REPORT_DIRECTORY = "target/coverage-report";
+
+  private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
+      ContainerRuntimePropertiesUtil.readProperties();
+
+  public static final String ELASTICSEARCH_DOCKER_IMAGE_VERSION =
+      PROPERTIES_UTIL.getElasticsearchVersion();
+
+  public static final String CAMUNDA_DOCKER_IMAGE_NAME =
+      PROPERTIES_UTIL.getCamundaDockerImageName();
+  public static final String CAMUNDA_DOCKER_IMAGE_VERSION =
+      PROPERTIES_UTIL.getCamundaDockerImageVersion();
+  public static final Map<String, String> CAMUNDA_ENV_VARS = PROPERTIES_UTIL.getCamundaEnvVars();
+  public static final List<Integer> CAMUNDA_EXPOSED_PORTS =
+      PROPERTIES_UTIL.getCamundaExposedPorts();
+
+  public static final String CAMUNDA_LOGGER_NAME = PROPERTIES_UTIL.getCamundaLoggerName();
+  public static final String CONNECTORS_LOGGER_NAME = PROPERTIES_UTIL.getConnectorsLoggerName();
+
+  public static final boolean CONNECTORS_ENABLED = PROPERTIES_UTIL.isConnectorsEnabled();
+  public static final String CONNECTORS_DOCKER_IMAGE_NAME =
+      PROPERTIES_UTIL.getConnectorsDockerImageName();
+  public static final String CONNECTORS_DOCKER_IMAGE_VERSION =
+      PROPERTIES_UTIL.getConnectorsDockerImageVersion();
+  public static final Map<String, String> CONNECTORS_ENV_VARS =
+      PROPERTIES_UTIL.getConnectorsEnvVars();
+  public static final Map<String, String> CONNECTORS_SECRETS =
+      PROPERTIES_UTIL.getConnectorsSecrets();
+  public static final List<Integer> CONNECTORS_EXPOSED_PORTS =
+      PROPERTIES_UTIL.getConnectorsExposedPorts();
+
+  public static final CamundaProcessTestRuntimeMode RUNTIME_MODE = PROPERTIES_UTIL.getRuntimeMode();
+
+  public static final URI REMOTE_CAMUNDA_MONITORING_API_ADDRESS =
+      PROPERTIES_UTIL.getRemoteCamundaMonitoringApiAddress();
+  public static final URI REMOTE_CONNECTORS_REST_API_ADDRESS =
+      PROPERTIES_UTIL.getRemoteConnectorsRestApiAddress();
+
+  public static final Duration REMOTE_RUNTIME_CONNECTION_TIMEOUT =
+      PROPERTIES_UTIL.getRemoteRuntimeConnectionTimeout();
+
+  public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
+      PROPERTIES_UTIL.getCamundaClientBuilderFactory();
+
+  public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
+
+  public static final String COVERAGE_REPORT_DIRECTORY =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
+  public static final List<String> COVERAGE_EXCLUDED_PROCESSES =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
+  public static final List<String> COVERAGE_EXCLUDED_DECISIONS =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedDecisions();
+
+  public static final AssertionProperties ASSERTION_PROPERTIES =
+      PROPERTIES_UTIL.getAssertionProperties();
+
+  public static final JudgeProperties JUDGE_PROPERTIES = PROPERTIES_UTIL.getJudgeProperties();
+  public static final SemanticSimilarityProperties SEMANTIC_SIMILARITY_PROPERTIES =
+      PROPERTIES_UTIL.getSemanticSimilarityProperties();
+}

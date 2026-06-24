@@ -1,0 +1,146 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {safeJsonParse} from 'modules/utils';
+import {untruncateJson} from 'modules/utils/editor/untruncateJSON';
+import {mergePathname} from 'modules/request/mergePathname';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+import {
+  endpoints,
+  documentReferenceSchema,
+  type DocumentReference,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+
+type DocumentType = 'image' | 'pdf' | 'json' | 'unknown';
+
+type DocumentInfo = {
+  fileName: string;
+  link: string | null;
+  type: DocumentType;
+  contentType: string;
+  size: number;
+  isExpired: boolean;
+};
+
+type DocumentParseResult =
+  | {type: 'single'; document: DocumentInfo}
+  | {type: 'list'; documents: DocumentInfo[]; isLowerBound: boolean};
+
+function isDocumentReference(value: unknown): value is DocumentReference {
+  return documentReferenceSchema.safeParse(value).success;
+}
+
+const MIME_TYPE_MAP: Record<string, DocumentType> = {
+  'image/jpeg': 'image',
+  'image/png': 'image',
+  'image/gif': 'image',
+  'image/webp': 'image',
+  'application/pdf': 'pdf',
+  'application/json': 'json',
+};
+
+function getDocumentType(contentType: string): DocumentType {
+  return MIME_TYPE_MAP[contentType] ?? 'unknown';
+}
+
+function toDocumentInfo(ref: DocumentReference): DocumentInfo {
+  const link =
+    ref.contentHash !== null
+      ? mergePathname(
+          getClientConfig().contextPath,
+          endpoints.getDocument.getUrl({
+            documentId: ref.documentId,
+            storeId: ref.storeId,
+            contentHash: ref.contentHash,
+          }),
+        )
+      : null;
+
+  const isExpired =
+    ref.metadata.expiresAt !== null &&
+    Date.parse(ref.metadata.expiresAt) < Date.now();
+
+  return {
+    link,
+    fileName: ref.metadata.fileName ?? ref.documentId,
+    type: getDocumentType(ref.metadata.contentType),
+    contentType: ref.metadata.contentType,
+    size: ref.metadata.size,
+    isExpired,
+  };
+}
+
+function parseDocumentVariable(
+  value: string,
+  isTruncated: boolean,
+): DocumentParseResult | null {
+  const {completed, collectionDepth} = isTruncated
+    ? untruncateJson(value)
+    : {completed: value, collectionDepth: 0};
+
+  const parsed = safeJsonParse(completed);
+
+  if (isDocumentReference(parsed)) {
+    return {type: 'single', document: toDocumentInfo(parsed)};
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    return null;
+  }
+
+  const docs = parsed.filter(isDocumentReference);
+  if (docs.length === 0) {
+    return null;
+  }
+
+  if (!isTruncated && docs.length !== parsed.length) {
+    return null;
+  }
+
+  if (docs.length === 1 && !isTruncated) {
+    return {type: 'single', document: toDocumentInfo(docs[0]!)};
+  }
+
+  return {
+    type: 'list',
+    documents: docs.map(toDocumentInfo),
+    isLowerBound: collectionDepth > 0 || docs.length < parsed.length,
+  };
+}
+
+const UNITS = ['B', 'KiB', 'MiB', 'GiB'];
+const BYTES_BASE = 1024;
+
+/**
+ * Formats a number of bytes into a human readable string with binary prefixes (up to GiB)
+ * @param bytes - The number of bytes to format
+ * @returns Formatted string (e.g. "1.5 MiB")
+ */
+function toHumanReadableBytes(bytes: number): string {
+  if (bytes === 0) {
+    return '0 B';
+  }
+
+  if (!Number.isFinite(bytes)) {
+    return 'N/A';
+  }
+
+  const exponent = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(BYTES_BASE)),
+    UNITS.length - 1,
+  );
+
+  const value = bytes / Math.pow(BYTES_BASE, exponent);
+  const unit = UNITS[exponent];
+  const formatted = value.toFixed(2).replace(/\.?0+$/, '');
+
+  return `${formatted} ${unit}`;
+}
+
+export {parseDocumentVariable, toHumanReadableBytes};
+export type {DocumentInfo, DocumentParseResult};

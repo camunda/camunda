@@ -1,0 +1,51 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
+
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.service.db.es.report.interpreter.groupby.GroupByInterpreterES;
+import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.MinMaxStatDto;
+import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
+import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
+import java.util.Optional;
+import java.util.Set;
+
+public interface ProcessGroupByInterpreterES
+    extends GroupByInterpreterES<ProcessReportDataDto, ProcessExecutionPlan> {
+  Set<ProcessGroupBy> getSupportedGroupBys();
+
+  /**
+   * This method returns the min and maximum values for range value types (e.g. number or date). It
+   * defaults to an empty result and needs to get overridden when applicable.
+   *
+   * @param context command execution context to perform the min max retrieval with
+   * @param baseQuery filtering query on which data to perform the min max retrieval
+   * @return min and max value range for the value grouped on by
+   */
+  default Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
+      final Query baseQuery) {
+    return Optional.empty();
+  }
+
+  /**
+   * Declares the instance index field on which unfiltered per-group baseline counts should be
+   * aggregated for this group-by, or empty if the group-by does not need per-group baselines (the
+   * report-level baseline count is used instead). The execution plan interpreter performs the
+   * actual aggregation, keeping the database client out of the group-by layer. Defaults to empty.
+   *
+   * @param context command execution context
+   * @return the field to aggregate per-group baseline counts on, if applicable
+   */
+  default Optional<String> getBaselineCountAggregationField(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return Optional.empty();
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "components": [
+    {
+      "key": "firstName",
+      "label": "First name",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_1uz627b",
+      "layout": {
+        "row": "Row_0cn4cin"
+      }
+    },
+    {
+      "key": "lastName",
+      "label": "Last name",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_1ld2t7y",
+      "layout": {
+        "row": "Row_1011ilc"
+      }
+    },
+    {
+      "key": "passNo",
+      "label": "Passport number",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_1f7zpzu",
+      "layout": {
+        "row": "Row_18s2yg0"
+      }
+    },
+    {
+      "key": "ticketNo",
+      "label": "Ticket number",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_1ma5h7k",
+      "layout": {
+        "row": "Row_1ejla4e"
+      }
+    },
+    {
+      "key": "registered",
+      "label": "Registered successfully",
+      "type": "textfield",
+      "id": "Field_06e0y83",
+      "layout": {
+        "row": "Row_0ab7x4a"
+      }
+    },
+    {
+      "action": "submit",
+      "key": "button1",
+      "label": "Save",
+      "type": "button",
+      "id": "Field_1ur5g4q",
+      "layout": {
+        "row": "Row_1p6kv0n"
+      }
+    }
+  ],
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.29.0-nightly.20241014"
+  },
+  "schemaVersion": 16,
+  "type": "default",
+  "id": "registerThePassenger"
+}

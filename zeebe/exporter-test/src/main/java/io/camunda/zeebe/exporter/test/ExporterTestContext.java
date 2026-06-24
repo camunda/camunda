@@ -1,0 +1,119 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter.test;
+
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
+import java.util.Objects;
+import net.jcip.annotations.NotThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * A mutable implementation of {@link Context} for testing. The context is passed only during the
+ * configuration phase, and any modifications afterwards isn't really used, so there is no real need
+ * to make this thread-safe at the moment.
+ */
+@NotThreadSafe
+public final class ExporterTestContext implements Context {
+  private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(ExporterTestContext.class);
+
+  private Configuration configuration;
+  private RecordFilter recordFilter;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private int partitionId;
+  private String physicalTenantId = DEFAULT_PHYSICAL_TENANT_ID;
+  private String clusterId = "";
+  private String licenseKey;
+  private InstantSource clock = InstantSource.system();
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
+  @Override
+  public Logger getLogger() {
+    return DEFAULT_LOGGER;
+  }
+
+  @Override
+  public InstantSource clock() {
+    return clock;
+  }
+
+  @Override
+  public Configuration getConfiguration() {
+    return configuration;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  public ExporterTestContext setPhysicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId =
+        Objects.requireNonNull(physicalTenantId, "must specify a physical tenant id");
+    return this;
+  }
+
+  @Override
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public ExporterTestContext setClusterId(final String clusterId) {
+    this.clusterId = Objects.requireNonNull(clusterId, "must specify a cluster ID");
+    return this;
+  }
+
+  @Override
+  public String getLicenseKey() {
+    return licenseKey;
+  }
+
+  @Override
+  public void setFilter(final RecordFilter filter) {
+    recordFilter = filter;
+  }
+
+  public ExporterTestContext setLicenseKey(final String licenseKey) {
+    this.licenseKey = licenseKey;
+    return this;
+  }
+
+  public ExporterTestContext setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public ExporterTestContext setConfiguration(final Configuration configuration) {
+    this.configuration = Objects.requireNonNull(configuration, "must specify a configuration");
+    return this;
+  }
+
+  public ExporterTestContext setClock(final InstantSource clock) {
+    this.clock = Objects.requireNonNull(clock, "must specify a clock");
+    return this;
+  }
+
+  public RecordFilter getRecordFilter() {
+    return recordFilter;
+  }
+}

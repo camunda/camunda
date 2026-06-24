@@ -1,0 +1,4 @@
+camunda:
+  client:
+    zeebe:
+      message-time-to-live: PT2H

@@ -1,0 +1,211 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.identity;
+
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
+
+public class AuthorizationEntityValidator {
+  public static final String MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist.";
+  public static final String ROLE_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to create or update authorization with ownerId or resourceId '%s', but a role with this ID does not exist.";
+  public static final String USER_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to create or update authorization with ownerId or resourceId '%s', but a user with this ID does not exist.";
+  public static final String GROUP_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to create or update authorization with ownerId or resourceId '%s', but a group with this ID does not exist.";
+  public static final String PROPERTY_MATCHER_MISSING_PROPERTY_NAME_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher 'PROPERTY', but no resource property name was provided. Please provide a resource property name.";
+  public static final String PROPERTY_MATCHER_HAS_BOTH_FIELDS_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided. Please provide only a resource property name.";
+  public static final String MATCHER_MISSING_RESOURCE_ID_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher '%s', but no resource ID was provided. Please provide a resource ID.";
+  public static final String MATCHER_HAS_PROPERTY_NAME_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher '%s', but both resource ID and resource property name were provided. Resource property names are only valid for matcher 'PROPERTY'.";
+  public static final String UNSPECIFIED_MATCHER_ERROR_MESSAGE =
+      "Expected to %s authorization, but resource matcher is UNSPECIFIED. Please specify a valid resource matcher (ID, ANY or PROPERTY).";
+  public static final String MATCHER_NOT_SUPPORTED_ERROR_MESSAGE =
+      "Expected to %s authorization, but resource matcher '%s' is not supported.";
+
+  private final UserState userState;
+  private final MappingRuleState mappingRuleState;
+  private final GroupState groupState;
+  private final RoleState roleState;
+  private final EngineSecurityConfig securityConfig;
+
+  public AuthorizationEntityValidator(
+      final ProcessingState processingState, final EngineSecurityConfig securityConfig) {
+    userState = processingState.getUserState();
+    mappingRuleState = processingState.getMappingRuleState();
+    groupState = processingState.getGroupState();
+    roleState = processingState.getRoleState();
+    this.securityConfig = securityConfig;
+  }
+
+  public Either<Rejection, AuthorizationRecord> ownerAndResourceExists(
+      final TypedRecord<AuthorizationRecord> command) {
+    final var record = command.getValue();
+    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
+    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
+    switch (record.getOwnerType()) {
+      case GROUP:
+        if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.NOT_FOUND,
+                  GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
+        }
+        break;
+      case MAPPING_RULE:
+        if (mappingRuleState.get(record.getOwnerId()).isEmpty()) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.NOT_FOUND,
+                  MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
+        }
+        break;
+      case ROLE:
+        if (roleState.getRole(record.getOwnerId()).isEmpty()) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.NOT_FOUND,
+                  ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
+        }
+        break;
+      case USER:
+        if (localUserEnabled && userState.getUser(record.getOwnerId()).isEmpty()) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.NOT_FOUND,
+                  USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
+        }
+        break;
+      default:
+        break;
+    }
+    if (!record.getResourceId().equals("*")) {
+      switch (record.getResourceType()) {
+        case GROUP:
+          if (localGroupEnabled && groupState.get(record.getResourceId()).isEmpty()) {
+            return Either.left(
+                new Rejection(
+                    RejectionType.NOT_FOUND,
+                    GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
+          }
+          break;
+        case MAPPING_RULE:
+          if (mappingRuleState.get(record.getResourceId()).isEmpty()) {
+            return Either.left(
+                new Rejection(
+                    RejectionType.NOT_FOUND,
+                    MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
+          }
+          break;
+        case ROLE:
+          if (roleState.getRole(record.getResourceId()).isEmpty()) {
+            return Either.left(
+                new Rejection(
+                    RejectionType.NOT_FOUND,
+                    ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
+          }
+          break;
+        case USER:
+          if (localUserEnabled && userState.getUser(record.getResourceId()).isEmpty()) {
+            return Either.left(
+                new Rejection(
+                    RejectionType.NOT_FOUND,
+                    USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
+          }
+          break;
+        default:
+          break;
+      }
+    }
+    return Either.right(record);
+  }
+
+  /**
+   * Validates that authorization record is correctly configured with either a resource ID or
+   * resource property name based on the matcher type.
+   *
+   * <p>Validation rules:
+   *
+   * <ul>
+   *   <li>PROPERTY matcher: requires resourcePropertyName, resourceId must be empty
+   *   <li>ID or ANY matcher: requires resourceId, resourcePropertyName must be empty
+   *   <li>UNSPECIFIED matcher: not allowed, must be rejected
+   * </ul>
+   *
+   * @param record the authorization record to validate
+   * @param operation the operation being performed (e.g., "create", "update") for error messages
+   * @return Either a Rejection with error details or the validated AuthorizationRecord
+   */
+  public Either<Rejection, AuthorizationRecord> validateResourceMatcher(
+      final AuthorizationRecord record, final String operation) {
+    final var matcher = record.getResourceMatcher();
+    final var resourceId = record.getResourceId();
+    final var resourcePropertyName = record.getResourcePropertyName();
+
+    final boolean hasResourceId = !resourceId.isEmpty();
+    final boolean hasPropertyName = !resourcePropertyName.isEmpty();
+
+    switch (matcher) {
+      case PROPERTY -> {
+        if (!hasPropertyName) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  PROPERTY_MATCHER_MISSING_PROPERTY_NAME_ERROR_MESSAGE.formatted(operation)));
+        }
+        if (hasResourceId) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  PROPERTY_MATCHER_HAS_BOTH_FIELDS_ERROR_MESSAGE.formatted(operation)));
+        }
+      }
+      case ID, ANY -> {
+        if (!hasResourceId) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  MATCHER_MISSING_RESOURCE_ID_ERROR_MESSAGE.formatted(operation, matcher)));
+        }
+        if (hasPropertyName) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  MATCHER_HAS_PROPERTY_NAME_ERROR_MESSAGE.formatted(operation, matcher)));
+        }
+      }
+      case UNSPECIFIED -> {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                UNSPECIFIED_MATCHER_ERROR_MESSAGE.formatted(operation)));
+      }
+      default ->
+          Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  MATCHER_NOT_SUPPORTED_ERROR_MESSAGE.formatted(
+                      operation, record.getResourceMatcher())));
+    }
+
+    return Either.right(record);
+  }
+}

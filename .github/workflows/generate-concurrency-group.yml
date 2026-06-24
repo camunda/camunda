@@ -1,0 +1,51 @@
+# description: Generate a branch-aware concurrency group name.
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Generate Concurrency Group
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      base_group_name:
+        description: "Base concurrency group name for the workflow"
+        required: true
+        type: string
+    outputs:
+      concurrency_group_name:
+        description: "Concurrency group name for the workflow"
+        value: ${{ jobs.get-concurrency-group-dynamically.outputs.result }}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  get-concurrency-group-dynamically:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}
+    if: >-
+      github.repository == 'camunda/camunda' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) &&
+      inputs.base_group_name != ''
+    outputs:
+      result: ${{ steps.split_branch.outputs.result }}
+    steps:
+      - name: Determine concurrency group name
+        id: split_branch
+        env:
+          BASE_GROUP_NAME: ${{ inputs.base_group_name }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == stable/* ]]; then
+            SUFFIX="${BRANCH#stable/}"
+            CONCURRENCY_GROUP_NAME="${BASE_GROUP_NAME}${SUFFIX}"
+          elif [[ "$BRANCH" == "main" ]]; then
+            CONCURRENCY_GROUP_NAME="${BASE_GROUP_NAME}"
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 1
+          fi
+          echo "result=$CONCURRENCY_GROUP_NAME" >> "$GITHUB_OUTPUT"

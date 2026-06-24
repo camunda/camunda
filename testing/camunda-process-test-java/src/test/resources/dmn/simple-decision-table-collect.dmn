@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0v4wfk6" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Web Modeler" exporterVersion="b46fab0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <decision id="simple_decision" name="Simple Decision">
+    <decisionTable id="DecisionTable_1wz9myc" hitPolicy="COLLECT">
+      <input id="Input_1" label="yes_or_no">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>yes_or_no</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="result" name="result" typeRef="Any" />
+      <rule id="DecisionRule_0ikukos">
+        <inputEntry id="UnaryTests_1kvwstk">
+          <text>"yes"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_05nw9v9">
+          <text>":)"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_02ysge9">
+        <inputEntry id="UnaryTests_0i50ybj">
+          <text>"no"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_02z6d5t">
+          <text>":("</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1216938">
+        <inputEntry id="UnaryTests_1kozd3j">
+          <text>"yes"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0y4c35r">
+          <text>1</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="simple_decision">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

@@ -1,0 +1,484 @@
+---
+name: Common paths filter for camunda/camunda
+
+# owner: @camunda/monorepo-devops-team
+
+description: |
+  Common filters to detect and group changes against a base branch
+  It leverages the `dorny/paths-filter` action to filter paths
+  Said third-party action uses picomatch patterns to filter paths
+
+outputs:
+  actionlint:
+    description: Output whether `actionlint` should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.actionlint-related-change == 'true'
+      }}
+  commitlint:
+    description: Output whether commit messages should be linted based on GitHub event
+    value: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        !contains(github.event.pull_request.labels.*.name, 'ci:ignore-commitlint') &&
+        steps.filter-special-branch.outputs.release-branch != 'true'
+      }}
+  codeowners-check:
+    description: Output whether codeowners check should be performed based on GitHub event
+    value: >-
+      ${{ github.event_name == 'pull_request' }}
+  maven-spotless-linter:
+    description: Output whether jobs depending on files relevant for Maven spotless should be run, related checks are based on GitHub events and file changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.markdown-change == 'true'
+      }}
+  validate-pom-metadata:
+    description: Output whether flattened POM metadata validation should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.validate-pom-metadata-extra-change == 'true'
+      }}
+  java-code-changes:
+    description: Output whether jobs depending on Java code changes should be run, related checks are based on GitHub events and java files changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
+      }}
+  identity-frontend-tests:
+    description: Output whether Identity frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-identity.outputs.identity-frontend-change == 'true'
+      }}
+  operate-backend-changes:
+    description: Output whether Operate backend build should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-operate.outputs.operate-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true'
+      }}
+  operate-frontend-changes:
+    description: Output whether Operate frontend build should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-operate.outputs.operate-frontend-change == 'true'
+      }}
+  tasklist-frontend-changes:
+    description: Output whether Tasklist frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
+      }}
+  tasklist-backend-changes:
+    description: Output whether Tasklist backend build should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true'
+      }}
+  optimize-frontend-changes:
+    description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-optimize.outputs.optimize-frontend-change == 'true'
+      }}
+  optimize-backend-changes:
+    description: Output whether Optimize backend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-optimize.outputs.optimize-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
+      }}
+  camunda-docker-tests:
+    description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true' ||
+        steps.filter-common.outputs.frontend-change == 'true'
+      }}
+  frontend-changes:
+    description: Output whether any frontend has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.frontend-change == 'true' ||
+        steps.filter-identity.outputs.frontend-identity == 'true'
+      }}
+  zeebe-changes:
+    description: Output whether any Zeebe code has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-zeebe.outputs.zeebe-change == 'true'
+      }}
+  protobuf-changes:
+    description: Output whether any Protobuf files have changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        (steps.filter-common.outputs.protobuf-change == 'true' && github.event_name != 'schedule')
+      }}
+  openapi-changes:
+    description: Output whether any C8 OpenAPI code has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.openapi-change == 'true'
+      }}
+  stable-branch-changes:
+    description: Output whether the change is occurring on a stable/X.Y branch or not
+    value: >-
+      ${{
+        github.event_name == 'push' &&
+        steps.filter-special-branch.outputs.stable-branch == 'true'
+      }}
+  rdbms-integration-tests:
+    description: Output whether RDBMS integrations tests should be run based on code changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.rdbms-change == 'true'
+      }}
+  renovate-config-changes:
+    description: Output whether renovate config validator needs to be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.renovate-config-change == 'true'
+      }}
+  webapp-client-changes:
+    description: Output whether Webapp Client tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-webapp-client.outputs.webapp-client-change == 'true'
+      }}
+  docs-changes:
+    description: Output whether Documentation tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        steps.filter-docs.outputs.docs-change == 'true'
+      }}
+  deps-changed:
+    description: Output whether dependency manifests (pom.xml, lock files) changed, triggering PR vulnerability scanning
+    value: >-
+      ${{ steps.filter-dep-manifests.outputs.dep-manifest-change == 'true' }}
+  c8-e2e-test-suite-changes:
+    description: Output whether the C8 Orchestration Cluster E2E test suite lint check should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-c8-e2e-test-suite.outputs.c8-e2e-test-suite-change == 'true'
+      }}
+
+runs:
+  using: composite
+  steps:
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-common
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        actionlint-related-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+          - '.github/conftest-*.rego'
+
+        renovate-config-change:
+          - '**/renovate.json'
+
+        # We use specific src/main and src/test path to:
+        #  * react on java code (production + test) changes
+        #  * react on resource changes like bpmn, XML, etc.
+        #  * but _not_ react on frontend src folder changes
+        java-code-change:
+          - '**/src/main/**'
+          - '**/src/test/**'
+
+        maven-change:
+          - 'bom/**'
+          - 'build-tools/**'
+          - 'dist/**'
+          - 'parent/**'
+          - '**/pom.xml'
+          - '.mvn/**'
+          - '.ci/db-versions.yml'
+
+        validate-pom-metadata-extra-change:
+          - 'mvnw'
+          - 'mvnw.cmd'
+          - '.github/scripts/validate-flattened-poms.sh'
+
+        dockerfile-change:
+          - '*.Dockerfile'
+
+        markdown-change:
+          - '**/*.md'
+
+        webapps-change:
+          - 'configuration/**'
+          - 'webapps-backup/**'
+          - 'webapps-common/**'
+          - 'webapps-schema/**'
+
+        frontend-change:
+          - 'operate/client/**'
+          - 'tasklist/client/**'
+          - 'identity/client/**'
+          - 'optimize/client/**'
+
+        protobuf-change:
+          - '**/*.proto'
+          - 'buf.yaml'
+
+        openapi-change:
+          - 'zeebe/gateway-protocol/src/main/proto/v2/**'
+          - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
+          - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
+          - 'zeebe/gateway-protocol/.spectral.yaml'
+          - 'zeebe/gateway-protocol/spectral-functions/**'
+          - 'zeebe/gateway-protocol/spectral-tests/**'
+          - '.github/scripts/x-added-in-version-check/**'
+          - '.github/workflows/verify-x-added-in-version-annotations.yml'
+
+        rdbms-change:
+        - 'db/rdbms/**'
+        - 'db/rdbms-schema/**'
+        - 'qa/acceptance-tests/**'
+        - 'search/search-domain/**'
+        - 'zeebe/exporters/rdbms-exporter/**'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-github-actions
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      list-files: json
+      filters: |
+        github-actions-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+          - '.github/conftest-*.rego'
+
+  # dorny/paths-filter negation patterns are broken (dorny/paths-filter#200,
+  # micromatch/picomatch#154): each pattern is an independent OR'd matcher, so
+  # !pattern matches everything NOT matching it instead of excluding.
+  # Work around by piping the actual file list through check.sh, which applies
+  # glob exclusions from .github/scripts/ci-relevance/excluded-paths.txt.
+  - id: ci-github-actions
+    shell: bash
+    env:
+      CHANGED_FILES: ${{ steps.filter-github-actions.outputs.github-actions-change_files }}
+    run: |
+      if [[ "${{ steps.filter-github-actions.outputs.github-actions-change }}" != "true" ]]; then
+        echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
+        exit 0
+      fi
+      if jq -r '.[]' <<< "$CHANGED_FILES" | \
+          .github/scripts/ci-relevance/check.sh; then
+        echo "ci-relevant=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
+      fi
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-identity
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        identity-frontend-change:
+          - 'identity/client/**'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-zeebe
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        zeebe-change:
+          - 'zeebe/**'
+          - 'clients/**'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-operate
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        operate-backend-change:
+          - 'operate/!(client/**)/**'
+
+        operate-frontend-change:
+          - operate/client/**
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-tasklist
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        tasklist-backend-change:
+          - 'tasklist/!(client/**)/**'
+
+        tasklist-frontend-change:
+          - tasklist/client/**
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-optimize
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        optimize-backend-change:
+          - optimize/backend/**
+          - optimize/upgrade/**
+          - optimize/util/**
+          - optimize/plugins/**
+
+        optimize-frontend-change:
+          - optimize/client/**
+          - optimize/backend/src/main/resources/localization/**
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-webapp-client
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        webapp-client-change:
+          - 'webapp/client/**'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-dep-manifests
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        dep-manifest-change:
+          - '**/pom.xml'
+          - 'bom/**'
+          - 'parent/**'
+          - '**/package.json'
+          - '**/package-lock.json'
+          - '**/yarn.lock'
+          - '**/go.mod'
+          - '**/go.sum'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-docs
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        docs-change:
+          - 'docs/monorepo-docs/**'
+          - 'monorepo-docs-site/!(node_modules)/**'
+          - 'monorepo-docs-site/*'
+          - '.github/workflows/docs-build-deploy.yml'
+          - '.github/workflows/docs-preview.yml'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-c8-e2e-test-suite
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        c8-e2e-test-suite-change:
+          - 'qa/c8-orchestration-cluster-e2e-test-suite/**'
+
+  # only works `on: push` and `on: pull_request` GitHub trigger events
+  - id: filter-special-branch
+    shell: bash
+    run: |
+      if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
+        test_branch_name="$GITHUB_REF_NAME"
+      elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then
+        test_branch_name="$GITHUB_HEAD_REF"
+      fi
+      echo "Branch name: $test_branch_name"
+
+      if [[ $test_branch_name =~ ^stable\/[0-9]+\.[0-9]+$ ]]; then
+        echo "Stable branch: true"
+        echo "stable-branch=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "Stable branch: false"
+        echo "stable-branch=false" >> "$GITHUB_OUTPUT"
+      fi
+
+      if [[ $test_branch_name =~ ^release.*$ ]]; then
+        echo "Release branch: true"
+        echo "release-branch=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "Release branch: false"
+        echo "release-branch=false" >> "$GITHUB_OUTPUT"
+      fi

@@ -1,0 +1,58 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.historydeletion;
+
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
+
+public class DeleteDecisionInstanceHistoryTest {
+
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DECISION_ID = "jedi_or_sith";
+
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+
+  @Test
+  public void shouldDeleteDecisionInstanceHistory() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+
+    final var decisionEvaluationRecord =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVariable("lightsaberColor", "blue")
+            .evaluate();
+
+    final var decisionInstanceKey = decisionEvaluationRecord.getKey();
+
+    RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+        .withRecordKey(decisionInstanceKey)
+        .await();
+
+    // when
+    final var deletedEvent =
+        ENGINE.historyDeletion().decisionInstance(decisionInstanceKey).delete();
+
+    // then
+    assertThat(deletedEvent.getValue())
+        .hasResourceKey(decisionInstanceKey)
+        .hasResourceType(HistoryDeletionType.DECISION_INSTANCE);
+  }
+}

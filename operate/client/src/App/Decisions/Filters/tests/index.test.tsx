@@ -1,0 +1,568 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {AppHeader} from 'App/Layout/AppHeader';
+import {render, screen, waitFor, within} from 'modules/testing-library';
+import {LocationLog} from 'modules/utils/LocationLog';
+import {MemoryRouter} from 'react-router-dom';
+import {Filters} from '../';
+import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
+import {act} from 'react';
+import {
+  clearComboBox,
+  selectDecision,
+  selectDecisionVersion,
+} from 'modules/testUtils/selectComboBoxOption';
+import {Paths} from 'modules/Routes';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser, searchResult} from 'modules/testUtils';
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
+import {
+  createDecisionDefinition,
+  mockDecisionDefinitions,
+} from 'modules/mocks/mockDecisionDefinitions';
+
+function getWrapper(initialPath: string = Paths.decisions()) {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    return (
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <AppHeader />
+          {children}
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  return Wrapper;
+}
+
+const expectVersion = (version: string) => {
+  expect(
+    within(screen.getByLabelText('Version', {selector: 'button'})).getByText(
+      version,
+    ),
+  ).toBeInTheDocument();
+};
+
+const MOCK_FILTERS_PARAMS = {
+  decisionDefinitionId: 'invoice-assign-approver',
+  decisionDefinitionVersion: '2',
+  evaluated: 'true',
+  failed: 'true',
+  decisionEvaluationInstanceKey: '2251799813689540-1',
+  processInstanceKey: '2251799813689549',
+} as const;
+
+describe('<Filters />', () => {
+  beforeEach(async () => {
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([
+        createDecisionDefinition({version: 2}),
+        createDecisionDefinition({version: 1}),
+      ]),
+    );
+    mockSearchDecisionDefinitions().withSuccess(
+      searchResult([createDecisionDefinition({version: 2})]),
+    );
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  it('should render the correct elements', () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByText(/^decision$/i)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^instances states$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evaluated/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/failed/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'More Filters'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Decision Instance Key(s)'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Process Instance Key'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Evaluation Date Range'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should write filters to url', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(''),
+    );
+    await selectDecision({user, option: 'Assign Approver Group'});
+    await selectDecisionVersion({user, option: '2'});
+
+    await user.click(screen.getByLabelText(/evaluated/i));
+    await user.click(screen.getByLabelText(/failed/i));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Decision Instance Key(s)'));
+    await user.type(
+      screen.getByText('Decision Instance Key(s)'),
+      '2251799813689540-1',
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key'));
+    await user.type(
+      screen.getByText('Process Instance Key'),
+      '2251799813689549',
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual(MOCK_FILTERS_PARAMS),
+    );
+
+    await user.click(screen.getByRole('button', {name: /reset/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?evaluated=true&failed=true$/,
+    );
+  });
+
+  it('should write filters to url - evaluation date range', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Evaluation Date Range'));
+    await user.click(screen.getByLabelText('Evaluation Date Range'));
+    const evaluationDate = await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '15',
+      toDay: '20',
+      fromTime: '20:30:00',
+      toTime: '11:03:59',
+    });
+    await user.click(screen.getByText('Apply'));
+
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual({
+        evaluationDateFrom: evaluationDate.fromDate,
+        evaluationDateTo: evaluationDate.toDate,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', {name: /reset/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?evaluated=true&failed=true$/,
+    );
+  });
+
+  it('initialize filter values from url', async () => {
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
+    render(<Filters />, {
+      wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+        'Assign Approver Group',
+      ),
+    );
+    expectVersion('2');
+
+    expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
+    expect(screen.getByLabelText(/failed/i)).toBeChecked();
+    expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
+  });
+
+  it('initialize filter values from url - evaluation date range', async () => {
+    const MOCK_PARAMS = {
+      evaluationDateFrom: '2021-02-21 09:00:00',
+      evaluationDateTo: '2021-02-22 10:00:00',
+    } as const;
+
+    render(<Filters />, {
+      wrapper: getWrapper(`/?${new URLSearchParams(MOCK_PARAMS)}`),
+    });
+
+    expect(
+      await screen.findByDisplayValue(
+        '2021-02-21 09:00:00 - 2021-02-22 10:00:00',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should remove enabled filters on unmount', async () => {
+    const {unmount, user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      screen.queryByLabelText('Decision Instance Key(s)'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Process Instance Key'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Evaluation Date Range'),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Decision Instance Key(s)'));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key'));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Evaluation Date Range'));
+
+    expect(
+      screen.getByLabelText('Decision Instance Key(s)'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Process Instance Key')).toBeInTheDocument();
+
+    unmount();
+
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      screen.queryByLabelText('Decision Instance Key(s)'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Process Instance Key'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Evaluation Date Range'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should hide optional filters', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Decision Instance Key(s)'));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key'));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Evaluation Date Range'));
+
+    expect(
+      screen.getByLabelText('Decision Instance Key(s)'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Process Instance Key')).toBeInTheDocument();
+    expect(screen.getByLabelText('Evaluation Date Range')).toBeInTheDocument();
+
+    await user.hover(screen.getByLabelText('Decision Instance Key(s)'));
+    await user.click(
+      screen.getByLabelText('Remove Decision Instance Key(s) Filter'),
+    );
+
+    await user.hover(screen.getByLabelText('Process Instance Key'));
+    await user.click(
+      screen.getByLabelText('Remove Process Instance Key Filter'),
+    );
+
+    await user.hover(screen.getByLabelText('Evaluation Date Range'));
+    await user.click(
+      screen.getByLabelText('Remove Evaluation Date Range Filter'),
+    );
+
+    expect(
+      screen.queryByLabelText('Decision Instance Key(s)'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Process Instance Key'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Evaluation Date Range'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should select decision name and version', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeDisabled();
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(''),
+    );
+    await selectDecision({user, option: 'Assign Approver Group'});
+    await waitFor(() => expectVersion('2'));
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeEnabled();
+
+    await selectDecisionVersion({user, option: '1'});
+    await waitFor(() => expectVersion('1'));
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeEnabled();
+
+    await clearComboBox({user, fieldName: 'Name'});
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toBeDisabled();
+  });
+
+  it('should validate decision instance keys', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Decision Instance Key(s)'));
+    await user.type(screen.getByLabelText('Decision Instance Key(s)'), 'a');
+
+    expect(
+      await screen.findByText(
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.clear(screen.getByLabelText('Decision Instance Key(s)'));
+
+    expect(
+      screen.queryByText(
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
+    ).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Decision Instance Key(s)'), '1');
+
+    expect(
+      await screen.findByText(
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
+    ).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Decision Instance Key(s)'));
+
+    expect(
+      screen.queryByText(
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
+    ).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByLabelText('Decision Instance Key(s)'),
+      '2251799813689549',
+    );
+
+    expect(
+      await screen.findByText(
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
+    ).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Decision Instance Key(s)'));
+
+    expect(
+      screen.queryByText(
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should validate process instance key', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key'));
+    await user.type(screen.getByLabelText('Process Instance Key'), 'a');
+
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.clear(screen.getByLabelText('Process Instance Key'));
+
+    expect(
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
+    ).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Process Instance Key'), '1');
+
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Process Instance Key'));
+
+    expect(
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
+    ).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByLabelText('Process Instance Key'),
+      '1111111111111111, 2222222222222222',
+    );
+
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Process Instance Key'));
+
+    expect(
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should reset applied filters on navigation', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Process Instance Key'));
+    await user.type(
+      screen.getByLabelText('Process Instance Key'),
+      '2251799813729387',
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?processInstanceKey=2251799813729387$/,
+      ),
+    );
+
+    await user.click(
+      await within(
+        screen.getByRole('navigation', {
+          name: /camunda operate/i,
+        }),
+      ).findByRole('link', {
+        name: /dashboard/i,
+      }),
+    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    await user.click(
+      within(
+        screen.getByRole('navigation', {
+          name: /camunda operate/i,
+        }),
+      ).getByRole('link', {
+        name: /decisions/i,
+      }),
+    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?evaluated=true&failed=true$/,
+    );
+  });
+
+  it('should omit all versions option', async () => {
+    const firstDecision = mockDecisionDefinitions.items[0]!;
+    // Note: Reversed call order. Second one for name suggestions, first one for versions.
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [firstDecision],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/decisions?decisionDefinitionId=${firstDecision.decisionDefinitionId}&decisionDefinitionVersion=${firstDecision.version}`,
+      ),
+    });
+
+    await user.click(
+      screen.getByLabelText(/version/i, {
+        selector: 'button',
+      }),
+    );
+
+    const versionDropdownList = screen.queryByLabelText(/version/i, {
+      selector: 'ul',
+    })!;
+
+    expect(
+      within(versionDropdownList).queryByRole('option', {
+        name: /all/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+});

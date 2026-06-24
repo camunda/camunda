@@ -1,0 +1,134 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC } from "react";
+import { Edit, TrashCan } from "@carbon/react/icons";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import useTranslate from "src/utility/localization";
+import { usePagination } from "src/utility/api";
+import { tenantQueries } from "src/utility/api/tenants/queries";
+import Page, { PageHeader } from "src/components/layout/Page";
+import EntityList from "src/components/entityList";
+import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import useModal, { useEntityModal } from "src/components/modal/useModal";
+import AddModal from "src/pages/tenants/modals/AddModal";
+import EditModal from "src/pages/tenants/modals/EditModal";
+import DeleteModal from "src/pages/tenants/modals/DeleteModal";
+import PageEmptyState from "src/components/layout/PageEmptyState";
+import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
+
+type ListProps = {
+  isOIDC: boolean;
+};
+
+const List: FC<ListProps> = ({ isOIDC }) => {
+  const { t } = useTranslate("tenants");
+  const navigate = useNavigate();
+  const noop = () => {};
+
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
+  const {
+    data: tenantSearchResults,
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(tenantQueries.search(pageParams));
+
+  const [addTenant, addTenantModal] = useModal(AddModal, noop, {
+    isOIDC,
+  });
+  const [editTenant, editTenantModal] = useEntityModal(EditModal, noop);
+  const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, noop);
+
+  const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
+
+  const shouldShowEmptyState =
+    success && !search && !tenantSearchResults?.items.length;
+
+  const pageHeader = (
+    <PageHeader
+      title={t("tenants")}
+      linkText={t("tenants").toLowerCase()}
+      docsLinkPath="/components/admin/tenant/"
+      shouldShowDocumentationLink={!shouldShowEmptyState}
+    />
+  );
+
+  if (shouldShowEmptyState) {
+    return (
+      <Page>
+        {pageHeader}
+        <PageEmptyState
+          resourceTypeTranslationKey={"tenant"}
+          docsLinkPath="/components/admin/tenant/"
+          handleClick={addTenant}
+        />
+        {addTenantModal}
+      </Page>
+    );
+  }
+
+  return (
+    <Page>
+      {pageHeader}
+      <EntityList
+        data={tenantSearchResults == null ? [] : tenantSearchResults.items}
+        headers={[
+          { header: t("tenantId"), key: "tenantId", isSortable: true },
+          { header: t("name"), key: "name", isSortable: true },
+        ]}
+        onEntityClick={showDetails}
+        addEntityLabel={t("createTenant")}
+        onAddEntity={addTenant}
+        loading={loading}
+        menuItems={[
+          {
+            label: t("edit"),
+            icon: Edit,
+            onClick: editTenant,
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
+          },
+          {
+            label: t("delete"),
+            icon: TrashCan,
+            isDangerous: true,
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
+            onClick: (tenant) =>
+              deleteTenant({
+                tenantId: tenant.tenantId,
+                name: tenant.name,
+                description: tenant.description,
+              }),
+          },
+        ]}
+        searchPlaceholder={t("searchByTenantId")}
+        searchKey="tenantId"
+        page={{ ...page, ...tenantSearchResults?.page }}
+        {...paginationCallbacks}
+      />
+      {!loading && !success && (
+        <TranslatedErrorInlineNotification
+          title={t("tenantsListCouldNotLoad")}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
+        />
+      )}
+      {addTenantModal}
+      {editTenantModal}
+      {deleteTenantModal}
+    </Page>
+  );
+};
+
+export default List;

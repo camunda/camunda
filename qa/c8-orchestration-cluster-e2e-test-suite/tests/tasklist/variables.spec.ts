@@ -1,0 +1,256 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {expect} from '@playwright/test';
+import {publicTest as test} from 'fixtures';
+import {deploy, createInstances} from 'utils/zeebeClient';
+import {captureScreenshot, captureFailureVideo} from '@setup';
+import {navigateToApp} from '@pages/UtilitiesPage';
+
+const MANY_VARIABLES = Object.fromEntries(
+  Array.from({length: 60}, (_, i) => [`variable_${i}`, `value_${i}`]),
+);
+
+test.beforeAll(async () => {
+  await deploy([
+    './resources/usertask_with_variables.bpmn',
+    './resources/usertask_with_variables2.bpmn',
+    './resources/usertask_without_variables.bpmn',
+    './resources/usertask_with_many_variables.bpmn',
+  ]);
+  await createInstances('usertask_without_variables', 1, 1);
+  await createInstances('usertask_with_variables', 1, 3, {
+    testData: 'something',
+  });
+  await createInstances('usertask_with_variables2', 1, 1, {
+    testData: 'something',
+  });
+  await createInstances('usertask_with_many_variables', 1, 1, MANY_VARIABLES);
+});
+
+test.describe('variables page', () => {
+  test.beforeEach(async ({page, loginPage}) => {
+    await navigateToApp(page, 'tasklist');
+    await loginPage.login('demo', 'demo');
+    await expect(page).toHaveURL('/tasklist');
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('display info message when task has no variables', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.openTask('usertask_without_variables');
+    await expect(taskDetailsPage.emptyTaskMessage).toBeVisible({
+      timeout: 30000,
+    });
+  });
+
+  test('display variables when task has variables', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('usertask_with_variables');
+
+    await expect(taskDetailsPage.emptyTaskMessage).toBeHidden();
+    await expect(taskDetailsPage.nameColumnHeader).toBeVisible();
+    await expect(taskDetailsPage.valueColumnHeader).toBeVisible();
+    await expect(
+      taskDetailsPage.variablesTable.getByRole('cell', {name: 'testData'}),
+    ).toBeVisible();
+    await expect(
+      taskDetailsPage.variablesTable.getByText('something'),
+    ).toBeVisible();
+  });
+
+  test('edited variable is saved after refresh if task is completed', async ({
+    page,
+    taskDetailsPage,
+    taskPanelPage,
+  }) => {
+    await taskPanelPage.openTask('usertask_with_variables');
+
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
+    await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
+    await expect(
+      taskDetailsPage.variablesTable.getByTitle('testData value'),
+    ).toHaveValue('"something"');
+    await taskDetailsPage.replaceExistingVariableValue({
+      name: 'testData value',
+      value: '"updatedValue"',
+    });
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+
+    await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
+    await page.reload();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('usertask_with_variables');
+
+    await expect(
+      taskDetailsPage.variablesTable.getByText('something'),
+    ).toBeHidden();
+    await expect(
+      taskDetailsPage.variablesTable.getByText('updatedValue'),
+    ).toBeVisible();
+  });
+
+  test('edited variable is not saved after refresh', async ({
+    page,
+    taskDetailsPage,
+    taskPanelPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('usertask_with_variables');
+
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
+    await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
+    await expect(
+      taskDetailsPage.variablesTable.getByTitle('testData value'),
+    ).toBeVisible();
+    await expect(
+      taskDetailsPage.variablesTable.getByTitle('testData value'),
+    ).toHaveValue('"something"');
+
+    await taskDetailsPage.replaceExistingVariableValue({
+      name: 'testData value',
+      value: '"updatedValue"',
+    });
+    await page.reload();
+    await expect(
+      taskDetailsPage.variablesTable.getByTitle('testData value'),
+    ).toHaveValue('"something"');
+    await expect(
+      taskDetailsPage.variablesTable.getByTitle('testData value'),
+    ).not.toHaveValue('"updatedValue"');
+  });
+
+  test('new variable disappears after refresh', async ({
+    page,
+    taskDetailsPage,
+    taskPanelPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('usertask_with_variables');
+
+    await expect(taskDetailsPage.addVariableButton).toBeHidden();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.addVariable({
+      name: 'newVariableName',
+      value: '"newVariableValue"',
+    });
+
+    await page.reload();
+
+    await expect(
+      taskDetailsPage.variablesTable.getByText('newVariableName'),
+    ).toBeHidden();
+    await expect(
+      taskDetailsPage.variablesTable.getByText('newVariableValue'),
+    ).toBeHidden();
+  });
+
+  test('loads all variables via infinite scroll pagination', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks
+          .getByText('usertask_with_many_variables')
+          .first(),
+      ).toBeVisible();
+    }).toPass();
+    await taskPanelPage.openTask('usertask_with_many_variables');
+
+    await expect(
+      taskDetailsPage.variablesTable
+
+        .getByRole('cell', {
+          name: /^variable_\d+$/,
+        })
+        .first(),
+    ).toBeVisible({timeout: 30000});
+
+    // Use mouse-wheel scroll (the pattern used in operateProcessesPage's
+    // scrollUntilElementIsVisible). Setting `scrollTop = scrollHeight` on
+    // `variablesTable.locator('..')` works locally but doesn't reliably
+    // trigger the lazy loader on slow CI runners — only ~13 of 60 cells end
+    // up rendered. Wheel events dispatch real scroll events, which the
+    // virtual list's intersection observer responds to consistently.
+    const targetCell = taskDetailsPage.variablesTable.getByRole('cell', {
+      name: 'variable_59',
+    });
+    await taskDetailsPage.variablesTable.hover();
+    await expect(async () => {
+      if (!(await targetCell.isVisible())) {
+        await taskDetailsPage.variablesTable.page().mouse.wheel(0, 600);
+      }
+      await expect(targetCell).toBeVisible();
+    }).toPass({timeout: 60000});
+  });
+
+  test('new variable still exists after refresh if task is completed', async ({
+    page,
+    taskDetailsPage,
+    taskPanelPage,
+  }) => {
+    test.slow();
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('usertask_with_variables2');
+
+    await expect(taskDetailsPage.addVariableButton).toBeHidden();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
+    await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
+
+    await taskDetailsPage.addVariable({
+      name: 'newVariableName',
+      value: '"newVariableValue"',
+    });
+
+    await taskDetailsPage.completeTaskButton.click();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
+
+    await page.reload();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('usertask_with_variables2');
+
+    await expect(page.getByText('newVariableName')).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(page.getByText('newVariableValue')).toBeVisible();
+  });
+});

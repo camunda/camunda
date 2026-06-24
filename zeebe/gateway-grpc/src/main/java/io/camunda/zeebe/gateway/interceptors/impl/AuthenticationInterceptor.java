@@ -1,0 +1,77 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.interceptors.impl;
+
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.zeebe.util.Either.Left;
+import io.camunda.zeebe.util.Either.Right;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.grpc.Context;
+import io.grpc.Contexts;
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
+import io.grpc.ServerCall.Listener;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerInterceptor;
+import io.grpc.Status;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
+public class AuthenticationInterceptor implements ServerInterceptor {
+  private static final Metadata.Key<String> AUTH_KEY =
+      Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
+  private final AuthenticationHandler authenticationHandler;
+  private final AuthenticationMetrics metrics;
+
+  @VisibleForTesting
+  AuthenticationInterceptor(final AuthenticationHandler authenticationHandler) {
+    this(
+        authenticationHandler,
+        new AuthenticationMetrics(new SimpleMeterRegistry(), AuthenticationMethod.BASIC));
+  }
+
+  public AuthenticationInterceptor(
+      final AuthenticationHandler authenticationHandler, final AuthenticationMetrics metrics) {
+    this.authenticationHandler = authenticationHandler;
+    this.metrics = metrics;
+  }
+
+  @Override
+  public <ReqT, RespT> Listener<ReqT> interceptCall(
+      final ServerCall<ReqT, RespT> call,
+      final Metadata headers,
+      final ServerCallHandler<ReqT, RespT> next) {
+    final var latencyTimer = metrics.startLatencySample();
+    final var authorization = headers.get(AUTH_KEY);
+    if (authorization == null) {
+      metrics.recordFailureLatency(latencyTimer);
+      return deny(
+          call,
+          Status.UNAUTHENTICATED.augmentDescription(
+              "Expected authentication information at header with key [%s], but found nothing"
+                  .formatted(AUTH_KEY.name())));
+    }
+
+    return switch (authenticationHandler.authenticate(authorization)) {
+      case Left<Status, Context>(final var status) -> {
+        metrics.recordFailureLatency(latencyTimer);
+        yield deny(call, status);
+      }
+      case Right<Status, Context>(final var context) -> {
+        metrics.recordSuccessLatency(latencyTimer);
+        yield Contexts.interceptCall(context, call, headers, next);
+      }
+    };
+  }
+
+  private static <ReqT> ServerCall.Listener<ReqT> deny(
+      final ServerCall<ReqT, ?> call, final Status status) {
+    call.close(status, new Metadata());
+    return new ServerCall.Listener<>() {};
+  }
+}

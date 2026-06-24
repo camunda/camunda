@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
+  <bpmn:process id="eventSubprocessProcess" name="Event Subprocess Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1vnazga">
+      <bpmn:outgoing>SequenceFlow_0b1strv</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_03acvim">
+      <bpmn:incoming>SequenceFlow_1aytoqp</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0b1strv" sourceRef="StartEvent_1vnazga" targetRef="parentProcessTask" />
+    <bpmn:userTask id="parentProcessTask" name="Parent process task">
+      <bpmn:incoming>SequenceFlow_0b1strv</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1aytoqp</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1aytoqp" sourceRef="parentProcessTask" targetRef="EndEvent_03acvim" />
+    <bpmn:subProcess id="eventSubprocess" name="Event Subprocess" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:input source="=processVar" target="subprocessVar" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:endEvent id="Event_1psayiq">
+        <bpmn:incoming>Flow_02thm43</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:userTask id="subProcessTask" name="Task in sub-subprocess">
+        <bpmn:incoming>Flow_0hazp6q</bpmn:incoming>
+        <bpmn:outgoing>Flow_02thm43</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:startEvent id="Event_0sla8du" name="Timer in sub-subprocess" isInterrupting="false">
+        <bpmn:outgoing>Flow_0hazp6q</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="TimerEventDefinition_0gzjk0w">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2S</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_02thm43" sourceRef="subProcessTask" targetRef="Event_1psayiq" />
+      <bpmn:sequenceFlow id="Flow_0hazp6q" sourceRef="Event_0sla8du" targetRef="subProcessTask" />
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmn:message id="Message_03ggk3d" name="interruptProcess">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=clientId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_1nvz8ri" name="continueProcess">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=clientId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="eventSubprocessProcess">
+      <bpmndi:BPMNEdge id="SequenceFlow_1aytoqp_di" bpmnElement="SequenceFlow_1aytoqp">
+        <di:waypoint x="384" y="120" />
+        <di:waypoint x="472" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0b1strv_di" bpmnElement="SequenceFlow_0b1strv">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="284" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_1vnazga_di" bpmnElement="StartEvent_1vnazga">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1daop2o_di" bpmnElement="parentProcessTask">
+        <dc:Bounds x="284" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_03acvim_di" bpmnElement="EndEvent_03acvim">
+        <dc:Bounds x="472" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14gfle0_di" bpmnElement="eventSubprocess" isExpanded="true">
+        <dc:Bounds x="130" y="230" width="388" height="145" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_02thm43_di" bpmnElement="Flow_02thm43">
+        <di:waypoint x="380" y="295" />
+        <di:waypoint x="442" y="295" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hazp6q_di" bpmnElement="Flow_0hazp6q">
+        <di:waypoint x="218" y="295" />
+        <di:waypoint x="280" y="295" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1psayiq_di" bpmnElement="Event_1psayiq">
+        <dc:Bounds x="442" y="277" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_17gj3cp_di" bpmnElement="subProcessTask">
+        <dc:Bounds x="280" y="255" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0sla8du_di" bpmnElement="Event_0sla8du">
+        <dc:Bounds x="182" y="277" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="170" y="320" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

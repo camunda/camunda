@@ -1,0 +1,550 @@
+# description: Triage-driven fix agent for C8 Orchestration Cluster nightly E2E/API failures.
+#              Dispatched per version by c8-orchestration-cluster-e2e-nightly-triage.yml.
+#              Uses Claude Code CLI to read failing tests + screenshots, apply a minimal fix,
+#              and open a draft PR against stable/<version> (or main). After the PR is open,
+#              triggers the matching on-demand workflow(s) and patches the PR body with
+#              the run URL(s) for verification.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly Fix Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Camunda version (8.7, 8.8, 8.9, or main)'
+        required: true
+      test_specs:
+        description: 'JSON array of {file, test_name, error, test_type, tasklist_mode?, database?}'
+        required: true
+      e2e_run_id:
+        description: 'Run ID of the failing E2E nightly (empty if E2E did not fail)'
+        required: false
+        default: ''
+      api_es_run_id:
+        description: 'Run ID of the failing API ES nightly (empty if API ES did not fail)'
+        required: false
+        default: ''
+      api_rdbms_run_id:
+        description: 'Run ID of the failing API RDBMS nightly (empty / N/A for 8.7, 8.8)'
+        required: false
+        default: ''
+      triage_run_url:
+        description: 'URL of the triage run that dispatched this (for PR body)'
+        required: false
+        default: ''
+      slack_thread_ts:
+        description: 'Slack thread ts to reply to (posted by triage)'
+        required: false
+        default: ''
+      slack_channel:
+        description: 'Slack channel ID for thread reply'
+        required: false
+        default: ''
+      send_slack_notification:
+        description: 'Post a Slack reply when done (true for nightly cron dispatches, false for on-demand runs)'
+        type: boolean
+        required: false
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  actions: write
+  pull-requests: write
+
+jobs:
+  fix:
+    name: Fix nightly failures (${{ github.event.inputs.version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Resolve target branch
+        id: target
+        env:
+          # Read workflow_dispatch input through env to avoid template injection
+          # (zizmor: template-injection — github.event.inputs.* is attacker-controllable)
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          version="$INPUT_VERSION"
+          case "$version" in
+            main)
+              {
+                echo "ref=main"
+                echo "safe_version=main"
+              } >> "$GITHUB_OUTPUT"
+              ;;
+            8.7|8.8|8.9)
+              {
+                echo "ref=stable/${version}"
+                echo "safe_version=stable-${version}"
+              } >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Unsupported version: $version (must be 8.7, 8.8, 8.9, or main)"
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout main for workflow tooling
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          # Intentionally NOT pinning to the target stable branch.
+          # The workspace manifest and guidance files live on main (introduced
+          # by this PR) and are absent from stable branches. workspace-cli
+          # handles cloning + switching to the correct stable branch inside
+          # ws_dir; nothing in the runner workspace needs the stable tree.
+          # We re-configure git with the bot PAT below; no need to keep the
+          # short-lived GITHUB_TOKEN around in .git/config (zizmor: artipacked).
+          persist-credentials: false
+
+      - name: Write test_specs to file
+        env:
+          # Read the (potentially large + arbitrary) JSON input through env to
+          # avoid template injection (zizmor: template-injection).
+          INPUT_TEST_SPECS: ${{ github.event.inputs.test_specs }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$INPUT_TEST_SPECS" > /tmp/test_specs.json
+          echo "test_specs entries: $(jq 'length' /tmp/test_specs.json)"
+          jq '.[0:3]' /tmp/test_specs.json || true
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+            secret/data/products/qa/ci/common GH_TOKEN | GH_TOKEN_PAT ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Configure git with GitHub App token
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global user.name  "qa-processes[bot]"
+          git config --global user.email "qa-processes[bot]@users.noreply.github.com"
+
+      - name: Ensure failing-test-fix label exists
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          gh label create "failing-test-fix" \
+            --repo "${{ github.repository }}" \
+            --color "FF4444" \
+            --description "Bot-opened fix PR for failing nightly orchestration cluster tests" \
+            2>/dev/null || true
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Install workspace-cli
+        env:
+          GOPRIVATE: github.com/camunda/*
+          GOTOOLCHAIN: auto
+          GH_TOKEN_PAT: ${{ steps.secrets.outputs.GH_TOKEN_PAT }}
+        run: |
+          # workspace-cli is a private repo; the qa-processes app token doesn't have access.
+          # Add a more-specific insteadOf for workspace-cli that uses the Vault PAT.
+          # Git selects the longest-matching insteadOf, so this wins over the global
+          # qa-processes rewrite set in "Configure git with GitHub App token".
+          git config --global url."https://x-access-token:${GH_TOKEN_PAT}@github.com/camunda/workspace-cli".insteadOf "https://github.com/camunda/workspace-cli"
+          go install github.com/camunda/workspace-cli/cmd/workspace@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Claude Code CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.156
+          claude --version
+
+      - name: Compute workspace name
+        id: ws
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          name="fix-oc-${VERSION}-$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ID}"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Stage workspace manifest
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.workspace-templates"
+          git fetch --depth 1 origin main
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.yaml \
+            > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.yaml"
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.guidance.md \
+            > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.guidance.md"
+
+      - name: Create workspace
+        run: |
+          workspace create "${{ steps.ws.outputs.name }}" \
+            --manifest camunda-orchestration-cluster-nightly
+
+      - name: Switch workspace to target branch
+        env:
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          git -C "$ws_dir" fetch --depth 1 origin "${TARGET_REF}"
+          git -C "$ws_dir" checkout "${TARGET_REF}"
+
+      - name: Determine which artifact downloads + on-demand verifications are needed
+        id: scope
+        run: |
+          set -euo pipefail
+          has_e2e=$(jq '[.[] | select(.test_type == "e2e")] | length > 0' /tmp/test_specs.json)
+          has_api=$(jq '[.[] | select(.test_type == "api")] | length > 0' /tmp/test_specs.json)
+          has_api_es=$(jq '[.[] | select(.test_type == "api" and (.database == null or .database == "" or .database == "elasticsearch"))] | length > 0' /tmp/test_specs.json)
+          has_api_rdbms=$(jq '[.[] | select(.test_type == "api" and .database != null and .database != "" and .database != "elasticsearch")] | length > 0' /tmp/test_specs.json)
+          {
+            echo "has_e2e=$has_e2e"
+            echo "has_api=$has_api"
+            echo "has_api_es=$has_api_es"
+            echo "has_api_rdbms=$has_api_rdbms"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Code fix agent
+        env:
+          ANTHROPIC_API_KEY:   ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          GH_TOKEN:            ${{ steps.github-token.outputs.token }}
+          VERSION:             ${{ github.event.inputs.version }}
+          TARGET_REF:          ${{ steps.target.outputs.ref }}
+          SAFE_VERSION:        ${{ steps.target.outputs.safe_version }}
+          E2E_RUN_ID:          ${{ github.event.inputs.e2e_run_id }}
+          API_ES_RUN_ID:       ${{ github.event.inputs.api_es_run_id }}
+          API_RDBMS_RUN_ID:    ${{ github.event.inputs.api_rdbms_run_id }}
+          TRIAGE_RUN_URL:      ${{ github.event.inputs.triage_run_url }}
+          HAS_E2E:             ${{ steps.scope.outputs.has_e2e }}
+          HAS_API_ES:          ${{ steps.scope.outputs.has_api_es }}
+          HAS_API_RDBMS:       ${{ steps.scope.outputs.has_api_rdbms }}
+          REPO:                ${{ github.repository }}
+          WORKSPACE_NAME:      ${{ steps.ws.outputs.name }}
+        run: |
+          set -euo pipefail
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+
+          # Pre-create artifact dirs so Claude does not need to mkdir
+          mkdir -p /tmp/nightly-artifacts
+
+          # The prompt is deliberately terse: all diagnosis steps, artifact-download
+          # patterns, PR rules, and constraints live in AGENTS.md (which Claude must
+          # read first). This keeps the per-run prompt small and the source-of-truth
+          # for behaviour in a single file the team can update without editing CI.
+
+          # Determine which AGENTS.md section to use based on whether test_specs is empty.
+          # Empty test_specs means a workflow-level failure (no test results produced).
+          test_spec_count=$(jq 'length' /tmp/test_specs.json 2>/dev/null || echo 0)
+          if [ "$test_spec_count" -eq 0 ]; then
+            agents_section="## Workflow-Level Failure Fix Agent"
+          else
+            agents_section="## Nightly Fix Agent"
+          fi
+
+          prompt=$(cat <<EOF
+          You are the Camunda orchestration-cluster nightly fix agent.
+          Workspace: ${ws_dir} (already on branch ${TARGET_REF}).
+
+          STEP 0 — read ${ws_dir}/qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md,
+          the "${agents_section}" section. That file is your full operating manual:
+          diagnosis steps, artifact-download patterns, constraints (NEVER skip/fixme),
+          PR conventions, and the /tmp/fix-meta.json schema.
+
+          /tmp/test_specs.json contains the failures to address ($(jq 'length' /tmp/test_specs.json) entries).
+          $(if [ "$test_spec_count" -gt 0 ]; then
+            echo "Fix ONLY the test failures listed in that file — do not address other failures visible in artifacts."
+          else
+            echo "The array is empty: this is a workflow-level failure. Follow the AGENTS.md section above to"
+            echo "inspect the failing run logs, trace the root cause to the owning file, and open a fix PR."
+          fi)
+
+          Context (env vars already exported):
+            VERSION=${VERSION}  TARGET_REF=${TARGET_REF}  SAFE_VERSION=${SAFE_VERSION}
+            E2E_RUN_ID=${E2E_RUN_ID}  API_ES_RUN_ID=${API_ES_RUN_ID}  API_RDBMS_RUN_ID=${API_RDBMS_RUN_ID}
+            HAS_E2E=${HAS_E2E}  HAS_API_ES=${HAS_API_ES}  HAS_API_RDBMS=${HAS_API_RDBMS}
+            TRIAGE_RUN_URL=${TRIAGE_RUN_URL}  REPO=${REPO}
+
+          Branch name to use: fix/nightly-${VERSION}-<short-slug> for test fixes,
+          ci/<short-slug> for workflow-level fixes.
+          Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
+          changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
+          commitlint rejects it).
+
+          CRITICAL for /tmp/fix-meta.json: the "branch" field must be the exact
+          headRefName of the PR you opened — never null, never omitted. Obtain it
+          with: gh pr view <number> --repo ${REPO} --json headRefName --jq '.headRefName'
+
+          When done (or if no fix is possible), write /tmp/fix-meta.json and stop.
+          EOF
+          )
+
+          cd "${ws_dir}"
+          claude -p "$prompt" --dangerously-skip-permissions
+
+      - name: Trigger on-demand verification runs and patch PR body
+        if: always()
+        env:
+          # Use GITHUB_TOKEN (built-in) here, not the Vault GH_TOKEN.
+          # The Vault token lacks read:org, which causes gh CLI to fail its
+          # GraphQL auth check and never reach the workflow dispatch REST call.
+          # The job already has actions:write and pull-requests:write so the
+          # built-in token is sufficient for triggering workflows and patching PR bodies.
+          GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          REPO:       ${{ github.repository }}
+          TARGET_REF: ${{ steps.target.outputs.ref }}
+        run: |
+          set -euo pipefail
+          if [ ! -f /tmp/fix-meta.json ]; then
+            echo "No fix-meta.json produced — nothing to verify."
+            exit 0
+          fi
+
+          count=$(jq '.prs | length' /tmp/fix-meta.json)
+          category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+          if [ "$count" -eq 0 ]; then
+            echo "No PRs were opened — nothing to verify."
+            if [ "$category" = "not-determined" ]; then
+              echo "::warning::Fix agent could not determine a fix (category: not-determined)"
+            fi
+            exit 0
+          fi
+
+          jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
+            pr_number=$(echo "$pr_obj" | jq -r '.number')
+            branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
+
+            if [ -z "$branch" ] || [ "$branch" = "null" ]; then
+              echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — resolving from PR"
+              branch=$(gh pr view "$pr_number" --repo "$REPO" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+              echo "Resolved branch: $branch"
+            fi
+
+            on_demand_run_url=""
+
+            if [ -n "$branch" ] && [ "$branch" != "null" ]; then
+              echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
+              dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+              # Recent gh versions print the run URL directly to stdout/stderr.
+              # Capture it — this is race-proof because it is the exact run we triggered.
+              # Note: the GitHub API does not expose workflow_dispatch inputs in the
+              # runs list or individual run endpoints, so we cannot filter by branch
+              # input after the fact.
+              trigger_output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
+                --repo "$REPO" -f branch="$branch" 2>&1)
+              dispatch_exit=$?
+              echo "$trigger_output"
+              on_demand_run_url=$(echo "$trigger_output" \
+                | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || echo "")
+
+              # Fallback: if gh did not print a URL (older gh version), poll by
+              # creation time. Only attempt when dispatch actually succeeded —
+              # if dispatch failed, the poll could pick up a different agent's run.
+              if [ -z "$on_demand_run_url" ] && [ "$dispatch_exit" -eq 0 ]; then
+                echo "gh did not return run URL directly — falling back to time-based poll"
+                for _ in $(seq 1 18); do
+                  sleep 5
+                  run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
+                    2>/dev/null \
+                    | jq -r --arg t "$dispatched_at" \
+                      '[.workflow_runs[] | select(.created_at >= $t)] | first | .id // ""' \
+                    || echo "")
+                  if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                    on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                    break
+                  fi
+                done
+              elif [ "$dispatch_exit" -ne 0 ]; then
+                echo "::warning::on-demand dispatch failed (exit $dispatch_exit) — skipping verification link"
+              fi
+
+              [ -n "$on_demand_run_url" ] && echo "On-demand run: $on_demand_run_url"
+            fi
+
+            # Patch PR body with the verification link (idempotent: strip any
+            # existing "## On-demand verification runs" section before appending
+            # so re-runs do not accumulate duplicate blocks)
+            current_body=$(gh pr view "$pr_number" --repo "$REPO" --json body --jq '.body')
+            base_body=$(printf '%s' "$current_body" | sed '/^## On-demand verification runs/,$d' | sed 's/[[:space:]]*$//')
+            if [ -n "$on_demand_run_url" ]; then
+              verification_block=$'\n\n## On-demand verification runs\n'"- ${on_demand_run_url}"$'\n'
+              new_body="${base_body}${verification_block}"
+              printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
+            fi
+          done
+
+      - name: Re-label PRs (idempotent)
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO:     ${{ github.repository }}
+        run: |
+          if [ -f /tmp/fix-meta.json ]; then
+            jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr_num; do
+              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" 2>/dev/null || true
+            done
+          fi
+
+      - name: Write job summary
+        if: always()
+        env:
+          VERSION:        ${{ github.event.inputs.version }}
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          TRIAGE_RUN_URL: ${{ github.event.inputs.triage_run_url }}
+          REPO:           ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Fix Agent — ${VERSION} (\`${TARGET_REF}\`)"
+            echo ""
+
+            if [ ! -f /tmp/fix-meta.json ]; then
+              echo ":x: **Agent did not produce \`/tmp/fix-meta.json\`** — see agent logs above."
+            else
+              pr_count=$(jq '.prs | length' /tmp/fix-meta.json)
+              if [ "$pr_count" -eq 0 ]; then
+                echo ":warning: **Decision: no fix applied** — agent could not determine a safe fix."
+                # Surface root_cause from the empty-prs object if the agent wrote one
+                reason=$(jq -r '.reason // .root_cause // ""' /tmp/fix-meta.json 2>/dev/null || true)
+                if [ -n "$reason" ] && [ "$reason" != "null" ]; then
+                  echo ""
+                  echo "**Reason:** ${reason}"
+                fi
+              else
+                # Print each PR as a prominent header so the link is the first thing visible
+                jq -r --arg repo "$REPO" '
+                  .prs[] |
+                  (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+                   elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
+                   else $repo end) as $full_repo |
+                  "### :white_check_mark: Decision: fix applied — [PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))",
+                  "",
+                  "**Branch:** `\(.branch)`"
+                ' /tmp/fix-meta.json
+                echo ""
+
+                # Root cause + fix description per PR
+                jq -c '.prs[]' /tmp/fix-meta.json | while IFS= read -r pr; do
+                  pr_num=$(echo "$pr" | jq -r '.number')
+                  root_cause=$(echo "$pr" | jq -r '.root_cause // ""')
+                  fix_desc=$(echo "$pr" | jq -r '.fix // ""')
+                  if [ -n "$root_cause" ] && [ "$root_cause" != "null" ]; then
+                    echo "#### PR #${pr_num} — Root cause"
+                    echo ""
+                    echo "${root_cause}"
+                    echo ""
+                  fi
+                  if [ -n "$fix_desc" ] && [ "$fix_desc" != "null" ]; then
+                    echo "#### PR #${pr_num} — Fix"
+                    echo ""
+                    echo "${fix_desc}"
+                    echo ""
+                  fi
+                done
+
+                echo "### Tests fixed"
+                echo ""
+                jq -r '.prs[] | .tests_fixed[]? |
+                  if type == "object" then "- `\(.file // "")` — \(.test_name // "")"
+                  else "- \(.)" end' \
+                  /tmp/fix-meta.json || true
+              fi
+            fi
+
+            if [ -n "${TRIAGE_RUN_URL:-}" ]; then
+              echo ""
+              echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-fix-${{ github.event.inputs.version }}-${{ github.run_id }}
+          path: |
+            /tmp/test_specs.json
+            /tmp/fix-meta.json
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Slack thread reply
+        if: always() && github.event.inputs.send_slack_notification == 'true'
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          SLACK_THREAD_TS:            ${{ github.event.inputs.slack_thread_ts }}
+          SLACK_CHANNEL:              ${{ github.event.inputs.slack_channel }}
+          VERSION:                    ${{ github.event.inputs.version }}
+          RUN_URL:                    ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_STATUS:                 ${{ job.status }}
+        run: |
+          set -euo pipefail
+          prs_json="[]"
+          category=""
+          [ -f /tmp/fix-meta.json ] && prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json 2>/dev/null || echo '[]')
+          [ -f /tmp/fix-meta.json ] && category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
+          pr_count=$(echo "$prs_json" | jq 'length')
+
+          # Check fix-meta.json first — if a PR was opened report it even when
+          # downstream steps (on-demand trigger, summary) failed.
+          if [ "$pr_count" -gt 0 ]; then
+            icon=":white_check_mark:"
+            pr_links=$(echo "$prs_json" | jq -r --arg repo "${{ github.repository }}" '
+              .[] |
+              (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+               elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
+               else $repo end) as $full_repo |
+              "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
+              | tr '\n' '  ')
+            summary="PR(s) opened: ${pr_links}"
+            [ "$JOB_STATUS" = "failure" ] && summary="${summary} _(post-processing failed — see run)_"
+          elif [ "$JOB_STATUS" = "failure" ]; then
+            icon=":x:"; summary="Agent failed (no fix applied)"
+          elif [ "$category" = "not-determined" ]; then
+            icon=":question:"; summary="Could not determine a fix — manual investigation required"
+          else
+            icon=":warning:"; summary="No fix applied — manual investigation required"
+          fi
+
+          text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
+          payload=$(jq -nc \
+            --arg channel    "$SLACK_CHANNEL" \
+            --arg thread_ts  "$SLACK_THREAD_TS" \
+            --arg text       "$text" \
+            '{channel: $channel, thread_ts: $thread_ts, text: $text, mrkdwn: true}')
+
+          curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" | jq '.' || true

@@ -1,0 +1,84 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { UseEntityModalCustomProps } from "src/components/modal";
+import { membershipMutations } from "src/utility/api/membership/mutations";
+import useTranslate from "src/utility/localization";
+import FormModal from "src/components/modal/FormModal";
+import TextField from "src/components/form/TextField";
+import { Caption } from "src/pages/authorizations/modals/components.tsx";
+import { DocumentationLink } from "src/components/documentation";
+import type { Tenant, User } from "@camunda/camunda-api-zod-schemas/8.10";
+
+const AssignMemberModal: FC<
+  UseEntityModalCustomProps<
+    { tenantId: Tenant["tenantId"] },
+    { assignedUsers: User[] }
+  >
+> = ({ entity: { tenantId }, onSuccess, open, onClose }) => {
+  const { t, Translate } = useTranslate("tenants");
+  const [username, setUsername] = useState("");
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignUser } = useMutation(
+    membershipMutations.assignTenantMember(qc),
+  );
+
+  const canSubmit = tenantId && username;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    mutate({ username, tenantId }, { onSuccess });
+  };
+
+  useEffect(() => {
+    if (open) {
+      setUsername("");
+    }
+  }, [open]);
+
+  return (
+    <FormModal
+      headline={t("assignUser")}
+      confirmLabel={t("assignUser")}
+      loading={loadingAssignUser}
+      loadingDescription={t("assigningUser")}
+      open={open}
+      onSubmit={handleSubmit}
+      submitDisabled={!canSubmit}
+      onClose={onClose}
+      overflowVisible
+    >
+      <p>{t("assignUsersToTenant")}</p>
+      <TextField
+        label={t("username")}
+        placeholder={t("typeUsername")}
+        helperText={
+          <Caption>
+            <Translate i18nKey="usernameDescription">
+              Check the documentation for{" "}
+              <DocumentationLink
+                path="/components/admin/tenant/#assign-users-to-a-tenant"
+                withIcon
+              >
+                how to reference users
+              </DocumentationLink>{" "}
+              .
+            </Translate>
+          </Caption>
+        }
+        onChange={setUsername}
+        value={username}
+        autoFocus
+      />
+    </FormModal>
+  );
+};
+
+export default AssignMemberModal;

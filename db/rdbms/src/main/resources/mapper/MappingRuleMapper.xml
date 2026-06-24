@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.MappingRuleMapper">
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingRuleEntity">
+    <constructor>
+      <idArg column="MAPPING_RULE_ID" javaType="string"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="MAPPING_RULE_KEY" javaType="long"/>
+      <arg column="CLAIM_NAME" javaType="string"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="CLAIM_VALUE" javaType="string"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="NAME" javaType="string"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingRuleDbModel">
+    INSERT INTO ${prefix}MAPPING_RULES (MAPPING_RULE_ID, MAPPING_RULE_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
+    VALUES (#{mappingRuleId}, #{mappingRuleKey}, #{claimName}, #{claimValue}, #{name})
+  </insert>
+
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.MappingRuleDbModel">
+    UPDATE ${prefix}MAPPING_RULES
+    SET NAME = #{name},
+        CLAIM_NAME = #{claimName},
+        CLAIM_VALUE = #{claimValue}
+    WHERE MAPPING_RULE_ID = #{mappingRuleId}
+  </update>
+
+  <delete id="delete" parameterType="string">
+    DELETE
+    FROM ${prefix}MAPPING_RULES
+    WHERE MAPPING_RULE_ID = #{mappingRuleId}
+  </delete>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
+    resultType="long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}MAPPING_RULES m
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.MappingRuleMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT
+    MAPPING_RULE_ID,
+    MAPPING_RULE_KEY,
+    CLAIM_NAME,
+    CLAIM_VALUE,
+    NAME
+    FROM ${prefix}MAPPING_RULES m
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND MAPPING_RULE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="filter.mappingRuleId != null">
+        AND MAPPING_RULE_ID = #{filter.mappingRuleId}
+      </if>
+      <if test="filter.claimName != null">
+        AND CLAIM_NAME = #{filter.claimName}
+      </if>
+      <if test="filter.claimValue">
+        AND CLAIM_VALUE = #{filter.claimValue}
+      </if>
+      <if test="filter.claimNames != null and !filter.claimNames.isEmpty()">
+        AND CLAIM_NAME IN
+        <foreach collection="filter.claimNames" item="claimName" open="(" separator=","
+          close=")">
+          #{claimName}
+        </foreach>
+      </if>
+      <if test="filter.claims != null and !filter.claims.isEmpty()">
+        AND
+        <foreach collection="filter.claims" item="claim" separator="OR">
+          (CLAIM_NAME = #{claim.name} AND CLAIM_VALUE = #{claim.value})
+        </foreach>
+      </if>
+      <if test="filter.name != null">
+        AND NAME = #{filter.name}
+      </if>
+      <if test="filter.groupId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+        ${prefix}GROUP_MEMBER
+        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND GROUP_ID = #{filter.groupId})
+      </if>
+      <if test="filter.roleId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+        ${prefix}ROLE_MEMBER
+        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND ROLE_ID = #{filter.roleId})
+      </if>
+      <if test="filter.tenantId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+        ${prefix}TENANT_MEMBER
+        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND TENANT_ID = #{filter.tenantId})
+      </if>
+    </where>
+  </sql>
+
+</mapper>

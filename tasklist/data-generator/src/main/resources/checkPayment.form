@@ -1,0 +1,49 @@
+{
+  "components": [
+    {
+      "key": "clientNo",
+      "label": "Client number",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_0f62b1f",
+      "layout": {
+        "row": "Row_1c3tyrj"
+      }
+    },
+    {
+      "key": "orderNo",
+      "label": "Order number",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_08leet9",
+      "layout": {
+        "row": "Row_1try7c5"
+      }
+    },
+    {
+      "key": "paid",
+      "label": "Order is paid?",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_11ixhno",
+      "layout": {
+        "row": "Row_1qr31xr"
+      }
+    }
+  ],
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.29.0-nightly.20241014"
+  },
+  "schemaVersion": 16,
+  "type": "default",
+  "id": "checkPayment"
+}

@@ -1,0 +1,269 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.impl.statistics.response;
+
+import static io.camunda.client.impl.search.response.SearchResponseMapper.toSearchResponsePage;
+import static java.util.Optional.ofNullable;
+
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.api.statistics.response.GlobalJobStatistics;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByDefinition;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByError;
+import io.camunda.client.api.statistics.response.JobErrorStatistics;
+import io.camunda.client.api.statistics.response.JobErrorStatisticsItem;
+import io.camunda.client.api.statistics.response.JobStatusMetric;
+import io.camunda.client.api.statistics.response.JobTimeSeriesStatistics;
+import io.camunda.client.api.statistics.response.JobTimeSeriesStatisticsItem;
+import io.camunda.client.api.statistics.response.JobTypeStatistics;
+import io.camunda.client.api.statistics.response.JobTypeStatisticsItem;
+import io.camunda.client.api.statistics.response.JobWorkerStatistics;
+import io.camunda.client.api.statistics.response.JobWorkerStatisticsItem;
+import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
+import io.camunda.client.api.statistics.response.ProcessElementStatistics;
+import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
+import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
+import io.camunda.client.impl.search.response.SearchResponseImpl;
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.client.protocol.rest.JobErrorStatisticsQueryResult;
+import io.camunda.client.protocol.rest.JobTimeSeriesStatisticsQueryResult;
+import io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult;
+import io.camunda.client.protocol.rest.JobWorkerStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.StatusMetric;
+import io.camunda.client.protocol.rest.UsageMetricsResponse;
+import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+public class StatisticsResponseMapper {
+
+  public static ProcessDefinitionMessageSubscriptionStatistics
+      toProcessDefinitionMessageSubscriptionStatisticsResponse(
+          final ProcessDefinitionMessageSubscriptionStatisticsQueryResult response) {
+    final List<ProcessDefinitionMessageSubscriptionStatisticsItem> items =
+        Optional.ofNullable(response.getItems())
+            .map(
+                l ->
+                    l.stream()
+                        .map(
+                            r ->
+                                (ProcessDefinitionMessageSubscriptionStatisticsItem)
+                                    new ProcessDefinitionMessageSubscriptionStatisticsItemImpl(
+                                        r.getProcessDefinitionId(),
+                                        r.getProcessDefinitionKey(),
+                                        r.getTenantId(),
+                                        r.getProcessInstancesWithActiveSubscriptions(),
+                                        r.getActiveSubscriptions()))
+                        .collect(Collectors.toList()))
+            .orElse(Collections.emptyList());
+    return new ProcessDefinitionMessageSubscriptionStatisticsImpl(
+        items, toSearchResponsePage(response.getPage()));
+  }
+
+  public static List<ProcessElementStatistics> toProcessDefinitionStatisticsResponse(
+      final ProcessDefinitionElementStatisticsQueryResult response) {
+    if (response.getItems() != null) {
+      return response.getItems().stream()
+          .map(ProcessElementStatisticsImpl::new)
+          .collect(Collectors.toList());
+    }
+    return Collections.emptyList();
+  }
+
+  public static UsageMetricsStatistics toUsageMetricsResponse(final UsageMetricsResponse response) {
+
+    Map<String, UsageMetricsStatisticsItem> tenants = null;
+    if (response.getTenants() != null) {
+      tenants =
+          response.getTenants().entrySet().stream()
+              .collect(
+                  Collectors.toMap(Entry::getKey, e -> toUsageMetricsResponseItem(e.getValue())));
+    }
+
+    return new UsageMetricsStatisticsImpl(
+        ofNullable(response.getProcessInstances()).orElse(0L),
+        ofNullable(response.getDecisionInstances()).orElse(0L),
+        ofNullable(response.getAssignees()).orElse(0L),
+        ofNullable(response.getActiveTenants()).orElse(0L),
+        tenants);
+  }
+
+  public static UsageMetricsStatisticsItem toUsageMetricsResponseItem(
+      final UsageMetricsResponseItem response) {
+    return new UsageMetricsStatisticsItemImpl(
+        ofNullable(response.getProcessInstances()).orElse(0L),
+        ofNullable(response.getDecisionInstances()).orElse(0L),
+        ofNullable(response.getAssignees()).orElse(0L));
+  }
+
+  public static SearchResponse<ProcessDefinitionInstanceStatistics>
+      toProcessDefinitionInstanceStatisticsResponse(
+          final ProcessDefinitionInstanceStatisticsQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ProcessDefinitionInstanceStatistics> items =
+        toSearchResponseInstances(
+            response.getItems(), ProcessDefinitionInstanceStatisticsImpl::new);
+
+    return new SearchResponseImpl<>(items, page);
+  }
+
+  public static SearchResponse<ProcessDefinitionInstanceVersionStatistics>
+      toProcessDefinitionInstanceVersionStatisticsResponse(
+          final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ProcessDefinitionInstanceVersionStatistics> items =
+        toSearchResponseInstances(
+            response.getItems(), ProcessDefinitionInstanceVersionStatisticsImpl::new);
+
+    return new SearchResponseImpl<>(items, page);
+  }
+
+  public static SearchResponse<IncidentProcessInstanceStatisticsByError>
+      toIncidentProcessInstanceStatisticsByErrorResponse(
+          final IncidentProcessInstanceStatisticsByErrorQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<IncidentProcessInstanceStatisticsByError> items =
+        toSearchResponseInstances(
+            response.getItems(), IncidentProcessInstanceStatisticsByErrorImpl::new);
+    return new SearchResponseImpl<>(items, page);
+  }
+
+  public static SearchResponse<IncidentProcessInstanceStatisticsByDefinition>
+      toIncidentProcessInstanceStatisticsByDefinitionResponse(
+          final io.camunda.client.protocol.rest
+                  .IncidentProcessInstanceStatisticsByDefinitionQueryResult
+              response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<IncidentProcessInstanceStatisticsByDefinition> items =
+        toSearchResponseInstances(
+            response.getItems(), IncidentProcessInstanceStatisticsByDefinitionImpl::new);
+
+    return new SearchResponseImpl<>(items, page);
+  }
+
+  private static <T, R> List<R> toSearchResponseInstances(
+      final List<T> items, final Function<T, R> mapper) {
+    return Optional.ofNullable(items)
+        .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
+  }
+
+  public static GlobalJobStatistics toGlobalJobStatisticsResponse(
+      final GlobalJobStatisticsQueryResult response) {
+    return new GlobalJobStatisticsImpl(
+        toJobStatusMetric(response.getCreated()),
+        toJobStatusMetric(response.getCompleted()),
+        toJobStatusMetric(response.getFailed()),
+        response.getIsIncomplete());
+  }
+
+  public static JobTypeStatistics toJobTypeStatisticsResponse(
+      final JobTypeStatisticsQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<io.camunda.client.api.statistics.response.JobTypeStatisticsItem> items =
+        toSearchResponseInstances(
+            response.getItems(), StatisticsResponseMapper::toJobTypeStatisticsItem);
+
+    return new JobTypeStatisticsImpl(items, page);
+  }
+
+  private static JobTypeStatisticsItem toJobTypeStatisticsItem(
+      final io.camunda.client.protocol.rest.JobTypeStatisticsItem item) {
+    return new JobTypeStatisticsItemImpl(
+        item.getJobType(),
+        toJobStatusMetric(item.getCreated()),
+        toJobStatusMetric(item.getCompleted()),
+        toJobStatusMetric(item.getFailed()),
+        ofNullable(item.getWorkers()).orElse(0));
+  }
+
+  private static JobStatusMetric toJobStatusMetric(final StatusMetric metric) {
+    if (metric == null) {
+      return new JobStatusMetricImpl(0L, null);
+    }
+    final OffsetDateTime lastUpdatedAt =
+        ParseUtil.parseOffsetDateTimeOrNull(metric.getLastUpdatedAt());
+    return new JobStatusMetricImpl(ofNullable(metric.getCount()).orElse(0L), lastUpdatedAt);
+  }
+
+  public static JobWorkerStatistics toJobWorkerStatisticsResponse(
+      final JobWorkerStatisticsQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<JobWorkerStatisticsItem> items =
+        toSearchResponseInstances(
+            response.getItems(), StatisticsResponseMapper::toJobWorkerStatisticsItem);
+    return new JobWorkerStatisticsImpl(items, page);
+  }
+
+  private static JobWorkerStatisticsItem toJobWorkerStatisticsItem(
+      final io.camunda.client.protocol.rest.JobWorkerStatisticsItem item) {
+    return new JobWorkerStatisticsItemImpl(
+        item.getWorker(),
+        toJobStatusMetric(item.getCreated()),
+        toJobStatusMetric(item.getCompleted()),
+        toJobStatusMetric(item.getFailed()));
+  }
+
+  public static JobTimeSeriesStatistics toJobTimeSeriesStatisticsResponse(
+      final JobTimeSeriesStatisticsQueryResult response) {
+    final io.camunda.client.api.search.response.SearchResponsePage page =
+        toSearchResponsePage(response.getPage());
+    final List<JobTimeSeriesStatisticsItem> items =
+        toSearchResponseInstances(
+            response.getItems(), StatisticsResponseMapper::toJobTimeSeriesStatisticsItem);
+    return new JobTimeSeriesStatisticsImpl(items, page);
+  }
+
+  private static JobTimeSeriesStatisticsItem toJobTimeSeriesStatisticsItem(
+      final io.camunda.client.protocol.rest.JobTimeSeriesStatisticsItem item) {
+    final OffsetDateTime time = ParseUtil.parseOffsetDateTimeOrNull(item.getTime());
+    return new JobTimeSeriesStatisticsItemImpl(
+        time,
+        toJobStatusMetric(item.getCreated()),
+        toJobStatusMetric(item.getCompleted()),
+        toJobStatusMetric(item.getFailed()));
+  }
+
+  public static JobErrorStatistics toJobErrorStatisticsResponse(
+      final JobErrorStatisticsQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<JobErrorStatisticsItem> items =
+        toSearchResponseInstances(
+            response.getItems(), StatisticsResponseMapper::toJobErrorStatisticsItem);
+    return new JobErrorStatisticsImpl(items, page);
+  }
+
+  private static JobErrorStatisticsItem toJobErrorStatisticsItem(
+      final io.camunda.client.protocol.rest.JobErrorStatisticsItem item) {
+    return new JobErrorStatisticsItemImpl(
+        item.getErrorCode(), item.getErrorMessage(), ofNullable(item.getWorkers()).orElse(0));
+  }
+}

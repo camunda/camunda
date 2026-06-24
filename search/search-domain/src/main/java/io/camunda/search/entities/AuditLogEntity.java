@@ -1,0 +1,383 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.entities;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record AuditLogEntity(
+    String auditLogKey,
+    String entityKey,
+    AuditLogEntityType entityType,
+    AuditLogOperationType operationType,
+    @Nullable Long batchOperationKey,
+    @Nullable BatchOperationType batchOperationType,
+    OffsetDateTime timestamp,
+    @Nullable String actorId,
+    @Nullable AuditLogActorType actorType,
+    @Nullable String agentElementId,
+    @Nullable String tenantId,
+    @Nullable AuditLogTenantScope tenantScope,
+    AuditLogOperationResult result,
+    AuditLogOperationCategory category,
+    @Nullable String processDefinitionId,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable Long elementInstanceKey,
+    @Nullable Long jobKey,
+    @Nullable Long userTaskKey,
+    @Nullable String decisionRequirementsId,
+    @Nullable Long decisionRequirementsKey,
+    @Nullable String decisionDefinitionId,
+    @Nullable Long decisionDefinitionKey,
+    @Nullable Long decisionEvaluationKey,
+    @Nullable Long deploymentKey,
+    @Nullable Long formKey,
+    @Nullable Long resourceKey,
+    @Nullable AuditLogEntityType relatedEntityType,
+    @Nullable String relatedEntityKey,
+    @Nullable String entityDescription,
+    @Nullable OffsetDateTime historyCleanupDate,
+    @Nullable String inboundChannelType,
+    @Nullable String inboundChannelToolName)
+    implements TenantOwnedEntity {
+
+  public AuditLogEntity {
+    Objects.requireNonNull(auditLogKey, "auditLogKey");
+    Objects.requireNonNull(entityKey, "entityKey");
+    Objects.requireNonNull(entityType, "entityType");
+    Objects.requireNonNull(operationType, "operationType");
+    Objects.requireNonNull(timestamp, "timestamp");
+    Objects.requireNonNull(result, "result");
+    Objects.requireNonNull(category, "category");
+  }
+
+  @Override
+  public boolean hasTenantScope() {
+    return AuditLogTenantScope.TENANT.equals(tenantScope);
+  }
+
+  public static class Builder implements ObjectBuilder<AuditLogEntity> {
+    private @Nullable String auditLogKey;
+    private @Nullable String entityKey;
+    private @Nullable AuditLogEntityType entityType;
+    private @Nullable AuditLogOperationType operationType;
+    private @Nullable Long batchOperationKey;
+    private @Nullable BatchOperationType batchOperationType;
+    private @Nullable OffsetDateTime timestamp;
+    private @Nullable String actorId;
+    private @Nullable AuditLogActorType actorType;
+    private @Nullable String agentElementId;
+    private @Nullable String tenantId;
+    private @Nullable AuditLogTenantScope tenantScope;
+    private @Nullable AuditLogOperationResult result;
+    private @Nullable AuditLogOperationCategory category;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long elementInstanceKey;
+    private @Nullable Long jobKey;
+    private @Nullable Long userTaskKey;
+    private @Nullable String decisionRequirementsId;
+    private @Nullable Long decisionRequirementsKey;
+    private @Nullable String decisionDefinitionId;
+    private @Nullable Long decisionDefinitionKey;
+    private @Nullable Long decisionEvaluationKey;
+    private @Nullable Long deploymentKey;
+    private @Nullable Long formKey;
+    private @Nullable Long resourceKey;
+    private @Nullable AuditLogEntityType relatedEntityType;
+    private @Nullable String relatedEntityKey;
+    private @Nullable String entityDescription;
+    private @Nullable OffsetDateTime historyCleanupDate;
+    private @Nullable String inboundChannelType;
+    private @Nullable String inboundChannelToolName;
+
+    public Builder auditLogKey(final String auditLogKey) {
+      this.auditLogKey = auditLogKey;
+      return this;
+    }
+
+    public Builder entityKey(final String entityKey) {
+      this.entityKey = entityKey;
+      return this;
+    }
+
+    public Builder entityType(final AuditLogEntityType entityType) {
+      this.entityType = entityType;
+      return this;
+    }
+
+    public Builder operationType(final AuditLogOperationType operationType) {
+      this.operationType = operationType;
+      return this;
+    }
+
+    public Builder batchOperationKey(final Long batchOperationKey) {
+      this.batchOperationKey = batchOperationKey;
+      return this;
+    }
+
+    public Builder batchOperationType(final BatchOperationType batchOperationType) {
+      this.batchOperationType = batchOperationType;
+      return this;
+    }
+
+    public Builder timestamp(final OffsetDateTime timestamp) {
+      this.timestamp = timestamp;
+      return this;
+    }
+
+    public Builder actorType(final AuditLogActorType actorType) {
+      this.actorType = actorType;
+      return this;
+    }
+
+    public Builder actorId(final String actorId) {
+      this.actorId = actorId;
+      return this;
+    }
+
+    public Builder agentElementId(final String agentElementId) {
+      this.agentElementId = agentElementId;
+      return this;
+    }
+
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    public Builder tenantScope(final AuditLogTenantScope tenantScope) {
+      this.tenantScope = tenantScope;
+      return this;
+    }
+
+    public Builder result(final AuditLogOperationResult result) {
+      this.result = result;
+      return this;
+    }
+
+    public Builder category(final AuditLogOperationCategory category) {
+      this.category = category;
+      return this;
+    }
+
+    public Builder processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final Long processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public Builder processInstanceKey(final Long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
+    public Builder elementInstanceKey(final Long elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
+      return this;
+    }
+
+    public Builder jobKey(final Long jobKey) {
+      this.jobKey = jobKey;
+      return this;
+    }
+
+    public Builder userTaskKey(final Long userTaskKey) {
+      this.userTaskKey = userTaskKey;
+      return this;
+    }
+
+    public Builder decisionRequirementsId(final String decisionRequirementsId) {
+      this.decisionRequirementsId = decisionRequirementsId;
+      return this;
+    }
+
+    public Builder decisionRequirementsKey(final Long decisionRequirementsKey) {
+      this.decisionRequirementsKey = decisionRequirementsKey;
+      return this;
+    }
+
+    public Builder decisionDefinitionId(final String decisionDefinitionId) {
+      this.decisionDefinitionId = decisionDefinitionId;
+      return this;
+    }
+
+    public Builder decisionDefinitionKey(final Long decisionDefinitionKey) {
+      this.decisionDefinitionKey = decisionDefinitionKey;
+      return this;
+    }
+
+    public Builder decisionEvaluationKey(final Long decisionEvaluationKey) {
+      this.decisionEvaluationKey = decisionEvaluationKey;
+      return this;
+    }
+
+    public Builder deploymentKey(final Long deploymentKey) {
+      this.deploymentKey = deploymentKey;
+      return this;
+    }
+
+    public Builder formKey(final Long formKey) {
+      this.formKey = formKey;
+      return this;
+    }
+
+    public Builder resourceKey(final Long resourceKey) {
+      this.resourceKey = resourceKey;
+      return this;
+    }
+
+    public Builder relatedEntityType(final AuditLogEntityType relatedEntityType) {
+      this.relatedEntityType = relatedEntityType;
+      return this;
+    }
+
+    public Builder relatedEntityKey(final String relatedEntityKey) {
+      this.relatedEntityKey = relatedEntityKey;
+      return this;
+    }
+
+    public Builder entityDescription(final String entityDescription) {
+      this.entityDescription = entityDescription;
+      return this;
+    }
+
+    public Builder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
+      this.historyCleanupDate = historyCleanupDate;
+      return this;
+    }
+
+    public Builder inboundChannelType(final String inboundChannelType) {
+      this.inboundChannelType = inboundChannelType;
+      return this;
+    }
+
+    public Builder inboundChannelToolName(final String inboundChannelToolName) {
+      this.inboundChannelToolName = inboundChannelToolName;
+      return this;
+    }
+
+    @SuppressWarnings("NullAway")
+    @Override
+    public AuditLogEntity build() {
+      return new AuditLogEntity(
+          auditLogKey,
+          entityKey,
+          entityType,
+          operationType,
+          batchOperationKey,
+          batchOperationType,
+          timestamp,
+          actorId,
+          actorType,
+          agentElementId,
+          tenantId,
+          tenantScope,
+          result,
+          category,
+          processDefinitionId,
+          processDefinitionKey,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          elementInstanceKey,
+          jobKey,
+          userTaskKey,
+          decisionRequirementsId,
+          decisionRequirementsKey,
+          decisionDefinitionId,
+          decisionDefinitionKey,
+          decisionEvaluationKey,
+          deploymentKey,
+          formKey,
+          resourceKey,
+          relatedEntityType,
+          relatedEntityKey,
+          entityDescription,
+          historyCleanupDate,
+          inboundChannelType,
+          inboundChannelToolName);
+    }
+  }
+
+  public enum AuditLogActorType {
+    USER,
+    CLIENT,
+    ANONYMOUS,
+    UNKNOWN
+  }
+
+  public enum AuditLogTenantScope {
+    GLOBAL,
+    TENANT
+  }
+
+  public enum AuditLogEntityType {
+    UNKNOWN,
+    PROCESS_INSTANCE,
+    VARIABLE,
+    INCIDENT,
+    JOB,
+    USER_TASK,
+    DECISION,
+    BATCH,
+    USER,
+    MAPPING_RULE,
+    ROLE,
+    GROUP,
+    TENANT,
+    AUTHORIZATION,
+    RESOURCE,
+    CLIENT
+  }
+
+  public enum AuditLogOperationCategory {
+    UNKNOWN,
+    ADMIN,
+    DEPLOYED_RESOURCES,
+    USER_TASKS
+  }
+
+  public enum AuditLogOperationResult {
+    SUCCESS,
+    FAIL
+  }
+
+  public enum AuditLogOperationType {
+    UNKNOWN,
+    CREATE,
+    UPDATE,
+    DELETE,
+    ASSIGN,
+    UNASSIGN,
+    MODIFY,
+    MIGRATE,
+    CANCEL,
+    RESOLVE,
+    COMPLETE,
+    SUSPEND,
+    RESUME,
+    EVALUATE
+  }
+}

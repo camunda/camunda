@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.BatchOperationMapper">
+
+  <resultMap id="BatchOperationResultMap"
+    type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
+    <constructor>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
+      <arg column="STATE"
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
+      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="ACTOR_TYPE"
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogActorType"/>
+      <arg column="ACTOR_ID" javaType="java.lang.String"/>
+      <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
+      <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
+      <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
+    </constructor>
+    <collection property="errors"
+      ofType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel$BatchOperationErrorDbModel">
+      <result property="partitionId" column="PARTITION_ID"/>
+      <result property="type" column="TYPE"/>
+      <result property="message" column="MESSAGE"/>
+    </collection>
+  </resultMap>
+
+  <resultMap id="BatchOperationItemResultMap"
+    type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
+    <constructor>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
+      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
+      <arg column="ITEM_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="STATE"
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
+      <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="postgresql">
+    INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+    STATE,
+    OPERATION_TYPE,
+    START_DATE,
+    END_DATE,
+    ACTOR_TYPE,
+    ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT,
+    OPERATIONS_FAILED_COUNT,
+    OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate, jdbcType=TIMESTAMP},
+    #{endDate, jdbcType=TIMESTAMP},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
+    ON CONFLICT (BATCH_OPERATION_KEY) DO NOTHING
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="mariadb">
+    INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+    STATE,
+    OPERATION_TYPE,
+    START_DATE,
+    END_DATE,
+    ACTOR_TYPE,
+    ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT,
+    OPERATIONS_FAILED_COUNT,
+    OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate, jdbcType=TIMESTAMP},
+    #{endDate, jdbcType=TIMESTAMP},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
+    ON DUPLICATE KEY UPDATE BATCH_OPERATION_KEY = BATCH_OPERATION_KEY
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="mysql">
+    INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+    STATE,
+    OPERATION_TYPE,
+    START_DATE,
+    END_DATE,
+    ACTOR_TYPE,
+    ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT,
+    OPERATIONS_FAILED_COUNT,
+    OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate, jdbcType=TIMESTAMP},
+    #{endDate, jdbcType=TIMESTAMP},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
+    ON DUPLICATE KEY UPDATE BATCH_OPERATION_KEY = BATCH_OPERATION_KEY
+  </insert>
+
+  <!-- The batch operation insert can happen concurrently on multiple partitions.
+  The more common MERGE INTO of MSSQL is not safe here and still can cause a PK violation.
+  This is what we want to avoid. This try-catch will explicitly ignore the PK violation. -->
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="mssql">
+    BEGIN TRY
+      INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+      STATE,
+      OPERATION_TYPE,
+      START_DATE,
+      END_DATE,
+      ACTOR_TYPE,
+      ACTOR_ID,
+      OPERATIONS_TOTAL_COUNT,
+      OPERATIONS_FAILED_COUNT,
+      OPERATIONS_COMPLETED_COUNT)
+      VALUES (#{batchOperationKey},
+      #{state},
+      #{operationType},
+      #{startDate, jdbcType=TIMESTAMP},
+      #{endDate, jdbcType=TIMESTAMP},
+      #{actorType},
+      #{actorId},
+      #{operationsTotalCount},
+      #{operationsFailedCount},
+      #{operationsCompletedCount});
+    END TRY
+    BEGIN CATCH
+      IF ERROR_NUMBER() != 2627 -- Violation of primary key (duplicate key)
+        THROW;
+    END CATCH
+  </insert>
+
+  <!-- The batch operation insert can happen concurrently on multiple partitions.
+  The more common MERGE INTO of MSSQL is not safe here and still can cause a PK violation.
+  This is what we want to avoid. This IGNORE_ROW_ON_DUPKEY_INDEX hint will explicitly ignore the PK violation. -->
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="oracle">
+    INSERT /*+ IGNORE_ROW_ON_DUPKEY_INDEX(${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY)) */
+    INTO ${prefix}BATCH_OPERATION
+    (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT, OPERATIONS_FAILED_COUNT, OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate},
+    #{endDate},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="h2">
+    MERGE INTO ${prefix}BATCH_OPERATION target
+    USING (SELECT CAST(#{batchOperationKey} AS VARCHAR) AS BATCH_OPERATION_KEY,
+    CAST(#{state} AS VARCHAR) AS STATE,
+    CAST(#{operationType} AS VARCHAR) AS OPERATION_TYPE,
+    CAST(#{startDate} AS TIMESTAMP) AS START_DATE,
+    CAST(#{endDate} AS TIMESTAMP) AS END_DATE,
+    CAST(#{actorType} AS VARCHAR) AS ACTOR_TYPE,
+    CAST(#{actorId} AS VARCHAR) AS ACTOR_ID,
+    CAST(#{operationsTotalCount} AS INTEGER) AS OPERATIONS_TOTAL_COUNT,
+    CAST(#{operationsFailedCount} AS INTEGER) AS OPERATIONS_FAILED_COUNT,
+    CAST(#{operationsCompletedCount} AS INTEGER) AS OPERATIONS_COMPLETED_COUNT) source
+    ON (target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY)
+    WHEN NOT MATCHED THEN
+    INSERT (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT, OPERATIONS_FAILED_COUNT, OPERATIONS_COMPLETED_COUNT)
+    VALUES (source.BATCH_OPERATION_KEY, source.STATE, source.OPERATION_TYPE, source.START_DATE,
+    source.END_DATE, source.ACTOR_TYPE, source.ACTOR_ID, source.OPERATIONS_TOTAL_COUNT,
+    source.OPERATIONS_FAILED_COUNT, source.OPERATIONS_COMPLETED_COUNT)
+  </insert>
+
+  <insert id="insertItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, STATE)
+    VALUES
+    <foreach collection="items" item="item" separator=",">
+      (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey}, #{item.rootProcessInstanceKey}, #{item.state})
+    </foreach>
+  </insert>
+
+  <insert id="insertItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto"
+    databaseId="oracle">
+    INSERT ALL
+    <foreach collection="items" item="item">
+      INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, STATE)
+      VALUES (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey}, #{item.rootProcessInstanceKey}, #{item.state})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <insert id="insertErrors"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationErrorDto">
+    INSERT INTO ${prefix}BATCH_OPERATION_ERROR
+    (BATCH_OPERATION_KEY, PARTITION_ID, TYPE, MESSAGE)
+    VALUES
+    <foreach collection="errors" item="error" separator=",">
+      (#{batchOperationKey}, #{error.partitionId}, #{error.type}, #{error.message})
+    </foreach>
+  </insert>
+
+  <insert id="insertErrors"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationErrorDto"
+    databaseId="oracle">
+    INSERT ALL
+    <foreach collection="errors" item="error">
+      INTO ${prefix}BATCH_OPERATION_ERROR (BATCH_OPERATION_KEY, PARTITION_ID, TYPE, MESSAGE)
+      VALUES (#{batchOperationKey}, #{error.partitionId}, #{error.type}, #{error.message})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <update id="activate"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationActivateDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET STATE      = 'ACTIVE',
+        START_DATE = #{startDate, jdbcType=TIMESTAMP}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND STATE != 'COMPLETED'
+  </update>
+
+  <update id="updateCompleted"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET STATE = #{state},
+    END_DATE = #{endDate, jdbcType=TIMESTAMP}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="postgresql">
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    VALUES (#{batchOperationKey},
+    #{itemKey},
+    #{processInstanceKey},
+    #{rootProcessInstanceKey},
+    #{processedDate},
+    #{state})
+    ON CONFLICT (BATCH_OPERATION_KEY, ITEM_KEY) DO UPDATE SET
+    STATE          = #{state},
+    PROCESSED_DATE = #{processedDate},
+    ERROR_MESSAGE  = #{errorMessage}
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="mssql">
+    MERGE ${prefix}BATCH_OPERATION_ITEM AS target
+    USING (SELECT #{batchOperationKey}   AS BATCH_OPERATION_KEY,
+                  #{itemKey}            AS ITEM_KEY,
+                  #{processInstanceKey} AS PROCESS_INSTANCE_KEY,
+                  #{rootProcessInstanceKey} AS ROOT_PROCESS_INSTANCE_KEY,
+                  #{processedDate}      AS PROCESSED_DATE,
+                  #{state}              AS STATE,
+                  #{errorMessage}       AS ERROR_MESSAGE) AS source
+    ON (target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY
+      AND target.ITEM_KEY = source.ITEM_KEY)
+    WHEN MATCHED THEN
+      UPDATE SET STATE = source.STATE,
+                 PROCESSED_DATE = source.PROCESSED_DATE,
+                 ERROR_MESSAGE = source.ERROR_MESSAGE
+    WHEN NOT MATCHED THEN
+      INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE, ERROR_MESSAGE)
+      VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY, source.ROOT_PROCESS_INSTANCE_KEY,
+              source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE);  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="mariadb">
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    VALUES (#{batchOperationKey},
+    #{itemKey},
+    #{processInstanceKey},
+    #{rootProcessInstanceKey},
+    #{processedDate},
+    #{state})
+    ON DUPLICATE KEY UPDATE
+    STATE = #{state}, PROCESSED_DATE = #{processedDate}, ERROR_MESSAGE = #{errorMessage}
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="mysql">
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    VALUES (#{batchOperationKey},
+    #{itemKey},
+    #{processInstanceKey},
+    #{rootProcessInstanceKey},
+    #{processedDate},
+    #{state})
+    ON DUPLICATE KEY UPDATE
+    STATE = #{state}, PROCESSED_DATE = #{processedDate}, ERROR_MESSAGE = #{errorMessage}
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="oracle">
+    MERGE INTO ${prefix}BATCH_OPERATION_ITEM target
+    USING (SELECT #{batchOperationKey}   AS BATCH_OPERATION_KEY,
+    #{itemKey}            AS ITEM_KEY,
+    #{processInstanceKey} AS PROCESS_INSTANCE_KEY,
+    #{rootProcessInstanceKey} AS ROOT_PROCESS_INSTANCE_KEY,
+    #{processedDate}      AS PROCESSED_DATE,
+    #{state}              AS STATE,
+    #{errorMessage}       AS ERROR_MESSAGE
+    FROM dual) source
+    ON (target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY AND target.ITEM_KEY = source.ITEM_KEY)
+    WHEN MATCHED THEN
+    UPDATE
+    SET STATE          = source.STATE,
+    PROCESSED_DATE = source.PROCESSED_DATE,
+    ERROR_MESSAGE  = source.ERROR_MESSAGE
+    WHEN NOT MATCHED THEN
+    INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
+    ERROR_MESSAGE)
+    VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY, source.ROOT_PROCESS_INSTANCE_KEY,
+    source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE)
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="h2">
+    MERGE INTO ${prefix}BATCH_OPERATION_ITEM target
+    USING (SELECT CAST(#{batchOperationKey} AS VARCHAR)   AS BATCH_OPERATION_KEY,
+    CAST(#{itemKey} AS BIGINT)            AS ITEM_KEY,
+    CAST(#{processInstanceKey} AS BIGINT) AS PROCESS_INSTANCE_KEY,
+    CAST(#{rootProcessInstanceKey} AS BIGINT) AS ROOT_PROCESS_INSTANCE_KEY,
+    CAST(#{processedDate} AS TIMESTAMP)   AS PROCESSED_DATE,
+    CAST(#{state} AS VARCHAR)            AS STATE,
+    CAST(#{errorMessage} AS VARCHAR)     AS ERROR_MESSAGE) source
+    ON (target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY AND target.ITEM_KEY = source.ITEM_KEY)
+    WHEN MATCHED THEN
+    UPDATE
+    SET STATE          = source.STATE,
+    PROCESSED_DATE = source.PROCESSED_DATE,
+    ERROR_MESSAGE  = source.ERROR_MESSAGE
+    WHEN NOT MATCHED THEN
+    INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
+    ERROR_MESSAGE)
+    VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY, source.ROOT_PROCESS_INSTANCE_KEY,
+    source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE)
+  </insert>
+
+
+  <update id="completeBatchOperationItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsCompletionDto">
+    UPDATE ${prefix}BATCH_OPERATION_ITEM
+    SET STATE = 'COMPLETED',
+        PROCESSED_DATE = #{processedDate, jdbcType=TIMESTAMP}
+    WHERE
+    <foreach collection="items" item="item" separator=" OR " open="(" close=")">
+      (BATCH_OPERATION_KEY = #{item.batchOperationKey} AND ITEM_KEY = #{item.itemKey})
+    </foreach>
+  </update>
+
+  <update id="updateItemsWithState"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemStatusUpdateDto">
+    UPDATE ${prefix}BATCH_OPERATION_ITEM
+    SET STATE = #{newState}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    AND STATE = #{oldState}
+  </update>
+
+  <update id="incrementOperationsTotalCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET OPERATIONS_TOTAL_COUNT = OPERATIONS_TOTAL_COUNT + #{operationsTotalCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <update id="incrementFailedOperationsCount"
+    parameterType="java.lang.String">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
+    WHERE BATCH_OPERATION_KEY = #{id}
+  </update>
+
+  <update id="incrementCompletedOperationsCount"
+    parameterType="java.lang.String">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
+    WHERE BATCH_OPERATION_KEY = #{id}
+  </update>
+
+  <update id="bulkIncrementCompletedOperationsCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + #{operationsTotalCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}BATCH_OPERATION
+      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
+    resultMap="BatchOperationResultMap">
+
+    SELECT * FROM (
+    SELECT
+    bof.BATCH_OPERATION_KEY,
+    bof.STATE,
+    bof.OPERATION_TYPE,
+    bof.START_DATE,
+    bof.END_DATE,
+    bof.ACTOR_TYPE,
+    bof.ACTOR_ID,
+    bof.OPERATIONS_TOTAL_COUNT,
+    bof.OPERATIONS_FAILED_COUNT,
+    bof.OPERATIONS_COMPLETED_COUNT,
+    boe.PARTITION_ID,
+    boe.TYPE,
+    boe.MESSAGE
+    FROM (
+    SELECT * FROM (
+    SELECT
+    bo.BATCH_OPERATION_KEY,
+    bo.STATE,
+    bo.OPERATION_TYPE,
+    bo.START_DATE,
+    bo.END_DATE,
+    bo.ACTOR_TYPE,
+    bo.ACTOR_ID,
+    bo.OPERATIONS_TOTAL_COUNT,
+    bo.OPERATIONS_FAILED_COUNT,
+    bo.OPERATIONS_COMPLETED_COUNT
+    FROM ${prefix}BATCH_OPERATION bo
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) bof
+    LEFT JOIN ${prefix}BATCH_OPERATION_ERROR boe ON (boe.BATCH_OPERATION_KEY =
+    bof.BATCH_OPERATION_KEY)
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <if test="_databaseId == 'mssql'">
+      <!-- MSSQL needs an OFFSET when sorting in subselects -->
+      OFFSET 0 ROWS
+    </if>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if
+      test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">
+      <foreach collection="filter.batchOperationKeyOperations" item="operation">
+        AND BATCH_OPERATION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.operationTypeOperations != null and !filter.operationTypeOperations.isEmpty()">
+      <foreach collection="filter.operationTypeOperations" item="operation">
+        AND OPERATION_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.actorTypeOperations != null and !filter.actorTypeOperations.isEmpty()">
+      <foreach collection="filter.actorTypeOperations" item="operation">
+        AND ACTOR_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.actorIdOperations != null and !filter.actorIdOperations.isEmpty()">
+      <foreach collection="filter.actorIdOperations" item="operation">
+        AND ACTOR_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+  <select id="countItems" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}BATCH_OPERATION_ITEM bi
+      JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
+      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="searchItems"
+    parameterType="io.camunda.db.rdbms.read.domain.BatchOperationItemDbQuery"
+    resultMap="BatchOperationItemResultMap">
+
+    SELECT * FROM (
+    SELECT
+    bi.BATCH_OPERATION_KEY,
+    bo.OPERATION_TYPE,
+    bi.ITEM_KEY,
+    bi.PROCESS_INSTANCE_KEY,
+    bi.ROOT_PROCESS_INSTANCE_KEY,
+    bi.STATE,
+    bi.PROCESSED_DATE,
+    bi.ERROR_MESSAGE
+    FROM ${prefix}BATCH_OPERATION_ITEM bi
+    JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="itemSearchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if
+      test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">
+      <foreach collection="filter.batchOperationKeyOperations" item="operation">
+        AND bi.BATCH_OPERATION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.itemKeyOperations != null and !filter.itemKeyOperations.isEmpty()">
+      <foreach collection="filter.itemKeyOperations" item="operation">
+        AND bi.ITEM_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND bi.PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND bi.STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.operationTypeOperations != null and !filter.operationTypeOperations.isEmpty()">
+      <foreach collection="filter.operationTypeOperations" item="operation">
+        AND bo.OPERATION_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+  <update id="updateHistoryCleanupDate">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'BATCH_OPERATION'"/>
+    <include refid="historyCleanup"/>
+  </delete>
+
+  <sql id="historyCleanup">
+    DELETE
+    FROM ${prefix}${tableName}
+    WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+      LIMIT #{limit}
+  </sql>
+  <sql id="historyCleanup" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}${tableName}
+    WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate, jdbcType=TIMESTAMP}
+  </sql>
+  <sql id="historyCleanup" databaseId="oracle">
+    DELETE
+    FROM ${prefix}${tableName}
+    WHERE rowid IN (SELECT rowid
+                    FROM ${prefix}${tableName}
+                    WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+                      AND ROWNUM &lt;= #{limit})
+  </sql>
+  <sql id="historyCleanup" databaseId="postgresql">
+    DELETE
+    FROM ${prefix}${tableName}
+    WHERE ctid IN (SELECT ctid
+                   FROM ${prefix}${tableName}
+                   WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
+      LIMIT #{limit})
+  </sql>
+
+</mapper>

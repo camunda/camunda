@@ -1,0 +1,474 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.webapps.schema.entities;
+
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.time.OffsetDateTime;
+import java.util.Map;
+import java.util.Objects;
+
+public class JobEntity
+    implements ExporterEntity<JobEntity>, PartitionedEntity<JobEntity>, TenantOwned {
+
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private Long flowNodeInstanceId;
+  @BeforeVersion880 private String flowNodeId;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String flowNodeType;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
+  @BeforeVersion880 private Long processDefinitionKey;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
+  @BeforeVersion880 private String bpmnProcessId;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private OffsetDateTime creationTime;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private OffsetDateTime lastUpdateTime;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
+
+  @BeforeVersion880 private String tenantId;
+  @BeforeVersion880 private String type;
+  @BeforeVersion880 private String worker;
+  @BeforeVersion880 private Integer retries;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Integer priority;
+
+  @BeforeVersion880 private String state;
+  @BeforeVersion880 private String errorMessage;
+  @BeforeVersion880 private String errorCode;
+  @BeforeVersion880 private OffsetDateTime deadline;
+  @BeforeVersion880 private OffsetDateTime endTime;
+  @BeforeVersion880 private Map<String, String> customHeaders;
+  @BeforeVersion880 private boolean jobFailedWithRetriesLeft;
+  @BeforeVersion880 private String jobKind;
+
+  @BeforeVersion880 private String listenerEventType;
+
+  @BeforeVersion880 private Long position;
+
+  @BeforeVersion880 private Boolean denied;
+  @BeforeVersion880 private String deniedReason;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public JobEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public JobEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public JobEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public JobEntity setProcessInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public Long getFlowNodeInstanceId() {
+    return flowNodeInstanceId;
+  }
+
+  public JobEntity setFlowNodeInstanceId(final Long flowNodeInstanceId) {
+    this.flowNodeInstanceId = flowNodeInstanceId;
+    return this;
+  }
+
+  public String getFlowNodeId() {
+    return flowNodeId;
+  }
+
+  public JobEntity setFlowNodeId(final String flowNodeId) {
+    this.flowNodeId = flowNodeId;
+    return this;
+  }
+
+  public String getFlowNodeType() {
+    return flowNodeType;
+  }
+
+  public JobEntity setFlowNodeType(final String flowNodeType) {
+    this.flowNodeType = flowNodeType;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public JobEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public JobEntity setType(final String type) {
+    this.type = type;
+    return this;
+  }
+
+  public String getWorker() {
+    return worker;
+  }
+
+  public JobEntity setWorker(final String worker) {
+    this.worker = worker;
+    return this;
+  }
+
+  public String getState() {
+    return state;
+  }
+
+  public JobEntity setState(final String state) {
+    this.state = state;
+    return this;
+  }
+
+  public Integer getRetries() {
+    return retries;
+  }
+
+  public JobEntity setRetries(final Integer retries) {
+    this.retries = retries;
+    return this;
+  }
+
+  public Integer getPriority() {
+    return priority;
+  }
+
+  public JobEntity setPriority(final Integer priority) {
+    this.priority = priority;
+    return this;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public JobEntity setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+    return this;
+  }
+
+  public String getErrorCode() {
+    return errorCode;
+  }
+
+  public JobEntity setErrorCode(final String errorCode) {
+    this.errorCode = errorCode;
+    return this;
+  }
+
+  public OffsetDateTime getDeadline() {
+    return deadline;
+  }
+
+  public JobEntity setDeadline(final OffsetDateTime deadline) {
+    this.deadline = deadline;
+    return this;
+  }
+
+  public OffsetDateTime getEndTime() {
+    return endTime;
+  }
+
+  public JobEntity setEndTime(final OffsetDateTime endTime) {
+    this.endTime = endTime;
+    return this;
+  }
+
+  public Map<String, String> getCustomHeaders() {
+    return customHeaders;
+  }
+
+  public JobEntity setCustomHeaders(final Map<String, String> customHeaders) {
+    this.customHeaders = customHeaders;
+    return this;
+  }
+
+  public boolean isJobFailedWithRetriesLeft() {
+    return jobFailedWithRetriesLeft;
+  }
+
+  public JobEntity setJobFailedWithRetriesLeft(final boolean jobFailedWithRetriesLeft) {
+    this.jobFailedWithRetriesLeft = jobFailedWithRetriesLeft;
+    return this;
+  }
+
+  public String getJobKind() {
+    return jobKind;
+  }
+
+  public JobEntity setJobKind(final String jobKind) {
+    this.jobKind = jobKind;
+    return this;
+  }
+
+  public String getListenerEventType() {
+    return listenerEventType;
+  }
+
+  public JobEntity setListenerEventType(final String listenerEventType) {
+    this.listenerEventType = listenerEventType;
+    return this;
+  }
+
+  public Long getPosition() {
+    return position;
+  }
+
+  public JobEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public JobEntity setProcessDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public JobEntity setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
+
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
+  }
+
+  public JobEntity setCreationTime(final OffsetDateTime creationTime) {
+    this.creationTime = creationTime;
+    return this;
+  }
+
+  public OffsetDateTime getLastUpdateTime() {
+    return lastUpdateTime;
+  }
+
+  public JobEntity setLastUpdateTime(final OffsetDateTime lastUpdateTime) {
+    this.lastUpdateTime = lastUpdateTime;
+    return this;
+  }
+
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public JobEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public Boolean isDenied() {
+    return denied;
+  }
+
+  public JobEntity setDenied(final Boolean denied) {
+    this.denied = denied;
+    return this;
+  }
+
+  public String getDeniedReason() {
+    return deniedReason;
+  }
+
+  public JobEntity setDeniedReason(final String deniedReason) {
+    this.deniedReason = deniedReason;
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        key,
+        partitionId,
+        processInstanceKey,
+        flowNodeInstanceId,
+        flowNodeId,
+        processDefinitionKey,
+        bpmnProcessId,
+        tenantId,
+        type,
+        worker,
+        retries,
+        priority,
+        state,
+        errorMessage,
+        errorCode,
+        deadline,
+        endTime,
+        customHeaders,
+        jobFailedWithRetriesLeft,
+        jobKind,
+        listenerEventType,
+        position,
+        denied,
+        deniedReason,
+        creationTime,
+        lastUpdateTime,
+        rootProcessInstanceKey);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final JobEntity jobEntity = (JobEntity) o;
+    return Objects.equals(id, jobEntity.id)
+        && key == jobEntity.key
+        && partitionId == jobEntity.partitionId
+        && jobFailedWithRetriesLeft == jobEntity.jobFailedWithRetriesLeft
+        && Objects.equals(processInstanceKey, jobEntity.processInstanceKey)
+        && Objects.equals(flowNodeInstanceId, jobEntity.flowNodeInstanceId)
+        && Objects.equals(flowNodeId, jobEntity.flowNodeId)
+        && Objects.equals(processDefinitionKey, jobEntity.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, jobEntity.bpmnProcessId)
+        && Objects.equals(tenantId, jobEntity.tenantId)
+        && Objects.equals(type, jobEntity.type)
+        && Objects.equals(worker, jobEntity.worker)
+        && Objects.equals(retries, jobEntity.retries)
+        && Objects.equals(priority, jobEntity.priority)
+        && Objects.equals(state, jobEntity.state)
+        && Objects.equals(errorMessage, jobEntity.errorMessage)
+        && Objects.equals(errorCode, jobEntity.errorCode)
+        && Objects.equals(deadline, jobEntity.deadline)
+        && Objects.equals(endTime, jobEntity.endTime)
+        && Objects.equals(customHeaders, jobEntity.customHeaders)
+        && Objects.equals(jobKind, jobEntity.jobKind)
+        && Objects.equals(listenerEventType, jobEntity.listenerEventType)
+        && Objects.equals(position, jobEntity.position)
+        && Objects.equals(denied, jobEntity.denied)
+        && Objects.equals(deniedReason, jobEntity.deniedReason)
+        && Objects.equals(creationTime, jobEntity.creationTime)
+        && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime)
+        && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey);
+  }
+
+  @Override
+  public String toString() {
+    return "JobEntity{"
+        + "processInstanceKey="
+        + processInstanceKey
+        + ", flowNodeInstanceId="
+        + flowNodeInstanceId
+        + ", flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", type='"
+        + type
+        + '\''
+        + ", worker='"
+        + worker
+        + '\''
+        + ", retries="
+        + retries
+        + ", priority="
+        + priority
+        + ", state='"
+        + state
+        + '\''
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
+        + ", errorCode='"
+        + errorCode
+        + '\''
+        + ", deadline="
+        + deadline
+        + ", endTime="
+        + endTime
+        + ", customHeaders="
+        + customHeaders
+        + ", jobFailedWithRetriesLeft="
+        + jobFailedWithRetriesLeft
+        + ", jobKind='"
+        + jobKind
+        + '\''
+        + ", listenerEventType='"
+        + listenerEventType
+        + '\''
+        + ", position="
+        + position
+        + ", jobDenied="
+        + denied
+        + ", jobDeniedReason="
+        + deniedReason
+        + ", creationTime="
+        + creationTime
+        + ", lastUpdateTime="
+        + lastUpdateTime
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
+        + "} "
+        + super.toString();
+  }
+}

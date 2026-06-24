@@ -1,0 +1,390 @@
+# type: CI
+# owner: @camunda/monorepo-devops-team
+
+# Description:
+# This GitHub Actions workflow creates Docker images for urgent hotfixes.
+# See the documentation about it at https://confluence.camunda.com/x/dwMNE
+#
+# It is triggered manually via workflow dispatch
+# and allows building specific components with versions from either a branch or a specific commit SHA.
+#
+# Usage:
+# - Input format for components: "component:version,component:version" (e.g., "camunda:8.6.1,operate:8.6.1")
+# - Either branch OR commit must be specified (commit takes precedence)
+# - Commit must be a FULL 40-character SHA (short SHAs are not supported)
+# - Support ticket ID is required for proper tagging (e.g. SUPPORT-12345, JIRA-123, ticket-456)
+# - Registry is fixed to: registry.camunda.cloud/hotfixes (not configurable)
+# - Platforms are not configurable, they are by default set to linux/amd64 and linux/arm64
+#
+# The workflow validates inputs, builds the requested images, and pushes them to the Camunda hotfix registry following
+# the naming convention: registry.camunda.cloud/hotfixes/<image>:<application-version>-<support-issue-id>.<short-sha>
+# Example: registry.camunda.cloud/hotfixes/camunda:8.6.1-SUPPORT-12345.abc123
+name: Create Urgent Hotfix Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'The branch to create hotfix images from (ignored if commit is specified)'
+        required: false
+        type: string
+      commit:
+        description: 'The specific commit SHA to create hotfix images from (must be full 40-character SHA - takes precedence over branch)'
+        required: false
+        type: string
+      support-ticket-id:
+        description: 'The support ticket ID (e.g. SUPPORT-12345, JIRA-123, ticket-456)'
+        required: true
+        type: string
+      components_with_versions:
+        description: 'Components to build with versions (e.g. camunda:8.6.1,operate:8.6.1)'
+        required: true
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HOTFIX_REGISTRY: "registry.camunda.cloud/hotfixes"
+  PLATFORMS: "linux/amd64,linux/arm64"
+
+jobs:
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: gcp-core-2-default
+    outputs:
+      branch: ${{ steps.parse.outputs.branch }}
+      commit: ${{ steps.parse.outputs.commit }}
+      support-ticket-id: ${{ steps.parse.outputs.support-ticket-id }}
+      components-with-versions: ${{ steps.parse.outputs.components-with-versions }}
+      components-matrix: ${{ steps.parse.outputs.matrix }}
+    steps:
+      - name: Validate and parse components
+        id: parse
+        run: |
+          BRANCH="${{ github.event.inputs.branch }}"
+          COMMIT="${{ github.event.inputs.commit }}"
+          TICKET_ID="${{ github.event.inputs.support-ticket-id }}"
+          COMPONENTS="${{ github.event.inputs.components_with_versions }}"
+
+          [[ -z "$BRANCH" && -z "$COMMIT" ]] && { echo "❌ Either branch or commit required"; exit 1; }
+          [[ -n "$BRANCH" && "$BRANCH" =~ [[:space:]] ]] && { echo "❌ Branch name cannot contain whitespace"; exit 1; }
+          [[ -n "$COMMIT" && ! "$COMMIT" =~ ^[a-f0-9]{40}$ ]] && { echo "❌ Commit must be a full 40-character SHA (got: $COMMIT)"; exit 1; }
+          [[ -z "$TICKET_ID" ]] && { echo "❌ Support ticket ID required"; exit 1; }
+          [[ ! "$TICKET_ID" =~ ^[a-zA-Z0-9_-]+$ ]] && { echo "❌ Invalid ticket ID format"; exit 1; }
+          [[ -z "$COMPONENTS" ]] && { echo "❌ Components required"; exit 1; }
+
+          {
+            echo "branch=$BRANCH"
+            echo "commit=$COMMIT"
+            echo "support-ticket-id=$TICKET_ID"
+            echo "components-with-versions=$COMPONENTS"
+          } >> "$GITHUB_OUTPUT"
+
+          VALID_COMPONENTS=()
+          IFS=',' read -ra ARRAY <<< "$COMPONENTS"
+          for ITEM in "${ARRAY[@]}"; do
+            ITEM=$(echo "$ITEM" | xargs)
+
+            # Check for whitespace in the component:version string
+            if [[ "$ITEM" =~ [[:space:]] ]]; then
+              echo "❌ Invalid format: '$ITEM' contains whitespace (spaces are not allowed)"
+              exit 1
+            fi
+
+            if [[ "$ITEM" =~ ^([^:]+):(.+)$ ]]; then
+              COMP="${BASH_REMATCH[1]}"
+              VER="${BASH_REMATCH[2]}"
+
+              # Validate component name
+              case "$COMP" in
+                camunda|optimize|operate|tasklist|zeebe) ;;
+                *) echo "❌ Unsupported component: $COMP"; exit 1 ;;
+              esac
+
+              # Validate version follows semantic versioning (e.g., 8.6.1, 8.8.0-alpha1)
+              # Must start with digit(s).digit(s).digit(s), optionally followed by -prerelease
+              if [[ ! "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+                echo "❌ Invalid version format for $COMP: '$VER'"
+                echo "   Version must follow semantic versioning (e.g., 8.6.1, 8.8.0, 8.9.0-alpha1)"
+                exit 1
+              fi
+
+              # Validate operate and tasklist version are prior to 8.9.X
+              if [[ "$COMP" == "operate" || "$COMP" == "tasklist" || "$COMP" == "zeebe" ]]; then
+                if [[ ! "$VER" =~ ^8\.[0-8]\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+                  echo "❌ Invalid version for $COMP: '$VER'."
+                  echo "   Separate zeebe/operate/tasklist hotfix images are only supported for versions < 8.9. For 8.9+, use component 'camunda' instead."
+                  exit 1
+                fi
+              fi
+
+              VALID_COMPONENTS+=("$ITEM")
+            else
+              echo "❌ Invalid format: $ITEM (expected format: component:version)"; exit 1
+            fi
+          done
+
+          printf '%s\n' "${VALID_COMPONENTS[@]}" | \
+            jq -R -s -c 'split("\n") | map(select(length > 0)) | map(split(":") | {component: .[0], version: .[1]})' | \
+            tee >(echo "matrix=$(cat)" >> "$GITHUB_OUTPUT")
+
+  build-images:
+    name: Build `${{ matrix.component }}:${{ matrix.version }}` Image
+    runs-on: gcp-perf-core-8-default
+    needs: validate-inputs
+    timeout-minutes: 45
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    outputs:
+      short-sha: ${{ steps.get-sha.outputs.short-sha }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.validate-inputs.outputs.components-matrix) }}
+    steps:
+      - name: Checkout workflow repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Checkout and resolve ref
+        id: resolve
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          token: ${{ github.token }}
+          ref: ${{ needs.validate-inputs.outputs.commit || needs.validate-inputs.outputs.branch }}
+          path: build-repo
+
+      - name: Get resolved SHA
+        id: get-sha
+        working-directory: build-repo
+        run: |
+          # If commit was provided, use it; otherwise resolve from checked out branch
+          COMMIT="${{ needs.validate-inputs.outputs.commit }}"
+          if [[ -n "$COMMIT" ]]; then
+            FULL_SHA="$COMMIT"
+            SHORT_SHA=$(git rev-parse --short "$COMMIT")
+          else
+            FULL_SHA=$(git rev-parse HEAD)
+            SHORT_SHA=$(git rev-parse --short HEAD)
+          fi
+
+          echo "✅ Building from commit: $FULL_SHA (short: $SHORT_SHA)"
+          echo "full-sha=$FULL_SHA" >> "$GITHUB_OUTPUT"
+          echo "short-sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          minimus: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          maven-mirrors: '[{"id": "camunda-nexus", "name": "Camunda Nexus", "url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "mirrorOf": "*"}]'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Set project version
+        id: set-version
+        working-directory: build-repo
+        run: |
+          echo "🔧 Setting project version to ${{ matrix.version }}..."
+
+          # Create semver-compatible hotfix version: <version>-<ticket>.<sha>
+          # Format: 8.8.88-SUPPORT-12345.abc123 (ticket ID contains hyphen, then dot before SHA)
+          HOTFIX_VERSION="${{ matrix.version }}-${{ needs.validate-inputs.outputs.support-ticket-id }}.${{ steps.get-sha.outputs.short-sha }}"
+          echo "📋 Hotfix version: $HOTFIX_VERSION"
+
+          # Update versions based on branch structure:
+          # - Unified branches (stable/8.8+, main): Have clients/camunda-spring-boot-starter
+          # - Dedicated branches (stable/optimize-8.6/8.7): No clients/camunda-spring-boot-starter
+          if [[ "${{ matrix.component }}" == "optimize" ]]; then
+            # For Optimize builds:
+            if [[ -d "clients/camunda-spring-boot-starter" ]]; then
+              # Unified branch (stable/8.8+): Update BOTH BOM and optimize/pom.xml
+              # BOM update: Zeebe modules get hotfix version
+              # optimize/pom.xml update: Optimize modules get hotfix version (separate parent hierarchy)
+              echo "🔧 Unified branch: updating BOM for Zeebe dependencies..."
+              ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "bom/pom.xml"
+
+              if [[ ! -f "optimize/pom.xml" ]]; then
+                echo "❌ ERROR: optimize/pom.xml not found"
+                exit 1
+              fi
+              echo "🔧 Unified branch: updating optimize/pom.xml for Optimize modules..."
+              ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "optimize/pom.xml"
+              MVN_POM="optimize/pom.xml"
+            else
+              # Dedicated branch (stable/optimize-8.6/8.7): Update only optimize/pom.xml
+              # These branches use published Zeebe versions from Nexus
+              echo "🔧 Dedicated Optimize branch: updating optimize/pom.xml..."
+              if [[ ! -f "optimize/pom.xml" ]]; then
+                echo "❌ ERROR: optimize/pom.xml not found"
+                exit 1
+              fi
+              ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "optimize/pom.xml"
+              MVN_POM="optimize/pom.xml"
+            fi
+          else
+            # For Zeebe/Operate/Tasklist/Camunda: always use BOM (unified branches only)
+            if [[ ! -f "bom/pom.xml" ]]; then
+              echo "❌ ERROR: bom/pom.xml not found"
+              exit 1
+            fi
+            echo "🔧 Updating BOM version (propagates to Zeebe modules)..."
+            ./mvnw versions:set -DnewVersion="$HOTFIX_VERSION" -DgenerateBackupPoms=false -f "bom/pom.xml"
+            MVN_POM="bom/pom.xml"
+          fi
+
+          echo "✅ Project version updated to $HOTFIX_VERSION"
+          echo "🔍 Verifying version change..."
+          EVALUATED_VERSION="$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -f "$MVN_POM")"
+
+          if [[ "$EVALUATED_VERSION" != "$HOTFIX_VERSION" ]]; then
+            echo "❌ ERROR: Verified project version '$EVALUATED_VERSION' does not match expected hotfix version '$HOTFIX_VERSION'."
+            exit 1
+          fi
+
+          echo "✅ Verified project version: $EVALUATED_VERSION"
+
+          # Store the hotfix version for later steps
+          echo "hotfix-version=$HOTFIX_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build Maven artifacts
+        working-directory: build-repo
+        run: |
+          case "${{ matrix.component }}" in
+            "camunda"|"operate"|"tasklist"|"zeebe")
+              echo "📦 Building ${{ matrix.component }} distribution tarball..."
+              ./mvnw clean package -T1C -DskipTests -DskipChecks -am -pl dist
+              ;;
+            "optimize")
+              echo "📦 Building optimize distribution tarball..."
+              if [[ ! -f "optimize.Dockerfile" ]]; then
+                echo "❌ ERROR: Optimize Dockerfile not available in this branch. Reminder: Optimize versions 8.6 and 8.7 had their own stable branches: stable/optimize-8.6|8.7;
+                In case you build Optimize 8.6 or 8.7 hotfix, ensure your source branch or commit descends from the corresponding stable branch for Optimize."
+                exit 1
+              fi
+
+              # Branch detection: clients/camunda-spring-boot-starter only exists on unified branches (stable/8.8+)
+              # Older branches (stable/optimize-8.6/8.7) have bom and clients/java but not camunda-spring-boot-starter
+              if [[ -d "clients/camunda-spring-boot-starter" ]]; then
+                # Unified branch (stable/8.8+): Pre-build Zeebe dependencies to make them available at hotfix version
+                # This ensures zeebe-client, search-client, etc. are installed locally
+                echo "📦 Unified branch: Building Zeebe dependencies first..."
+                ./mvnw clean install -DskipTests -DskipChecks -am -pl clients/java
+
+                # Build optimize-distro with install goal (installs to local repo)
+                echo "📦 Building Optimize distribution..."
+                ./mvnw clean install -DskipTests -DskipChecks -Dskip.fe.build=false -PrunAssembly -am -pl optimize-distro,optimize/client
+              else
+                # Dedicated/older branch (stable/optimize-8.6/8.7): Use published Zeebe dependencies from Nexus
+                echo "📦 Dedicated Optimize branch: Building with published dependencies..."
+                ./mvnw clean package -DskipTests -DskipChecks -Dskip.fe.build=false -PrunAssembly -am -pl optimize-distro,optimize/client
+              fi
+              ;;
+            *)
+              echo "❌ Unknown component: ${{ matrix.component }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Configure Docker build args
+        id: build-args
+        run: |
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+          # Use the full semver-compatible hotfix version for consistency
+          BUILD_ARGS="VERSION=${{ steps.set-version.outputs.hotfix-version }}
+          DATE=$BUILD_DATE
+          REVISION=${{ steps.get-sha.outputs.full-sha }}"
+
+          {
+            echo "args<<EOF"
+            echo "$BUILD_ARGS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: ./build-repo
+          file: ./build-repo/${{ matrix.component == 'zeebe' && 'Dockerfile' || format('{0}.Dockerfile', matrix.component) }}
+          platforms: ${{ env.PLATFORMS }}
+          push: true
+          provenance: false
+          build-args: ${{ steps.build-args.outputs.args }}
+          tags: |
+            ${{ env.HOTFIX_REGISTRY }}/${{ matrix.component }}:${{ steps.set-version.outputs.hotfix-version }}
+          labels: |
+            org.opencontainers.image.title=Camunda ${{ matrix.component }} ${{ matrix.version }} Hotfix
+            org.opencontainers.image.description=Hotfix image for ${{ matrix.component }} ${{ matrix.version }} - Ticket: ${{ needs.validate-inputs.outputs.support-ticket-id }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.get-sha.outputs.full-sha }}
+            org.opencontainers.image.version=${{ steps.set-version.outputs.hotfix-version }}
+            camunda.hotfix.ticket-id=${{ needs.validate-inputs.outputs.support-ticket-id }}
+            camunda.hotfix.component=${{ matrix.component }}
+            camunda.hotfix.version=${{ matrix.version }}
+            camunda.hotfix.sha=${{ steps.get-sha.outputs.short-sha }}
+
+  summary:
+    name: Build Summary
+    runs-on: gcp-core-2-default
+    needs: [validate-inputs, build-images]
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Generate summary
+        run: |
+          {
+            echo "# 🔥 Urgent Hotfix: ${{ needs.validate-inputs.outputs.support-ticket-id }}"
+            echo ""
+            echo "**Support Ticket:** \`${{ needs.validate-inputs.outputs.support-ticket-id }}\`"
+            echo "**SHA:** \`${{ needs.build-images.outputs.short-sha }}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          BUILD_RESULT="${{ needs.build-images.result }}"
+
+          if [[ "$BUILD_RESULT" == "success" ]]; then
+            {
+              echo "## ✅ All Images Built Successfully"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            COMPONENTS="${{ needs.validate-inputs.outputs.components-with-versions }}"
+            TICKET_ID="${{ needs.validate-inputs.outputs.support-ticket-id }}"
+            SHORT_SHA="${{ needs.build-images.outputs.short-sha }}"
+
+            IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS"
+            for ITEM in "${COMP_ARRAY[@]}"; do
+              ITEM=$(echo "$ITEM" | xargs)
+              if [[ "$ITEM" =~ ^([^:]+):(.+)$ ]]; then
+                # Use the same hotfix version format: version-ticket.sha
+                HOTFIX_TAG="${BASH_REMATCH[2]}-${TICKET_ID}.${SHORT_SHA}"
+                TAG="${{ env.HOTFIX_REGISTRY }}/${BASH_REMATCH[1]}:${HOTFIX_TAG}"
+                echo "- \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            done
+
+          else
+            {
+              echo "## ❌ Build Failed"
+              echo ""
+              echo "One or more components failed to build. Check the matrix job logs above for details."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

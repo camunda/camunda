@@ -1,0 +1,117 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter.filter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.util.SemanticVersion;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public final class VariableTypeFilter implements ExporterRecordFilter, RecordVersionFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VariableTypeFilter.class);
+
+  private static final SemanticVersion MIN_BROKER_VERSION =
+      new SemanticVersion(8, 9, 0, null, null);
+
+  private final ObjectMapper objectMapper;
+
+  private final Set<VariableValueType> allowedTypes;
+
+  public VariableTypeFilter(
+      final Set<VariableValueType> inclusion, final Set<VariableValueType> exclusion) {
+    this(new ObjectMapper(), inclusion, exclusion);
+  }
+
+  public VariableTypeFilter(
+      final ObjectMapper objectMapper,
+      final Set<VariableValueType> inclusion,
+      final Set<VariableValueType> exclusion) {
+    this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
+    Objects.requireNonNull(inclusion, "inclusion must not be null");
+    Objects.requireNonNull(exclusion, "exclusion must not be null");
+
+    allowedTypes = VariableValueType.buildAllowedSet(inclusion, exclusion);
+  }
+
+  @Override
+  public boolean accept(final Record<?> record) {
+    if (!(record.getValue() instanceof final VariableRecordValue variableRecordValue)) {
+      return true;
+    }
+    final VariableValueType inferredType =
+        VariableValueType.infer(objectMapper, variableRecordValue.getValue());
+
+    final boolean accepted = allowedTypes.contains(inferredType);
+    if (!accepted && LOG.isDebugEnabled()) {
+      LOG.debug(
+          "VariableTypeFilter rejected record {}: inferred type {} is not in allowed types {}",
+          record.getKey(),
+          inferredType,
+          allowedTypes);
+    }
+    return accepted;
+  }
+
+  public static Set<VariableValueType> parseTypes(final List<String> rawValues) {
+    if (rawValues == null || rawValues.isEmpty()) {
+      return Collections.emptySet();
+    }
+
+    final EnumSet<VariableValueType> result = EnumSet.noneOf(VariableValueType.class);
+
+    for (final String value : rawValues) {
+      if (value == null) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("parseTypes: skipping null value");
+        }
+        continue;
+      }
+
+      final String upper = value.trim().toUpperCase(Locale.ROOT);
+      if (upper.isEmpty()) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("parseTypes: skipping empty value after trim (original='{}')", value);
+        }
+        continue;
+      }
+
+      if (upper.equals(VariableValueType.UNKNOWN.name())) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("parseTypes: skipping explicit UNKNOWN type token (original='{}')", value);
+        }
+        continue;
+      }
+
+      try {
+        final VariableValueType parsed = VariableValueType.valueOf(upper);
+        result.add(parsed);
+      } catch (final IllegalArgumentException ex) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(
+              "parseTypes: unable to parse variable value type token '{}', skipping", value, ex);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  @Override
+  public SemanticVersion minRecordBrokerVersion() {
+    return MIN_BROKER_VERSION;
+  }
+}

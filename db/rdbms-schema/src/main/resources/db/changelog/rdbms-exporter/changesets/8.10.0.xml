@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+  <property name="timestampWithTimeZone.type" value="DATETIMEOFFSET" dbms="mssql"/>
+
+  <changeSet id="create_deployed_resource_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}DEPLOYED_RESOURCE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}DEPLOYED_RESOURCE">
+      <column name="RESOURCE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="RESOURCE_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="RESOURCE_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="RESOURCE_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="VERSION" type="SMALLINT"/>
+      <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="DEPLOYMENT_KEY" type="BIGINT"/>
+      <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="RESOURCE_CONTENT" type="BLOB"/>
+    </createTable>
+    <modifySql dbms="h2">
+      <replace replace="BLOB" with="BINARY LARGE OBJECT"/>
+    </modifySql>
+    <modifySql dbms="postgresql">
+      <replace replace="OID" with="bytea"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_type_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="MESSAGE_SUBSCRIPTION_TYPE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="MESSAGE_SUBSCRIPTION_TYPE" type="VARCHAR(50)"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_process_definition_name_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="PROCESS_DEFINITION_NAME"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="PROCESS_DEFINITION_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_process_definition_version_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="PROCESS_DEFINITION_VERSION"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_tool_properties_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="TOOL_PROPERTIES"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="TOOL_PROPERTIES" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_tool_name_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="TOOL_NAME"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="TOOL_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_inbound_connector_type_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="INBOUND_CONNECTOR_TYPE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="INBOUND_CONNECTOR_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="create_rdbms_schema_version_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}RDBMS_SCHEMA_VERSION"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}RDBMS_SCHEMA_VERSION">
+      <column name="ID" type="SMALLINT" defaultValueNumeric="1">
+        <constraints nullable="false" primaryKey="true" checkConstraint="ID = 1"/>
+      </column>
+      <column name="VERSION" type="VARCHAR(32)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="add_job_priority_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}JOB" columnName="PRIORITY"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}JOB">
+      <column name="PRIORITY" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}AGENT_INSTANCE">
+      <column name="AGENT_INSTANCE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
+      <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PARTITION_ID" type="INTEGER"/>
+      <column name="STATUS" type="VARCHAR(20)"/>
+      <column name="MODEL" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PROVIDER" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="SYSTEM_PROMPT" type="CLOB"/>
+      <column name="MAX_TOKENS" type="BIGINT"/>
+      <column name="MAX_MODEL_CALLS" type="INTEGER"/>
+      <column name="MAX_TOOL_CALLS" type="INTEGER"/>
+      <column name="INPUT_TOKENS" type="BIGINT"/>
+      <column name="OUTPUT_TOKENS" type="BIGINT"/>
+      <column name="MODEL_CALLS" type="INTEGER"/>
+      <column name="TOOL_CALLS" type="INTEGER"/>
+      <column name="TOOLS" type="CLOB"/>
+      <column name="CREATION_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="LAST_UPDATED_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="COMPLETION_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+    </createTable>
+
+    <modifySql dbms="mariadb,mysql">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+    <modifySql dbms="mssql">
+      <replace replace="datetime2" with="DATETIMEOFFSET"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_pi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_PI_KEY"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_RPI_KEY"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_tenant_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_TENANT_ID"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_TENANT_ID">
+      <column name="TENANT_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_pd_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_PD_KEY"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_element_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_ID"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_ID">
+      <column name="ELEMENT_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_element_instance_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE">
+      <column name="AGENT_INSTANCE_KEY" type="BIGINT">
+        <constraints primaryKey="true"
+          foreignKeyName="${prefix}FK_AGENT_INSTANCE_EI_AGENT_INSTANCE"
+          referencedTableName="${prefix}AGENT_INSTANCE"
+          referencedColumnNames="AGENT_INSTANCE_KEY"
+          deleteCascade="true"/>
+      </column>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_element_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_INSTANCE_KEY"
+          tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_INSTANCE_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_element_instance_agent_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_INSTANCE_AGENT_INSTANCE_KEY"
+          tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_INSTANCE_AGENT_INSTANCE_KEY">
+      <column name="AGENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_wait_state_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}WAIT_STATE">
+      <column name="WAIT_STATE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="ELEMENT_TYPE" type="VARCHAR(50)"/>
+      <column name="WAIT_STATE_TYPE" type="VARCHAR(50)"/>
+      <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="DETAILS" type="CLOB"/>
+      <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="create_wait_state_process_definition_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_PROCESS_DEFINITION_ID"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}WAIT_STATE"
+      indexName="${prefix}IDX_WAIT_STATE_PROCESS_DEFINITION_ID">
+      <column name="PROCESS_DEFINITION_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_wait_state_process_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}WAIT_STATE"
+      indexName="${prefix}IDX_WAIT_STATE_PROCESS_INSTANCE_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_wait_state_element_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_ELEMENT_INSTANCE_KEY"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}WAIT_STATE"
+      indexName="${prefix}IDX_WAIT_STATE_ELEMENT_INSTANCE_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_wait_state_root_process_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_ROOT_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <sql dbms="mysql,mariadb,h2,oracle">
+      CREATE INDEX ${prefix}IDX_WAIT_STATE_ROOT_PROCESS_INSTANCE_KEY
+      ON ${prefix}WAIT_STATE (ROOT_PROCESS_INSTANCE_KEY)
+    </sql>
+    <!-- Since the user task key is sparse, we allow Postgres and MSSQL to exclude null values -->
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_WAIT_STATE_ROOT_PROCESS_INSTANCE_KEY
+      ON ${prefix}WAIT_STATE (ROOT_PROCESS_INSTANCE_KEY) WHERE ROOT_PROCESS_INSTANCE_KEY IS NOT NULL
+    </sql>
+  </changeSet>
+
+  <changeSet id="add_inbound_channel_type_to_audit_log" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AUDIT_LOG" columnName="INBOUND_CHANNEL_TYPE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AUDIT_LOG">
+      <column name="INBOUND_CHANNEL_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_inbound_channel_tool_name_to_audit_log" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AUDIT_LOG" columnName="INBOUND_CHANNEL_TOOL_NAME"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AUDIT_LOG">
+      <column name="INBOUND_CHANNEL_TOOL_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="create_process_def_var_name_lookup_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}PROCESS_DEF_VAR_NAME_LOOKUP"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}PROCESS_DEF_VAR_NAME_LOOKUP">
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
+        <constraints nullable="false" primaryKey="true"/>
+      </column>
+      <column name="VAR_NAME" type="NVARCHAR(${userCharColumnSize})">
+        <constraints nullable="false" primaryKey="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="add_business_id_to_correlated_message_subscription" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" columnName="BUSINESS_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION">
+      <column name="BUSINESS_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_business_id_to_user_task" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}USER_TASK" columnName="BUSINESS_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}USER_TASK">
+      <column name="BUSINESS_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+</databaseChangeLog>

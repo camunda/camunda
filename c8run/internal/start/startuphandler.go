@@ -1,0 +1,491 @@
+package start
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+
+	"github.com/camunda/camunda/c8run/internal/health"
+	"github.com/camunda/camunda/c8run/internal/jre"
+	"github.com/camunda/camunda/c8run/internal/overrides"
+	"github.com/camunda/camunda/c8run/internal/types"
+	"github.com/rs/zerolog/log"
+)
+
+var evalSymlinks = filepath.EvalSymlinks
+
+const startupHealthCheckRetries = 24
+
+type processHandler interface {
+	AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc)
+	WritePIDToFile(pidPath string, pid int) error
+	TrackProcessTree(pidPath string, rootPid int)
+}
+
+const (
+	expectedJavaVersion       = 21
+	java25RuntimeVersion      = 25
+	jdkJavaOptionsEnvironment = "JDK_JAVA_OPTIONS"
+)
+
+var java25RuntimeOptions = []string{
+	"--enable-native-access=ALL-UNNAMED",
+	"--sun-misc-unsafe-memory-access=allow",
+}
+
+func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEnabled bool) {
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("System Version Information")
+	fmt.Println("--------------------------")
+	fmt.Println("Camunda Details:")
+	fmt.Printf("  Version: %s\n", os.Getenv("CAMUNDA_VERSION"))
+	fmt.Println("--------------------------")
+	fmt.Println("Java Details:")
+	fmt.Printf("  Version: %s\n", javaVersion)
+	fmt.Printf("  JAVA_HOME: %s\n", javaHome)
+	fmt.Printf("  JAVA_OPTS: %s\n", javaOpts)
+	if jdkJavaOptions := os.Getenv(jdkJavaOptionsEnvironment); jdkJavaOptions != "" {
+		fmt.Printf("  %s: %s\n", jdkJavaOptionsEnvironment, jdkJavaOptions)
+	}
+	fmt.Println("--------------------------")
+	fmt.Println("Logging Details:")
+	if connectorsEnabled {
+		fmt.Println("  Connectors: ./log/connectors.log")
+	} else {
+		fmt.Println("  Connectors: disabled (--disable-connectors)")
+	}
+	fmt.Println("  Camunda: ./log/camunda.log")
+	fmt.Println("--------------------------")
+	fmt.Println("Press Ctrl+C to initiate graceful shutdown.")
+	fmt.Println("--------------------------")
+	fmt.Println("")
+	fmt.Println("")
+}
+
+func getJavaVersion(javaBinary string) (string, error) {
+	return runJavaHelper(javaBinary, "JavaVersion")
+}
+
+func runJavaHelper(javaBinary, helperClass string) (string, error) {
+	javaCmd := exec.Command(javaBinary, helperClass)
+	var out strings.Builder
+	var stderr strings.Builder
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return "", fmt.Errorf(
+			"failed to run java helper %s with %s: %w\n%s",
+			helperClass,
+			javaBinary,
+			err,
+			strings.TrimSpace(stderr.String()))
+	}
+	return out.String(), nil
+}
+
+type StartupHandler struct {
+	ProcessHandler processHandler
+}
+
+func ensurePortAvailable(port int) error {
+	networks := []string{"tcp4", "tcp6"}
+	for _, network := range networks {
+		listener, err := net.Listen(network, fmt.Sprintf(":%d", port))
+		if err != nil {
+			if isNetworkUnsupported(err) {
+				continue
+			}
+			return fmt.Errorf("port %d is already in use (%s)", port, network)
+		}
+		if err := listener.Close(); err != nil {
+			return fmt.Errorf("failed to release temporary port check listener: %w", err)
+		}
+	}
+	return nil
+}
+
+func isNetworkUnsupported(err error) bool {
+	switch {
+	case errors.Is(err, syscall.EAFNOSUPPORT),
+		errors.Is(err, syscall.EPROTONOSUPPORT),
+		errors.Is(err, syscall.EPFNOSUPPORT),
+		errors.Is(err, syscall.EADDRNOTAVAIL):
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath string, stop context.CancelFunc) error {
+	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		log.Err(err).Msg("Failed to open file: " + logPath)
+		return err
+	}
+
+	defer func() {
+		if cerr := logFile.Close(); cerr != nil {
+			log.Err(cerr).Msg("Failed to close file: " + logPath)
+		}
+	}()
+
+	cmd.Stdout = logFile
+	cmd.Stderr = logFile
+	err = cmd.Start()
+	if err != nil {
+		log.Err(err).Msg("Failed to start process: " + cmd.String())
+		return err
+	}
+
+	err = s.ProcessHandler.WritePIDToFile(pid, cmd.Process.Pid)
+	if err != nil {
+		log.Err(err).Msg("Failed to write PID to file: " + pid)
+		log.Info().Msg("To avoid zombie processes, we will now kill all processes that have the same PID as the process we just started and quit the application")
+		stop()
+		return err
+	}
+
+	s.ProcessHandler.TrackProcessTree(pid, cmd.Process.Pid)
+
+	return nil
+}
+
+func getJavaHome(javaBinary string) (string, error) {
+	return runJavaHelper(javaBinary, "JavaHome")
+}
+
+func resolveJavaHomeAndBinary(parentDir string) (string, string, error) {
+	if javaHome, javaBinary, ok := resolveBundledJava(parentDir); ok {
+		return javaHome, javaBinary, nil
+	}
+
+	javaHome := os.Getenv("JAVA_HOME")
+	javaBinary := "java"
+	var javaHomeAfterSymlink string
+	var err error
+	if javaHome != "" {
+		javaHomeAfterSymlink, err = evalSymlinks(javaHome)
+		if err != nil {
+			if _, statErr := os.Stat(javaHome); statErr != nil {
+				log.Debug().Err(err).Msg("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
+				javaHome = ""
+			} else {
+				log.Debug().Err(err).Msg("Failed to resolve JAVA_HOME symlinks, continuing with provided path")
+			}
+		} else {
+			javaHome = javaHomeAfterSymlink
+		}
+	}
+	if javaHome == "" {
+		javaHome, err = getJavaHome(javaBinary)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to get JAVA_HOME: %w", err)
+		}
+	}
+
+	if javaHome != "" {
+		err = filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
+			_, filename := filepath.Split(path)
+			if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
+				javaBinary = path
+				return filepath.SkipAll
+			}
+			return nil
+		})
+		if err != nil {
+			return "", "", err
+		}
+		// fallback to bin/java.exe
+		if javaBinary == "" {
+			switch runtime.GOOS {
+			case "linux", "darwin":
+				javaBinary = filepath.Join(javaHome, "bin", "java")
+			case "windows":
+				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
+			}
+		}
+	} else {
+		path, err := exec.LookPath("java")
+		if err != nil {
+			return "", "", fmt.Errorf("failed to find JAVA_HOME or java program")
+		}
+
+		// go up 2 directories since it's not guaranteed that java is in a bin folder
+		javaHome = filepath.Dir(filepath.Dir(path))
+		javaBinary = path
+	}
+
+	return javaHome, javaBinary, nil
+}
+
+func resolveBundledJava(parentDir string) (string, string, bool) {
+	if parentDir == "" {
+		return "", "", false
+	}
+
+	javaHome := jre.Home(parentDir)
+	javaBinary := jre.JavaBinary(parentDir)
+	if !isExecutableFile(javaBinary) {
+		return "", "", false
+	}
+	return javaHome, javaBinary, true
+}
+
+func isExecutableFile(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	if runtime.GOOS == "windows" {
+		return true
+	}
+	return info.Mode().Perm()&0o111 != 0
+}
+
+func configureJavaRuntimeEnvironment(javaHome, javaBinary string) error {
+	if err := os.Setenv("JAVA_HOME", javaHome); err != nil {
+		return fmt.Errorf("failed to set JAVA_HOME: %w", err)
+	}
+	// Camunda's launch scripts read JAVACMD; camunda.bat needs quotes for paths with spaces.
+	javaCmd := javaBinary
+	if runtime.GOOS == "windows" {
+		javaCmd = `"` + javaBinary + `"`
+	}
+	if err := os.Setenv("JAVACMD", javaCmd); err != nil {
+		return fmt.Errorf("failed to set JAVACMD: %w", err)
+	}
+	return nil
+}
+
+func parseJavaMajorVersion(version string) (int, error) {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return 0, fmt.Errorf("empty version")
+	}
+
+	firstToken := strings.Fields(version)[0]
+	firstToken = strings.Trim(firstToken, `"`)
+	parts := strings.Split(firstToken, ".")
+	if len(parts) == 0 {
+		return 0, fmt.Errorf("invalid version")
+	}
+	if parts[0] == "1" && len(parts) > 1 {
+		return leadingInteger(parts[1])
+	}
+	return leadingInteger(parts[0])
+}
+
+func leadingInteger(value string) (int, error) {
+	for index, char := range value {
+		if char < '0' || char > '9' {
+			if index == 0 {
+				return 0, fmt.Errorf("invalid version")
+			}
+			return strconv.Atoi(value[:index])
+		}
+	}
+	return strconv.Atoi(value)
+}
+
+func configureJavaCompatibilityOptions(javaMajorVersion int) error {
+	if javaMajorVersion < java25RuntimeVersion {
+		return nil
+	}
+
+	currentOptions := os.Getenv(jdkJavaOptionsEnvironment)
+	updatedOptions := appendMissingOptions(currentOptions, java25RuntimeOptions)
+	if updatedOptions == currentOptions {
+		return nil
+	}
+	if err := os.Setenv(jdkJavaOptionsEnvironment, updatedOptions); err != nil {
+		return fmt.Errorf("failed to set %s: %w", jdkJavaOptionsEnvironment, err)
+	}
+	return nil
+}
+
+func appendMissingOptions(currentOptions string, requiredOptions []string) string {
+	updatedOptions := strings.TrimSpace(currentOptions)
+	existingOptions := make(map[string]struct{})
+	for _, option := range strings.Fields(currentOptions) {
+		existingOptions[option] = struct{}{}
+	}
+	for _, option := range requiredOptions {
+		if _, exists := existingOptions[option]; exists {
+			continue
+		}
+		if updatedOptions == "" {
+			updatedOptions = option
+		} else {
+			updatedOptions = updatedOptions + " " + option
+		}
+	}
+	return updatedOptions
+}
+
+// ensureDefaultConfig verifies that <parentDir>/configuration/default.yaml exists.
+func ensureDefaultConfig(parentDir string) error {
+	configDir := filepath.Join(parentDir, "configuration")
+	appYAML := filepath.Join(configDir, "application.yaml")
+
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create configuration directory: %w", err)
+	}
+	if _, err := os.Stat(appYAML); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("missing default config at %s (expected /configuration/application.yaml). Please add it to your repo", appYAML)
+		}
+		return fmt.Errorf("failed to stat %s: %w", appYAML, err)
+	}
+	return nil
+}
+
+func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string) {
+	defer wg.Done()
+
+	c8 := state.C8
+	settings := state.Settings
+	processInfo := state.ProcessInfo
+
+	// Resolve JAVA_HOME and javaBinary
+	javaHome, javaBinary, err := resolveJavaHomeAndBinary(parentDir)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	if err := configureJavaRuntimeEnvironment(javaHome, javaBinary); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	if err := ensureDefaultConfig(parentDir); err != nil {
+		fmt.Printf("Failed to ensure default config: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := ensurePortAvailable(settings.Port); err != nil {
+		log.Error().Err(err).Int("port", settings.Port).Msg("Camunda Run port is unavailable")
+		fmt.Printf("Port %d is already in use. Stop the other service or run `c8run start --port <free-port>`.\n", settings.Port)
+		os.Exit(1)
+	}
+
+	err = overrides.SetEnvVars()
+	if err != nil {
+		fmt.Println("Failed to set envVars:", err)
+	}
+	javaVersion := os.Getenv("JAVA_VERSION")
+	if javaVersion == "" {
+		javaVersion, err = getJavaVersion(javaBinary)
+		if err != nil {
+			fmt.Printf("Failed to get Java version: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	javaMajorVersionInt, err := parseJavaMajorVersion(javaVersion)
+	if err != nil {
+		fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
+		os.Exit(1)
+	}
+	if javaMajorVersionInt < expectedJavaVersion {
+		fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
+		os.Exit(1)
+	}
+	if err := configureJavaCompatibilityOptions(javaMajorVersionInt); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	javaOpts := os.Getenv("JAVA_OPTS")
+	if javaOpts != "" {
+		fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
+	}
+	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
+
+	if strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		event := log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType)
+		if settings.ResolvedConfigPath != "" {
+			event = event.Str("config", settings.ResolvedConfigPath)
+		}
+		event.Msg("C8Run will use the configured external Elasticsearch instance; no local Elasticsearch process is bundled or managed")
+	}
+
+	printSystemInformation(javaVersion, javaHome, javaOpts, !settings.DisableConnectors)
+
+	var extraArgs string
+	var slash string
+	switch runtime.GOOS {
+	case "linux", "darwin":
+		slash = "/"
+	case "windows":
+		slash = "\\"
+	}
+
+	// Always load the default config directory
+	extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, "configuration") + slash
+
+	// Optional user override (file or dir) — appended LAST => higher precedence
+	if settings.Config != "" {
+		path := filepath.Join(parentDir, settings.Config)
+		configStat, err := os.Stat(path)
+		if err != nil {
+			fmt.Printf("Failed to read config path: %s\n", path)
+			os.Exit(1)
+		}
+		if configStat.IsDir() {
+			extraArgs = extraArgs + ",file:" + path + slash
+		} else {
+			extraArgs = extraArgs + ",file:" + path
+		}
+	}
+
+	s.ProcessHandler.AttemptToStartProcess(processInfo.Camunda.PidPath, "Camunda", func() {
+		camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
+		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
+		err := s.startApplication(camundaCmd, processInfo.Camunda.PidPath, camundaLogPath, stop)
+		if err != nil {
+			log.Err(err).Msg("Failed to start Camunda process")
+			stop()
+			return
+		}
+	}, func() error {
+		return health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
+	}, stop)
+
+	if ctx.Err() != nil {
+		return
+	}
+
+	s.startConnectors(ctx, stop, state, parentDir, javaBinary)
+}
+
+func (s *StartupHandler) startConnectors(ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string, javaBinary string) {
+	if state.Settings.DisableConnectors {
+		log.Info().Msg("Skipping bundled connectors startup because --disable-connectors was set")
+		return
+	}
+
+	processInfo := state.ProcessInfo
+	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
+		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
+		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
+		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
+		if err != nil {
+			log.Err(err).Msg("Failed to start Connectors process")
+			stop()
+			return
+		}
+	}, func() error {
+		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
+	}, stop)
+}

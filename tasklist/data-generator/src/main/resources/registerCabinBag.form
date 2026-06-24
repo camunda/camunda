@@ -1,0 +1,47 @@
+{
+  "components": [
+    {
+      "key": "ticketNo",
+      "label": "Ticket number",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_1fyssxb",
+      "layout": {
+        "row": "Row_0znn06t"
+      }
+    },
+    {
+      "key": "cabinBagRegistered",
+      "label": "Cabin bag registered",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      },
+      "id": "Field_1syxjqz",
+      "layout": {
+        "row": "Row_10masv4"
+      }
+    },
+    {
+      "action": "submit",
+      "key": "button1",
+      "label": "Save",
+      "type": "button",
+      "id": "Field_0cge0q4",
+      "layout": {
+        "row": "Row_0lu4d2o"
+      }
+    }
+  ],
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.29.0-nightly.20241014"
+  },
+  "schemaVersion": 16,
+  "type": "default",
+  "id": "registerCabinBag"
+}

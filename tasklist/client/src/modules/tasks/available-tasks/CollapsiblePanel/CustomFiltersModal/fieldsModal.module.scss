@@ -1,0 +1,81 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/layout';
+
+.modalFooter {
+  display: grid;
+  grid-template-columns: 40% 20% 20% 20%;
+}
+
+.twoColumnGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-gap: var(--cds-spacing-06) var(--cds-spacing-03);
+  align-items: flex-end;
+
+  & > * {
+    width: 100%;
+    max-width: layout.to-rem(288px);
+  }
+
+  & > .secondColumn {
+    margin-right: calc(40px + var(--cds-spacing-03));
+    justify-self: flex-end;
+  }
+}
+
+.nameField {
+  width: 100%;
+  grid-column-start: span 2;
+  max-width: unset;
+}
+
+.variableGrid {
+  display: grid;
+  grid-template-columns: minmax(auto, layout.to-rem(288px)) auto 40px;
+  grid-gap: var(--cds-spacing-05) var(--cds-spacing-03);
+  align-items: flex-end;
+
+  &:not(:empty) {
+    margin-bottom: var(--cds-spacing-05);
+  }
+
+  & .variableGridItem {
+    align-self: flex-start;
+  }
+
+  & .variableGridRemove {
+    align-self: center;
+  }
+}
+
+.toggle {
+  grid-column-start: span 2;
+}
+
+.variableFormGroup {
+  grid-column-start: span 2;
+  max-width: unset;
+}
+
+.dateRangeFormGroup {
+  display: inline-flex;
+}
+
+.datePicker {
+  &,
+  & :global(input.cds--date-picker__input.flatpickr-input) {
+    inline-size: layout.to-rem(143.5px);
+  }
+
+  &:first-of-type {
+    margin-inline-end: layout.to-rem(1px);
+  }
+}

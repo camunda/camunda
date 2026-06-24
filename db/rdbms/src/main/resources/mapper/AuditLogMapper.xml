@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.AuditLogMapper">
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}AUDIT_LOG
+      <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.AuditLogDbQuery"
+    resultType="io.camunda.db.rdbms.write.domain.AuditLogDbModel"
+    statementType="PREPARED">
+    SELECT * FROM (
+      SELECT
+        AUDIT_LOG_KEY,
+        ENTITY_KEY,
+        ENTITY_TYPE,
+        OPERATION_TYPE,
+        ENTITY_VERSION,
+        ENTITY_VALUE_TYPE,
+        ENTITY_OPERATION_INTENT,
+        BATCH_OPERATION_KEY,
+        BATCH_OPERATION_TYPE,
+        TIMESTAMP,
+        ACTOR_TYPE,
+        ACTOR_ID,
+        AGENT_ELEMENT_ID,
+        TENANT_ID,
+        TENANT_SCOPE,
+        RESULT,
+        CATEGORY,
+        PROCESS_DEFINITION_ID,
+        DECISION_REQUIREMENTS_ID,
+        DECISION_DEFINITION_ID,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_INSTANCE_KEY,
+        ROOT_PROCESS_INSTANCE_KEY,
+        ELEMENT_INSTANCE_KEY,
+        JOB_KEY,
+        USER_TASK_KEY,
+        DECISION_REQUIREMENTS_KEY,
+        DECISION_DEFINITION_KEY,
+        DECISION_EVALUATION_KEY,
+        DEPLOYMENT_KEY,
+        FORM_KEY,
+        RESOURCE_KEY,
+        RELATED_ENTITY_TYPE,
+        RELATED_ENTITY_KEY,
+        ENTITY_DESCRIPTION,
+        PARTITION_ID,
+        HISTORY_CLEANUP_DATE,
+        INBOUND_CHANNEL_TYPE,
+        INBOUND_CHANNEL_TOOL_NAME
+      FROM ${prefix}AUDIT_LOG
+      <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter" />
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy" />
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
+  </select>
+
+  <sql id="searchFilter">
+    <where>
+      <!-- tenant authorization filter -->
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND (TENANT_SCOPE = 'GLOBAL' OR TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>)
+      </if>
+      <!-- Deny all access when no authorizations are configured -->
+      <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+        AND 1 = 0
+      </if>
+      <!-- composite authorization filter (OR of all authorization checks) -->
+      <!-- Only apply this filter if there are any authorizations configured -->
+      <if test="!authorizationFilter.authorizedCategories.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+        AND (
+          <trim prefixOverrides="OR">
+             <!-- AUDIT_LOG resource type: wildcard access to all categories -->
+            <if test="authorizationFilter.hasCategoryWildcard()">
+              OR CATEGORY IS NOT NULL
+            </if>
+            <!-- AUDIT_LOG resource type: specific authorized categories -->
+            <if test="!authorizationFilter.authorizedCategories.isEmpty() and !authorizationFilter.hasCategoryWildcard()">
+              OR CATEGORY IN
+              <foreach collection="authorizationFilter.authorizedCategories" item="category" open="(" separator="," close=")">
+                #{category}
+              </foreach>
+            </if>
+            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: wildcard access -->
+            <if test="authorizationFilter.hasProcessInstanceWildcard()">
+              OR PROCESS_DEFINITION_ID IS NOT NULL
+            </if>
+            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: specific process definition IDs -->
+            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and !authorizationFilter.hasProcessInstanceWildcard()">
+              OR PROCESS_DEFINITION_ID IN
+              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance" item="processDefId" open="(" separator="," close=")">
+                #{processDefId}
+              </foreach>
+            </if>
+            <!-- PROCESS_DEFINITION + READ_USER_TASK: wildcard access -->
+            <if test="authorizationFilter.hasUserTaskWildcard()">
+              OR CATEGORY = 'USER_TASKS'
+            </if>
+            <!-- PROCESS_DEFINITION + READ_USER_TASK: specific process definition IDs -->
+            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty() and !authorizationFilter.hasUserTaskWildcard()">
+              OR (CATEGORY = 'USER_TASKS' AND PROCESS_DEFINITION_ID IN
+              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForUserTask" item="processDefId" open="(" separator="," close=")">
+                #{processDefId}
+              </foreach>)
+            </if>
+          </trim>
+        )
+      </if>
+      <!-- basic filters -->
+      <if test="filter.auditLogKeyOperations != null and !filter.auditLogKeyOperations.isEmpty()">
+        <foreach collection="filter.auditLogKeyOperations" item="operation">
+          AND AUDIT_LOG_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.entityKeyOperations != null and !filter.entityKeyOperations.isEmpty()">
+        <foreach collection="filter.entityKeyOperations" item="operation">
+          AND ENTITY_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.entityTypeOperations != null and !filter.entityTypeOperations.isEmpty()">
+        <foreach collection="filter.entityTypeOperations" item="operation">
+          AND ENTITY_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.operationTypeOperations != null and !filter.operationTypeOperations.isEmpty()">
+        <foreach collection="filter.operationTypeOperations" item="operation">
+          AND OPERATION_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.batchOperationTypeOperations != null and !filter.batchOperationTypeOperations.isEmpty()">
+        <foreach collection="filter.batchOperationTypeOperations" item="operation">
+          AND BATCH_OPERATION_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.timestampOperations != null and !filter.timestampOperations.isEmpty()">
+        <foreach collection="filter.timestampOperations" item="operation">
+          AND TIMESTAMP
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.actorTypeOperations != null and !filter.actorTypeOperations.isEmpty()">
+        <foreach collection="filter.actorTypeOperations" item="operation">
+          AND ACTOR_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.actorIdOperations != null and !filter.actorIdOperations.isEmpty()">
+        <foreach collection="filter.actorIdOperations" item="operation">
+          AND ACTOR_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.agentElementIdOperations != null and !filter.agentElementIdOperations.isEmpty()">
+        <foreach collection="filter.agentElementIdOperations" item="operation">
+          AND AGENT_ELEMENT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.inboundChannelTypeOperations != null and !filter.inboundChannelTypeOperations.isEmpty()">
+        <foreach collection="filter.inboundChannelTypeOperations" item="operation">
+          AND INBOUND_CHANNEL_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.inboundChannelToolNameOperations != null and !filter.inboundChannelToolNameOperations.isEmpty()">
+        <foreach collection="filter.inboundChannelToolNameOperations" item="operation">
+          AND INBOUND_CHANNEL_TOOL_NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+        <foreach collection="filter.tenantIdOperations" item="operation">
+          AND TENANT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.resultOperations != null and !filter.resultOperations.isEmpty()">
+        <foreach collection="filter.resultOperations" item="operation">
+          AND RESULT
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.categoryOperations != null and !filter.categoryOperations.isEmpty()">
+        <foreach collection="filter.categoryOperations" item="operation">
+          AND CATEGORY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.processInstanceKeyOperations" item="operation">
+          AND PROCESS_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+          AND PROCESS_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionIdOperations" item="operation">
+          AND PROCESS_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.userTaskKeyOperations != null and !filter.userTaskKeyOperations.isEmpty()">
+        <foreach collection="filter.userTaskKeyOperations" item="operation">
+          AND USER_TASK_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionRequirementsIdOperations != null and !filter.decisionRequirementsIdOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsIdOperations" item="operation">
+          AND DECISION_REQUIREMENTS_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionRequirementsKeyOperations != null and !filter.decisionRequirementsKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsKeyOperations" item="operation">
+          AND DECISION_REQUIREMENTS_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionDefinitionIdOperations != null and !filter.decisionDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.decisionDefinitionIdOperations" item="operation">
+          AND DECISION_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionDefinitionKeyOperations != null and !filter.decisionDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionDefinitionKeyOperations" item="operation">
+          AND DECISION_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
+        <foreach collection="filter.jobKeyOperations" item="operation">
+          AND JOB_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.batchOperationKeyOperations != null and !filter.batchOperationKeyOperations.isEmpty()">
+        <foreach collection="filter.batchOperationKeyOperations" item="operation">
+          AND BATCH_OPERATION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.deploymentKeyOperations != null and !filter.deploymentKeyOperations.isEmpty()">
+        <foreach collection="filter.deploymentKeyOperations" item="operation">
+          AND DEPLOYMENT_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.formKeyOperations != null and !filter.formKeyOperations.isEmpty()">
+        <foreach collection="filter.formKeyOperations" item="operation">
+          AND FORM_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.resourceKeyOperations != null and !filter.resourceKeyOperations.isEmpty()">
+        <foreach collection="filter.resourceKeyOperations" item="operation">
+          AND RESOURCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.decisionEvaluationKeyOperations != null and !filter.decisionEvaluationKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionEvaluationKeyOperations" item="operation">
+          AND DECISION_EVALUATION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+          AND ELEMENT_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.relatedEntityTypeOperations != null and !filter.relatedEntityTypeOperations.isEmpty()">
+        <foreach collection="filter.relatedEntityTypeOperations" item="operation">
+          AND RELATED_ENTITY_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.relatedEntityKeyOperations != null and !filter.relatedEntityKeyOperations.isEmpty()">
+        <foreach collection="filter.relatedEntityKeyOperations" item="operation">
+          AND RELATED_ENTITY_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.entityDescriptionOperations != null and !filter.entityDescriptionOperations.isEmpty()">
+        <foreach collection="filter.entityDescriptionOperations" item="operation">
+          AND ENTITY_DESCRIPTION
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
+    INSERT INTO ${prefix}AUDIT_LOG (
+      AUDIT_LOG_KEY,
+      ENTITY_KEY,
+      ENTITY_TYPE,
+      OPERATION_TYPE,
+      ENTITY_VERSION,
+      ENTITY_VALUE_TYPE,
+      ENTITY_OPERATION_INTENT,
+      BATCH_OPERATION_KEY,
+      BATCH_OPERATION_TYPE,
+      TIMESTAMP,
+      ACTOR_TYPE,
+      ACTOR_ID,
+      AGENT_ELEMENT_ID,
+      TENANT_ID,
+      TENANT_SCOPE,
+      RESULT,
+      CATEGORY,
+      PROCESS_DEFINITION_ID,
+      DECISION_REQUIREMENTS_ID,
+      DECISION_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
+      ELEMENT_INSTANCE_KEY,
+      JOB_KEY,
+      USER_TASK_KEY,
+      DECISION_REQUIREMENTS_KEY,
+      DECISION_DEFINITION_KEY,
+      DECISION_EVALUATION_KEY,
+      DEPLOYMENT_KEY,
+      FORM_KEY,
+      RESOURCE_KEY,
+      RELATED_ENTITY_TYPE,
+      RELATED_ENTITY_KEY,
+      ENTITY_DESCRIPTION,
+      PARTITION_ID,
+      HISTORY_CLEANUP_DATE,
+      INBOUND_CHANNEL_TYPE,
+      INBOUND_CHANNEL_TOOL_NAME
+    )
+    VALUES
+    <foreach collection="dbModels" item="auditLog" separator=",">
+      (
+        #{auditLog.auditLogKey},
+        #{auditLog.entityKey},
+        #{auditLog.entityType},
+        #{auditLog.operationType},
+        #{auditLog.entityVersion},
+        #{auditLog.entityValueType},
+        #{auditLog.entityOperationIntent},
+        #{auditLog.batchOperationKey},
+        #{auditLog.batchOperationType},
+        #{auditLog.timestamp, jdbcType=TIMESTAMP},
+        #{auditLog.actorType},
+        #{auditLog.actorId},
+        #{auditLog.agentElementId},
+        #{auditLog.tenantId},
+        #{auditLog.tenantScope},
+        #{auditLog.result},
+        #{auditLog.category},
+        #{auditLog.processDefinitionId},
+        #{auditLog.decisionRequirementsId},
+        #{auditLog.decisionDefinitionId},
+        #{auditLog.processDefinitionKey},
+        #{auditLog.processInstanceKey},
+        #{auditLog.rootProcessInstanceKey},
+        #{auditLog.elementInstanceKey},
+        #{auditLog.jobKey},
+        #{auditLog.userTaskKey},
+        #{auditLog.decisionRequirementsKey},
+        #{auditLog.decisionDefinitionKey},
+        #{auditLog.decisionEvaluationKey},
+        #{auditLog.deploymentKey},
+        #{auditLog.formKey},
+        #{auditLog.resourceKey},
+        #{auditLog.relatedEntityType},
+        #{auditLog.relatedEntityKey},
+        #{auditLog.entityDescription},
+        #{auditLog.partitionId},
+        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP},
+        #{auditLog.inboundChannelType},
+        #{auditLog.inboundChannelToolName}
+      )
+    </foreach>
+  </insert>
+
+  <update id="updateAuditLogEntityHistoryCleanupDate">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE ENTITY_KEY IN
+    <foreach collection="entityKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    AND ENTITY_TYPE = #{entityType}
+  </update>
+
+  <sql id="updateUnsetAuditLogEntityHistoryCleanupDatesFilter">
+    <choose>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_INSTANCE'">
+        PROCESS_INSTANCE_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_DEFINITION'">
+        PROCESS_DEFINITION_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_INSTANCE'">
+        DECISION_EVALUATION_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_REQUIREMENTS'">
+        DECISION_REQUIREMENTS_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <otherwise>
+        1 = 0
+      </otherwise>
+    </choose>
+    AND HISTORY_CLEANUP_DATE IS NULL
+  </sql>
+
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE
+    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.updateUnsetAuditLogEntityHistoryCleanupDatesFilter"/>
+    LIMIT #{limit}
+  </update>
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates" databaseId="mssql">
+    UPDATE TOP (#{limit}) ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE
+    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.updateUnsetAuditLogEntityHistoryCleanupDatesFilter"/>
+  </update>
+  <!--
+    Special handling for Oracle to handle large lists of keys.
+    We use XMLTABLE to pass the list of keys as an XML document, avoiding Oracle's 1000-element IN clause limit.
+    The keys list is joined directly against the AUDIT_LOG table via XMLTABLE — no IN clause on the keys.
+  -->
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates" databaseId="oracle">
+    UPDATE ${prefix}AUDIT_LOG t SET
+    t.HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE t.HISTORY_CLEANUP_DATE IS NULL
+    AND
+    <choose>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_INSTANCE'">
+        t.PROCESS_INSTANCE_KEY
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_DEFINITION'">
+        t.PROCESS_DEFINITION_KEY
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_INSTANCE'">
+        t.DECISION_EVALUATION_KEY
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_REQUIREMENTS'">
+        t.DECISION_REQUIREMENTS_KEY
+      </when>
+      <otherwise>
+        NULL
+      </otherwise>
+    </choose>
+    IN (SELECT COLUMN_VALUE FROM XMLTABLE('/d/r'
+        PASSING XMLTYPE(#{keys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
+        COLUMNS COLUMN_VALUE NUMBER PATH 'text()'))
+    AND ROWNUM &lt;= #{limit}
+  </update>
+  <!--
+    Special handling for PostgreSQL to delete using ctid or a specified primary key column.
+    This avoids issues with large IN clauses by using ANY with an array parameter.
+  -->
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates" databaseId="postgresql">
+    UPDATE ${prefix}AUDIT_LOG t SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    FROM (
+      SELECT AUDIT_LOG_KEY FROM ${prefix}AUDIT_LOG
+      WHERE HISTORY_CLEANUP_DATE IS NULL
+      AND
+      <choose>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_INSTANCE'">
+          PROCESS_INSTANCE_KEY
+        </when>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_DEFINITION'">
+          PROCESS_DEFINITION_KEY
+        </when>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_INSTANCE'">
+          DECISION_EVALUATION_KEY
+        </when>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_REQUIREMENTS'">
+          DECISION_REQUIREMENTS_KEY
+        </when>
+        <otherwise>
+          NULL
+        </otherwise>
+      </choose>
+      = ANY(#{keys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+      LIMIT #{limit}
+    ) sub
+    WHERE t.AUDIT_LOG_KEY = sub.AUDIT_LOG_KEY
+  </update>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="dbModels" item="auditLog">
+      INTO ${prefix}AUDIT_LOG (
+        AUDIT_LOG_KEY, ENTITY_KEY, ENTITY_TYPE, OPERATION_TYPE, ENTITY_VERSION, ENTITY_VALUE_TYPE,
+        ENTITY_OPERATION_INTENT, BATCH_OPERATION_KEY, BATCH_OPERATION_TYPE, TIMESTAMP,
+        ACTOR_TYPE, ACTOR_ID, AGENT_ELEMENT_ID, TENANT_ID, TENANT_SCOPE, RESULT, CATEGORY,
+        PROCESS_DEFINITION_ID, DECISION_REQUIREMENTS_ID, DECISION_DEFINITION_ID,
+        PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY,
+        ELEMENT_INSTANCE_KEY, JOB_KEY, USER_TASK_KEY, DECISION_REQUIREMENTS_KEY,
+        DECISION_DEFINITION_KEY, DECISION_EVALUATION_KEY, DEPLOYMENT_KEY, FORM_KEY,
+        RESOURCE_KEY, RELATED_ENTITY_TYPE, RELATED_ENTITY_KEY, ENTITY_DESCRIPTION,
+        PARTITION_ID, HISTORY_CLEANUP_DATE, INBOUND_CHANNEL_TYPE, INBOUND_CHANNEL_TOOL_NAME)
+      VALUES (
+        #{auditLog.auditLogKey}, #{auditLog.entityKey}, #{auditLog.entityType},
+        #{auditLog.operationType}, #{auditLog.entityVersion}, #{auditLog.entityValueType},
+        #{auditLog.entityOperationIntent}, #{auditLog.batchOperationKey},
+        #{auditLog.batchOperationType}, #{auditLog.timestamp, jdbcType=TIMESTAMP},
+        #{auditLog.actorType}, #{auditLog.actorId}, #{auditLog.agentElementId}, #{auditLog.tenantId},
+        #{auditLog.tenantScope}, #{auditLog.result},
+        #{auditLog.category}, #{auditLog.processDefinitionId},
+        #{auditLog.decisionRequirementsId}, #{auditLog.decisionDefinitionId},
+        #{auditLog.processDefinitionKey}, #{auditLog.processInstanceKey},
+        #{auditLog.rootProcessInstanceKey}, #{auditLog.elementInstanceKey},
+        #{auditLog.jobKey}, #{auditLog.userTaskKey}, #{auditLog.decisionRequirementsKey},
+        #{auditLog.decisionDefinitionKey}, #{auditLog.decisionEvaluationKey},
+        #{auditLog.deploymentKey}, #{auditLog.formKey}, #{auditLog.resourceKey},
+        #{auditLog.relatedEntityType}, #{auditLog.relatedEntityKey},
+        #{auditLog.entityDescription}, #{auditLog.partitionId},
+        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP},
+        #{auditLog.inboundChannelType}, #{auditLog.inboundChannelToolName})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessDefinitionRelatedData">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit}
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="oracle">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE rowid IN (SELECT rowid
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    AND ROWNUM &lt;= #{limit})
+  </delete>
+  <delete id="deleteProcessDefinitionRelatedData" databaseId="postgresql">
+    DELETE
+    FROM ${prefix}AUDIT_LOG
+    WHERE ctid IN (SELECT ctid
+    FROM ${prefix}AUDIT_LOG
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator=", " close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit})
+  </delete>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+</mapper>
+

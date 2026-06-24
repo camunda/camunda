@@ -1,0 +1,29 @@
+---
+# Source: camunda-platform/charts/elasticsearch/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elastic
+  namespace: "c8-golden-main-elasticsearch-stable"
+  labels:
+    app.kubernetes.io/instance: c8-golden-main-elasticsearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.18.0
+
+    app.kubernetes.io/component: master
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: tcp-rest-api
+      port: 9200
+      targetPort: rest-api
+      nodePort: null
+    - name: tcp-transport
+      port: 9300
+      nodePort: null
+  selector:
+    app.kubernetes.io/instance: c8-golden-main-elasticsearch-stable
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/component: master

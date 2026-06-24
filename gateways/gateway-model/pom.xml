@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../../parent/pom.xml</relativePath>
+  </parent>
+  <artifactId>camunda-gateway-model</artifactId>
+  <packaging>jar</packaging>
+  <name>Camunda Gateway Model</name>
+
+  <properties>
+    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
+    <!-- Roaster builds the emitted Java AST inside the maven-antrun-plugin classpath;
+         only used by this module so the version is local. -->
+    <version.roaster>2.31.0.Final</version.roaster>
+  </properties>
+
+  <dependencies>
+    <!-- required for OpenAPI model generation -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
+    </dependency>
+
+    <!-- Required for @NullMarked emitted on generated model classes. -->
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <dependencies>
+          <!-- snakeyaml powers ModelGenerator's spec loading; jspecify supplies @NullMarked
+               for the tool sources we javac in-line; roaster builds the emitted Java AST.
+               Listed here because the antrun plugin classloader does not see project compile
+               dependencies. snakeyaml and jspecify versions come from parent's
+               dependencyManagement; roaster is local to this module so we define its version
+               via the property below. -->
+          <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${version.snakeyaml}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>${version.jspecify}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-api</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>generate-advanced-model</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <property name="advanced.tool.classes" value="${project.build.directory}/tool-classes"/>
+                <property name="advanced.model.outDir" value="${project.build.directory}/generated-sources/openapi/src/main/java/io/camunda/gateway/protocol/model"/>
+                <property name="advanced.model.timestamp" value="${project.build.directory}/generated-sources/openapi/.advanced-model-timestamp"/>
+                <mkdir dir="${advanced.tool.classes}"/>
+                <mkdir dir="${advanced.model.outDir}"/>
+                <!-- Skip the generator run when the inputs haven't changed since the last
+                     successful generation. The marker file is <touch>-ed after a successful run;
+                     ant's <uptodate> compares mtimes against srcfiles. The output dir itself is
+                     also a srcfile: if any other tool (e.g. an older branch's openapi-generator
+                     run after a `git checkout` without `mvn clean`) wrote into it, those files
+                     will be newer than the marker and we re-run. -->
+                <uptodate property="advanced.model.skip" targetfile="${advanced.model.timestamp}">
+                  <srcfiles dir="${openapi.dir}" includes="*.yaml"/>
+                  <srcfiles dir="${project.basedir}/src/tool/java" includes="**/*.java"/>
+                  <srcfiles file="${project.basedir}/pom.xml"/>
+                  <srcfiles dir="${advanced.model.outDir}" includes="**/*.java"/>
+                </uptodate>
+                <javac xmlns:unless="ant:unless" classpathref="maven.plugin.classpath" debug="true" destdir="${advanced.tool.classes}" encoding="UTF-8" includeantruntime="false" release="21" unless:set="advanced.model.skip" srcdir="${project.basedir}/src/tool/java"></javac>
+                <java xmlns:unless="ant:unless" classname="io.camunda.gateway.protocol.model.tools.ModelGenerator" failonerror="true" fork="true" unless:set="advanced.model.skip">
+                  <classpath>
+                    <pathelement location="${advanced.tool.classes}"/>
+                    <path refid="maven.plugin.classpath"/>
+                  </classpath>
+                  <arg value="${openapi.dir}"/>
+                  <arg value="${advanced.model.outDir}"/>
+                </java>
+                <touch xmlns:unless="ant:unless" file="${advanced.model.timestamp}" mkdirs="true" unless:set="advanced.model.skip"></touch>
+                <echo xmlns:if="ant:if" message="[ModelGenerator] inputs unchanged, skipping" if:set="advanced.model.skip"></echo>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>simple</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
+              <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
+              <generatorName>spring</generatorName>
+              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <modelPackage>io.camunda.gateway.protocol.model.simple</modelPackage>
+              <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/simple</templateDirectory>
+              <typeMappings>
+                <!-- map OffsetDateTime to String to avoid timezone issues and do validation manually -->
+                <typeMapping>OffsetDateTime=String</typeMapping>
+                <!-- map complex String schemas to String -->
+                <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+                <typeMapping>ResourceKey=String</typeMapping>
+                <typeMapping>ScopeKey=String</typeMapping>
+                <typeMapping>ElementInstanceKey=String</typeMapping>
+                <!-- map specific filter properties to String for equality behavior -->
+                <typeMapping>AuditLogEntityKeyFilterProperty=String</typeMapping>
+                <typeMapping>AuditLogKeyFilterProperty=String</typeMapping>
+                <typeMapping>BasicStringFilterProperty=String</typeMapping>
+                <typeMapping>DecisionDefinitionKeyFilterProperty=String</typeMapping>
+                <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=String</typeMapping>
+                <typeMapping>DecisionEvaluationKeyFilterProperty=String</typeMapping>
+                <typeMapping>DecisionRequirementsKeyFilterProperty=String</typeMapping>
+                <typeMapping>DeploymentKeyFilterProperty=String</typeMapping>
+                <typeMapping>ElementIdFilterProperty=String</typeMapping>
+                <typeMapping>ElementInstanceKeyFilterProperty=String</typeMapping>
+                <typeMapping>FormKeyFilterProperty=String</typeMapping>
+                <typeMapping>IntegerFilterProperty=Integer</typeMapping>
+                <typeMapping>JobKeyFilterProperty=String</typeMapping>
+                <typeMapping>MessageSubscriptionKeyFilterProperty=String</typeMapping>
+                <typeMapping>ProcessDefinitionIdFilterProperty=String</typeMapping>
+                <typeMapping>ProcessDefinitionKeyFilterProperty=String</typeMapping>
+                <typeMapping>ProcessInstanceKeyFilterProperty=String</typeMapping>
+                <typeMapping>ResourceKeyFilterProperty=String</typeMapping>
+                <typeMapping>ScopeKeyFilterProperty=String</typeMapping>
+                <typeMapping>StringFilterProperty=String</typeMapping>
+                <typeMapping>VariableKeyFilterProperty=String</typeMapping>
+                <!-- map to custom model classes -->
+                <typeMapping>DateTimeFilterProperty=SimpleDateTimeFilterProperty</typeMapping>
+                <!-- enum filter properties mapped to advanced model enum types for equality behavior and simple -> advanced mapping is simple this way -->
+                <typeMapping>AuditLogActorTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogActorTypeEnum</typeMapping>
+                <typeMapping>AuditLogResultFilterProperty=io.camunda.gateway.protocol.model.AuditLogResultEnum</typeMapping>
+                <typeMapping>BatchOperationItemStateFilterProperty=io.camunda.gateway.protocol.model.BatchOperationItemStateEnum</typeMapping>
+                <typeMapping>BatchOperationStateFilterProperty=io.camunda.gateway.protocol.model.BatchOperationStateEnum</typeMapping>
+                <typeMapping>BatchOperationTypeFilterProperty=io.camunda.gateway.protocol.model.BatchOperationTypeEnum</typeMapping>
+                <typeMapping>CategoryFilterProperty=io.camunda.gateway.protocol.model.AuditLogCategoryEnum</typeMapping>
+                <typeMapping>ClusterVariableScopeFilterProperty=io.camunda.gateway.protocol.model.ClusterVariableScopeEnum</typeMapping>
+                <typeMapping>DecisionInstanceStateFilterProperty=io.camunda.gateway.protocol.model.DecisionInstanceStateEnum</typeMapping>
+                <typeMapping>EntityTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum</typeMapping>
+                <typeMapping>ElementInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ElementInstanceStateEnum</typeMapping>
+                <typeMapping>IncidentErrorTypeFilterProperty=io.camunda.gateway.protocol.model.IncidentErrorTypeEnum</typeMapping>
+                <typeMapping>IncidentStateFilterProperty=io.camunda.gateway.protocol.model.IncidentStateEnum</typeMapping>
+                <typeMapping>JobKindFilterProperty=io.camunda.gateway.protocol.model.JobKindEnum</typeMapping>
+                <typeMapping>JobListenerEventTypeFilterProperty=io.camunda.gateway.protocol.model.JobListenerEventTypeEnum</typeMapping>
+                <typeMapping>JobStateFilterProperty=io.camunda.gateway.protocol.model.JobStateEnum</typeMapping>
+                <typeMapping>MessageSubscriptionStateFilterProperty=io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum</typeMapping>
+                <typeMapping>MessageSubscriptionTypeFilterProperty=io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum</typeMapping>
+                <typeMapping>ProcessInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ProcessInstanceStateEnum</typeMapping>
+                <typeMapping>OperationTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum</typeMapping>
+                <typeMapping>UserTaskStateFilterProperty=io.camunda.gateway.protocol.model.UserTaskStateEnum</typeMapping>
+                <!-- sort requests mapped to advanced counterpart since they are equal and simple -> advanced mapping is simple this way -->
+                <typeMapping>AuditLogSearchQuerySortRequest=io.camunda.gateway.protocol.model.AuditLogSearchQuerySortRequest</typeMapping>
+                <typeMapping>AuthorizationSearchQuerySortRequest=io.camunda.gateway.protocol.model.AuthorizationSearchQuerySortRequest</typeMapping>
+                <typeMapping>BatchOperationItemSearchQuerySortRequest=io.camunda.gateway.protocol.model.BatchOperationItemSearchQuerySortRequest</typeMapping>
+                <typeMapping>BatchOperationSearchQuerySortRequest=io.camunda.gateway.protocol.model.BatchOperationSearchQuerySortRequest</typeMapping>
+                <typeMapping>ClusterVariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.ClusterVariableSearchQuerySortRequest</typeMapping>
+                <typeMapping>CorrelatedMessageSubscriptionSearchQuerySortRequest=io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuerySortRequest</typeMapping>
+                <typeMapping>DecisionDefinitionSearchQuerySortRequest=io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuerySortRequest</typeMapping>
+                <typeMapping>DecisionInstanceSearchQuerySortRequest=io.camunda.gateway.protocol.model.DecisionInstanceSearchQuerySortRequest</typeMapping>
+                <typeMapping>DecisionRequirementsSearchQuerySortRequest=io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuerySortRequest</typeMapping>
+                <typeMapping>ElementInstanceSearchQuerySortRequest=io.camunda.gateway.protocol.model.ElementInstanceSearchQuerySortRequest</typeMapping>
+                <typeMapping>GroupClientSearchQuerySortRequest=io.camunda.gateway.protocol.model.GroupClientSearchQuerySortRequest</typeMapping>
+                <typeMapping>GroupSearchQuerySortRequest=io.camunda.gateway.protocol.model.GroupSearchQuerySortRequest</typeMapping>
+                <typeMapping>GroupUserSearchQuerySortRequest=io.camunda.gateway.protocol.model.GroupUserSearchQuerySortRequest</typeMapping>
+                <typeMapping>IncidentSearchQuerySortRequest=io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest</typeMapping>
+                <typeMapping>JobSearchQuerySortRequest=io.camunda.gateway.protocol.model.JobSearchQuerySortRequest</typeMapping>
+                <typeMapping>MappingRuleSearchQuerySortRequest=io.camunda.gateway.protocol.model.MappingRuleSearchQuerySortRequest</typeMapping>
+                <typeMapping>MessageSubscriptionSearchQuerySortRequest=io.camunda.gateway.protocol.model.MessageSubscriptionSearchQuerySortRequest</typeMapping>
+                <typeMapping>ProcessDefinitionSearchQuerySortRequest=io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest</typeMapping>
+                <typeMapping>ProcessInstanceSearchQuerySortRequest=io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest</typeMapping>
+                <typeMapping>ResourceSearchQuerySortRequest=io.camunda.gateway.protocol.model.ResourceSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleClientSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleClientSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleGroupSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleGroupSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleUserSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleUserSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantClientSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantClientSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantGroupSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantGroupSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantUserSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantUserSearchQuerySortRequest</typeMapping>
+                <typeMapping>UserSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserSearchQuerySortRequest</typeMapping>
+                <typeMapping>UserTaskSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest</typeMapping>
+                <typeMapping>UserTaskVariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest</typeMapping>
+                <typeMapping>VariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest</typeMapping>
+              </typeMappings>
+              <generateApis>false</generateApis>
+              <generateSupportingFiles>false</generateSupportingFiles>
+              <generateModels>true</generateModels>
+              <generateModelDocumentation>false</generateModelDocumentation>
+              <generateModelTests>false</generateModelTests>
+              <!-- no validation needed, done in the advanced execution already -->
+              <skipValidateSpec>true</skipValidateSpec>
+              <!-- only write files whose content changed to avoid spurious recompilation -->
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS);@org.jspecify.annotations.NullMarked</additionalModelTypeAnnotations>
+                <serializationLibrary>jackson</serializationLibrary>
+                <library>spring-boot</library>
+                <jdk8>true</jdk8>
+                <openApiNullable>false</openApiNullable>
+                <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
+                <useOneOfInterfaces>false</useOneOfInterfaces>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!-- dependencies only packaged but not explicitly used -->
+          <usedDependencies>
+            <!-- Used for OpenAPI generation -->
+            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-advanced-model-sources</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

@@ -1,0 +1,1120 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.client;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientHttpException;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.client.api.response.EvaluationWarning;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
+
+@MultiDbTest
+@CompatibilityTest(envVars = {"CAMUNDA_EXPRESSION_TIMEOUT=PT0.3S"})
+public class ExpressionEvaluationIT {
+
+  private static CamundaClient camundaClient;
+
+  @MultiDbTestApplication
+  private static final TestCamundaApplication CAMUNDA_APPLICATION =
+      new TestCamundaApplication()
+          .withUnifiedConfig(
+              cfg ->
+                  // Set it low to speed up shouldRejectExpressionAfterTimeout
+                  // But not too low to accidentally timeout during other tests
+                  cfg.getExpression().setTimeout(Duration.ofMillis(300)));
+
+  // ============ STATIC EXPRESSION TESTS (LITERALS) ============
+
+  @Test
+  void shouldEvaluateStaticStringLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("Hello World").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getExpression()).isEqualTo("Hello World");
+    assertThat(response.getResult()).isEqualTo("Hello World");
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticIntegerLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("42").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(42);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticDoubleLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("3.14").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(3.14);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticBooleanTrueLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("true").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticBooleanFalseLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("false").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(false);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticNullLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("null").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticNestedStructure() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("{person: {name: \"Bob\", scores: [10, 20, 30]}}")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("{person: {name: \"Bob\", scores: [10, 20, 30]}}");
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  // ============ BASIC EXPRESSION TESTS (NO VARIABLES) ============
+
+  @Test
+  void shouldEvaluateSimpleIntegerExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("=1 + 2").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getExpression()).isEqualTo("=1 + 2");
+    assertThat(response.getResult()).isEqualTo(3);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateSimpleDoubleExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("=1.5 + 2.6").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(4.1);
+  }
+
+  @Test
+  void shouldEvaluateSimpleStringExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=\"Hello\" + \" \" + \"World\"")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("Hello World");
+  }
+
+  @Test
+  void shouldEvaluateBooleanExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("=true and false").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(false);
+  }
+
+  @Test
+  void shouldEvaluateBooleanExpressionTrue() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("=true or false").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldEvaluateComparisonExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("=5 > 3").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldEvaluateListExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("=[1, 2, 3]").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(List.of(1, 2, 3));
+  }
+
+  @Test
+  void shouldEvaluateContextExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("={name: \"John\", age: 30}")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(Map.of("name", "John", "age", 30));
+  }
+
+  @Test
+  void shouldEvaluateIfExpression() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=if 10 > 5 then \"greater\" else \"smaller\"")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("greater");
+  }
+
+  @Test
+  void shouldEvaluateMathFunctions() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("=abs(-5)").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(5);
+  }
+
+  @Test
+  void shouldEvaluateStringFunctions() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=upper case(\"hello\")")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("HELLO");
+  }
+
+  @Test
+  void shouldRejectInvalidExpression() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newEvaluateExpressionCommand()
+                    .expression("={{invalid_syntax}")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("400");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithWarnings() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=invalid_function()")
+            .send()
+            .join();
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
+        .contains("No function found with name 'invalid_function' and 0 parameters");
+  }
+
+  // ============ GLOBAL SCOPED CLUSTER VARIABLE TESTS ============
+
+  @Test
+  void shouldEvaluateExpressionWithGlobalClusterVariableInteger() {
+    // given
+    final String variableName = "globalIntVar_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, 42)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName + " + 8")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(50);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithGlobalClusterVariableDouble() {
+    // given
+    final String variableName = "globalDoubleVar_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, 3.14)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName + " * 2")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(6.28);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithGlobalClusterVariableString() {
+    // given
+    final String variableName = "globalStringVar_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, "Hello")
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName + " + \" World\"")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("Hello World");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithGlobalClusterVariableObject() {
+    // given
+    final String variableName = "globalObjectVar_" + UUID.randomUUID().toString().replace("-", "");
+    final Map<String, Object> objectValue = Map.of("name", "John", "age", 30);
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, objectValue)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName + ".name")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("John");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithGlobalClusterVariableNestedObject() {
+    // given
+    final String variableName = "globalNestedVar_" + UUID.randomUUID().toString().replace("-", "");
+    final Map<String, Object> nestedObject =
+        Map.of("person", Map.of("name", "Jane", "address", Map.of("city", "Berlin")));
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, nestedObject)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName + ".person.address.city")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("Berlin");
+  }
+
+  // ============ TENANT SCOPED CLUSTER VARIABLE TESTS ============
+
+  @Test
+  void shouldEvaluateExpressionWithTenantClusterVariableInteger() {
+    // given
+    final String variableName = "tenantIntVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String tenantId = "<default>";
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, 100)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.tenant." + variableName + " - 50")
+            .tenantId(tenantId)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(50);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithTenantClusterVariableString() {
+    // given
+    final String variableName = "tenantStringVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String tenantId = "<default>";
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, "Tenant")
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.tenant." + variableName + " + \" Value\"")
+            .tenantId(tenantId)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("Tenant Value");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithTenantClusterVariableObject() {
+    // given
+    final String variableName = "tenantObjectVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String tenantId = "<default>";
+    final Map<String, Object> objectValue = Map.of("product", "Widget", "price", 19.99);
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, objectValue)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.tenant." + variableName + ".product")
+            .tenantId(tenantId)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("Widget");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithTenantClusterVariableNestedObject() {
+    // given
+    final String variableName = "tenantNestedVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String tenantId = "<default>";
+    final Map<String, Object> nestedObject =
+        Map.of("config", Map.of("settings", Map.of("enabled", true, "maxRetries", 3)));
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, nestedObject)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.tenant." + variableName + ".config.settings.maxRetries")
+            .tenantId(tenantId)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(3);
+  }
+
+  // ============ ENV (MERGED CONTEXT) TESTS ============
+
+  @Test
+  void shouldEvaluateExpressionWithEnvVariableFromGlobalScope() {
+    // given - create a global variable
+    final String variableName = "envGlobalVar_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, "GlobalValue")
+        .send()
+        .join();
+
+    // when - access via env (merged context)
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.env." + variableName)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("GlobalValue");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithEnvVariableFromTenantScope() {
+    // given - create a tenant variable
+    final String variableName = "envTenantVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String tenantId = "<default>";
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, "TenantValue")
+        .send()
+        .join();
+
+    // when - access via env (merged context) with tenant
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.env." + variableName)
+            .tenantId(tenantId)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("TenantValue");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithEnvVariableTenantOverridesGlobal() {
+    // given - create both global and tenant variable with same name
+    final String variableName = "envOverrideVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String tenantId = "<default>";
+
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, "GlobalValue")
+        .send()
+        .join();
+
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, "TenantValue")
+        .send()
+        .join();
+
+    // when - access via env (merged context) with tenant - should get tenant value
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.env." + variableName)
+            .tenantId(tenantId)
+            .send()
+            .join();
+
+    // then - tenant value should override global value
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("TenantValue");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithEnvNestedVariable() {
+    // given
+    final String variableName = "envNestedVar_" + UUID.randomUUID().toString().replace("-", "");
+    final Map<String, Object> nestedObject =
+        Map.of("database", Map.of("host", "localhost", "port", 5432));
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, nestedObject)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.env." + variableName + ".database.host")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("localhost");
+  }
+
+  // ============ COMPLEX EXPRESSION TESTS WITH CLUSTER VARIABLES ============
+
+  @Test
+  void shouldEvaluateComplexExpressionWithMultipleGlobalVariables() {
+    // given
+    final String priceVar = "price_" + UUID.randomUUID().toString().replace("-", "");
+    final String quantityVar = "quantity_" + UUID.randomUUID().toString().replace("-", "");
+    final String discountVar = "discount_" + UUID.randomUUID().toString().replace("-", "");
+
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(priceVar, 100)
+        .send()
+        .join();
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(quantityVar, 5)
+        .send()
+        .join();
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(discountVar, 0.1)
+        .send()
+        .join();
+
+    // when - calculate total with discount
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression(
+                "=camunda.vars.cluster."
+                    + priceVar
+                    + " * camunda.vars.cluster."
+                    + quantityVar
+                    + " * (1 - camunda.vars.cluster."
+                    + discountVar
+                    + ")")
+            .send()
+            .join();
+
+    // then - 100 * 5 * 0.9 = 450
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(450);
+  }
+
+  @Test
+  void shouldEvaluateConditionalExpressionWithClusterVariable() {
+    // given
+    final String thresholdVar = "threshold_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(thresholdVar, 50)
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression(
+                "=if 75 > camunda.vars.cluster." + thresholdVar + " then \"above\" else \"below\"")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("above");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithClusterVariableInList() {
+    // given
+    final String listVar = "items_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(listVar, List.of(1, 2, 3, 4, 5))
+        .send()
+        .join();
+
+    // when - sum of list
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=sum(camunda.vars.cluster." + listVar + ")")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(15);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithClusterVariableStringConcatenation() {
+    // given
+    final String firstNameVar = "firstName_" + UUID.randomUUID().toString().replace("-", "");
+    final String lastNameVar = "lastName_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(firstNameVar, "John")
+        .send()
+        .join();
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(lastNameVar, "Doe")
+        .send()
+        .join();
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression(
+                "=camunda.vars.cluster."
+                    + firstNameVar
+                    + " + \" \" + camunda.vars.cluster."
+                    + lastNameVar)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("John Doe");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithNestedFunctionCalls() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=upper case(substring(\"hello world\", 1, 5))")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("HELLO");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithForLoop() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=for i in [1, 2, 3] return i * 2")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(List.of(2, 4, 6));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithSomeQuantifier() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=some x in [1, 2, 3] satisfies x > 2")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithEveryQuantifier() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=every x in [1, 2, 3] satisfies x > 0")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithFilterList() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=[1, 2, 3, 4, 5][item > 2]")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(List.of(3, 4, 5));
+  }
+
+  // ============ ERROR HANDLING TESTS ============
+
+  @Test
+  void shouldEvaluateNonExistentClusterVariableAsNull() {
+    // when - accessing a non-existent cluster variable should evaluate to null (not throw)
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression(
+                "=camunda.vars.cluster.nonExistentVar_"
+                    + UUID.randomUUID().toString().replace("-", ""))
+            .send()
+            .join();
+
+    // then - result is null and warnings are produced
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings())
+        .extracting(io.camunda.client.api.response.EvaluationWarning::getMessage)
+        .anySatisfy(
+            message ->
+                assertThat(message)
+                    .contains("The context is empty")
+                    .contains("No context entry found with key"));
+  }
+
+  @Test
+  void shouldRejectNullExpression() {
+    // when / then
+    assertThatThrownBy(
+            () -> camundaClient.newEvaluateExpressionCommand().expression(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("expression must not be null");
+  }
+
+  @Test
+  void shouldRejectExpressionAfterTimeout() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newEvaluateExpressionCommand()
+                    .expression("=for x in 0..1000 return for y in 0..x return x + y")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+        .hasMessageContaining(
+            """
+                Command 'EVALUATE' rejected with code 'PROCESSING_ERROR': \
+                Expected to evaluate expression but timed out after 300 ms: \
+                'for x in 0..1000 return for y in 0..x return x + y'""")
+        .extracting(ClientHttpException::code)
+        .isEqualTo(500);
+  }
+
+  // ============ SCOPE CONTEXT TESTS ============
+
+  @Test
+  void shouldEvaluateExpressionWithProcessInstanceScopeKey() {
+    // given
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x + y")
+            .scopeKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getResult()).isEqualTo(30);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithElementInstanceScopeKey() {
+    // given
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x + y")
+            .scopeKey(instance.elementInstanceKey)
+            .send()
+            .join();
+
+    // then - element instance inherits from the process instance scope
+    assertThat(response.getResult()).isEqualTo(30);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnNullWhenProcessVariableNotInScope() {
+    // given - process started without any variables, so x is not in scope
+    final ProcessAndElement instance = deployAndStart(Map.of());
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
+        .anySatisfy(message -> assertThat(message).contains("No variable found with name 'x'"));
+  }
+
+  // ---- precedence: same variable name at process and element scope ----
+
+  @Test
+  void shouldReadProcessLevelVariableWhenUsingProcessInstanceScopeKey() {
+    // given - process-level x=10, element-local x=99 (shadows only the element scope)
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - asking with process instance scope key resolves at the process root scope
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then - process-level value wins because the element-local var is not visible at root
+    assertThat(response.getResult()).isEqualTo(10);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldReadElementLevelVariableWhenUsingElementInstanceScopeKey() {
+    // given - same setup as above: process-level x=10, element-local x=99
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - asking with element instance scope key resolves starting at the element scope
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.elementInstanceKey)
+            .send()
+            .join();
+
+    // then - element-local value shadows the process-level value
+    assertThat(response.getResult()).isEqualTo(99);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  // ---- precedence: request-body variables override engine variables ----
+
+  @Test
+  void shouldOverrideProcessVariableWithRequestVariableInProcessContext() {
+    // given - process-level x=10
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+
+    // when - request-body variable x=999 is supplied alongside a process instance scope key
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.processInstanceKey)
+            .variable("x", 999)
+            .send()
+            .join();
+
+    // then - request-body value takes precedence over the engine variable
+    assertThat(response.getResult()).isEqualTo(999);
+  }
+
+  @Test
+  void shouldOverrideElementVariableWithRequestVariableInElementContext() {
+    // given - process-level x=10, element-local x=99
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - request-body variable x=999 is supplied alongside an element instance scope key
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.elementInstanceKey)
+            .variable("x", 999)
+            .send()
+            .join();
+
+    // then - request-body value takes precedence over both engine scopes
+    assertThat(response.getResult()).isEqualTo(999);
+  }
+
+  // ============ HELPERS ============
+
+  private ProcessAndElement deployAndStart(final Map<String, Object> processVariables) {
+    final String processId = "expr_proc_" + UUID.randomUUID().toString().replace("-", "");
+    final String taskId = "wait_task";
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(taskId, t -> t.zeebeJobType("expr-eval-it-noop"))
+            .endEvent()
+            .done();
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+
+    final long processInstanceKey =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(processVariables)
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    final long elementInstanceKey = waitForActiveElementInstance(processInstanceKey, taskId);
+    return new ProcessAndElement(processInstanceKey, elementInstanceKey);
+  }
+
+  private long waitForActiveElementInstance(final long processInstanceKey, final String elementId) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .elementId(elementId)
+                                        .state(ElementInstanceState.ACTIVE))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+
+    final ElementInstance element =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processInstanceKey(processInstanceKey)
+                        .elementId(elementId)
+                        .state(ElementInstanceState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+    return element.getElementInstanceKey();
+  }
+
+  private void setLocalVariable(
+      final long elementInstanceKey, final String key, final Object value) {
+    camundaClient
+        .newSetVariablesCommand(elementInstanceKey)
+        .variables(Map.of(key, value))
+        .local(true)
+        .send()
+        .join();
+  }
+
+  private record ProcessAndElement(long processInstanceKey, long elementInstanceKey) {}
+}

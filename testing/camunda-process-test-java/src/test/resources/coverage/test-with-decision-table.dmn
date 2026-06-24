@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="Definitions_coverage" name="Coverage Decision" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.26.0">
+  <decision id="test-coverage-decision" name="Test Coverage Decision">
+    <decisionTable id="DecisionTable_coverage">
+      <input id="Input_1" label="category">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>category</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="result" name="result" typeRef="string" />
+      <rule id="DecisionRule_1">
+        <inputEntry id="UnaryTests_1">
+          <text>"A"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1">
+          <text>"Result A"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_2">
+        <inputEntry id="UnaryTests_2">
+          <text>"B"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_2">
+          <text>"Result B"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

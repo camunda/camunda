@@ -1,0 +1,9 @@
+// The purpose of this APT configuration file is to make Docker image builds
+// more resilient against package mirror or network problems.
+// The file can be copied into /etc/apt/apt.conf.d/ during the build process.
+// The default APT retries value is 3, so doubling it gives more chance for a successfull build.
+// Original request: https://github.com/camunda/camunda/issues/32264
+
+Acquire::Retries "6";
+Acquire::http::Timeout "10";
+Acquire::https::Timeout "10";

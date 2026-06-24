@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_miPar" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="1.0">
+  <bpmn:process id="miParSubprocess" name="MI Parallel Subprocess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_miPar">
+      <bpmn:outgoing>Flow_miPar_start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="MIParSubprocess" name="Parallel MI Subprocess">
+      <bpmn:incoming>Flow_miPar_start</bpmn:incoming>
+      <bpmn:outgoing>Flow_miPar_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="SubStart_miPar">
+        <bpmn:outgoing>SubFlow_miPar_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="SubTaskA_miPar" name="Task A">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="miParSubTaskA" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_miPar_1</bpmn:incoming>
+        <bpmn:outgoing>SubFlow_miPar_2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="SubTaskB_miPar" name="Task B">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="miParSubTaskB" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_miPar_2</bpmn:incoming>
+        <bpmn:outgoing>SubFlow_miPar_3</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="SubEnd_miPar">
+        <bpmn:incoming>SubFlow_miPar_3</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SubFlow_miPar_1" sourceRef="SubStart_miPar" targetRef="SubTaskA_miPar" />
+      <bpmn:sequenceFlow id="SubFlow_miPar_2" sourceRef="SubTaskA_miPar" targetRef="SubTaskB_miPar" />
+      <bpmn:sequenceFlow id="SubFlow_miPar_3" sourceRef="SubTaskB_miPar" targetRef="SubEnd_miPar" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_miPar">
+      <bpmn:incoming>Flow_miPar_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_miPar_start" sourceRef="StartEvent_miPar" targetRef="MIParSubprocess" />
+    <bpmn:sequenceFlow id="Flow_miPar_end" sourceRef="MIParSubprocess" targetRef="EndEvent_miPar" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_miPar">
+    <bpmndi:BPMNPlane id="BPMNPlane_miPar" bpmnElement="miParSubprocess">
+      <bpmndi:BPMNShape id="StartEvent_miPar_di" bpmnElement="StartEvent_miPar">
+        <dc:Bounds x="152" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MIParSubprocess_di" bpmnElement="MIParSubprocess" isExpanded="true">
+        <dc:Bounds x="250" y="160" width="560" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_miPar_di" bpmnElement="SubStart_miPar">
+        <dc:Bounds x="282" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubTaskA_miPar_di" bpmnElement="SubTaskA_miPar">
+        <dc:Bounds x="380" y="270" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubTaskB_miPar_di" bpmnElement="SubTaskB_miPar">
+        <dc:Bounds x="550" y="270" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_miPar_di" bpmnElement="SubEnd_miPar">
+        <dc:Bounds x="722" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_miPar_di" bpmnElement="EndEvent_miPar">
+        <dc:Bounds x="882" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_miPar_start_di" bpmnElement="Flow_miPar_start">
+        <di:waypoint x="188" y="310" />
+        <di:waypoint x="250" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_miPar_1_di" bpmnElement="SubFlow_miPar_1">
+        <di:waypoint x="318" y="310" />
+        <di:waypoint x="380" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_miPar_2_di" bpmnElement="SubFlow_miPar_2">
+        <di:waypoint x="480" y="310" />
+        <di:waypoint x="550" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_miPar_3_di" bpmnElement="SubFlow_miPar_3">
+        <di:waypoint x="650" y="310" />
+        <di:waypoint x="722" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_miPar_end_di" bpmnElement="Flow_miPar_end">
+        <di:waypoint x="810" y="310" />
+        <di:waypoint x="882" y="310" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,163 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.handlers.batchoperation;
+
+import static io.camunda.exporter.utils.ExporterUtil.map;
+
+import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.util.SemanticVersion;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Handles the creation of a batch operation by upserting the corresponding {@link
+ * BatchOperationEntity} with the batch operation details. This handler is responsible for
+ * initializing the batch operation state and type, and updating the local cache for immediate
+ * access.
+ */
+public class BatchOperationCreatedHandler
+    implements ExportHandler<BatchOperationEntity, BatchOperationCreationRecordValue> {
+
+  private final String indexName;
+  private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
+  private final ActorInfoExtractor actorInfoExtractor = new ActorInfoExtractor();
+
+  public BatchOperationCreatedHandler(
+      final String indexName,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+    this.indexName = indexName;
+    this.batchOperationCache = batchOperationCache;
+  }
+
+  @Override
+  public ValueType getHandledValueType() {
+    return ValueType.BATCH_OPERATION_CREATION;
+  }
+
+  @Override
+  public Class<BatchOperationEntity> getEntityType() {
+    return BatchOperationEntity.class;
+  }
+
+  @Override
+  public boolean handlesRecord(final Record<BatchOperationCreationRecordValue> record) {
+    return record.getIntent().equals(BatchOperationIntent.CREATED);
+  }
+
+  @Override
+  public List<String> generateIds(final Record<BatchOperationCreationRecordValue> record) {
+    return List.of(String.valueOf(record.getValue().getBatchOperationKey()));
+  }
+
+  @Override
+  public BatchOperationEntity createNewEntity(final String id) {
+    return new BatchOperationEntity().setId(id);
+  }
+
+  @Override
+  public void updateEntity(
+      final Record<BatchOperationCreationRecordValue> record, final BatchOperationEntity entity) {
+    final var actorInfo = actorInfoExtractor.extract(record);
+    final BatchOperationCreationRecordValue value = record.getValue();
+    entity
+        .setId(String.valueOf(value.getBatchOperationKey()))
+        .setType(OperationType.valueOf(value.getBatchOperationType().name()))
+        .setState(BatchOperationState.CREATED)
+        .setActorType(actorInfo.type())
+        .setActorId(actorInfo.id());
+
+    // update local cache so that the batch operation info is available immediately to operation
+    // status handlers
+    final var cachedEntity = new CachedBatchOperationEntity(entity.getId(), map(entity.getType()));
+    batchOperationCache.put(cachedEntity.batchOperationKey(), cachedEntity);
+  }
+
+  @Override
+  public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
+      throws PersistenceException {
+    // Use upsert instead of add (index) to prevent cross-partition document overwrites.
+    // The CREATED event is distributed to all partitions, so each partition's exporter writes to
+    // the same document. An index operation would fully replace the document, potentially
+    // overwriting operationsTotalCount increments or state transitions applied by other partitions.
+    // With upsert: if the document does not yet exist, it is created from the entity; if it
+    // already exists, only the specified fields are updated without affecting other fields.
+    // Note: STATE is intentionally excluded from updateFields because a late CREATED event from a
+    // slow partition could overwrite a state that has already advanced (e.g., ACTIVE or COMPLETED).
+    // The state is set correctly on initial document creation via the entity.
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(BatchOperationTemplate.TYPE, entity.getType());
+
+    final var actorType = entity.getActorType();
+    if (actorType != null) {
+      updateFields.put(BatchOperationTemplate.ACTOR_TYPE, actorType);
+    }
+
+    final var actorId = entity.getActorId();
+    if (actorId != null) {
+      updateFields.put(BatchOperationTemplate.ACTOR_ID, actorId);
+    }
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
+  private record ActorInfo(AuditLogActorType type, String id) {
+    static final ActorInfo NULL_VALUES = new ActorInfo(null, null);
+  }
+
+  private static final class ActorInfoExtractor {
+
+    private static final SemanticVersion VERSION_8_9_0 = new SemanticVersion(8, 9, 0, null, null);
+
+    /**
+     * Extracts the actor information from the record's authorizations based on the broker version.
+     * Actor info is only provided for broker versions 8.9.0 and above. If the actor info is not
+     * available, null values are provided.
+     */
+    private ActorInfo extract(final Record<BatchOperationCreationRecordValue> record) {
+      final var semanticVersion = SemanticVersion.parse(record.getBrokerVersion()).orElse(null);
+      if (semanticVersion == null || semanticVersion.compareTo(VERSION_8_9_0) < 0) {
+        // actor info should only be set for versions 8.9.0 and above
+        return ActorInfo.NULL_VALUES;
+      }
+
+      final AuditLogActor auditLogActor = AuditLogActor.of(record);
+      if (auditLogActor == null) {
+        return ActorInfo.NULL_VALUES;
+      }
+
+      final var actorType =
+          switch (auditLogActor.actorType()) {
+            case USER -> AuditLogActorType.USER;
+            case CLIENT -> AuditLogActorType.CLIENT;
+            case ANONYMOUS -> AuditLogActorType.ANONYMOUS;
+            case UNKNOWN -> AuditLogActorType.UNKNOWN;
+            case null -> null;
+          };
+      return new ActorInfo(actorType, auditLogActor.actorId());
+    }
+  }
+}

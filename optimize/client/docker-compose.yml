@@ -1,0 +1,212 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.16}
+    container_name: elasticsearch
+    profiles: ['cloud', 'self-managed', 'cloud:elasticsearch', 'self-managed:elasticsearch']
+    environment:
+      - TZ=Europe/Berlin
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - cluster.name=elasticsearch
+      - cluster.routing.allocation.disk.watermark.high=95%
+      - cluster.routing.allocation.disk.watermark.high.max_headroom=150GB
+      - action.destructive_requires_name=false
+      - http.port=9200
+      - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g -XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+      - CLI_JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    restart: always
+    cpu_count: 4
+    mem_limit: 2g
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:9200/_cat/health | grep -q green']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  opensearch:
+    image: opensearchproject/opensearch:${OS_VERSION:-2.19.5}
+    container_name: opensearch
+    profiles: ['cloud:opensearch', 'self-managed:opensearch']
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch
+      - discovery.seed_hosts=opensearch
+      - plugins.security.disabled=true
+      - cluster.initial_cluster_manager_nodes=opensearch
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD:-ThisIsAStrongOptimizePassword79!}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    ports:
+      - 9200:9200
+      - 9305:9300
+    restart: always
+    cpu_count: 4
+    mem_limit: 2g
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:9200/_cat/health | grep -q green']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  keycloak:
+    container_name: keycloak
+    image: camunda/keycloak:quay-26@sha256:3eba2912da4668619c8a7b6cdc00138d20a1f293ce3fcba980ce70ec2ed7f8d0
+    profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
+    command: [start]
+    ports:
+      - '18080:8080'
+    healthcheck:
+      test: bash -c "echo -e 'GET /auth HTTP/1.0\r\n\r\n' >/dev/tcp/127.0.0.1/8080 || exit 1"
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: dev-file
+      KC_CACHE: ispn
+      KC_HTTP_ENABLED: 'true'
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HEALTH_ENABLED: 'true'
+      KC_HOSTNAME_STRICT: 'false'
+      JAVA_OPTS_APPEND: '-Dquarkus.http.http2=false'
+  identity:
+    depends_on:
+      - keycloak
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:${CAMUNDA_VERSION:-8.9.0}
+    profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
+    ports:
+      - '8081:8081'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--tries=1', '--spider', 'http://localhost:8082/actuator/health']
+      interval: 5s
+      timeout: 15s
+      retries: 30
+      start_period: 60s
+    environment:
+      SERVER_PORT: 8081
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
+      KEYCLOAK_USERS_0_USERNAME: 'ourief'
+      KEYCLOAK_USERS_0_PASSWORD: 'ourief'
+      KEYCLOAK_USERS_0_FIRST_NAME: 'ourief'
+      KEYCLOAK_USERS_0_ROLES_0: 'ManagementIdentity'
+      KEYCLOAK_USERS_0_ROLES_1: 'Optimize'
+      KEYCLOAK_USERS_1_USERNAME: 'comentse'
+      KEYCLOAK_USERS_1_PASSWORD: 'comentse'
+      KEYCLOAK_USERS_1_FIRST_NAME: 'comentse'
+      KEYCLOAK_USERS_1_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_2_USERNAME: 'abook1998'
+      KEYCLOAK_USERS_2_PASSWORD: 'abook1998'
+      KEYCLOAK_USERS_2_FIRST_NAME: 'abook1998'
+      KEYCLOAK_USERS_2_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_3_USERNAME: 'aboys1960'
+      KEYCLOAK_USERS_3_PASSWORD: 'aboys1960'
+      KEYCLOAK_USERS_3_FIRST_NAME: 'aboys1960'
+      KEYCLOAK_USERS_3_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_4_USERNAME: 'abrount'
+      KEYCLOAK_USERS_4_PASSWORD: 'abrount'
+      KEYCLOAK_USERS_4_FIRST_NAME: 'abrount'
+      KEYCLOAK_USERS_4_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_5_USERNAME: 'abse1978'
+      KEYCLOAK_USERS_5_PASSWORD: 'abse1978'
+      KEYCLOAK_USERS_5_FIRST_NAME: 'abse1978'
+      KEYCLOAK_USERS_5_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_6_USERNAME: 'demo'
+      KEYCLOAK_USERS_6_PASSWORD: 'demo'
+      KEYCLOAK_USERS_6_EMAIL: 'demo@example.com'
+      KEYCLOAK_USERS_6_FIRST_NAME: 'demo'
+      KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_6_ROLES_1: 'ManagementIdentity'
+  camunda:
+    profiles: ['self-managed', 'self-managed:elasticsearch']
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    container_name: camunda
+    environment:
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=elasticsearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+      - "8080:8080"
+    healthcheck:
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      interval: 30s
+      timeout: 1s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      - elasticsearch
+    restart: always
+    volumes:
+      - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
+  camunda-opensearch:
+    profiles: ['self-managed:opensearch']
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    container_name: camunda-opensearch
+    environment:
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=opensearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL=http://opensearch:9200
+      - DATABASE_URL=http://opensearch
+      - DATABASE_PORT=9200
+      - DATABASE_TYPE=opensearch
+      - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
+      - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+      - "8080:8080"
+    healthcheck:
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      interval: 30s
+      timeout: 1s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      - opensearch
+    restart: always
+    volumes:
+      - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml

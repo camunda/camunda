@@ -1,0 +1,10 @@
+{
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
+  "testCases": [
+    {
+      "name": "Test Case 1",
+      "description": "A human-readable description of what this test case is verifying.",
+      "instructions": []
+    }
+  ]
+}

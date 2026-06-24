@@ -1,0 +1,32 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/layout';
+
+.spinner {
+  width: layout.to-rem(10px);
+  height: layout.to-rem(10px);
+  border-width: layout.to-rem(2px);
+}
+
+.overlay {
+  background-color: var(--cds-overlay);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  z-index: 2;
+}
+
+.loadingStateContainer {
+  position: relative;
+  width: 100%;
+  display: flex;
+}

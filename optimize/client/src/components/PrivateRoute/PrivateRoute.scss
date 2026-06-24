@@ -1,0 +1,20 @@
+.PrivateRoute {
+  padding-top: var(--c3-header-height, 48px);
+  padding-left: var(--c3-sidebar-width, 0);
+  box-sizing: border-box;
+  transition: padding-left 0.15s ease-out;
+
+  &,
+  & > div {
+    height: 100%;
+    width: 100%;
+  }
+
+  &.nav-v2 {
+    .cds--popover,
+    .cds--popover-content,
+    .Popover .cds--popover {
+      z-index: 8500;
+    }
+  }
+}

@@ -1,0 +1,188 @@
+# description: Compatibility tests for Camunda Process Test against a selected Camunda image
+# type: CI
+# owner: @camunda/c8-testing
+name: Camunda Process Test Compatibility Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to check out for CPT tests (e.g., stable/8.8)'
+        required: true
+        type: string
+      camunda_image_version:
+        description: 'Camunda Docker image version (e.g., 8.9-SNAPSHOT).'
+        required: false
+        default: 'SNAPSHOT'
+        type: string
+      connectors_image_version:
+        description: 'Connectors Docker image version (e.g., 8.9-SNAPSHOT).'
+        required: false
+        default: 'SNAPSHOT'
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  FLAKY_TEST_RERUN_COUNT: '3'
+
+jobs:
+  run-cpt-tests:
+    name: Test CPT (${{ inputs.branch }}) -> Runtime ${{ inputs.camunda_image_version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout Camunda branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: run-cpt-tests (branch=${{ inputs.branch }}, runtime=${{ inputs.camunda_image_version }})
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Resolve CPT version from pom.xml
+        id: cpt-version
+        run: |
+          CPT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$CPT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved CPT version: $CPT_VERSION"
+
+      - name: Install zeebe-parent only
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: >-
+            install
+            -f parent/pom.xml
+            -DskipTests
+            -DskipITs
+            -DskipUTs
+            -DskipChecks
+
+      - name: Determine Docker API version override
+        id: api-version
+        run: |
+          CLIENT_VERSION="${{ steps.cpt-version.outputs.version }}"
+          CLIENT_VERSION="${CLIENT_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
+          EXTRA_PROPS=""
+          # For CPT versions < 8.8.5, we need to pin the API version
+          if [[ "$CLIENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[3]}"
+            if (( MAJOR < 8 )) || \
+               (( MAJOR == 8 && MINOR < 8 )) || \
+               (( MAJOR == 8 && MINOR == 8 && PATCH < 5 )); then
+              EXTRA_PROPS="-Dapi.version=1.44"
+              echo "CPT version $CLIENT_VERSION < 8.8.5 - adding $EXTRA_PROPS"
+            fi
+          fi
+          echo "extra-props=$EXTRA_PROPS" >> "$GITHUB_OUTPUT"
+
+      - name: Run compatibility tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: >-
+            verify
+            -f testing/pom.xml
+            -DskipUTs
+            -Dio.camunda.process.test.camundaDockerImageVersion=${{ inputs.camunda_image_version }}
+            -Dio.camunda.process.test.connectorsDockerImageVersion=${{ inputs.connectors_image_version }}
+            -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+            -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+            -DfailIfNoTests=false
+            ${{ steps.api-version.outputs.extra-props }}
+
+      - name: Upload test artifacts
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: 'cpt compatibility tests - cpt version ${{ steps.cpt-version.outputs.version }} camunda version ${{ inputs.camunda_image_version }}'
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: run-cpt-tests (branch=${{ inputs.branch }}, runtime=${{ inputs.camunda_image_version }})
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [run-cpt-tests]
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    permissions: { }
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
+      - name: Notify failure
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+               "blocks": [
+                 {
+                   "type": "section",
+                   "text": {
+                     "type": "mrkdwn",
+                     "text": ":alarm: *Camunda Process Test (CPT) Compatibility Tests Failed*"
+                   }
+                 },
+                 {
+                   "type": "section",
+                   "text": {
+                     "type": "mrkdwn",
+                     "text": "Branch: `${{ github.ref_name }}`\nCamunda image: `${{ inputs.camunda_image_version }}`\nConnectors image: `${{ inputs.connectors_image_version }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                   }
+                 }
+               ]
+             }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.23.0">
+  <bpmn:process id="migration-process_v1" name="Migration Process V1" isExecutable="true">
+    <bpmn:startEvent id="start" name="start">
+      <bpmn:outgoing>SequenceFlow_1sz6737</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="end" name="end">
+      <bpmn:incoming>Flow_0zxp01w</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="taskC" name="task C">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="taskC" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_06ytcxw</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_148rk2p</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="gateway1">
+      <bpmn:incoming>SequenceFlow_1sz6737</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kjrk5n</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1vb6zcw</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="taskB" name="task B">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="taskB" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1vb6zcw</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kldei7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="gateway2">
+      <bpmn:incoming>SequenceFlow_148rk2p</bpmn:incoming>
+      <bpmn:incoming>Flow_0kldei7</bpmn:incoming>
+      <bpmn:outgoing>Flow_0zxp01w</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_1sz6737" sourceRef="start" targetRef="gateway1" />
+    <bpmn:sequenceFlow id="Flow_0zxp01w" sourceRef="gateway2" targetRef="end" />
+    <bpmn:sequenceFlow id="Flow_0kjrk5n" sourceRef="gateway1" targetRef="taskA" />
+    <bpmn:sequenceFlow id="SequenceFlow_06ytcxw" sourceRef="taskA" targetRef="taskC" />
+    <bpmn:sequenceFlow id="SequenceFlow_148rk2p" sourceRef="taskC" targetRef="gateway2" />
+    <bpmn:sequenceFlow id="Flow_1vb6zcw" sourceRef="gateway1" targetRef="taskB" />
+    <bpmn:sequenceFlow id="Flow_0kldei7" sourceRef="taskB" targetRef="gateway2" />
+    <bpmn:userTask id="taskA" name="task A">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0kjrk5n</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_06ytcxw</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="migration-process_v1">
+      <bpmndi:BPMNShape id="BPMNShape_1shk4i9" bpmnElement="start">
+        <dc:Bounds x="172" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="179" y="138" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0bwryb0" bpmnElement="end">
+        <dc:Bounds x="871" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="880" y="138" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1d0r568" bpmnElement="taskC">
+        <dc:Bounds x="569" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1llybr5_di" bpmnElement="gateway1">
+        <dc:Bounds x="264" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0qlb1bf" bpmnElement="taskB">
+        <dc:Bounds x="389" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1c2lg83_di" bpmnElement="gateway2" isMarkerVisible="true">
+        <dc:Bounds x="744" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0jrz5i2_di" bpmnElement="taskA">
+        <dc:Bounds x="389" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_1m0ct4z" bpmnElement="SequenceFlow_1sz6737">
+        <di:waypoint x="208" y="120" />
+        <di:waypoint x="264" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="260" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0zxp01w_di" bpmnElement="Flow_0zxp01w">
+        <di:waypoint x="794" y="120" />
+        <di:waypoint x="871" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kjrk5n_di" bpmnElement="Flow_0kjrk5n">
+        <di:waypoint x="314" y="120" />
+        <di:waypoint x="389" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0u0a5se" bpmnElement="SequenceFlow_06ytcxw">
+        <di:waypoint x="489" y="120" />
+        <di:waypoint x="569" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="456" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0o2vv5c" bpmnElement="SequenceFlow_148rk2p">
+        <di:waypoint x="669" y="120" />
+        <di:waypoint x="744" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="831" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vb6zcw_di" bpmnElement="Flow_1vb6zcw">
+        <di:waypoint x="289" y="145" />
+        <di:waypoint x="289" y="250" />
+        <di:waypoint x="389" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kldei7_di" bpmnElement="Flow_0kldei7">
+        <di:waypoint x="489" y="250" />
+        <di:waypoint x="769" y="250" />
+        <di:waypoint x="769" y="145" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

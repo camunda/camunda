@@ -1,0 +1,267 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.restore;
+
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.application.MainSupport;
+import io.camunda.application.Profile;
+import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.RestoreProperties;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.context.annotation.Import;
+
+@SpringBootApplication(scanBasePackages = {"io.camunda.zeebe.restore"})
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.restore"})
+@Import(
+    value = {
+      UnifiedConfigurationModule.class,
+      WorkingDirectoryConfiguration.class,
+      // RDBMS Configuration - conditional on secondary storage type being RDBMS.
+      // When active, provides ExporterPositionMapper for RDBMS-aware restore.
+      RdbmsConfiguration.class,
+    })
+@NullMarked
+public class RestoreApp implements ApplicationRunner {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RestoreApp.class);
+  private final BrokerCfg configuration;
+  private final BackupStore backupStore;
+
+  @Value("${backupId:#{null}}")
+  // Parsed from commandline Eg:-`--backupId=100` (optional, mutually exclusive with from/to)
+  private long @Nullable [] backupId;
+
+  @Value("${from:#{null}}")
+  // Parsed from commandline Eg:-`--from=2024-01-01T10:00:00Z` (optional, requires --to)
+  @Nullable
+  private Instant from;
+
+  @Value("${to:#{null}}")
+  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, can be omitted when `--from`
+  // is specified)
+  @Nullable
+  private Instant to;
+
+  @Nullable private final ExporterPositionMapper exporterPositionMapper;
+  private final RestoreProperties restoreConfiguration;
+  private final MeterRegistry meterRegistry;
+  private final PostRestoreAction postRestoreAction;
+  private final PreRestoreAction preRestoreAction;
+
+  @Autowired
+  public RestoreApp(
+      final Camunda camunda,
+      final BrokerBasedProperties configuration,
+      final BackupStore backupStore,
+      @Nullable @Autowired(required = false)
+          final Map<String, RdbmsMapperBundle> rdbmsMapperBundleMap,
+      final RestoreProperties restoreConfiguration,
+      final MeterRegistry meterRegistry,
+      final NodeIdProvider nodeIdProvider,
+      // DataDirectoryProvider is not used directly here but is needed to ensure the directory is
+      // set up already especially when using dynamic node ids.
+      final DataDirectoryProvider dataDirectoryProvider,
+      final PostRestoreAction postRestoreAction,
+      final PreRestoreAction preRestoreAction) {
+    this.configuration = configuration;
+    this.backupStore = backupStore;
+    if (camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
+      // FIXME https://github.com/camunda/product-hub/issues/3646 RestoreApp with RDBMS is only
+      // supported for DEFAULT_PHYSICAL_TENANT_ID
+      if (rdbmsMapperBundleMap == null
+          || !rdbmsMapperBundleMap.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
+        throw new IllegalStateException(
+            "RDBMS-aware restore requires ExporterPositionMapper for default physical tenant");
+      }
+      exporterPositionMapper =
+          rdbmsMapperBundleMap.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
+    } else {
+      exporterPositionMapper = null;
+    }
+    this.restoreConfiguration = restoreConfiguration;
+    this.meterRegistry = meterRegistry;
+    this.postRestoreAction = postRestoreAction;
+    this.preRestoreAction = preRestoreAction;
+    configuration.getCluster().setNodeId(nodeIdProvider.currentNodeInstance().id());
+  }
+
+  public static void main(final String[] args) {
+    MainSupport.setDefaultGlobalConfiguration();
+
+    final var application =
+        MainSupport.createDefaultApplicationBuilder()
+            .web(WebApplicationType.NONE)
+            .sources(RestoreApp.class)
+            .profiles(Profile.RESTORE.getId())
+            .build();
+
+    final String activeProfiles = System.getProperty("spring.profiles.active");
+    final String springProfilesActive = System.getenv("SPRING_PROFILES_ACTIVE");
+    if (!Objects.equals(activeProfiles, Profile.RESTORE.getId())
+        || (springProfilesActive != null
+            && !springProfilesActive.equals(Profile.RESTORE.getId()))) {
+      LOG.warn(
+          "Additional profiles besides restore are set, which is not supported: {}. "
+              + "The application will run only with the restore profile.",
+          activeProfiles);
+      System.setProperty("spring.profiles.active", Profile.RESTORE.getId());
+    }
+
+    application.run(args);
+  }
+
+  @Override
+  public void run(final ApplicationArguments args) throws Exception {
+    validateParameters();
+
+    final var restoreId = getRestoreId();
+    final var preRestoreActionResult =
+        preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry)) {
+
+      final PostRestoreActionContext postRestoreActionContext;
+      if (!preRestoreActionResult.skipRestore()) {
+        if (backupId != null) {
+          restoreFromBackupList(restoreManager, backupId);
+        } else if (hasTimeRange()) {
+          restoreFromTimeRange(restoreManager);
+        } else if (exporterPositionMapper != null) {
+          restoreRDBMSWithoutTimeRange(restoreManager);
+        }
+        postRestoreActionContext =
+            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
+      } else {
+        LOG.info("Skipping restore: {}", preRestoreActionResult.message());
+        postRestoreActionContext =
+            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), true);
+      }
+      // We have to run post restore anyway even if post restore action decided to skip restore,
+      // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
+      // complete restore.
+      postRestoreAction.restored(postRestoreActionContext);
+    }
+  }
+
+  private void restoreFromTimeRange(final RestoreManager restoreManager)
+      throws IOException, ExecutionException, InterruptedException {
+    LOG.info(
+        "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+        from,
+        to,
+        restoreConfiguration);
+    restoreManager.restore(
+        from,
+        to,
+        restoreConfiguration.validateConfig(),
+        restoreConfiguration.ignoreFilesInTarget());
+    LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+  }
+
+  private void restoreRDBMSWithoutTimeRange(final RestoreManager restoreManager)
+      throws IOException, ExecutionException, InterruptedException {
+    LOG.info(
+        "Starting to restore from backups without a time range with the following configuration: {}",
+        restoreConfiguration);
+    restoreManager.restore(
+        null,
+        null,
+        restoreConfiguration.validateConfig(),
+        restoreConfiguration.ignoreFilesInTarget());
+    LOG.info("Successfully restored broker from backups in time range");
+  }
+
+  private void restoreFromBackupList(final RestoreManager restoreManager, final long[] backupIds)
+      throws Exception {
+    LOG.info(
+        "Starting to restore from backup {} with the following configuration: {}",
+        backupIds,
+        restoreConfiguration);
+    restoreManager.restore(
+        backupIds,
+        restoreConfiguration.validateConfig(),
+        restoreConfiguration.ignoreFilesInTarget());
+    LOG.info("Successfully restored broker from backup {}", backupIds);
+  }
+
+  private void validateParameters() {
+    final boolean hasBackupId = hasBackupId();
+    final boolean hasTimeRange = hasTimeRange();
+
+    if (hasBackupId && hasTimeRange) {
+      throw new IllegalArgumentException(
+          "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
+    }
+
+    if (hasTimeRange && from != null && to != null && from.isAfter(to)) {
+      throw new IllegalArgumentException(
+          "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
+    }
+  }
+
+  private boolean hasTimeRange() {
+    return from != null || to != null;
+  }
+
+  private boolean hasBackupId() {
+    return backupId != null && backupId.length > 0;
+  }
+
+  private String getRestoreId() {
+    if (hasBackupId()) {
+      return String.valueOf(Arrays.hashCode(backupId));
+    } else if (hasTimeRange()) {
+      return String.valueOf(Objects.hash(from, to));
+    } else {
+      return "latest";
+    }
+  }
+
+  public record PreRestoreActionResult(boolean skipRestore, String message) {}
+
+  public record PostRestoreActionContext(String restoreId, int nodeId, boolean skippedRestore) {}
+
+  public interface PreRestoreAction {
+    PreRestoreActionResult beforeRestore(final String restoreId, int nodeId)
+        throws InterruptedException;
+  }
+
+  public interface PostRestoreAction {
+    void restored(final PostRestoreActionContext context) throws InterruptedException;
+  }
+}

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <!-- We can't reference zeebe parent as parent otherwise we will have a circle dependency -->
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-bom</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../bom/pom.xml</relativePath>
+  </parent>
+  <artifactId>zeebe-build-tools</artifactId>
+  <packaging>jar</packaging>
+  <name>Zeebe Build Tools</name>
+
+  <properties>
+    <version.java>8</version.java>
+    <version.maven-jar-plugin>3.5.0</version.maven-jar-plugin>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.18</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>surefire-extensions-api</artifactId>
+      <version>3.5.6</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>maven-surefire-common</artifactId>
+      <version>3.5.6</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Since we can't use zeebe parent as parent we have to declare/configure the java doc plugin again -->
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${plugin.version.javadoc}</version>
+          <configuration>
+            <source>${version.java}</source>
+            <quiet>true</quiet>
+            <additionalOptions>-Xdoclint:none</additionalOptions>
+          </configuration>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${version.maven-jar-plugin}</version>
+          <configuration>
+            <useDefaultManifestFile>false</useDefaultManifestFile>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

@@ -1,0 +1,6 @@
+camunda:
+  client:
+    auth:
+      method: oidc
+      issuer-url: http://localhost:18080/auth/realms/camunda-platform
+      audience: zeebe-api

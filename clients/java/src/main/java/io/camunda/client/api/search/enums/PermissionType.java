@@ -1,0 +1,69 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.api.search.enums;
+
+public enum PermissionType {
+  ACCESS,
+
+  CANCEL_PROCESS_INSTANCE,
+  CLAIM,
+  CLAIM_USER_TASK,
+  COMPLETE,
+  COMPLETE_USER_TASK,
+  CREATE,
+  CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
+  CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
+  CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
+  CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+  CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE,
+  CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE,
+  CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE,
+  CREATE_BATCH_OPERATION_RESOLVE_INCIDENT,
+  CREATE_BATCH_OPERATION_UPDATE_JOB,
+  CREATE_DECISION_INSTANCE,
+  CREATE_PROCESS_INSTANCE,
+  CREATE_TASK_LISTENER,
+
+  DELETE,
+  DELETE_DECISION_INSTANCE,
+  DELETE_DRD,
+  DELETE_FORM,
+  DELETE_PROCESS,
+  DELETE_PROCESS_INSTANCE,
+  DELETE_RESOURCE,
+  DELETE_TASK_LISTENER,
+
+  EVALUATE,
+
+  MODIFY_PROCESS_INSTANCE,
+
+  READ,
+  READ_DECISION_DEFINITION,
+  READ_DECISION_INSTANCE,
+  READ_JOB_METRIC,
+  READ_PROCESS_DEFINITION,
+  READ_PROCESS_INSTANCE,
+  READ_USAGE_METRIC,
+  READ_USER_TASK,
+  READ_TASK_LISTENER,
+
+  UPDATE,
+  UPDATE_PROCESS_INSTANCE,
+  UPDATE_USER_TASK,
+  UPDATE_TASK_LISTENER,
+
+  UNKNOWN_ENUM_VALUE;
+}

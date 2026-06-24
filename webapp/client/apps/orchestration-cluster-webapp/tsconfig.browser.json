@@ -1,0 +1,19 @@
+{
+	"extends": "./tsconfig.base.json",
+	"include": ["src/**/*"],
+	"exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/vitest-modules/**/*"],
+	"compilerOptions": {
+		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.browser.tsbuildinfo",
+		"jsx": "react-jsx",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"types": ["vite/client"],
+		"paths": {
+			"#/shared/*": ["./src/shared/*"],
+			"#/operate/*": ["./src/operate/*"],
+			"#/tasklist/*": ["./src/tasklist/*"],
+			"#/admin/*": ["./src/admin/*"]
+		}
+	}
+}

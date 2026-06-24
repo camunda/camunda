@@ -1,0 +1,55 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.impl.record.value.processinstance;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+
+@JsonIgnoreProperties({
+  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  "encodedLength",
+  "empty"
+})
+public final class ProcessInstanceCreationStartInstruction extends ObjectValue
+    implements ProcessInstanceCreationStartInstructionValue {
+
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY);
+
+  public ProcessInstanceCreationStartInstruction() {
+    super(1);
+    declareProperty(elementIdProp);
+  }
+
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
+  }
+
+  public ProcessInstanceCreationStartInstruction setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public void copy(final ProcessInstanceCreationStartInstructionValue startInstruction) {
+    setElementId(startInstruction.getElementId());
+  }
+}

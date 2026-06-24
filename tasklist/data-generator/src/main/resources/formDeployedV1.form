@@ -1,0 +1,81 @@
+{
+  "components": [
+    {
+      "label": "Text field",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0x82hup",
+        "columns": null
+      },
+      "id": "Field_1z0ob9p",
+      "key": "field_11ggl9f"
+    },
+    {
+      "label": "Text field",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_066zg6a",
+        "columns": null
+      },
+      "id": "Field_00mf9oj",
+      "key": "field_1tx9ibz"
+    },
+    {
+      "subtype": "date",
+      "dateLabel": "Date",
+      "label": "Date time",
+      "type": "datetime",
+      "layout": {
+        "row": "Row_152atxq",
+        "columns": null
+      },
+      "id": "Field_0x0fzja",
+      "key": "field_0zzr2xa"
+    },
+    {
+      "values": [
+        {
+          "label": "Value",
+          "value": "value"
+        }
+      ],
+      "label": "Checklist",
+      "type": "checklist",
+      "layout": {
+        "row": "Row_06e8d6q",
+        "columns": null
+      },
+      "id": "Field_108osf0",
+      "key": "field_1pnbv5c"
+    },
+    {
+      "label": "Text field",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1s6b7he",
+        "columns": null
+      },
+      "id": "Field_072q2xz",
+      "key": "field_057f9nr"
+    },
+    {
+      "label": "Number",
+      "type": "number",
+      "layout": {
+        "row": "Row_1wy7uz8",
+        "columns": null
+      },
+      "id": "Field_10kfioa",
+      "key": "field_00ypn2w"
+    }
+  ],
+  "type": "default",
+  "id": "Form_0mik7px",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.2.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.16.0-nightly.20230919"
+  },
+  "schemaVersion": 10
+}

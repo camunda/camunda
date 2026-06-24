@@ -1,0 +1,7 @@
+camunda:
+  client:
+    zeebe:
+      defaults:
+        tenant-ids:
+          - <default>
+          - foo

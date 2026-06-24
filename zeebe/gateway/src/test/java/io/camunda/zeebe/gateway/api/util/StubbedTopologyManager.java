@@ -1,0 +1,82 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.api.util;
+
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
+import io.atomix.cluster.BrokerMemberId;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import java.util.UUID;
+import org.jspecify.annotations.NonNull;
+
+public final class StubbedTopologyManager implements BrokerTopologyManager {
+
+  private final TestBrokerClusterState clusterState;
+  private final ClusterConfiguration clusterConfiguration;
+
+  public StubbedTopologyManager() {
+    this(8);
+  }
+
+  public StubbedTopologyManager(final int partitionsCount) {
+    clusterConfiguration = ClusterConfiguration.uninitialized();
+    clusterState = new TestBrokerClusterState(partitionsCount);
+    clusterState.addBroker(BrokerMemberId.from(0), "localhost:26501");
+    clusterState.setClusterId(UUID.randomUUID().toString());
+    for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
+      clusterState.setPartitionLeader(
+          START_PARTITION_ID + partitionOffset, BrokerMemberId.from(0), 1);
+      clusterState.addPartition(START_PARTITION_ID + partitionOffset);
+    }
+  }
+
+  @Override
+  public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
+    // a single shared state for all partition groups; group-specific stubbing not needed yet
+    return clusterState;
+  }
+
+  @Override
+  public ClusterConfiguration getClusterConfiguration() {
+    return clusterConfiguration;
+  }
+
+  @Override
+  public void addTopologyListener(final BrokerTopologyListener listener) {
+    throw new UnsupportedOperationException("Not yet implemented; implement if need be");
+  }
+
+  @Override
+  public void removeTopologyListener(final BrokerTopologyListener listener) {
+    throw new UnsupportedOperationException("Not yet implemented; implement if need be");
+  }
+
+  @Override
+  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  public void setPartitionHealthStatus(
+      final BrokerMemberId nodeId,
+      final int partitionId,
+      final PartitionHealthStatus partitionHealthStatus) {
+    clusterState.setPartitionHealthStatus(nodeId, partitionId, partitionHealthStatus);
+  }
+
+  public void setClusterId(final String clusterId) {
+    clusterState.setClusterId(clusterId);
+  }
+
+  public void addPartitionInactive(final int partitionId, final BrokerMemberId nodeId) {
+    clusterState.addPartitionInactive(partitionId, nodeId);
+  }
+}

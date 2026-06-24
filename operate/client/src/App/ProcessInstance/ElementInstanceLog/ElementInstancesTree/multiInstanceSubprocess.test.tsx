@@ -1,0 +1,302 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render, screen, within} from 'modules/testing-library';
+import {multiInstanceProcess, searchResult} from 'modules/testUtils';
+import {ElementInstancesTree} from './index';
+import {
+  getWrapper,
+  mockMultiInstanceProcessInstance,
+  parseBusinessObjects,
+} from './mocks';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+
+const MULTI_INSTANCE_BODY_ELEMENT: ElementInstance = {
+  elementInstanceKey: '2251799813686156',
+  processInstanceKey: '2251799813686118',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionId: 'multiInstanceProcess',
+  state: 'ACTIVE',
+  type: 'MULTI_INSTANCE_BODY',
+  elementId: 'filterMapSubProcess',
+  elementName: 'Filter-Map Sub Process',
+  hasIncident: true,
+  incidentKey: null,
+  tenantId: '<default>',
+  startDate: '2020-08-18T12:07:34.205+0000',
+  endDate: null,
+  rootProcessInstanceKey: null,
+};
+
+const SUB_PROCESS_ELEMENT: ElementInstance = {
+  elementInstanceKey: '2251799813686166',
+  processInstanceKey: '2251799813686118',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionId: 'multiInstanceProcess',
+  state: 'ACTIVE',
+  type: 'SUB_PROCESS',
+  elementId: 'filterMapSubProcess',
+  elementName: 'Filter-Map Sub Process',
+  hasIncident: true,
+  incidentKey: null,
+  tenantId: '<default>',
+  startDate: '2020-08-18T12:07:34.281+0000',
+  endDate: null,
+  rootProcessInstanceKey: null,
+};
+
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Multi Instance Subprocess', () => {
+  beforeEach(async () => {
+    mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
+
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        MULTI_INSTANCE_BODY_ELEMENT,
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'PARALLEL_GATEWAY',
+          elementId: 'peterFork',
+          elementName: 'Peter Fork',
+          hasIncident: false,
+          incidentKey: null,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
+        },
+      ]),
+    );
+  });
+
+  it('should load the instance history', async () => {
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [],
+    });
+
+    render(
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        businessObjects={businessObjects}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Peter Fork')).toBeInTheDocument();
+    expect(
+      screen.getByText('Filter-Map Sub Process (Multi Instance)'),
+    ).toBeInTheDocument();
+  });
+
+  it('should be able to unfold and fold subprocesses', async () => {
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [],
+    });
+
+    const {user} = render(
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        businessObjects={businessObjects}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(
+      screen.queryByLabelText('Filter-Map Sub Process', {
+        selector: "[aria-expanded='false']",
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([SUB_PROCESS_ELEMENT]),
+    );
+    mockFetchElementInstance(
+      MULTI_INSTANCE_BODY_ELEMENT.elementInstanceKey,
+    ).withSuccess(MULTI_INSTANCE_BODY_ELEMENT);
+
+    await user.type(
+      await screen.findByLabelText('Filter-Map Sub Process (Multi Instance)', {
+        selector: "[aria-expanded='false']",
+      }),
+      '{arrowright}',
+    );
+
+    expect(
+      await screen.findByLabelText('Filter-Map Sub Process (Multi Instance)', {
+        selector: "[aria-expanded='true']",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        {
+          elementInstanceKey: '2251799813686204',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'START_EVENT',
+          elementId: 'startFilterMap',
+          elementName: 'Start Filter-Map',
+          hasIncident: false,
+          incidentKey: null,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:34.337+0000',
+          endDate: '2020-08-18T12:07:34.445+0000',
+          rootProcessInstanceKey: null,
+        },
+      ]),
+    );
+    mockFetchElementInstance(
+      SUB_PROCESS_ELEMENT.elementInstanceKey,
+    ).withSuccess(SUB_PROCESS_ELEMENT);
+
+    await user.type(
+      await screen.findByLabelText('Filter-Map Sub Process', {
+        selector: "[aria-expanded='false']",
+      }),
+      '{arrowRight}',
+    );
+
+    expect(await screen.findByText('Start Filter-Map')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Filter-Map Sub Process (Multi Instance)', {
+        selector: "[aria-expanded='true']",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Filter-Map Sub Process', {
+        selector: "[aria-expanded='true']",
+      }),
+    ).toBeInTheDocument();
+
+    await user.type(
+      screen.getByLabelText('Filter-Map Sub Process', {
+        selector: "[aria-expanded='true']",
+      }),
+      '{arrowleft}',
+    );
+
+    expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
+  });
+
+  it('should poll for instances on root level', async () => {
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [],
+    });
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [],
+    });
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    render(
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        businessObjects={businessObjects}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
+
+    const withinMultiInstanceElementInstance = within(
+      await screen.findByTestId(`tree-node-2251799813686156`),
+    );
+
+    expect(
+      await withinMultiInstanceElementInstance.findByTestId('INCIDENT-icon'),
+    ).toBeInTheDocument();
+    expect(
+      withinMultiInstanceElementInstance.queryByTestId('COMPLETED-icon'),
+    ).not.toBeInTheDocument();
+
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'PARALLEL_GATEWAY',
+          elementId: 'peterFork',
+          elementName: 'Peter Fork',
+          hasIncident: false,
+          incidentKey: null,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
+        },
+        {
+          elementInstanceKey: '2251799813686156',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'MULTI_INSTANCE_BODY',
+          elementId: 'filterMapSubProcess',
+          elementName: 'Filter-Map Sub Process',
+          hasIncident: false,
+          incidentKey: null,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:34.205+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
+        },
+      ]),
+    );
+
+    vi.runOnlyPendingTimers();
+
+    expect(
+      await withinMultiInstanceElementInstance.findByTestId('COMPLETED-icon'),
+    ).toBeInTheDocument();
+    expect(
+      withinMultiInstanceElementInstance.queryByTestId('INCIDENT-icon'),
+    ).not.toBeInTheDocument();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+});

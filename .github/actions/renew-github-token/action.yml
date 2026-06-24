@@ -1,0 +1,88 @@
+# The GitHub App token generated for actions/checkout expires after 1 hour.
+# In long-running jobs (e.g. Maven release), the token may expire before git push.
+# This action generates a fresh token and replaces the credential in the correct
+# location used by checkout.
+#
+# Background: checkout stores the extraheader credential in an external temp
+# config file ($RUNNER_TEMP/git-credentials-<uuid>.config) and references it from
+# .git/config via includeIf.gitdir directives. A naïve `git config --add` would
+# create a duplicate entry, causing HTTP 400 "Duplicate header: Authorization".
+# This action clears both locations and writes the renewed token to the original
+# credential file.
+#
+# See: https://github.com/actions/checkout/pull/2286 (persist-creds change)
+# See: https://github.com/camunda/camunda/issues/47369 (expired token in release job)
+
+# owner: @camunda/monorepo-devops-team
+---
+name: Renew GitHub Token
+
+description: >
+  Generates a fresh GitHub App token via Vault and replaces the git credential
+  set by actions/checkout, avoiding duplicate Authorization headers.
+
+inputs:
+  vault-url:
+    description: 'Vault server URL'
+    required: true
+  vault-role-id:
+    description: 'Vault AppRole role ID'
+    required: true
+  vault-secret-id:
+    description: 'Vault AppRole secret ID'
+    required: true
+  github-app-id-vault-key:
+    description: 'Vault key for the GitHub App ID'
+    required: true
+  github-app-id-vault-path:
+    description: 'Vault path for the GitHub App ID'
+    required: true
+  github-app-private-key-vault-key:
+    description: 'Vault key for the GitHub App private key'
+    required: true
+  github-app-private-key-vault-path:
+    description: 'Vault path for the GitHub App private key'
+    required: true
+
+outputs:
+  token:
+    description: 'The renewed GitHub App token'
+    value: ${{ steps.generate-token.outputs.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate renewed GitHub App token
+      id: generate-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      with:
+        github-app-id-vault-key: ${{ inputs.github-app-id-vault-key }}
+        github-app-id-vault-path: ${{ inputs.github-app-id-vault-path }}
+        github-app-private-key-vault-key: ${{ inputs.github-app-private-key-vault-key }}
+        github-app-private-key-vault-path: ${{ inputs.github-app-private-key-vault-path }}
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ inputs.vault-role-id }}
+        vault-auth-secret-id: ${{ inputs.vault-secret-id }}
+        vault-url: ${{ inputs.vault-url }}
+
+    - name: Replace git credentials with renewed token
+      shell: bash
+      env:
+        RENEWED_TOKEN: ${{ steps.generate-token.outputs.token }}
+      run: |
+        set -euo pipefail
+
+        # 1. Find the checkout credential config file
+        #    checkout stores the extraheader in $RUNNER_TEMP/git-credentials-<uuid>.config
+        #    See: https://github.com/actions/checkout/blob/main/src/git-auth-helper.ts#L425
+        CRED_FILE=$(ls "${RUNNER_TEMP}"/git-credentials-*.config 2>/dev/null | head -1)
+
+        # 2. Write the renewed token to the credential file
+        ENCODED=$(echo -n "x-access-token:${RENEWED_TOKEN}" | base64 -w0)
+        if [ -n "$CRED_FILE" ] && [ -f "$CRED_FILE" ]; then
+          echo "Writing renewed token to: $CRED_FILE"
+          git config --file "$CRED_FILE" http.https://github.com/.extraheader "AUTHORIZATION: basic ${ENCODED}"
+        else
+          echo "::error::checkout credential file not found; cannot safely renew token without risking duplicate Authorization headers"
+          exit 1
+        fi

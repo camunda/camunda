@@ -1,0 +1,1063 @@
+# description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
+# type: CI
+# owner: @camunda/distribution
+---
+name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-main-run<run_id>-a<attempt> for push to main)'
+        type: string
+        required: false
+      helmRepositoryBranchName:
+        description: 'Helm repository branch name'
+        type: string
+        default: 'main'
+      helmRepositoryDirName:
+        description: 'Helm chart directory name'
+        type: string
+        default: 'camunda-platform-8.10'
+      scenario:
+        description: 'Test scenario'
+        type: string
+        default: 'alwaysgreen'
+      deployment-ttl:
+        description: 'Deployment TTL'
+        type: string
+        default: ''
+      shortname:
+        description: 'Short name for the deployment'
+        type: string
+        default: 'agrn'
+  merge_group:
+    types:
+      - checks_requested
+
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidence
+concurrency:
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
+  cancel-in-progress: true
+
+env:
+  TEST_OWNER: '@camunda/distribution'
+  GHA_BEST_PRACTICES_LINTER: enabled
+  HARBOR_REGISTRY: registry.camunda.cloud
+  HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Gate job - checks conditions once, all other jobs depend on this
+  should-run:
+    name: Check Run Conditions
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    permissions: { }
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      github.event_name == 'merge_group'
+    steps:
+      - run: echo "Workflow conditions met, proceeding with build"
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_should_run"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+          {
+            echo "### AlwaysGreen Failure Context"
+            echo ""
+            echo "- stage: ${{ github.job }}"
+            echo "- status: ${{ job.status }}"
+            echo "- failure_category: ${FAILURE_CATEGORY}"
+            echo "- owner_team: ${OWNER_TEAM}"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
+
+  # Preflight checks. Validates the things that have historically broken
+  # downstream stages silently:
+  #   1. required org secrets are present
+  #   2. expected Vault paths are readable from this repo
+  #   3. when a user supplies inputs.version on workflow_dispatch, it
+  #      matches one of the three documented tag shapes — otherwise the
+  #      build would push a tag the Harbor replication filter silently
+  #      drops, and helm-deploy would later fail with ImagePullBackOff.
+  # Fails fast before any expensive build job runs.
+  preflight:
+    name: Preflight checks
+    needs: should-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # NB: NO `continue-on-error` here. Preflight is meant to fail-fast and
+    # block the expensive downstream stages — including on merge_group runs
+    # (one of the two protected events this hardening targets). Letting
+    # preflight failures pass through here would defeat the entire rationale.
+    permissions: { }
+    steps:
+      - name: Verify required org secrets are set
+        id: check-secrets
+        env:
+          VAULT_ADDR_PRESENT: ${{ secrets.VAULT_ADDR != '' }}
+          VAULT_ROLE_ID_PRESENT: ${{ secrets.VAULT_ROLE_ID != '' }}
+          VAULT_SECRET_ID_PRESENT: ${{ secrets.VAULT_SECRET_ID != '' }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ "$VAULT_ADDR_PRESENT" == "true" ]] || missing+=(VAULT_ADDR)
+          [[ "$VAULT_ROLE_ID_PRESENT" == "true" ]] || missing+=(VAULT_ROLE_ID)
+          [[ "$VAULT_SECRET_ID_PRESENT" == "true" ]] || missing+=(VAULT_SECRET_ID)
+          if (( ${#missing[@]} > 0 )); then
+            echo "Missing org secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+          echo "All required org secrets are present."
+
+      - name: Verify Vault paths are reachable
+        id: check-vault
+        # Read-only smoke check: only proves the role can resolve the paths
+        # this workflow depends on. Failure here means the Vault policy for
+        # this repo lost a path binding (or the secret was rotated to a
+        # different path) — a known historical break mode.
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Validate inputs.version shape (when provided)
+        id: check-tag-shape
+        # The only tag this job has access to before build-and-push runs is
+        # the user-supplied workflow_dispatch override. Validate that it
+        # matches one of the three documented shapes:
+        #   - "...-main-run<run_id>-a<attempt>"               (push to main)
+        #   - "...-mq<PR_NUMBER>-run<run_id>-a<attempt>"      (merge_group)
+        #   - "...-dispatch-run<run_id>-a<attempt>"           (workflow_dispatch)
+        # Other event paths synthesize the tag inside
+        # build-and-push.set-image-tag, which is the single source of truth
+        # for that logic — preflight cannot validate that tag without
+        # duplicating the producer.
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$INPUT_VERSION" ]]; then
+            echo "No inputs.version provided — tag will be synthesized by build-and-push.set-image-tag."
+            exit 0
+          fi
+          contract_re='^.+-(main|dispatch|mq[0-9]+)-run[0-9]+-a[0-9]+$'
+          echo "Validating inputs.version: $INPUT_VERSION"
+          if [[ ! "$INPUT_VERSION" =~ $contract_re ]]; then
+            echo "inputs.version '$INPUT_VERSION' does not match the documented contract:" >&2
+            echo "  **-(main|dispatch|mq<digits>)-run**-a**" >&2
+            exit 1
+          fi
+          echo "inputs.version shape OK."
+
+      - name: Add preflight summary
+        if: always()
+        env:
+          # Each check's `outcome` is one of: success, failure, cancelled,
+          # skipped. Map the raw value to a glyph so the summary reflects
+          # reality even when an earlier step failed and later ones never
+          # ran. Without this the summary unconditionally claimed "validated".
+          SECRETS_OUTCOME: ${{ steps.check-secrets.outcome }}
+          VAULT_OUTCOME: ${{ steps.check-vault.outcome }}
+          TAG_OUTCOME: ${{ steps.check-tag-shape.outcome }}
+        run: |
+          format_outcome() {
+            case "$1" in
+              success)   echo ":white_check_mark: passed" ;;
+              failure)   echo ":x: failed" ;;
+              cancelled) echo ":no_entry_sign: cancelled" ;;
+              skipped|"") echo ":heavy_minus_sign: skipped (an earlier check failed)" ;;
+              *)         echo ":grey_question: $1" ;;
+            esac
+          }
+          {
+            echo "### AlwaysGreen Preflight"
+            echo ""
+            echo "- secrets: $(format_outcome "$SECRETS_OUTCOME")"
+            echo "- vault paths: $(format_outcome "$VAULT_OUTCOME")"
+            echo "- image tag shape: $(format_outcome "$TAG_OUTCOME")"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Same CI Health observability hook every other job in this workflow
+      # uses. Without it the Monorepo CI Health linter flags this job.
+      - name: Checkout (for observe-build-status)
+        if: always()
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-preflight
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Parallel frontend builds
+  build-operate-frontend:
+    name: Build Operate Frontend
+    needs: preflight
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - name: Upload Operate frontend artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: operate-frontend
+          path: operate/client/build
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-operate-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/core-features"
+            FAILURE_CATEGORY="orchestration_frontend_build"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
+
+  build-tasklist-frontend:
+    name: Build Tasklist Frontend
+    needs: preflight
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - name: Upload Tasklist frontend artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tasklist-frontend
+          path: tasklist/client/build
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-tasklist-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/core-features"
+            FAILURE_CATEGORY="orchestration_frontend_build"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
+
+  build-identity-frontend:
+    name: Build Identity Frontend
+    needs: preflight
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - name: Upload Identity frontend artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: identity-frontend
+          path: identity/client/dist
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-identity-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/core-features"
+            FAILURE_CATEGORY="orchestration_frontend_build"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
+
+  # Main build job - waits for all frontends to complete
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: [build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
+    permissions: { }
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    outputs:
+      image-tag: ${{ steps.set-image-tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+
+      - name: Get Maven project version
+        id: maven-version
+        run: |
+          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Set semantic image tag
+        id: set-image-tag
+        run: |
+          MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
+          if [[ -n "${{ inputs.version }}" ]]; then
+            # Use explicitly provided version
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            # For merge queue: <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
+            PR_NUM=$(sed -nE 's|^refs/heads/gh-readonly-queue/.+/pr-([0-9]+)-.*$|\1|p' <<< "${{ github.ref }}")
+            if [[ -z "${PR_NUM}" ]]; then
+              echo "Failed to resolve a single PR number from merge_group ref: '${{ github.ref }}'" >&2
+              exit 1
+            fi
+            echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.10.0-SNAPSHOT-dispatch-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          else
+            # For push to main: <maven-version>-main-run<run_id>-a<run_attempt> (e.g., 8.10.0-SNAPSHOT-main-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-main-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download Operate frontend artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: operate-frontend
+          path: operate/client/build
+
+      - name: Download Tasklist frontend artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tasklist-frontend
+          path: tasklist/client/build
+
+      - name: Download Identity frontend artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: identity-frontend
+          path: identity/client/dist
+
+      - name: Build Camunda
+        id: build-camunda
+        uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - name: Build and push Docker image to Harbor
+        id: build-docker
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ env.HARBOR_REPOSITORY }}
+          version: ${{ steps.set-image-tag.outputs.tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: camunda.Dockerfile
+          push: true
+
+      - name: Output image details
+        run: |
+          {
+            echo "### Docker Image Built and Pushed"
+            echo ""
+            echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}"
+            echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}"
+            echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-build
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/core-features"
+            FAILURE_CATEGORY="orchestration_build_and_push"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
+
+  format-identifier:
+    name: Format Identifier
+    # Runs in parallel with frontend builds (no dependency on their outputs)
+    needs: preflight
+    permissions: { }
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    outputs:
+      identifier: ${{ steps.format.outputs.identifier }}
+    steps:
+      - name: Format identifier
+        id: format
+        shell: bash
+        run: |
+          # Create a unique identifier based on run ID and short SHA
+          SHA_SHORT="${GITHUB_SHA::7}"
+          IDENTIFIER="docker-helm-${{ github.run_id }}-${SHA_SHORT}"
+          # Truncate to max 40 chars if needed (k8s namespace limit)
+          IDENTIFIER="${IDENTIFIER:0:40}"
+          echo "identifier=${IDENTIFIER}" >> "$GITHUB_OUTPUT"
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_identifier"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
+
+  helm-deploy:
+    name: Helm chart Integration Tests
+    needs: [build-and-push, format-identifier]
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    secrets: inherit
+    with:
+      identifier: ${{ needs.format-identifier.outputs.identifier }}
+      platforms: gke
+      camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
+      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
+      namespace-prefix: monorepo
+      test-enabled: true
+      e2e-enabled: true
+      deployment-ttl: ${{ inputs.deployment-ttl || '' }}
+      scenario: ${{ inputs.scenario || 'alwaysgreen' }}
+      shortname: ${{ inputs.shortname || 'agrn' }}
+      always-delete-namespace: true
+      flows: install
+      extra-values: |
+        orchestration:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/camunda
+            tag: ${{ needs.build-and-push.outputs.image-tag }}
+            pullSecrets:
+              - name: index-docker-io
+              - name: registry-camunda-cloud
+      vault-secret-mapping: |
+        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
+        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
+        secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
+        secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+
+  helm-deploy-status:
+    name: Observe Helm chart Integration Tests status
+    needs: helm-deploy
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    permissions: { }
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - run: |
+          # shellcheck disable=SC2242
+          exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - name: Add Helm debugging guidance on failure
+        if: failure()
+        run: |
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
+          {
+            echo "## Helm Integration Tests Failed"
+            echo ""
+            echo "### Where to look"
+            echo "Open [this run](${RUN_URL}) → job \`Helm chart Integration Tests\`"
+            echo "Expand the reusable workflow steps to find the failing install or test step."
+            echo ""
+            echo "### Common failure patterns"
+            echo "| Symptom | Likely cause |"
+            echo "|---|---|"
+            echo "| Pod not ready / CrashLoopBackOff | Container image issue or misconfiguration — check pod logs in the job output |"
+            echo "| Helm install timeout | Resource limits, PVC issues, or missing secrets — check Kubernetes events |"
+            echo "| E2E assertions failed | App started but behaving incorrectly — check E2E test output and screenshots |"
+            echo "| ImagePullBackOff | Harbor push failed or wrong tag — re-run the Docker build job |"
+            echo "| Namespace cleanup error | Previous run left dangling resources — usually safe to re-run |"
+            echo ""
+            echo "### Full debugging guide"
+            echo "[CI Debugging Cookbook — Helm Chart Setup/Integration failures](${COOKBOOK_URL}#failure-type-3--helm-chart-setup--integration-tests) · [Helm Chart E2E failures](${COOKBOOK_URL}#failure-type-4--helm-chart-e2e-tests)"
+            echo ""
+            echo "### Need help?"
+            echo "- Slack: [#ask-alwaysgreen](https://camunda.slack.com/archives/C0AQ378VBEV) / [#alwaysgreen-reliability](https://camunda.slack.com/archives/C0AK0AVKRL0)"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ needs.helm-deploy.result }}
+          job_name: docker-build-helm-integration-helm-deploy
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ needs.helm-deploy.result }}" == "failure" || "${{ needs.helm-deploy.result }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/distribution"
+            FAILURE_CATEGORY="helm_install_or_it"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            --arg upstream_result "${{ needs.helm-deploy.result }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,upstream_result:$upstream_result}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
+
+  trigger-saas-e2e:
+    name: Trigger SaaS E2E tests
+    runs-on: ubuntu-latest
+    needs: [build-and-push, format-identifier]
+    timeout-minutes: 35
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    permissions: { }
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Generate GitHub App Token (for dispatch)
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda,c8-cross-component-e2e-tests
+
+      - name: Trigger repository_dispatch for SaaS Monorepo
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
+        run: |
+          # Use the image tag as the generation name to match filter patterns
+          # e.g., "8.10.0-SNAPSHOT-main-run12345678-a1" matches "**-main-run**-a**"
+          GEN_NAME="${IMAGE_TAG}"
+
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            https://api.github.com/repos/camunda/c8-cross-component-e2e-tests/dispatches \
+            -d '{
+                  "event_type": "run-saas-generation-smoke-mono",
+                  "client_payload": {
+                      "correlation_id": "'"$CORRELATION_ID"'",
+                      "source_repo": "${{ github.repository }}",
+                      "source_sha": "${{ github.sha }}",
+                      "gen_name": "'"${GEN_NAME}"'",
+                      "c8Version": "8.10",
+                      "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
+                      "operateVersion": "SNAPSHOT",
+                      "tasklistVersion": "SNAPSHOT",
+                      "connectorsVersion": "SNAPSHOT",
+                      "optimizeVersion": "8-SNAPSHOT"
+                  }
+                }'
+
+      - name: Wait for downstream workflow to finish
+        id: wait-downstream
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+        run: |
+          set -euo pipefail
+          echo "Waiting for downstream E2E workflow run in camunda/c8-cross-component-e2e-tests for correlation id: $CORRELATION_ID"
+
+          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
+          WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo.yml"
+
+          gh_api_with_retry() {
+            local endpoint="$1"
+            local max_attempts="${2:-6}"
+            local sleep_s="${3:-2}"
+            local attempt=1
+            local out
+
+            while true; do
+              if out="$(gh api "$endpoint" 2>&1)"; then
+                printf '%s' "$out"
+                return 0
+              fi
+
+              if echo "$out" | grep -Eq 'HTTP 502|HTTP 503|HTTP 504|TLS handshake timeout|timeout|temporarily unavailable|connection reset by peer|EOF'; then
+                if (( attempt >= max_attempts )); then
+                  echo "gh api failed after ${attempt}/${max_attempts} attempts for $endpoint" >&2
+                  echo "$out" >&2
+                  return 1
+                fi
+                echo "Transient gh/api error (attempt ${attempt}/${max_attempts}) for $endpoint:" >&2
+                echo "$out" >&2
+                sleep "$sleep_s"
+                attempt=$((attempt + 1))
+                sleep_s=$((sleep_s * 2))
+                continue
+              fi
+
+              echo "Non-retryable gh/api error for $endpoint:" >&2
+              echo "$out" >&2
+              return 1
+            done
+          }
+
+          RUN_ID=""
+
+          for _ in {1..80}; do
+            if [[ -z "$RUN_ID" ]]; then
+              RUN_ID=$(
+                gh_api_with_retry "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=50" \
+                | jq -r --arg c "$CORRELATION_ID" '
+                    .workflow_runs
+                    | map(select(.display_title != null and (.display_title | contains($c))))
+                    | sort_by(.created_at)
+                    | last
+                    | .id // empty
+                  '
+              )
+
+              if [[ -z "$RUN_ID" ]]; then
+                echo "No downstream run found yet for correlation id. Sleeping..."
+                sleep 30
+                continue
+              fi
+
+              echo "Locked onto downstream run id: $RUN_ID"
+              echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
+            fi
+
+            RUN_JSON="$(gh_api_with_retry "/repos/$TARGET_REPO/actions/runs/$RUN_ID")"
+            STATUS="$(jq -r .status <<<"$RUN_JSON")"
+            CONCLUSION="$(jq -r .conclusion <<<"$RUN_JSON")"
+            echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
+
+            if [[ "$STATUS" == "completed" ]]; then
+              if [[ "$CONCLUSION" == "success" ]]; then
+                echo "downstream_conclusion=success" >> "$GITHUB_OUTPUT"
+                echo "Downstream workflow succeeded!"
+                exit 0
+              else
+                echo "downstream_conclusion=${CONCLUSION}" >> "$GITHUB_OUTPUT"
+                echo "Downstream workflow failed: $CONCLUSION"
+                exit 1
+              fi
+            fi
+
+            sleep 30
+          done
+
+          echo "downstream_conclusion=timeout" >> "$GITHUB_OUTPUT"
+          echo "Timed out waiting for downstream workflow to complete."
+          exit 1
+
+      - name: Add SaaS downstream workflow link to Job Summary
+        if: always()
+        run: |
+          if [ -n "${{ steps.wait-downstream.outputs.downstream_run_url }}" ]; then
+            {
+              echo "### SaaS Downstream Workflow Run"
+              echo ""
+              echo "**Correlation ID:** \`${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}\`"
+              echo ""
+              echo "[Open the triggered SaaS E2E workflow run in camunda/c8-cross-component-e2e-tests](${{ steps.wait-downstream.outputs.downstream_run_url }})"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Add debugging guidance on failure
+        if: steps.wait-downstream.outcome == 'failure'
+        run: |
+          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
+          {
+            echo ""
+            echo "### Debugging the SaaS E2E Failure"
+            echo ""
+            if [ -n "$DOWNSTREAM_URL" ]; then
+              echo "**Downstream run:** [$DOWNSTREAM_URL]($DOWNSTREAM_URL)"
+              echo ""
+              echo "**Artifacts (HTML report, screenshots, traces):** [playwright-report, screenshots, traces]($DOWNSTREAM_URL#artifacts)"
+            fi
+            echo ""
+            echo "**Quick steps:**"
+            echo "1. Click the downstream run link above"
+            echo "2. In the \`run-tests-saas-manual\` job, expand \`Run tests\` for log output"
+            echo "3. Download the \`playwright-report\` artifact → open \`index.html\`"
+            echo "4. Download \`test-results\` for screenshots and Playwright traces:"
+            echo "   \`\`\`"
+            echo "   npx playwright show-trace trace.zip"
+            echo "   \`\`\`"
+            echo "   Or upload to https://trace.playwright.dev"
+            echo ""
+            echo "**Full guide:** [CI Debugging Cookbook — SaaS E2E section](${COOKBOOK_URL}#failure-type-5--saas-e2e-tests)"
+          } >> "$GITHUB_STEP_SUMMARY"
+      # Propagate the downstream SaaS E2E failure category. Computed from
+      # the downstream json-report artifact using the decision tree in
+      # camunda/c8-cross-component-e2e-tests/docs/ci-failure-categories.md
+      # so an alwaysgreen medic can immediately tell whether a downstream
+      # failure was infrastructure / product / mixed without opening the
+      # downstream HTML report. Emitted as a separate artifact
+      # (alwaysgreen-saas-category) so the streak detector and any other
+      # consumer can read it alongside the per-job failure-context artifacts.
+      - name: Resolve downstream SaaS E2E failure category
+        id: downstream-category
+        if: always() && steps.wait-downstream.outputs.downstream_run_url != ''
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          RUN_ID="${DOWNSTREAM_URL##*/}"
+          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
+
+          # Resolve the downstream conclusion directly from the GitHub API
+          # so this step does not depend on outputs produced by any other
+          # workflow change. Possible values per the REST API include
+          # `success`, `failure`, `timed_out`, `cancelled`, `neutral`,
+          # `action_required`, `skipped`, `stale`, `null` (still running).
+          DOWNSTREAM_CONCLUSION=$(gh api "/repos/$TARGET_REPO/actions/runs/$RUN_ID" \
+            --jq '.conclusion // "unknown"' 2>/dev/null || echo "unknown")
+          echo "Resolved downstream conclusion from API: $DOWNSTREAM_CONCLUSION"
+
+          DOWNSTREAM_CATEGORY="unknown"
+          DOWNSTREAM_OWNER="@camunda/test-automation-team"
+
+          case "$DOWNSTREAM_CONCLUSION" in
+            success)
+              DOWNSTREAM_CATEGORY="none"
+              DOWNSTREAM_OWNER="none"
+              ;;
+            timed_out|cancelled)
+              DOWNSTREAM_CATEGORY="infrastructure"
+              ;;
+            failure)
+              WORK_DIR="${RUNNER_TEMP}/downstream-report"
+              mkdir -p "$WORK_DIR"
+              # Capture stderr so we can surface a real reason (404 / 403 /
+              # auth scope) rather than silently classifying as `unknown`.
+              # Common modes:
+              #   - GitHub App installation on c8-cross-component-e2e-tests
+              #     lacks `actions: read` → 403
+              #   - artifact retention expired → 404
+              #   - downstream run still publishing → transient 404
+              DOWNLOAD_LOG="${WORK_DIR}/.gh-run-download.log"
+              if gh run download "$RUN_ID" --repo "$TARGET_REPO" \
+                  --pattern 'json-report*' --dir "$WORK_DIR" 2>"$DOWNLOAD_LOG"; then
+                TOTAL=0
+                FAILED=0
+                FLAKY=0
+                SETUP_FAILED=0
+                while IFS= read -r -d '' RESULTS; do
+                  T=$(jq '[.suites[]?.specs[]?] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  F=$(jq '[.suites[]?.specs[]? | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  K=$(jq '[.suites[]?.specs[]? | select(.tests[]?.results | length > 1) | select(.ok==true)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  S=$(jq '[.suites[]?.specs[]? | select((.file // "") | endswith("test-setup.spec.ts")) | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  TOTAL=$((TOTAL + T))
+                  FAILED=$((FAILED + F))
+                  FLAKY=$((FLAKY + K))
+                  SETUP_FAILED=$((SETUP_FAILED + S))
+                done < <(find "$WORK_DIR" -type f -name 'results.json' -print0)
+
+                echo "downstream totals: total=$TOTAL failed=$FAILED flaky=$FLAKY setup_failed=$SETUP_FAILED"
+                if (( TOTAL == 0 )) || (( SETUP_FAILED > 0 )); then
+                  DOWNSTREAM_CATEGORY="infrastructure"
+                elif (( FAILED > 0 )) && (( FLAKY > 0 )); then
+                  DOWNSTREAM_CATEGORY="mixed"
+                elif (( FAILED > 0 )); then
+                  DOWNSTREAM_CATEGORY="product"
+                else
+                  DOWNSTREAM_CATEGORY="unknown"
+                fi
+              else
+                # The artifact was unreachable. Distinguish this from a
+                # genuinely "unknown" categorisation so consumers don't
+                # confuse "we couldn't tell" with "we tried and the data
+                # was ambiguous". Routing falls to monorepo-devops since
+                # this is an integration / permissions problem with the
+                # parent workflow, not a downstream test failure.
+                DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)
+                echo "::warning::Could not download downstream json-report artifact: ${DOWNLOAD_ERR:-no stderr}" >&2
+                DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
+                DOWNSTREAM_OWNER="@camunda/monorepo-devops-team"
+                {
+                  echo "### Downstream Category Unavailable"
+                  echo ""
+                  echo "\`gh run download\` failed for run $RUN_ID on $TARGET_REPO."
+                  echo "Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
+                  echo ""
+                  echo "stderr: \`${DOWNLOAD_ERR:-(empty)}\`"
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+              ;;
+          esac
+
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-saas-category.json"
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg downstream_conclusion "$DOWNSTREAM_CONCLUSION" \
+            --arg downstream_category "$DOWNSTREAM_CATEGORY" \
+            --arg owner_team "$DOWNSTREAM_OWNER" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg downstream_run_url "$DOWNSTREAM_URL" \
+            '{
+              stage:$stage,
+              downstream_conclusion:$downstream_conclusion,
+              downstream_category:$downstream_category,
+              owner_team:$owner_team,
+              run_url:$run_url,
+              downstream_run_url:$downstream_run_url
+            }' > "$CONTEXT_FILE"
+
+          echo "downstream_category=$DOWNSTREAM_CATEGORY" >> "$GITHUB_OUTPUT"
+          echo "downstream_owner=$DOWNSTREAM_OWNER" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Downstream SaaS E2E Failure Category"
+            echo ""
+            echo "- conclusion: $DOWNSTREAM_CONCLUSION"
+            echo "- category: $DOWNSTREAM_CATEGORY"
+            echo "- owner: $DOWNSTREAM_OWNER"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload downstream SaaS E2E category artifact
+        if: ${{ always() && steps.downstream-category.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-saas-category
+          path: ${{ runner.temp }}/alwaysgreen-saas-category.json
+          retention-days: 14
+
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-trigger-saas-e2e
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
+              OWNER_TEAM="@camunda/test-automation-team"
+              FAILURE_CATEGORY="saas_e2e"
+            else
+              OWNER_TEAM="@camunda/monorepo-devops-team"
+              FAILURE_CATEGORY="orchestration_dispatch_or_wait"
+            fi
+          fi
+
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            --arg downstream_conclusion "${{ steps.wait-downstream.outputs.downstream_conclusion }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,downstream_conclusion:$downstream_conclusion}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5

@@ -1,0 +1,240 @@
+# description: Runs Integration tests on different versions of AWS OS
+# test locations:
+#  - /qa/acceptance-tests
+#  - /search/search-client-opensearch,
+#  - /zeebe/exporters/camunda-exporter,
+#  - /zeebe/exporters/opensearch-exporter,
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: AWS OpenSearch Manual/Scheduled Run Integration Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      opensearch-version:
+        description: Version of AWS OpenSearch
+        type: choice
+        options:
+          - "2.19"
+          - "3.5"
+  schedule:
+    - cron: "0 4 * * Mon-Fri"
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/core-features'
+
+jobs:
+  cleanup-opensearch-indices:
+    name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ matrix.os_version }}"
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    runs-on: aws-core-8-default
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup AWS OpenSearch
+        uses: ./.github/actions/setup-aws-opensearch-env
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          opensearch-version: ${{ matrix.os_version }}
+      - name: Python setup
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.x"
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install -q --disable-pip-version-check boto3==1.42.50 opensearch-py==3.1.0
+      - name: Delete old aws opensearch indices
+        env:
+          OPENSEARCH_URL: ${{ env.OPENSEARCH_URL }}
+          DRY_RUN: "false"
+          AGE_HOURS: "2"
+        run: python3 .github/scripts/clean-up-aws-opensearch-indices.py
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "cleanup-opensearch-indices/${{ matrix.os_version }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  integration-tests:
+    name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
+    needs: cleanup-opensearch-indices
+    permissions:
+      contents: read
+      actions: write
+    timeout-minutes: 60
+    runs-on: ${{ matrix.runs-on }}
+    env:
+      TEST_OWNER: ${{ matrix.owner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
+        group:
+        - camunda-qa-acceptance-tests-client
+        - camunda-qa-acceptance-tests-non-client
+        - search-client-opensearch
+        - camunda-exporter
+        - zeebe-opensearch-exporter
+        include:
+          - group: camunda-qa-acceptance-tests-client
+            name: "Camunda QA Module Client Tests"
+            maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test-client
+            runs-on: aws-core-8-default
+            owner: '@camunda/monorepo-devops-team'
+          - group: camunda-qa-acceptance-tests-non-client
+            name: "Camunda QA Module Non-Client Tests"
+            maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test-non-client
+            runs-on: aws-core-8-default
+            owner: '@camunda/monorepo-devops-team'
+          - group: search-client-opensearch
+            name: "Search Client OpenSearch ITs"
+            maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test
+            runs-on: aws-core-8-default
+            owner: '@camunda/core-features'
+          - group: camunda-exporter
+            name: "Camunda Exporter ITs"
+            maven-modules: "'io.camunda:camunda-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test
+            runs-on: aws-core-8-default
+            owner: '@camunda/data-layer'
+          - group: zeebe-opensearch-exporter
+            name: "Zeebe OpenSearch Exporter ITs"
+            maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test
+            runs-on: aws-core-8-default
+            owner: '@camunda/data-layer'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup AWS OpenSearch
+        uses: ./.github/actions/setup-aws-opensearch-env
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          opensearch-version: ${{ matrix.os_version }}
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-${{ matrix.group }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -D skip.fe.build -D skip.yarn -D skip.docker
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Test Build
+        shell: bash
+        run: >
+          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
+          -D forkCount=${{ matrix.maven-test-fork-count }}
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D flaky.test.reportDir=failsafe-reports
+          -D test.integration.opensearch.aws.url="${{ env.OPENSEARCH_URL }}"
+          -D test.integration.camunda.database.type=AWS_OS
+          -D test.integration.opensearch.aws.timeout.seconds=180
+          -P parallel-tests,extract-flaky-tests,${{ matrix.maven-test-profiles }}
+          -pl ${{ matrix.maven-modules }}
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] ${{ matrix.name }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "integration-tests/${{ matrix.group }}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  send-slack-notificaion:
+    name: "Send slack notification on fail"
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: (failure() || cancelled()) && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    permissions:
+      contents: read
+      actions: write
+    steps:
+    - name: Import secrets from Vault
+      id: secrets
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+    - name: Send notification
+      uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+      with:
+        webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+        webhook-type: webhook-trigger
+        # For posting a rich message using Block Kit
+        payload: |
+          text: "AWS OpenSearch Manual/Scheduled Run Integration Tests failed or were cancelled"
+          blocks:
+            - type: "section"
+              text:
+                type: "mrkdwn"
+                text: "AWS OpenSearch Manual/Scheduled Run Integration Tests FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        sparse-checkout: .github
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

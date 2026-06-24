@@ -1,0 +1,8 @@
+camunda:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:mariadb://localhost:3306/camunda_secondary?serverTimezone=UTC
+        username: camunda
+        password: camunda

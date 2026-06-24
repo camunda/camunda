@@ -1,0 +1,8 @@
+camunda:
+  client:
+    auth:
+      client-assertion:
+        keystore-path: /path/to/keystore.jks
+        keystore-password: changeit
+        keystore-key-alias: alias
+        keystore-key-password: alias-password

@@ -1,0 +1,518 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type {Mixpanel} from 'mixpanel-browser';
+import {getStage} from './getStage';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+import type {
+  BatchOperationState,
+  BatchOperationType,
+  DecisionInstanceState,
+  ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useCurrentPage} from 'modules/hooks/useCurrentPage';
+
+const EVENT_PREFIX = 'operate:';
+
+/**
+ * These are all available events for mixpanel tracking. If a new event is introduced,
+ * it needs to be added here first.
+ */
+type Events =
+  | {
+      eventName: 'navigation';
+      link:
+        | 'header-logo'
+        | 'header-dashboard'
+        | 'header-processes'
+        | 'header-decisions'
+        | 'header-batch-operations'
+        | 'header-operations-log'
+        | 'dashboard-running-processes'
+        | 'dashboard-processes-with-incidents'
+        | 'dashboard-active-processes'
+        | 'dashboard-process-instances-by-name-all-versions'
+        | 'dashboard-process-instances-by-name-single-version'
+        | 'dashboard-process-incidents-by-error-message-all-processes'
+        | 'dashboard-process-incidents-by-error-message-single-version'
+        | 'processes-instance-details'
+        | 'processes-parent-instance-details'
+        | 'process-details-parent-details'
+        | 'process-details-breadcrumb'
+        | 'process-details-called-instances'
+        | 'process-details-version'
+        | 'decision-instances-instance-details'
+        | 'decision-instances-parent-process-details'
+        | 'decision-details-parent-process-details'
+        | 'decision-details-version';
+      currentPage?: ReturnType<typeof useCurrentPage>['currentPage'];
+    }
+  | {
+      eventName: 'theme-toggle';
+      toggledTo: 'light' | 'dark' | 'system';
+    }
+  | {
+      eventName: 'batch-operation';
+      operationType: BatchOperationType;
+    }
+  | {
+      eventName: 'single-operation';
+      operationType: BatchOperationType;
+      source: 'instances-list' | 'incident-table' | 'instance-header';
+    }
+  | {
+      eventName: 'instances-loaded';
+      filters: string[];
+      sortBy?: string;
+      sortOrder?: 'desc' | 'asc';
+    }
+  | {
+      eventName: 'decisions-loaded';
+      filters: string[];
+      sort?: {field: string; order?: 'desc' | 'asc'}[];
+    }
+  | {
+      eventName: 'variables-panel-used';
+      toTab: string;
+    }
+  | {
+      eventName: 'drd-panel-interaction';
+      action: 'open' | 'close' | 'maximize' | 'minimize';
+    }
+  | {
+      eventName: 'operate-loaded';
+      theme: 'dark' | 'light' | 'system';
+    }
+  | {
+      eventName: 'process-instance-details-loaded';
+      state: ProcessInstanceState;
+    }
+  | {
+      eventName: 'decision-instance-details-loaded';
+      state: DecisionInstanceState;
+    }
+  | {
+      eventName: 'incidents-panel-opened';
+    }
+  | {
+      eventName: 'incidents-panel-closed';
+    }
+  | {
+      eventName: 'incidents-sorted';
+      column: string;
+    }
+  | {
+      eventName: 'incidents-panel-full-error-message-opened';
+    }
+  | {
+      eventName: 'incident-filtered';
+    }
+  | {
+      eventName: 'incident-filters-cleared';
+    }
+  | {
+      eventName: 'metadata-popover-opened';
+    }
+  | {
+      eventName: 'metadata-popover-closed';
+    }
+  | {
+      eventName: 'diagram-zoom-in';
+    }
+  | {
+      eventName: 'diagram-zoom-out';
+    }
+  | {
+      eventName: 'diagram-zoom-reset';
+    }
+  | {
+      eventName: 'flow-node-instance-details-opened';
+    }
+  | {
+      eventName: 'flow-node-incident-details-opened';
+    }
+  | {
+      eventName: 'json-editor-opened';
+      variant:
+        | 'add-variable'
+        | 'edit-variable'
+        | 'search-variable'
+        | 'search-multiple-variables';
+    }
+  | {
+      eventName: 'json-editor-closed';
+      variant:
+        | 'add-variable'
+        | 'edit-variable'
+        | 'search-variable'
+        | 'search-multiple-variables';
+    }
+  | {
+      eventName: 'json-editor-saved';
+      variant:
+        | 'add-variable'
+        | 'edit-variable'
+        | 'search-variable'
+        | 'search-multiple-variables';
+    }
+  | {
+      eventName: 'instance-history-end-time-toggled';
+    }
+  | {
+      eventName: 'instance-history-item-clicked';
+    }
+  | {
+      eventName: 'enable-modification-mode';
+    }
+  | {
+      eventName: 'apply-modifications-summary';
+      hasPendingModifications: boolean;
+    }
+  | {
+      eventName: 'apply-modifications';
+      isProcessCanceled: boolean;
+      addToken: number;
+      cancelToken: number;
+      moveToken: number;
+      addVariable: number;
+      editVariable: number;
+    }
+  | {
+      eventName: 'discard-all-summary';
+      hasPendingModifications: boolean;
+    }
+  | {
+      eventName: 'discard-modifications';
+      hasPendingModifications: boolean;
+    }
+  | {
+      eventName: 'undo-modification';
+      modificationType:
+        | 'ADD_TOKEN'
+        | 'CANCEL_TOKEN'
+        | 'MOVE_TOKEN'
+        | 'ADD_VARIABLE'
+        | 'EDIT_VARIABLE';
+    }
+  | {
+      eventName: 'add-token';
+    }
+  | {
+      eventName: 'cancel-token';
+    }
+  | {
+      eventName: 'move-token';
+    }
+  | {
+      eventName: 'modification-successful';
+    }
+  | {
+      eventName: 'modification-failed';
+    }
+  | {
+      eventName: 'leave-modification-mode';
+    }
+  | {
+      eventName: 'app-switcher-item-clicked';
+      app: string;
+    }
+  | {
+      eventName: 'user-side-bar';
+      link: 'cookies' | 'terms-conditions' | 'privacy-policy' | 'imprint';
+    }
+  | {
+      eventName: 'info-bar';
+      link: 'documentation' | 'academy' | 'feedback' | 'forum';
+    }
+  | {
+      eventName: 'dashboard-link-clicked';
+      link: 'modeler' | 'operate-docs';
+    }
+  | {
+      eventName: 'date-range-popover-opened';
+      filterName: string;
+    }
+  | {
+      eventName: 'date-range-applied';
+      filterName: string;
+      methods: {
+        datePicker: boolean;
+        dateInput: boolean;
+        timeInput: boolean;
+        quickFilter: boolean;
+      };
+    }
+  | {
+      eventName: 'optional-filter-selected';
+      filterName: string;
+    }
+  | {
+      eventName: 'process-instances-filtered';
+      filterName: 'variable';
+      multipleValues: boolean;
+    }
+  | {
+      eventName: 'definition-deletion-button';
+      resource: 'process' | 'decision';
+      version: string;
+    }
+  | {
+      eventName: 'definition-deletion-confirmation';
+      resource: 'process' | 'decision';
+      version: string;
+    }
+  | {
+      eventName: 'open-tasklist-link-clicked';
+    }
+  /**
+   * Process instance migration
+   */
+  | {
+      eventName: 'process-instance-migration-button-clicked';
+    }
+  | {
+      eventName: 'process-instance-migration-mode-entered';
+    }
+  | {
+      eventName: 'process-instance-migration-confirmed';
+    }
+  /**
+   * Process instance batch modification
+   */
+  | {
+      eventName: 'batch-move-modification-move-button-clicked';
+    }
+  | {
+      eventName: 'batch-move-modification-exit-button-clicked';
+    }
+  | {
+      eventName: 'batch-move-modification-apply-button-clicked';
+    }
+  /**
+   * Batch operations list and details
+   */
+  | {
+      eventName: 'batch-operations-sorted';
+      sortBy: string;
+      sortOrder: 'asc' | 'desc';
+    }
+  | {
+      eventName: 'batch-operation-details-opened';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  | {
+      eventName: 'batch-operation-details-loaded';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+      operationsTotalCount: number;
+    }
+  | {
+      eventName: 'batch-operation-suspended';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  | {
+      eventName: 'batch-operation-resumed';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  | {
+      eventName: 'batch-operation-canceled';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  /**
+   * audit logs
+   */
+  | {
+      eventName: 'audit-logs-loaded';
+      filters: string[];
+      sort?: {field: string; order?: 'desc' | 'asc'}[];
+    }
+  | {
+      eventName: 'audit-logs-fetch-failed';
+    }
+  /**
+   * Document analytics
+   */
+  | {
+      eventName: 'document-previewed' | 'document-downloaded';
+      documentType: 'image' | 'pdf' | 'json' | 'unknown';
+      contentType: string | null;
+      size: number | null;
+    };
+
+const STAGE_ENV = getStage(window.location.host);
+
+function injectScript(src: string): Promise<void> {
+  return new Promise((resolve) => {
+    const scriptElement = document.createElement('script');
+
+    scriptElement.src = src;
+
+    document.head.appendChild(scriptElement);
+
+    setTimeout(resolve, 1000);
+
+    scriptElement.onload = () => {
+      resolve();
+    };
+    scriptElement.onerror = () => {
+      resolve();
+    };
+  });
+}
+
+class Tracking {
+  #mixpanel: null | Mixpanel = null;
+  #appCues: null | NonNullable<typeof window.Appcues> = null;
+
+  #baseProperties = (() => {
+    const clientConfig = getClientConfig();
+
+    return {
+      organizationId: clientConfig.organizationId,
+      clusterId: clientConfig.clusterId,
+      stage: STAGE_ENV,
+      version: import.meta.env.VITE_VERSION,
+    } as const;
+  })();
+
+  #isTrackingSupported = () => {
+    const clientConfig = getClientConfig();
+
+    return (
+      !import.meta.env.DEV &&
+      ['prod', 'int'].includes(STAGE_ENV) &&
+      Boolean(clientConfig.organizationId)
+    );
+  };
+
+  track(events: Events) {
+    if (!this.#isTrackingSupported() || !this.#isTrackingAllowed()) {
+      return;
+    }
+
+    if (this.#mixpanel === null) {
+      console.warn(
+        'Could not track event because mixpanel was not properly loaded.',
+      );
+    }
+
+    const {eventName, ...properties} = events;
+    const prefixedEventName = `${EVENT_PREFIX}${eventName}`;
+
+    try {
+      this.#mixpanel?.track(prefixedEventName, properties);
+      this.#appCues?.track(prefixedEventName, {
+        ...this.#baseProperties,
+        ...properties,
+      });
+    } catch (error) {
+      console.error(`Can't track event: ${eventName}`, error);
+    }
+  }
+
+  identifyUser = (user: {
+    username: string;
+    salesPlanType: string | null;
+    roles: ReadonlyArray<string> | null;
+  }) => {
+    this.#mixpanel?.identify(user.username);
+    this.#appCues?.identify(user.username, {
+      orgId: this.#baseProperties.organizationId,
+      salesPlanType: user.salesPlanType ?? '',
+      roles: user.roles?.join('|'),
+      clusters: this.#baseProperties.clusterId,
+    });
+  };
+
+  trackPagination = () => {
+    this.#appCues?.page();
+  };
+
+  #isTrackingAllowed = () => {
+    return Boolean(window.Osano?.cm?.analytics);
+  };
+
+  #loadMixpanel = (): Promise<void> => {
+    return import('mixpanel-browser').then(({default: mixpanel}) => {
+      const clientConfig = getClientConfig();
+
+      mixpanel.init(
+        clientConfig.mixpanelToken ?? import.meta.env.VITE_MIXPANEL_TOKEN,
+        {
+          api_host:
+            clientConfig.mixpanelAPIHost ?? import.meta.env.VITE_MIXPANEL_HOST,
+          opt_out_tracking_by_default: true,
+        },
+      );
+      mixpanel.register(this.#baseProperties);
+      this.#mixpanel = mixpanel;
+      window.mixpanel = mixpanel;
+    });
+  };
+
+  #loadOsano = (): Promise<void> => {
+    return new Promise((resolve) => {
+      if (STAGE_ENV === 'int') {
+        return injectScript(import.meta.env.VITE_OSANO_INT_ENV_URL).then(
+          resolve,
+        );
+      }
+
+      if (STAGE_ENV === 'prod') {
+        return injectScript(import.meta.env.VITE_OSANO_PROD_ENV_URL).then(
+          resolve,
+        );
+      }
+
+      return resolve();
+    });
+  };
+
+  #loadAppCues = (): Promise<void> => {
+    return new Promise((resolve) => {
+      return injectScript(import.meta.env.VITE_CUES_HOST).then(() => {
+        if (window.Appcues) {
+          this.#appCues = window.Appcues;
+        }
+
+        resolve();
+      });
+    });
+  };
+
+  loadAnalyticsToWillingUsers(): Promise<void[] | void> {
+    if (!this.#isTrackingSupported()) {
+      console.warn('Tracking is not supported for this environment');
+      return Promise.resolve();
+    }
+
+    return this.#loadOsano().then(() =>
+      Promise.all([this.#loadMixpanel(), this.#loadAppCues()]).then(() => {
+        window.Osano?.cm?.addEventListener(
+          'osano-cm-consent-saved',
+          ({ANALYTICS}) => {
+            if (ANALYTICS === 'ACCEPT') {
+              this.#mixpanel?.opt_in_tracking();
+            }
+            if (ANALYTICS === 'DENY') {
+              this.#mixpanel?.opt_out_tracking();
+            }
+          },
+        );
+      }),
+    );
+  }
+}
+
+const tracking = new Tracking();
+
+export {tracking};

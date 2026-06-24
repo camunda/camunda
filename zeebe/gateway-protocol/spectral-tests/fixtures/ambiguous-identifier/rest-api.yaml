@@ -1,0 +1,22 @@
+# Entry point for no-ambiguous-identifier-property rule tests.
+# Tests lint things.yaml directly via lintFixtureFile(); this file exists
+# only to satisfy the fixture directory convention.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — no-ambiguous-identifier-property
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  /things:
+    post:
+      operationId: createThing
+      summary: Create a thing
+      description: Creates a new thing.
+      x-added-in-version: "8.6"
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.

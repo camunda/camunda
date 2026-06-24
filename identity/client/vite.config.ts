@@ -1,0 +1,64 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { defineConfig, PluginOption, UserConfig } from "vite";
+import svgr from "vite-plugin-svgr";
+import react from "@vitejs/plugin-react";
+import sbom from "rollup-plugin-sbom";
+
+const outDir = "dist";
+const contextPath = process.env.CONTEXT_PATH ?? "";
+const proxyPath = `^${contextPath}/(v2|login|logout).*`;
+const configPath = `^${contextPath}/config.js`;
+
+const plugins: PluginOption[] = [
+  react(),
+  svgr({
+    svgrOptions: {
+      exportType: "default",
+      ref: true,
+      svgo: false,
+      titleProp: true,
+    },
+    include: "**/*.svg",
+  }),
+];
+
+// https://vitejs.dev/config/
+export default defineConfig(
+  ({ mode }): UserConfig => ({
+    base: "",
+    plugins: mode === "sbom" ? [...plugins, sbom()] : plugins,
+    resolve: {
+      tsconfigPaths: true,
+    },
+    build: {
+      outDir,
+      license: {
+        fileName: "assets/vendor.LICENSE.txt",
+      },
+      rolldownOptions: {
+        output: {
+          postBanner: "/*! licenses: /assets/vendor.LICENSE.txt */",
+        },
+      },
+    },
+    server: {
+      proxy: {
+        [proxyPath]: {
+          target: "http://localhost:8080",
+          changeOrigin: true,
+        },
+        [configPath]: {
+          target: "http://localhost:8080/admin",
+          changeOrigin: true,
+        },
+      },
+    },
+  }),
+);

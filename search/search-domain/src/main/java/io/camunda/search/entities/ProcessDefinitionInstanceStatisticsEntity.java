@@ -1,0 +1,84 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.entities;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record ProcessDefinitionInstanceStatisticsEntity(
+    String processDefinitionId,
+    String tenantId,
+    // cache-enriched; null on cache miss.
+    @Nullable String latestProcessDefinitionName,
+    Boolean hasMultipleVersions,
+    Long activeInstancesWithoutIncidentCount,
+    Long activeInstancesWithIncidentCount) {
+
+  public ProcessDefinitionInstanceStatisticsEntity {
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(hasMultipleVersions, "hasMultipleVersions");
+    Objects.requireNonNull(
+        activeInstancesWithoutIncidentCount, "activeInstancesWithoutIncidentCount");
+    Objects.requireNonNull(activeInstancesWithIncidentCount, "activeInstancesWithIncidentCount");
+  }
+
+  public static class Builder implements ObjectBuilder<ProcessDefinitionInstanceStatisticsEntity> {
+    private @Nullable String processDefinitionId;
+    private @Nullable String tenantId;
+    private @Nullable String latestProcessDefinitionName;
+    private @Nullable Boolean hasMultipleVersions;
+    private @Nullable Long activeInstancesWithoutIncidentCount;
+    private @Nullable Long activeInstancesWithIncidentCount;
+
+    public Builder processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
+      return this;
+    }
+
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    public Builder latestProcessDefinitionName(final String latestProcessDefinitionName) {
+      this.latestProcessDefinitionName = latestProcessDefinitionName;
+      return this;
+    }
+
+    public Builder hasMultipleVersions(final Boolean hasMultipleVersions) {
+      this.hasMultipleVersions = hasMultipleVersions;
+      return this;
+    }
+
+    public Builder activeInstancesWithoutIncidentCount(final Long count) {
+      activeInstancesWithoutIncidentCount = count;
+      return this;
+    }
+
+    public Builder activeInstancesWithIncidentCount(final Long count) {
+      activeInstancesWithIncidentCount = count;
+      return this;
+    }
+
+    @SuppressWarnings("NullAway")
+    @Override
+    public ProcessDefinitionInstanceStatisticsEntity build() {
+      return new ProcessDefinitionInstanceStatisticsEntity(
+          processDefinitionId,
+          tenantId,
+          latestProcessDefinitionName,
+          hasMultipleVersions,
+          activeInstancesWithoutIncidentCount,
+          activeInstancesWithIncidentCount);
+    }
+  }
+}

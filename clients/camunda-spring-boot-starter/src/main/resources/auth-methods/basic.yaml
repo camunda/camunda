@@ -1,0 +1,6 @@
+camunda:
+  client:
+    auth:
+      method: basic
+      username: demo
+      password: demo

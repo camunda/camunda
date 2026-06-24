@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_01r5pta" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.6.2">
+  <bpmn:process id="order-fulfilled-xor" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>start-to-split</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="start-to-split" sourceRef="StartEvent_1" targetRef="split" />
+    <bpmn:serviceTask id="a" name="Ship Without Insurance">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="ship-without-insurance" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>split-to-a</bpmn:incoming>
+      <bpmn:outgoing>a-to-join</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="split-to-a" sourceRef="split" targetRef="a" />
+    <bpmn:exclusiveGateway id="join">
+      <bpmn:incoming>a-to-join</bpmn:incoming>
+      <bpmn:incoming>b-to-join</bpmn:incoming>
+      <bpmn:outgoing>join-to-end</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="a-to-join" sourceRef="a" targetRef="join" />
+    <bpmn:endEvent id="end" name="Order Fulfilled&#10;">
+      <bpmn:incoming>join-to-end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="join-to-end" sourceRef="join" targetRef="end" />
+    <bpmn:serviceTask id="b" name="Ship With Insurance">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="ship-with-insurance" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>split-to-b</bpmn:incoming>
+      <bpmn:outgoing>b-to-join</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="split-to-b" name="order == true" sourceRef="split" targetRef="b">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">order == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="b-to-join" sourceRef="b" targetRef="join" />
+    <bpmn:exclusiveGateway id="split" name="Order Value?" default="split-to-a">
+      <bpmn:incoming>start-to-split</bpmn:incoming>
+      <bpmn:outgoing>split-to-a</bpmn:outgoing>
+      <bpmn:outgoing>split-to-b</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+  </bpmn:process>
+  <bpmn:message id="Message_0c81fok" name="payment-received">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="orderId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="order-fulfilled-xor">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="156" y="159" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_01k4v45_di" bpmnElement="start-to-split">
+        <di:waypoint x="192" y="177" />
+        <di:waypoint x="325" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1tn76vs_di" bpmnElement="a">
+        <dc:Bounds x="425" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1t3j3ue_di" bpmnElement="split-to-a">
+        <di:waypoint x="350" y="152" />
+        <di:waypoint x="350" y="72" />
+        <di:waypoint x="475" y="72" />
+        <di:waypoint x="475" y="137" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_0oakm1l_di" bpmnElement="join" isMarkerVisible="true">
+        <dc:Bounds x="575" y="152" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0578md9_di" bpmnElement="a-to-join">
+        <di:waypoint x="525" y="177" />
+        <di:waypoint x="575" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0grxxus_di" bpmnElement="end">
+        <dc:Bounds x="675" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="658" y="202" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1m1yhvt_di" bpmnElement="join-to-end">
+        <di:waypoint x="625" y="177" />
+        <di:waypoint x="675" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1k9u06f_di" bpmnElement="b">
+        <dc:Bounds x="425" y="247" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1ty4diz_di" bpmnElement="split-to-b">
+        <di:waypoint x="350" y="202" />
+        <di:waypoint x="350" y="473" />
+        <di:waypoint x="475" y="473" />
+        <di:waypoint x="475" y="327" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="334" y="345" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_05m5pby_di" bpmnElement="b-to-join">
+        <di:waypoint x="525" y="287" />
+        <di:waypoint x="600" y="287" />
+        <di:waypoint x="600" y="202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_0bo3v1m_di" bpmnElement="split" isMarkerVisible="true">
+        <dc:Bounds x="325" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="385" y="170" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

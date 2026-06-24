@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.HistoryDeletionMapper">
+
+  <resultMap id="historyDeletionResultMap" type="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel">
+    <constructor>
+      <idArg column="RESOURCE_KEY" javaType="java.lang.Long"/>
+      <arg column="RESOURCE_TYPE" javaType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel$HistoryDeletionTypeDbModel"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="postgresql">
+    INSERT INTO ${prefix}HISTORY_DELETION (
+      RESOURCE_KEY,
+      BATCH_OPERATION_KEY,
+      RESOURCE_TYPE,
+      PARTITION_ID
+    ) VALUES (
+      #{resourceKey},
+      #{batchOperationKey},
+      #{resourceType},
+      #{partitionId}
+    )
+    ON CONFLICT (RESOURCE_KEY, BATCH_OPERATION_KEY) DO NOTHING
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="mariadb">
+    INSERT INTO ${prefix}HISTORY_DELETION (
+      RESOURCE_KEY,
+      BATCH_OPERATION_KEY,
+      RESOURCE_TYPE,
+      PARTITION_ID
+    ) VALUES (
+      #{resourceKey},
+      #{batchOperationKey},
+      #{resourceType},
+      #{partitionId}
+    )
+    ON DUPLICATE KEY UPDATE RESOURCE_KEY = RESOURCE_KEY
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="mysql">
+    INSERT INTO ${prefix}HISTORY_DELETION (
+      RESOURCE_KEY,
+      BATCH_OPERATION_KEY,
+      RESOURCE_TYPE,
+      PARTITION_ID
+    ) VALUES (
+      #{resourceKey},
+      #{batchOperationKey},
+      #{resourceType},
+      #{partitionId}
+    )
+    ON DUPLICATE KEY UPDATE RESOURCE_KEY = RESOURCE_KEY
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="h2">
+    MERGE INTO ${prefix}HISTORY_DELETION hd
+      USING dual
+      ON (hd.RESOURCE_KEY = #{resourceKey} AND hd.BATCH_OPERATION_KEY = #{batchOperationKey})
+    WHEN NOT MATCHED THEN
+    INSERT (RESOURCE_KEY,
+            BATCH_OPERATION_KEY,
+            RESOURCE_TYPE,
+            PARTITION_ID)
+    VALUES (#{resourceKey},
+            #{batchOperationKey},
+            #{resourceType},
+            #{partitionId})
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="oracle">
+    MERGE INTO ${prefix}HISTORY_DELETION hd
+      USING (SELECT #{resourceKey} AS RESOURCE_KEY,
+                    #{batchOperationKey} AS BATCH_OPERATION_KEY
+             FROM dual) src
+      ON (hd.RESOURCE_KEY = src.RESOURCE_KEY AND hd.BATCH_OPERATION_KEY = src.BATCH_OPERATION_KEY)
+    WHEN NOT MATCHED THEN
+    INSERT (RESOURCE_KEY,
+            BATCH_OPERATION_KEY,
+            RESOURCE_TYPE,
+            PARTITION_ID)
+    VALUES (#{resourceKey},
+            #{batchOperationKey},
+            #{resourceType},
+            #{partitionId})
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="mssql">
+    MERGE ${prefix}HISTORY_DELETION AS target
+    USING (SELECT #{resourceKey} AS RESOURCE_KEY,
+                  #{batchOperationKey} AS BATCH_OPERATION_KEY,
+                  #{resourceType} AS RESOURCE_TYPE,
+                  #{partitionId} AS PARTITION_ID) AS source
+    ON (target.RESOURCE_KEY = source.RESOURCE_KEY AND target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY)
+    WHEN NOT MATCHED THEN
+      INSERT (RESOURCE_KEY,
+              BATCH_OPERATION_KEY,
+              RESOURCE_TYPE,
+              PARTITION_ID)
+      VALUES (source.RESOURCE_KEY,
+              source.BATCH_OPERATION_KEY,
+              source.RESOURCE_TYPE,
+              source.PARTITION_ID);
+  </insert>
+
+  <select id="getHistoryDeletionBatch" resultMap="historyDeletionResultMap">
+    SELECT *
+    FROM ${prefix}HISTORY_DELETION
+    WHERE PARTITION_ID = #{partitionId}
+    ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+    LIMIT #{limit}
+  </select>
+
+  <select id="getHistoryDeletionBatch" databaseId="mssql" resultMap="historyDeletionResultMap">
+    SELECT TOP (#{limit}) *
+    FROM ${prefix}HISTORY_DELETION
+    WHERE PARTITION_ID = #{partitionId}
+    ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+  </select>
+
+  <select id="getHistoryDeletionBatch" databaseId="oracle" resultMap="historyDeletionResultMap">
+    SELECT *
+    FROM (
+           SELECT *
+           FROM ${prefix}HISTORY_DELETION
+           WHERE PARTITION_ID = #{partitionId}
+           ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+         )
+    WHERE ROWNUM &lt;= #{limit}
+  </select>
+
+  <delete id="delete">
+    DELETE FROM ${prefix}HISTORY_DELETION
+    WHERE RESOURCE_KEY = #{resourceKey}
+      AND BATCH_OPERATION_KEY = #{batchOperationKey}
+  </delete>
+
+  <delete id="deleteByResourceKeys">
+    DELETE FROM ${prefix}HISTORY_DELETION
+    WHERE RESOURCE_KEY IN
+    <foreach collection="resourceKeys" item="resourceKey" open="(" separator="," close=")">
+      #{resourceKey}
+    </foreach>
+  </delete>
+
+</mapper>

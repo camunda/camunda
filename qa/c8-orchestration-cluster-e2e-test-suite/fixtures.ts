@@ -1,0 +1,253 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {test as base, type Cookie} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import {OperateHomePage} from '@pages/OperateHomePage';
+import {TaskPanelPage} from '@pages/TaskPanelPage';
+import {LoginPage} from '@pages/LoginPage';
+import {OperateProcessesPage} from '@pages/OperateProcessesPage';
+import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
+import {OperateDecisionInstancePage} from '@pages/OperateDecisionInstancePage';
+import {OperateDecisionsPage} from '@pages/OperateDecisionsPage';
+import {OperateFiltersPanelPage} from '@pages/OperateFiltersPanelPage';
+import {OperateDashboardPage} from '@pages/OperateDashboardPage';
+import {OperateDiagramPage} from '@pages/OperateDiagramPage';
+import {OperateProcessMigrationModePage} from '@pages/OperateProcessMigrationModePage';
+import {OperateProcessModificationModePage} from '@pages/OperateProcessModificationModePage';
+import {OperateProcessInstanceViewModificationModePage} from '@pages/OperateProcessInstanceViewModificationMode';
+import {TaskDetailsPage} from '@pages/TaskDetailsPage';
+import {TasklistHeader} from '@pages/TasklistHeader';
+import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
+import {PublicFormsPage} from '@pages/PublicFormsPage';
+import {IdentityHeader} from '@pages/IdentityHeader';
+import {IdentityAuthorizationsPage} from '@pages/IdentityAuthorizationsPage';
+import {IdentityGroupsPage} from '@pages/IdentityGroupsPage';
+import {IdentityUsersPage} from '@pages/IdentityUsersPage';
+import {IdentityMappingRulesPage} from '@pages/IdentityMappingRulesPage';
+import {IdentityRolesPage} from '@pages/IdentityRolesPage';
+import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
+import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
+import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
+import {IdentityGlobalTaskListenersPage} from '@pages/IdentityGlobalTaskListenersPage';
+import {IdentityMcpProcessesPage} from '@pages/IdentityMcpProcessesPage';
+import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
+import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
+import {SwaggerPage} from '@pages/SwaggerPage';
+import {OperateBatchOperationsPage} from '@pages/OperateBatchOperationsPage';
+
+type PlaywrightFixtures = {
+  makeAxeBuilder: () => AxeBuilder;
+  operateHomePage: OperateHomePage;
+  loginPage: LoginPage;
+  taskPanelPage: TaskPanelPage;
+  operateProcessesPage: OperateProcessesPage;
+  operateProcessInstancePage: OperateProcessInstancePage;
+  operateDecisionInstancePage: OperateDecisionInstancePage;
+  operateDecisionsPage: OperateDecisionsPage;
+  operateFiltersPanelPage: OperateFiltersPanelPage;
+  operateDashboardPage: OperateDashboardPage;
+  operateDiagramPage: OperateDiagramPage;
+  operateProcessMigrationModePage: OperateProcessMigrationModePage;
+  operateProcessModificationModePage: OperateProcessModificationModePage;
+  operateProcessInstanceViewModificationModePage: OperateProcessInstanceViewModificationModePage;
+  operateOperationsDetailsPage: OperateOperationsDetailsPage;
+  operateOperationsLogPage: OperateOperationsLogPage;
+  operateBatchOperationsPage: OperateBatchOperationsPage;
+  taskDetailsPage: TaskDetailsPage;
+  tasklistHeader: TasklistHeader;
+  tasklistProcessesPage: TasklistProcessesPage;
+  resetData: () => Promise<void>;
+  publicFormsPage: PublicFormsPage;
+  identityHeader: IdentityHeader;
+  identityMappingRulesPage: IdentityMappingRulesPage;
+  identityUsersPage: IdentityUsersPage;
+  identityGroupsPage: IdentityGroupsPage;
+  identityAuthorizationsPage: IdentityAuthorizationsPage;
+  identityRolesPage: IdentityRolesPage;
+  identityTenantsPage: IdentityTenantsPage;
+  identityRolesDetailsPage: IdentityRolesDetailsPage;
+  identityAuditLogPage: IdentityAuditLogPage;
+  identityMcpProcessesPage: IdentityMcpProcessesPage;
+  swaggerPage: SwaggerPage;
+  identityGlobalTaskListenersPage: IdentityGlobalTaskListenersPage;
+  suppressHelperModals: void;
+};
+
+const publicTest = base.extend<PlaywrightFixtures>({
+  suppressHelperModals: [
+    async ({page}, use) => {
+      await page.addInitScript(() => {
+        const current = JSON.parse(
+          window.localStorage.getItem('sharedState') || '{}',
+        );
+        window.localStorage.setItem(
+          'sharedState',
+          JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
+        );
+      });
+      await use();
+    },
+    {auto: true},
+  ],
+  makeAxeBuilder: async ({page}, use) => {
+    const makeAxeBuilder = () =>
+      new AxeBuilder({page}).withTags([
+        'best-practice',
+        'wcag2a',
+        'wcag2aa',
+        'cat.semantics',
+        'cat.forms',
+      ]);
+
+    await use(makeAxeBuilder);
+  },
+  operateHomePage: async ({page}, use) => {
+    await use(new OperateHomePage(page));
+  },
+  operateDashboardPage: async ({page}, use) => {
+    await use(new OperateDashboardPage(page));
+  },
+  operateDiagramPage: async ({page}, use) => {
+    await use(new OperateDiagramPage(page));
+  },
+  operateProcessMigrationModePage: async ({page}, use) => {
+    await use(new OperateProcessMigrationModePage(page));
+  },
+  operateProcessModificationModePage: async ({page}, use) => {
+    await use(new OperateProcessModificationModePage(page));
+  },
+  loginPage: async ({page}, use) => {
+    await use(new LoginPage(page));
+  },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
+  },
+  taskPanelPage: async ({page}, use) => {
+    await use(new TaskPanelPage(page));
+  },
+  operateProcessesPage: async ({page}, use) => {
+    await use(new OperateProcessesPage(page));
+  },
+  operateProcessInstancePage: async ({page}, use) => {
+    await use(new OperateProcessInstancePage(page));
+  },
+  operateDecisionInstancePage: async ({page}, use) => {
+    await use(new OperateDecisionInstancePage(page));
+  },
+  operateDecisionsPage: async ({page}, use) => {
+    await use(new OperateDecisionsPage(page));
+  },
+  operateFiltersPanelPage: async ({page}, use) => {
+    await use(new OperateFiltersPanelPage(page));
+  },
+  operateProcessInstanceViewModificationModePage: async ({page}, use) => {
+    await use(new OperateProcessInstanceViewModificationModePage(page));
+  },
+  operateOperationsDetailsPage: async ({page}, use) => {
+    await use(new OperateOperationsDetailsPage(page));
+  },
+  operateOperationsLogPage: async ({page}, use) => {
+    await use(new OperateOperationsLogPage(page));
+  },
+  operateBatchOperationsPage: async ({page}, use) => {
+    await use(new OperateBatchOperationsPage(page));
+  },
+  taskDetailsPage: async ({page}, use) => {
+    await use(new TaskDetailsPage(page));
+  },
+  tasklistHeader: async ({page}, use) => {
+    await use(new TasklistHeader(page));
+  },
+  tasklistProcessesPage: async ({page}, use) => {
+    await use(new TasklistProcessesPage(page));
+  },
+  publicFormsPage: async ({page}, use) => {
+    await use(new PublicFormsPage(page));
+  },
+
+  identityHeader: async ({page}, use) => {
+    await use(new IdentityHeader(page));
+  },
+  identityMappingRulesPage: async ({page}, use) => {
+    await use(new IdentityMappingRulesPage(page));
+  },
+
+  identityUsersPage: async ({page}, use) => {
+    await use(new IdentityUsersPage(page));
+  },
+
+  identityGroupsPage: async ({page}, use) => {
+    await use(new IdentityGroupsPage(page));
+  },
+
+  identityAuthorizationsPage: async ({page}, use) => {
+    await use(new IdentityAuthorizationsPage(page));
+  },
+
+  identityRolesPage: async ({page}, use) => {
+    await use(new IdentityRolesPage(page));
+  },
+
+  identityTenantsPage: async ({page}, use) => {
+    await use(new IdentityTenantsPage(page));
+  },
+
+  identityRolesDetailsPage: async ({page}, use) => {
+    await use(new IdentityRolesDetailsPage(page));
+  },
+  identityAuditLogPage: async ({page}, use) => {
+    await use(new IdentityAuditLogPage(page));
+  },
+  identityGlobalTaskListenersPage: async ({page}, use) => {
+    await use(new IdentityGlobalTaskListenersPage(page));
+  },
+  identityMcpProcessesPage: async ({page}, use) => {
+    await use(new IdentityMcpProcessesPage(page));
+  },
+});
+
+type AuthWorkerFixtures = {
+  loginUser: {username: string; password: string};
+  loginState: {cookies: Cookie[]; csrfToken: string};
+};
+
+const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
+  loginUser: [
+    {
+      username: process.env.TEST_USERNAME ?? 'demo',
+      password: process.env.TEST_PASSWORD ?? 'demo',
+    },
+    {scope: 'worker'},
+  ],
+  loginState: [
+    async ({browser, loginUser}, use) => {
+      const baseURL =
+        process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+      const context = await browser.newContext();
+      const response = await context.request.post(`${baseURL}/login`, {
+        form: loginUser,
+      });
+      const csrfToken = response.headers()['x-csrf-token'] ?? '';
+      const cookies = await context.cookies();
+      await context.close();
+      await use({cookies, csrfToken});
+    },
+    {scope: 'worker'},
+  ],
+  page: async ({context, loginState}, use) => {
+    await context.addCookies(loginState.cookies);
+    await context.addInitScript((csrfToken) => {
+      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
+    }, loginState.csrfToken);
+    const page = await context.newPage();
+    await use(page);
+  },
+});
+
+export {test, publicTest};

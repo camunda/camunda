@@ -1,0 +1,278 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.snapshots.impl;
+
+import static io.camunda.zeebe.util.Unit.unit;
+
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
+import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Objects;
+import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Represents a pending snapshot, that is a snapshot in the process of being written and has not yet
+ * been committed to the store.
+ */
+public final class FileBasedTransientSnapshot implements TransientSnapshot {
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedTransientSnapshot.class);
+
+  private final Path directory;
+  private final ConcurrencyControl actor;
+  private final FileBasedSnapshotStoreImpl snapshotStore;
+  private final FileBasedSnapshotId snapshotId;
+  private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
+  private boolean isValid = false;
+  private @Nullable PersistedSnapshot snapshot;
+  private @Nullable MutableChecksumsSFV checksum;
+  private final CRC32CChecksumProvider checksumProvider;
+  private long lastFollowupEventPosition = Long.MAX_VALUE;
+  private long maxExportedPosition = Long.MAX_VALUE;
+  private final boolean isBootstrap;
+
+  @SuppressWarnings("NullAway.Init")
+  FileBasedTransientSnapshot(
+      final FileBasedSnapshotId snapshotId,
+      final Path directory,
+      final FileBasedSnapshotStoreImpl snapshotStore,
+      final ConcurrencyControl actor,
+      final CRC32CChecksumProvider checksumProvider,
+      final boolean isBootstrap) {
+    this.snapshotId = snapshotId;
+    this.snapshotStore = snapshotStore;
+    this.directory = directory;
+    this.actor = actor;
+    this.checksumProvider = checksumProvider;
+    this.isBootstrap = isBootstrap;
+  }
+
+  @Override
+  public ActorFuture<Void> take(final Consumer<Path> takeSnapshot) {
+    actor.run(() -> takeInternal(takeSnapshot));
+    return takenFuture;
+  }
+
+  @Override
+  public TransientSnapshot withLastFollowupEventPosition(final long lastFollowupEventPosition) {
+    actor.run(() -> this.lastFollowupEventPosition = lastFollowupEventPosition);
+    return this;
+  }
+
+  @Override
+  public TransientSnapshot withMaxExportedPosition(final long maxExportedPosition) {
+    actor.run(() -> this.maxExportedPosition = maxExportedPosition);
+    return this;
+  }
+
+  private void takeInternal(final Consumer<Path> takeSnapshot) {
+    final var snapshotMetrics = snapshotStore.getMetrics();
+
+    try (final var ignored = snapshotMetrics.startTimer(isBootstrap)) {
+      try {
+        takeSnapshot.accept(getPath());
+        if (FileUtil.isEmpty(directory)) {
+          // If no snapshot files are created, snapshot is not valid
+          abortInternal();
+          takenFuture.completeExceptionally(
+              new IllegalStateException(
+                  String.format(
+                      "Expected to find transient snapshot in directory %s, but the directory is empty or does not exists",
+                      directory)));
+
+        } else {
+          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, checksumProvider);
+
+          snapshot = null;
+          isValid = true;
+          takenFuture.complete(unit());
+        }
+
+      } catch (final Exception exception) {
+        LOGGER.warn("Unexpected exception on taking snapshot ({})", snapshotId, exception);
+        abortInternal();
+        takenFuture.completeExceptionally(exception);
+      }
+    }
+  }
+
+  @Override
+  public ActorFuture<Void> abort() {
+    final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          abortInternal();
+          abortFuture.complete(unit());
+        });
+    return abortFuture;
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshot> persist() {
+    final CompletableActorFuture<PersistedSnapshot> future = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          persistInternal(future);
+          return null;
+        });
+    return future;
+  }
+
+  @Override
+  public SnapshotId snapshotId() {
+    return snapshotId;
+  }
+
+  @Override
+  public Path getPath() {
+    return directory;
+  }
+
+  ActorFuture<PersistedSnapshot> persistInternal() {
+    final CompletableActorFuture<PersistedSnapshot> fut = new CompletableActorFuture<>();
+    persistInternal(fut);
+    return fut;
+  }
+
+  private void persistInternal(final CompletableActorFuture<PersistedSnapshot> future) {
+    if (snapshot != null) {
+      future.complete(snapshot);
+      return;
+    }
+
+    if (!takenFuture.isDone() || takenFuture.isCompletedExceptionally()) {
+      future.completeExceptionally(new IllegalStateException("Snapshot is not taken"));
+      return;
+    }
+
+    if (!isValid) {
+      future.completeExceptionally(
+          new SnapshotNotFoundException("Snapshot may have been already deleted."));
+      return;
+    }
+
+    try {
+      final var metadata =
+          isBootstrap
+              ? FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION)
+              : new FileBasedSnapshotMetadata(
+                  FileBasedSnapshotStoreImpl.VERSION,
+                  snapshotId.getProcessedPosition(),
+                  snapshotId.getExportedPosition(),
+                  maxExportedPosition,
+                  lastFollowupEventPosition,
+                  false);
+
+      writeMetadataAndUpdateChecksum(metadata);
+      // snapshot id and director were first provided without the checksum because we could only
+      // calculate it just now.
+      // Let's construct a new snapshot id with the checksum and move the snapshot to the final
+      // directory.
+      // Including the checksum ensures we can take new snapshots even if positions didn't change,
+      // for example after running data migrations.
+      final var idWithChecksum =
+          new FileBasedSnapshotId(
+              snapshotId.getIndex(),
+              snapshotId.getTerm(),
+              snapshotId.getProcessedPosition(),
+              snapshotId.getExportedPosition(),
+              snapshotId.getBrokerId(),
+              Long.toHexString(Objects.requireNonNull(checksum, "checksum").getCombinedChecksum()));
+      final var directoryParent = FileUtil.requireParent(directory);
+      final var directoryWithChecksum =
+          directoryParent.resolve(idWithChecksum.getSnapshotIdAsString());
+      try {
+        FileUtil.moveDurably(directory, directoryWithChecksum, StandardCopyOption.ATOMIC_MOVE);
+      } catch (final Exception e) {
+        // Due to atomic move, we only get a generic `FileSystemException` if the target already
+        // exists. Let's double-check that this is the case and throw a more specific exception in
+        // that case, this helps with logging.
+        if (e instanceof final FileSystemException ignored && Files.exists(directoryWithChecksum)) {
+          future.completeExceptionally(
+              new SnapshotAlreadyExistsException(
+                  "Snapshot %s already exists".formatted(idWithChecksum)));
+        } else {
+          future.completeExceptionally(
+              new SnapshotException(
+                  "Unable to move snapshot %s to target directory with checksum %s"
+                      .formatted(idWithChecksum, directoryWithChecksum),
+                  e));
+        }
+        return;
+      }
+      snapshot =
+          snapshotStore.persistNewSnapshot(
+              directoryWithChecksum, idWithChecksum, checksum, metadata);
+      future.complete(snapshot);
+    } catch (final Exception e) {
+      future.completeExceptionally(e);
+    }
+
+    snapshotStore.removePendingSnapshot(this);
+  }
+
+  private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
+      throws IOException {
+    final var metadataPath = directory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
+    // Write metadata file along with snapshot files
+    try (final var channel =
+            FileChannel.open(
+                metadataPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.DSYNC);
+        final var output = Channels.newOutputStream(channel)) {
+      metadata.encode(output);
+      Objects.requireNonNull(checksum, "checksum").updateFromFile(metadataPath);
+    }
+  }
+
+  private void abortInternal() {
+    try {
+      isValid = false;
+      snapshot = null;
+      LOGGER.debug("Aborting transient snapshot {}", this);
+      FileUtil.deleteFolderIfExists(directory);
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete pending snapshot {}", this, e);
+    } finally {
+      snapshotStore.removePendingSnapshot(this);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "FileBasedTransientSnapshot{"
+        + "directory="
+        + directory
+        + ", snapshotId="
+        + snapshotId
+        + ", checksum="
+        + (checksum == null ? "none" : checksum.getCombinedChecksum())
+        + '}';
+  }
+}

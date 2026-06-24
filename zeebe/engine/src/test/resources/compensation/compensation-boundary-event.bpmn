@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x2c0k1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.15.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+  <bpmn:process id="compensation-process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1evmw69</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1evmw69" sourceRef="StartEvent_1" targetRef="Activity_05iamly" />
+    <bpmn:userTask id="Activity_05iamly" name="A">
+      <bpmn:incoming>Flow_1evmw69</bpmn:incoming>
+      <bpmn:outgoing>Flow_13spwoi</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_0iasuoa">
+      <bpmn:incoming>Flow_13spwoi</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_13spwoi" sourceRef="Activity_05iamly" targetRef="Event_0iasuoa" />
+    <bpmn:boundaryEvent id="Event_14k1uqy" attachedToRef="Activity_05iamly">
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_0o178oi" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Activity_1epoz0g" name="undo A" isForCompensation="true" />
+    <bpmn:association id="Association_1jwpcsv" associationDirection="One" sourceRef="Event_14k1uqy" targetRef="Activity_1epoz0g" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="compensation-process">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1761rwu_di" bpmnElement="Activity_05iamly">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0iasuoa_di" bpmnElement="Event_0iasuoa">
+        <dc:Bounds x="432" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1en6ywx_di" bpmnElement="Activity_1epoz0g">
+        <dc:Bounds x="440" y="200" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1n78lze_di" bpmnElement="Event_14k1uqy">
+        <dc:Bounds x="352" y="139" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1evmw69_di" bpmnElement="Flow_1evmw69">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13spwoi_di" bpmnElement="Flow_13spwoi">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="432" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1jwpcsv_di" bpmnElement="Association_1jwpcsv">
+        <di:waypoint x="350" y="175" />
+        <di:waypoint x="350" y="240" />
+        <di:waypoint x="420" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

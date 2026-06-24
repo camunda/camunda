@@ -1,0 +1,66 @@
+{
+  "index_patterns": [
+    "zeebe-record_conditional-subscription_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": "1",
+        "number_of_replicas": "0",
+        "queries": {
+          "cache": {
+            "enabled": false
+          }
+        }
+      }
+    },
+    "aliases": {
+      "zeebe-record-conditional-subscription": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "tenantId": {
+              "type": "keyword"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "processDefinitionKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "scopeKey": {
+              "type": "long"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "catchEventId": {
+              "type": "keyword"
+            },
+            "condition": {
+              "type": "keyword"
+            },
+            "variableNames": {
+              "type": "keyword"
+            },
+            "variableEvents": {
+              "type": "keyword"
+            },
+            "interrupting": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}

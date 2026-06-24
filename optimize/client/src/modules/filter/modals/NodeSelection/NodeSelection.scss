@@ -1,0 +1,20 @@
+.NodeSelection {
+  .cds--modal-container {
+    height: 100%;
+  }
+
+  .modalContent {
+    display: flex;
+    flex-direction: column;
+
+    .instructions,
+    .diagramActions {
+      margin-bottom: var(--cds-spacing-04);
+    }
+
+    .diagramContainer {
+      flex-grow: 1;
+      display: flex;
+    }
+  }
+}

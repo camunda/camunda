@@ -1,0 +1,133 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.analytics;
+
+import io.camunda.exporter.analytics.sampling.HashSampler;
+import java.time.Duration;
+
+/** Configuration for the Analytics Exporter. Instantiated from the exporter's args map. */
+public class AnalyticsExporterConfig {
+
+  private String endpoint = "https://analytics.cloud.camunda.io";
+  private int maxQueueSize = 2048;
+  private int maxBatchSize = 512;
+  private String pushInterval = "PT5M";
+  private String heartbeatInterval = "PT10M";
+  private boolean signing = true;
+  private double samplingRate = HashSampler.MAX_SAMPLE_RATE;
+
+  public String getEndpoint() {
+    return endpoint;
+  }
+
+  public AnalyticsExporterConfig setEndpoint(final String endpoint) {
+    this.endpoint = endpoint;
+    return this;
+  }
+
+  public int getMaxQueueSize() {
+    return maxQueueSize;
+  }
+
+  public AnalyticsExporterConfig setMaxQueueSize(final int maxQueueSize) {
+    this.maxQueueSize = maxQueueSize;
+    return this;
+  }
+
+  public int getMaxBatchSize() {
+    return maxBatchSize;
+  }
+
+  public AnalyticsExporterConfig setMaxBatchSize(final int maxBatchSize) {
+    this.maxBatchSize = maxBatchSize;
+    return this;
+  }
+
+  public Duration getPushInterval() {
+    return Duration.parse(pushInterval);
+  }
+
+  public AnalyticsExporterConfig setPushInterval(final String pushInterval) {
+    this.pushInterval = pushInterval;
+    return this;
+  }
+
+  public Duration getHeartbeatInterval() {
+    return Duration.parse(heartbeatInterval);
+  }
+
+  public AnalyticsExporterConfig setHeartbeatInterval(final String heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+    return this;
+  }
+
+  public boolean isSigning() {
+    return signing;
+  }
+
+  public AnalyticsExporterConfig setSigning(final boolean signing) {
+    this.signing = signing;
+    return this;
+  }
+
+  public double getSamplingRate() {
+    return samplingRate;
+  }
+
+  public AnalyticsExporterConfig setSamplingRate(final double samplingRate) {
+    this.samplingRate = samplingRate;
+    return this;
+  }
+
+  public AnalyticsExporterConfig validate() {
+    if (endpoint == null || endpoint.isBlank()) {
+      throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
+    }
+    try {
+      Duration.parse(pushInterval);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
+    }
+    final Duration parsedHeartbeat;
+    try {
+      parsedHeartbeat = Duration.parse(heartbeatInterval);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid heartbeatInterval: " + heartbeatInterval, e);
+    }
+    if (parsedHeartbeat.isZero() || parsedHeartbeat.isNegative()) {
+      throw new IllegalArgumentException(
+          "heartbeatInterval must be positive, got: " + heartbeatInterval);
+    }
+    if (maxQueueSize <= 0) {
+      throw new IllegalArgumentException("maxQueueSize must be positive, got: " + maxQueueSize);
+    }
+    if (maxBatchSize <= 0) {
+      throw new IllegalArgumentException("maxBatchSize must be positive, got: " + maxBatchSize);
+    }
+    if (maxBatchSize > maxQueueSize) {
+      throw new IllegalArgumentException(
+          "maxBatchSize ("
+              + maxBatchSize
+              + ") must not exceed maxQueueSize ("
+              + maxQueueSize
+              + ")");
+    }
+    if (Double.isNaN(samplingRate)
+        || samplingRate < HashSampler.MIN_SAMPLE_RATE
+        || samplingRate > HashSampler.MAX_SAMPLE_RATE) {
+      throw new IllegalArgumentException(
+          "samplingRate must be between "
+              + HashSampler.MIN_SAMPLE_RATE
+              + " and "
+              + HashSampler.MAX_SAMPLE_RATE
+              + ", got: "
+              + samplingRate);
+    }
+    return this;
+  }
+}

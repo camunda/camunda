@@ -1,0 +1,9 @@
+Operate is a tool in Camunda 8 stack to provide visibility into all your processes and resolve any incident from a centralized platform. More information can be found on https://camunda.com/platform/operate/
+
+License
+The licensing information for Operate available at: https://docs.camunda.io/docs/reference/licenses/
+
+Login with the credentials:
+  User:     demo
+  Password: demo
+

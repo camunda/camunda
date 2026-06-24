@@ -1,0 +1,350 @@
+---
+# description: Provisions an ephemeral AWS Aurora Global Database (two regions) using the
+# aurora-global Terraform module from camunda/camunda-deployment-references and runs the
+# AuroraAsyncReplicationIT acceptance test against it through an SSM port-forwarding tunnel.
+# The infrastructure is destroyed at the end of the run.
+# test location: qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication
+# type: CI
+# owner: @camunda/zeebe-distributed-platform
+
+name: Aurora Async Replication Test
+
+on:
+  workflow_call:
+    inputs:
+      deployment_references_ref:
+        description: 'Ref of camunda/camunda-deployment-references to use'
+        type: string
+        required: false
+        default: 'main'
+      skip_destroy:
+        description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
+        type: boolean
+        required: false
+        default: false
+  workflow_dispatch:
+    inputs:
+      deployment_references_ref:
+        description: 'Ref of camunda/camunda-deployment-references to use'
+        type: string
+        required: false
+        default: 'main'
+      skip_destroy:
+        description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
+        type: boolean
+        required: false
+        default: false
+  pull_request:
+    types: [labeled, synchronize]
+
+concurrency:
+  group: aurora-async-replication-test
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  AWS_REGION: eu-west-1
+  TF_DIR: .github/terraform/aurora-replication-it
+  TF_IN_AUTOMATION: 'true'
+  TF_INPUT: 'false'
+  TF_VAR_primary_region: eu-west-1
+  TF_VAR_secondary_region: eu-west-2
+  LOCAL_DB_PORT: '15432'
+  TF_STATE_BUCKET_REGION: eu-west-1
+
+jobs:
+  aurora-it:
+    name: Provision Aurora and run AuroraAsyncReplicationIT
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions: {}
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       (github.event.action == 'labeled' && github.event.label.name == 'run-aurora-tests' ||
+        github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-aurora-tests')))
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_owner: '@camunda/zeebe-distributed-platform'
+          test_product: zeebe
+          test_type: integration
+
+      - name: Checkout camunda-deployment-references
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: camunda/camunda-deployment-references
+          ref: ${{ inputs.deployment_references_ref || 'main' }}
+          path: camunda-deployment-references
+
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@99214aa6889fcddfa57764031d71add364327e59 # v6.1.3
+        with:
+          aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Ensure Terraform state bucket exists
+        run: |
+          set -euo pipefail
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET="aurora-it-tf-state-${ACCOUNT_ID}"
+          if ! aws s3api head-bucket --bucket "${BUCKET}" --region "${TF_STATE_BUCKET_REGION}" 2>/dev/null; then
+            aws s3api create-bucket \
+              --bucket "${BUCKET}" \
+              --region "${TF_STATE_BUCKET_REGION}" \
+              --create-bucket-configuration LocationConstraint="${TF_STATE_BUCKET_REGION}"
+            aws s3api put-bucket-versioning \
+              --bucket "${BUCKET}" \
+              --versioning-configuration Status=Enabled
+            aws s3api put-bucket-encryption \
+              --bucket "${BUCKET}" \
+              --server-side-encryption-configuration \
+                '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+          fi
+          echo "TF_STATE_BUCKET=${BUCKET}" >> "$GITHUB_ENV"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: Install AWS Session Manager plugin
+        run: |
+          curl -fsSL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" \
+            -o /tmp/session-manager-plugin.deb
+          sudo dpkg -i /tmp/session-manager-plugin.deb
+          session-manager-plugin --version
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Generate Terraform variables
+        id: tfvars
+        run: |
+          set -euo pipefail
+          NAME_PREFIX="aurora-it-${{ github.run_id }}"
+          MASTER_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::${MASTER_PASSWORD}"
+          {
+            echo "TF_VAR_name_prefix=${NAME_PREFIX}"
+            echo "TF_VAR_master_password=${MASTER_PASSWORD}"
+          } >> "$GITHUB_ENV"
+          echo "name_prefix=${NAME_PREFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Provision Aurora Global Database
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=aurora-replication-it/tfstate-${TF_VAR_name_prefix}/${TF_VAR_name_prefix}.tfstate" \
+            -backend-config="region=${TF_STATE_BUCKET_REGION}" \
+            -backend-config="encrypt=true"
+          terraform apply -auto-approve
+
+      - name: Start SSM port-forwarding tunnel to Aurora primary
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          set -euo pipefail
+          ENDPOINT="$(terraform output -raw primary_cluster_endpoint)"
+          BASTION_ID="$(terraform output -raw bastion_instance_id)"
+          echo "${ENDPOINT}"   > /tmp/ssm-endpoint
+          echo "${BASTION_ID}" > /tmp/ssm-bastion-id
+
+          # Supervise the tunnel: `aws ssm start-session` blocks until the session ends,
+          # then we restart it. Over a 90+ min run the session can drop from an SSM idle
+          # timeout or a network blip, leaving the local port unbound and later queries
+          # failing with "Connection refused". Restarting immediately rebinds port
+          # ${LOCAL_DB_PORT} (~2s) so HikariCP can refill its pool before the next query.
+          # No pkill is needed — the plugin terminates on its own when the session drops,
+          # so there are no orphaned processes holding the port. (The bastion staying put
+          # across the test's repeated `terraform apply`s is handled in main.tf via
+          # lifecycle.ignore_changes — without it the bastion is replaced mid-test and the
+          # cached instance id fails forever with "TargetNotConnected", which no amount of
+          # restarting here can fix.)
+          #
+          # The supervised script is single-quoted on purpose: ${LOCAL_DB_PORT} and the
+          # $(cat ...) reads must be evaluated by the inner bash on every restart, not
+          # expanded once by the outer shell.
+          # shellcheck disable=SC2016
+          # The session-manager-plugin emits no timestamps, so prefix every line with a
+          # UTC stamp — that is the only way to correlate a session death with the test
+          # phase that was running when the tunnel dropped.
+          nohup bash -c '
+            stamp() { while IFS= read -r line; do printf "%s %s\n" "$(date -u +%FT%TZ)" "$line"; done; }
+            while true; do
+              echo "starting SSM port-forward session" | stamp
+              aws ssm start-session \
+                --target "$(cat /tmp/ssm-bastion-id)" \
+                --document-name AWS-StartPortForwardingSessionToRemoteHost \
+                --parameters "host=$(cat /tmp/ssm-endpoint),portNumber=5432,localPortNumber=${LOCAL_DB_PORT}" \
+                2>&1 | stamp
+              echo "SSM session ended — restarting in 2s" | stamp
+              sleep 2
+            done
+          ' >> /tmp/ssm-tunnel.log 2>&1 &
+          disown
+
+          # Wait until the local port accepts connections
+          for _ in $(seq 1 60); do
+            if (exec 3<>"/dev/tcp/127.0.0.1/${LOCAL_DB_PORT}") 2>/dev/null; then
+              exec 3>&-
+              echo "✅ Tunnel established on localhost:${LOCAL_DB_PORT}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::SSM tunnel did not come up"
+          cat /tmp/ssm-tunnel.log
+          exit 1
+
+      - name: Build dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -pl qa/acceptance-tests -am -Dquickly
+
+      - name: Run AuroraAsyncReplicationIT
+        env:
+          TEST_AURORA_JDBC_URL: jdbc:postgresql://localhost:${{ env.LOCAL_DB_PORT }}/postgres
+          TEST_AURORA_USERNAME: camunda_admin
+          TEST_AURORA_PASSWORD: ${{ env.TF_VAR_master_password }}
+          # Replica loss is simulated by DELETING the secondary instance, not by rebooting or
+          # scaling it. Aurora Global Database replication is storage-level and independent of the
+          # secondary DB instance, so a reboot never freezes the replica's durable_lsn nor removes
+          # its row from aurora_global_db_instance_status() — the row the test waits to disappear.
+          # Deleting the instance makes the secondary cluster headless: its row vanishes from the
+          # status function (so the exporter loses its sync quorum and pauses) while the secondary
+          # cluster and its already-replicated storage volume survive. Recovery re-creates the
+          # instance into that surviving cluster, so it reattaches to the replicated volume and
+          # catches up quickly instead of re-seeding from scratch.
+          TEST_AURORA_STOP_REPLICA_CMD: >-
+            aws rds delete-db-instance
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-secondary-0
+            --skip-final-snapshot
+            && aws rds wait db-instance-deleted
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-secondary-0
+          TEST_AURORA_START_REPLICA_CMD: >-
+            aws rds create-db-instance
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-cluster-identifier ${{ env.TF_VAR_name_prefix }}-secondary
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-secondary-0
+            --engine aurora-postgresql
+            --db-instance-class db.r6g.large
+            && aws rds wait db-instance-available
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-secondary-0
+        uses: ./.github/actions/run-maven
+        with:
+          threads: '1'
+          parameters: >-
+            verify -pl qa/acceptance-tests
+            -Prdbms-aurora
+            -DskipUTs -DskipChecks -DskipTests=false
+
+      - name: Upload test reports and SSM logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: aurora-it-reports
+          path: |
+            qa/acceptance-tests/target/failsafe-reports/
+            /tmp/ssm-tunnel.log
+          retention-days: 7
+
+      - name: Destroy Aurora infrastructure
+        id: destroy
+        if: always() && inputs.skip_destroy != true
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform destroy -auto-approve
+
+      - name: Delete Terraform state from S3
+        if: always() && steps.destroy.outcome == 'success'
+        run: |
+          set -euo pipefail
+          if [ -z "${TF_STATE_BUCKET:-}" ]; then
+            echo "TF_STATE_BUCKET not set — nothing to clean up"
+            exit 0
+          fi
+          STATE_KEY="aurora-replication-it/tfstate-${TF_VAR_name_prefix}/${TF_VAR_name_prefix}.tfstate"
+          RAW=$(aws s3api list-object-versions \
+            --bucket "${TF_STATE_BUCKET}" \
+            --prefix "${STATE_KEY}" \
+            --output json 2>/dev/null || echo '{}')
+          OBJECTS=$(echo "${RAW}" | jq '{Objects: ((.Versions // []) + (.DeleteMarkers // [])) | map({Key: .Key, VersionId: .VersionId})}')
+          COUNT=$(echo "${OBJECTS}" | jq '.Objects | length')
+          if [ "${COUNT}" -gt 0 ]; then
+            aws s3api delete-objects --bucket "${TF_STATE_BUCKET}" --delete "${OBJECTS}"
+            echo "Deleted ${COUNT} object version(s) for state key ${STATE_KEY}"
+          else
+            echo "No state objects found for ${STATE_KEY}"
+          fi
+
+      - name: Notify Slack on destroy failure
+        if: always() && steps.destroy.outcome == 'failure'
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *Aurora infrastructure cleanup failed — manual action required*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "@zeebe-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+
+      - name: Warn about kept infrastructure
+        if: always() && inputs.skip_destroy == true
+        run: |
+          echo "::warning::Aurora infrastructure '${{ steps.tfvars.outputs.name_prefix }}' was NOT destroyed. Destroy it manually."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

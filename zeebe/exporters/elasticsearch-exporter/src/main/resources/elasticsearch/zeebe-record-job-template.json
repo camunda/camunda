@@ -1,0 +1,159 @@
+{
+  "index_patterns": [
+    "zeebe-record_job_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-job": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "type": {
+              "type": "keyword"
+            },
+            "elementId": {
+              "type": "text"
+            },
+            "elementType": {
+              "type": "keyword"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "processDefinitionVersion": {
+              "type": "integer"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "processDefinitionKey": {
+              "type": "long"
+            },
+            "customHeaders": {
+              "enabled": false
+            },
+            "worker": {
+              "type": "keyword"
+            },
+            "retries": {
+              "type": "long"
+            },
+            "priority": {
+              "type": "integer"
+            },
+            "retryBackoff": {
+              "type": "long"
+            },
+            "recurringTime": {
+              "type": "long"
+            },
+            "deadline": {
+              "type": "long"
+            },
+            "timeout": {
+              "type": "long"
+            },
+            "variables": {
+              "enabled": false
+            },
+            "errorMessage": {
+              "type": "text"
+            },
+            "errorCode": {
+              "type": "text"
+            },
+            "tenantId": {
+              "type": "keyword"
+            },
+            "jobKind": {
+              "type": "keyword"
+            },
+            "jobListenerEventType": {
+              "type": "keyword"
+            },
+            "changedAttributes": {
+              "type": "text"
+            },
+            "tags": {
+              "type": "keyword"
+            },
+            "jobToUserTaskMigration": {
+              "type": "boolean"
+            },
+            "result": {
+              "properties": {
+                "type": {
+                  "type": "text"
+                },
+                "denied": {
+                  "type": "boolean"
+                },
+                "deniedReason": {
+                  "type": "text"
+                },
+                "correctedAttributes": {
+                  "type": "text"
+                },
+                "corrections": {
+                  "properties": {
+                    "assignee": {
+                      "type": "keyword"
+                    },
+                    "dueDate": {
+                      "type": "keyword"
+                    },
+                    "followUpDate": {
+                      "type": "keyword"
+                    },
+                    "candidateGroupsList": {
+                      "type": "text"
+                    },
+                    "candidateUsersList": {
+                      "type": "text"
+                    },
+                    "priority": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "activateElements": {
+                  "properties": {
+                    "elementId": {
+                      "type": "text"
+                    },
+                    "variables": {
+                      "enabled": false
+                    }
+                  }
+                },
+                "completionConditionFulfilled": {
+                  "type": "boolean"
+                },
+                "cancelRemainingInstances": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            }
+          }
+        }
+      }
+    }
+  }
+}

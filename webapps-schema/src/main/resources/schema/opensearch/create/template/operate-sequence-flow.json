@@ -1,0 +1,34 @@
+{
+	"mappings": {
+    "dynamic": "strict",
+		"properties": {
+			"activityId": {
+				"type": "keyword"
+			},
+			"partitionId": {
+				"type": "integer"
+			},
+			"processInstanceKey": {
+				"type": "long"
+			},
+			"processDefinitionKey": {
+				"type": "long"
+			},
+			"bpmnProcessId": {
+				"type": "keyword"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"key": {
+				"type": "long"
+			},
+            "tenantId": {
+              "type": "keyword"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            }
+		}
+	}
+}

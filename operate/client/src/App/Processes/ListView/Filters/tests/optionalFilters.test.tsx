@@ -1,0 +1,608 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render, screen, waitFor} from 'modules/testing-library';
+import {getWrapper} from './mocks';
+import {createUser, mockProcessXML, searchResult} from 'modules/testUtils';
+import {Filters} from '../index';
+import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+
+describe('Optional Filters', () => {
+  beforeEach(async () => {
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockMe().withSuccess(createUser());
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should initially hide optional filters', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+    expect(
+      screen.queryByTestId('open-variable-filter-modal'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/process instance key\(s\)/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/batch operation key/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/business id/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Parent Process Instance Key/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/start date range/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
+  });
+
+  it('should display variables filter on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+    expect(screen.getByText('Variables')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('open-variable-filter-modal'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-variable'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should clear inline variable inputs after closing and reopening the filter', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+
+    await user.type(screen.getByTestId('single-condition-name'), 'orderStatus');
+    await user.type(screen.getByTestId('single-condition-value'), '"paid"');
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue(
+      'orderStatus',
+    );
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('"paid"');
+
+    await user.hover(screen.getByTestId('open-variable-filter-modal'));
+    await user.click(screen.getByLabelText('Remove Variables Filter'));
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue('');
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('');
+  });
+
+  it('should display instance ids field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-processInstanceKey'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(
+      screen.getByLabelText(/^process instance key\(s\)$/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-processInstanceKey'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display batch operation key field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-batchOperationKey'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(screen.getByLabelText(/^batch operation key$/i)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-batchOperationKey'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display business id field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-businessId'));
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-businessId'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display Parent Process Instance Key field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(
+      screen.getByLabelText(/^Parent Process Instance Key$/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display error message field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-errorMessage'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(screen.getByLabelText(/^error message$/i)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-errorMessage'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display start date field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-startDateRange'),
+    );
+
+    expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-startDateRange'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display end date field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-endDateRange'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-endDateRange'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should hide more filters button when all optional filters are visible', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-processInstanceKey'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-batchOperationKey'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-businessId'));
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-errorMessage'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-startDateRange'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-endDateRange'),
+    );
+
+    expect(
+      screen.queryByTestId('more-filters-dropdown'),
+    ).not.toBeInTheDocument();
+
+    await user.hover(screen.getByTestId('open-variable-filter-modal'));
+    await user.click(screen.getByLabelText(`Remove Variables Filter`));
+
+    expect(
+      screen.getByRole('button', {name: /^more filters$/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should delete optional filters', async () => {
+    const MOCK_PARAMS = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      processInstanceKey: '2251799813685467',
+      parentProcessInstanceKey: '1954699813693756',
+      errorMessage: 'a random error',
+      incidentErrorHashCode: '351027393',
+      startDateTo: '2021-02-21 18:17:18',
+      startDateFrom: '2021-02-21 20:00:00',
+      endDateTo: '2021-02-23 18:17:18',
+      endDateFrom: '2021-02-23 22:00:00',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      businessId: 'order-12345',
+    } as const;
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+      ),
+    });
+
+    expect(screen.getByTestId('search').textContent).toBe(
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+    );
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+
+    expect(
+      screen.getByLabelText(/^process instance key\(s\)$/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/^Parent Process Instance Key$/i),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/^error message$/i)).toBeInTheDocument();
+
+    expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^batch operation key$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
+
+    await removeOptionalFilter({
+      user,
+      screen,
+      label: 'Process Instance Key(s)',
+    });
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            parentProcessInstanceKey: '1954699813693756',
+            errorMessage: 'a random error',
+            incidentErrorHashCode: '351027393',
+            startDateTo: '2021-02-21 18:17:18',
+            startDateFrom: '2021-02-21 20:00:00',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+            businessId: 'order-12345',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(
+      screen.queryByLabelText('Process Instance Key(s)'),
+    ).not.toBeInTheDocument();
+
+    await removeOptionalFilter({
+      user,
+      screen,
+      label: 'Parent Process Instance Key',
+    });
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            errorMessage: 'a random error',
+            incidentErrorHashCode: '351027393',
+            startDateTo: '2021-02-21 18:17:18',
+            startDateFrom: '2021-02-21 20:00:00',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+            businessId: 'order-12345',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(
+      screen.queryByLabelText('Parent Process Instance Key'),
+    ).not.toBeInTheDocument();
+
+    await removeOptionalFilter({user, screen, label: 'Error Message'});
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            startDateTo: '2021-02-21 18:17:18',
+            startDateFrom: '2021-02-21 20:00:00',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+            businessId: 'order-12345',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(screen.queryByLabelText('Error Message')).not.toBeInTheDocument();
+
+    await removeOptionalFilter({user, screen, label: 'Start Date Range'});
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+            businessId: 'order-12345',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(screen.queryByLabelText('Start Date Range')).not.toBeInTheDocument();
+
+    await removeOptionalFilter({user, screen, label: 'End Date Range'});
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+            businessId: 'order-12345',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(screen.queryByLabelText('End Date Range')).not.toBeInTheDocument();
+
+    expect(screen.getByText('Variables')).toBeInTheDocument();
+    await user.hover(screen.getByTestId('open-variable-filter-modal'));
+    await user.click(screen.getByLabelText(`Remove Variables Filter`));
+
+    expect(screen.getByTestId('search').textContent).toBe(
+      `?${new URLSearchParams(
+        Object.entries({
+          processDefinitionId: 'bigVarProcess',
+          processDefinitionVersion: '1',
+          elementId: 'ServiceTask_0kt6c5i',
+          batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+          active: 'true',
+          incidents: 'true',
+          completed: 'true',
+          canceled: 'true',
+          businessId: 'order-12345',
+        }),
+      ).toString()}`,
+    );
+    expect(
+      screen.queryByTestId('open-variable-filter-modal'),
+    ).not.toBeInTheDocument();
+
+    await removeOptionalFilter({user, screen, label: 'Batch Operation Key'});
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            elementId: 'ServiceTask_0kt6c5i',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+            businessId: 'order-12345',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(
+      screen.queryByLabelText('Batch Operation Key'),
+    ).not.toBeInTheDocument();
+
+    await removeOptionalFilter({user, screen, label: 'Business ID'});
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            elementId: 'ServiceTask_0kt6c5i',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(screen.queryByLabelText('Business ID')).not.toBeInTheDocument();
+  });
+
+  it('should remove optional filters on filter reset', async () => {
+    const MOCK_PARAMS = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      processInstanceKey: '2251799813685467',
+      parentProcessInstanceKey: '1954699813693756',
+      errorMessage: 'a random error',
+      startDateTo: '2021-02-21 18:17:18',
+      startDateFrom: '2021-02-21 20:00:00',
+      endDateTo: '2021-02-23 18:17:18',
+      endDateFrom: '2021-02-23 22:00:00',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      businessId: 'eq_order-12345',
+    } as const;
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+      ),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+
+    expect(screen.getByTestId('search').textContent).toBe(
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+    );
+
+    expect(
+      screen.getByLabelText(/^process instance key\(s\)$/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/^Parent Process Instance Key$/i),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/^error message$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
+    expect(screen.getByText('Variables')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^batch operation key$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^business id$/i)).toHaveValue('order-12345');
+
+    await user.click(screen.getByRole('button', {name: /reset filters/i}));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /\?active=true&incidents=true$/,
+      ),
+    );
+
+    expect(
+      screen.queryByLabelText(/^process instance key\(s\)$/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/^Parent Process Instance Key$/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^error message$/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/^start date range$/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/^end date range$/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('open-variable-filter-modal'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/^batch operation key$/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^business id$/i)).not.toBeInTheDocument();
+  });
+});

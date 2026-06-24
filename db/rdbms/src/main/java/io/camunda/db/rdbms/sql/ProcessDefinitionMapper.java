@@ -1,0 +1,44 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.sql;
+
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import java.util.List;
+
+public interface ProcessDefinitionMapper {
+
+  void insert(ProcessDefinitionDbModel processDeployment);
+
+  Long count(ProcessDefinitionDbQuery filter);
+
+  List<ProcessDefinitionEntity> search(ProcessDefinitionDbQuery filter);
+
+  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
+      ProcessDefinitionStatisticsDbQuery query);
+
+  Long processInstanceStatisticsCount(ProcessDefinitionInstanceStatisticsDbQuery filter);
+
+  List<ProcessDefinitionInstanceStatisticsEntity> processInstanceStatistics(
+      ProcessDefinitionInstanceStatisticsDbQuery query);
+
+  Long processInstanceVersionStatisticsCount(
+      ProcessDefinitionInstanceVersionStatisticsDbQuery filter);
+
+  List<ProcessDefinitionInstanceVersionStatisticsEntity> processInstanceVersionStatistics(
+      ProcessDefinitionInstanceVersionStatisticsDbQuery filter);
+
+  void deleteByKeys(List<Long> processDefinitionKeys);
+}

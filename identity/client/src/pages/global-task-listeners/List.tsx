@@ -1,0 +1,149 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC } from "react";
+import { Edit, TrashCan } from "@carbon/react/icons";
+import useTranslate from "src/utility/localization";
+import { usePagination } from "src/utility/api";
+import { useQuery } from "@tanstack/react-query";
+import { globalTaskListenerQueries } from "src/utility/api/global-task-listeners/queries";
+import Page, { PageHeader } from "src/components/layout/Page";
+import EntityList from "src/components/entityList";
+import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import useModal, { useEntityModal } from "src/components/modal/useModal";
+import AddModal from "src/pages/global-task-listeners/modals/AddModal";
+import EditModal from "src/pages/global-task-listeners/modals/EditModal";
+import DeleteModal from "src/pages/global-task-listeners/modals/DeleteModal";
+import PageEmptyState from "src/components/layout/PageEmptyState";
+import { getEventTypeLabels } from "src/pages/global-task-listeners/utility";
+
+const List: FC = () => {
+  const { t } = useTranslate("globalTaskListeners");
+  const noop = () => {};
+
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
+  const {
+    data: globalTaskListeners,
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(globalTaskListenerQueries.search(pageParams));
+
+  const [addGlobalTaskListener, addGlobalTaskListenerModal] = useModal(
+    AddModal,
+    noop,
+  );
+  const [editGlobalTaskListener, editGlobalTaskListenerModal] = useEntityModal(
+    EditModal,
+    noop,
+  );
+  const [deleteGlobalTaskListener, deleteGlobalTaskListenerModal] =
+    useEntityModal(DeleteModal, noop);
+
+  const shouldShowEmptyState =
+    success && !search && !globalTaskListeners?.items.length;
+
+  const pageHeader = (
+    <PageHeader
+      title={t("globalTaskListeners")}
+      linkText={t("globalTaskListeners").toLowerCase()}
+      docsLinkPath="/components/concepts/global-user-task-listeners/"
+      shouldShowDocumentationLink={!shouldShowEmptyState}
+    />
+  );
+
+  if (shouldShowEmptyState) {
+    return (
+      <Page>
+        {pageHeader}
+        <PageEmptyState
+          resourceTypeTranslationKey={"globalTaskListener"}
+          docsLinkPath="/components/concepts/global-user-task-listeners/"
+          handleClick={addGlobalTaskListener}
+        />
+        {addGlobalTaskListenerModal}
+      </Page>
+    );
+  }
+
+  const transformedData = globalTaskListeners?.items.map((listener) => ({
+    ...listener,
+    afterNonGlobal: listener.afterNonGlobal
+      ? t("executionOrderAfter")
+      : t("executionOrderBefore"),
+    eventTypes: getEventTypeLabels(listener.eventTypes, t),
+    originalListener: listener,
+  }));
+
+  return (
+    <Page>
+      {pageHeader}
+      <EntityList
+        data={transformedData ?? []}
+        headers={[
+          {
+            header: t("globalTaskListenerId"),
+            key: "id",
+            isSortable: true,
+          },
+          { header: t("listenerType"), key: "type", isSortable: true },
+          {
+            header: t("eventType"),
+            key: "eventTypes",
+            isSortable: false,
+          },
+          { header: t("retries"), key: "retries", isSortable: false },
+          {
+            header: t("executionOrder"),
+            key: "afterNonGlobal",
+            isSortable: true,
+          },
+          { header: t("priority"), key: "priority", isSortable: true },
+        ]}
+        addEntityLabel={t("createListener")}
+        onAddEntity={addGlobalTaskListener}
+        loading={loading}
+        menuItems={[
+          {
+            label: t("editGlobalTaskListener"),
+            icon: Edit,
+            onClick: (entity) =>
+              editGlobalTaskListener(entity.originalListener),
+          },
+          {
+            label: t("delete"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: (entity) =>
+              deleteGlobalTaskListener(entity.originalListener),
+          },
+        ]}
+        searchPlaceholder={t("searchById")}
+        searchKey="id"
+        page={{ ...page, ...globalTaskListeners?.page }}
+        {...paginationCallbacks}
+      />
+      {!loading && !success && (
+        <TranslatedErrorInlineNotification
+          title={t("globalTaskListenersCouldNotLoad")}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
+        />
+      )}
+      {addGlobalTaskListenerModal}
+      {editGlobalTaskListenerModal}
+      {deleteGlobalTaskListenerModal}
+    </Page>
+  );
+};
+
+export default List;

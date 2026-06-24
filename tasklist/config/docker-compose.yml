@@ -1,0 +1,321 @@
+networks:
+  zeebe_network: {}
+
+services:
+
+  postgres:
+    container_name: postgres
+    image: postgres:18.4-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+    networks:
+      - zeebe_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.16}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - path.repo=/usr/local/els-snapshots
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - zeebe_network
+    restart: always
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
+
+  opensearch:
+    image: opensearchproject/opensearch:${OS_VERSION:-2.19.5}
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch-cluster
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    ports:
+      - 9200:9200
+      - 9605:9605 # required for Performance Analyzer
+    networks:
+      - zeebe_network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.3.2
+    ports:
+      - 5601:5601
+    environment:
+      - elasticsearch.hosts=elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - zeebe_network
+
+  keycloak:
+    depends_on:
+      - postgres
+    container_name: keycloak
+    image: bitnami/keycloak:26.3.3
+    ports:
+      - "18080:8080"
+    environment:
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_DATABASE_HOST: postgres
+      KEYCLOAK_DATABASE_NAME: identity
+      KEYCLOAK_DATABASE_USER: identity
+      KEYCLOAK_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/auth" ]
+      interval: 30s
+      timeout: 15s
+      retries: 8
+      start_period: 30s
+    networks:
+      - zeebe_network
+
+  identity: &identity
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:SNAPSHOT
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      IDENTITY_LOG_LEVEL: DEBUG
+    env_file:
+      - envs/.env.identity.keycloak
+      - envs/.env.identity
+    networks:
+      - zeebe_network
+
+  identity_oauth:
+    <<: *identity
+    container_name: identity-oauth
+    env_file:
+      - envs/.env.identity.keycloak
+      - envs/.env.identity
+      - envs/.env.identity-oauth
+    networks:
+      - zeebe_network
+
+  identity_mt:
+    <<: *identity
+    container_name: identity-mt
+    env_file:
+      - envs/.env.identity.keycloak
+      - envs/.env.identity
+      - envs/.env.identity-oauth
+      - envs/.env.multi-tenancy
+    networks:
+      - zeebe_network
+
+  camunda_identity:
+    container_name: camunda-identity
+    image: camunda/camunda:SNAPSHOT
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
+      - ZEEBE_BROKER_NETWORK_HOST=camunda-identity
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data
+      - CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
+      # Identity (Keycloak) wiring for the in-process broker
+      - CAMUNDA_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_BASEURL=http://identity:8084
+      - CAMUNDA_IDENTITY_AUDIENCE=zeebe-api
+    ports:
+      - 26500:26500
+      - 9600:9600
+      - 8080:8080
+    depends_on:
+      - ${DATABASE}
+      - identity
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
+    networks:
+      - zeebe_network
+    restart: always
+
+  camunda_oauth:
+    container_name: camunda-oauth
+    image: camunda/camunda:SNAPSHOT
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
+      - ZEEBE_BROKER_NETWORK_HOST=camunda-oauth
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data
+      - CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
+      # Identity (Keycloak) wiring for the in-process broker
+      - CAMUNDA_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_BASEURL=http://identity:8084
+      - CAMUNDA_IDENTITY_AUDIENCE=zeebe-api
+    ports:
+      - 26500:26500
+      - 9600:9600
+      - 8080:8080
+    depends_on:
+      - ${DATABASE}
+      - identity_oauth
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
+      - envs/.env.identity-oauth
+    networks:
+      - zeebe_network
+    restart: always
+
+  camunda_mt:
+    container_name: camunda-mt
+    image: camunda/camunda:SNAPSHOT
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
+      - ZEEBE_BROKER_NETWORK_HOST=camunda-mt
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data
+      - CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
+      # Identity (Keycloak) wiring for the in-process broker
+      - CAMUNDA_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_BASEURL=http://identity:8084
+      - CAMUNDA_IDENTITY_AUDIENCE=zeebe-api
+    ports:
+      - 26500:26500
+      - 9600:9600
+      - 8080:8080
+    depends_on:
+      - ${DATABASE}
+      - identity_mt
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
+      - envs/.env.identity-oauth
+      - envs/.env.multi-tenancy
+    networks:
+      - zeebe_network
+
+  camunda-e2e:
+    container_name: camunda-e2e
+    image: camunda/camunda:SNAPSHOT
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
+      - ZEEBE_BROKER_NETWORK_HOST=camunda-e2e
+      - ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503
+      - ZEEBE_BROKER_GATEWAY_ENABLE=true
+      - SPRING_PROFILES_ACTIVE=broker,tasklist,e2e-test,consolidated-auth
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+      - CAMUNDA_DATABASE_INDEXPREFIX=e2e
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX=e2e
+      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+    ports:
+      - 26503:26503   # gRPC gateway (non-standard port)
+      - 8081:8080     # web UI + REST API (legacy tasklist-e2e host port)
+      - 8088:8080     # REST API (legacy zeebe-e2e host port, kept for compatibility)
+      - 8001:8000     # debug
+    depends_on:
+      - elasticsearch
+    networks:
+      - zeebe_network
+    env_file:
+      - envs/.env.database.elasticsearch
+    restart: always
+
+  camunda-sso:
+    container_name: camunda-sso
+    image: camunda/camunda:SNAPSHOT
+    ports:
+      - 26500:26500
+      - 9600:9600
+      - 8080:8080
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
+      - ZEEBE_BROKER_NETWORK_HOST=camunda-sso
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data,sso-auth
+      - CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+      - camunda.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
+      - camunda.tasklist.auth0.claimName=https://camunda.com/orgs
+      - camunda.tasklist.auth0.clientId=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3
+      - camunda.tasklist.auth0.clientSecret=${ZEEBE_TASKLIST_AUTH0_CLIENTSECRET}
+      - camunda.tasklist.auth0.domain=weblogin.cloud.ultrawombat.com
+      - camunda.tasklist.auth0.organization=ebe81097-6657-4481-8fba-be5d94cac4ce
+      - graphql.playground.enabled=true
+      - graphql.playground.settings.request.credentials=include
+    depends_on:
+      - ${DATABASE}
+    env_file:
+      - envs/.env.database.${DATABASE}
+    networks:
+      - zeebe_network
+    volumes:
+      # Optional override of the bundled custom.css. In the unified image CAMUNDA_HOME=/usr/local/camunda
+      # and config/ is on the classpath (dist appassembler includeConfigurationDirectoryInClasspath=true),
+      # so the file must be mounted here to be picked up by ClassPathResource("custom.css").
+      - ./config/custom.css:/usr/local/camunda/config/custom.css
+    restart: always
+
+  camunda:
+    container_name: camunda
+    image: camunda/camunda:SNAPSHOT
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
+      - ZEEBE_BROKER_NETWORK_HOST=camunda
+      - SPRING_PROFILES_ACTIVE=consolidated-auth,tasklist,broker,operate,dev-data
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+    ports:
+      - 26500:26500
+      - 9600:9600
+      - 8080:8080
+    depends_on:
+      - ${DATABASE}
+    networks:
+      - zeebe_network
+    env_file:
+      - envs/.env.database.${DATABASE}
+    restart: always

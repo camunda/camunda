@@ -1,0 +1,192 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.state.immutable;
+
+import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.agrona.DirectBuffer;
+
+public interface ElementInstanceState {
+
+  ElementInstance getInstance(long key);
+
+  List<ElementInstance> getChildren(long parentKey);
+
+  /**
+   * Applies the provided visitor to each child element of the given parent. The visitor can
+   * indicate via the return value, whether the iteration should continue or not. This means if the
+   * visitor returns false the iteration will stop.
+   *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key-value-pair will contain the equal key as {@code startAtKey}. If the key doesn't
+   * exist it will start after.
+   *
+   * @param parentKey the key of the parent element instance
+   * @param startAtKey the element instance key of child the iteration should start at
+   * @param visitor the visitor which is applied for each child
+   */
+  void forEachChild(
+      long parentKey, long startAtKey, BiFunction<Long, ElementInstance, Boolean> visitor);
+
+  /**
+   * Applies the provided visitor to each child element key of the given parent. The visitor can
+   * indicate via its return value whether the iteration should continue or not. This means that if
+   * the visitor returns {@code false}, the iteration will stop and no further child keys will be
+   * visited.
+   *
+   * @param parentKey the key of the parent element instance whose child keys should be visited
+   * @param visitor the visitor which is applied to each child key; returning {@code true} to
+   *     continue iteration, or {@code false} to stop it
+   */
+  void forEachChildKey(long parentKey, Function<Long, Boolean> visitor);
+
+  /**
+   * Applies the provided visitor to each child element of the given parent. The visitor can
+   * indicate via the return value, whether the iteration should continue or not. This means if the
+   * visitor returns false the iteration will stop.
+   *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key-value-pair will contain the equal key as {@code startAtKey}. If the key doesn't
+   * exist it will start after.
+   *
+   * @param parentKey the key of the parent element instance
+   * @param startAtKey the element instance key of child the iteration should start at
+   * @param visitor the visitor which is applied for each child
+   * @param filter the filter which is applied for each child before calling the visitor
+   */
+  void forEachChild(
+      long parentKey,
+      long startAtKey,
+      BiFunction<Long, ElementInstance, Boolean> visitor,
+      Predicate<ElementInstance> filter);
+
+  AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(long processInstanceKey);
+
+  /**
+   * Returns the number of the taken sequence flows that are connected to the given (joining)
+   * gateway.
+   *
+   * <p><b>NOTE</b>: Each sequence flow counts only as one, even if it is taken multiple times.
+   *
+   * <p>The number helps to determine if a gateway can be activated or not.
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @param gatewayElementId the element id of the gateway
+   * @return the number of taken sequence flows of the given gateway
+   */
+  int getNumberOfTakenSequenceFlows(final long flowScopeKey, final DirectBuffer gatewayElementId);
+
+  /**
+   * Returns the number of the taken sequence flows in the scope of the given flow scope key.
+   *
+   * <p><b>NOTE</b>: Each sequence flow counts only as one, even if it is taken multiple times.
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @return the number of taken sequence flows in the scope of the given flow scope key
+   */
+  int getNumberOfTakenSequenceFlows(final long flowScopeKey);
+
+  /**
+   * Returns the taken sequence flows that are connected to the given (joining) gateway.
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @param gatewayElementId the element id of the gateway
+   * @return the taken sequence flows of the given gateway
+   */
+  Set<DirectBuffer> getTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId);
+
+  /**
+   * Visits all taken sequence flows of the given (joining) gateway and applies the given visitor to
+   * each taken sequence flow
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @param visitor the visitor that is applied for each taken sequence flow
+   */
+  void visitTakenSequenceFlows(final long flowScopeKey, final TakenSequenceFlowVisitor visitor);
+
+  /**
+   * Returns a list of process instance keys that belong to a specific process definition.
+   *
+   * <p>Caution: This will also return the keys of banned process instances!
+   *
+   * @param processDefinitionKey the key of the process definition
+   * @return a list of process instance keys
+   */
+  List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey);
+
+  /**
+   * Verifies if there are active process instances for a given process definition
+   *
+   * @param processDefinitionKey the key of the process definition
+   * @param bannedInstances a list of banned process instance keys
+   * @return a boolean indicating if there are running instances
+   */
+  boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
+
+  /**
+   * Verifies if the process instance has a runtime instruction to be terminated after the element
+   * with the given ID has completed or terminated.
+   *
+   * @param processInstanceKey the key of the process instance
+   * @param elementId the ID of the element that has completed or terminated
+   * @return a list of runtime instructions for the given element ID, potentially empty
+   */
+  List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
+      long processInstanceKey, String elementId);
+
+  /**
+   * Verifies if there is an active process instance with the given business id. This method is used
+   * to enforce uniqueness of business id per process definition (scoped by tenant, across
+   * versions).
+   *
+   * <p>Note that it uses process definition id rather than key to find an active process instance
+   * across all versions of the process definition.
+   *
+   * <p>The {@code ignoreWhen} predicate can be used to exclude certain process instances from the
+   * check, for example banned process instances. This allows the caller to handle edge cases where
+   * a process instance should not be considered as active.
+   *
+   * @param businessId the business id to look up
+   * @param processDefinitionId the id of the process definition to scope the search
+   * @param tenantId the tenant id
+   * @param ignoreWhen a predicate that takes a process instance key and returns true if the process
+   *     instance should be ignored (e.g. because it is banned), and false otherwise
+   * @return true if an active process instance exists with the given business id, false otherwise
+   */
+  boolean hasActiveProcessInstanceWithBusinessId(
+      String businessId,
+      String processDefinitionId,
+      String tenantId,
+      final Predicate<Long> ignoreWhen);
+
+  /**
+   * Returns the number of active process instances. This includes all process instances that are
+   * currently active, regardless of their process definition. This method is useful for monitoring
+   * and metrics purposes, as it provides insight into the overall number of active process
+   * instances in the system.
+   *
+   * @return the number of active process instances.
+   */
+  long getActiveProcessInstanceCount();
+
+  @FunctionalInterface
+  interface TakenSequenceFlowVisitor {
+    void visit(
+        final long flowScopeKey,
+        final DirectBuffer gatewayElementId,
+        final DirectBuffer sequenceFlowId,
+        final int number);
+  }
+}

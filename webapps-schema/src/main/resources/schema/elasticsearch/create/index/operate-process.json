@@ -1,0 +1,62 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "bpmnProcessId": {
+        "type": "keyword",
+        "eager_global_ordinals": true
+      },
+      "bpmnXml": {
+        "type": "text",
+        "index": false
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "resourceName": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "long"
+      },
+      "versionTag": {
+        "type": "keyword"
+      },
+      "flowNodes": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          }
+        }
+      },
+      "isPublic": {
+        "type": "boolean"
+      },
+      "formId": {
+        "type": "keyword"
+      },
+      "formKey": {
+        "type": "keyword"
+      },
+      "isFormEmbedded": {
+        "type": "boolean"
+      },
+      "tenantId": {
+        "type": "keyword"
+      }
+    }
+  }
+}

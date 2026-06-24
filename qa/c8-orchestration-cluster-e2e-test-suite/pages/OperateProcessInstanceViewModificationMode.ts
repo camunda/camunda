@@ -1,0 +1,729 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Page, Locator, expect} from '@playwright/test';
+
+export class OperateProcessInstanceViewModificationModePage {
+  private page: Page;
+  readonly modifyModeHeader: Locator;
+  readonly flowNodeModificationsPopup: Locator;
+  readonly addModificationButtononPopup: Locator;
+  readonly moveAllButtononPopup: Locator;
+  readonly cancelButtonPopup: Locator;
+  readonly cancelAllButtonPopup: Locator;
+  readonly reviewModificationsButton: Locator;
+  readonly discardAllModificationsButton: Locator;
+  readonly cancelButtonModificationDialog: Locator;
+  readonly applyButtonModificationsDialog: Locator;
+  readonly moveTokensMessage: Locator;
+  readonly diagram: Locator;
+  readonly multipleInstancesAlert: Locator;
+  readonly history: Locator;
+  readonly continueButton: Locator;
+  readonly addSingleFlowNodeInstanceButton: Locator;
+  readonly moveSelectedInstanceButton: Locator;
+  readonly modificationModeText: Locator;
+  readonly lastAddedModificationText: Locator;
+  readonly undoModificationButton: Locator;
+  readonly deleteVariableModificationButton: Locator;
+  readonly cancelButton: Locator;
+  readonly addVariableModificationButton: Locator;
+  readonly modalDialog: Locator;
+  readonly noVariablesText: Locator;
+  readonly newVariableByIndex: (index: number) => {
+    name: Locator;
+    readModeValue: Locator;
+    writeModeValue: Locator;
+    jsonEditorButton: Locator;
+    deleteButton: Locator;
+    jsonEditorModal: {
+      header: Locator;
+      cancelButton: Locator;
+      applyButton: Locator;
+      inputField: Locator;
+    };
+    valueErrorMessage?: Locator;
+    nameErrorMessage?: Locator;
+  };
+  readonly editableExistingVariableByName: (name: string) => {
+    name: Locator;
+    readModeValue: Locator;
+    writeModeValue: Locator;
+    jsonEditorButton: Locator;
+    jsonEditorModal: {
+      header: Locator;
+      cancelButton: Locator;
+      applyButton: Locator;
+      inputField: Locator;
+    };
+    valueErrorMessage?: Locator;
+  };
+  readonly applyModificationDialog: Locator;
+  readonly applyModificationDialogFlowNodeModificationRowByIndex: (
+    index: number,
+  ) => {
+    operation: Locator;
+    flowNode: Locator;
+    instanceKey: Locator;
+    affectedTokens: Locator;
+    deleteFlowNodeModificationButton: Locator;
+  };
+  readonly applyModificationDialogVariableModificationRowByIndex: (
+    index: number,
+  ) => {
+    expandChangesButton: Locator;
+    operation: Locator;
+    scope: Locator;
+    nameValue: Locator;
+    childRow: Locator;
+    deleteVariableModificationButton: Locator;
+  };
+
+  constructor(page: Page) {
+    this.page = page;
+    this.modifyModeHeader = page
+      .getByText('Process Instance Modification Mode')
+      .first();
+    this.flowNodeModificationsPopup = page.getByText('Element Modifications');
+    this.addModificationButtononPopup = page.getByRole('button', {
+      name: /Add single (flow node|element) instance/i,
+    });
+    this.moveAllButtononPopup = page
+      .getByTestId('popover')
+      .getByRole('button', {name: /Move all/i});
+    this.cancelButtonPopup = page.getByRole('button', {
+      name: /Cancel selected instance in this (flow node|element)/i,
+    });
+    this.cancelAllButtonPopup = page.getByRole('button', {
+      name: /Cancel all running (flow node|element) instances in this (flow node|element)/i,
+    });
+    this.reviewModificationsButton = page.getByRole('button', {
+      name: /Apply Modifications|Review Modifications/,
+    });
+    this.discardAllModificationsButton = page.getByTestId('discard-all-button');
+    this.cancelButtonModificationDialog = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Cancel'});
+    this.applyButtonModificationsDialog = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Apply'});
+    this.moveTokensMessage = page.getByText(
+      /Select the target (flow node|element) in the diagram/,
+    );
+    this.diagram = this.page.getByTestId('diagram');
+    this.multipleInstancesAlert = page
+      .getByTestId('popover')
+      .getByText(
+        'To modify a specific instance, select it in the Instance History below.',
+      );
+    this.history = page.getByTestId('instance-history');
+
+    this.continueButton = page.getByRole('button', {name: 'Continue'});
+    this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
+      name: 'Add single element instance',
+    });
+    this.moveSelectedInstanceButton = page.getByRole('button', {
+      name: /Move selected instance in this (flow node|element) to another target/,
+    });
+    this.modificationModeText = page.getByText(
+      'Process Instance Modification Mode',
+    );
+    this.lastAddedModificationText = page.getByText('Last added modification:');
+    this.undoModificationButton = page.getByRole('button', {name: 'undo'});
+    this.deleteVariableModificationButton = page.getByRole('button', {
+      name: /delete variable modification/i,
+    });
+    this.cancelButton = page.getByRole('button', {name: 'Cancel'});
+    this.addVariableModificationButton = page.getByRole('button', {
+      name: /add variable/i,
+    });
+    this.modalDialog = page.getByRole('dialog');
+    this.noVariablesText = page.getByText(/The element has no variables/i);
+    this.newVariableByIndex = (index: number) => ({
+      name: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .locator(`[id="newVariables[${index}].name"]`),
+      readModeValue: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .getByTestId('new-variable-value-readonly'),
+      writeModeValue: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .getByTestId('new-variable-value'),
+      jsonEditorButton: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .getByRole('button', {name: 'Open'}),
+      deleteButton: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .getByRole('button', {name: 'Delete'}),
+      jsonEditorModal: {
+        header: this.page.getByRole('dialog').getByText('Edit a new Variable'),
+        cancelButton: this.page
+          .getByRole('dialog')
+          .getByRole('button', {name: 'Cancel'}),
+        applyButton: this.page
+          .getByRole('dialog')
+          .getByRole('button', {name: 'Apply'}),
+        inputField: this.page
+          .getByRole('dialog')
+          .getByRole('code')
+          .getByRole('textbox', {name: 'Editor content'}),
+      },
+      valueErrorMessage: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .getByRole('cell')
+        .nth(1)
+        .locator(`.cds--form-requirement`),
+      nameErrorMessage: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .getByRole('cell')
+        .nth(0)
+        .locator(`[id="newVariables[${index}].name-error-msg"]`),
+    });
+
+    this.editableExistingVariableByName = (name: string) => ({
+      name: this.page.getByTestId(`variable-${name}`).getByTitle(name),
+      readModeValue: this.page
+        .getByTestId(`variable-${name}`)
+        .getByTestId('edit-variable-value'),
+      writeModeValue: this.page
+        .getByTestId(`variable-${name}`)
+        .getByTestId('edit-variable-value'),
+      jsonEditorButton: this.page
+        .getByTestId(`variable-${name}`)
+        .getByRole('button', {name: 'Open'}),
+      jsonEditorModal: {
+        header: this.page
+          .getByRole('dialog')
+          .getByText(`Edit Variable "${name}"`),
+        cancelButton: this.page
+          .getByRole('dialog')
+          .getByRole('button', {name: 'Cancel'}),
+        applyButton: this.page
+          .getByRole('dialog')
+          .getByRole('button', {name: 'Apply'}),
+        inputField: this.page
+          .getByRole('dialog')
+          .getByRole('code')
+          .getByRole('textbox', {name: 'Editor content'}),
+      },
+      valueErrorMessage: this.page
+        .getByTestId(`variable-${name}`)
+        .locator(`[id="${name}-error-msg"]`),
+    });
+    this.applyModificationDialog = this.page.getByRole('dialog', {
+      name: 'Apply Modifications',
+    });
+    this.applyModificationDialogFlowNodeModificationRowByIndex = (
+      index: number,
+    ) => ({
+      operation: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(1),
+      flowNode: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(2),
+      instanceKey: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(3),
+      affectedTokens: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByTestId('affected-token-count'),
+      deleteFlowNodeModificationButton: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(5)
+        .getByRole('button', {name: 'Delete element modification'}),
+    });
+    this.applyModificationDialogVariableModificationRowByIndex = (
+      index: number,
+    ) => ({
+      expandChangesButton: this.applyModificationDialog
+        .getByRole('table')
+        .nth(1)
+        .locator('tr[data-parent-row="true"]')
+        .nth(index)
+        .getByRole('cell')
+        .nth(0)
+        .getByRole('button'),
+      operation: this.applyModificationDialog
+        .getByRole('table')
+        .nth(1)
+        .locator('tr[data-parent-row="true"]')
+        .nth(index)
+        .getByRole('cell')
+        .nth(1),
+      scope: this.applyModificationDialog
+        .getByRole('table')
+        .nth(1)
+        .locator('tr[data-parent-row="true"]')
+        .nth(index)
+        .getByRole('cell')
+        .nth(2),
+      nameValue: this.applyModificationDialog
+        .getByRole('table')
+        .nth(1)
+        .locator('tr[data-parent-row="true"]')
+        .nth(index)
+        .getByRole('cell')
+        .nth(3),
+      childRow: this.applyModificationDialog
+        .getByRole('table')
+        .nth(1)
+        .locator('tr[data-child-row="true"]')
+        .nth(index),
+      deleteVariableModificationButton: this.applyModificationDialog
+        .getByRole('table')
+        .nth(1)
+        .locator('tr[data-parent-row="true"]')
+        .nth(index)
+        .getByRole('cell')
+        .nth(5)
+        .getByRole('button', {name: 'Delete variable modification'}),
+    });
+  }
+
+  async clickAddModificationButtononPopup(): Promise<void> {
+    await this.addModificationButtononPopup.click();
+  }
+
+  async clickMoveAllButtononPopup(): Promise<void> {
+    // Wait for any in-flight element-stats fetch (which replaces buttons with a
+    // spinner) to complete before clicking. Passes immediately when the spinner
+    // is not present.
+    await this.page
+      .getByTestId('dropdown-spinner')
+      .waitFor({state: 'hidden', timeout: 15000});
+    // The sticky header can overlap the button in the popover, intercepting
+    // pointer events even though the button is visible and enabled. Using
+    // evaluate/click() fires the DOM click event directly on the element,
+    // bypassing any visual interception by the header.
+    await this.moveAllButtononPopup.evaluate((el: HTMLElement) => el.click());
+  }
+
+  async clickMoveInstanceButtononPopup(): Promise<void> {
+    await this.moveSelectedInstanceButton.click();
+  }
+
+  async clickCancelButtononPopup(): Promise<void> {
+    await this.cancelButtonPopup.click();
+  }
+
+  async clickCancelAllButtononPopup(): Promise<void> {
+    await this.cancelAllButtonPopup.click();
+  }
+
+  async clickReviewModificationsButton(): Promise<void> {
+    await this.reviewModificationsButton.click();
+  }
+
+  async clickDiscardAllModificationsButton(): Promise<void> {
+    await this.discardAllModificationsButton.click();
+  }
+
+  async clickCancelButtonDialog(): Promise<void> {
+    await this.cancelButtonModificationDialog.click();
+  }
+
+  async clickApplyButtonModificationsDialog(): Promise<void> {
+    await this.applyButtonModificationsDialog.click();
+  }
+
+  clickFlowNode(flowNodeName: string) {
+    return this.getFlowNode(flowNodeName).first().click({timeout: 20000});
+  }
+
+  clickSubProcess(subProcessName: string) {
+    return this.getFlowNode(subProcessName).click({
+      position: {x: 5, y: 5},
+      force: true,
+    });
+  }
+
+  getFlowNode(flowNodeName: string) {
+    return this.diagram.locator(
+      `.djs-element[data-element-id="${flowNodeName}"]`,
+    );
+  }
+
+  async addTokenToFlowNodeAndApplyChanges(flowNodeName: string): Promise<void> {
+    await this.clickFlowNode(flowNodeName);
+    await this.clickAddModificationButtononPopup();
+    await this.applyChanges();
+  }
+
+  async addTokenToSubprocessAndApplyChanges(
+    flowNodeName: string,
+  ): Promise<void> {
+    await this.clickSubProcess(flowNodeName);
+    await this.clickAddModificationButtononPopup();
+    await this.applyChanges();
+  }
+
+  async moveAllTokensFromSelectedFlowNodeToTarget(
+    sourceFlowNodeName: string,
+    targetFlowNodeName: string,
+  ): Promise<void> {
+    await this.clickFlowNode(sourceFlowNodeName);
+    await this.clickMoveAllButtononPopup();
+    await expect(this.moveTokensMessage).toBeVisible();
+    await this.clickFlowNode(targetFlowNodeName);
+  }
+
+  async moveInstanceFromSelectedFlowNodeToTarget(
+    sourceFlowNodeName: string,
+    targetFlowNodeName: string,
+  ): Promise<void> {
+    await this.clickFlowNode(sourceFlowNodeName);
+    await this.clickMoveInstanceButtononPopup();
+    await expect(this.moveTokensMessage).toBeVisible();
+    await this.clickFlowNode(targetFlowNodeName);
+  }
+
+  async addTokenToFlowNode(flowNodeName: string): Promise<void> {
+    await this.clickFlowNode(flowNodeName);
+    await this.clickAddModificationButtononPopup();
+  }
+
+  async applyChanges(): Promise<void> {
+    await this.clickReviewModificationsButton();
+    await this.clickApplyButtonModificationsDialog();
+  }
+
+  async getBadgeLocatorForModificationOverlay(elementLocator: Locator) {
+    const badgeLocator = elementLocator.getByTestId(/^badge-/);
+    return await badgeLocator.getAttribute('data-testid');
+  }
+
+  async getModificationOverlayLocatorByElementName(elementName: string) {
+    return this.page
+      .locator(`[data-container-id="${elementName}"]`)
+      .getByTestId('modifications-overlay');
+  }
+
+  async verifyModificationOverlay(
+    flowNodeName: string,
+    tokenChange: number,
+  ): Promise<void> {
+    const flowNodeModificationOverlay =
+      await this.getModificationOverlayLocatorByElementName(flowNodeName);
+    await expect(flowNodeModificationOverlay).toBeVisible();
+
+    const flowNodeModificationOverlayText =
+      await flowNodeModificationOverlay.innerText();
+    const flowNodeModificationOverlayBadgeValue =
+      await this.getBadgeLocatorForModificationOverlay(
+        flowNodeModificationOverlay,
+      );
+
+    if (tokenChange < 0) {
+      tokenChange = -tokenChange;
+      expect(flowNodeModificationOverlayBadgeValue).toContain('minus');
+    } else {
+      expect(flowNodeModificationOverlayBadgeValue).toContain('plus');
+    }
+
+    expect(flowNodeModificationOverlayText).toContain(tokenChange.toString());
+  }
+
+  async cancelOneTokenUsingHistory(flowNodeName: string): Promise<void> {
+    await this.clickFlowNode(flowNodeName);
+    await expect(this.multipleInstancesAlert).toBeVisible();
+    const meow = this.history
+      .getByTestId(/^tree-node-/)
+      .locator('[aria-current="true"]')
+      .first();
+    await meow.click();
+    await expect(
+      this.page
+        .getByTestId('popover')
+        .getByText('Selected running instances: 1'),
+    ).toBeVisible();
+    await this.clickCancelButtononPopup();
+    await this.verifyModificationOverlay(flowNodeName, -1);
+    await this.applyChanges();
+  }
+
+  getNewVariableNameFieldSelector = (variableIndex: string) => {
+    return this.page
+      .getByTestId(`variable-newVariables[${variableIndex}]`)
+      .locator(`[id="newVariables[${variableIndex}].name"]`);
+  };
+
+  getNewVariableValueFieldSelector = (variableIndex: string) => {
+    return this.page
+      .getByTestId(`variable-newVariables[${variableIndex}]`)
+      .getByTestId('new-variable-value');
+  };
+
+  getEditVariableFieldSelector(variableName: string) {
+    return this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByTestId('edit-variable-value');
+  }
+
+  async undoModification() {
+    await this.undoModificationButton.click();
+  }
+
+  async clickAddVariable() {
+    await this.addVariableModificationButton.click();
+  }
+
+  async clickDeleteVariableModification() {
+    await this.deleteVariableModificationButton.click();
+  }
+
+  async clickCancel() {
+    await this.cancelButton.click();
+  }
+
+  getEditVariableModificationText(variableName: string) {
+    return this.page.getByText(
+      new RegExp(`edit variable "${variableName}"`, 'i'),
+    );
+  }
+
+  getAddVariableModificationText(variableName: string) {
+    return this.page.getByText(
+      new RegExp(`add new variable "${variableName}"`, 'i'),
+    );
+  }
+
+  getVariableModificationSummaryText(variableName: string, value: string) {
+    return this.page.getByText(`${variableName}: ${value}`);
+  }
+
+  getDialogVariableModificationSummaryText(
+    variableName: string,
+    value: string,
+  ) {
+    return this.modalDialog.getByText(`${variableName}: ${value}`);
+  }
+
+  getDialogDeleteVariableModificationButton(index?: number) {
+    const button = this.modalDialog.getByRole('button', {
+      name: 'Delete variable modification',
+    });
+    return index !== undefined ? button.nth(index) : button;
+  }
+
+  getDialogCancelButton() {
+    return this.modalDialog.getByRole('button', {name: 'Cancel'});
+  }
+
+  async clickDialogDeleteVariableModification(index?: number) {
+    await this.getDialogDeleteVariableModificationButton(index).click();
+  }
+
+  async clickDialogCancel() {
+    await this.getDialogCancelButton().click();
+  }
+
+  async addNewVariable(variableIndex: string, name: string, value: string) {
+    await this.addVariableModificationButton.click();
+    const nameField = this.getNewVariableNameFieldSelector(variableIndex);
+    // Wait for a fresh empty input — guards against matching a pre-existing row
+    // at the same index that is about to be detached by the re-render.
+    await expect(nameField).toBeVisible();
+    await expect(nameField).toHaveValue('');
+    await nameField.click();
+    await nameField.type(name);
+    const valueField = this.getNewVariableValueFieldSelector(variableIndex);
+    await valueField.click();
+    await expect(async () => {
+      expect(
+        await valueField.evaluate((el) => el.matches(':focus-within')),
+      ).toBe(true);
+    }).toPass({timeout: 10_000});
+    await this.page.keyboard.insertText(value);
+    await this.page.keyboard.press('Tab');
+  }
+
+  async editVariableValue(variableName: string, value: string) {
+    await this.getEditVariableFieldSelector(variableName).click();
+
+    await this.expectEditorToBeLoaded();
+
+    await this.clearMonacoEditor();
+
+    await this.page.keyboard.insertText(value);
+    await this.page.keyboard.press('Tab');
+  }
+
+  async applyModifications(): Promise<void> {
+    await expect(this.reviewModificationsButton).toBeEnabled();
+    await this.reviewModificationsButton.click();
+    await this.applyButtonModificationsDialog.click();
+  }
+
+  async checkNewVariableErrorMessageText(
+    variableIndex: number,
+    message:
+      | 'Name should be unique'
+      | 'Value has to be filled'
+      | 'Name has to be filled'
+      | 'Value has to be JSON',
+    field: 'name' | 'value',
+  ) {
+    const errorMessage =
+      field === 'name'
+        ? this.newVariableByIndex(variableIndex).nameErrorMessage
+        : this.newVariableByIndex(variableIndex).valueErrorMessage;
+    await expect(errorMessage!).toHaveText(message);
+  }
+
+  async deleteNewVariableModification(variableIndex: number) {
+    await this.newVariableByIndex(variableIndex).deleteButton.click();
+  }
+
+  async editNewVariableJSONInModal(variableIndex: number, json: string) {
+    await this.clearMonacoEditor();
+
+    await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
+    const jsonEditorModal =
+      this.newVariableByIndex(variableIndex).jsonEditorModal;
+    await expect(jsonEditorModal.header).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeEnabled();
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
+    await this.fillMonacoEditor(jsonEditorModal.inputField, json);
+    await jsonEditorModal.applyButton.click();
+    await this.page.keyboard.press('Tab');
+  }
+
+  async editExistingVariableJSONInModal(variableName: string, json: string) {
+    await this.editableExistingVariableByName(
+      variableName,
+    ).readModeValue.click();
+
+    await this.editableExistingVariableByName(
+      variableName,
+    ).jsonEditorButton.click();
+    const jsonEditorModal =
+      this.editableExistingVariableByName(variableName).jsonEditorModal;
+    await expect(jsonEditorModal.header).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeEnabled();
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
+    await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
+    await this.clearMonacoEditor();
+    await this.fillMonacoEditor(jsonEditorModal.inputField, json);
+    await jsonEditorModal.applyButton.click();
+    await expect(jsonEditorModal.header).toBeHidden();
+    await this.editableExistingVariableByName(
+      variableName,
+    ).writeModeValue.click();
+    await this.page.keyboard.press('Tab');
+  }
+
+  async fillMonacoEditor(editor: Locator, value: string) {
+    await editor.evaluate((el: HTMLElement) => el.focus());
+    await this.page.keyboard.insertText(value);
+  }
+
+  private async iterateVariableModificationDialogRows(
+    onRow: (
+      row: ReturnType<
+        OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
+      >,
+      index: number,
+    ) => Promise<boolean | void>,
+  ) {
+    for (let index = 0; ; index++) {
+      const row =
+        this.applyModificationDialogVariableModificationRowByIndex(index);
+      if (await row.nameValue.isHidden()) {
+        break;
+      }
+
+      const shouldContinue = await onRow(row, index);
+      if (shouldContinue === false) {
+        break;
+      }
+    }
+  }
+
+  async deleteVariableModificationFromDialog({
+    nameText,
+    scopeText,
+  }: {
+    nameText: string;
+    scopeText?: string;
+  }) {
+    let targetRow: ReturnType<
+      OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
+    > | null = null;
+
+    await this.iterateVariableModificationDialogRows(async (row) => {
+      const variableNameValue = await row.nameValue.innerText();
+      if (variableNameValue !== nameText) {
+        return true;
+      }
+
+      if (scopeText) {
+        const scopeValue = await row.scope.innerText();
+        if (scopeValue !== scopeText) {
+          return true;
+        }
+      }
+
+      targetRow = row;
+      return false;
+    });
+
+    expect(
+      targetRow,
+      `Variable modification ${nameText} not found`,
+    ).toBeTruthy();
+
+    await expect(targetRow!.nameValue).toHaveText(nameText);
+    if (scopeText) {
+      await expect(targetRow!.scope).toHaveText(scopeText);
+    }
+    await targetRow!.deleteVariableModificationButton.click();
+  }
+
+  async expectVariableNotPresentInDialog(forbiddenText: string) {
+    await this.iterateVariableModificationDialogRows(async (row) => {
+      const variableName = await row.nameValue.innerText();
+      expect(variableName).not.toContain(forbiddenText);
+    });
+  }
+
+  async clearMonacoEditor() {
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+  }
+
+  async expectEditorToBeLoaded() {
+    await expect(this.page.getByRole('code')).toBeVisible();
+  }
+}

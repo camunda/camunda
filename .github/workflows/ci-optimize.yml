@@ -1,0 +1,662 @@
+# Unified CI for Optimize. Runs backend unit tests, front end unit tests, dockerfile linting (hadolint), and E2E cloud tests
+# test location: /optimize, /optimize/client, optimize.Dockerfile, /optimize/client/e2e/cloud-tests
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features
+name: Optimize CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      runFeTests:
+        description: "Set to true if Optimize front-end code was changed"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true if Optimize back-end code was changed"
+        type: boolean
+        required: true
+  workflow_call:
+    inputs:
+      runFeTests:
+        description: "Set to true if Optimize front-end code was changed"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true if Optimize back-end code was changed"
+        type: boolean
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/core-features'
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Optimize
+
+jobs:
+  # run every time this workflow is called
+  optimize-backend-unit-tests:
+    name: "Unit"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+            owner: '@camunda/data-layer'
+          - suite: CoreFeatures
+            suiteName: Core Features
+            owner: '@camunda/core-features'
+    with:
+      componentName: "Optimize"
+      suite: ${{ matrix.suite }}
+      suiteName: ${{ matrix.suiteName }}
+      owner: ${{ matrix.owner }}
+
+  optimize-it-elasticsearch:
+    name: "Integration / Elasticsearch ITs"
+    if: inputs.runBeTests
+    runs-on: gcp-core-32-longrunning
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: IT
+    strategy:
+      fail-fast: false
+      matrix:
+        includedGroups: [ 'ccsm-test' ]
+        include:
+          - includedGroups: 'ccsm-test'
+            excludedGroups: ''
+            profiles: 'ccsm-it'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Fetch main branch
+        run: git fetch origin main:refs/remote/origin/main
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: optimize-tests
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
+      - name: Start Elasticsearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+          ELASTIC_JVM_MEMORY: 16
+          ELASTIC_HTTP_PORT: 9200
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: >
+            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+            -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+            -Dfailsafe.rerunFailingTestsCount=2
+            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        continue-on-error: true
+        with:
+          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "optimize-it-elasticsearch/${{ matrix.includedGroups }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-it-opensearch:
+    name: "Integration / OpenSearch ITs"
+    if: inputs.runBeTests
+    runs-on: gcp-core-32-longrunning
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: IT
+    strategy:
+      fail-fast: false
+      matrix:
+        includedGroups: [ 'ccsm-test' ]
+        include:
+          - includedGroups: 'ccsm-test'
+            excludedGroups: 'openSearchSingleTestFailOK'
+            profiles: 'ccsm-it'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Fetch main branch
+        run: git fetch origin main:refs/remote/origin/main
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: optimize-tests
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
+      - name: Start OpenSearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.opensearch.yml
+          project_name: opensearch
+        env:
+          OPENSEARCH_VERSION: ${{ steps.db-versions.outputs.opensearch-2 }}
+          OPENSEARCH_JVM_MEMORY: 16
+          OPENSEARCH_HTTP_PORT: 9200
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: >
+            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+            -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+            -Dfailsafe.rerunFailingTestsCount=2
+            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        continue-on-error: true
+        with:
+          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "optimize-it-opensearch/${{ matrix.includedGroups }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-frontend-unit-tests:
+    name: "Unit - Front End"
+    if: inputs.runFeTests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      LIMITS_CPU: 4
+      TEST_TYPE: Unit
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        with:
+          work-dir: ./optimize
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: optimize/client
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Unit tests
+        run: yarn test:ci
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optimize-unit-tests-frontend-junit
+          path: |
+            **/jest-test-results.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-frontend-sbom-snyk:
+    name: "Tool / Front End - Snyk SBOM"
+    if: inputs.runFeTests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      TEST_TYPE: Tool
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        with:
+          work-dir: ./optimize
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: optimize/client
+      - name: Import Snyk token from Vault
+        id: snyk-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
+      - name: Generate and scan frontend SBOM
+        uses: ./.github/actions/frontend-sbom-snyk
+        env:
+          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
+        with:
+          directory: optimize/client
+          package-manager: yarn
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+          sbom-file: optimize/client/dist/cyclonedx/bom.json
+          project-name: Optimize frontend
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  hadolint:
+    if: inputs.runBeTests
+    name: "Tool / Dockerfile / Hadolint"
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 4
+    env:
+      TEST_TYPE: Tool
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          ignore: DL3018,DL3008
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "hadolint/${{ matrix.dockerfile }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  optimize-e2e-smoke:
+    name: "E2E / Self-Managed (Smoke)"
+    if: inputs.runFeTests
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 45
+    permissions: { }
+    env:
+      TEST_TYPE: E2E
+
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Setup CI runtime (TestCafe + Chrome + Xvfb)
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update
+
+          # ----------------------------
+          # Core system dependencies
+          # ----------------------------
+          sudo apt-get install -y --no-install-recommends \
+            wget gnupg ca-certificates xdg-utils curl \
+            fonts-dejavu fonts-noto fonts-liberation \
+            xvfb ffmpeg \
+            libgbm1 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+            libgtk-3-0 libxcomposite1 libxrandr2 libxdamage1 libxfixes3 \
+            libasound2t64 libpangocairo-1.0-0
+
+          # ----------------------------
+          # Google Chrome install
+          # ----------------------------
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
+              | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+              | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
+
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends google-chrome-stable
+          fi
+
+          google-chrome --version
+
+          # ----------------------------
+          # Sanity check (CI debug safety)
+          # ----------------------------
+          xvfb-run -a google-chrome --version
+
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        with:
+          work-dir: ./optimize
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: optimize-e2e-smoke
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
+      - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
+        uses: ./.github/actions/compose
+        with:
+          compose_file: optimize/client/docker-compose.yml
+          project_name: e2e
+          additional_flags: "--profile self-managed"
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
+
+      - name: Create backend logs file
+        run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
+
+      - name: Start backend
+        working-directory: ./optimize/client
+        run: |
+          yarn run start-backend ci &> ./build/backendLogs.log &
+
+      - name: Start frontend
+        working-directory: ./optimize/client
+        run: yarn start &
+
+      - name: Wait for import to complete
+        run: |
+          while : ; do
+            count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
+            if [[ $count -eq 17 ]]; then
+              echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
+              prev="-1"
+              stable=0
+              while [[ $stable -lt 2 ]]; do
+                cur=$(curl -s -X GET "http://localhost:9200/optimize-process-instance/_count" | jq '.count // 0')
+                echo "Process instances: $cur"
+                if [[ "$cur" == "$prev" ]]; then
+                  stable=$((stable + 1))
+                else
+                  stable=0
+                fi
+                prev="$cur"
+                sleep 10
+              done
+              echo "Import stabilized at $cur process instances"
+              break
+            fi
+            echo "Index has $count entities. Waiting for 17..."
+            sleep 10
+          done
+
+      - name: Wait for frontend to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
+
+      - name: Run smoke tests
+        working-directory: ./optimize/client
+        run: yarn run e2e:ci:sm:smoke:headless
+
+      - name: Upload logs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: optimize-e2e-smoke-logs
+          path: |
+            ./optimize/client/build/*.log
+            ./optimize/client/build/smoke-test-results.txt
+            ./optimize/client/build/screenshots/
+            ./optimize/client/build/videos/
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        continue-on-error: true
+        with:
+          archive_name: optimize-e2e-smoke-docker-logs
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  e2e-cloud-test:
+    name: "E2E Cloud"
+    if: inputs.runFeTests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: E2E
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Import secrets
+        id: vault_secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize AUTH0_CLIENTSECRET | AUTH0_CLIENTSECRET;
+            secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL | AUTH0_USEREMAIL;
+            secret/data/products/optimize/ci/camunda-optimize AUTH0_USERPASSWORD | AUTH0_USERPASSWORD;
+      - name: Validate Auth0 secrets
+        env:
+          AUTH0_CLIENTSECRET: "${{ steps.vault_secrets.outputs.AUTH0_CLIENTSECRET }}"
+          AUTH0_USEREMAIL: "${{ steps.vault_secrets.outputs.AUTH0_USEREMAIL }}"
+          AUTH0_USERPASSWORD: "${{ steps.vault_secrets.outputs.AUTH0_USERPASSWORD }}"
+        run: |
+          set -euo pipefail
+          for var in AUTH0_CLIENTSECRET AUTH0_USEREMAIL AUTH0_USERPASSWORD; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Missing required Auth0 secret: ${var}"
+              exit 1
+            fi
+          done
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          java-distribution: zulu
+          maven-cache-key-modifier: optimize-tests
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        with:
+          work-dir: ./optimize
+
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
+      - name: Start Elasticsearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+          node-version: ${{ steps.pom-info.outputs.x_version_node }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
+      - name: Create backend logs file
+        run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
+      - name: Start backend
+        working-directory: ./optimize/client
+        env:
+          AUTH0_CLIENTSECRET: "${{ steps.vault_secrets.outputs.AUTH0_CLIENTSECRET }}"
+        run: |
+          yarn run start-backend-cloud ci &> ./build/backendLogs.log &
+      - name: Start frontend
+        working-directory: ./optimize/client
+        run: yarn start &
+      - name: Wait for backend to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/api/readyz
+      - name: Wait for frontend to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
+      - name: Run E2E tests
+        working-directory: ./optimize/client
+        env:
+          AUTH0_CLIENTSECRET: "${{ steps.vault_secrets.outputs.AUTH0_CLIENTSECRET }}"
+          AUTH0_USEREMAIL: "${{ steps.vault_secrets.outputs.AUTH0_USEREMAIL }}"
+          AUTH0_USERPASSWORD: "${{ steps.vault_secrets.outputs.AUTH0_USERPASSWORD }}"
+        run: yarn run e2e:ci:cloud:headless
+      - name: Upload logs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: logs
+          path: ./optimize/client/build/*.log
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

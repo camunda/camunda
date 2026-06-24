@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <groupId>io.camunda.optimize</groupId>
+  <artifactId>optimize-parent</artifactId>
+  <version>8.10.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Optimize Parent</name>
+
+  <organization>
+    <name>Camunda Services GmbH</name>
+    <url>http://www.camunda.com</url>
+  </organization>
+
+  <modules>
+    <!-- client should be built before optimize-distro and before backend -->
+    <module>client</module>
+    <module>util</module>
+    <module>backend</module>
+    <module>../optimize-distro</module>
+    <module>upgrade</module>
+  </modules>
+
+  <scm>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/camunda/camunda</url>
+  </scm>
+
+  <issueManagement>
+    <system>Jira</system>
+    <url>https://app.camunda.com/jira/browse/OPT/</url>
+  </issueManagement>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <zeebe.version>${project.version}</zeebe.version>
+    <!-- This is used in the start-backend.js script to determine the backing Camunda version -->
+    <camunda.docker.version>8.9.0</camunda.docker.version>
+    <!-- We use this for the Zeebe test container version only -->
+    <zeebe.docker.version>8.9</zeebe.docker.version>
+
+    <!-- maven plugins -->
+    <surefire-plugin.version>3.5.6</surefire-plugin.version>
+
+    <!-- maven dependency plugin -->
+    <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
+    <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}</dependencyAnalyze.failOnWarning>
+
+    <!-- DATABASE -->
+    <!-- Elasticsearch-->
+    <version.elasticsearch.client>8.19.16</version.elasticsearch.client>
+    <version.elasticsearch-java-client>8.19.16</version.elasticsearch-java-client>
+    <!-- The least supported elasticsearch version we should test against-->
+    <elasticsearch.test.version>${version.elasticsearch.container}</elasticsearch.test.version>
+    <!-- The least supported opensearch version we should test against-->
+    <opensearch.test.version>${version.opensearch.container}</opensearch.test.version>
+    <!-- The ElasticSearch version of the previous Optimize version -->
+    <previous.optimize.elasticsearch.version>8.16.6</previous.optimize.elasticsearch.version>
+    <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
+    <elasticsearch.log4j.version>2.24.2</elasticsearch.log4j.version>
+    <apache.http5-client.version>5.4</apache.http5-client.version>
+    <quartz.version>2.5.2</quartz.version>
+
+    <!-- testing config -->
+    <mockito.version>5.23.0</mockito.version>
+    <mockito-inline.version>5.2.0</mockito-inline.version>
+    <mockserver.version>6.1.0</mockserver.version>
+    <assertj.version>3.27.7</assertj.version>
+    <google-java-format.plugin.version>1.35.0</google-java-format.plugin.version>
+    <!-- This is the default profile used for the DB selection in tests -->
+    <database.type>elasticsearch</database.type>
+
+    <skip.docker>${skipTests}</skip.docker>
+    <skip.unit.tests>${skipTests}</skip.unit.tests>
+    <skip.docker>false</skip.docker>
+    <docker.compose.file>docker-compose.yml</docker.compose.file>
+
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
+  <dependencies>
+    <!-- Common test dependencies-->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-build-tools</artifactId>
+      <version>8.10.0-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
+      <version>${mockito-inline.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-junit-jupiter</artifactId>
+      <version>${mockserver.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-core</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+      <version>${version.httpclient}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.3.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+      <version>${version.spring-boot}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.11.0</version>
+          <configuration>
+            <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
+            <ignoredUnusedDeclaredDependencies combine.children="append">
+              <dep>io.camunda:identity-spring-boot-starter</dep>
+              <dep>io.micrometer:micrometer-registry-prometheus</dep>
+              <dep>jakarta.annotation:jakarta.annotation-api</dep>
+              <dep>jakarta.servlet:jakarta.servlet-api</dep>
+              <dep>org.apache.httpcomponents.core5:httpcore5</dep>
+              <dep>org.apache.logging.log4j:log4j-api</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+              <dep>org.codehaus.janino:janino</dep>
+              <dep>org.eclipse.angus:jakarta.mail</dep>
+              <dep>org.springframework:spring-tx</dep>
+              <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
+              <dep>org.springframework.boot:spring-boot-starter-web</dep>
+              <dep>software.amazon.awssdk:sdk-core</dep>
+              <dep>software.amazon.awssdk:sts</dep>
+              <dep>org.javassist:javassist</dep>
+              <dep>org.springframework.boot:spring-boot-starter-validation</dep>
+
+              <!-- test dependencies -->
+              <dep>com.sun.mail:jakarta.mail</dep>
+              <dep>io.camunda.optimize:optimize-backend</dep>
+              <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
+              <dep>io.camunda.optimize:upgrade-optimize</dep>
+              <dep>io.camunda:zeebe-build-tools</dep>
+              <dep>io.github.netmikey.logunit:logunit-core</dep>
+              <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
+              <dep>io.netty:netty-codec-http</dep>
+              <dep>org.apache.httpcomponents:httpmime</dep>
+              <dep>org.apache.logging.log4j:log4j-core</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+              <dep>org.assertj:assertj-core</dep>
+              <dep>org.awaitility:awaitility</dep>
+              <dep>org.junit.jupiter:junit-jupiter-api</dep>
+              <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+              <dep>org.junit.jupiter:junit-jupiter-params</dep>
+              <dep>org.junit.platform:junit-platform-commons</dep>
+              <dep>org.junit.platform:junit-platform-launcher</dep>
+              <dep>org.mock-server:mockserver-junit-jupiter</dep>
+              <dep>org.mockito:mockito-inline</dep>
+              <dep>org.mockito:mockito-junit-jupiter</dep>
+              <dep>org.springframework.boot:spring-boot-starter-test</dep>
+              <dep>org.glassfish.jersey.media:jersey-media-json-jackson</dep>
+            </ignoredUnusedDeclaredDependencies>
+            <ignoredNonTestScopedDependencies combine.children="append">
+              <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
+              <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
+              <dep>commons-collections:commons-collections</dep>
+              <dep>org.apache.httpcomponents:httpcore-nio</dep>
+              <dep>org.opensearch.client:opensearch-java</dep>
+              <dep>com.nimbusds:nimbus-jose-jwt</dep>
+            </ignoredNonTestScopedDependencies>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>templating-maven-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.6.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.5.0</version>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${basedir}/javadoc</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire-plugin.version}</version>
+          <configuration>
+            <skipTests>${skip.unit.tests}</skipTests>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <useModulePath>false</useModulePath>
+            <argLine>${jvm.module.opens} --add-opens java.base/java.lang=ALL-UNNAMED
+              --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+            <systemPropertyVariables>
+              <database.type>${database.type}</database.type>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${surefire-plugin.version}</version>
+          <configuration>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <useModulePath>false</useModulePath>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>3.5.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.8.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.6.2</version>
+          <configuration>
+            <createDependencyReducedPom>false</createDependencyReducedPom>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>3.6.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>3.2.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <extensions>true</extensions>
+          <configuration>
+            <serverId>camunda-nexus</serverId>
+            <nexusUrl>https://artifacts.camunda.com/artifactory/</nexusUrl>
+            <skipStaging>true</skipStaging>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>3.1.4</version>
+        </plugin>
+        <plugin>
+          <groupId>com.github.eirslett</groupId>
+          <artifactId>frontend-maven-plugin</artifactId>
+        </plugin>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>5.0.0</version>
+        </plugin>
+        <!-- Google code format plugin -->
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>3.6.0</version>
+          <configuration>
+            <java>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+              <googleJavaFormat>
+                <version>${google-java-format.plugin.version}</version>
+                <style>GOOGLE</style>
+              </googleJavaFormat>
+            </java>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.google.googlejavaformat</groupId>
+              <artifactId>google-java-format</artifactId>
+              <version>${google-java-format.plugin.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.commonjava.maven.plugins</groupId>
+        <artifactId>directory-maven-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>directories</id>
+            <goals>
+              <goal>directory-of</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <property>parent.basedir</property>
+              <project>
+                <groupId>io.camunda.optimize</groupId>
+                <artifactId>optimize-parent</artifactId>
+              </project>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <licenseSets>
+            <licenseSet>
+              <header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</header>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+            </licenseSet>
+          </licenseSets>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+          </mapping>
+        </configuration>
+        <executions>
+          <execution>
+            <id>check-java-copyright</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>prepare-package</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.15.0</version>
+        <configuration>
+          <release>${maven.compiler.target}</release>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>${plugin.version.flatten}</version>
+        <configuration combine.children="append">
+          <flattenMode>bom</flattenMode>
+          <!--
+            do not change the outputDirectory; it must remain the same one as the relative project
+            directory, as many plugins expect to resolve the project directory from the current POM
+            file's parent, and any plugin which would run post flatten would resolve the project
+            directory to the wrong one. For example, if you configure it to
+            ${project.build.directory}, then any plugin after will think that the project's
+            directory is not /parent/ but /parent/target, which may affect the execution of plugins
+            (e.g. resource file resolution)
+            -->
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+            <phase>process-resources</phase>
+          </execution>
+          <execution>
+            <id>flatten.clean</id>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+            <phase>clean</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!-- release profile-->
+    <profile>
+      <id>release</id>
+      <properties>
+        <skip.docker>true</skip.docker>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>3.3.1</version>
+            <configuration>
+              <localCheckout>true</localCheckout>
+              <scmCommentPrefix xml:space="preserve">build: </scmCommentPrefix>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.4.0</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+              <execution>
+                <id>attach-test-sources</id>
+                <goals>
+                  <goal>test-jar-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- testing profiles-->
+    <profile>
+      <id>it</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+      </properties>
+    </profile>
+    <profile>
+      <id>ccsm-it</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+      </properties>
+    </profile>
+
+    <!-- database profiles-->
+    <profile>
+      <id>elasticsearch</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <database.type>elasticsearch</database.type>
+      </properties>
+    </profile>
+    <!-- database profiles-->
+    <profile>
+      <id>opensearch</id>
+      <properties>
+        <database.type>opensearch</database.type>
+      </properties>
+    </profile>
+
+    <!-- profile to auto format -->
+    <profile>
+      <id>autoFormat</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-format</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to perform strict validation checks -->
+    <profile>
+      <id>checkFormat</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+  </profiles>
+
+</project>

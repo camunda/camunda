@@ -1,0 +1,683 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine;
+
+import java.time.Duration;
+
+public final class EngineConfiguration {
+
+  public static final int DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT = 100;
+  public static final Duration DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL = Duration.ofMinutes(1);
+
+  public static final int DEFAULT_MAX_ERROR_MESSAGE_SIZE = 10000;
+
+  // This size (in bytes) is used as a buffer when filling an event/command up to the maximum
+  // message size.
+  public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
+
+  public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_GROUP_NAME_CACHE_CAPACITY = 1000;
+  public static final boolean DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION = true;
+  public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
+  public static final boolean DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT = false;
+  public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
+  public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
+  public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
+
+  public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
+  public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
+  public static final int DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH = 100;
+  public static final int DEFAULT_MAX_ID_FIELD_LENGTH = 32 * 1024;
+  public static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
+  public static final int DEFAULT_MAX_WORKER_TYPE_LENGTH = 32 * 1024;
+  public static final int DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH = 100;
+  public static final int DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH = 30;
+  public static final int DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS = 9500;
+  public static final boolean DEFAULT_JOB_METRICS_EXPORT_ENABLED = true;
+
+  public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
+  // reasonable size of a chunk record to avoid too many or too large records
+  public static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 100;
+  // ES/OS have max 10000 entities per query
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
+  // Oracle can only have 1000 elements in `IN` clause
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE = 1000;
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX = 0;
+  public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY =
+      Duration.ofSeconds(1);
+  public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY =
+      Duration.ofSeconds(60);
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
+  public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
+      Duration.ofMinutes(5);
+  public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
+  public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
+  public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
+  public static final Duration DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL =
+      Duration.ofSeconds(30);
+  public static final int DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT = 100;
+
+  /**
+   * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
+   * reach before it is re-emitted. The scheduler ticks every {@code retryInterval} and re-sends
+   * every ask whose last-sent time is older than {@code now - retryInterval}, so an ask is retried
+   * at most once per interval. Correctness does not depend on this value relative to any window:
+   * every retry re-emits the same {@code messageDeadline} carried by the original ask, so the
+   * {@code P_B} dedup row that bounds re-replies shares the buffered message's lifetime on {@code
+   * P_K}. This interval only controls retry cadence.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL = Duration.ofSeconds(10);
+
+  /**
+   * Grace period by which the cross-partition message-start dedup row on {@code P_B} is kept valid
+   * (for both re-reply lookups and the expiration sweep) <em>beyond</em> the originating message's
+   * deadline. It closes the near-deadline duplicate window: a retry ask {@code P_K} sends just
+   * before the message deadline {@code T} can be processed on {@code P_B} only at {@code T + L}
+   * (inter-partition delivery + processing latency); without grace the dedup row is already expired
+   * at {@code T}, so that late retry misses the dedup, re-evaluates live state, and — if the holder
+   * it would have re-replied has since auto-completed and freed the businessId — creates a
+   * duplicate instance. With grace the late retry still hits the dedup and re-replies the same
+   * instance.
+   *
+   * <p>The value must therefore cover the worst-case one-way inter-partition command latency plus
+   * clock skew between partitions. The default is deliberately generous: an over-large grace is
+   * essentially free — the dedup key is {@code (processDefinitionKey, messageKey)} and {@code
+   * messageKey} is unique per publish, so a stale row can never collide with a new publish; it only
+   * lingers slightly longer before the sweep GCs it. An under-sized grace re-opens the duplicate
+   * window. 30s comfortably exceeds realistic inter-partition latency and NTP-level skew even under
+   * load, and aligns with the feature's other 30s timescales (dedup sweep interval, lock-release
+   * max back-off).
+   */
+  public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_GRACE = Duration.ofSeconds(30);
+
+  /**
+   * Base cadence at which {@code P_K} polls {@code P_B} for the completion of a cross-partition
+   * message-start holder instance, and the interval at which a newly observed lock entry is first
+   * polled. Each lock entry then backs off exponentially up to {@link
+   * #DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF} so a long-running holder does not produce
+   * steady-state polling at the base rate.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL =
+      Duration.ofSeconds(1);
+
+  /** Maximum back-off interval a single cross-partition lock entry's release poll grows to. */
+  public static final Duration DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF =
+      Duration.ofSeconds(30);
+
+  /** Maximum number of holder instances batched into a single release query to one partition. */
+  public static final int DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT = 64;
+
+  public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
+
+  private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
+  private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
+  private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
+  private int jobMetricsMaxTypeLength = DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH;
+  private int jobMetricsMaxTenantIdLength = DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH;
+  private int jobMetricsMaxUniqueKeys = DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS;
+  private int jobMetricsMaxWorkerNameLength = DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH;
+  private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
+  private boolean jobMetricsExportEnabled = DEFAULT_JOB_METRICS_EXPORT_ENABLED;
+  private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
+  private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
+  private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
+  private int formCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private int resourceCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
+  private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
+  private int groupNameCacheCapacity = DEFAULT_GROUP_NAME_CACHE_CAPACITY;
+  private boolean candidateGroupNameResolution = DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION;
+  private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
+  private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
+  private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
+  private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
+  private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
+  private Duration batchOperationSchedulerInterval = DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
+  private int batchOperationChunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
+  private int batchOperationQueryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
+  private int batchOperationQueryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
+  private int batchOperationQueryRetryMax = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX;
+  private Duration batchOperationQueryRetryInitialDelay =
+      DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY;
+  private Duration batchOperationQueryRetryMaxDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
+  private int batchOperationQueryRetryBackoffFactor =
+      DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
+  private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
+  private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
+  private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
+  private Duration commandRedistributionMaxBackoff =
+      DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
+  private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
+  private GlobalListenersConfiguration globalListeners = GlobalListenersConfiguration.empty();
+  private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
+  private boolean includeVariablesInJobCompletedEvent =
+      DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
+  private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
+
+  /**
+   * Controls uniqueness enforcement of business IDs across active process instances.
+   *
+   * <ul>
+   *   <li><b>Disabled (default):</b> Multiple active process instances can share the same business
+   *       ID. No tracking or validation is performed.
+   *   <li><b>Enabled:</b> Creating a process instance with a business ID that is already in use by
+   *       an active process instance will be rejected. Business IDs of process instances created
+   *       before enabling this setting are not tracked, so duplicates with those are not detected.
+   * </ul>
+   */
+  private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+
+  private Duration messageStartDedupExpirationSweepInterval =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
+  private int messageStartDedupExpirationSweepBatchLimit =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
+  private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
+  private Duration messageStartAskRetryGrace = DEFAULT_MESSAGE_START_ASK_RETRY_GRACE;
+  private Duration messageStartLockReleasePollInterval =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
+  private Duration messageStartLockReleasePollMaxBackoff =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
+  private int messageStartLockReleasePollBatchLimit =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+
+  public int getMessagesTtlCheckerBatchLimit() {
+    return messagesTtlCheckerBatchLimit;
+  }
+
+  public EngineConfiguration setMessagesTtlCheckerBatchLimit(
+      final int messagesTtlCheckerBatchLimit) {
+    this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
+    return this;
+  }
+
+  public Duration getMessagesTtlCheckerInterval() {
+    return messagesTtlCheckerInterval;
+  }
+
+  public EngineConfiguration setMessagesTtlCheckerInterval(
+      final Duration messagesTtlCheckerInterval) {
+    this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
+    return this;
+  }
+
+  public int getDrgCacheCapacity() {
+    return drgCacheCapacity;
+  }
+
+  public EngineConfiguration setDrgCacheCapacity(final int drgCacheCapacity) {
+    this.drgCacheCapacity = drgCacheCapacity;
+    return this;
+  }
+
+  public int getFormCacheCapacity() {
+    return formCacheCapacity;
+  }
+
+  public EngineConfiguration setFormCacheCapacity(final int formCacheCapacity) {
+    this.formCacheCapacity = formCacheCapacity;
+    return this;
+  }
+
+  public int getResourceCacheCapacity() {
+    return resourceCacheCapacity;
+  }
+
+  public EngineConfiguration setResourceCacheCapacity(final int resourceCacheCapacity) {
+    this.resourceCacheCapacity = resourceCacheCapacity;
+    return this;
+  }
+
+  public int getProcessCacheCapacity() {
+    return processCacheCapacity;
+  }
+
+  public EngineConfiguration setProcessCacheCapacity(final int processCacheCapacity) {
+    this.processCacheCapacity = processCacheCapacity;
+    return this;
+  }
+
+  public int getAuthorizationsCacheCapacity() {
+    return authorizationsCacheCapacity;
+  }
+
+  public EngineConfiguration setAuthorizationsCacheCapacity(final int authorizationsCacheCapacity) {
+    this.authorizationsCacheCapacity = authorizationsCacheCapacity;
+    return this;
+  }
+
+  public Duration getAuthorizationsCacheTtl() {
+    return authorizationsCacheTtl;
+  }
+
+  public EngineConfiguration setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
+    this.authorizationsCacheTtl = authorizationsCacheTtl;
+    return this;
+  }
+
+  public int getGroupNameCacheCapacity() {
+    return groupNameCacheCapacity;
+  }
+
+  public EngineConfiguration setGroupNameCacheCapacity(final int groupNameCacheCapacity) {
+    this.groupNameCacheCapacity = groupNameCacheCapacity;
+    return this;
+  }
+
+  public boolean isCandidateGroupNameResolution() {
+    return candidateGroupNameResolution;
+  }
+
+  public EngineConfiguration setCandidateGroupNameResolution(
+      final boolean candidateGroupNameResolution) {
+    this.candidateGroupNameResolution = candidateGroupNameResolution;
+    return this;
+  }
+
+  public Duration getJobsTimeoutCheckerPollingInterval() {
+    return jobsTimeoutCheckerPollingInterval;
+  }
+
+  public EngineConfiguration setJobsTimeoutCheckerPollingInterval(
+      final Duration jobsTimeoutCheckerPollingInterval) {
+    this.jobsTimeoutCheckerPollingInterval = jobsTimeoutCheckerPollingInterval;
+    return this;
+  }
+
+  public int getJobsTimeoutCheckerBatchLimit() {
+    return jobsTimeoutCheckerBatchLimit;
+  }
+
+  public EngineConfiguration setJobsTimeoutCheckerBatchLimit(
+      final int jobsTimeoutCheckerBatchLimit) {
+    this.jobsTimeoutCheckerBatchLimit = jobsTimeoutCheckerBatchLimit;
+    return this;
+  }
+
+  public int getValidatorsResultsOutputMaxSize() {
+    return validatorsResultsOutputMaxSize;
+  }
+
+  public EngineConfiguration setValidatorsResultsOutputMaxSize(final int maxSize) {
+    validatorsResultsOutputMaxSize = maxSize;
+    return this;
+  }
+
+  public boolean isEnableAuthorization() {
+    return enableAuthorization;
+  }
+
+  public EngineConfiguration setEnableAuthorization(final boolean enableAuthorization) {
+    this.enableAuthorization = enableAuthorization;
+    return this;
+  }
+
+  public int getMaxProcessDepth() {
+    return maxProcessDepth;
+  }
+
+  public EngineConfiguration setMaxProcessDepth(final int maxProcessDepth) {
+    this.maxProcessDepth = maxProcessDepth;
+    return this;
+  }
+
+  public Duration getBatchOperationSchedulerInterval() {
+    return batchOperationSchedulerInterval;
+  }
+
+  public EngineConfiguration setBatchOperationSchedulerInterval(
+      final Duration batchOperationSchedulerInterval) {
+    this.batchOperationSchedulerInterval = batchOperationSchedulerInterval;
+    return this;
+  }
+
+  public int getBatchOperationChunkSize() {
+    return batchOperationChunkSize;
+  }
+
+  public EngineConfiguration setBatchOperationChunkSize(final int batchOperationChunkSize) {
+    this.batchOperationChunkSize = batchOperationChunkSize;
+    return this;
+  }
+
+  public int getBatchOperationQueryPageSize() {
+    return batchOperationQueryPageSize;
+  }
+
+  public EngineConfiguration setBatchOperationQueryPageSize(final int batchOperationQueryPageSize) {
+    this.batchOperationQueryPageSize = batchOperationQueryPageSize;
+    return this;
+  }
+
+  public int getBatchOperationQueryInClauseSize() {
+    return batchOperationQueryInClauseSize;
+  }
+
+  public EngineConfiguration setBatchOperationQueryInClauseSize(
+      final int batchOperationQueryInClauseSize) {
+    this.batchOperationQueryInClauseSize = batchOperationQueryInClauseSize;
+    return this;
+  }
+
+  public int getBatchOperationQueryRetryMax() {
+    return batchOperationQueryRetryMax;
+  }
+
+  public EngineConfiguration setBatchOperationQueryRetryMax(final int batchOperationQueryRetryMax) {
+    this.batchOperationQueryRetryMax = batchOperationQueryRetryMax;
+    return this;
+  }
+
+  public Duration getBatchOperationQueryRetryInitialDelay() {
+    return batchOperationQueryRetryInitialDelay;
+  }
+
+  public EngineConfiguration setBatchOperationQueryRetryInitialDelay(
+      final Duration batchOperationQueryRetryInitialDelay) {
+    this.batchOperationQueryRetryInitialDelay = batchOperationQueryRetryInitialDelay;
+    return this;
+  }
+
+  public Duration getBatchOperationQueryRetryMaxDelay() {
+    return batchOperationQueryRetryMaxDelay;
+  }
+
+  public EngineConfiguration setBatchOperationQueryRetryMaxDelay(
+      final Duration batchOperationQueryRetryMaxDelay) {
+    this.batchOperationQueryRetryMaxDelay = batchOperationQueryRetryMaxDelay;
+    return this;
+  }
+
+  public int getBatchOperationQueryRetryBackoffFactor() {
+    return batchOperationQueryRetryBackoffFactor;
+  }
+
+  public EngineConfiguration setBatchOperationQueryRetryBackoffFactor(
+      final int batchOperationQueryRetryBackoffFactor) {
+    this.batchOperationQueryRetryBackoffFactor = batchOperationQueryRetryBackoffFactor;
+    return this;
+  }
+
+  public Duration getUsageMetricsExportInterval() {
+    return usageMetricsExportInterval;
+  }
+
+  public EngineConfiguration setUsageMetricsExportInterval(
+      final Duration usageMetricsExportInterval) {
+    this.usageMetricsExportInterval = usageMetricsExportInterval;
+    return this;
+  }
+
+  public Duration getJobMetricsExportInterval() {
+    return jobMetricsExportInterval;
+  }
+
+  public EngineConfiguration setJobMetricsExportInterval(final Duration jobMetricsExportInterval) {
+    this.jobMetricsExportInterval = jobMetricsExportInterval;
+    return this;
+  }
+
+  public boolean isJobMetricsExportEnabled() {
+    return jobMetricsExportEnabled;
+  }
+
+  public EngineConfiguration setJobMetricsExportEnabled(final boolean jobMetricsExportEnabled) {
+    this.jobMetricsExportEnabled = jobMetricsExportEnabled;
+    return this;
+  }
+
+  public boolean isCommandDistributionPaused() {
+    return commandDistributionPaused;
+  }
+
+  public EngineConfiguration setCommandDistributionPaused(final boolean commandDistributionPaused) {
+    this.commandDistributionPaused = commandDistributionPaused;
+    return this;
+  }
+
+  public Duration getCommandRedistributionInterval() {
+    return commandRedistributionInterval;
+  }
+
+  public EngineConfiguration setCommandRedistributionInterval(
+      final Duration commandRedistributionInterval) {
+    this.commandRedistributionInterval = commandRedistributionInterval;
+    return this;
+  }
+
+  public Duration getCommandRedistributionMaxBackoff() {
+    return commandRedistributionMaxBackoff;
+  }
+
+  public EngineConfiguration setCommandRedistributionMaxBackoff(
+      final Duration commandRedistributionMaxBackoff) {
+    this.commandRedistributionMaxBackoff = commandRedistributionMaxBackoff;
+    return this;
+  }
+
+  public boolean isEnableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+  public EngineConfiguration setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
+    return this;
+  }
+
+  public GlobalListenersConfiguration getGlobalListeners() {
+    return globalListeners;
+  }
+
+  public EngineConfiguration setGlobalListeners(
+      final GlobalListenersConfiguration globalListeners) {
+    this.globalListeners = globalListeners;
+    return this;
+  }
+
+  public int getJobMetricsMaxUniqueKeys() {
+    return jobMetricsMaxUniqueKeys;
+  }
+
+  public EngineConfiguration setJobMetricsMaxUniqueKeys(final int jobMetricsMaxUniqueKeys) {
+    this.jobMetricsMaxUniqueKeys = jobMetricsMaxUniqueKeys;
+    return this;
+  }
+
+  public int getJobMetricsMaxWorkerNameLength() {
+    return jobMetricsMaxWorkerNameLength;
+  }
+
+  public EngineConfiguration setJobMetricsMaxWorkerNameLength(
+      final int jobMetricsMaxWorkerNameLength) {
+    this.jobMetricsMaxWorkerNameLength = jobMetricsMaxWorkerNameLength;
+    return this;
+  }
+
+  public int getMaxIdFieldLength() {
+    return maxIdFieldLength;
+  }
+
+  public EngineConfiguration setMaxIdFieldLength(final int maxIdFieldLength) {
+    this.maxIdFieldLength = maxIdFieldLength;
+    return this;
+  }
+
+  public int getMaxNameFieldLength() {
+    return maxNameFieldLength;
+  }
+
+  public EngineConfiguration setMaxNameFieldLength(final int maxNameFieldLength) {
+    this.maxNameFieldLength = maxNameFieldLength;
+    return this;
+  }
+
+  public int getMaxWorkerTypeLength() {
+    return maxWorkerTypeLength;
+  }
+
+  public EngineConfiguration setMaxWorkerTypeLength(final int maxWorkerTypeLength) {
+    this.maxWorkerTypeLength = maxWorkerTypeLength;
+    return this;
+  }
+
+  public int getJobMetricsMaxTypeLength() {
+    return jobMetricsMaxTypeLength;
+  }
+
+  public EngineConfiguration setJobMetricsMaxTypeLength(final int jobMetricsMaxTypeLength) {
+    this.jobMetricsMaxTypeLength = jobMetricsMaxTypeLength;
+    return this;
+  }
+
+  public int getJobMetricsMaxTenantIdLength() {
+    return jobMetricsMaxTenantIdLength;
+  }
+
+  public EngineConfiguration setJobMetricsMaxTenantIdLength(final int jobMetricsMaxTenantIdLength) {
+    this.jobMetricsMaxTenantIdLength = jobMetricsMaxTenantIdLength;
+    return this;
+  }
+
+  public Duration getExpressionEvaluationTimeout() {
+    return expressionEvaluationTimeout;
+  }
+
+  public EngineConfiguration setExpressionEvaluationTimeout(
+      final Duration expressionEvaluationTimeout) {
+    this.expressionEvaluationTimeout = expressionEvaluationTimeout;
+    return this;
+  }
+
+  public boolean isBusinessIdUniquenessEnabled() {
+    return businessIdUniquenessEnabled;
+  }
+
+  public EngineConfiguration setBusinessIdUniquenessEnabled(
+      final boolean businessIdUniquenessEnabled) {
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    return this;
+  }
+
+  /**
+   * Interval between scheduled expired dedup entry sweeps of the cross-partition message-start
+   * dedup.
+   */
+  public Duration getMessageStartDedupExpirationSweepInterval() {
+    return messageStartDedupExpirationSweepInterval;
+  }
+
+  public EngineConfiguration setMessageStartDedupExpirationSweepInterval(
+      final Duration messageStartDedupExpirationSweepInterval) {
+    this.messageStartDedupExpirationSweepInterval = messageStartDedupExpirationSweepInterval;
+    return this;
+  }
+
+  /** Maximum number of dedup expired dedup entries a single sweep cycle deletes. */
+  public int getMessageStartDedupExpirationSweepBatchLimit() {
+    return messageStartDedupExpirationSweepBatchLimit;
+  }
+
+  public EngineConfiguration setMessageStartDedupExpirationSweepBatchLimit(
+      final int messageStartDedupExpirationSweepBatchLimit) {
+    this.messageStartDedupExpirationSweepBatchLimit = messageStartDedupExpirationSweepBatchLimit;
+    return this;
+  }
+
+  /**
+   * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
+   * reach before it is re-emitted. The scheduler ticks every {@code retryInterval} and re-sends
+   * every ask whose last-sent time is older than {@code now - retryInterval}.
+   */
+  public Duration getMessageStartAskRetryInterval() {
+    return messageStartAskRetryInterval;
+  }
+
+  public EngineConfiguration setMessageStartAskRetryInterval(
+      final Duration messageStartAskRetryInterval) {
+    this.messageStartAskRetryInterval = messageStartAskRetryInterval;
+    return this;
+  }
+
+  /**
+   * Grace by which the {@code P_B} dedup row is kept valid (lookup re-replies and the expiration
+   * sweep) beyond the message deadline, to absorb a late in-flight retry and avoid a near-deadline
+   * duplicate. See {@link #DEFAULT_MESSAGE_START_ASK_RETRY_GRACE} for sizing rationale.
+   */
+  public Duration getMessageStartAskRetryGrace() {
+    return messageStartAskRetryGrace;
+  }
+
+  public EngineConfiguration setMessageStartAskRetryGrace(
+      final Duration messageStartAskRetryGrace) {
+    this.messageStartAskRetryGrace = messageStartAskRetryGrace;
+    return this;
+  }
+
+  /**
+   * Base cadence at which {@code P_K} polls {@code P_B} for a cross-partition message-start
+   * holder's completion, and the interval at which a newly observed lock entry is first polled.
+   */
+  public Duration getMessageStartLockReleasePollInterval() {
+    return messageStartLockReleasePollInterval;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollInterval(
+      final Duration messageStartLockReleasePollInterval) {
+    this.messageStartLockReleasePollInterval = messageStartLockReleasePollInterval;
+    return this;
+  }
+
+  /** Maximum back-off interval a single cross-partition lock entry's release poll grows to. */
+  public Duration getMessageStartLockReleasePollMaxBackoff() {
+    return messageStartLockReleasePollMaxBackoff;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollMaxBackoff(
+      final Duration messageStartLockReleasePollMaxBackoff) {
+    this.messageStartLockReleasePollMaxBackoff = messageStartLockReleasePollMaxBackoff;
+    return this;
+  }
+
+  /** Maximum number of holder instances batched into a single release query to one partition. */
+  public int getMessageStartLockReleasePollBatchLimit() {
+    return messageStartLockReleasePollBatchLimit;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollBatchLimit(
+      final int messageStartLockReleasePollBatchLimit) {
+    this.messageStartLockReleasePollBatchLimit = messageStartLockReleasePollBatchLimit;
+    return this;
+  }
+
+  public boolean isIncludeVariablesInJobCompletedEvent() {
+    return includeVariablesInJobCompletedEvent;
+  }
+
+  public EngineConfiguration setIncludeVariablesInJobCompletedEvent(
+      final boolean includeVariablesInJobCompletedEvent) {
+    this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
+    return this;
+  }
+
+  public boolean isEnableRpaReexportMigration() {
+    return enableRpaReexportMigration;
+  }
+
+  public EngineConfiguration setEnableRpaReexportMigration(
+      final boolean enableRpaReexportMigration) {
+    this.enableRpaReexportMigration = enableRpaReexportMigration;
+    return this;
+  }
+}

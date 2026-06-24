@@ -1,0 +1,21 @@
+# description: Nightly Elasticsearch API tests for stable/8.9
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly 8.9 - API Tests (ES)
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-api-tests-es:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
+    with:
+      branch: stable/8.9
+    secrets: inherit

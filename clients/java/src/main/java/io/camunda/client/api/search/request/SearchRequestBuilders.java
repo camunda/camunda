@@ -1,0 +1,614 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.api.search.request;
+
+import io.camunda.client.api.search.filter.AgentInstanceFilter;
+import io.camunda.client.api.search.filter.AuditLogFilter;
+import io.camunda.client.api.search.filter.AuthorizationFilter;
+import io.camunda.client.api.search.filter.BatchOperationFilter;
+import io.camunda.client.api.search.filter.BatchOperationItemFilter;
+import io.camunda.client.api.search.filter.ClusterVariableFilter;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
+import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.GlobalTaskListenerFilter;
+import io.camunda.client.api.search.filter.GroupFilter;
+import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.JobFilter;
+import io.camunda.client.api.search.filter.MappingRuleFilter;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
+import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.ResourceFilter;
+import io.camunda.client.api.search.filter.RoleFilter;
+import io.camunda.client.api.search.filter.TenantFilter;
+import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.UserTaskAuditLogFilter;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.UserTaskVariableFilter;
+import io.camunda.client.api.search.filter.VariableFilter;
+import io.camunda.client.api.search.filter.VariableValueFilter;
+import io.camunda.client.api.search.page.AnyPage;
+import io.camunda.client.api.search.page.CursorBackwardPage;
+import io.camunda.client.api.search.page.CursorForwardPage;
+import io.camunda.client.api.search.page.LimitPage;
+import io.camunda.client.api.search.page.OffsetPage;
+import io.camunda.client.api.search.sort.AgentInstanceSort;
+import io.camunda.client.api.search.sort.AuditLogSort;
+import io.camunda.client.api.search.sort.AuthorizationSort;
+import io.camunda.client.api.search.sort.BatchOperationItemSort;
+import io.camunda.client.api.search.sort.BatchOperationSort;
+import io.camunda.client.api.search.sort.ClientSort;
+import io.camunda.client.api.search.sort.ClusterVariableSort;
+import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
+import io.camunda.client.api.search.sort.DecisionDefinitionSort;
+import io.camunda.client.api.search.sort.DecisionInstanceSort;
+import io.camunda.client.api.search.sort.DecisionRequirementsSort;
+import io.camunda.client.api.search.sort.ElementInstanceSort;
+import io.camunda.client.api.search.sort.ElementInstanceWaitStateSort;
+import io.camunda.client.api.search.sort.GlobalTaskListenerSort;
+import io.camunda.client.api.search.sort.GroupSort;
+import io.camunda.client.api.search.sort.GroupUserSort;
+import io.camunda.client.api.search.sort.IncidentSort;
+import io.camunda.client.api.search.sort.JobSort;
+import io.camunda.client.api.search.sort.MappingRuleSort;
+import io.camunda.client.api.search.sort.MessageSubscriptionSort;
+import io.camunda.client.api.search.sort.ProcessDefinitionSort;
+import io.camunda.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.client.api.search.sort.ResourceSort;
+import io.camunda.client.api.search.sort.RoleGroupSort;
+import io.camunda.client.api.search.sort.RoleSort;
+import io.camunda.client.api.search.sort.RoleUserSort;
+import io.camunda.client.api.search.sort.TenantGroupSort;
+import io.camunda.client.api.search.sort.TenantSort;
+import io.camunda.client.api.search.sort.TenantUserSort;
+import io.camunda.client.api.search.sort.UserSort;
+import io.camunda.client.api.search.sort.UserTaskSort;
+import io.camunda.client.api.search.sort.VariableSort;
+import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
+import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
+import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.client.impl.search.filter.AgentInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
+import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
+import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
+import io.camunda.client.impl.search.filter.ClusterVariableFilterImpl;
+import io.camunda.client.impl.search.filter.CorrelatedMessageSubscriptionFilterImpl;
+import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
+import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
+import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.GlobalTaskListenerFilterImpl;
+import io.camunda.client.impl.search.filter.GroupFilterImpl;
+import io.camunda.client.impl.search.filter.IncidentFilterImpl;
+import io.camunda.client.impl.search.filter.JobFilterImpl;
+import io.camunda.client.impl.search.filter.MappingRuleFilterImpl;
+import io.camunda.client.impl.search.filter.MessageSubscriptionFilterImpl;
+import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
+import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.ResourceFilterImpl;
+import io.camunda.client.impl.search.filter.RoleFilterImpl;
+import io.camunda.client.impl.search.filter.TenantFilterImpl;
+import io.camunda.client.impl.search.filter.UserFilterImpl;
+import io.camunda.client.impl.search.filter.UserTaskAuditLogFilterImpl;
+import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
+import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
+import io.camunda.client.impl.search.filter.VariableFilterImpl;
+import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
+import io.camunda.client.impl.search.page.AnyPageImpl;
+import io.camunda.client.impl.search.page.CursorBackwardPageImpl;
+import io.camunda.client.impl.search.page.CursorForwardPageImpl;
+import io.camunda.client.impl.search.page.LimitPageImpl;
+import io.camunda.client.impl.search.page.OffsetPageImpl;
+import io.camunda.client.impl.search.request.SearchRequestPageImpl;
+import io.camunda.client.impl.search.sort.AgentInstanceSortImpl;
+import io.camunda.client.impl.search.sort.AuditLogSortImpl;
+import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
+import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
+import io.camunda.client.impl.search.sort.BatchOperationSortImpl;
+import io.camunda.client.impl.search.sort.ClientSortImpl;
+import io.camunda.client.impl.search.sort.ClusterVariableSortImpl;
+import io.camunda.client.impl.search.sort.CorrelatedMessageSubscriptionSortImpl;
+import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
+import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
+import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
+import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
+import io.camunda.client.impl.search.sort.ElementInstanceWaitStateSortImpl;
+import io.camunda.client.impl.search.sort.GlobalTaskListenerSortImpl;
+import io.camunda.client.impl.search.sort.GroupSortImpl;
+import io.camunda.client.impl.search.sort.GroupUserSortImpl;
+import io.camunda.client.impl.search.sort.IncidentSortImpl;
+import io.camunda.client.impl.search.sort.JobSortImpl;
+import io.camunda.client.impl.search.sort.MappingRuleSortImpl;
+import io.camunda.client.impl.search.sort.MessageSubscriptionSortImpl;
+import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
+import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
+import io.camunda.client.impl.search.sort.ResourceSortImpl;
+import io.camunda.client.impl.search.sort.RoleGroupSortImpl;
+import io.camunda.client.impl.search.sort.RoleSortImpl;
+import io.camunda.client.impl.search.sort.RoleUserSortImpl;
+import io.camunda.client.impl.search.sort.TenantGroupSortImpl;
+import io.camunda.client.impl.search.sort.TenantSortImpl;
+import io.camunda.client.impl.search.sort.TenantUserSortImpl;
+import io.camunda.client.impl.search.sort.UserSortImpl;
+import io.camunda.client.impl.search.sort.UserTaskSortImpl;
+import io.camunda.client.impl.search.sort.VariableSortImpl;
+import io.camunda.client.impl.statistics.filter.JobErrorStatisticsFilterImpl;
+import io.camunda.client.impl.statistics.filter.JobTypeStatisticsFilterImpl;
+import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
+import java.util.function.Consumer;
+
+public final class SearchRequestBuilders {
+
+  private SearchRequestBuilders() {}
+
+  public static ProcessDefinitionFilter processDefinitionFilter(
+      final Consumer<ProcessDefinitionFilter> fn) {
+    final ProcessDefinitionFilter filter = new ProcessDefinitionFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ProcessInstanceFilter processInstanceFilter(
+      final Consumer<ProcessInstanceFilter> fn) {
+    final ProcessInstanceFilter filter = new ProcessInstanceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static DecisionDefinitionFilter decisionDefinitionFilter(
+      final Consumer<DecisionDefinitionFilter> fn) {
+    final DecisionDefinitionFilter filter = new DecisionDefinitionFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static IncidentFilter incidentFilter(final Consumer<IncidentFilter> fn) {
+    final IncidentFilter filter = new IncidentFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ProcessDefinitionSort processDefinitionSort(
+      final Consumer<ProcessDefinitionSort> fn) {
+    final ProcessDefinitionSort sort = new ProcessDefinitionSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ProcessInstanceSort processInstanceSort(final Consumer<ProcessInstanceSort> fn) {
+    final ProcessInstanceSort sort = new ProcessInstanceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static DecisionDefinitionSort decisionDefinitionSort(
+      final Consumer<DecisionDefinitionSort> fn) {
+    final DecisionDefinitionSort sort = new DecisionDefinitionSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static IncidentSort incidentSort(final Consumer<IncidentSort> fn) {
+    final IncidentSort sort = new IncidentSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  /**
+   * @deprecated Use {@link #anyPage(Consumer)} instead. The returned {@link SearchRequestPage}
+   *     cannot be passed to {@code .page(...)} on typed search requests because it does not
+   *     implement the new {@link io.camunda.client.api.search.page.SearchPagination} marker
+   *     interface. This method will be removed in a future release.
+   */
+  @Deprecated
+  public static SearchRequestPage searchRequestPage(final Consumer<SearchRequestPage> fn) {
+    final SearchRequestPage filter = new SearchRequestPageImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AnyPage anyPage(final Consumer<AnyPage> fn) {
+    final AnyPage page = new AnyPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static CursorForwardPage cursorForwardPage(final Consumer<CursorForwardPage> fn) {
+    final CursorForwardPage page = new CursorForwardPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static OffsetPage offsetPage(final Consumer<OffsetPage> fn) {
+    final OffsetPage page = new OffsetPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static LimitPage limitPage(final Consumer<LimitPage> fn) {
+    final LimitPage page = new LimitPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static CursorBackwardPage cursorBackwardPage(final Consumer<CursorBackwardPage> fn) {
+    final CursorBackwardPage page = new CursorBackwardPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static UserTaskFilter userTaskFilter(final Consumer<UserTaskFilter> fn) {
+    final UserTaskFilter filter = new UserTaskFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static UserTaskSort userTaskSort(final Consumer<UserTaskSort> fn) {
+    final UserTaskSort sort = new UserTaskSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static DecisionRequirementsFilter decisionRequirementsFilter(
+      final Consumer<DecisionRequirementsFilter> fn) {
+    final DecisionRequirementsFilter filter = new DecisionRequirementsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static DecisionRequirementsSort decisionRequirementsSort(
+      final Consumer<DecisionRequirementsSort> fn) {
+    final DecisionRequirementsSort sort = new DecisionRequirementsSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static DecisionInstanceFilter decisionInstanceFilter(
+      final Consumer<DecisionInstanceFilter> fn) {
+    final DecisionInstanceFilter filter = new DecisionInstanceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static DecisionInstanceSort decisionInstanceSort(final Consumer<DecisionInstanceSort> fn) {
+    final DecisionInstanceSort sort = new DecisionInstanceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ElementInstanceFilter elementInstanceFilter(
+      final Consumer<ElementInstanceFilter> fn) {
+    final ElementInstanceFilter filter = new ElementInstanceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ElementInstanceSort elementInstanceSort(final Consumer<ElementInstanceSort> fn) {
+    final ElementInstanceSort sort = new ElementInstanceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static VariableFilter variableFilter(final Consumer<VariableFilter> fn) {
+    final VariableFilter filter = new VariableFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static VariableSort variableSort(final Consumer<VariableSort> fn) {
+    final VariableSort sort = new VariableSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ClusterVariableFilter clusterVariableFilter(
+      final Consumer<ClusterVariableFilter> fn) {
+    final ClusterVariableFilter filter = new ClusterVariableFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ClusterVariableSort clusterVariableSort(final Consumer<ClusterVariableSort> fn) {
+    final ClusterVariableSort sort = new ClusterVariableSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static UserTaskVariableFilter userTaskVariableFilter(
+      final Consumer<UserTaskVariableFilter> fn) {
+    final UserTaskVariableFilter filter = new UserTaskVariableFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static VariableValueFilter variableValueFilter(final Consumer<VariableValueFilter> fn) {
+    final VariableValueFilterImpl filter = new VariableValueFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ProcessDefinitionStatisticsFilter processDefinitionStatisticsFilter(
+      final Consumer<ProcessDefinitionStatisticsFilter> fn) {
+    final ProcessDefinitionStatisticsFilter filter = new ProcessDefinitionStatisticsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static JobTypeStatisticsFilter jobTypeStatisticsFilter(
+      final Consumer<JobTypeStatisticsFilter> fn) {
+    final JobTypeStatisticsFilter filter = new JobTypeStatisticsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static JobErrorStatisticsFilter jobErrorStatisticsFilter(
+      final Consumer<JobErrorStatisticsFilter> fn) {
+    final JobErrorStatisticsFilter filter = new JobErrorStatisticsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static GroupFilter groupFilter(final Consumer<GroupFilter> fn) {
+    final GroupFilter filter = new GroupFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static GroupSort groupSort(final Consumer<GroupSort> fn) {
+    final GroupSort sort = new GroupSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static UserFilter userFilter(final Consumer<UserFilter> fn) {
+    final UserFilter filter = new UserFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static UserSort userSort(final Consumer<UserSort> fn) {
+    final UserSort sort = new UserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static GroupUserSort groupUserSort(final Consumer<GroupUserSort> fn) {
+    final GroupUserSort sort = new GroupUserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static MappingRuleFilter mappingRuleFilter(final Consumer<MappingRuleFilter> fn) {
+    final MappingRuleFilter filter = new MappingRuleFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static MappingRuleSort mappingRuleSort(final Consumer<MappingRuleSort> fn) {
+    final MappingRuleSort sort = new MappingRuleSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static BatchOperationFilter batchOperationFilter(final Consumer<BatchOperationFilter> fn) {
+    final BatchOperationFilter filter = new BatchOperationFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static BatchOperationSort batchOperationSort(final Consumer<BatchOperationSort> fn) {
+    final BatchOperationSort sort = new BatchOperationSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static BatchOperationItemFilter batchOperationItemFilter(
+      final Consumer<BatchOperationItemFilter> fn) {
+    final BatchOperationItemFilter filter = new BatchOperationItemFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static BatchOperationItemSort batchOperationItemSort(
+      final Consumer<BatchOperationItemSort> fn) {
+    final BatchOperationItemSort sort = new BatchOperationItemSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AuthorizationFilter authorizationFilter(final Consumer<AuthorizationFilter> fn) {
+    final AuthorizationFilter filter = new AuthorizationFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AuthorizationSort authorizationSort(final Consumer<AuthorizationSort> fn) {
+    final AuthorizationSort sort = new AuthorizationSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static RoleFilter roleFilter(final Consumer<RoleFilter> fn) {
+    final RoleFilter filter = new RoleFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static RoleSort roleSort(final Consumer<RoleSort> fn) {
+    final RoleSort sort = new RoleSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static TenantFilter tenantFilter(final Consumer<TenantFilter> fn) {
+    final TenantFilter filter = new TenantFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static TenantSort tenantSort(final Consumer<TenantSort> fn) {
+    final TenantSort sort = new TenantSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static RoleUserSort roleUserSort(final Consumer<RoleUserSort> fn) {
+    final RoleUserSort sort = new RoleUserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static RoleGroupSort roleGroupSort(final Consumer<RoleGroupSort> fn) {
+    final RoleGroupSort sort = new RoleGroupSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static TenantUserSort tenantUserSort(final Consumer<TenantUserSort> fn) {
+    final TenantUserSort sort = new TenantUserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static TenantGroupSort tenantGroupSort(final Consumer<TenantGroupSort> fn) {
+    final TenantGroupSort sort = new TenantGroupSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ClientSort clientSort(final Consumer<ClientSort> fn) {
+    final ClientSort sort = new ClientSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static JobFilter jobFilter(final Consumer<JobFilter> fn) {
+    final JobFilter filter = new JobFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static JobSort jobSort(final Consumer<JobSort> fn) {
+    final JobSort sort = new JobSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static MessageSubscriptionFilter messageSubscriptionFilter(
+      final Consumer<MessageSubscriptionFilter> fn) {
+    final MessageSubscriptionFilter filter = new MessageSubscriptionFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static MessageSubscriptionSort messageSubscriptionSort(
+      final Consumer<MessageSubscriptionSort> fn) {
+    final MessageSubscriptionSort sort = new MessageSubscriptionSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static CorrelatedMessageSubscriptionFilter correlatedMessageSubscriptionFilter(
+      final Consumer<CorrelatedMessageSubscriptionFilter> fn) {
+    final CorrelatedMessageSubscriptionFilter filter =
+        new CorrelatedMessageSubscriptionFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static CorrelatedMessageSubscriptionSort correlatedMessageSubscriptionSort(
+      final Consumer<CorrelatedMessageSubscriptionSort> fn) {
+    final CorrelatedMessageSubscriptionSort sort = new CorrelatedMessageSubscriptionSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AuditLogFilter auditLogFilter(final Consumer<AuditLogFilter> fn) {
+    final AuditLogFilter filter = new io.camunda.client.impl.search.filter.AuditLogFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter
+      elementInstanceWaitStateFilter(
+          final Consumer<io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter> fn) {
+    final io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter filter =
+        new io.camunda.client.impl.search.filter.ElementInstanceWaitStateFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ElementInstanceWaitStateSort elementInstanceWaitStateSort(
+      final Consumer<ElementInstanceWaitStateSort> fn) {
+    final ElementInstanceWaitStateSort sort = new ElementInstanceWaitStateSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AuditLogSort auditLogSort(final Consumer<AuditLogSort> fn) {
+    final AuditLogSort sort = new AuditLogSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static UserTaskAuditLogFilter userTaskAuditLogFilter(
+      final Consumer<UserTaskAuditLogFilter> fn) {
+    final UserTaskAuditLogFilter filter = new UserTaskAuditLogFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static GlobalTaskListenerFilter globalTaskListenerFilter(
+      final Consumer<GlobalTaskListenerFilter> fn) {
+    final GlobalTaskListenerFilter filter = new GlobalTaskListenerFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static GlobalTaskListenerSort globalTaskListenerSort(
+      final Consumer<GlobalTaskListenerSort> fn) {
+    final GlobalTaskListenerSort sort = new GlobalTaskListenerSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AgentInstanceFilter agentInstanceFilter(final Consumer<AgentInstanceFilter> fn) {
+    final AgentInstanceFilter filter = new AgentInstanceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AgentInstanceSort agentInstanceSort(final Consumer<AgentInstanceSort> fn) {
+    final AgentInstanceSort sort = new AgentInstanceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ResourceFilter resourceFilter(final Consumer<ResourceFilter> fn) {
+    final ResourceFilter filter = new ResourceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ResourceSort resourceSort(final Consumer<ResourceSort> fn) {
+    final ResourceSort sort = new ResourceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+}

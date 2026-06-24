@@ -1,0 +1,3 @@
+org.springframework.boot.SpringApplicationRunListener=io.camunda.application.ModesAndProfilesProcessor
+org.springframework.boot.env.EnvironmentPostProcessor=io.camunda.application.commons.identity.PersistentWebSessionPropertiesPostProcessor
+

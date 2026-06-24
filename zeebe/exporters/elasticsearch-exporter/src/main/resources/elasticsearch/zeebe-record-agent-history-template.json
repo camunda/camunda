@@ -1,0 +1,85 @@
+{
+  "index_patterns": [
+    "zeebe-record_agent-history_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-agent-history": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "agentHistoryKey": {
+              "type": "long"
+            },
+            "agentInstanceKey": {
+              "type": "long"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "processDefinitionKey": {
+              "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
+            },
+            "jobKey": {
+              "type": "long"
+            },
+            "jobLease": {
+              "type": "keyword"
+            },
+            "iteration": {
+              "type": "integer"
+            },
+            "role": {
+              "type": "keyword"
+            },
+            "producedAt": {
+              "type": "long"
+            },
+            "content": {
+              "enabled": false
+            },
+            "toolCalls": {
+              "enabled": false
+            },
+            "metrics": {
+              "properties": {
+                "inputTokens": {
+                  "type": "long"
+                },
+                "outputTokens": {
+                  "type": "long"
+                },
+                "durationMs": {
+                  "type": "long"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

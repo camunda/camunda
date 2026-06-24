@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.DecisionInstanceMapper">
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}DECISION_INSTANCE di
+      LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY =
+      dd.DECISION_DEFINITION_KEY)
+      <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionInstanceDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT di.DECISION_INSTANCE_ID,
+    di.DECISION_INSTANCE_KEY,
+    di.PROCESS_INSTANCE_KEY,
+    di.ROOT_PROCESS_INSTANCE_KEY,
+    di.FLOW_NODE_INSTANCE_KEY,
+    di.PROCESS_DEFINITION_ID,
+    di.PROCESS_DEFINITION_KEY,
+    di.DECISION_DEFINITION_KEY,
+    di.DECISION_DEFINITION_ID,
+    di.STATE,
+    di.TYPE, /* TODO really save it there? */
+    di.EVALUATION_DATE,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="di.FULL_RESULT"/>
+      <property name="nonClobColumn" value="di.RESULT"/>
+    </include> AS RESULT,
+    di.EVALUATION_FAILURE,
+    di.EVALUATION_FAILURE_MESSAGE,
+    di.TENANT_ID,
+    di.ROOT_DECISION_DEFINITION_KEY,
+    NULL AS EVALUATED_INPUTS,
+    NULL AS EVALUATED_OUTPUTS,
+    dd.NAME AS DECISION_DEFINITION_NAME,
+    dd.VERSION AS DECISION_DEFINITION_VERSION
+    FROM ${prefix}DECISION_INSTANCE di
+    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY =
+    dd.DECISION_DEFINITION_KEY)
+    <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND di.DECISION_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND di.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <!-- basic filters -->
+      <if
+        test="filter.decisionInstanceIdOperations != null and !filter.decisionInstanceIdOperations.isEmpty()">
+        <foreach collection="filter.decisionInstanceIdOperations" item="operation">
+          AND di.DECISION_INSTANCE_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.decisionInstanceKeys != null and !filter.decisionInstanceKeys.isEmpty()">
+        AND di.DECISION_INSTANCE_KEY IN
+        <foreach collection="filter.decisionInstanceKeys" item="key" open="(" close=")"
+          separator=", ">
+          #{key}
+        </foreach>
+      </if>
+      <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
+        AND di.PROCESS_INSTANCE_KEY IN
+        <foreach collection="filter.processInstanceKeys" item="key" open="(" close=")"
+          separator=", ">
+          #{key}
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
+        AND di.PROCESS_DEFINITION_KEY IN
+        <foreach collection="filter.processDefinitionKeys" item="key" open="(" close=")"
+          separator=", ">
+          #{key}
+        </foreach>
+      </if>
+      <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+        <foreach collection="filter.stateOperations" item="operation">
+          AND di.STATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.evaluationFailures != null and !filter.evaluationFailures.isEmpty()">
+        AND di.EVALUATION_FAILURE IN
+        <foreach collection="filter.evaluationFailures" item="value" open="(" close=")"
+          separator=", ">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.decisionDefinitionIds != null and !filter.decisionDefinitionIds.isEmpty()">
+        AND di.DECISION_DEFINITION_ID IN
+        <foreach collection="filter.decisionDefinitionIds" item="value" open="(" close=")"
+          separator=", ">
+          #{value}
+        </foreach>
+      </if>
+      <if
+        test="filter.decisionDefinitionNames != null and !filter.decisionDefinitionNames.isEmpty()">
+        AND dd.NAME IN
+        <foreach collection="filter.decisionDefinitionNames" item="value" open="(" close=")"
+          separator=", ">
+          #{value}
+        </foreach>
+      </if>
+      <if
+        test="filter.decisionDefinitionVersions != null and !filter.decisionDefinitionVersions.isEmpty()">
+        AND dd.VERSION IN
+        <foreach collection="filter.decisionDefinitionVersions" item="value" open="(" close=")"
+          separator=", ">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.decisionTypes != null and !filter.decisionTypes.isEmpty()">
+        AND di.TYPE IN
+        <foreach collection="filter.decisionTypes" item="value" open="(" close=")" separator=", ">
+          #{value}
+        </foreach>
+      </if>
+      <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+        AND di.TENANT_ID IN
+        <foreach collection="filter.tenantIds" item="value" open="(" close=")" separator=", ">
+          #{value}
+        </foreach>
+      </if>
+      <if
+        test="filter.evaluationDateOperations != null and !filter.evaluationDateOperations.isEmpty()">
+        <foreach collection="filter.evaluationDateOperations" item="operation">
+          AND di.EVALUATION_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.decisionDefinitionKeyOperations != null and !filter.decisionDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionDefinitionKeyOperations" item="operation">
+          AND di.DECISION_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.flowNodeInstanceKeyOperations != null and !filter.flowNodeInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.flowNodeInstanceKeyOperations" item="operation">
+          AND di.FLOW_NODE_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.rootDecisionDefinitionKeyOperations != null and !filter.rootDecisionDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.rootDecisionDefinitionKeyOperations" item="operation">
+          AND di.ROOT_DECISION_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.decisionRequirementsKeyOperations != null and !filter.decisionRequirementsKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsKeyOperations" item="operation">
+          AND di.DECISION_REQUIREMENTS_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.partitionId != null">
+        AND di.PARTITION_ID = #{filter.partitionId}
+      </if>
+    </where>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionInstanceEntity">
+    <constructor>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
+      <arg column="DECISION_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="STATE"
+        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionInstanceState"/>
+      <arg column="EVALUATION_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="EVALUATION_FAILURE" javaType="java.lang.String"/>
+      <arg column="EVALUATION_FAILURE_MESSAGE" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="DECISION_DEFINITION_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="DECISION_DEFINITION_VERSION" javaType="java.lang.Integer"/>
+      <arg column="TYPE"
+        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionDefinitionType"/>
+      <arg column="ROOT_DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="RESULT" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <!-- The list is loaded separately (optional). But we still need a value (NULL) here.
+       we use the ObjectTypeHandler because no other typeHandler can map NULL to List -->
+      <arg column="EVALUATED_INPUTS" javaType="java.util.List"
+        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+      <arg column="EVALUATED_OUTPUTS" javaType="java.util.List"
+        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
+    INSERT INTO ${prefix}DECISION_INSTANCE (DECISION_INSTANCE_ID,
+                                            DECISION_INSTANCE_KEY,
+                                            PROCESS_INSTANCE_KEY,
+                                            ROOT_PROCESS_INSTANCE_KEY,
+                                            PROCESS_DEFINITION_KEY,
+                                            PROCESS_DEFINITION_ID,
+                                            DECISION_DEFINITION_KEY,
+                                            DECISION_DEFINITION_ID,
+                                            DECISION_REQUIREMENTS_KEY,
+                                            DECISION_REQUIREMENTS_ID,
+                                            FLOW_NODE_INSTANCE_KEY,
+                                            FLOW_NODE_ID,
+                                            ROOT_DECISION_DEFINITION_KEY,
+                                            TYPE,
+                                            STATE,
+                                            EVALUATION_DATE,
+                                            FULL_RESULT,
+                                            EVALUATION_FAILURE,
+                                            EVALUATION_FAILURE_MESSAGE,
+                                            TENANT_ID,
+                                            PARTITION_ID,
+                                            HISTORY_CLEANUP_DATE)
+    VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
+            #{rootProcessInstanceKey},
+            #{processDefinitionKey}, #{processDefinitionId},
+            #{decisionDefinitionKey}, #{decisionDefinitionId},
+            #{decisionRequirementsKey}, #{decisionRequirementsId},
+            #{flowNodeInstanceKey}, #{flowNodeId},
+            #{rootDecisionDefinitionKey},
+            #{decisionType}, #{state},
+            #{evaluationDate, jdbcType=TIMESTAMP}, #{result, jdbcType=CLOB}, #{evaluationFailure},
+            #{evaluationFailureMessage},
+            #{tenantId}, #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
+  </insert>
+
+  <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
+    INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME,
+    FULL_INPUT_VALUE)
+    VALUES
+    <foreach collection="evaluatedInputs" item="item" separator=", ">
+      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB})
+    </foreach>
+  </insert>
+
+  <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="evaluatedInputs" item="item">
+      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, FULL_INPUT_VALUE)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <!-- create select statement for decision instance input -->
+  <select id="loadInputs" parameterType="list"
+    resultMap="io.camunda.db.rdbms.sql.DecisionInstanceMapper.evaluatedInputResultMap">
+    SELECT
+    DECISION_INSTANCE_ID,
+    INPUT_ID,
+    INPUT_NAME,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_INPUT_VALUE"/>
+      <property name="nonClobColumn" value="INPUT_VALUE"/>
+    </include> AS INPUT_VALUE
+    FROM ${prefix}DECISION_INSTANCE_INPUT
+    WHERE DECISION_INSTANCE_ID IN (<foreach collection="list" item="id" separator=", ">
+    #{id}</foreach>)
+  </select>
+
+  <resultMap id="evaluatedInputResultMap"
+    type="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel$EvaluatedInput">
+    <constructor>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
+      <idArg column="INPUT_ID" javaType="java.lang.String"/>
+      <arg column="INPUT_NAME" javaType="java.lang.String"/>
+      <arg column="INPUT_VALUE" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insertOutput"
+    parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
+    INSERT INTO ${prefix}DECISION_INSTANCE_OUTPUT
+    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
+    <foreach collection="evaluatedOutputs" item="item" separator=", ">
+      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB}, #{item.ruleId},
+      #{item.ruleIndex})
+    </foreach>
+  </insert>
+
+  <insert id="insertOutput"
+    parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel"
+    databaseId="oracle">
+    INSERT ALL
+    <foreach collection="evaluatedOutputs" item="item">
+      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB}, #{item.ruleId}, #{item.ruleIndex})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <select id="loadOutputs" parameterType="list"
+    resultMap="io.camunda.db.rdbms.sql.DecisionInstanceMapper.evaluatedOutputResultMap">
+    SELECT
+    DECISION_INSTANCE_ID,
+    OUTPUT_ID,
+    OUTPUT_NAME,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_OUTPUT_VALUE"/>
+      <property name="nonClobColumn" value="OUTPUT_VALUE"/>
+    </include> AS OUTPUT_VALUE,
+    RULE_ID,
+    RULE_INDEX
+    FROM ${prefix}DECISION_INSTANCE_OUTPUT
+    WHERE DECISION_INSTANCE_ID IN (<foreach collection="list" item="id" separator=", ">
+    #{id}</foreach>)
+  </select>
+
+  <resultMap id="evaluatedOutputResultMap"
+    type="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel$EvaluatedOutput">
+    <constructor>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
+      <idArg column="OUTPUT_ID" javaType="java.lang.String"/>
+      <arg column="OUTPUT_NAME" javaType="java.lang.String"/>
+      <arg column="OUTPUT_VALUE" javaType="java.lang.String"/>
+      <arg column="RULE_ID" javaType="java.lang.String"/>
+      <arg column="RULE_INDEX" javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_ID'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_ID'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'DECISION_INSTANCE_ID'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}DECISION_INSTANCE
+    WHERE DECISION_INSTANCE_KEY IN
+    <foreach collection="decisionInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+</mapper>

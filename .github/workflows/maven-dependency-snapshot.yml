@@ -1,0 +1,95 @@
+# description: Submits the resolved Maven dependency tree to the GitHub Dependency Submission API.
+# Runs on push to main/stable to keep the base snapshot current.
+# PR-side (head) snapshot submission is handled by the pr-maven-snapshot job in ci.yml,
+# which pr-vuln-check depends on — ensuring the snapshot is ready before the gate runs.
+# type: Security
+# owner: @camunda/monorepo-devops-team
+name: Maven Dependency Snapshot
+
+on:
+  push:
+    branches:
+      - main
+      - stable/**
+    paths:
+      - '**/pom.xml'
+      - 'bom/**'
+      - 'parent/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
+jobs:
+  submit-maven-snapshot:
+    name: "Security / Submit Maven Dependency Snapshot"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write  # required by the Dependency Submission API
+      id-token: write  # Vault OIDC/JWT auth
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Configure Maven credentials
+        uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      # Scope to shipped modules only (mirrors JAVA_PROJECTS in zeebe-snyk.yml).
+      # -am resolves the full transitive tree including BOM-pinned versions.
+      # The Spring Boot starter was renamed between main and stable branches, so detect dynamically.
+      - name: Detect Spring Boot starter module path
+        run: |
+          if [ -d "clients/camunda-spring-boot-starter" ]; then
+            echo "SPRING_STARTER_MODULE=clients/camunda-spring-boot-starter" >> "$GITHUB_ENV"
+          elif [ -d "clients/spring-boot-starter-camunda-sdk" ]; then
+            echo "SPRING_STARTER_MODULE=clients/spring-boot-starter-camunda-sdk" >> "$GITHUB_ENV"
+          else
+            echo "ERROR: neither clients/camunda-spring-boot-starter nor clients/spring-boot-starter-camunda-sdk found" >&2
+            exit 1
+          fi
+      - name: Submit Maven dependency snapshot
+        uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
+        with:
+          token: ${{ github.token }}
+          maven-args: >-
+            -pl bom,clients/java,${{ env.SPRING_STARTER_MODULE }},zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -am
+            -Dquickly
+          correlator: ${{ github.job }}-maven
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
