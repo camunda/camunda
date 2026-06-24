@@ -36,6 +36,7 @@ Module paths:
 
 ```java
 record PartitionGroupAwareClusterConfiguration(
+    long version,                                      // always INITIAL_VERSION; reserved for future root-level merge
     ClusterMembership clusterMembership,               // ALL brokers; BrokerState (lifecycle state only)
     Map<String, PartitionGroupConfiguration> partitionGroups, // one per partition group ID
     Optional<PhasedChangePlan> pendingPlan,            // only for cluster-spanning operations
@@ -241,7 +242,9 @@ advances if the current phase is already complete.
 
 ### `PartitionGroupAwareClusterConfiguration.merge()`
 
-No outer version — always field-by-field CRDT merge:
+`version` is always `INITIAL_VERSION` — it is never incremented. The current merge is always
+field-by-field CRDT. The version field is reserved so that a future evolution can switch to a
+root-level version-wins strategy without changing the wire format.
 
 ```java
 PartitionGroupAwareClusterConfiguration merge(PartitionGroupAwareClusterConfiguration other) {
@@ -256,8 +259,9 @@ PartitionGroupAwareClusterConfiguration merge(PartitionGroupAwareClusterConfigur
     // Non-empty wins; if both present, this wins (coordinator is the sole writer).
     final var mergedDistributorConfig =
         partitionDistributorConfig.or(() -> other.partitionDistributorConfig);
+    // version always stays INITIAL_VERSION; not used in merge decisions.
     return new PartitionGroupAwareClusterConfiguration(
-        mergedMembership, Map.copyOf(mergedGroups), mergedPlan, mergedDistributorConfig);
+        INITIAL_VERSION, mergedMembership, Map.copyOf(mergedGroups), mergedPlan, mergedDistributorConfig);
 }
 ```
 
@@ -371,6 +375,7 @@ message PartitionGroupAwareClusterConfiguration {
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
   PartitionDistributorConfig partitionDistributorConfig = 4;
+  int64 version = 5; // always INITIAL_VERSION; reserved for future root-level version-based merge
 }
 
 message PhasedChangePlan {
@@ -426,6 +431,7 @@ message GossipState {
 extracted, state dropped); `routingState` and `incarnationNumber` preserved; `recovery` defaults
 to `false`
 - `partitionDistributorConfig` = taken from `ClusterTopology.partitionDistributor` directly
+- `version` = `INITIAL_VERSION`
 - `pendingPlan` = absent
 
 ---

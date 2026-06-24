@@ -129,6 +129,7 @@ POC; will be renamed when the existing `ClusterConfiguration` usages are fully m
 
 ```java
 record ClusterConfiguration(
+    long version,                // always INITIAL_VERSION; reserved for future root-level merge
     ClusterMembership clusterMembership,
     Map<String, PartitionGroupConfiguration> partitionGroups,
     Optional<PhasedChangePlan> phasedChangePlan,
@@ -315,9 +316,9 @@ wholesale. If equal (concurrent writes during plan execution), they merge field-
 
 #### `ClusterConfiguration.merge()`
 
-`ClusterConfiguration` has **no outer version**. Every gossip reconciliation is a
-full field-by-field merge. The structure behaves as a CRDT: the result is the component-wise
-maximum of all received state.
+`ClusterConfiguration.version` is always `INITIAL_VERSION` — it is never incremented. The
+current merge is always field-by-field CRDT. The version is reserved so that a future evolution
+can switch to root-level version-wins semantics without changing the wire format.
 
 ```java
 ClusterConfiguration merge(ClusterConfiguration other) {
@@ -329,7 +330,8 @@ ClusterConfiguration merge(ClusterConfiguration other) {
         mergedGroups.merge(groupId, config, PartitionGroupConfiguration::merge));
 
     final var mergedPlan = mergePlan(phasedChangePlan, other.phasedChangePlan);
-    return new ClusterConfiguration(mergedMembership, Map.copyOf(mergedGroups), mergedPlan);
+    // version always stays INITIAL_VERSION; not used in merge decisions.
+    return new ClusterConfiguration(INITIAL_VERSION, mergedMembership, Map.copyOf(mergedGroups), mergedPlan);
 }
 ```
 
@@ -535,6 +537,7 @@ message PartitionGroupAwareClusterConfiguration {
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
   PartitionDistributorConfig partitionDistributorConfig = 4;
+  int64 version = 5; // always INITIAL_VERSION; reserved for future root-level version-based merge
 }
 
 message PhasedChangePlan {
@@ -589,6 +592,7 @@ coordinator would stall waiting for state changes that it never sees.
     state dropped); `routingState` and `incarnationNumber` preserved; `recovery` defaults to
     `false`
   - `partitionDistributorConfig` = taken from `ClusterTopology.partitionDistributor` directly
+  - `version` = `INITIAL_VERSION`
   - `pendingPlan` = absent
 
 **Persistence: header version discriminator.** `PersistedClusterConfiguration` already has a
