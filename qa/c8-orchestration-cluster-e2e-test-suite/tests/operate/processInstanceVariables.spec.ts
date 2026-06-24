@@ -231,7 +231,7 @@ test.describe('Process Instance Variables', () => {
           el.scrollTop = el.scrollHeight - el.clientHeight - 50;
         });
         await page.evaluate(
-          () => new Promise<void>((r) => requestAnimationFrame(r)),
+          () => new Promise<void>((r) => requestAnimationFrame(() => r())),
         );
         await operateProcessInstancePage.variablesList.evaluate((el) => {
           el.scrollTop = el.scrollHeight - el.clientHeight;
