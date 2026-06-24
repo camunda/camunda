@@ -357,7 +357,7 @@ public class ClusterVariableValueFilterIT {
     // when we search for it, we should find one
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     clusterVariableFilter,
@@ -399,7 +399,7 @@ public class ClusterVariableValueFilterIT {
     // when we search for it, we should find one
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     clusterVariableFilter,
@@ -441,7 +441,7 @@ public class ClusterVariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 ClusterVariableQuery.of(
                     b ->
@@ -486,7 +486,7 @@ public class ClusterVariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 ClusterVariableQuery.of(
                     b ->
@@ -531,7 +531,7 @@ public class ClusterVariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 ClusterVariableQuery.of(
                     b ->
@@ -575,7 +575,7 @@ public class ClusterVariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 ClusterVariableQuery.of(
                     b ->
@@ -619,7 +619,7 @@ public class ClusterVariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 ClusterVariableQuery.of(
                     b ->
@@ -663,7 +663,7 @@ public class ClusterVariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 ClusterVariableQuery.of(
                     b ->
@@ -708,7 +708,7 @@ public class ClusterVariableValueFilterIT {
 
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     builder.build(),

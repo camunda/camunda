@@ -172,7 +172,7 @@ public class GlobalListenerSortIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader("default")
+            .getGlobalListenerDbReader()
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()

@@ -9,7 +9,7 @@ package io.camunda.exporter.rdbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
-import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -82,16 +82,16 @@ public class RdbmsExporterWrapper implements Exporter {
   /** The partition on which all process deployments are published */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
-  private final RdbmsService rdbmsService;
+  private final RdbmsServiceFactory rdbmsServiceFactory;
   private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
 
   private RdbmsExporter exporter;
   private RdbmsCacheRegistry cacheRegistry;
 
   public RdbmsExporterWrapper(
-      final RdbmsService rdbmsService,
+      final RdbmsServiceFactory rdbmsServiceFactory,
       final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
-    this.rdbmsService = rdbmsService;
+    this.rdbmsServiceFactory = rdbmsServiceFactory;
     this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
   }
 
@@ -104,6 +104,7 @@ public class RdbmsExporterWrapper implements Exporter {
     final var physicalTenantId = context.getPhysicalTenantId();
     final var rdbmsWriterConfig =
         config.createRdbmsWriterConfig(partitionId, physicalTenantId, context.clock());
+    final var rdbmsService = rdbmsServiceFactory.createRdbmsService(physicalTenantId);
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =
@@ -114,21 +115,18 @@ public class RdbmsExporterWrapper implements Exporter {
             .queueSize(config.getQueueSize())
             .rdbmsWriter(rdbmsWriters);
 
-    cacheRegistry =
-        new RdbmsCacheRegistry(config, rdbmsService, physicalTenantId, context.getMeterRegistry());
+    cacheRegistry = new RdbmsCacheRegistry(config, rdbmsService, context.getMeterRegistry());
 
     final var historyCleanupService =
         new HistoryCleanupService(
-            rdbmsWriterConfig,
-            rdbmsWriters,
-            rdbmsService.getProcessInstanceReader(physicalTenantId));
+            rdbmsWriterConfig, rdbmsWriters, rdbmsService.getProcessInstanceReader());
     builder.historyCleanupService(historyCleanupService);
     final var historyDeletionService =
         new HistoryDeletionService(
             rdbmsWriters,
-            rdbmsService.getHistoryDeletionDbReader(physicalTenantId),
-            rdbmsService.getProcessInstanceReader(physicalTenantId),
-            rdbmsService.getDecisionInstanceReader(physicalTenantId),
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
             new HistoryDeletionConfig(
                 config.getHistoryDeletion().getDelayBetweenRuns(),
                 config.getHistoryDeletion().getMaxDelayBetweenRuns(),

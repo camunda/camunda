@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
@@ -67,7 +68,8 @@ class RdbmsExporterWrapperTest {
         .thenReturn(configuration);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(mock(RdbmsService.class), mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(
+            mock(RdbmsServiceFactory.class), mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     assertThatThrownBy(() -> exporterWrapper.configure(context))
@@ -79,8 +81,10 @@ class RdbmsExporterWrapperTest {
     // given
     final var configuration = new ExporterConfiguration();
     final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
@@ -89,7 +93,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);
@@ -158,8 +162,10 @@ class RdbmsExporterWrapperTest {
     // given
     final var configuration = new ExporterConfiguration();
     final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
@@ -168,7 +174,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);
@@ -222,8 +228,10 @@ class RdbmsExporterWrapperTest {
     // given
     final var configuration = new ExporterConfiguration();
     final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
@@ -232,7 +240,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);
@@ -286,8 +294,10 @@ class RdbmsExporterWrapperTest {
     // given
     final var configuration = new ExporterConfiguration();
     final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
@@ -296,7 +306,7 @@ class RdbmsExporterWrapperTest {
     when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsService, mock(RdbmsSchemaManagerRegistry.class));
+        new RdbmsExporterWrapper(rdbmsServiceFactory, mock(RdbmsSchemaManagerRegistry.class));
 
     // when
     exporterWrapper.configure(context);

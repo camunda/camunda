@@ -7,10 +7,12 @@
  */
 package io.camunda.it.rdbms.db;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
@@ -40,7 +42,8 @@ public class HistoryCleanupIT {
 
   @Autowired JdbcTemplate jdbcTemplate;
 
-  @Autowired RdbmsService rdbmsService;
+  @Autowired RdbmsServiceFactory rdbmsServiceFactory;
+  RdbmsService rdbmsService;
 
   HistoryCleanupService historyCleanupService;
 
@@ -48,11 +51,11 @@ public class HistoryCleanupIT {
 
   @BeforeEach
   void setUp() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     rdbmsWriters = rdbmsService.createWriter(config);
     historyCleanupService =
-        new HistoryCleanupService(
-            config, rdbmsWriters, rdbmsService.getProcessInstanceReader("default"));
+        new HistoryCleanupService(config, rdbmsWriters, rdbmsService.getProcessInstanceReader());
   }
 
   @Test

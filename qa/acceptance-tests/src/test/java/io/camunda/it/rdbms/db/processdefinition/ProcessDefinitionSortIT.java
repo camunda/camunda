@@ -138,7 +138,7 @@ public class ProcessDefinitionSortIT {
       final Function<Builder, ObjectBuilder<ProcessDefinitionSort>> sortBuilder,
       final Comparator<ProcessDefinitionEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader("default");
+    final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader();
 
     final var versionTag = nextStringId();
     createAndSaveRandomProcessDefinitions(rdbmsWriters, b -> b.versionTag(versionTag));

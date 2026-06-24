@@ -10,32 +10,23 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Map;
 
 public class RdbmsWriterFactory {
 
-  private final Map<String, RdbmsMapperBundle> mapperBundles;
+  private final RdbmsMapperBundle mapperBundle;
   private final MeterRegistry meterRegistry;
 
   public RdbmsWriterFactory(
-      final Map<String, RdbmsMapperBundle> mapperBundles, final MeterRegistry meterRegistry) {
-    this.mapperBundles = mapperBundles;
+      final RdbmsMapperBundle mapperBundle, final MeterRegistry meterRegistry) {
+    this.mapperBundle = mapperBundle;
     this.meterRegistry = meterRegistry;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
-    final var bundle = mapperBundles.get(config.physicalTenantId());
-    if (bundle == null) {
-      throw new IllegalArgumentException(
-          "No RdbmsMapperBundle registered for physical tenant '"
-              + config.physicalTenantId()
-              + "'. Known tenants: "
-              + mapperBundles.keySet());
-    }
     final var metrics = new RdbmsWriterMetrics(meterRegistry, config.partitionId());
     final var executionQueue =
         new DefaultExecutionQueue(
-            bundle.sqlSessionFactory(),
+            mapperBundle.sqlSessionFactory(),
             config.partitionId(),
             config.queueSize(),
             config.queueMemoryLimit(),
@@ -43,31 +34,31 @@ public class RdbmsWriterFactory {
     return new RdbmsWriters(
         config,
         executionQueue,
-        new ExporterPositionService(executionQueue, bundle.exporterPositionMapper()),
+        new ExporterPositionService(executionQueue, mapperBundle.exporterPositionMapper()),
         metrics,
-        bundle.auditLogMapper(),
-        bundle.decisionInstanceMapper(),
-        bundle.decisionDefinitionMapper(),
-        bundle.decisionRequirementsMapper(),
-        bundle.flowNodeInstanceMapper(),
-        bundle.incidentMapper(),
-        bundle.processInstanceMapper(),
-        bundle.processDefinitionMapper(),
-        bundle.purgeMapper(),
-        bundle.userTaskMapper(),
-        bundle.variableMapper(),
-        bundle.vendorDatabaseProperties(),
-        bundle.jobMapper(),
-        bundle.jobMetricsBatchMapper(),
-        bundle.sequenceFlowMapper(),
-        bundle.usageMetricMapper(),
-        bundle.usageMetricTUMapper(),
-        bundle.batchOperationMapper(),
-        bundle.messageSubscriptionMapper(),
-        bundle.correlatedMessageSubscriptionMapper(),
-        bundle.clusterVariableMapper(),
-        bundle.historyDeletionMapper(),
-        bundle.agentInstanceMapper(),
-        bundle.waitStateMapper());
+        mapperBundle.auditLogMapper(),
+        mapperBundle.decisionInstanceMapper(),
+        mapperBundle.decisionDefinitionMapper(),
+        mapperBundle.decisionRequirementsMapper(),
+        mapperBundle.flowNodeInstanceMapper(),
+        mapperBundle.incidentMapper(),
+        mapperBundle.processInstanceMapper(),
+        mapperBundle.processDefinitionMapper(),
+        mapperBundle.purgeMapper(),
+        mapperBundle.userTaskMapper(),
+        mapperBundle.variableMapper(),
+        mapperBundle.vendorDatabaseProperties(),
+        mapperBundle.jobMapper(),
+        mapperBundle.jobMetricsBatchMapper(),
+        mapperBundle.sequenceFlowMapper(),
+        mapperBundle.usageMetricMapper(),
+        mapperBundle.usageMetricTUMapper(),
+        mapperBundle.batchOperationMapper(),
+        mapperBundle.messageSubscriptionMapper(),
+        mapperBundle.correlatedMessageSubscriptionMapper(),
+        mapperBundle.clusterVariableMapper(),
+        mapperBundle.historyDeletionMapper(),
+        mapperBundle.agentInstanceMapper(),
+        mapperBundle.waitStateMapper());
   }
 }

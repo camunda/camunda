@@ -47,7 +47,7 @@ public class MappingRuleIT {
 
     final var mappingRule =
         rdbmsService
-            .getMappingRuleReader("default")
+            .getMappingRuleReader()
             .findOne(randomizedMappingRule.mappingRuleId())
             .orElse(null);
     assertThat(mappingRule).isNotNull();
@@ -65,8 +65,7 @@ public class MappingRuleIT {
 
     // Verify the mapping rule is saved
     final var mappingRuleId = randomizedMappingRule.mappingRuleId();
-    final var mappingRule =
-        rdbmsService.getMappingRuleReader("default").findOne(mappingRuleId).orElse(null);
+    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId).orElse(null);
     assertThat(mappingRule).isNotNull();
     assertThat(mappingRule).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
 
@@ -76,8 +75,7 @@ public class MappingRuleIT {
     writer.flush();
 
     // Verify the mapping rule is deleted
-    final var deletedMappingRuleResult =
-        rdbmsService.getMappingRuleReader("default").findOne(mappingRuleId);
+    final var deletedMappingRuleResult = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
     assertThat(deletedMappingRuleResult).isEmpty();
   }
 
@@ -93,7 +91,7 @@ public class MappingRuleIT {
     // Search for the mapping rule by claimName
     final var searchResult =
         rdbmsService
-            .getMappingRuleReader("default")
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder()
@@ -123,7 +121,7 @@ public class MappingRuleIT {
     // Search for the mapping rule by claimValue
     final var searchResult =
         rdbmsService
-            .getMappingRuleReader("default")
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder()
@@ -155,7 +153,7 @@ public class MappingRuleIT {
     // Search for the mapping rule by claimValue
     final var searchResult =
         rdbmsService
-            .getMappingRuleReader("default")
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder()
@@ -189,7 +187,7 @@ public class MappingRuleIT {
     // Search for the mapping rule by claimValue
     final var searchResult =
         rdbmsService
-            .getMappingRuleReader("default")
+            .getMappingRuleReader()
             .search(
                 MappingRuleQuery.of(b -> b),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
@@ -214,7 +212,7 @@ public class MappingRuleIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingRuleReader("default")
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().claimName(claimName).build(),
@@ -237,7 +235,7 @@ public class MappingRuleIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingRuleReader("default")
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().claimName(claimName).build(),
@@ -255,7 +253,7 @@ public class MappingRuleIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final MappingRuleDbReader mappingRuleReader = rdbmsService.getMappingRuleReader("default");
+    final MappingRuleDbReader mappingRuleReader = rdbmsService.getMappingRuleReader();
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
     createAndSaveRandomMappingRules(rdbmsWriters, b -> b.claimName(claimName));
@@ -303,7 +301,7 @@ public class MappingRuleIT {
     writer.flush();
 
     // then
-    final var mappingRule = rdbmsService.getMappingRuleReader("default").findOne(mappingRuleId);
+    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
     assertThat(mappingRule)
         .isPresent()
         .get()

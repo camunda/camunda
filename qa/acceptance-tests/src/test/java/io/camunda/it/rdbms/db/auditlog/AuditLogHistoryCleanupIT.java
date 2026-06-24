@@ -33,9 +33,8 @@ public class AuditLogHistoryCleanupIT {
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     final var rdbmsWriter = rdbmsService.createWriter(config);
     final var historyCleanupService =
-        new HistoryCleanupService(
-            config, rdbmsWriter, rdbmsService.getProcessInstanceReader("default"));
-    final var auditLogReader = rdbmsService.getAuditLogReader("default");
+        new HistoryCleanupService(config, rdbmsWriter, rdbmsService.getProcessInstanceReader());
+    final var auditLogReader = rdbmsService.getAuditLogReader();
 
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime scheduledCleanupDate = now.plus(HistoryConfig.DEFAULT_HISTORY_TTL);
@@ -61,9 +60,8 @@ public class AuditLogHistoryCleanupIT {
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     final var rdbmsWriter = rdbmsService.createWriter(config);
     final var historyCleanupService =
-        new HistoryCleanupService(
-            config, rdbmsWriter, rdbmsService.getProcessInstanceReader("default"));
-    final var auditLogReader = rdbmsService.getAuditLogReader("default");
+        new HistoryCleanupService(config, rdbmsWriter, rdbmsService.getProcessInstanceReader());
+    final var auditLogReader = rdbmsService.getAuditLogReader();
 
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime scheduledCleanupDate = now.plus(HistoryConfig.DEFAULT_HISTORY_TTL);

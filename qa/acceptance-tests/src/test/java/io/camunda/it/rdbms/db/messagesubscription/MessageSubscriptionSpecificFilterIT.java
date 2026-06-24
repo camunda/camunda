@@ -7,9 +7,11 @@
  */
 package io.camunda.it.rdbms.db.messagesubscription;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
@@ -48,7 +50,8 @@ public class MessageSubscriptionSpecificFilterIT {
   private static final String PROCESS_DEFINITION_NAME = "processDefinitionName";
   private static final Integer PROCESS_DEFINITION_VERSION = 15;
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
   private MessageSubscriptionDbReader messageSubscriptionDbReader;
 
@@ -56,8 +59,9 @@ public class MessageSubscriptionSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
     rdbmsWriters = rdbmsService.createWriter(0L);
-    messageSubscriptionDbReader = rdbmsService.getMessageSubscriptionReader("default");
+    messageSubscriptionDbReader = rdbmsService.getMessageSubscriptionReader();
   }
 
   @ParameterizedTest

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -47,7 +48,8 @@ class RdbmsExporterBatchOperationsIT {
   private static final RecordFixtures FIXTURES = new RecordFixtures();
   private final ExporterTestController controller = new ExporterTestController();
   @Autowired private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
@@ -56,7 +58,9 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   private void setup(final boolean exportPendingItems) {
-    exporter = new RdbmsExporterWrapper(rdbmsService, rdbmsSchemaManagerRegistry);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
     exporter.configure(
         new ExporterContext(
             null,
@@ -83,7 +87,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService.getBatchOperationReader("default").findOne(String.valueOf(batchOperationKey));
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
     assertThat(batchOperation)
         .hasValueSatisfying(
             entity -> {
@@ -108,7 +112,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService.getBatchOperationReader("default").findOne(String.valueOf(batchOperationKey));
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
     assertThat(batchOperation)
         .hasValueSatisfying(
             entity -> {
@@ -130,10 +134,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.COMPLETED);
   }
 
@@ -149,10 +150,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
     assertThat(batchOperation.errors()).isNotEmpty();
   }
@@ -169,10 +167,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.FAILED);
     assertThat(batchOperation.errors()).isNotEmpty();
   }
@@ -189,10 +184,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.CANCELED);
 
     // and the items should be canceled
@@ -216,10 +208,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.SUSPENDED);
   }
 
@@ -238,10 +227,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then it should be canceled
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
   }
 
@@ -265,10 +251,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(1);
@@ -297,10 +280,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(1);
@@ -333,10 +313,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
@@ -365,10 +342,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
@@ -402,10 +376,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(1);
@@ -434,10 +405,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
@@ -466,10 +434,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(1);
@@ -499,10 +464,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
@@ -532,10 +494,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(1);
@@ -565,10 +524,7 @@ class RdbmsExporterBatchOperationsIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
@@ -587,10 +543,7 @@ class RdbmsExporterBatchOperationsIT {
     exporter.export(batchOperationInitializedRecord);
     exporter.export(batchOperationChunkRecord);
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader("default")
-            .findOne(String.valueOf(batchOperationKey))
-            .get();
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
 
     assumeThat(batchOperation).isNotNull();
     assumeThat(batchOperation.operationsTotalCount()).isEqualTo(3);
@@ -600,7 +553,7 @@ class RdbmsExporterBatchOperationsIT {
 
   private List<BatchOperationItemEntity> getItems(final long batchOperationKey) {
     return rdbmsService
-        .getBatchOperationItemReader("default")
+        .getBatchOperationItemReader()
         .search(
             SearchQueryBuilders.batchOperationItemQuery(
                 q -> q.filter(f -> f.batchOperationKeys(Long.toString(batchOperationKey)))))

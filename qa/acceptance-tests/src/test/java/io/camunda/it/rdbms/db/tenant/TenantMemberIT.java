@@ -40,7 +40,7 @@ public class TenantMemberIT {
   public void shouldFindTenantMember(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final TenantMemberDbReader reader = rdbmsService.getTenantMemberReader("default");
+    final TenantMemberDbReader reader = rdbmsService.getTenantMemberReader();
 
     createAndSaveRandomTenants(rdbmsWriters, b -> b);
     final var tenant = createAndSaveTenant(rdbmsWriters, b -> b);

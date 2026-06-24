@@ -38,7 +38,7 @@ public class AgentInstanceIT {
     final var entity =
         testApplication
             .getRdbmsService()
-            .getAgentInstanceDbReader("default")
+            .getAgentInstanceDbReader()
             .getByKey(model.agentInstanceKey(), ResourceAccessChecks.disabled());
 
     assertThat(entity).isNotNull();
@@ -51,7 +51,7 @@ public class AgentInstanceIT {
     final var entity =
         testApplication
             .getRdbmsService()
-            .getAgentInstanceDbReader("default")
+            .getAgentInstanceDbReader()
             .getByKey(Long.MIN_VALUE, ResourceAccessChecks.disabled());
 
     assertThat(entity).isNull();
@@ -65,7 +65,7 @@ public class AgentInstanceIT {
     final var result =
         testApplication
             .getRdbmsService()
-            .getAgentInstanceDbReader("default")
+            .getAgentInstanceDbReader()
             .search(
                 new AgentInstanceQuery(
                     new AgentInstanceFilter.Builder().processDefinitionIds(processId).build(),
@@ -87,7 +87,7 @@ public class AgentInstanceIT {
     final var result =
         testApplication
             .getRdbmsService()
-            .getAgentInstanceDbReader("default")
+            .getAgentInstanceDbReader()
             .search(
                 new AgentInstanceQuery(
                     new AgentInstanceFilter.Builder().processDefinitionIds(processId).build(),

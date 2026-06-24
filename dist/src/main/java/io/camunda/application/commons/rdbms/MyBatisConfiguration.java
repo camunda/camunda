@@ -15,7 +15,6 @@ import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
-import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
@@ -146,18 +145,12 @@ public class MyBatisConfiguration {
     return factoryBean.getObject();
   }
 
-  // TODO: the next 3 mappers are the last remaining default-tenant-only mappers. They should be
+  // TODO: the next 2 mappers are the last remaining default-tenant-only mappers. They should be
   // refactored to support multi-tenancy, and then these beans can be removed.
   @Bean
   TableMetricsMapper tableMetricsMapper(
       final Map<String, RdbmsMapperBundle> allRdbmsMapperBundles) {
     return allRdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).tableMetricsMapper();
-  }
-
-  @Bean
-  ReplicationStatusMapper replicationStatusMapper(
-      final Map<String, RdbmsMapperBundle> allRdbmsMapperBundles) {
-    return allRdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).replicationStatusMapper();
   }
 
   @Bean

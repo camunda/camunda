@@ -7,12 +7,14 @@
  */
 package io.camunda.it.rdbms.db.incident;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
@@ -38,7 +40,8 @@ import org.springframework.test.context.TestPropertySource;
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class IncidentSpecificFilterIT {
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
   private IncidentDbReader incidentDbReader;
 
@@ -46,8 +49,9 @@ public class IncidentSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
     rdbmsWriters = rdbmsService.createWriter(0L);
-    incidentDbReader = rdbmsService.getIncidentReader("default");
+    incidentDbReader = rdbmsService.getIncidentReader();
   }
 
   @ParameterizedTest

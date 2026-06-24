@@ -91,7 +91,7 @@ public class JobMetricsBatchIT {
   void setUp() {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    jobMetricsBatchReader = rdbmsService.getJobMetricsBatchDbReader("default");
+    jobMetricsBatchReader = rdbmsService.getJobMetricsBatchDbReader();
     jobMetricsBatchWriter = rdbmsWriters.getJobMetricsBatchWriter();
   }
 

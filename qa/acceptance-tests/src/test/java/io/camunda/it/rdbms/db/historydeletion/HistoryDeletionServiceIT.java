@@ -38,9 +38,9 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     final var historyDeletionService =
         new HistoryDeletionService(
             writers,
-            rdbmsService.getHistoryDeletionDbReader("default"),
-            rdbmsService.getProcessInstanceReader("default"),
-            rdbmsService.getDecisionInstanceReader("default"),
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
             new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000),
             InstantSource.system());
 
@@ -84,9 +84,9 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     final var historyDeletionService =
         new HistoryDeletionService(
             writers,
-            rdbmsService.getHistoryDeletionDbReader("default"),
-            rdbmsService.getProcessInstanceReader("default"),
-            rdbmsService.getDecisionInstanceReader("default"),
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
             new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10),
             InstantSource.system());
 
@@ -129,9 +129,9 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     final var historyDeletionService =
         new HistoryDeletionService(
             writers,
-            rdbmsService.getHistoryDeletionDbReader("default"),
-            rdbmsService.getProcessInstanceReader("default"),
-            rdbmsService.getDecisionInstanceReader("default"),
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
             new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000),
             InstantSource.system());
 
@@ -166,16 +166,15 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     writers.flush();
 
     // pre-condition: lookup rows exist for the target
-    assertThat(rdbmsService.getVariableReader("default").findLookupVariableNames(targetPdKey))
+    assertThat(rdbmsService.getVariableReader().findLookupVariableNames(targetPdKey))
         .containsExactlyInAnyOrder(varNameA, varNameB);
 
     // when
     historyDeletionService.deleteHistory(0);
 
     // then: target lookup rows removed; control untouched
-    assertThat(rdbmsService.getVariableReader("default").findLookupVariableNames(targetPdKey))
-        .isEmpty();
-    assertThat(rdbmsService.getVariableReader("default").findLookupVariableNames(controlPdKey))
+    assertThat(rdbmsService.getVariableReader().findLookupVariableNames(targetPdKey)).isEmpty();
+    assertThat(rdbmsService.getVariableReader().findLookupVariableNames(controlPdKey))
         .containsExactly(controlVarName);
   }
 

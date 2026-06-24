@@ -54,7 +54,7 @@ public class AuditLogIT {
   public void shouldGetAuditLogById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
     createAndSaveAuditLog(rdbmsWriters, original);
@@ -70,7 +70,7 @@ public class AuditLogIT {
   public void shouldFindAuditLogByEntityType(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
     createAndSaveAuditLog(rdbmsWriters, original);
@@ -95,7 +95,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
     createAndSaveAuditLog(rdbmsWriters, original);
@@ -121,7 +121,7 @@ public class AuditLogIT {
   public void shouldFindAllAuditLogsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final Long processInstanceKey = nextKey();
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
@@ -144,7 +144,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final Long processInstanceKey = nextKey();
     createAndSaveRandomAuditLogs(rdbmsWriters, 120, b -> b.processInstanceKey(processInstanceKey));
@@ -167,7 +167,7 @@ public class AuditLogIT {
   public void shouldFindAuditLogWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
     createAndSaveAuditLog(rdbmsWriters, original);
@@ -202,7 +202,7 @@ public class AuditLogIT {
   public void shouldFindAuditLogWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processInstanceKey = nextKey();
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
@@ -241,7 +241,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     // Create audit logs with different categories
     final var adminLog =
@@ -282,7 +282,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
@@ -328,7 +328,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
@@ -381,7 +381,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
@@ -433,7 +433,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
@@ -483,7 +483,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
@@ -544,7 +544,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     // Create audit logs
     AuditLogFixtures.createAndSaveAuditLog(
@@ -573,7 +573,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final Long processInstanceKey = nextKey();
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
@@ -593,7 +593,7 @@ public class AuditLogIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
@@ -661,7 +661,7 @@ public class AuditLogIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
 
     final var processDefinitionKey1 = nextKey();
@@ -710,7 +710,7 @@ public class AuditLogIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
 
     final var processInstanceKey1 = nextKey();
@@ -750,7 +750,7 @@ public class AuditLogIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
 
     final var processInstanceKey1 = nextKey();
@@ -818,7 +818,7 @@ public class AuditLogIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
 
     final var processInstanceKey1 = nextKey();
@@ -861,7 +861,7 @@ public class AuditLogIT {
 
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey1));
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey2));
@@ -901,7 +901,7 @@ public class AuditLogIT {
 
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionEvaluationKey(decisionInstanceKey1));
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionEvaluationKey(decisionInstanceKey2));
@@ -941,7 +941,7 @@ public class AuditLogIT {
 
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionRequirementsKey(decisionReqKey1));
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionRequirementsKey(decisionReqKey2));
@@ -978,7 +978,7 @@ public class AuditLogIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
     final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
 
     final var processInstanceKey = nextKey();

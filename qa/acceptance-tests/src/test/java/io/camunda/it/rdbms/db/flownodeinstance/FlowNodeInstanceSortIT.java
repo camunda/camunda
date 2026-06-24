@@ -161,7 +161,7 @@ public class FlowNodeInstanceSortIT {
       final Function<Builder, ObjectBuilder<FlowNodeInstanceSort>> sortBuilder,
       final Comparator<FlowNodeInstanceEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomFlowNodeInstances(

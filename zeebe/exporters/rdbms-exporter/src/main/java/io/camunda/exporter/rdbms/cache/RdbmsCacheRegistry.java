@@ -48,25 +48,24 @@ public final class RdbmsCacheRegistry {
   public RdbmsCacheRegistry(
       final ExporterConfiguration config,
       final RdbmsService rdbmsService,
-      final String physicalTenantId,
       final MeterRegistry meterRegistry) {
     processCache =
         createCache(
             config.getProcessCache().getMaxSize(),
             "process",
-            processLoader(rdbmsService, physicalTenantId, config.getExtensionProperties()),
+            processLoader(rdbmsService, config.getExtensionProperties()),
             meterRegistry);
     decisionRequirementsCache =
         createCache(
             config.getDecisionRequirementsCache().getMaxSize(),
             "decisionRequirements",
-            decisionRequirementsLoader(rdbmsService, physicalTenantId),
+            decisionRequirementsLoader(rdbmsService),
             meterRegistry);
     batchOperationCache =
         createCache(
             config.getBatchOperationCache().getMaxSize(),
             "batchOperation",
-            batchOperationLoader(rdbmsService, physicalTenantId),
+            batchOperationLoader(rdbmsService),
             meterRegistry);
   }
 
@@ -98,10 +97,8 @@ public final class RdbmsCacheRegistry {
 
   private BulkExporterEntityCacheLoader<Long, CachedProcessEntity> processLoader(
       final RdbmsService rdbmsService,
-      final String physicalTenantId,
       final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
-    final ProcessDefinitionDbReader reader =
-        rdbmsService.getProcessDefinitionReader(physicalTenantId);
+    final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader();
     return new RdbmsEntityCacheLoader<>(
         "Process",
         reader::findOne,
@@ -116,9 +113,8 @@ public final class RdbmsCacheRegistry {
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedDecisionRequirementsEntity>
-      decisionRequirementsLoader(final RdbmsService rdbmsService, final String physicalTenantId) {
-    final DecisionRequirementsDbReader reader =
-        rdbmsService.getDecisionRequirementsReader(physicalTenantId);
+      decisionRequirementsLoader(final RdbmsService rdbmsService) {
+    final DecisionRequirementsDbReader reader = rdbmsService.getDecisionRequirementsReader();
     return new RdbmsEntityCacheLoader<>(
         "DecisionRequirements",
         reader::findOne,
@@ -133,8 +129,8 @@ public final class RdbmsCacheRegistry {
   }
 
   private CacheLoader<String, CachedBatchOperationEntity> batchOperationLoader(
-      final RdbmsService rdbmsService, final String physicalTenantId) {
-    final BatchOperationDbReader reader = rdbmsService.getBatchOperationReader(physicalTenantId);
+      final RdbmsService rdbmsService) {
+    final BatchOperationDbReader reader = rdbmsService.getBatchOperationReader();
     return new RdbmsEntityCacheLoader<>(
         "BatchOperation",
         reader::findOne,

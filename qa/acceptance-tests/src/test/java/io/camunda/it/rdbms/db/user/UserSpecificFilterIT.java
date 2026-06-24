@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.user;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
@@ -15,6 +16,7 @@ import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
@@ -43,7 +45,8 @@ import org.springframework.test.context.TestPropertySource;
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class UserSpecificFilterIT {
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
   private UserDbReader userReader;
 
@@ -51,8 +54,9 @@ public class UserSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
     rdbmsWriters = rdbmsService.createWriter(0L);
-    userReader = rdbmsService.getUserReader("default");
+    userReader = rdbmsService.getUserReader();
   }
 
   @Test

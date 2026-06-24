@@ -39,8 +39,7 @@ public class WaitStateIT {
     rdbmsWriters.flush();
 
     // then
-    final var found =
-        rdbmsService.getWaitStateReader("default").findOne(model.waitStateKey()).orElse(null);
+    final var found = rdbmsService.getWaitStateReader().findOne(model.waitStateKey()).orElse(null);
     assertThat(found).isNotNull();
     assertThat(found.waitStateKey()).isEqualTo(model.waitStateKey());
     assertThat(found.rootProcessInstanceKey()).isEqualTo(model.rootProcessInstanceKey());
@@ -62,15 +61,14 @@ public class WaitStateIT {
     final var model = createRandomized(nextKey());
     rdbmsWriters.getWaitStateWriter().create(model);
     rdbmsWriters.flush();
-    assertThat(rdbmsService.getWaitStateReader("default").findOne(model.waitStateKey()))
-        .isPresent();
+    assertThat(rdbmsService.getWaitStateReader().findOne(model.waitStateKey())).isPresent();
 
     // when
     rdbmsWriters.getWaitStateWriter().delete(model.waitStateKey());
     rdbmsWriters.flush();
 
     // then
-    assertThat(rdbmsService.getWaitStateReader("default").findOne(model.waitStateKey())).isEmpty();
+    assertThat(rdbmsService.getWaitStateReader().findOne(model.waitStateKey())).isEmpty();
   }
 
   private static WaitStateDbModel createRandomized(final long waitStateKey) {

@@ -72,7 +72,7 @@ public class GroupSortIT {
       final Function<Builder, ObjectBuilder<GroupSort>> sortBuilder,
       final Comparator<GroupEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final GroupDbReader reader = rdbmsService.getGroupReader("default");
+    final GroupDbReader reader = rdbmsService.getGroupReader();
 
     final var name = nextStringId();
     createAndSaveRandomGroups(rdbmsWriters, b -> b.name(name));

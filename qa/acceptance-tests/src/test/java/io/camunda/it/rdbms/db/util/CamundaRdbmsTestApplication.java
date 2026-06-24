@@ -7,9 +7,12 @@
  */
 package io.camunda.it.rdbms.db.util;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -134,7 +137,7 @@ public final class CamundaRdbmsTestApplication
     if (!isStarted()) {
       throw new IllegalStateException("Application is not started");
     }
-    return super.bean(RdbmsService.class);
+    return super.bean(RdbmsServiceFactory.class).createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private void setSecondaryStorageToRdbms() {
