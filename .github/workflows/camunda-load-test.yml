@@ -247,6 +247,7 @@ jobs:
           |-------|-------|
           | Name | `${{ inputs.name }}` |
           | Ref | `${{ inputs.ref }}` |
+          | Target version | `${{ inputs.target-version }}` |
           | Scenario | `${{ inputs.scenario }}` |
           | Secondary storage | `${{ inputs.secondary-storage-type }}` |
           | Reuse tag | ${{ inputs.reuse-tag || '—' }} |
