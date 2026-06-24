@@ -233,7 +233,7 @@ public class FormStoreElasticSearch implements FormStore {
 
       final var searchRequest =
           new SearchRequest.Builder()
-              .index(taskTemplate.getFullQualifiedName())
+              .index(ElasticsearchUtil.whereToSearch(taskTemplate, QueryType.ALL))
               .query(tenantAwareQuery)
               .build();
 
