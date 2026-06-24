@@ -297,6 +297,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessInstanceKey())
           .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       ofNullable(filter.getElementInstanceKey())
           .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);

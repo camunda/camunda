@@ -20,12 +20,14 @@ import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.DecisionInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DecisionInstanceStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
@@ -103,6 +105,19 @@ public class DecisionInstanceFilterImpl
   @Override
   public DecisionInstanceFilter processInstanceKey(final long processInstanceKey) {
     filter.setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter businessId(final String businessId) {
+    return businessId(b -> b.eq(businessId));
+  }
+
+  @Override
+  public DecisionInstanceFilter businessId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBusinessId(provideSearchRequestProperty(property));
     return this;
   }
 

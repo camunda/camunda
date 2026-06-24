@@ -261,6 +261,13 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+        businessId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: >
+            The business ID of the owning process instance the decision instance belongs to. This
+            only works for decision instances created with 8.10 and onwards. Decision instances from
+            prior versions and standalone evaluations don't contain this data and cannot be found.
         decisionDefinitionKey:
           description: The key of the decision.
           allOf:
@@ -310,6 +317,8 @@ components:
           addedInVersion: "8.9"
         - propertyName: decisionRequirementsKey
           addedInVersion: "8.9"
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     DeleteDecisionInstanceRequest:
       type: object

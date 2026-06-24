@@ -8,7 +8,6 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
-import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceIsEnded;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
@@ -44,6 +43,7 @@ class DecisionInstanceSearchIT {
   private static final String DECISION_DEFINITION_ID_3 = "invoiceClassification";
   private static final String PROCESS_DEFINITION_ID = "myProcessWithDMN";
   private static final String ELEMENT_ID_DMN_CALL = "dmnCall";
+  private static final String BUSINESS_ID = "order-42";
 
   private static CamundaClient camundaClient;
   private static long processInstanceKey;
@@ -83,10 +83,13 @@ class DecisionInstanceSearchIT {
         "myProcessWithDMN.bpmn");
     processInstanceKey =
         // creates two decision instances
-        startProcessInstance(
-                camundaClient,
-                PROCESS_DEFINITION_ID,
-                "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .businessId(BUSINESS_ID)
+            .variables("{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
+            .execute()
             .getProcessInstanceKey();
 
     waitUntilProcessInstanceIsEnded(camundaClient, processInstanceKey);
@@ -521,6 +524,44 @@ class DecisionInstanceSearchIT {
         .containsExactlyInAnyOrder(
             tuple(processInstanceKey, processInstanceKey, DECISION_DEFINITION_ID_2),
             tuple(processInstanceKey, processInstanceKey, DECISION_DEFINITION_ID_3));
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByBusinessIdFilter(final CamundaClient camundaClient) {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.businessId(BUSINESS_ID))
+            .send()
+            .join();
+
+    // then - only the two in-process decision instances carry the owning instance's businessId;
+    // the standalone evaluations stay null
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("businessId", "processInstanceKey", "decisionDefinitionId")
+        .containsExactlyInAnyOrder(
+            tuple(BUSINESS_ID, processInstanceKey, DECISION_DEFINITION_ID_2),
+            tuple(BUSINESS_ID, processInstanceKey, DECISION_DEFINITION_ID_3));
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByBusinessIdLikeFilter(
+      final CamundaClient camundaClient) {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("businessId")
+        .containsExactlyInAnyOrder(BUSINESS_ID, BUSINESS_ID);
   }
 
   @Test
