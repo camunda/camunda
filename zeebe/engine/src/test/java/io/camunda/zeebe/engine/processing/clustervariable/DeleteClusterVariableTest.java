@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -252,5 +255,33 @@ public final class DeleteClusterVariableTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Invalid cluster variable name: 'KEY_5'. The variable does not exist in the scope 'GLOBAL'");
+  }
+
+  @Test
+  public void shouldCarryMetadataThroughDeleteEvent() {
+    // given
+    final var metadata = Map.<String, Object>of("type", "OAUTH2");
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_META_DELETE")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .withMetadata(metadata)
+        .create();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_META_DELETE")
+            .setGlobalScope()
+            .withMetadata(metadata)
+            .delete();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.DELETED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
   }
 }

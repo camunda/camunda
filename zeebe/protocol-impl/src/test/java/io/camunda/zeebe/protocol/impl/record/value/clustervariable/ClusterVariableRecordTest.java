@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 final class ClusterVariableRecordTest {
 
   @Test
-  void shouldRoundTripMetadataViaMsgPack() {
+  void shouldRoundTripFieldsViaMsgPack() {
     // given
     final Map<String, Object> metadata = Map.of("credentialType", "OAUTH2", "version", "1");
     final var original =
@@ -34,22 +34,32 @@ final class ClusterVariableRecordTest {
     copy.copyFrom(original);
 
     // then
+    assertThat(copy.getName()).isEqualTo(original.getName());
+    assertThat(copy.getScope()).isEqualTo(original.getScope());
+    assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
+    assertThat(copy.getValue()).isEqualTo(original.getValue());
     assertThat(copy.getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
   }
 
   @Test
-  void shouldDeserializeAsEmptyMapWhenMetadataFieldAbsent() {
-    // given — a record written without the metadata field (simulates old serialised records)
-    final var legacy = new ClusterVariableRecord();
-    legacy.setName("myVar");
-    legacy.setScope(ClusterVariableScope.GLOBAL);
-    legacy.setTenantId("<default>");
-    legacy.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"value\"")));
+  void shouldReturnEmptyMetadataIfNotSet() {
+    // given
+    final var original =
+        new ClusterVariableRecord()
+            .setName("myVar")
+            .setScope(ClusterVariableScope.GLOBAL)
+            .setTenantId("<default>")
+            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"value\"")));
 
+    // when
     final var copy = new ClusterVariableRecord();
-    copy.copyFrom(legacy);
+    copy.copyFrom(original);
 
     // then
+    assertThat(copy.getName()).isEqualTo(original.getName());
+    assertThat(copy.getScope()).isEqualTo(original.getScope());
+    assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
+    assertThat(copy.getValue()).isEqualTo(original.getValue());
     assertThat(copy.getMetadata()).isEmpty();
   }
 }

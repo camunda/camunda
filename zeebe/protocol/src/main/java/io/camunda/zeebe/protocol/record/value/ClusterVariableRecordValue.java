@@ -74,7 +74,7 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
    * <p>The engine stores, replicates, and exports the map as-is without validating its contents.
    * Records serialized without this field deserialize with an empty map.
    *
-   * @return an immutable metadata map (never {@code null}, may be empty)
+   * @return the metadata map (never {@code null}, may be empty)
    */
   Map<String, Object> getMetadata();
 }
