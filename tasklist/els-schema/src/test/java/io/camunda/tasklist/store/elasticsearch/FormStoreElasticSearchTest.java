@@ -11,6 +11,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -29,10 +31,13 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -96,6 +101,48 @@ class FormStoreElasticSearchTest {
         .isInstanceOf(TasklistRuntimeException.class)
         .hasMessage("some error")
         .hasCauseInstanceOf(IOException.class);
+  }
+
+  @Test
+  void getLinkedFormQueriesTaskAliasToIncludeArchivedIndices() throws IOException {
+    final String taskAlias = "task-alias";
+    when(taskTemplate.getAlias()).thenReturn(taskAlias);
+    when(tenantHelper.makeQueryTenantAware(any(), any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    final var taskTotalHits = mock(TotalHits.class);
+    when(taskTotalHits.value()).thenReturn(1L);
+    final var taskHit = mock(Hit.class);
+    when(taskHit.source()).thenReturn(Map.of(TaskTemplate.TENANT_ID, "tenant1"));
+    final var taskHitsMetadata = mock(HitsMetadata.class);
+    when(taskHitsMetadata.total()).thenReturn(taskTotalHits);
+    when(taskHitsMetadata.hits()).thenReturn(List.of(taskHit));
+    final var taskSearchResponse = mock(SearchResponse.class);
+    when(taskSearchResponse.hits()).thenReturn(taskHitsMetadata);
+
+    final Map<String, Object> formSource = new HashMap<>();
+    formSource.put(FormIndex.BPMN_ID, "formBpmnId");
+    formSource.put(FormIndex.VERSION, 1);
+    formSource.put(FormIndex.EMBEDDED, false);
+    formSource.put(FormIndex.SCHEMA, "{}");
+    formSource.put(FormIndex.TENANT_ID, "tenant1");
+    formSource.put(FormIndex.IS_DELETED, false);
+    final var formHit = mock(Hit.class);
+    when(formHit.source()).thenReturn(formSource);
+    final var formHitsMetadata = mock(HitsMetadata.class);
+    when(formHitsMetadata.hits()).thenReturn(List.of(formHit));
+    final var formSearchResponse = mock(SearchResponse.class);
+    when(formSearchResponse.hits()).thenReturn(formHitsMetadata);
+
+    when(esClient.search(any(SearchRequest.class), any(Class.class)))
+        .thenReturn(taskSearchResponse)
+        .thenReturn(formSearchResponse);
+
+    instance.getForm("formId", "procDefId", 1L);
+
+    final var captor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(esClient, times(2)).search(captor.capture(), any(Class.class));
+    assertThat(captor.getAllValues().getFirst().index()).asList().contains(taskAlias);
   }
 
   @Test
