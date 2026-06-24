@@ -128,6 +128,7 @@ jobs:
           secrets: |
             secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+            secret/data/products/qa/ci/common GH_TOKEN | GH_TOKEN_PAT ;
 
       - name: Generate GitHub App Token
         id: github-token
@@ -172,7 +173,13 @@ jobs:
         env:
           GOPRIVATE: github.com/camunda/*
           GOTOOLCHAIN: auto
+          GH_TOKEN_PAT: ${{ steps.secrets.outputs.GH_TOKEN_PAT }}
         run: |
+          # workspace-cli is a private repo; the qa-processes app token doesn't have access.
+          # Add a more-specific insteadOf for workspace-cli that uses the Vault PAT.
+          # Git selects the longest-matching insteadOf, so this wins over the global
+          # qa-processes rewrite set in "Configure git with bot PAT".
+          git config --global url."https://x-access-token:${GH_TOKEN_PAT}@github.com/camunda/workspace-cli".insteadOf "https://github.com/camunda/workspace-cli"
           go install github.com/camunda/workspace-cli/cmd/workspace@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
