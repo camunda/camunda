@@ -115,12 +115,15 @@ final class GroupReconciliationTest {
     final var rebalanceTimeout = Duration.ofMinutes(5);
 
     // then — not evicted while its last heartbeat is within the session timeout
-    assertThat(reconciliation.membersToEvict(group, NOW, sessionTimeout, rebalanceTimeout))
+    assertThat(
+            reconciliation.liveness().membersToEvict(group, NOW, sessionTimeout, rebalanceTimeout))
         .isEmpty();
     // and evicted once its last heartbeat falls before the deadline (now - sessionTimeout)
     assertThat(
-            reconciliation.membersToEvict(
-                group, NOW.plus(Duration.ofSeconds(10)), sessionTimeout, rebalanceTimeout))
+            reconciliation
+                .liveness()
+                .membersToEvict(
+                    group, NOW.plus(Duration.ofSeconds(10)), sessionTimeout, rebalanceTimeout))
         .containsExactly("m1");
   }
 

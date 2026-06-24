@@ -10,10 +10,9 @@ package io.camunda.eventbridge.consumergroups.membership;
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +51,9 @@ final class GroupReconciliation {
       final List<Integer> owned,
       final Instant now) {
     observeTarget(group, now);
+    // Drop sessions for members no longer in the roster (left/evicted) so liveness stays bounded to
+    // the current group; the member being reconciled is always in the roster (validated upstream).
+    sessions.keySet().retainAll(group.members().keySet());
 
     final var member = group.members().get(memberId);
     final var session = sessionFor(memberId, now);
@@ -74,47 +76,19 @@ final class GroupReconciliation {
   }
 
   /**
-   * The members to evict on this tick: those whose session has lapsed (no heartbeat within {@code
-   * sessionTimeout}), plus — when a rebalance has stalled past {@code rebalanceTimeout} — those
-   * that never confirmed the current target. The coordinator writes a {@code LEAVE_GROUP} for each.
+   * An immutable snapshot of this group's liveness for the {@link MemberLivenessMirror} — each
+   * member's last heartbeat and confirmed epoch, plus the rebalance start. Published by the
+   * heartbeat handler after each reconcile and read off-actor by the eviction task.
    */
-  List<String> membersToEvict(
-      final GroupSnapshot group,
-      final Instant now,
-      final Duration sessionTimeout,
-      final Duration rebalanceTimeout) {
-    final var deadline = now.minus(sessionTimeout);
-    final var evict = new LinkedHashSet<String>();
-
+  GroupLiveness liveness() {
+    final var members = new HashMap<String, GroupLiveness.MemberLiveness>();
     sessions.forEach(
-        (memberId, session) -> {
-          if (session.isExpired(deadline)) {
-            evict.add(memberId);
-          }
-        });
-
-    if (isRebalancing(group) && rebalanceStalled(now, rebalanceTimeout)) {
-      group
-          .members()
-          .keySet()
-          .forEach(
-              memberId -> {
-                final var session = sessions.get(memberId);
-                if (session == null || session.confirmedEpoch() != group.assignmentEpoch()) {
-                  evict.add(memberId);
-                }
-              });
-    }
-    return List.copyOf(evict);
-  }
-
-  void removeSession(final String memberId) {
-    sessions.remove(memberId);
-  }
-
-  private boolean rebalanceStalled(final Instant now, final Duration timeout) {
-    return rebalanceStartedAt != null
-        && Duration.between(rebalanceStartedAt, now).compareTo(timeout) > 0;
+        (memberId, session) ->
+            members.put(
+                memberId,
+                new GroupLiveness.MemberLiveness(
+                    session.lastHeartbeat(), session.confirmedEpoch())));
+    return new GroupLiveness(rebalanceStartedAt, members);
   }
 
   /** Seeds a session as already-converged to its current target (used on leader activation). */

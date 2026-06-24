@@ -8,12 +8,14 @@
 package io.camunda.eventbridge.consumergroups.stream;
 
 import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
+import io.camunda.eventbridge.consumergroups.membership.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
 import io.camunda.eventbridge.consumergroups.processing.JoinGroupProcessor;
 import io.camunda.eventbridge.consumergroups.processing.LeaveGroupProcessor;
 import io.camunda.eventbridge.consumergroups.processing.OffsetCommitProcessor;
 import io.camunda.eventbridge.consumergroups.processing.RebalanceAssignorTask;
 import io.camunda.eventbridge.consumergroups.processing.RebalanceProcessor;
+import io.camunda.eventbridge.consumergroups.processing.SessionEvictionTask;
 import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.EventBridgeRecordValues;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
@@ -56,8 +58,16 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
    */
   private static final Duration ASSIGNOR_INTERVAL = Duration.ofSeconds(1);
 
+  // Session-eviction sweep cadence and the liveness windows it enforces: the heartbeat session
+  // timeout, and the longest a rebalance may stall before non-converged members are evicted.
+  private static final Duration EVICTION_INTERVAL = Duration.ofSeconds(1);
+  private static final Duration SESSION_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration REBALANCE_TIMEOUT = Duration.ofSeconds(30);
+
+  private final InstantSource clock;
   private DbOffsetState offsetState;
   private DbConsumerGroupState groupState;
+  private MemberLivenessMirror liveness;
 
   /**
    * @param zeebeDb the state DB, recovered/owned by the {@link
@@ -71,6 +81,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
       final InstantSource clock,
       final MeterRegistry meterRegistry) {
     super(partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
+    this.clock = clock;
   }
 
   @Override
@@ -91,6 +102,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
     // access yet), so a replica recovered from a snapshot exposes its state even before any replay.
     offsetState.seedMirror();
     groupState.seedMirror();
+    liveness = new MemberLivenessMirror();
   }
 
   @Override
@@ -124,7 +136,15 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     CoordinatorIntent.GROUP_REBALANCED, new GroupRebalancedApplier(groupState))
                 .withListener(
                     new RebalanceAssignorTask(
-                        ASSIGNOR_INTERVAL, groupState, new BalancedStickyAssignor())));
+                        ASSIGNOR_INTERVAL, groupState, new BalancedStickyAssignor()))
+                .withListener(
+                    new SessionEvictionTask(
+                        EVICTION_INTERVAL,
+                        SESSION_TIMEOUT,
+                        REBALANCE_TIMEOUT,
+                        groupState,
+                        liveness,
+                        clock)));
   }
 
   /**
@@ -149,12 +169,23 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
 
   /**
    * Writes a {@code LEAVE_GROUP} command; the returned future completes with the encoded {@code
-   * LeaveGroupResponse} after the command commits. Also used (future ignored) when the coordinator
-   * evicts a timed-out member. Leader only.
+   * LeaveGroupResponse} after the command commits. Eviction of timed-out members goes through the
+   * {@link SessionEvictionTask} instead, which appends {@code LEAVE_GROUP} on the processing path.
+   * Leader only.
    */
   public CompletableFuture<byte[]> leaveGroup(final MembershipRecord command) {
     return writeRequest(
         CoordinatorIntent.LEAVE_GROUP, EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE, command);
+  }
+
+  /**
+   * The shared ephemeral member-liveness mirror: the coordinator's heartbeat handler publishes per
+   * group, the off-actor {@link SessionEvictionTask} reads it to expire dead sessions. Created at
+   * startup so both — the task (built with the record processor) and the coordinator (built on
+   * leader activation) — share one instance.
+   */
+  public MemberLivenessMirror liveness() {
+    return liveness;
   }
 
   /** A thread-safe snapshot of a group's replicated membership/assignment, or {@code null}. */

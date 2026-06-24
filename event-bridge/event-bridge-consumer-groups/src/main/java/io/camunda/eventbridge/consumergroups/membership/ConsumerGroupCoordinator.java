@@ -14,7 +14,6 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
-import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -25,7 +24,6 @@ import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
-import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -42,27 +40,21 @@ import org.slf4j.LoggerFactory;
  * {@code LEAVE_GROUP} are written as commands and validated in their processors, so this manager
  * only turns a request into a command and bridges the committed reply. Heartbeats stay
  * request/response — they read the durable target from the thread-safe mirror and run the
- * assign/revoke handshake in memory ({@link GroupReconciliation}), writing no log entry. Session
- * liveness is an in-memory timer; an expired session is evicted by writing a {@code LEAVE_GROUP}.
+ * assign/revoke handshake in memory ({@link GroupReconciliation}), writing no log entry. After each
+ * heartbeat it publishes the group's liveness to the {@link MemberLivenessMirror}; the off-actor
+ * {@code SessionEvictionTask} reads that to expire dead sessions (writing a {@code LEAVE_GROUP}),
+ * so this manager no longer runs an eviction timer itself.
  */
 public class ConsumerGroupCoordinator extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConsumerGroupCoordinator.class);
 
-  // Eviction LEAVE_GROUP write: retry a few times if the write itself fails (e.g. leadership lost
-  // mid-append) before giving up; a still-present member is re-detected on a later tick.
-  private static final int EVICTION_ATTEMPTS = 3;
-  private static final Duration EVICTION_RETRY_DELAY = Duration.ofMillis(200);
-
   private final int partitionId;
   private final int partitionCount;
   private final InstantSource clock;
   private final CoordinatorStream coordinatorStream;
+  private final MemberLivenessMirror liveness;
   private final SnowflakeIdGenerator idGenerator;
-
-  private final Duration heartbeatTimeout = Duration.ofSeconds(10);
-  private final Duration heartbeatCheckInterval = Duration.ofSeconds(1);
-  private final Duration rebalanceTimeout = Duration.ofSeconds(30);
 
   // Ephemeral reconciliation handshake per group (rebuilt from heartbeats after failover).
   private final Map<String, GroupReconciliation> reconciliations = new ConcurrentHashMap<>();
@@ -76,6 +68,7 @@ public class ConsumerGroupCoordinator extends Actor {
     this.partitionCount = partitionCount;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
+    liveness = coordinatorStream.liveness();
     idGenerator = new SnowflakeIdGenerator(1L);
   }
 
@@ -88,9 +81,17 @@ public class ConsumerGroupCoordinator extends Actor {
   protected void onActorStarted() {
     // The durable membership/target was replayed into the stream's state (and mirror) before this
     // manager started, so seed reconciliation sessions from it: re-attaching consumers get fresh
-    // deadlines and are treated as already at their target (no rejoin storm after a failover).
+    // deadlines and are treated as already at their target (no rejoin storm after a failover). The
+    // eviction sweep runs as a separate task on the stream's async group; this manager only keeps
+    // the liveness mirror it reads up to date.
     seedReconciliations();
-    scheduleConsumerEviction();
+  }
+
+  @Override
+  protected void onActorClosing() {
+    // Leadership is being given up — abandon the ephemeral liveness so the eviction task (also
+    // stopping) cannot act on stale sessions; a new leader reseeds it from replicated state.
+    liveness.clear();
   }
 
   /** Writes a {@code JOIN_GROUP} command and bridges the committed {@code JoinGroupResponse}. */
@@ -179,6 +180,10 @@ public class ConsumerGroupCoordinator extends Actor {
         reconciliations.computeIfAbsent(groupId, ignored -> new GroupReconciliation());
     final var delta =
         reconciliation.reconcile(group, memberId, request.getOwnedPartitions(), clock.instant());
+    // Publish the refreshed liveness for the off-actor eviction task, and drop reconciliations for
+    // groups that have since disappeared (their last member left).
+    liveness.publish(groupId, reconciliation.liveness());
+    pruneReconciliations();
 
     return new HeartbeatResponse()
         .setErrorCode(reconciliation.isRebalancing(group) ? REBALANCE_IN_PROGRESS : NONE)
@@ -201,81 +206,6 @@ public class ConsumerGroupCoordinator extends Actor {
     return NONE;
   }
 
-  private void scheduleConsumerEviction() {
-    actor.schedule(heartbeatCheckInterval, this::evictExpiredSessions);
-  }
-
-  private void evictExpiredSessions() {
-    final var now = clock.instant();
-    for (final var group : coordinatorStream.groupSnapshots()) {
-      final var reconciliation = reconciliations.get(group.groupId());
-      if (reconciliation == null) {
-        continue;
-      }
-      reconciliation
-          .membersToEvict(group, now, heartbeatTimeout, rebalanceTimeout)
-          .forEach(memberId -> evict(group, memberId));
-    }
-    pruneReconciliations();
-    scheduleConsumerEviction();
-  }
-
-  private void evict(final GroupSnapshot group, final String memberId) {
-    final var member = group.members().get(memberId);
-    final var reconciliation = reconciliations.get(group.groupId());
-    if (reconciliation != null) {
-      // Stop tracking the session now so the next tick does not re-detect this member while its
-      // LEAVE_GROUP is still being written/retried.
-      reconciliation.removeSession(memberId);
-    }
-    if (member == null) {
-      return;
-    }
-    LOG.debug(
-        "Coordinator partition {} — evicting timed-out member {} from group {}",
-        partitionId,
-        memberId,
-        group.groupId());
-    final var command =
-        new MembershipRecord()
-            .setGroupId(group.groupId())
-            .setMemberId(memberId)
-            .setMemberEpoch(member.memberEpoch());
-    leaveGroupWithRetry(command, EVICTION_ATTEMPTS);
-  }
-
-  /**
-   * Writes the eviction {@code LEAVE_GROUP}, retrying a few times if the write itself fails (e.g.
-   * leadership lost mid-append, a transient append error). A committed reply needs no retry — even
-   * a rejection ("already gone") means the member is no longer there. Best-effort: if every attempt
-   * fails the member stays put and is re-detected once its session lapses again (or after failover,
-   * when the new leader re-seeds sessions from replicated state).
-   */
-  private void leaveGroupWithRetry(final MembershipRecord command, final int attemptsLeft) {
-    coordinatorStream
-        .leaveGroup(command)
-        .whenComplete(
-            (reply, error) -> {
-              if (error == null) {
-                return; // committed (member left, or already gone) — nothing more to do
-              }
-              actor.run(
-                  () -> {
-                    if (attemptsLeft <= 1) {
-                      LOG.warn(
-                          "Coordinator partition {} — gave up evicting member {} from group {}",
-                          partitionId,
-                          command.getMemberId(),
-                          command.getGroupId(),
-                          error);
-                      return;
-                    }
-                    actor.schedule(
-                        EVICTION_RETRY_DELAY, () -> leaveGroupWithRetry(command, attemptsLeft - 1));
-                  });
-            });
-  }
-
   private void seedReconciliations() {
     final var now = clock.instant();
     final var groups = coordinatorStream.groupSnapshots();
@@ -286,6 +216,7 @@ public class ConsumerGroupCoordinator extends Actor {
           .members()
           .values()
           .forEach(member -> reconciliation.seedSession(member, group.assignmentEpoch(), now));
+      liveness.publish(group.groupId(), reconciliation.liveness());
     }
     if (!groups.isEmpty()) {
       LOG.info(
