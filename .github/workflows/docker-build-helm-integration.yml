@@ -661,6 +661,17 @@ jobs:
         if: failure()
         with:
           node-version: "20"
+      - name: Import Slack token
+        id: slack-secrets
+        if: failure()
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
       - name: Generate GitHub App Token
         id: app-token
         if: failure()
@@ -688,8 +699,10 @@ jobs:
           status: failure
           evidence: "Helm chart Integration Tests failed."
           pr: ${{ github.event.merge_group.head_ref || github.event.pull_request.number }}
-          # TODO: set to the AlwaysGreen Slack channel id + import SLACK_CORE_DOMAIN_BOT_TOKEN to enable Slack
-          slack_channel: ""
+          # Existing AlwaysGreen alerting channel (#alwaysgreen-reliability), same
+          # as alwaysgreen-streak-detector.yml.
+          slack_channel: "C0AK0AVKRL0"
+          slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
       - name: Observe build status
         if: always()
