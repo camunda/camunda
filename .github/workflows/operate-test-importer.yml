@@ -1,0 +1,66 @@
+name: "Operate / [IT] Import"
+on:
+  push:
+    branches:
+      - "stable/**"
+    paths:
+      - '.github/workflows/operate-*'
+      - 'operate/**'
+  pull_request:
+    paths:
+      - '.github/workflows/operate-*'
+      - "operate/**"
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+permissions:
+  contents: read
+
+jobs:
+  run-importer-tests:
+    name: Operate importer integration tests (${{ matrix.group.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - name: process-instance
+            include: "**/ProcessInstanceZeebeImportIT.java"
+          - name: retry-basic
+            include: "**/RetryAfterFailureZeebeImportIT.java,**/BasicZeebeImportIT.java"
+          - name: metrics-flownode
+            include: "**/ImporterMetricsZeebeImportIT.java,**/ImporterMetricsMockedZeebeImportIT.java,**/FlowNodeInstanceZeebeImportIT.java,**/ErrorMessagesZeebeImportIT.java,**/ImportWithMissedDataZeebeImportIT.java,**/DecisionZeebeImportIT.java,**/DMNFlowNodeMetadataZeebeImportIT.java"
+          - name: misc
+            include: "**/IdempotencyZeebeImportIT.java,**/ImportFieldsZeebeImportIT.java,**/ImportMidnightZeebeImportIT.java,**/ImportMultitenancyDisabledZeebeImportIT.java,**/ImportMultitenancyZeebeImportIT.java,**/ImportSeveralVersionsZeebeImportIT.java,**/IncidentPostImportZeebeImportIT.java,**/ManualTaskZeebeImportIT.java,**/MessageEndEventZeebeImportIT.java,**/MigratedIncidentZeebeImportIT.java,**/MultiProcessZeebeImportIT.java,**/ProcessCacheZeebeImportIT.java,**/ProcessZeebeImportIT.java,**/UserTaskZeebeImportIT.java"
+    uses: ./.github/workflows/operate-run-tests.yml
+    with:
+      command: >-
+        ./mvnw -pl operate/qa/integration-tests verify
+        -P skipFrontendBuild,operateItImport -B
+        -Dfailsafe.rerunFailingTestsCount=1
+        -DincludeITNames="${{ matrix.group.include }}"
+    secrets: inherit
+  run-zeebe-integration-tests:
+    name: Operate zeebe integration tests (${{ matrix.group.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - name: operation
+            include: "**/OperationZeebeIT.java"
+          - name: modify
+            include: "**/ModifyProcessInstanceOperationZeebeIT.java"
+          - name: archiver
+            include: "**/ArchiverZeebeIT.java,**/OneNodeArchiverZeebeIT.java,**/DeleteProcessInstanceOperationZeebeIT.java"
+          - name: misc
+            include: "**/CallActivityIncidentZeebeIT.java,**/FlowNodeStatisticsZeebeIT.java,**/BatchOperationWriterZeebeIT.java,**/MigrateProcessInstanceOperationZeebeIT.java,**/OperationFailureZeebeIT.java"
+    uses: ./.github/workflows/operate-run-tests.yml
+    with:
+      command: >-
+        ./mvnw -pl operate/qa/integration-tests verify
+        -P skipFrontendBuild,operateItZeebe -B
+        -Dfailsafe.rerunFailingTestsCount=1
+        -DincludeITNames="${{ matrix.group.include }}"
+    secrets: inherit
