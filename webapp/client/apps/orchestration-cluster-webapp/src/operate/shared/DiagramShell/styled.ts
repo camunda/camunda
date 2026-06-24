@@ -24,6 +24,7 @@ const Container = styled.div`
 const LoadingContainer = styled.div`
 	position: absolute;
 	inset: 0;
+	z-index: 11;
 	display: flex;
 	align-items: center;
 	justify-content: center;
