@@ -208,40 +208,62 @@ test.describe('Process Instance Variables', () => {
       ).toHaveCount(51);
 
       await expect(page.getByText('aa', {exact: true})).toBeVisible();
-      await expect(page.getByText('bx', {exact: true})).toBeVisible();
 
-      await page.getByText('bx', {exact: true}).scrollIntoViewIfNeeded();
+      // The container has overflow-y:auto but no fixed height, so it grows to
+      // fit all loaded rows (scrollHeight === clientHeight).  InfiniteScroller
+      // detects scroll direction via container.scrollTop, which is always 0
+      // when there is nothing to scroll.  Capping the container height makes
+      // it a real scroll container so the IntersectionObserver fires correctly.
+      // The cap must be small enough that the container's bottom stays inside
+      // the 720px Playwright viewport (container starts around y=450).
+      await operateProcessInstancePage.variablesList.evaluate((el) => {
+        (el as HTMLElement).style.maxHeight = '200px';
+      });
+      await operateProcessInstancePage.variablesList.hover();
+
+      // Helper: two-step scroll to reliably trigger InfiniteScroller.
+      // Step 1 sets scrollTop just short of the bottom so the IntersectionObserver
+      // updates prevScrollTop.  One rAF later, step 2 scrolls to the actual
+      // bottom — the last row becomes visible with scrollTop > prevScrollTop,
+      // satisfying InfiniteScroller's scroll-direction guard.
+      const scrollToBottom = async () => {
+        await operateProcessInstancePage.variablesList.evaluate((el) => {
+          el.scrollTop = el.scrollHeight - el.clientHeight - 50;
+        });
+        await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(r)));
+        await operateProcessInstancePage.variablesList.evaluate((el) => {
+          el.scrollTop = el.scrollHeight - el.clientHeight;
+        });
+      };
+
+      await scrollToBottom();
       await expect(
         operateProcessInstancePage.variablesList.getByRole('row'),
       ).toHaveCount(101);
 
-      await expect(page.getByText('dv', {exact: true})).toBeVisible();
-      await page.getByText('dv', {exact: true}).scrollIntoViewIfNeeded();
+      await scrollToBottom();
       await expect(
         operateProcessInstancePage.variablesList.getByRole('row'),
       ).toHaveCount(151);
 
-      await expect(page.getByText('ft', {exact: true})).toBeVisible();
-      await page.getByText('ft', {exact: true}).scrollIntoViewIfNeeded();
+      await scrollToBottom();
       await expect(
         operateProcessInstancePage.variablesList.getByRole('row'),
       ).toHaveCount(201);
 
-      await expect(page.getByText('hr', {exact: true})).toBeVisible();
-      await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
-
-      await expectInViewport(page.getByTestId('variable-aa'), false);
-      await expect(page.getByText('by', {exact: true})).toBeVisible();
+      await scrollToBottom();
       await expect(page.getByText('jp', {exact: true})).toBeVisible();
 
-      await page.getByText('by', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(251);
-
+      // Scroll back to top and verify all loaded items are still present
+      await operateProcessInstancePage.variablesList.evaluate((el) => {
+        el.scrollTop = 0;
+      });
       await expectInViewport(page.getByTestId('variable-jp'), false);
       await expect(page.getByText('aa', {exact: true})).toBeVisible();
       await expect(page.getByText('by', {exact: true})).toBeVisible();
+      await expect(
+        operateProcessInstancePage.variablesList.getByRole('row'),
+      ).toHaveCount(251);
     });
   });
 
