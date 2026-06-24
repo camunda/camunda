@@ -9,11 +9,15 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.errorhandling.Error;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -23,6 +27,9 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.exporter.common.waitstate.transformers.WaitStateTransformerRegistry;
@@ -364,6 +371,82 @@ public class DefaultExporterResourceProviderTest {
                 .isEqualTo(expectedValueType);
           }
         });
+  }
+
+  @Test
+  void shouldRecreateStateAfterResetAndInit() {
+    // given
+    final var resourceProvider = initializedProvider(mock(ExporterEntityCacheProvider.class));
+    final var processCache = resourceProvider.getProcessCache();
+    final var decisionRequirementsCache = resourceProvider.getDecisionRequirementsCache();
+    final var formCache = resourceProvider.getFormCache();
+    final var processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
+
+    // when
+    resourceProvider.reset();
+    final var processCacheAfterReset = resourceProvider.getProcessCache();
+    final var decisionRequirementsCacheAfterReset = resourceProvider.getDecisionRequirementsCache();
+    final var formCacheAfterReset = resourceProvider.getFormCache();
+    initProvider(resourceProvider, mock(ExporterEntityCacheProvider.class));
+
+    // then
+    assertThat(processCacheAfterReset).isNull();
+    assertThat(decisionRequirementsCacheAfterReset).isNull();
+    assertThat(formCacheAfterReset).isNull();
+    assertThat(resourceProvider.getProcessCache()).isNotSameAs(processCache);
+    assertThat(resourceProvider.getDecisionRequirementsCache())
+        .isNotSameAs(decisionRequirementsCache);
+    assertThat(resourceProvider.getFormCache()).isNotSameAs(formCache);
+    assertThat(resourceProvider.getIndexDescriptor(ProcessIndex.class))
+        .isNotSameAs(processIndex)
+        .extracting(IndexDescriptor::getFullQualifiedName)
+        .isEqualTo(processIndex.getFullQualifiedName());
+    assertThat(resourceProvider.getExportHandlers()).isNotEmpty();
+  }
+
+  @Test
+  void shouldIgnoreMissingDocumentErrorsOnlyForOperationIndex() {
+    // given
+    final var resourceProvider = initializedProvider(mock(ExporterEntityCacheProvider.class));
+    final var operationIndex =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class).getFullQualifiedName();
+    final var formIndex =
+        resourceProvider.getIndexDescriptor(FormIndex.class).getFullQualifiedName();
+    final var customErrorHandlers = resourceProvider.getCustomErrorHandlers();
+    final var missingDocument = new Error("missing", "document_missing_exception", 404);
+    final var versionConflict = new Error("conflict", "version_conflict_engine_exception", 409);
+
+    // when
+    final var missingOperationError =
+        catchThrowable(() -> customErrorHandlers.accept(operationIndex, missingDocument));
+
+    // then
+    assertThat(missingOperationError).isNull();
+    assertThatThrownBy(() -> customErrorHandlers.accept(formIndex, missingDocument))
+        .isInstanceOf(PersistenceException.class)
+        .hasMessage("missing");
+    assertThatThrownBy(() -> customErrorHandlers.accept(operationIndex, versionConflict))
+        .isInstanceOf(PersistenceException.class)
+        .hasMessage("conflict");
+  }
+
+  private DefaultExporterResourceProvider initializedProvider(
+      final ExporterEntityCacheProvider cacheProvider) {
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    initProvider(resourceProvider, cacheProvider);
+    return resourceProvider;
+  }
+
+  private void initProvider(
+      final DefaultExporterResourceProvider resourceProvider,
+      final ExporterEntityCacheProvider cacheProvider) {
+    final var objectMapper = TestObjectMapper.objectMapper();
+    resourceProvider.init(
+        new ExporterConfiguration(),
+        cacheProvider,
+        new ExporterTestContext(),
+        new ExporterMetadata(objectMapper),
+        objectMapper);
   }
 
   /**
