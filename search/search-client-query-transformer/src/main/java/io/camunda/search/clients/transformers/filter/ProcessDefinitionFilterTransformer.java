@@ -11,11 +11,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.bool;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.FORM_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.IS_DELETED;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_NAME;
@@ -51,6 +54,7 @@ public class ProcessDefinitionFilterTransformer
     ofNullable(stringTerms(VERSION_TAG, filter.versionTags())).ifPresent(queries::add);
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getHasStartFormQuery(filter.hasStartForm())).ifPresent(queries::add);
+    queries.add(not(term(IS_DELETED, true)));
     return and(queries);
   }
 

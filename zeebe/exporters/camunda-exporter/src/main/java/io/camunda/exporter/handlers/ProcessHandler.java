@@ -50,7 +50,8 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   @Override
   public boolean handlesRecord(final Record<Process> record) {
-    return record.getIntent().equals(ProcessIntent.CREATED);
+    final var intent = record.getIntent();
+    return intent.equals(ProcessIntent.CREATED) || intent.equals(ProcessIntent.DELETED);
   }
 
   @Override
@@ -72,6 +73,14 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
         .setTenantId(ExporterUtil.tenantOrDefault(process.getTenantId()));
+
+    if (record.getIntent().equals(ProcessIntent.DELETED)) {
+      entity.setIsDeleted(true);
+      processCache.remove(process.getProcessDefinitionKey());
+      return;
+    }
+
+    entity.setIsDeleted(false);
     final byte[] byteArray = process.getResource();
 
     final String bpmn = new String(byteArray, StandardCharsets.UTF_8);

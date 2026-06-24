@@ -48,10 +48,20 @@ public class ProcessHandlerTest {
   }
 
   @Test
-  void shouldHandleRecord() {
+  void shouldHandleCreatedRecord() {
     // given
     final Record<Process> processRecord =
         factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(ProcessIntent.CREATED));
+
+    // when - then
+    assertThat(underTest.handlesRecord(processRecord)).isTrue();
+  }
+
+  @Test
+  void shouldHandleDeletedRecord() {
+    // given
+    final Record<Process> processRecord =
+        factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(ProcessIntent.DELETED));
 
     // when - then
     assertThat(underTest.handlesRecord(processRecord)).isTrue();
@@ -311,6 +321,72 @@ public class ProcessHandlerTest {
             CachedProcessEntity::versionTag,
             CachedProcessEntity::hasUserTasks)
         .containsExactly("testProcessName", "processTag", false);
+  }
+
+  @Test
+  void shouldMarkEntityAsDeletedAndEvictCacheOnDeletedRecord() throws IOException {
+    // given — first create the process so it's in the cache
+    final long expectedId = 123;
+    final var resource = getClass().getClassLoader().getResource("process/test-process.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> createRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+    final ProcessEntity createdEntity = new ProcessEntity();
+    underTest.updateEntity(createRecord, createdEntity);
+    assertThat(processCache.get(expectedId)).isPresent();
+
+    // when — process is deleted
+    final Record<Process> deleteRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.DELETED).withValue(processRecordValue));
+    final ProcessEntity deletedEntity = new ProcessEntity();
+    underTest.updateEntity(deleteRecord, deletedEntity);
+
+    // then
+    assertThat(deletedEntity.getIsDeleted()).isTrue();
+    assertThat(deletedEntity.getId()).isEqualTo(String.valueOf(expectedId));
+    assertThat(deletedEntity.getKey()).isEqualTo(expectedId);
+    assertThat(processCache.get(expectedId)).isEmpty();
+  }
+
+  @Test
+  void shouldMarkEntityAsNotDeletedOnCreatedRecord() throws IOException {
+    // given
+    final long expectedId = 456;
+    final var resource = getClass().getClassLoader().getResource("process/test-process.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processEntity.getIsDeleted()).isFalse();
   }
 
   @Test

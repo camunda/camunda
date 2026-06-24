@@ -56,6 +56,9 @@
       },
       "tenantId": {
         "type": "keyword"
+      },
+      "isDeleted": {
+        "type": "boolean"
       }
     }
   }
