@@ -8,6 +8,7 @@
 package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import java.util.List;
@@ -182,6 +183,44 @@ class PhysicalTenantScopeProviderTest {
     final var env = env(Map.of("camunda.security.authentication.method", "oidc"));
 
     assertThat(new PhysicalTenantScopeProvider(env).get()).isEmpty();
+  }
+
+  @Test
+  void shouldFailStartupWhenPhysicalTenantConfigCannotBeBuilt() {
+    // given — an invalid enum value for `method` under a PT overlay causes Binder to throw
+    final var env =
+        env(
+            Map.of(
+                "camunda.physical-tenants.badtenant.security.authentication.method",
+                "NOT_A_VALID_METHOD"));
+
+    // when / then
+    assertThatThrownBy(() -> new PhysicalTenantScopeProvider(env))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("badtenant");
+  }
+
+  @Test
+  void shouldFailStartupWhenDefaultTenantConfigCannotBeBuilt() {
+    // given — keep the root config valid and activate PT mode via a non-default tenant, then put an
+    // invalid value specifically under the default overlay prefix so only
+    // forPhysicalTenant("default")
+    // fails — ensuring the implicit default alias follows the same fail-fast rule independently.
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                // A non-default tenant activates PT mode so the default alias is attempted
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id",
+                    "pt-client",
+                // Invalid value under the default overlay — triggers a Binder failure only when
+                // forPhysicalTenant("default", env) is called
+                "camunda.physical-tenants.default.security.authentication.method",
+                    "NOT_A_VALID_METHOD"));
+
+    assertThatThrownBy(() -> new PhysicalTenantScopeProvider(env))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("default");
   }
 
   private static MockEnvironment env(final Map<String, String> properties) {
