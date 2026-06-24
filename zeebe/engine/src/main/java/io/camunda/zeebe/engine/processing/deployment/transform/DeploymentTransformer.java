@@ -10,8 +10,13 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.Map.entry;
 
+<<<<<<< HEAD
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
+=======
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
@@ -30,14 +35,18 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
 
 public final class DeploymentTransformer {
 
+<<<<<<< HEAD
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
       new UnknownResourceTransformer();
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
+=======
+  private final DeploymentValidator validator;
+  private final List<DeploymentResourceTransformer> resourceTransformers;
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   // internal changes during processing
   private RejectionType rejectionType;
@@ -129,6 +138,11 @@ public final class DeploymentTransformer {
               .append("':\n")
               .append(validationError);
         }
+<<<<<<< HEAD
+=======
+      } catch (final RuntimeException e) {
+        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
       }
     }
 
@@ -167,12 +181,22 @@ public final class DeploymentTransformer {
     try {
       final var result = transformer.createMetadata(deploymentResource, deploymentEvent, context);
 
+<<<<<<< HEAD
       if (result.isRight()) {
         return true;
       } else {
         final var failureMessage = result.getLeft().getMessage();
         errors.append("\n").append(failureMessage);
         return false;
+=======
+    for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
+      final var deploymentResource = resourceWithTransformer.resource;
+      final var transformer = resourceWithTransformer.transformer;
+      try {
+        transformer.writeRecords(deploymentResource, deploymentEvent);
+      } catch (final RuntimeException e) {
+        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
       }
 
     } catch (final RuntimeException e) {
@@ -235,6 +259,21 @@ public final class DeploymentTransformer {
         final DeploymentResource resource, final DeploymentRecord deployment) {}
   }
 
+<<<<<<< HEAD
   private record BpmnResource(
       DeploymentResource resource, BpmnElementsWithDeploymentBinding elements) {}
+=======
+  private DeploymentResourceTransformer getResourceTransformer(final DeploymentResource resource) {
+    return resourceTransformers.stream()
+        .filter(transformer -> transformer.canTransform(resource))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "No transformer found for resource: " + resource.getResourceName()));
+  }
+
+  private record ResourceWithTransformer(
+      DeploymentResource resource, DeploymentResourceTransformer transformer) {}
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
 }
