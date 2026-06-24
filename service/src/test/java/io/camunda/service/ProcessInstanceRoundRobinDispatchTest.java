@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 final class ProcessInstanceRoundRobinDispatchTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private static final int PARTITION_COUNT = 3;
 
   private BrokerClient brokerClient;
@@ -50,6 +51,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
 
     services =
         new ProcessInstanceServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             mock(SecurityContextProvider.class),
             mock(ProcessInstanceSearchClient.class),
@@ -73,6 +75,29 @@ final class ProcessInstanceRoundRobinDispatchTest {
     // then — the per-definition handler (requests 2..N) hit every partition
     final var perDefPartitions = partitions.subList(1, partitions.size());
     assertThat(perDefPartitions).hasSize(PARTITION_COUNT).doesNotHaveDuplicates();
+  }
+
+  @Test
+  void shouldStampPhysicalTenantPartitionGroupOnDispatchedRequests() {
+    // given
+    final var sentRequests = new ArrayList<BrokerCreateProcessInstanceRequest>();
+    when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+        .thenAnswer(
+            invocation -> {
+              sentRequests.add(invocation.getArgument(0, BrokerCreateProcessInstanceRequest.class));
+              return CompletableFuture.completedFuture(
+                  new BrokerResponse<>(new ProcessInstanceCreationRecord()));
+            });
+
+    // when
+    services.createProcessInstance(createRequest(100L), authentication).join();
+
+    // then — the retry-partition dispatch path must apply the physical-tenant mutator so the
+    // request carries the tenant's partition group; otherwise it would route to the default group
+    assertThat(sentRequests)
+        .isNotEmpty()
+        .allSatisfy(
+            request -> assertThat(request.getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID));
   }
 
   @Test

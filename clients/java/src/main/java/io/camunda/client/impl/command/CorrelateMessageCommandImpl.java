@@ -72,6 +72,12 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
   }
 
   @Override
+  public CorrelateMessageCommandStep3 businessId(final String businessId) {
+    request.setBusinessId(businessId);
+    return this;
+  }
+
+  @Override
   public CorrelateMessageCommandStep3 withoutCorrelationKey() {
     return this;
   }

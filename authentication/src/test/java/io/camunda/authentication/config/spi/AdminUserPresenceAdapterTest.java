@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -19,10 +20,17 @@ import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.service.RoleServices;
+import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 class AdminUserPresenceAdapterTest {
 
@@ -33,7 +41,21 @@ class AdminUserPresenceAdapterTest {
   private final InitializationConfiguration initializationConfiguration =
       new InitializationConfiguration();
   private final AdminUserPresenceAdapter port =
-      new AdminUserPresenceAdapter(roleServices, initializationConfiguration);
+      new AdminUserPresenceAdapter(
+          DefaultServiceRegistry.of(b -> b.roleServices("default", roleServices)),
+          initializationConfiguration);
+
+  @BeforeEach
+  void setUp() {
+    // Bind a plain request with no PT attribute — resolves to the "default" tenant.
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+  }
+
+  @AfterEach
+  void tearDown() {
+    RequestContextHolder.resetRequestAttributes();
+  }
 
   @Test
   void shouldReturnTrueWhenInitializationConfiguresAdminUser() {
@@ -79,5 +101,34 @@ class AdminUserPresenceAdapterTest {
 
     // when / then
     assertThat(port.adminUserExists()).isTrue();
+  }
+
+  @Test
+  void shouldRouteAdminCheckToRequestPhysicalTenant() {
+    // given — two tenants, request scoped to "tenanta"
+    final var defaultRoleServices = mock(RoleServices.class);
+    final var tenantARoleServices = mock(RoleServices.class);
+    final var adapter =
+        new AdminUserPresenceAdapter(
+            DefaultServiceRegistry.of(
+                b ->
+                    b.roleServices("default", defaultRoleServices)
+                        .roleServices("tenanta", tenantARoleServices)),
+            initializationConfiguration);
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    when(tenantARoleServices.hasMembersOfType(
+            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+        .thenReturn(true);
+
+    // when
+    final var exists = adapter.adminUserExists();
+
+    // then — admin presence resolved from the tenanta role services, not the default ones
+    assertThat(exists).isTrue();
+    verify(tenantARoleServices)
+        .hasMembersOfType(eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class));
+    verifyNoInteractions(defaultRoleServices);
   }
 }

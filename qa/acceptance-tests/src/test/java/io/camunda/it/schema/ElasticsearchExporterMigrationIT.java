@@ -62,7 +62,7 @@ class ElasticsearchExporterMigrationIT {
     esContainer =
         new ElasticsearchContainer(
                 DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                    .withTag(SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION))
+                    .withTag(SupportedVersions.TEST_ELASTICSEARCH_VERSION))
             .withNetwork(network)
             .withNetworkAliases(ES_NETWORK_ALIAS)
             .withStartupTimeout(Duration.ofMinutes(5))

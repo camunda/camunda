@@ -103,7 +103,7 @@ public class ReportRestMapper {
       final ReportDefinitionDto<?> reportDefinitionDto,
       final String locale,
       final LocalizationService localizationService) {
-    if (isManagementOrInstantPreviewOrAgenticReport(reportDefinitionDto)) {
+    if (isSystemGeneratedReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
       final var data = ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
       if (data.isManagementReport()) {
@@ -222,8 +222,7 @@ public class ReportRestMapper {
         .ifPresent(reportDefinitionDto::setLastModifier);
   }
 
-  private static boolean isManagementOrInstantPreviewOrAgenticReport(
-      final ReportDefinitionDto<?> reportDefinitionDto) {
+  private static boolean isSystemGeneratedReport(final ReportDefinitionDto<?> reportDefinitionDto) {
     if (!(reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto)) {
       return false;
     }

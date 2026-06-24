@@ -32,12 +32,14 @@ public final class UsageMetricsServices
   private final UsageMetricsSearchClient usageMetricsSearchClient;
 
   public UsageMetricsServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UsageMetricsSearchClient usageMetricsSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -58,12 +60,14 @@ public final class UsageMetricsServices
 
     final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
         CompletableFuture.supplyAsync(
-            () -> authUsageMetricsSearchClient.usageMetricStatistics(query));
+            () -> authUsageMetricsSearchClient.usageMetricStatistics(query),
+            executorProvider.getExecutor());
     final CompletableFuture<UsageMetricTUStatisticsEntity> tuStatsFuture =
         CompletableFuture.supplyAsync(
             () ->
                 authUsageMetricsSearchClient.usageMetricTUStatistics(
-                    mapToUsageMetricsTUQuery(query)));
+                    mapToUsageMetricsTUQuery(query)),
+            executorProvider.getExecutor());
 
     return SearchQueryResult.of(Tuple.of(statsFuture.join(), tuStatsFuture.join()));
   }

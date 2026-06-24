@@ -11,18 +11,20 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
+import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -33,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import jakarta.annotation.Resource;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -70,9 +73,10 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
   @Test
   void shouldWirePerTenantSearchClientsFromResolver() {
     assertThat(searchClients.esClients())
-        .containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
+        .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
     assertThat(searchClients.osClients()).isEmpty();
-    assertThat(tenantDescriptors).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
+    assertThat(tenantDescriptors)
+        .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
   }
 
   @Test
@@ -135,6 +139,17 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
               + TENANT_B
               + ".data.secondary-storage.elasticsearch.index-prefix",
           TENANT_B);
+      // each explicitly-configured tenant must provide its own initialization block
+      env.setProperty(
+          "camunda.physical-tenants."
+              + TENANT_A
+              + ".security.initialization.default-roles.admin.users[0]",
+          TENANT_A + "-admin");
+      env.setProperty(
+          "camunda.physical-tenants."
+              + TENANT_B
+              + ".security.initialization.default-roles.admin.users[0]",
+          TENANT_B + "-admin");
       return env;
     }
 
@@ -151,12 +166,19 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
     }
 
     /**
-     * Required only so that {@link CamundaSearchClients} can execute a read; access control is not
-     * under test here.
+     * Provides an anonymous controller per physical tenant so {@link CamundaSearchClients} can
+     * execute reads; access control is not under test here.
      */
     @Bean
-    ResourceAccessController testAnonymousResourceAccessController() {
-      return new AnonymousResourceAccessController();
+    PhysicalTenantResourceAccessControllers testPhysicalTenantResourceAccessControllers(
+        final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
+      return new PhysicalTenantResourceAccessControllers(
+          physicalTenantSearchClientReaders.readersByPhysicalTenant().keySet().stream()
+              .collect(
+                  Collectors.toUnmodifiableMap(
+                      tenantId -> tenantId,
+                      tenantId ->
+                          (ResourceAccessController) new AnonymousResourceAccessController())));
     }
 
     private static void stubFakeEs(final WireMockServer wm, final long processInstanceKey) {

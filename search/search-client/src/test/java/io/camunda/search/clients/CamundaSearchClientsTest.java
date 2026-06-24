@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -46,7 +47,10 @@ class CamundaSearchClientsTest {
   @BeforeEach
   void setUp() {
     camundaSearchClients =
-        new CamundaSearchClients(Map.of("default", readers), resourceAccessController);
+        (CamundaSearchClients)
+            new CamundaSearchClients(
+                    Map.of("default", readers), Map.of("default", resourceAccessController))
+                .withPhysicalTenant("default");
 
     // Make the resource access controller simply invoke the applier with a no-op check
     when(resourceAccessController.doSearch(any(), any()))
@@ -217,7 +221,10 @@ class CamundaSearchClientsTest {
       final var clients =
           new CamundaSearchClients(
               Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
-              resourceAccessController);
+              Map.of(
+                  DEFAULT, resourceAccessController,
+                  TENANT_A, resourceAccessController,
+                  TENANT_B, resourceAccessController));
 
       // when / then
       assertThatThrownBy(() -> clients.withPhysicalTenant("unknown"))
@@ -236,7 +243,10 @@ class CamundaSearchClientsTest {
       final var clients =
           new CamundaSearchClients(
               Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
-              resourceAccessController);
+              Map.of(
+                  DEFAULT, resourceAccessController,
+                  TENANT_A, resourceAccessController,
+                  TENANT_B, resourceAccessController));
 
       // when
       clients.withPhysicalTenant(TENANT_A).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
@@ -247,6 +257,47 @@ class CamundaSearchClientsTest {
     }
 
     @Test
+    void shouldThrowWhenReadIsAttemptedWithoutScopingToAPhysicalTenant() {
+      // given — an unscoped base instance (withPhysicalTenant not yet called)
+      final var unscopedClients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers), Map.of(DEFAULT, resourceAccessController));
+
+      // when / then
+      assertThatThrownBy(
+              () -> unscopedClients.searchProcessInstances(ProcessInstanceQuery.of(b -> b)))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("withPhysicalTenant");
+    }
+
+    @Test
+    void shouldThrowWhenStatisticsReadIsAttemptedWithoutScoping() {
+      // given — an unscoped base instance
+      final var unscopedClients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers), Map.of(DEFAULT, resourceAccessController));
+
+      // when / then — a ResourceAccessController-backed (non reader-first) path must also fail fast
+      assertThatThrownBy(() -> unscopedClients.processInstanceFlowNodeStatistics(1L))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("withPhysicalTenant");
+    }
+
+    @Test
+    void shouldThrowWhenGetViaResourceAccessControllerIsAttemptedWithoutScoping() {
+      // given — an unscoped base instance
+      final var unscopedClients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers), Map.of(DEFAULT, resourceAccessController));
+
+      // when / then — a doGet(...)-backed path must fail fast with ISE, not a wrapped
+      // CamundaSearchException
+      assertThatThrownBy(() -> unscopedClients.getDeployedResource(1L))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("withPhysicalTenant");
+    }
+
+    @Test
     void shouldPreserveSecurityContextAndResourceAccessControllerOnTheReturnedInstance() {
       // given
       when(tenantAReaders.processInstanceReader()).thenReturn(tenantAProcessInstanceReader);
@@ -254,7 +305,8 @@ class CamundaSearchClientsTest {
       final var securityContext = SecurityContext.of(b -> b);
       final var clients =
           new CamundaSearchClients(
-              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders), resourceAccessController);
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders),
+              Map.of(DEFAULT, resourceAccessController, TENANT_A, resourceAccessController));
 
       // when
       clients
@@ -265,6 +317,63 @@ class CamundaSearchClientsTest {
       // then — switching the security context must not reset the physical tenant scoping
       verify(tenantAProcessInstanceReader).search(any(), any());
       verifyNoInteractions(processInstanceReader);
+    }
+  }
+
+  @Nested
+  class WithPhysicalTenantSelectsPerTenantRac {
+
+    private static final String PT_A = "pt-a";
+    private static final String PT_B = "pt-b";
+
+    @Test
+    void shouldRouteReadToCorrectRac() {
+      // given — two PTs with distinct RAC mocks (plus the required "default" entry)
+      final ResourceAccessController racDefault = mock(ResourceAccessController.class);
+      final ResourceAccessController racA = mock(ResourceAccessController.class);
+      final ResourceAccessController racB = mock(ResourceAccessController.class);
+      final SearchClientReaders readersDefault = mock(SearchClientReaders.class);
+      final SearchClientReaders readersA = mock(SearchClientReaders.class);
+      final SearchClientReaders readersB = mock(SearchClientReaders.class);
+      final ProcessInstanceReader processInstanceReaderA = mock(ProcessInstanceReader.class);
+      final ProcessInstanceReader processInstanceReaderB = mock(ProcessInstanceReader.class);
+
+      // make each RAC call through its applier
+      when(racA.doSearch(any(), any()))
+          .thenAnswer(
+              inv -> {
+                final Function<ResourceAccessChecks, Object> applier = inv.getArgument(1);
+                return applier.apply(ResourceAccessChecks.disabled());
+              });
+      when(racB.doSearch(any(), any()))
+          .thenAnswer(
+              inv -> {
+                final Function<ResourceAccessChecks, Object> applier = inv.getArgument(1);
+                return applier.apply(ResourceAccessChecks.disabled());
+              });
+
+      when(readersA.processInstanceReader()).thenReturn(processInstanceReaderA);
+      when(readersB.processInstanceReader()).thenReturn(processInstanceReaderB);
+
+      final CamundaSearchClients clients =
+          new CamundaSearchClients(
+              Map.of("default", readersDefault, PT_A, readersA, PT_B, readersB),
+              Map.of("default", racDefault, PT_A, racA, PT_B, racB));
+
+      // when scoped to PT_A
+      clients.withPhysicalTenant(PT_A).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
+
+      // then only racA is called
+      verify(racA).doSearch(any(), any());
+      verifyNoInteractions(racB);
+
+      // when scoped to PT_B
+      clearInvocations(racA, racB);
+      clients.withPhysicalTenant(PT_B).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
+
+      // then only racB is called
+      verify(racB).doSearch(any(), any());
+      verifyNoInteractions(racA);
     }
   }
 }

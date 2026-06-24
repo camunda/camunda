@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_HEARTBEAT;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.HEARTBEAT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -51,10 +51,12 @@ class AnalyticsExporterHeartbeatTest {
             log -> {
               final var attrs = log.getAttributes().asMap();
               assertThat(attrs)
-                  .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_HEARTBEAT)
-                  .containsEntry(AnalyticsAttributes.BROKER_VERSION, VersionUtil.getVersion())
+                  .containsEntry(AnalyticsAttributes.Event.NAME, HEARTBEAT)
                   .containsEntry(
-                      AnalyticsAttributes.EXPORTER_VERSION, AnalyticsExporterVersion.get());
+                      AnalyticsAttributes.Heartbeat.BROKER_VERSION, VersionUtil.getVersion())
+                  .containsEntry(
+                      AnalyticsAttributes.Heartbeat.EXPORTER_VERSION,
+                      AnalyticsExporterVersion.get());
             });
   }
 
@@ -69,7 +71,7 @@ class AnalyticsExporterHeartbeatTest {
     // then — two scheduled fires
     assertThat(memoryExporter.getFinishedLogRecordItems())
         .filteredOn(
-            log -> EVENT_HEARTBEAT.equals(log.getAttributes().get(AnalyticsAttributes.EVENT_NAME)))
+            log -> HEARTBEAT.equals(log.getAttributes().get(AnalyticsAttributes.Event.NAME)))
         .hasSize(2);
   }
 

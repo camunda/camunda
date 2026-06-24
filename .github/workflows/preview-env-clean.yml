@@ -23,6 +23,9 @@ on:
         required: true
   workflow_dispatch:
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   preview-env-clean:
     concurrency:

@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -23,17 +24,25 @@ import io.camunda.security.core.authz.ResourceAccess;
 import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.service.UserServices;
 import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class BasicCamundaUserServiceTest {
+
+  private static final String TENANT_A = "tenanta";
 
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
   @Mock private UserServices userServices;
+  @Mock private UserServices tenantAUserServices;
   @Mock private CamundaAuthentication authentication;
   private BasicCamundaUserService basicCamundaUserService;
 
@@ -55,11 +64,22 @@ public class BasicCamundaUserServiceTest {
     when(userServices.getUser(eq("foo@bar.com"), any())).thenReturn(user);
 
     final var serviceRegistry =
-        DefaultServiceRegistry.of(b -> b.userServices("default", userServices));
+        DefaultServiceRegistry.of(
+            b ->
+                b.userServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, userServices)
+                    .userServices(TENANT_A, tenantAUserServices));
 
     basicCamundaUserService =
         new BasicCamundaUserService(
             authenticationProvider, resourceAccessProvider, serviceRegistry);
+
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+  }
+
+  @AfterEach
+  void clearRequestScope() {
+    RequestContextHolder.resetRequestAttributes();
   }
 
   @Test
@@ -193,5 +213,24 @@ public class BasicCamundaUserServiceTest {
 
     // then
     assertThat(currentUser).isNull();
+  }
+
+  @Test
+  void shouldRouteUserLookupToRequestPhysicalTenant() {
+    // given a request scoped to a non-default physical tenant
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    final var tenantAUser = mock(UserEntity.class);
+    when(tenantAUser.userKey()).thenReturn(200L);
+    when(tenantAUser.name()).thenReturn("Tenant A User");
+    when(tenantAUser.email()).thenReturn("foo@bar.com");
+    when(tenantAUserServices.getUser(eq("foo@bar.com"), any())).thenReturn(tenantAUser);
+
+    // when
+    final var currentUser = basicCamundaUserService.getCurrentUser();
+
+    // then — resolved via the tenant-A user services, not the default
+    assertThat(currentUser.displayName()).isEqualTo("Tenant A User");
   }
 }

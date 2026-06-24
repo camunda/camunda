@@ -67,17 +67,8 @@ const updateSelectionSearchParams = (
   );
 };
 
-const useProcessInstanceElementSelection = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const {processInstanceId: processInstanceKey} =
-    useProcessInstancePageParams();
-  const elementInstanceKey = searchParams.get(ELEMENT_INSTANCE_KEY);
-
-  const elementId = searchParams.get(ELEMENT_ID);
-  const isMultiInstanceBody =
-    searchParams.get(IS_MULTI_INSTANCE_BODY) === 'true';
-  const isPlaceholder = searchParams.get(IS_PLACEHOLDER) === 'true';
-  const anchorElementId = searchParams.get(ANCHOR_ELEMENT_ID);
+const useProcessInstanceElementSelectActions = () => {
+  const [, setSearchParams] = useSearchParams();
 
   const selectElement = useCallback(
     ({
@@ -138,6 +129,23 @@ const useProcessInstanceElementSelection = () => {
       {replace: true},
     );
   }, [setSearchParams]);
+
+  return {selectElement, selectElementInstance, clearSelection};
+};
+
+const useProcessInstanceElementSelection = () => {
+  const [searchParams] = useSearchParams();
+  const {processInstanceId: processInstanceKey} =
+    useProcessInstancePageParams();
+  const elementInstanceKey = searchParams.get(ELEMENT_INSTANCE_KEY);
+  const {selectElement, selectElementInstance, clearSelection} =
+    useProcessInstanceElementSelectActions();
+
+  const elementId = searchParams.get(ELEMENT_ID);
+  const isMultiInstanceBody =
+    searchParams.get(IS_MULTI_INSTANCE_BODY) === 'true';
+  const isPlaceholder = searchParams.get(IS_PLACEHOLDER) === 'true';
+  const anchorElementId = searchParams.get(ANCHOR_ELEMENT_ID);
 
   // If elementInstanceKey is in URL, fetch element instance by key.
   // Skip fetching if elementInstanceKey is a placeholder key
@@ -219,4 +227,7 @@ const useProcessInstanceElementSelection = () => {
   };
 };
 
-export {useProcessInstanceElementSelection};
+export {
+  useProcessInstanceElementSelection,
+  useProcessInstanceElementSelectActions,
+};

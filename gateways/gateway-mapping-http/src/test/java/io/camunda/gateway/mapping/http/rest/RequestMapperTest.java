@@ -13,6 +13,8 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobChangeset;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
@@ -20,6 +22,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationR
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
+import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -581,6 +584,67 @@ class RequestMapperTest {
       assertThat(problemDetail.getDetail())
           .contains("ASSIGNED tenant filter")
           .contains("multi-tenancy is disabled");
+    }
+  }
+
+  @Nested
+  class JobUpdateRequestMappingTest {
+
+    @Test
+    void shouldMapPriorityToChangeset() {
+      // given
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().changeset()).isEqualTo(new UpdateJobChangeset(null, null, 80));
+    }
+
+    @Test
+    void shouldMapNullPriorityWhenNotProvided() {
+      // given
+      final var changeset = JobChangeset.Builder.create().retries(3).build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().changeset()).isEqualTo(new UpdateJobChangeset(3, null, null));
+    }
+
+    @Test
+    @SuppressWarnings("NullAway")
+    void shouldRejectWhenChangesetIsNull() {
+      // given
+      final var request = JobUpdateRequest.Builder.create().changeset(null).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldRejectWhenAllChangesetFieldsAreNull() {
+      // given
+      final var changeset = JobChangeset.Builder.create().build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("retries", "timeout", "priority");
     }
   }
 }

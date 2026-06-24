@@ -1,0 +1,122 @@
+# description: Keeps open Renovate PRs fresh and unstuck (rebaseWhen=conflicted companion).
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+
+---
+name: Renovate PR maintainer
+
+on:
+  schedule:
+  # Runs hourly, but actions are taken selectively based on PR state and defined strategy, not on every run
+  - cron: "53 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Run without modifying any PR (check to enable dry run)
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+permissions: {}
+
+jobs:
+  maintain:
+    concurrency:
+      group: renovate-pr-maintainer
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+      pull-requests: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    
+    # Inspects in-scope Renovate PRs and takes action per PR:
+    # rebase stale PRs (by adding the Renovate `rebase` label) or re-run their
+    # failed required jobs.
+    - name: Maintain Renovate PRs
+      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@be5b0496892a83e6b3c5cedb818b771e8ed68121
+      with:
+        dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        # PR is considered stale if head branch is behind base branch by at least 100 commit
+        behind-threshold: 100
+        # PR is considered stale if head commit is older than 24 hours
+        stale-hours: 24
+        # Try to rerun the failing required checks up to 2 times to workaround flaky CI jobs
+        rerun-budget: 2
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify:
+    name: Send Slack notification
+    runs-on: ubuntu-latest
+    needs: [maintain]
+    if: ${{ always() && needs.maintain.result != 'success' && github.event_name == 'schedule' }}
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        exportEnv: false # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+
+    - name: Send failure Slack notification
+      uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+      with:
+        webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
+        webhook-type: incoming-webhook
+        # For posting a rich message using Block Kit
+        payload: |
+          {
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": ":alarm: *Renovate PR maintainer* automation failed on `main`!\n"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run> for details, and fix the problem."
+                }
+              }
+            ]
+          }
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

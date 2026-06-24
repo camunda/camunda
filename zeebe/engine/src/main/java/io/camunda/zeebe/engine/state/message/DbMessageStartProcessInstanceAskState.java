@@ -34,6 +34,14 @@ import java.util.List;
 public final class DbMessageStartProcessInstanceAskState
     implements MutableMessageStartProcessInstanceAskState, StreamProcessorLifecycleAware {
 
+  /**
+   * Upper bound on the persisted rejection count. The scheduler derives the back-off interval as
+   * {@code min(baseInterval * 2^rejectionCount, cap)}, which saturates at the cap long before this
+   * bound; capping the stored count keeps the value bounded for a very long-blocked ask and avoids
+   * any overflow when the scheduler computes {@code 2^rejectionCount}.
+   */
+  private static final long MAX_REJECTION_COUNT = 30L;
+
   private final DbLong messageKey = new DbLong();
   private final DbLong processDefinitionKey = new DbLong();
   private final DbCompositeKey<DbLong, DbLong> key =
@@ -55,11 +63,18 @@ public final class DbMessageStartProcessInstanceAskState
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    // Rebuild the transient state from the persisted CF. All entries are added with lastSentTime=0
-    // so they are immediately eligible for re-send; the P_B dedup bounds the storm.
+    // Rebuild the transient last-sent tracking from the persisted CF. The back-off magnitude (the
+    // rejectionCount) survives in the CF; only the last-sent phase is rebuilt here. Fresh asks
+    // (never rejected) are seeded with lastSentTime=0 so they are immediately eligible, preserving
+    // at-least-once first delivery. Already-backed-off asks are seeded with the recovery time so
+    // they resume at their back-off cadence rather than every blocked ask re-probing P_B at once.
+    final long recoveryTime = context.getClock().millis();
     columnFamily.forEach(
-        (k, v) ->
-            transientState.add(new PendingAskKey(k.first().getValue(), k.second().getValue()), 0L));
+        (k, v) -> {
+          final long lastSentSeed = v.getRejectionCount() > 0 ? recoveryTime : 0L;
+          transientState.add(
+              new PendingAskKey(k.first().getValue(), k.second().getValue()), lastSentSeed);
+        });
   }
 
   @Override
@@ -76,20 +91,20 @@ public final class DbMessageStartProcessInstanceAskState
   }
 
   @Override
-  public boolean hasPendingAsksPastDeadline(final long deadline) {
-    return transientState.entriesBefore(deadline).iterator().hasNext();
+  public void forEachPendingAsk(final PendingAskVisitor visitor) {
+    for (final var entry : transientState.entries()) {
+      final var askKey = entry.getKey();
+      final var ask = get(askKey.messageKey(), askKey.processDefinitionKey());
+      if (ask != null) {
+        visitor.visit(entry.getValue(), ask);
+      }
+    }
   }
 
   @Override
-  public Iterable<MessageStartProcessInstanceAsk> getPendingAsksPastDeadline(final long deadline) {
-    final List<MessageStartProcessInstanceAsk> result = new ArrayList<>();
-    for (final var askKey : transientState.entriesBefore(deadline)) {
-      final var ask = get(askKey.messageKey(), askKey.processDefinitionKey());
-      if (ask != null) {
-        result.add(ask.copy());
-      }
-    }
-    return result;
+  public void updateLastSentTime(
+      final long messageKey, final long processDefinitionKey, final long lastSentTime) {
+    transientState.update(new PendingAskKey(messageKey, processDefinitionKey), lastSentTime);
   }
 
   @Override
@@ -109,6 +124,22 @@ public final class DbMessageStartProcessInstanceAskState
   }
 
   @Override
+  public void backOff(final long messageKey, final long processDefinitionKey) {
+    final var ask = get(messageKey, processDefinitionKey);
+    if (ask == null) {
+      // The ask was already removed (e.g. by a racing success or message expiry); nothing to do.
+      return;
+    }
+    ask.setRejectionCount(Math.min(ask.getRejectionCount() + 1, MAX_REJECTION_COUNT));
+    this.messageKey.wrapLong(messageKey);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    columnFamily.upsert(key, ask);
+    // Intentionally leave the transient last-sent tracking untouched: the scheduler uses it as the
+    // in-flight guard, and resetting it here would make the ask immediately eligible again and
+    // defeat the back-off the incremented count is meant to produce.
+  }
+
+  @Override
   public void removeAllByMessageKey(final long messageKey) {
     // messageKey is the first component of the composite key, so a prefix scan visits all entries
     // for this message regardless of processDefinitionKey.
@@ -121,11 +152,5 @@ public final class DbMessageStartProcessInstanceAskState
     for (final long pdk : processDefinitionKeysToRemove) {
       remove(messageKey, pdk);
     }
-  }
-
-  @Override
-  public void updateLastSentTime(
-      final long messageKey, final long processDefinitionKey, final long lastSentTime) {
-    transientState.update(new PendingAskKey(messageKey, processDefinitionKey), lastSentTime);
   }
 }

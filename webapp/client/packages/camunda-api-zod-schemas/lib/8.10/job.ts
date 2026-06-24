@@ -35,6 +35,7 @@ type JobKind = z.infer<typeof jobKindSchema>;
 
 const listenerEventTypeSchema = z.enum([
 	'UNSPECIFIED',
+	'BEFORE_ALL',
 	'START',
 	'END',
 	'CANCEL',
@@ -239,8 +240,9 @@ const completeJob: Endpoint<Pick<Job, 'jobKey'>> = {
 };
 
 const jobChangesetSchema = z.object({
-	retries: z.number().optional(),
-	timeout: z.number().optional(),
+	retries: z.number().int().optional(),
+	timeout: z.number().int().optional(),
+	priority: z.number().int().optional(),
 });
 type JobChangeset = z.infer<typeof jobChangesetSchema>;
 

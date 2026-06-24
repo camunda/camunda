@@ -9,9 +9,39 @@
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createEndpointMock} from './mock-endpoint';
 
+const mockQueryUserTasksEndpoint = createEndpointMock({
+	endpoint: endpoints.queryUserTasks.getUrl(),
+	method: endpoints.queryUserTasks.method as 'POST',
+});
+
+const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
+	method: endpoints.getProcessDefinitionInstanceStatistics.method as 'POST',
+});
+
+const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryProcessDefinitions.getUrl(),
+	method: endpoints.queryProcessDefinitions.method as 'POST',
+});
+
+const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
+	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
+	method: endpoints.getIncidentProcessInstanceStatisticsByError.method as 'POST',
+});
+
+const mockGetProcessDefinitionInstanceVersionStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl(),
+	method: endpoints.getProcessDefinitionInstanceVersionStatistics.method as 'POST',
+});
+
+const mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint = createEndpointMock({
+	endpoint: endpoints.getIncidentProcessInstanceStatisticsByDefinition.getUrl(),
+	method: endpoints.getIncidentProcessInstanceStatisticsByDefinition.method as 'POST',
+});
+
 const mockCurrentUserEndpoint = createEndpointMock({
 	endpoint: endpoints.getCurrentUser.getUrl(),
-	method: 'GET',
+	method: endpoints.getCurrentUser.method,
 });
 
 const mockLoginEndpoint = createEndpointMock({
@@ -26,12 +56,12 @@ const mockLogoutEndpoint = createEndpointMock({
 
 const mockSystemConfigurationEndpoint = createEndpointMock({
 	endpoint: endpoints.getSystemConfiguration.getUrl(),
-	method: 'GET',
+	method: endpoints.getSystemConfiguration.method,
 });
 
 const mockLicenseEndpoint = createEndpointMock({
 	endpoint: endpoints.getLicense.getUrl(),
-	method: 'GET',
+	method: endpoints.getLicense.method,
 });
 
 const mockSaasTokenEndpoint = createEndpointMock({
@@ -46,4 +76,10 @@ export {
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
+	mockQueryUserTasksEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 };

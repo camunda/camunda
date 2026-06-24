@@ -12,6 +12,6 @@ import io.camunda.db.rdbms.write.domain.JobDbModel;
 public class InsertJobMerger extends BatchInsertMerger<JobDbModel> {
 
   public InsertJobMerger(final JobDbModel job, final int maxBatchSize) {
-    super(ContextType.JOB, job, maxBatchSize);
+    super(ContextType.JOB, job, maxBatchSize, JobDbModel::jobKey);
   }
 }

@@ -34,6 +34,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Tasklist
 
@@ -51,12 +52,15 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
+            owner: '@camunda/data-layer'
           - suite: CoreFeatures
             suiteName: Core Features
+            owner: '@camunda/core-features'
     with:
       componentName: "Tasklist"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+      owner: ${{ matrix.owner }}
 
   fe-type-check:
     if: inputs.runFeTests
@@ -66,7 +70,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
       TEST_PRODUCT: Tasklist
     defaults:
       run:
@@ -92,7 +95,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-eslint:
     if: inputs.runFeTests
@@ -102,7 +104,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
       TEST_PRODUCT: Tasklist
     defaults:
       run:
@@ -128,7 +129,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-stylelint:
     if: inputs.runFeTests
@@ -138,7 +138,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: tasklist/client
@@ -163,7 +162,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-prettier:
     if: inputs.runFeTests
@@ -173,7 +171,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
       TEST_PRODUCT: Tasklist
     defaults:
       run:
@@ -199,7 +196,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-tests:
     if: inputs.runFeTests
@@ -209,7 +205,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
-      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: tasklist/client
@@ -234,7 +229,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-sbom-snyk:
     if: inputs.runFeTests
@@ -244,7 +238,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: tasklist/client
@@ -280,7 +273,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-visual-regression-tests:
     if: inputs.runFeTests
@@ -290,7 +282,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
-      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.60.0
       options: --user 1001:1000
@@ -328,7 +319,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-a11y-tests:
     if: inputs.runFeTests
@@ -338,7 +328,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.60.0
       options: --user 1001:1000
@@ -376,7 +365,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
 # As part of the V1 API cleanup, the backup restore tests have been disabled
 # and need to be reinstated before 8.10 releases.
@@ -390,7 +378,7 @@ jobs:
 #      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
 #      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
 #      TEST_TYPE: Integration
-#      TEST_OWNER: Data Layer
+#      TEST_OWNER: '@camunda/data-layer'
 #    strategy:
 #      fail-fast: false
 #      matrix:
@@ -421,7 +409,7 @@ jobs:
 #        with:
 #          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
 #          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
-#          dockerfile: tasklist.Dockerfile
+#          dockerfile: tasklist.Dockerfile # removed in PR #52180, use camunda image instead
 #          push: true
 #          distball: ${{ steps.build-zeebe.outputs.distball }}
 #      - name: Run Tasklist backup restore Tests
@@ -458,7 +446,7 @@ jobs:
 #          job_name: "tasklist-ci/backup-restore-${{ matrix.database }}"
 #          build_status: ${{ job.status }}
 #          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-#          user_description: "team-data-layer"
+#          user_description: "@camunda/data-layer"
 #          detailed_junit_tests: true
 #          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 #          secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -473,7 +461,6 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Integration
-      TEST_OWNER: Core Features
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
     services:
@@ -489,7 +476,7 @@ jobs:
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -507,7 +494,7 @@ jobs:
           version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
           push: true
           distball: ${{ steps.build-backend.outputs.distball }}
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
           ./mvnw \
@@ -534,4 +521,3 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"

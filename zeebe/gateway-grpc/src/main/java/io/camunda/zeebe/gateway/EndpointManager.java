@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -66,11 +67,14 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -79,6 +83,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -413,6 +418,16 @@ public final class EndpointManager {
         responseObserver);
   }
 
+  public void updateJobPriority(
+      final UpdateJobPriorityRequest request,
+      final ServerStreamObserver<UpdateJobPriorityResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toUpdateJobPriorityRequest,
+        ResponseMapper::toUpdateJobPriorityResponse,
+        responseObserver);
+  }
+
   public void modifyProcessInstance(
       final ModifyProcessInstanceRequest request,
       final ServerStreamObserver<ModifyProcessInstanceResponse> responseObserver) {
@@ -532,7 +547,20 @@ public final class EndpointManager {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
     brokerRequest.setAuthorization(getClaims());
+    final String physicalTenantId = getPhysicalTenantId();
+    brokerRequest.setPartitionGroup(
+        Objects.requireNonNullElse(physicalTenantId, Protocol.DEFAULT_PARTITION_GROUP_NAME));
     return brokerRequest;
+  }
+
+  /**
+   * Returns the physical tenant id resolved by the {@code PhysicalTenantInterceptor} and stored in
+   * the gRPC {@link Context}, or {@code null} when no interceptor populated it (e.g. in tests that
+   * invoke the endpoint without the interceptor chain). The id doubles as the partition group name
+   * the request is dispatched to; a {@code null} leaves the request's default group unchanged.
+   */
+  private String getPhysicalTenantId() throws Exception {
+    return Context.current().call(InterceptorUtil.getPhysicalTenantIdKey()::get);
   }
 
   private Map<String, Object> getClaims() throws Exception {

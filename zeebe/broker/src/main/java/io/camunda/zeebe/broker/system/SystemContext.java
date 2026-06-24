@@ -10,11 +10,12 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -137,7 +138,7 @@ public final class SystemContext {
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final NodeIdProvider nodeIdProvider;
-  private final List<String> physicalTenantIds;
+  private final PhysicalTenantIds physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
 
   public SystemContext(
@@ -156,7 +157,7 @@ public final class SystemContext {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider,
-      final List<String> physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -173,7 +174,7 @@ public final class SystemContext {
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.nodeIdProvider = nodeIdProvider;
-    this.physicalTenantIds = List.copyOf(physicalTenantIds);
+    this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
   }
@@ -736,7 +737,7 @@ public final class SystemContext {
     return nodeIdProvider;
   }
 
-  public List<String> getPhysicalTenantIds() {
+  public PhysicalTenantIds getPhysicalTenantIds() {
     return physicalTenantIds;
   }
 }

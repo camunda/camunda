@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import type {
   AgentInstance,
   AgentInstanceStatus,
@@ -19,6 +20,7 @@ import {
   MeterAlt,
   Chip,
   DocumentBlank,
+  Chat,
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
@@ -33,6 +35,10 @@ import {TokensUsedMetric} from './AgentMetrics/TokensUsedMetric';
 import {ToolsCalledMetric} from './AgentMetrics/ToolsCalledMetric';
 import {SectionTitle} from './SectionTitle';
 import {ConversationMessage} from './ConversationMessage';
+import {ConversationHistory} from './ConversationHistory';
+import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
+import {IS_CONVERSATION_HISTORY_ENABLED} from 'modules/feature-flags';
+import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   INITIALIZING: 'Initializing',
@@ -70,6 +76,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   isLoading,
   isError,
 }) => {
+  const [isConversationHistoryOpen, setIsConversationHistoryOpen] =
+    useState(false);
+
   if (isLoading) {
     return (
       <AgentDetailsContainer>
@@ -98,18 +107,37 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   const {metrics, limits, definition} = agentInstance;
 
   return (
-    <AgentDetailsContainer data-testid="agent-details">
+    <AgentDetailsContainer
+      data-testid="agent-details"
+      onKeyDown={(e) => {
+        // TODO: Workaround for https://github.com/carbon-design-system/carbon/issues/22483.
+        if (
+          e.key === 'Escape' &&
+          (e.target as HTMLElement).innerText === 'Conversation history'
+        ) {
+          setIsConversationHistoryOpen(false);
+        }
+      }}
+    >
       <AgentHeading>AI Agent</AgentHeading>
       <Accordion align="start">
         <AccordionItem
           data-testid="agent-status-section"
-          disabled
+          open
+          disabled={!IS_CONVERSATION_HISTORY_ENABLED}
           title={
             <SectionTitle icon={<StatusIcon status={agentInstance.status} />}>
               Status: {statusLabel}
             </SectionTitle>
           }
-        ></AccordionItem>
+        >
+          {IS_CONVERSATION_HISTORY_ENABLED && (
+            <LatestAgentMessage
+              agentInstanceKey={agentInstance.agentInstanceKey}
+              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+            />
+          )}
+        </AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
           title={
@@ -132,6 +160,24 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             />
           </MetricsRow>
         </AccordionItem>
+        {IS_CONVERSATION_HISTORY_ENABLED && (
+          <AccordionItem
+            data-testid="agent-conversation-history-section"
+            open={isConversationHistoryOpen}
+            onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
+            title={
+              <SectionTitle icon={<Chat size={16} />}>
+                Conversation history
+              </SectionTitle>
+            }
+          >
+            <ConversationHistory
+              agentInstanceKey={agentInstance.agentInstanceKey}
+              isVisible={isConversationHistoryOpen}
+              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+            />
+          </AccordionItem>
+        )}
         <AccordionItem
           data-testid="agent-system-prompt-section"
           title={
@@ -141,8 +187,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
           }
         >
           <ConversationMessage
-            actor="system"
-            messages={[definition.systemPrompt]}
+            actor="SYSTEM"
+            content={[{contentType: 'TEXT', text: definition.systemPrompt}]}
           />
         </AccordionItem>
         <AccordionItem

@@ -10,6 +10,7 @@ package io.camunda.application.commons.service;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
@@ -19,6 +20,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuditLogServices;
@@ -161,23 +163,24 @@ public class CamundaServicesConfiguration {
               // -- leaf services (no service-to-service dependencies) --
               final var form =
                   new FormServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var incident =
                   new IncidentServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var variable =
                   new VariableServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var auditLog =
                   new AuditLogServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var decisionRequirements =
                   new DecisionRequirementsServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
 
               // -- mid-tier services (depend on leaf services) --
               final var elementInstance =
                   new ElementInstanceServices(
+                      tenantId,
                       brokerClient,
                       securityContextProvider,
                       search,
@@ -188,11 +191,18 @@ public class CamundaServicesConfiguration {
                       converter);
               final var processDefinition =
                   new ProcessDefinitionServices(
-                      brokerClient, securityContextProvider, search, form, executor, converter);
+                      tenantId,
+                      brokerClient,
+                      securityContextProvider,
+                      search,
+                      form,
+                      executor,
+                      converter);
 
               // -- top-level services --
               final var processInstance =
                   new ProcessInstanceServices(
+                      tenantId,
                       brokerClient,
                       securityContextProvider,
                       search,
@@ -203,6 +213,7 @@ public class CamundaServicesConfiguration {
                       maxNameFieldLength);
               final var userTask =
                   new UserTaskServices(
+                      tenantId,
                       brokerClient,
                       securityContextProvider,
                       search,
@@ -219,34 +230,65 @@ public class CamundaServicesConfiguration {
                   .adHocSubProcessActivityServices(
                       tenantId,
                       new AdHocSubProcessActivityServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
+                  .agentHistoryServices(
+                      tenantId,
+                      new AgentHistoryServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .agentInstanceServices(
                       tenantId,
                       new AgentInstanceServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .auditLogServices(tenantId, auditLog)
                   .authorizationServices(
                       tenantId,
                       new AuthorizationServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .batchOperationServices(
                       tenantId,
                       new BatchOperationServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .clockServices(
                       tenantId,
-                      new ClockServices(brokerClient, securityContextProvider, executor, converter))
+                      new ClockServices(
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .clusterVariableServices(
                       tenantId,
                       new ClusterVariableServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .conditionalServices(
                       tenantId,
                       new ConditionalServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .decisionDefinitionServices(
                       tenantId,
                       new DecisionDefinitionServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           search,
@@ -256,11 +298,17 @@ public class CamundaServicesConfiguration {
                   .decisionInstanceServices(
                       tenantId,
                       new DecisionInstanceServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .decisionRequirementsServices(tenantId, decisionRequirements)
                   .documentServices(
                       tenantId,
                       new DocumentServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           new SimpleDocumentStoreRegistry(
@@ -273,20 +321,31 @@ public class CamundaServicesConfiguration {
                   .expressionServices(
                       tenantId,
                       new ExpressionServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .formServices(tenantId, form)
                   .globalListenerServices(
                       tenantId,
                       new GlobalListenerServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .groupServices(
                       tenantId,
                       new GroupServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .incidentServices(tenantId, incident)
                   .jobServices(
                       tenantId,
                       new JobServices<>(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           activateJobsHandler,
@@ -297,10 +356,16 @@ public class CamundaServicesConfiguration {
                   .mappingRuleServices(
                       tenantId,
                       new MappingRuleServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .messageServices(
                       tenantId,
                       new MessageServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           executor,
@@ -309,12 +374,18 @@ public class CamundaServicesConfiguration {
                   .messageSubscriptionServices(
                       tenantId,
                       new MessageSubscriptionServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .processDefinitionServices(tenantId, processDefinition)
                   .processInstanceServices(tenantId, processInstance)
                   .resourceServices(
                       tenantId,
                       new ResourceServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           executor,
@@ -326,26 +397,42 @@ public class CamundaServicesConfiguration {
                   .roleServices(
                       tenantId,
                       new RoleServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .signalServices(
                       tenantId,
                       new SignalServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .tenantServices(
                       tenantId,
                       new TenantServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .topologyServices(
                       tenantId,
                       new TopologyServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .usageMetricsServices(
                       tenantId,
                       new UsageMetricsServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .userServices(
                       tenantId,
                       new UserServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           search,
@@ -359,69 +446,11 @@ public class CamundaServicesConfiguration {
     return builder.build();
   }
 
-  // -- default-tenant service beans --
-  //
-  // Consumers that are not yet physical-tenant aware (currently the MCP gateway tools) still inject
-  // individual {@code *Services} singletons. We expose the default tenant's instances from the
-  // serviceRegistry so those consumers keep working until they are migrated to resolve the tenant
-  // per
-  // request. Making the MCP gateway physical-tenant aware is tracked by
-  // https://github.com/camunda/camunda/issues/52573.
-
-  @Bean
-  public TopologyServices topologyServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.topologyServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public ProcessInstanceServices processInstanceServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.processInstanceServices(
-        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public ProcessDefinitionServices processDefinitionServices(
-      final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.processDefinitionServices(
-        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public UserTaskServices userTaskServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.userTaskServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public IncidentServices incidentServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.incidentServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public JobServices<JobActivationResult> jobServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.jobServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public VariableServices variableServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.variableServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public MessageServices messageServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.messageServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  @Bean
-  public MessageSubscriptionServices messageSubscriptionServices(
-      final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.messageSubscriptionServices(
-        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
-  // This is required by BrokerModuleConfiguration that requires UserServices for Basic auth
-  // TODO we need to make it physical tenant aware
+  // UserServices bean is used by BrokerModuleConfiguration and GatewayModuleConfiguration for Basic
+  // auth in gRPC
+  // TODO to be removed by https://github.com/camunda/camunda/issues/55753
   @Bean
   public UserServices userServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.userServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.userServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 }

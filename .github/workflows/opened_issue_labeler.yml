@@ -1,5 +1,5 @@
 # type: Project Management
-# owner: Engineering Ops
+# owner: @camunda/monorepo-devops-team
 name: "Opened Issue Labeler"
 on:
   issues:

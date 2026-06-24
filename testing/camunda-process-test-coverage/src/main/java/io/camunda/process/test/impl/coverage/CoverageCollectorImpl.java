@@ -53,7 +53,7 @@ public final class CoverageCollectorImpl implements CoverageCollector {
       final String displayName,
       final CoverageTestData testData) {
 
-    final String testClassName = testClass.getName();
+    final String testClassName = getCollectorKey(testClass);
     final CoverageReportCollector coverageReportCollector =
         COLLECTORS_BY_TEST_CLASS.computeIfAbsent(
             testClassName,
@@ -68,11 +68,19 @@ public final class CoverageCollectorImpl implements CoverageCollector {
   @Override
   public CoverageReport generateReport(final Class<?> testClass) {
 
-    final String testClassName = testClass.getName();
+    final String testClassName = getCollectorKey(testClass);
     Optional.ofNullable(COLLECTORS_BY_TEST_CLASS.get(testClassName))
         .ifPresent(
             coverageReportCollector -> coverageReporter.printCoverage(coverageReportCollector));
 
     return coverageReporter.createAggregatedReport(COLLECTORS_BY_TEST_CLASS.values());
+  }
+
+  private static String getCollectorKey(final Class<?> testClass) {
+    final Class<?> enclosingClass = testClass.getEnclosingClass();
+    if (enclosingClass != null) {
+      return enclosingClass.getName();
+    }
+    return testClass.getName();
   }
 }

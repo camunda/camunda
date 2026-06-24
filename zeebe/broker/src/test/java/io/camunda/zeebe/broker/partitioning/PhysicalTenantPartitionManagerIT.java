@@ -10,8 +10,9 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -24,6 +25,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,7 +40,7 @@ final class PhysicalTenantPartitionManagerIT {
     try (final var broker =
         buildBroker(
             tmp,
-            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME, "tenant2"),
+            () -> Set.of(PartitionManagerImpl.DEFAULT_GROUP_NAME, "tenant2"),
             brokerCfg -> {
               final var clusterCfg = brokerCfg.getCluster();
               clusterCfg.setClusterSize(1);
@@ -65,7 +67,9 @@ final class PhysicalTenantPartitionManagerIT {
   }
 
   private static Broker buildBroker(
-      final Path tmp, final List<String> physicalTenantIds, final Consumer<BrokerCfg> configure) {
+      final Path tmp,
+      final PhysicalTenantIds physicalTenantIds,
+      final Consumer<BrokerCfg> configure) {
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
     configure.accept(brokerCfg);
@@ -87,7 +91,7 @@ final class PhysicalTenantPartitionManagerIT {
             null,
             null,
             null,
-            new NoopOidcClaimsProvider(),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),

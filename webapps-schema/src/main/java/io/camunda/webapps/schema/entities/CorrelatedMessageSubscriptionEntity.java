@@ -37,6 +37,10 @@ public class CorrelatedMessageSubscriptionEntity
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String businessId;
+
   @Override
   public String getId() {
     return id;
@@ -190,6 +194,15 @@ public class CorrelatedMessageSubscriptionEntity
     return this;
   }
 
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public CorrelatedMessageSubscriptionEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -207,7 +220,8 @@ public class CorrelatedMessageSubscriptionEntity
         processInstanceKey,
         subscriptionKey,
         subscriptionType,
-        tenantId);
+        tenantId,
+        businessId);
   }
 
   @Override
@@ -234,7 +248,8 @@ public class CorrelatedMessageSubscriptionEntity
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(subscriptionType, that.subscriptionType)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(businessId, that.businessId);
   }
 
   @Override
@@ -278,6 +293,9 @@ public class CorrelatedMessageSubscriptionEntity
         + '\''
         + ", rootProcessInstanceKey="
         + rootProcessInstanceKey
+        + ", businessId='"
+        + businessId
+        + '\''
         + '}';
   }
 }

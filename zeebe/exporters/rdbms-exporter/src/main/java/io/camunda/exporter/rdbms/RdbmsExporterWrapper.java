@@ -9,10 +9,8 @@ package io.camunda.exporter.rdbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
-import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -56,6 +54,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationInitializ
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.DecisionInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.JobBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
@@ -83,20 +82,17 @@ public class RdbmsExporterWrapper implements Exporter {
   /** The partition on which all process deployments are published */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
-  private final RdbmsService rdbmsService;
+  private final RdbmsServiceFactory rdbmsServiceFactory;
   private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
-  private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private RdbmsExporter exporter;
   private RdbmsCacheRegistry cacheRegistry;
 
   public RdbmsExporterWrapper(
-      final RdbmsService rdbmsService,
-      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
-      final VendorDatabaseProperties vendorDatabaseProperties) {
-    this.rdbmsService = rdbmsService;
+      final RdbmsServiceFactory rdbmsServiceFactory,
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
+    this.rdbmsServiceFactory = rdbmsServiceFactory;
     this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
-    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   @Override
@@ -105,9 +101,10 @@ public class RdbmsExporterWrapper implements Exporter {
     config.validate(); // throws exception if configuration is invalid
 
     final int partitionId = context.getPartitionId();
-    final var physicalTenantId = RdbmsWriterConfig.DEFAULT_PHYSICAL_TENANT_ID;
+    final var physicalTenantId = context.getPhysicalTenantId();
     final var rdbmsWriterConfig =
         config.createRdbmsWriterConfig(partitionId, physicalTenantId, context.clock());
+    final var rdbmsService = rdbmsServiceFactory.createRdbmsService(physicalTenantId);
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =
@@ -358,6 +355,10 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getBatchOperationWriter(),
             cacheRegistry.batchOperationCache(),
             BatchOperationType.DELETE_DECISION_INSTANCE));
+    builder.withHandler(
+        ValueType.JOB,
+        new JobBatchOperationExportHandler(
+            rdbmsWriters.getBatchOperationWriter(), cacheRegistry.batchOperationCache()));
   }
 
   private void registerAuditLogHandlers(
@@ -377,10 +378,7 @@ public class RdbmsExporterWrapper implements Exporter {
             builder.withHandler(
                 transformer.config().valueType(),
                 new AuditLogExportHandler<>(
-                    rdbmsWriters.getAuditLogWriter(),
-                    vendorDatabaseProperties,
-                    transformer,
-                    config.getAuditLog())));
+                    rdbmsWriters.getAuditLogWriter(), transformer, config.getAuditLog())));
   }
 
   private void registerWaitStateHandlers(final RdbmsWriters rdbmsWriters, final Builder builder) {

@@ -16,14 +16,16 @@ import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public final class ExpressionServices extends ApiServices<ExpressionServices> {
+public final class ExpressionServices extends PhysicalTenantScopedApiServices<ExpressionServices> {
 
   public ExpressionServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

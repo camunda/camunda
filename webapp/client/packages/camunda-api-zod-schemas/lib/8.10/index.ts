@@ -10,9 +10,9 @@ import {getCurrentUser} from './authentication';
 import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
 import {
 	getAgentInstance,
-	searchAgentInstances,
+	queryAgentInstances,
 	createAgentInstanceHistoryItem,
-	searchAgentInstanceHistory,
+	queryAgentInstanceHistory,
 } from './agent-instance';
 import {
 	createAuthorization,
@@ -197,9 +197,9 @@ const endpoints = {
 
 	activateAdHocSubProcessActivities,
 	getAgentInstance,
-	searchAgentInstances,
+	queryAgentInstances,
 	createAgentInstanceHistoryItem,
-	searchAgentInstanceHistory,
+	queryAgentInstanceHistory,
 	createAuthorization,
 	updateAuthorization,
 	getAuthorization,
@@ -429,6 +429,7 @@ export {
 	agentInstanceDefinitionSchema,
 	agentInstanceMetricsSchema,
 	agentInstanceLimitsSchema,
+	agentToolSchema,
 	agentInstanceSchema,
 	agentInstanceFilterSchema,
 	queryAgentInstancesRequestBodySchema,
@@ -446,12 +447,13 @@ export {
 	agentInstanceHistoryFilterSchema,
 	createAgentInstanceHistoryItemRequestBodySchema,
 	createAgentInstanceHistoryItemResponseBodySchema,
-	searchAgentInstanceHistoryRequestBodySchema,
-	searchAgentInstanceHistoryResponseBodySchema,
+	queryAgentInstanceHistoryRequestBodySchema,
+	queryAgentInstanceHistoryResponseBodySchema,
 	type AgentInstanceStatus,
 	type AgentInstanceDefinition,
 	type AgentInstanceMetrics,
 	type AgentInstanceLimits,
+	type AgentTool,
 	type AgentInstance,
 	type AgentInstanceFilter,
 	type QueryAgentInstancesRequestBody,
@@ -469,8 +471,8 @@ export {
 	type AgentInstanceHistoryFilter,
 	type CreateAgentInstanceHistoryItemRequestBody,
 	type CreateAgentInstanceHistoryItemResponseBody,
-	type SearchAgentInstanceHistoryRequestBody,
-	type SearchAgentInstanceHistoryResponseBody,
+	type QueryAgentInstanceHistoryRequestBody,
+	type QueryAgentInstanceHistoryResponseBody,
 } from './agent-instance';
 export {
 	activityTypeSchema,

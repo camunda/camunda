@@ -22,19 +22,21 @@ public final class PartitionIdIterator implements Iterator<Integer> {
   public PartitionIdIterator(
       final int startPartitionId,
       final int partitionsCount,
-      final BrokerTopologyManager topologyManager) {
+      final BrokerTopologyManager topologyManager,
+      final String partitionGroup) {
     iterator =
         IntStream.range(0, partitionsCount)
             .map(
                 index ->
                     (index + startPartitionId - START_PARTITION_ID) % partitionsCount
                         + START_PARTITION_ID)
-            .filter(p -> hasLeader(topologyManager, p))
+            .filter(p -> hasLeader(topologyManager, partitionGroup, p))
             .iterator();
   }
 
-  private boolean hasLeader(final BrokerTopologyManager topologyManager, final int p) {
-    final var topology = topologyManager.getTopology();
+  private boolean hasLeader(
+      final BrokerTopologyManager topologyManager, final String partitionGroup, final int p) {
+    final var topology = topologyManager.getTopology(partitionGroup);
     return topology != null && topology.getLeaderForPartition(p) != null;
   }
 

@@ -89,6 +89,50 @@ go version
 - Use `gofmt` — output must be clean before committing.
 - Formatting is managed by `gofmt`; do not override manually.
 
+### Markdown Formatting (Spotless / Flexmark)
+
+Most `*.md` files in this repo are checked by Spotless using the Flexmark formatter, including all files under `c8run/`. (Excluded paths include `**/node_modules/**`, `.github/instructions/**`, `.claude/skills/**`, and others defined in the root `pom.xml`.) CI will reject PRs with formatting violations. Key rules:
+
+**Tables:**
+
+- Header cell width = `text_len + left_pad + right_pad`, where `left_pad = floor((col_width - text_len) / 2)` and `right_pad = ceil((col_width - text_len) / 2)` (centered).
+- Column width = `max(header_cell_width, widest_body_cell_content + 2)` — no extra padding beyond what content requires.
+- Body cells are **left-aligned**: one leading space, content, then trailing spaces to fill the column width, then one trailing space.
+- Separator uses full-width dashes matching the column width.
+- Copy column widths from an existing table in the same file if possible; do not add gratuitous padding.
+
+**Lists with indented code blocks:**
+
+- Fenced code blocks inside list items MUST have a blank line before and after them.
+- When any list item contains blank lines (making it a "loose" list), ALL items must be separated by blank lines.
+
+Correct:
+
+````markdown
+- First item text:
+
+  ```bash
+  command
+  ```
+
+  Continuation paragraph.
+
+- Second item.
+````
+
+Wrong (will fail CI):
+
+````markdown
+- First item text:
+  ```bash
+  command
+  ```
+  Continuation paragraph.
+- Second item.
+````
+
+**Verification:** Run `./mvnw spotless:apply -T1C` from the repo root. This requires access to Camunda's internal Nexus (`repository.nexus.camunda.cloud`), configured via `NEXUS_USR`/`NEXUS_PSW` credentials — CI sets these automatically from Vault. If you don't have those credentials locally, verify formatting manually using the rules above before pushing.
+
 ### Package Design
 
 - Keep package APIs narrow and aligned with the current layout.
@@ -121,7 +165,7 @@ go version
 | `docs/local-development.md`      | Prerequisites, quick start, and testing code changes against a local Camunda build                           |
 | `docs/package-layout.md`         | Key package areas, runtime artifact list, packaging a distribution                                           |
 | `docs/runtime-rules.md`          | Config precedence, H2 rules, Connectors compatibility, ports, health check timeout, quickstart marker        |
-| `docs/testing-guide.md`          | Platform coverage, process lifecycle, packaging, startup test expectations                                   |
+| `docs/testing-guide.md`          | Platform coverage, process lifecycle, packaging, E2E layers, on-demand all-OS trigger guide                  |
 | `docs/process-lifecycle.md`      | PID locking semantics, 4-state restart machine, signal handling, graceful shutdown, detached mode stub       |
 | `docs/configuration.md`          | JAVA_HOME fallback chain, config directory handling, H2 cleanup decision tree, RDBMS driver detection        |
 | `docs/platform-differences.md`   | Unix vs Windows: process groups, kill implementation, path/classpath conventions, archive formats, test tags |
@@ -140,4 +184,5 @@ go version
 6. Build the changed binary to confirm it compiles: `go build -o c8run ./cmd/c8run`.
 7. For packaging changes, also build and verify `packager`.
 8. Commit with Conventional Commits format, no scope.
+9. For packaging changes (archive layout, JRE bundling, lib stripping, new artifacts), trigger the all-OS on-demand E2E suite against the branch — see [Testing Guide — Triggering the all-OS on-demand suite](docs/testing-guide.md#triggering-the-all-os-on-demand-suite-against-a-feature-branch).
 

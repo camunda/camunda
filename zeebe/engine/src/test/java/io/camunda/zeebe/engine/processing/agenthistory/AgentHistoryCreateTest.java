@@ -62,6 +62,7 @@ public class AgentHistoryCreateTest {
     assertThat(created.getValue().getAgentInstanceKey()).isEqualTo(agentInstanceKey);
     assertThat(created.getValue().getJobKey()).isEqualTo(jobKey);
     assertThat(created.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
+    assertThat(created.getValue().getBpmnProcessId()).isEqualTo(PROCESS_ID);
 
     final var committed =
         RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)

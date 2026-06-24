@@ -9,8 +9,10 @@
 import styled from "styled-components";
 
 const PageHeadline = styled.h1`
-  display: flex;
-  gap: var(--cds-spacing-04);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export default PageHeadline;

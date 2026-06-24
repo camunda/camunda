@@ -68,6 +68,27 @@ Reach out to `#team-data-layer` for review if your answers indicate:
 
 ---
 
+## 1.3 Automated Enforcement
+
+Schema constraint tests enforce the type guidance in §2 automatically. If your PR fails one of
+these tests, it means the change requires explicit Data Layer sign-off before it can merge.
+
+|               Test class                |      Module       |                                                    What it enforces                                                     |
+|-----------------------------------------|-------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `SecondaryStorageSchemaConstraintsTest` | `webapps-schema`  | Approved ES/OS field types; `"dynamic": "strict"` required everywhere; same template filenames in ES and OS directories |
+| `RdbmsSchemaConstraintsTest`            | `db/rdbms-schema` | Approved RDBMS column base types                                                                                        |
+
+**To request a new type or mapping pattern:**
+
+1. Add the type to the appropriate allowlist in the test class. The test failure output lists the
+   exact steps.
+2. Add a comment explaining the use case and any performance or portability implications.
+3. Get sign-off from the Data Layer team (`#team-data-layer` on Slack).
+4. Add `@camunda/data-layer` as a required reviewer on the PR (CODEOWNERS will do this
+   automatically when you modify those files).
+
+---
+
 ## 2. Schema & Field Type Guidance
 
 ### 2.1 Choosing Field Types (ES/OS)

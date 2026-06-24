@@ -9,9 +9,9 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -66,6 +66,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final OidcClaimsProvider oidcClaimsProvider;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
+  private final PhysicalTenantIds physicalTenantIds;
 
   private Gateway gateway;
 
@@ -83,7 +84,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final JwtDecoder jwtDecoder,
       @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
+      final GatewayRestConfiguration gatewayRestConfiguration,
+      final PhysicalTenantIds physicalTenantIds) {
     this.configuration = configuration;
     this.engineSecurityConfig =
         new EngineSecurityConfig(
@@ -102,9 +104,10 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.oidcClaimsProvider =
-        oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider();
+        oidcClaimsProvider != null ? oidcClaimsProvider : (jwtClaims, tokenValue) -> jwtClaims;
     this.meterRegistry = meterRegistry;
     maxVariableNameLength = gatewayRestConfiguration.getMaxNameFieldLength();
+    this.physicalTenantIds = physicalTenantIds;
   }
 
   @Bean(destroyMethod = "close")
@@ -136,7 +139,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             jwtDecoder,
             oidcClaimsProvider,
             meterRegistry,
-            maxVariableNameLength);
+            maxVariableNameLength,
+            physicalTenantIds);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->

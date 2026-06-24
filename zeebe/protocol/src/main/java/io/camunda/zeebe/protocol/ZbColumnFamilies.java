@@ -313,7 +313,17 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // absent from this CF and continue to be released by today's local completion path.
   CROSS_PARTITION_MESSAGE_START_LOCK(147, PARTITION_LOCAL),
 
-  JOB_ACTIVATABLE_BY_PRIORITY(148, PARTITION_LOCAL);
+  JOB_ACTIVATABLE_BY_PRIORITY(148, PARTITION_LOCAL),
+
+  // Secondary index over buffered messages by Business ID, keyed by (tenantId, businessId,
+  // messageKey). Maintained on the buffered message's own lifecycle: an entry is written when a
+  // message that carries a businessId is buffered and removed when that message expires. It lets a
+  // same-partition message-start that was skipped on Business-ID uniqueness be found again by the
+  // freed businessId: when a holder instance completes/terminates, the post-transition re-drive
+  // looks up blocked starts by businessId here and re-attempts the ordinary local start. Mirrors
+  // the
+  // correlation-key buffer's completion-driven re-drive (see ADR 0002 D5).
+  MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

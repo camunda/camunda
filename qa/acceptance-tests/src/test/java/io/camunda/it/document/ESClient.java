@@ -73,6 +73,16 @@ public class ESClient implements DocumentClient {
   }
 
   @Override
+  public void createAlias(final String indexName, final String aliasName) throws IOException {
+    esClient.indices().putAlias(b -> b.index(indexName).name(aliasName));
+  }
+
+  @Override
+  public void deleteAlias(final String indexName, final String aliasName) throws IOException {
+    esClient.indices().deleteAlias(b -> b.index(indexName).name(aliasName));
+  }
+
+  @Override
   public void deleteAllIndices(final String indexPrefix) throws IOException {
     esClient.indices().delete(DeleteIndexRequest.of(b -> b.index("*")));
   }

@@ -67,6 +67,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
                         "rootProcessInstanceKey": "37",
+                        "businessId": "biz-77",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -290,6 +291,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
                         "rootProcessInstanceKey": "37",
+                        "businessId": "biz-77",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -345,6 +347,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       2L, // processDefinitionId
                       1L, // processInstanceId
                       37L, // rootProcessInstanceId
+                      "biz-77", // businessId
                       3L, // elementInstanceId
                       "t", // tenantId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // dueDate
@@ -441,6 +444,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 2L,
                 1L,
                 37L,
+                "biz-77",
                 3L,
                 "t",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
@@ -547,6 +551,44 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                             .completionDate()
                             .asc()
                             .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldSearchUserTasksWithBusinessIdSorting() {
+    // given
+    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+                {
+                    "sort": [
+                        {
+                            "field": "businessId",
+                            "order": "asc"
+                        }
+                    ]
+                }""";
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .search(
+            eq(
+                new UserTaskQuery.Builder()
+                    .sort(new UserTaskSort.Builder().businessId().asc().build())
                     .build()),
             any());
   }
@@ -787,7 +829,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "Bad Request",
                           "status": 400,
-                          "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name]",
+                          "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name, businessId]",
                           "instance": "%s"
                         }""",
             USER_TASKS_SEARCH_URL);
@@ -1162,6 +1204,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "assignee",
         ops -> new UserTaskFilter.Builder().assigneeOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "businessId",
+        ops -> new UserTaskFilter.Builder().businessIdOperations(ops).build());
     stringOperationTestCases(
         streamBuilder,
         "tenantId",

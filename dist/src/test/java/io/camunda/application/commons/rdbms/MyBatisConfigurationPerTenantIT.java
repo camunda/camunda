@@ -7,12 +7,11 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
@@ -28,8 +27,6 @@ import org.springframework.mock.env.MockEnvironment;
 class MyBatisConfigurationPerTenantIT {
 
   private static final MyBatisConfiguration MY_BATIS = new MyBatisConfiguration();
-  private static final RdbmsDatabaseIdProvider DATABASE_ID_PROVIDER =
-      new RdbmsDatabaseIdProvider(null);
 
   @BeforeAll
   @AfterAll
@@ -39,47 +36,30 @@ class MyBatisConfigurationPerTenantIT {
 
   @Test
   void shouldBuildIsolatedFactoryAndBundlePerTenantAndExposeDefaultAsSingleton() throws Exception {
-    try (final var fixture = wireTenants(DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
-      assertThat(fixture.factories).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
-      assertThat(fixture.bundles).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
-      assertThat(fixture.factories.get(DEFAULT_PHYSICAL_TENANT_ID))
+    try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
+      assertThat(fixture.factories)
+          .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
+      assertThat(fixture.bundles)
+          .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
+      assertThat(fixture.factories.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
           .isNotSameAs(fixture.factories.get("tenantb"));
-      assertThat(MY_BATIS.sqlSessionFactory(fixture.factories))
-          .isSameAs(fixture.factories.get(DEFAULT_PHYSICAL_TENANT_ID));
     }
   }
 
   @Test
-  void shouldRouteWriterFactoryByPhysicalTenantId() throws Exception {
-    try (final var fixture = wireTenants(DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
-      final var writerFactory = fixture.writerFactory();
-
+  void shouldBuildIsolatedWritersPerTenant() throws Exception {
+    try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
       final var defaultWriters =
-          writerFactory.createWriter(new RdbmsWriterConfig.Builder().partitionId(1).build());
+          fixture
+              .writerFactory(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .createWriter(new RdbmsWriterConfig.Builder().partitionId(1).build());
       final var tenantBWriters =
-          writerFactory.createWriter(
-              new RdbmsWriterConfig.Builder().partitionId(1).physicalTenantId("tenantb").build());
+          fixture
+              .writerFactory("tenantb")
+              .createWriter(new RdbmsWriterConfig.Builder().partitionId(1).build());
 
       assertThat(defaultWriters.getExecutionQueue())
           .isNotSameAs(tenantBWriters.getExecutionQueue());
-    }
-  }
-
-  @Test
-  void shouldRejectUnknownPhysicalTenantId() throws Exception {
-    try (final var fixture = wireTenants(DEFAULT_PHYSICAL_TENANT_ID)) {
-      final var writerFactory = fixture.writerFactory();
-
-      assertThatThrownBy(
-              () ->
-                  writerFactory.createWriter(
-                      new RdbmsWriterConfig.Builder()
-                          .partitionId(1)
-                          .physicalTenantId("unknown")
-                          .build()))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("unknown")
-          .hasMessageContaining(DEFAULT_PHYSICAL_TENANT_ID);
     }
   }
 
@@ -93,15 +73,19 @@ class MyBatisConfigurationPerTenantIT {
           "jdbc:h2:mem:rdbms-test-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
       props.put(base + "rdbms.username", "sa");
       props.put(base + "rdbms.password", "");
+      // every explicitly-configured tenant must provide its own initialization block
+      props.put(
+          "camunda.physical-tenants."
+              + tenantId
+              + ".security.initialization.default-roles.admin.users[0]",
+          tenantId + "-admin");
     }
     final var env = new MockEnvironment();
     env.getPropertySources().addFirst(new MapPropertySource("test", props));
     final var resolver = PhysicalTenantResolver.of(env, new Camunda());
     final var dataSources =
-        RdbmsDataSources.of(
-            resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()),
-            DATABASE_ID_PROVIDER);
-    final var factories = MY_BATIS.sqlSessionFactories(dataSources, resolver, DATABASE_ID_PROVIDER);
+        RdbmsDataSources.of(resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()));
+    final var factories = MY_BATIS.sqlSessionFactories(dataSources, resolver);
     final var bundles = MY_BATIS.rdbmsMapperBundles(factories, dataSources);
     return new TenantFixture(dataSources, factories, bundles);
   }
@@ -112,8 +96,8 @@ class MyBatisConfigurationPerTenantIT {
       java.util.Map<String, io.camunda.db.rdbms.write.RdbmsMapperBundle> bundles)
       implements AutoCloseable {
 
-    RdbmsWriterFactory writerFactory() {
-      return new RdbmsWriterFactory(bundles, new SimpleMeterRegistry());
+    RdbmsWriterFactory writerFactory(final String physicalTenantId) {
+      return new RdbmsWriterFactory(bundles.get(physicalTenantId), new SimpleMeterRegistry());
     }
 
     @Override

@@ -7,16 +7,16 @@
  */
 package io.camunda.it.rdbms.db.util;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +31,8 @@ public final class CamundaRdbmsTestApplication
 
   private GenericContainer<?> databaseContainer;
 
-  private final Camunda unifiedConfig;
-
   public CamundaRdbmsTestApplication(final Class<?>... springConfigurations) {
     super(springConfigurations);
-
-    unifiedConfig = new Camunda();
   }
 
   public CamundaRdbmsTestApplication withDatabaseContainer(
@@ -104,10 +100,6 @@ public final class CamundaRdbmsTestApplication
     // we need to hook in at the last minute and set the property as it won't resolve from the
     // config bean
     withProperty("zeebe.broker.gateway.enable", true);
-    // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
-    // so the rdbms URL set in start() (after the container is up) is captured. Refreshable so that
-    // fields cleared between stop/start don't remain.
-    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder();
   }
 
@@ -141,23 +133,11 @@ public final class CamundaRdbmsTestApplication
     return false;
   }
 
-  /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public CamundaRdbmsTestApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
   public RdbmsService getRdbmsService() {
     if (!isStarted()) {
       throw new IllegalStateException("Application is not started");
     }
-    return super.bean(RdbmsService.class);
+    return super.bean(RdbmsServiceFactory.class).createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private void setSecondaryStorageToRdbms() {

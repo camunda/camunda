@@ -49,6 +49,7 @@ public class RdbmsFlushRollbackIT {
   private static final int PARTITION_ID_POST_FLUSH = 10_003;
   private static final int PARTITION_ID_HOOK = 10_004;
   private static final int PARTITION_ID_FULL_SCENARIO = 10_005;
+  private static final int PARTITION_ID_DUPLICATE_INSERT = 10_006;
 
   @TestTemplate
   void shouldRollbackAllStatementsWhenSecondStatementFails(
@@ -372,6 +373,37 @@ public class RdbmsFlushRollbackIT {
             flowNodeInstanceReader.getByKey(
                 flowNodeInstance2.flowNodeInstanceKey(), resourceAccessChecksFromTenantIds()))
         .as("Items must be committed on the successful retry")
+        .isNotNull();
+  }
+
+  /**
+   * Verifies that creating the same entity twice within a single flush (as happens when the
+   * exporter re-processes and re-enqueues a record after a failed flush) does not produce a
+   * duplicate row in the batch INSERT. The {@code BatchInsertMerger} must absorb the second insert
+   * so the flush succeeds with a single row instead of failing with a primary-key violation.
+   */
+  @TestTemplate
+  void shouldDropDuplicateInsertWithinSameFlush(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID_DUPLICATE_INSERT);
+    final FlowNodeInstanceDbReader flowNodeInstanceReader =
+        rdbmsService.getFlowNodeInstanceReader();
+
+    final var flowNodeInstance = FlowNodeInstanceFixtures.createRandomized(b -> b);
+
+    // the same flow node instance is queued twice into one flush (mirrors the re-enqueue on retry)
+    rdbmsWriters.getFlowNodeInstanceWriter().create(flowNodeInstance);
+    rdbmsWriters.getFlowNodeInstanceWriter().create(flowNodeInstance);
+
+    // when: the flush must succeed (the duplicate is absorbed), not throw a duplicate-key error
+    rdbmsWriters.flush();
+
+    // then: the row exists exactly once
+    assertThat(
+            flowNodeInstanceReader.getByKey(
+                flowNodeInstance.flowNodeInstanceKey(), resourceAccessChecksFromTenantIds()))
+        .as("The de-duplicated flow node must be committed exactly once")
         .isNotNull();
   }
 }

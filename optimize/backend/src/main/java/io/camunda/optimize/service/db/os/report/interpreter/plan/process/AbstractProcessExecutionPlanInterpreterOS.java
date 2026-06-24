@@ -37,6 +37,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 public abstract class AbstractProcessExecutionPlanInterpreterOS
     extends AbstractExecutionPlanInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessExecutionPlanInterpreterOS {
+
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
   protected abstract ProcessQueryFilterEnhancerOS getQueryFilterEnhancer();
@@ -86,31 +87,33 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
   @Override
   protected BoolQuery.Builder unfilteredBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    // Instance level date filters are also applied to the baseline so are included here
-    final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
-        getInstanceLevelDateFiltersByDefinitionKey(context);
+    final Map<String, List<ProcessFilterDto<?>>> instanceLevelFiltersByDefinitionKey =
+        buildBaselineFiltersByDefinition(context);
     final List<ProcessFilterDto<?>> filters =
-        instanceLevelDateFiltersByDefinitionKey.getOrDefault(
+        instanceLevelFiltersByDefinitionKey.getOrDefault(
             APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList());
     final List<Query> filterQueries =
         getQueryFilterEnhancer().filterQueries(filters, context.getFilterContext());
     return buildDefinitionBaseQueryForFilters(
-        context, instanceLevelDateFiltersByDefinitionKey, filterQueries);
+        context, instanceLevelFiltersByDefinitionKey, filterQueries);
   }
 
   private BoolQuery.Builder buildDefinitionBaseQueryForFilters(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition,
       final List<Query> filterQueries) {
-    // If the user has access to no definitions, management reports may contain no processes in its
-    // data source so we exclude all instances from the result
-    return context.getReportData().getDefinitions().isEmpty()
-            && context.getReportData().isManagementReport()
-        ? new BoolQuery.Builder().filter(not(matchAll()))
-        : new BoolQuery.Builder()
-            .minimumShouldMatch("1")
-            .should(multiDefinitionFilterQueries(context, filtersByDefinition))
-            .filter(filterQueries);
+    if (context.getReportData().getDefinitions().isEmpty()) {
+      if (context.getReportData().isManagementReport()) {
+        // Management report with no accessible definitions: exclude all instances from the result
+        return new BoolQuery.Builder().filter(not(matchAll()));
+      }
+      // No definitions: skip definition-scoped filtering and let other query filters apply
+      return new BoolQuery.Builder().filter(filterQueries);
+    }
+    return new BoolQuery.Builder()
+        .minimumShouldMatch("1")
+        .should(multiDefinitionFilterQueries(context, filtersByDefinition))
+        .filter(filterQueries);
   }
 
   private List<Query> multiDefinitionFilterQueries(

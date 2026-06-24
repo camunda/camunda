@@ -16,10 +16,11 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -43,38 +44,39 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
-  protected <R> CompletableFuture<R> sendBrokerRequest(
+  protected final <R> CompletableFuture<R> sendBrokerRequest(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
-  protected <R> CompletableFuture<R> sendBrokerRequest(
-      final BrokerRequest<R> brokerRequest,
-      final Duration requestTimeout,
-      final CamundaAuthentication authentication) {
-    return sendBrokerRequestWithFullResponse(brokerRequest, requestTimeout, authentication)
-        .thenApplyAsync(BrokerResponse::getResponse, executor);
-  }
-
-  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+  protected final <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    applyBrokerRequestMutators(brokerRequest, authentication);
     return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
   }
 
-  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
-      final BrokerRequest<R> brokerRequest,
-      final Duration requestTimeout,
-      final CamundaAuthentication authentication) {
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
-    return brokerClient
-        .sendRequest(brokerRequest, requestTimeout)
-        .handleAsync(handleBrokerResponse(), executor);
+  /**
+   * Applies every {@link #brokerRequestMutators() mutator} to the given request. Send paths that
+   * cannot use {@link #sendBrokerRequest} / {@link #sendBrokerRequestWithFullResponse} (e.g.
+   * because they dispatch via a partition-retry or job-activation handler and therefore bypass
+   * these helpers) must call this so they get the full mutator set (authorization <em>and</em>, for
+   * physical-tenant-scoped services, the partition group). Hand-applying a subset (e.g. only
+   * authorization) silently drops newer mutators and is the bug class this method exists to
+   * prevent.
+   */
+  protected final void applyBrokerRequestMutators(
+      final BrokerRequest<?> brokerRequest, final CamundaAuthentication authentication) {
+    brokerRequestMutators().forEach(mutator -> mutator.accept(brokerRequest, authentication));
+  }
+
+  protected List<BiConsumer<BrokerRequest, CamundaAuthentication>> brokerRequestMutators() {
+    return List.of(
+        (brokerRequest, authentication) -> {
+          final var brokerRequestAuthorization =
+              brokerRequestAuthorizationConverter.convert(authentication);
+          brokerRequest.setAuthorization(brokerRequestAuthorization);
+        });
   }
 
   private <R>

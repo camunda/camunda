@@ -9,10 +9,11 @@
 import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
+import { usePagination } from "src/utility/api";
+import { useQuery } from "@tanstack/react-query";
+import { globalTaskListenerQueries } from "src/utility/api/global-task-listeners/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { searchGlobalTaskListeners } from "src/utility/api/global-task-listeners";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/global-task-listeners/modals/AddModal";
@@ -23,26 +24,26 @@ import { getEventTypeLabels } from "src/pages/global-task-listeners/utility";
 
 const List: FC = () => {
   const { t } = useTranslate("globalTaskListeners");
+  const noop = () => {};
 
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
   const {
     data: globalTaskListeners,
-    loading,
-    reload,
-    success,
-    search,
-    ...paginationProps
-  } = usePaginatedApi(searchGlobalTaskListeners);
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(globalTaskListenerQueries.search(pageParams));
 
   const [addGlobalTaskListener, addGlobalTaskListenerModal] = useModal(
     AddModal,
-    reload,
+    noop,
   );
   const [editGlobalTaskListener, editGlobalTaskListenerModal] = useEntityModal(
     EditModal,
-    reload,
+    noop,
   );
   const [deleteGlobalTaskListener, deleteGlobalTaskListenerModal] =
-    useEntityModal(DeleteModal, reload);
+    useEntityModal(DeleteModal, noop);
 
   const shouldShowEmptyState =
     success && !search && !globalTaskListeners?.items.length;
@@ -124,12 +125,18 @@ const List: FC = () => {
         ]}
         searchPlaceholder={t("searchById")}
         searchKey="id"
-        {...paginationProps}
+        page={{ ...page, ...globalTaskListeners?.page }}
+        {...paginationCallbacks}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("globalTaskListenersCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
       {addGlobalTaskListenerModal}

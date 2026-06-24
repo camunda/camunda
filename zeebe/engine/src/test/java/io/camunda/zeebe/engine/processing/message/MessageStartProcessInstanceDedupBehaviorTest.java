@@ -55,6 +55,11 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
   private static final Duration MESSAGE_TTL = Duration.ofSeconds(5);
   private static final Duration SWEEP_INTERVAL = Duration.ofSeconds(1);
 
+  // Explicit, comfortably-wide grace so the dedup row stays a valid re-reply source for
+  // (messageDeadline, messageDeadline + grace) — the near-deadline window the grace closes. Chosen
+  // larger than MESSAGE_TTL so a single clock advance can land strictly inside the grace window.
+  private static final Duration DEDUP_GRACE = Duration.ofSeconds(10);
+
   private static final BpmnModelInstance MESSAGE_START_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent(START_EVENT_ID)
@@ -70,7 +75,8 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
               config ->
                   config
                       .setBusinessIdUniquenessEnabled(true)
-                      .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL));
+                      .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL)
+                      .setMessageStartAskRetryGrace(DEDUP_GRACE));
 
   @Test
   public void shouldReReplyStartedWithCachedKeyOnActiveDedupHit() {
@@ -129,16 +135,53 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
   }
 
   @Test
-  public void shouldReEvaluateAfterDedupDeletionDeadlineHasPassed() {
-    // given a PI was started, completed, and the dedup entry's deletionDeadline (= the request's
-    // messageDeadline) has elapsed
+  public void shouldReReplyCachedKeyWhenRetryArrivesAfterDeadlineButWithinGrace() {
+    // Pins the near-deadline grace (ADR 0002 / commit 8): a retry that crosses the message deadline
+    // but lands within the grace window still hits the dedup and re-replies the SAME PI key,
+    // instead
+    // of falling through to a fresh start. Without the grace this retry would dedup-miss past the
+    // deadline, re-evaluate live state (the holder has completed and freed the businessId), and
+    // create a duplicate — the exact near-deadline duplicate window the grace closes.
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
     final long subscriptionKey = waitForStartEventSubscriptionKey();
     writeRequest(subscriptionKey);
     final long firstPiKey = firstStartReplyPiKey();
     completeServiceTask(firstPiKey);
     waitForRootProcessCompletion(firstPiKey);
-    engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
+
+    // advance past the message deadline but stay strictly inside the grace window
+    engine.increaseTime(MESSAGE_TTL.plusSeconds(1));
+
+    // when a retry arrives in the grace window
+    writeRequest(subscriptionKey);
+
+    // then the dedup still re-replies the original PI key (no duplicate)
+    final long secondPiKey =
+        RecordingExporter.records()
+            .filter(r -> r.getRecordType() == RecordType.COMMAND)
+            .filter(r -> r.getIntent() == MessageStartProcessInstanceRequestIntent.START)
+            .limit(2)
+            .skip(1)
+            .map(this::asRequest)
+            .findFirst()
+            .orElseThrow()
+            .getProcessInstanceKey();
+    assertThat(secondPiKey)
+        .as("a retry within the grace window re-replies the cached PI key, not a fresh start")
+        .isEqualTo(firstPiKey);
+  }
+
+  @Test
+  public void shouldReEvaluateAfterDedupDeletionDeadlineHasPassed() {
+    // given a PI was started, completed, and the dedup entry's deletionDeadline (= the request's
+    // messageDeadline) plus the grace has elapsed
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    writeRequest(subscriptionKey);
+    final long firstPiKey = firstStartReplyPiKey();
+    completeServiceTask(firstPiKey);
+    waitForRootProcessCompletion(firstPiKey);
+    engine.increaseTime(MESSAGE_TTL.plus(DEDUP_GRACE).plus(SWEEP_INTERVAL).plusSeconds(1));
 
     // when a fresh REQUEST arrives after the window has passed
     writeRequest(subscriptionKey);
@@ -197,7 +240,7 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
     waitForRootProcessCompletion(firstPiKey);
 
     // when the scheduler observes a past-deadline dedup entry and the processor sweeps it
-    engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
+    engine.increaseTime(MESSAGE_TTL.plus(DEDUP_GRACE).plus(SWEEP_INTERVAL).plusSeconds(1));
 
     // then a EXPIRED_DEDUP_DELETED event is written and its applier removes the entry; a subsequent
     // REQUEST is a cache miss and a fresh PI is created

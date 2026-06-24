@@ -94,6 +94,11 @@ on:
         type: number
         default: 1
         required: false
+      target-version:
+        description: 'Setup version subfolder to use. Corresponds to load-tests/setup/<target-version>/. Default: main.'
+        type: string
+        default: "main"
+        required: false
       orchestration-tag:
         description: 'Official Docker Hub image tag (docker.io/camunda/camunda). Uses Docker Hub instead of building. ⚠ Cannot be used with reuse-tag.'
         type: string
@@ -185,6 +190,11 @@ on:
         type: string
         required: false
         default: elasticsearch
+      target-version:
+        description: 'Setup version subfolder to use (main, stable-89, stable-88, stable-87). Default: main.'
+        type: string
+        default: "main"
+        required: false
       orchestration-tag:
         description: 'Orchestration Tag: Docker image tag for official Camunda images from Docker Hub (docker.io/camunda/camunda). When set, official Docker Hub images are used instead of building from source. Cannot be used together with reuse-tag.'
         type: string
@@ -237,6 +247,7 @@ jobs:
           |-------|-------|
           | Name | `${{ inputs.name }}` |
           | Ref | `${{ inputs.ref }}` |
+          | Target version | `${{ inputs.target-version }}` |
           | Scenario | `${{ inputs.scenario }}` |
           | Secondary storage | `${{ inputs.secondary-storage-type }}` |
           | Reuse tag | ${{ inputs.reuse-tag || '—' }} |
@@ -453,19 +464,58 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  build-metrics-exporter-image:
+    name: Build Metrics Exporter
+    if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: calculate-image-tag
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Build and push image
+        working-directory: ./load-tests/metrics-exporter
+        run: make docker IMAGE=registry.camunda.cloud/team-reliability-testing/metrics-exporter:${{ needs.calculate-image-tag.outputs.image-tag }} DOCKER_PUSH=true
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   deploy-cluster-under-test:
     name: Deploy cluster under test
     needs:
       - calculate-image-tag
       - build-camunda-image
       - build-load-test-images
+      - build-metrics-exporter-image
     # To have the possibility to re-deploy the tests without rebuilding the images,
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
       needs.calculate-image-tag.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
-      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped') &&
+      (needs.build-metrics-exporter-image.result == 'success' || needs.build-metrics-exporter-image.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -532,7 +582,7 @@ jobs:
           git config user.name ${{ github.actor }}
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          ./newLoadTest.sh --target-version ${{ inputs.target-version || 'main' }} ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}
@@ -564,6 +614,8 @@ jobs:
             --set orchestration.image.registry=${image_registry} \
             --set orchestration.image.repository=${camunda_repo} \
             --set orchestration.image.tag=${image_tag}"
+
+          additional_load_test_setup_configuration=""
 
           # Append optimize image config: optimize-tag wins if set, otherwise custom builds use internal registry
           if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
@@ -597,18 +649,29 @@ jobs:
             additional_platform_config+=" ${{ inputs.platform-helm-values }}"
           fi
 
+          # Pin the metrics-exporter image to the tag built by build-metrics-exporter-image.
+          # If the image has been skipped, keep using the "latest" tag, which
+          # is assuming to be always published by the dedicated CI running on
+          # the main branch.
+          if [[ "${{ needs.build-metrics-exporter-image.result }}" == "success" ]]; then
+            additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${image_tag}"
+          fi
+
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             scenario=${{ inputs.scenario }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
             additional_platform_configuration="$additional_platform_config" \
-            additional_load_test_configuration="$load_test_config"
+            additional_load_test_configuration="$load_test_config" \
+            additional_load_test_setup_configuration="$additional_load_test_setup_configuration"
+
       - name: Annotate namespace with workflow run URL
         run: |
           # Traceability annotation, applied after `make install` has created the namespace.
           kubectl annotate namespace ${{ env.NAMESPACE }} \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --overwrite
+
       - name: Summarize platform deployment
         if: success()
         run: |

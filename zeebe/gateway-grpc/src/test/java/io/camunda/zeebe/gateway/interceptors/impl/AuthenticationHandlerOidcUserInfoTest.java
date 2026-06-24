@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import java.util.List;
 import java.util.Map;

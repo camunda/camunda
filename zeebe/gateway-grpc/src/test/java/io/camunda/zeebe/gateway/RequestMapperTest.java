@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -809,6 +810,109 @@ public class RequestMapperTest {
           .isInstanceOf(InvalidVariableRequestException.class)
           .hasMessageContaining("Expected variable names to be no longer than 5 characters")
           .hasMessageContaining("length 6");
+    }
+  }
+
+  @Nested
+  class PublishMessageRequestNameValidationTest {
+
+    @Test
+    public void shouldAcceptNonBlankName() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().setName("message").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getName()).isEqualTo("message");
+    }
+
+    @Test
+    public void shouldRejectMissingName() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toPublishMessageRequest(grpcRequest))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("non-empty name");
+    }
+
+    @Test
+    public void shouldRejectBlankName() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().setName("   ").build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toPublishMessageRequest(grpcRequest))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("non-empty name");
+    }
+  }
+
+  @Nested
+  class PublishMessageRequestBusinessIdTest {
+
+    @Test
+    public void shouldAcceptValidBusinessId() {
+      // given
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId("order-12345")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo("order-12345");
+    }
+
+    @Test
+    public void shouldAcceptBusinessIdAtMaxLength() {
+      // given
+      final String maxLengthBusinessId = "a".repeat(256);
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId(maxLengthBusinessId)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo(maxLengthBusinessId);
+    }
+
+    @Test
+    public void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId("a".repeat(257))
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toPublishMessageRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("business id")
+          .hasMessageContaining("256");
+    }
+
+    @Test
+    public void shouldAcceptEmptyBusinessId() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().setName("message").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
     }
   }
 }

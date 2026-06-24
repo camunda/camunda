@@ -38,13 +38,13 @@ commitlint*                 @camunda/orchestration-cluster
 .gitattributes              @camunda/orchestration-cluster
 .gitignore                  @camunda/orchestration-cluster
 .suppressions.xml           @camunda/orchestration-cluster
-Dockerfile                  @camunda/orchestration-cluster
 camunda.Dockerfile          @camunda/orchestration-cluster
 
 # Zeebe shared ownership modules
 zeebe/README.md             @camunda/orchestration-cluster
 zeebe/docker/utils/         @camunda/orchestration-cluster
 zeebe/docs/.htaccess        @camunda/orchestration-cluster
+zeebe/docs/adr/             @camunda/orchestration-cluster
 zeebe/pom.xml               @camunda/orchestration-cluster
 zeebe/qa/pom.xml            @camunda/orchestration-cluster
 buf.yaml                    @camunda/orchestration-cluster
@@ -121,6 +121,7 @@ mwnw*                       @camunda/monorepo-devops-team
 /.github/workflows/camunda8-getting-started-bundle.yaml @camunda/camundaex
 /.github/workflows/camunda-client-compatibility-test* @camunda/camundaex
 /.github/workflows/camunda-process-test-compatibility* @camunda/camundaex
+/.github/workflows/camunda-spring-boot-starter-compatibility-test* @camunda/camundaex
 
 
 ################################
@@ -247,11 +248,9 @@ mwnw*                       @camunda/monorepo-devops-team
 /operate/                   @camunda/core-features
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
 /operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
-operate.Dockerfile          @camunda/core-features
 
 # Tasklist
 /tasklist/                  @camunda/core-features
-tasklist.Dockerfile         @camunda/core-features
 
 # Optimize
 /optimize/                  @camunda/core-features
@@ -292,7 +291,6 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/assign-urgency-to-issue* @camunda/core-features
 /.github/workflows/operate-e2e-tests.yml @camunda/core-features
 /.github/workflows/operate-playwright.yml @camunda/core-features
-/.github/workflows/operate-release-*.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
 /.github/workflows/ci-tasklist.yml @camunda/core-features
 /.github/workflows/ci-webapp-client.yml @camunda/core-features
@@ -305,6 +303,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-*.yml @camunda/core-features
 /.github/workflows/gh-inherit-core-fields.yml @camunda/core-features
 /.github/workflows/publish-zod-schemas.yml @camunda/core-features
+/.github/workflows/verify-x-added-in-version-annotations.yml @camunda/core-features
 
 ################################
 ## @camunda/reliability-testing
@@ -322,6 +321,9 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
 /.github/workflows/*load-test*.yaml @camunda/reliability-testing
 /.github/workflows/profile-load-test.yml @camunda/reliability-testing
+
+# Helm version pin consumed by the load test setup golden file workflow
+/.tool-versions             @camunda/reliability-testing
 
 # Claude Code skills
 /.claude/skills/load-test-ops/ @camunda/reliability-testing
@@ -373,6 +375,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/actions/rdbms/* @camunda/data-layer
 /.github/actions/setup-aws-opensearch-env/* @camunda/data-layer
 /.github/workflows/ci-database-integration-tests-reusable.yml @camunda/data-layer
+/.github/workflows/data-layer-nightly-tests.yml @camunda/data-layer
 /.github/workflows/operate-test-backup-restore.yml @camunda/data-layer
 /.github/workflows/operate-test-importer.yml @camunda/data-layer
 
@@ -389,3 +392,15 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8run*            @camunda/distribution
 /.github/workflows/docker-build-helm-integration.yml @camunda/distribution
 /.github/workflows/trigger-c8run-e2e-tests.yml @camunda/distribution
+
+################################
+## Late overrides
+################################
+
+# Codeowners is last-match-wins. Add specific overrides here when a broader
+# earlier rule (e.g. `/.github/workflows/zeebe*`) needs to be reverted to a
+# different team for a particular file.
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml @camunda/qa-engineering
+/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml @camunda/camundaex
+/.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/qa-engineering
+/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team

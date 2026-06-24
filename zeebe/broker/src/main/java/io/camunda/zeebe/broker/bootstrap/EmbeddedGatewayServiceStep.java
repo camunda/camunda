@@ -50,7 +50,8 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             passwordEncoder,
             brokerStartupContext.getJwtDecoder(),
             brokerStartupContext.getOidcClaimsProvider(),
-            brokerStartupContext.getMeterRegistry());
+            brokerStartupContext.getMeterRegistry(),
+            brokerStartupContext.getPhysicalTenantIds());
 
     final var embeddedGatewayServiceFuture = embeddedGatewayService.start();
     concurrencyControl.runOnCompletion(

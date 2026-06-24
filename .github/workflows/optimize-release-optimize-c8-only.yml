@@ -35,6 +35,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
 
 jobs:
@@ -384,7 +385,7 @@ jobs:
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
-          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_docker_version }}
+          CAMUNDA_VERSION: ${{ steps.pom-info.outputs.x_zeebe_docker_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 
       - name: Wait for Optimize to start

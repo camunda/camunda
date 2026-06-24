@@ -964,8 +964,7 @@ components:
           items:
             $ref: '#/components/schemas/AgentInstanceToolCall'
         metrics:
-          description: Per-call token and latency metrics. Present on ASSISTANT items only.
-          nullable: true
+          description: Per-call token and latency metrics. Zero-valued when not available.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
         commitStatus:

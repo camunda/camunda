@@ -33,6 +33,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
   private List<AgentToolValueDto> tools = new ArrayList<>();
+  private List<String> changedAttributes = new ArrayList<>();
 
   public ZeebeAgentInstanceDataDto() {}
 
@@ -179,7 +180,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
   @Override
   public List<String> getChangedAttributes() {
-    return List.of();
+    return changedAttributes != null ? changedAttributes : List.of();
+  }
+
+  public void setChangedAttributes(final List<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
   }
 
   @Override
@@ -198,7 +203,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         status,
         definition,
         metrics,
-        tools);
+        tools,
+        changedAttributes);
   }
 
   @Override
@@ -220,7 +226,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && Objects.equals(status, that.status)
         && Objects.equals(definition, that.definition)
         && Objects.equals(metrics, that.metrics)
-        && Objects.equals(tools, that.tools);
+        && Objects.equals(tools, that.tools)
+        && Objects.equals(changedAttributes, that.changedAttributes);
   }
 
   @Override
@@ -249,6 +256,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + metrics
         + ", tools="
         + tools
+        + ", changedAttributes="
+        + changedAttributes
         + ")";
   }
 
@@ -268,6 +277,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String definition = "definition";
     public static final String metrics = "metrics";
     public static final String tools = "tools";
+    public static final String changedAttributes = "changedAttributes";
   }
 
   public static class AgentDefinitionValueDto implements AgentInstanceDefinitionValue {

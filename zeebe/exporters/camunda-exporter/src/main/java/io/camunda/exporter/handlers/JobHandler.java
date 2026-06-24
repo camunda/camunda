@@ -47,7 +47,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
           JobIntent.RETRIES_UPDATED,
           JobIntent.CANCELED,
           JobIntent.ERROR_THROWN,
-          JobIntent.MIGRATED);
+          JobIntent.MIGRATED,
+          JobIntent.PRIORITY_UPDATED);
   private static final Set<JobIntent> FAILED_JOB_EVENTS =
       Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
   private static final Set<JobIntent> INTENTS_RETAINING_ELEMENT_ID =

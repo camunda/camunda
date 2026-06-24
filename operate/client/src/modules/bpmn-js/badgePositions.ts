@@ -41,7 +41,12 @@ const SUBPROCESS_WITH_INCIDENTS = {
 
 const WAITING_BADGE = {
   top: -36,
-  left: 6,
+  left: 0,
+};
+
+const WAITING_BADGE_NARROW = {
+  top: -36,
+  left: -20,
 };
 
 const AGENT_STATUS_TAG = {
@@ -64,6 +69,7 @@ export {
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
   WAITING_BADGE,
+  WAITING_BADGE_NARROW,
   AGENT_STATUS_TAG,
   AGENT_SHINE,
 };

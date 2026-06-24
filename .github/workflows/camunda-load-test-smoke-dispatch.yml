@@ -1,0 +1,88 @@
+# description: Dispatches smoke tests for each load-test setup version that changed in a PR.
+#              Detects which stable-XX or main setup folders were touched and runs only those
+#              versions. When workflow files themselves change, all versions are tested.
+# calls: camunda-load-test-smoke.yml (per detected version)
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Smoke Load Test Dispatch
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'load-tests/setup/**'
+      - '.github/workflows/camunda-load-test.yml'
+      - '.github/workflows/camunda-load-test-smoke.yml'
+      - '.github/workflows/camunda-load-test-smoke-dispatch.yml'
+
+concurrency:
+  group: smoke-dispatch-${{ github.event.pull_request.id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect-versions:
+    name: Detect changed versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - id: detect
+        name: Detect which setup versions changed
+        run: |
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+
+          run_all=false
+          if echo "$changed" | grep -qE '\.github/workflows/camunda-load-test'; then
+            run_all=true
+          fi
+
+          matrix_entries=()
+
+          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/main/'; then
+            matrix_entries+=('{"version":"main","orchestration-tag":"SNAPSHOT"}')
+          fi
+          #
+          # Commented out versions - will be added as soon as we have target version support
+          #
+          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-89/'; then
+            matrix_entries+=('{"version":"stable-89","orchestration-tag":"8.9-SNAPSHOT"}')
+          fi
+          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-88/'; then
+            matrix_entries+=('{"version":"stable-88","orchestration-tag":"8.8-SNAPSHOT"}')
+          fi
+          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-87/'; then
+            matrix_entries+=('{"version":"stable-87","orchestration-tag":"8.7-SNAPSHOT"}')
+          fi
+
+          # Default: run main if nothing specific was detected
+          if [[ ${#matrix_entries[@]} -eq 0 ]]; then
+            matrix_entries+=('{"version":"main","orchestration-tag":"SNAPSHOT"}')
+          fi
+
+          joined=$(IFS=,; echo "${matrix_entries[*]}")
+          echo "matrix={\"include\":[${joined}]}" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: Smoke (${{ matrix.version }})
+    needs: detect-versions
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-versions.outputs.matrix) }}
+    uses: ./.github/workflows/camunda-load-test-smoke.yml
+    secrets: inherit
+    with:
+      target-version: ${{ matrix.version }}
+      orchestration-tag: ${{ matrix.orchestration-tag }}
+      ref: ${{ github.event.pull_request.head.ref }}

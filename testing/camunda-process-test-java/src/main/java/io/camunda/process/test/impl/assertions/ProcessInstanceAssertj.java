@@ -407,6 +407,44 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasVariableSatisfiesExpression(
+      final String variableName, final String expression) {
+    return hasVariableSatisfiesExpression(VariableSelectors.byName(variableName), expression);
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSatisfiesExpression(
+      final VariableSelector variableSelector, final String expression) {
+    variableAssertj.hasVariableSatisfiesExpression(
+        getProcessInstanceKey(), variableSelector, expression);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
+      final String elementId, final String variableName, final String expression) {
+    return hasLocalVariableSatisfiesExpression(
+        elementSelector.apply(elementId), variableName, expression);
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
+      final ElementSelector selector, final String variableName, final String expression) {
+    return hasLocalVariableSatisfiesExpression(
+        selector, VariableSelectors.byName(variableName), expression);
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
+      final ElementSelector selector,
+      final VariableSelector variableSelector,
+      final String expression) {
+    variableAssertj.hasLocalVariableSatisfiesExpression(
+        getProcessInstanceKey(), selector, variableSelector, expression);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
     variableAssertj.hasVariables(getProcessInstanceKey(), variables);
     return this;

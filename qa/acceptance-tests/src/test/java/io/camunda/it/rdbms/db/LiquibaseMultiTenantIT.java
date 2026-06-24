@@ -69,7 +69,18 @@ class LiquibaseMultiTenantIT {
                 "")
             .withProperty(
                 "camunda.physical-tenants." + TENANT_B + ".data.secondary-storage.rdbms.prefix",
-                PREFIX_B);
+                PREFIX_B)
+            // each explicitly-configured tenant must provide its own initialization block
+            .withProperty(
+                "camunda.physical-tenants."
+                    + TENANT_A
+                    + ".security.initialization.default-roles.admin.users[0]",
+                TENANT_A + "-admin")
+            .withProperty(
+                "camunda.physical-tenants."
+                    + TENANT_B
+                    + ".security.initialization.default-roles.admin.users[0]",
+                TENANT_B + "-admin");
 
     // when
     app.start();

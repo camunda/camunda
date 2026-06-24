@@ -24,6 +24,7 @@ import io.camunda.search.sort.CorrelatedMessageSubscriptionSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
@@ -78,6 +79,31 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(searchResult.items())
         .extracting(CorrelatedMessageSubscriptionEntity::processDefinitionId)
         .contains(original.processDefinitionId());
+  }
+
+  @TestTemplate
+  public void shouldFindCorrelatedMessageSubscriptionByBusinessId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final CorrelatedMessageSubscriptionDbReader reader =
+        rdbmsService.getCorrelatedMessageSubscriptionReader();
+
+    final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
+    createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
+    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriters);
+
+    final var searchResult =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.businessIds(original.businessId()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().businessId()).isEqualTo(original.businessId());
   }
 
   @TestTemplate
@@ -206,6 +232,7 @@ public class CorrelatedMessageSubscriptionIT {
                                     .processDefinitionIds(original.processDefinitionId())
                                     .processDefinitionKeys(original.processDefinitionKey())
                                     .subscriptionKeys(original.subscriptionKey())
+                                    .businessIds(original.businessId())
                                     .tenantIds(original.tenantId()))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));
@@ -256,6 +283,96 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldFindCorrelatedMessageSubscriptionWithSearchAfterByNullableBusinessId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final CorrelatedMessageSubscriptionDbReader reader =
+        rdbmsService.getCorrelatedMessageSubscriptionReader();
+
+    final var processDefinitionKey = nextKey();
+    // 16 subscriptions without a businessId and 4 with one. Sorted ascending, businessId is
+    // NULLS FIRST on every database, so the 15-row page boundary (and therefore the keyset
+    // cursor) falls on a null businessId - exercising the nullable keyset path.
+    createAndSaveRandomCorrelatedMessageSubscriptions(
+        rdbmsWriters, 16, b -> b.processDefinitionKey(processDefinitionKey).businessId(null));
+    createAndSaveRandomCorrelatedMessageSubscriptions(
+        rdbmsWriters, 4, b -> b.processDefinitionKey(processDefinitionKey));
+
+    final var sort = CorrelatedMessageSubscriptionSort.of(s -> s.businessId().asc());
+    final var allItems =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(sort)
+                        .page(p -> p.from(0).size(20))));
+
+    final var firstPage =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(sort)
+                        .page(p -> p.size(15))));
+
+    final var nextPage =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(sort)
+                        .page(p -> p.size(5).after(firstPage.endCursor()))));
+
+    // the whole result is ordered nulls-first by businessId
+    assertThat(allItems.items())
+        .extracting(CorrelatedMessageSubscriptionEntity::businessId)
+        .isSortedAccordingTo(Comparator.nullsFirst(Comparator.naturalOrder()));
+    // the cursor boundary sits on a null businessId
+    assertThat(firstPage.items()).hasSize(15);
+    assertThat(firstPage.items().get(14).businessId()).isNull();
+    // paging continues correctly across the null -> non-null boundary from a null cursor
+    assertThat(nextPage.total()).isEqualTo(20);
+    assertThat(nextPage.items()).hasSize(5);
+    assertThat(nextPage.items()).isEqualTo(allItems.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldSortByBusinessId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final CorrelatedMessageSubscriptionDbReader reader =
+        rdbmsService.getCorrelatedMessageSubscriptionReader();
+
+    final var processDefinitionKey = nextKey();
+    createAndSaveRandomCorrelatedMessageSubscriptions(
+        rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
+
+    final var ascending =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(s -> s.businessId().asc())
+                        .page(p -> p.from(0).size(20))));
+
+    final var descending =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(s -> s.businessId().desc())
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(ascending.items())
+        .extracting(CorrelatedMessageSubscriptionEntity::businessId)
+        .isSortedAccordingTo(String::compareTo);
+    assertThat(descending.items())
+        .extracting(CorrelatedMessageSubscriptionEntity::businessId)
+        .isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @TestTemplate
@@ -362,5 +479,6 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(actual.rootProcessInstanceKey()).isEqualTo(expected.rootProcessInstanceKey());
     assertThat(actual.subscriptionKey()).isEqualTo(expected.subscriptionKey());
     assertThat(actual.tenantId()).isEqualTo(expected.tenantId());
+    assertThat(actual.businessId()).isEqualTo(expected.businessId());
   }
 }

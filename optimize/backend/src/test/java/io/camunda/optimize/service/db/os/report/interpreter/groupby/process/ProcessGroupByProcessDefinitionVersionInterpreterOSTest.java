@@ -66,6 +66,27 @@ class ProcessGroupByProcessDefinitionVersionInterpreterOSTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  void shouldAggregateBaselineCountsOnVersionFieldForPercentageView() {
+    final ProcessReportDataDto reportData = mock(ProcessReportDataDto.class);
+    when(reportData.getViewProperties()).thenReturn(List.of(ViewProperty.PERCENTAGE));
+    when(context.getReportData()).thenReturn(reportData);
+
+    assertThat(underTest.getBaselineCountAggregationField(context))
+        .contains(PROCESS_DEFINITION_VERSION);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldNotProvideBaselineCountFieldForNonPercentageView() {
+    final ProcessReportDataDto reportData = mock(ProcessReportDataDto.class);
+    when(reportData.getViewProperties()).thenReturn(List.of(ViewProperty.FREQUENCY));
+    when(context.getReportData()).thenReturn(reportData);
+
+    assertThat(underTest.getBaselineCountAggregationField(context)).isEmpty();
+  }
+
+  @Test
   void shouldBuildTermsAggregationOnVersionFieldSortedByKeyAscending() {
     when(configurationService.getOpenSearchConfiguration()).thenReturn(openSearchConfiguration);
     when(openSearchConfiguration.getAggregationBucketLimit()).thenReturn(10);

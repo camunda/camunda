@@ -8,9 +8,13 @@
 package io.camunda.zeebe.engine.state.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -85,18 +89,22 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldGetPendingAsksPastDeadline() {
-    // given
+  public void shouldVisitPendingAsksWithLastSentTime() {
+    // given two pending asks; one already has a last-sent time recorded
     final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
-    // All entries are added with timestamp 0, so they are all past any positive deadline
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
     state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(2L, 20L, "b2", "p2")));
+    state.updateLastSentTime(2L, 20L, 5_000L);
 
-    // when - check with a deadline in the future
-    final var pendingAsks = state.getPendingAsksPastDeadline(System.currentTimeMillis());
+    // when
+    final var lastSentByMessageKey = new java.util.HashMap<Long, Long>();
+    state.forEachPendingAsk(
+        (lastSentTime, ask) -> lastSentByMessageKey.put(ask.getMessageKey(), lastSentTime));
 
-    // then
-    assertThat(pendingAsks).hasSize(2);
+    // then both pending asks are visited with their transient last-sent time (0 until first send)
+    assertThat(lastSentByMessageKey).containsOnlyKeys(1L, 2L);
+    assertThat(lastSentByMessageKey.get(1L)).isZero();
+    assertThat(lastSentByMessageKey.get(2L)).isEqualTo(5_000L);
   }
 
   @Test
@@ -127,6 +135,132 @@ public class DbMessageStartProcessInstanceAskStateTest {
     assertThat(populatedRecord.getMessageStartEventSubscriptionKey()).isEqualTo(789L);
     assertThat(populatedRecord.getTenantId()).isEqualTo("test-tenant");
     assertThat(populatedRecord.getMessageDeadline()).isEqualTo(99999L);
+  }
+
+  @Test
+  public void shouldDefaultRejectionCountToZeroForFreshAsk() {
+    // given a fresh ask sourced from a request record (never rejected)
+    final var ask = new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p"));
+
+    // then the P_K-local retry bookkeeping defaults to zero, keeping the ask at the base re-send
+    // cadence and ensuring values persisted before this field existed decode unchanged
+    assertThat(ask.getRejectionCount()).isZero();
+  }
+
+  @Test
+  public void shouldPersistRejectionCount() {
+    // given
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var ask =
+        new MessageStartProcessInstanceAsk()
+            .wrap(createRecord(123L, 456L, "b", "p"))
+            .setRejectionCount(3L);
+
+    // when
+    state.put(ask);
+
+    // then the rejection count survives the RocksDB round-trip
+    final var retrieved = state.get(123L, 456L);
+    assertThat(retrieved.getRejectionCount()).isEqualTo(3L);
+  }
+
+  @Test
+  public void shouldPreserveRejectionCountOnCopy() {
+    // given
+    final var ask =
+        new MessageStartProcessInstanceAsk()
+            .wrap(createRecord(1L, 2L, "b", "p"))
+            .setRejectionCount(5L);
+
+    // when
+    final var copy = ask.copy();
+
+    // then
+    assertThat(copy.getRejectionCount()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldIncrementRejectionCountOnBackOff() {
+    // given a pending ask with no rejections yet
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
+
+    // when backed off twice
+    state.backOff(1L, 2L);
+    state.backOff(1L, 2L);
+
+    // then the persisted rejection count reflects both rejections
+    assertThat(state.get(1L, 2L).getRejectionCount()).isEqualTo(2L);
+  }
+
+  @Test
+  public void shouldNotResetSendEligibilityOnBackOff() {
+    // given a pending ask that has already been sent (transient last-sent advanced)
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
+    state.updateLastSentTime(1L, 2L, 10_000L);
+
+    // when the ask is backed off
+    state.backOff(1L, 2L);
+
+    // then back-off does not reset the transient send-tracking: the ask is still considered sent at
+    // 10_000 (resetting it would make the ask immediately eligible again and defeat the back-off)
+    final var lastSentByMessageKey = new java.util.HashMap<Long, Long>();
+    state.forEachPendingAsk(
+        (lastSentTime, ask) -> lastSentByMessageKey.put(ask.getMessageKey(), lastSentTime));
+    assertThat(lastSentByMessageKey).containsExactly(java.util.Map.entry(1L, 10_000L));
+  }
+
+  @Test
+  public void shouldBeNoOpWhenBackingOffMissingAsk() {
+    // given no pending ask for the key
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+
+    // when / then no exception and nothing is created
+    state.backOff(7L, 8L);
+    assertThat(state.get(7L, 8L)).isNull();
+  }
+
+  @Test
+  public void shouldSeedRecoveryEligibilityByRejectionCount() {
+    // given a fresh ask (never rejected) and a backed-off ask
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 10L, "b1", "p1")));
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(2L, 20L, "b2", "p2")));
+    state.backOff(2L, 20L);
+
+    // when the partition recovers at a known time
+    final long recoveryTime = 50_000L;
+    final var context = mock(ReadonlyStreamProcessorContext.class);
+    final var clock = mock(StreamClock.class);
+    when(context.getClock()).thenReturn(clock);
+    when(clock.millis()).thenReturn(recoveryTime);
+    ((DbMessageStartProcessInstanceAskState) state).onRecovered(context);
+
+    // then the fresh ask is seeded immediately eligible (0, preserving at-least-once first
+    // delivery); the backed-off ask is seeded at the recovery time so it waits its back-off before
+    // re-probing instead of all blocked asks storming P_B at once
+    final var lastSentByMessageKey = new java.util.HashMap<Long, Long>();
+    state.forEachPendingAsk(
+        (lastSentTime, ask) -> lastSentByMessageKey.put(ask.getMessageKey(), lastSentTime));
+    assertThat(lastSentByMessageKey.get(1L)).isZero();
+    assertThat(lastSentByMessageKey.get(2L)).isEqualTo(recoveryTime);
+  }
+
+  @Test
+  public void shouldCapRejectionCount() {
+    // given a pending ask
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
+
+    // when backed off far more often than the cap (30)
+    for (int i = 0; i < 100; i++) {
+      state.backOff(1L, 2L);
+    }
+
+    // then the persisted count saturates at the cap, so it never overflows when the scheduler
+    // computes 2^rejectionCount
+    assertThat(state.get(1L, 2L).getRejectionCount()).isEqualTo(30L);
   }
 
   private MessageStartProcessInstanceRequestRecord createRecord(

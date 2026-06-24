@@ -114,6 +114,22 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::followUpDate).reversed());
   }
 
+  @TestTemplate
+  public void shouldSortByBusinessIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.businessId().asc(),
+        Comparator.comparing(UserTaskEntity::businessId));
+  }
+
+  @TestTemplate
+  public void shouldSortByBusinessIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.businessId().desc(),
+        Comparator.comparing(UserTaskEntity::businessId).reversed());
+  }
+
   private void testSorting(
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<UserTaskSort>> sortBuilder,

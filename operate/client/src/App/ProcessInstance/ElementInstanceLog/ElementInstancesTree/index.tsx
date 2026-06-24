@@ -137,7 +137,8 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       const {latestMigrationDate, businessObjects} =
         useElementInstanceHistoryTree();
       const isRoot = elementType === 'PROCESS';
-      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection, selectElementInstance, clearSelection} =
+        useProcessInstanceElementSelection();
       const isElementSelected = isRoot
         ? !hasSelection
         : isSelected({
@@ -145,9 +146,6 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
             elementInstanceKey: scopeKey,
             isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
           });
-
-      const {selectElementInstance, clearSelection} =
-        useProcessInstanceElementSelection();
 
       const handleSelect = () => {
         if (isRoot) {
@@ -232,7 +230,8 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
       const {businessObjects} = useElementInstanceHistoryTree();
       const businessObject = businessObjects[elementId];
 
-      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection, selectElementInstance} =
+        useProcessInstanceElementSelection();
       const isElementSelected = isRoot
         ? !hasSelection
         : isSelected({
@@ -240,7 +239,6 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
             elementInstanceKey: scopeKey,
             isMultiInstanceBody: isMultiInstance(businessObject),
           });
-      const {selectElementInstance} = useProcessInstanceElementSelection();
 
       const handleSelect = () => {
         if (modificationsStore.state.status === 'moving-token') {
@@ -355,7 +353,8 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
       const businessObject = businessObjects[elementId];
       const isRoot = elementType === 'bpmn:Process';
 
-      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection, selectElementInstance} =
+        useProcessInstanceElementSelection();
       const isElementSelected = isRoot
         ? !hasSelection
         : isSelected({
@@ -378,8 +377,6 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         instanceHistoryModificationStore.state.expandedElementInstanceIds.includes(
           scopeKey,
         );
-
-      const {selectElementInstance} = useProcessInstanceElementSelection();
 
       const handleSelect = async () => {
         if (modificationsStore.state.status === 'moving-token') {
@@ -511,7 +508,8 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       );
       const isRoot = elementType === 'PROCESS';
 
-      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const {isSelected, hasSelection, selectElementInstance, clearSelection} =
+        useProcessInstanceElementSelection();
       const isElementSelected = isRoot
         ? !hasSelection
         : isSelected({
@@ -534,9 +532,6 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
             businessObjects,
           })
         : [];
-
-      const {selectElementInstance, clearSelection} =
-        useProcessInstanceElementSelection();
 
       const handleSelect = async () => {
         if (isRoot) {

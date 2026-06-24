@@ -71,6 +71,7 @@ const InputsAndOutputs: React.FC<InputAndOutputProps> = ({
 
   const panelMinWidth = clientWidth / 3;
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const evaluatedInputsRows = useMemo<RowProps[]>(() => {
     if (!decisionInstance?.evaluatedInputs?.length) {
       return [];
@@ -85,6 +86,7 @@ const InputsAndOutputs: React.FC<InputAndOutputProps> = ({
     }));
   }, [decisionInstance?.evaluatedInputs]);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const evaluatedOutputRows = useMemo<RowProps[]>(() => {
     if (!decisionInstance?.matchedRules?.length) {
       return [];

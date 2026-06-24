@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import static io.camunda.zeebe.dynamic.config.state.ExporterState.State.ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
@@ -17,12 +18,14 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ClusterConfigurationTest {
@@ -424,30 +427,161 @@ class ClusterConfigurationTest {
     assertThat(initialConfig.incarnationNumber()).isZero();
   }
 
-  @Test
-  void shouldMergeRecoveryMode() {
-    // given
-    final var oldConfig = ClusterConfiguration.builder().recovery(false).build();
-
-    final var newConfig = ClusterConfiguration.builder().recovery(true).build();
-
-    // when
-    final var merged = oldConfig.merge(newConfig);
-
-    // then
-    assertThat(merged.recovery()).isTrue();
-  }
-
-  @Test
-  void initialRecoveryModeIsDisabled() {
-    // given
-    final var initialConfig = ClusterConfiguration.init();
-
-    // then
-    assertThat(initialConfig.recovery()).isFalse();
-  }
-
   private MemberId member(final int id) {
     return MemberId.from(Integer.toString(id));
+  }
+
+  @Nested
+  class ZoneAware {
+    @Test
+    void shouldClassifyZoneAwarenessForUnzoned() {
+      // given
+      final var configs =
+          List.of(
+              ClusterConfiguration.init(),
+              ClusterConfiguration.init()
+                  .addMember(member(1), MemberState.initializeAsActive(Map.of())));
+
+      for (final var config : configs) {
+        assertThat(config)
+            .returns(true, ClusterConfiguration::isUnzoned)
+            .returns(false, ClusterConfiguration::isPartiallyZoneAware)
+            .returns(false, ClusterConfiguration::isFullyZoneAware);
+      }
+    }
+
+    @Test
+    void shouldClassifyZoneAwarenessForPartiallyZoned() {
+      // given
+      final var config =
+          ClusterConfiguration.init()
+              .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+              .addMember(MemberId.from("zoneA", 1), MemberState.initializeAsActive(Map.of()));
+
+      // then
+      assertThat(config)
+          .returns(false, ClusterConfiguration::isUnzoned)
+          .returns(true, ClusterConfiguration::isPartiallyZoneAware)
+          .returns(false, ClusterConfiguration::isFullyZoneAware);
+    }
+
+    @Test
+    void shouldClassifyZoneAwarenessForPartiallyZonedWhenDistributionIsNotConfigured() {
+      // given
+      final var config =
+          ClusterConfiguration.init()
+              .addMember(MemberId.from("zoneB", 1), MemberState.initializeAsActive(Map.of()))
+              .addMember(MemberId.from("zoneA", 1), MemberState.initializeAsActive(Map.of()));
+
+      // then
+      assertThat(config)
+          .returns(false, ClusterConfiguration::isUnzoned)
+          .returns(true, ClusterConfiguration::isPartiallyZoneAware)
+          .returns(false, ClusterConfiguration::isFullyZoneAware);
+    }
+
+    @Test
+    void shouldClassifyZoneAwarenessForFullyZoned() {
+      // given
+      final var config =
+          ClusterConfiguration.init()
+              .addMember(MemberId.from("zoneB", 1), MemberState.initializeAsActive(Map.of()))
+              .addMember(MemberId.from("zoneA", 1), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(
+                  new PartitionDistributorConfig.ZoneAwareConfig(
+                      List.of(new ZoneSpec("zoneA", 1, 100), new ZoneSpec("zoneB", 1, 100))));
+
+      assertThat(config)
+          .returns(false, ClusterConfiguration::isUnzoned)
+          .returns(false, ClusterConfiguration::isPartiallyZoneAware)
+          .returns(true, ClusterConfiguration::isFullyZoneAware);
+    }
+  }
+
+  @Nested
+  class PartitionDistributor {
+    @Test
+    void shouldMergeIdenticalPartitionDistributorConfigs() {
+      // given two members that initialized the same distributor config at the same version
+      final var config =
+          new PartitionDistributorConfig.ZoneAwareConfig(
+              List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000)));
+      final var topologyInMemberOne =
+          ClusterConfiguration.init()
+              .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(config);
+      final var topologyInMemberTwo =
+          ClusterConfiguration.init()
+              .addMember(member(2), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(config);
+
+      // when
+      final var merged = topologyInMemberOne.merge(topologyInMemberTwo);
+
+      // then
+      assertThat(merged.partitionDistributorConfig()).hasValue(config);
+    }
+
+    @Test
+    void shouldKeepPartitionDistributorConfigWhenOtherHasNone() {
+      // given
+      final var config = new PartitionDistributorConfig.RoundRobinConfig();
+      final var topologyWithConfig =
+          ClusterConfiguration.init()
+              .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(config);
+      final var topologyWithoutConfig =
+          ClusterConfiguration.init()
+              .addMember(member(2), MemberState.initializeAsActive(Map.of()));
+
+      // then
+      assertThat(topologyWithConfig.merge(topologyWithoutConfig).partitionDistributorConfig())
+          .hasValue(config);
+      assertThat(topologyWithoutConfig.merge(topologyWithConfig).partitionDistributorConfig())
+          .hasValue(config);
+    }
+
+    @Test
+    void shouldFailToMergeConflictingPartitionDistributorConfigsAtSameVersion() {
+      // given two members that initialized different distributor configs at the same version
+      final var topologyInMemberOne =
+          ClusterConfiguration.init()
+              .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(new PartitionDistributorConfig.RoundRobinConfig());
+      final var topologyInMemberTwo =
+          ClusterConfiguration.init()
+              .addMember(member(2), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(
+                  new PartitionDistributorConfig.ZoneAwareConfig(
+                      List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000))));
+
+      // when / then
+      assertThatThrownBy(() -> topologyInMemberOne.merge(topologyInMemberTwo))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("Cannot merge two different partition distributor configs");
+    }
+
+    @Test
+    void shouldUsePartitionDistributorConfigOfHigherVersionWhenMerging() {
+      // given a member that updated the config (bumping the version) and a member on the old config
+      final var oldConfig = new PartitionDistributorConfig.RoundRobinConfig();
+      final var newConfig =
+          new PartitionDistributorConfig.ZoneAwareConfig(
+              List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000)));
+      final var oldTopology =
+          ClusterConfiguration.init()
+              .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(oldConfig);
+      final var newTopology =
+          oldTopology
+              .startConfigurationChange(List.of(new PartitionLeaveOperation(member(1), 1, 1)))
+              .setPartitionDistributorConfig(newConfig);
+
+      // when
+      final var merged = oldTopology.merge(newTopology);
+
+      // then the higher version wins wholesale
+      assertThat(merged.partitionDistributorConfig()).hasValue(newConfig);
+    }
   }
 }

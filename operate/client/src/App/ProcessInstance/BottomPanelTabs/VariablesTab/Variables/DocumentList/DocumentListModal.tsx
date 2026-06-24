@@ -46,6 +46,7 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
     enabled: open && isLowerBound,
   });
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const resolvedDocuments = useMemo(() => {
     if (data?.value === undefined) {
       return documents;

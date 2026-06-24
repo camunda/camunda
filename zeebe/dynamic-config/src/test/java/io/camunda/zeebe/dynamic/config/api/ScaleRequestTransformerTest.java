@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
@@ -18,6 +19,9 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -35,6 +39,8 @@ import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.AssertionsForInterfaceTypes;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 class ScaleRequestTransformerTest {
 
@@ -120,20 +126,35 @@ class ScaleRequestTransformerTest {
       final int replicationFactor,
       final int oldClusterSize,
       final int newClusterSize) {
-    // given
-    final var oldDistribution =
-        new RoundRobinPartitionDistributor()
-            .distributePartitions(
-                getClusterMembers(oldClusterSize),
-                getSortedPartitionIds(partitionCount),
-                replicationFactor);
-    final var oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "clusterId");
+    shouldFailIfClusterSizeLessThanReplicationFactor(
+        partitionCount,
+        replicationFactor,
+        null,
+        getClusterMembers(oldClusterSize),
+        getClusterMembers(newClusterSize));
+  }
 
-    //  when
+  void shouldFailIfClusterSizeLessThanReplicationFactor(
+      final int partitionCount,
+      final int replicationFactor,
+      final PartitionDistributorConfig config,
+      final Set<MemberId> oldMembers,
+      final Set<MemberId> newMembers) {
+    // given
+    final PartitionDistributor distributor =
+        config != null ? config.toDistributor() : new RoundRobinPartitionDistributor();
+    final var oldDistribution =
+        distributor.distributePartitions(
+            oldMembers, getSortedPartitionIds(partitionCount), replicationFactor);
+    var oldClusterTopology =
+        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "clusterId");
+    if (config != null) {
+      oldClusterTopology = oldClusterTopology.setPartitionDistributorConfig(config);
+    }
+
+    // when
     final var operationsEither =
-        new ScaleRequestTransformer(getClusterMembers(newClusterSize))
-            .operations(oldClusterTopology);
+        new ScaleRequestTransformer(newMembers).operations(oldClusterTopology);
 
     // then
     EitherAssert.assertThat(operationsEither)
@@ -147,28 +168,39 @@ class ScaleRequestTransformerTest {
       final int replicationFactor,
       final int oldClusterSize,
       final int newClusterSize) {
+    shouldScaleAndReassign(
+        partitionCount,
+        replicationFactor,
+        null,
+        getClusterMembers(oldClusterSize),
+        getClusterMembers(newClusterSize));
+  }
+
+  void shouldScaleAndReassign(
+      final int partitionCount,
+      final int replicationFactor,
+      final PartitionDistributorConfig config,
+      final Set<MemberId> oldMembers,
+      final Set<MemberId> newMembers) {
     // given
+    final PartitionDistributor distributor =
+        config != null ? config.toDistributor() : new RoundRobinPartitionDistributor();
     final var expectedNewDistribution =
-        new RoundRobinPartitionDistributor()
-            .distributePartitions(
-                getClusterMembers(newClusterSize),
-                getSortedPartitionIds(partitionCount),
-                replicationFactor);
+        distributor.distributePartitions(
+            newMembers, getSortedPartitionIds(partitionCount), replicationFactor);
 
     final var oldDistribution =
-        new RoundRobinPartitionDistributor()
-            .distributePartitions(
-                getClusterMembers(oldClusterSize),
-                getSortedPartitionIds(partitionCount),
-                replicationFactor);
-    final var oldClusterTopology =
+        distributor.distributePartitions(
+            oldMembers, getSortedPartitionIds(partitionCount), replicationFactor);
+    var oldClusterTopology =
         ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "clusterId");
+    if (config != null) {
+      oldClusterTopology = oldClusterTopology.setPartitionDistributorConfig(config);
+    }
 
     // when
     final var operations =
-        new ScaleRequestTransformer(getClusterMembers(newClusterSize))
-            .operations(oldClusterTopology)
-            .get();
+        new ScaleRequestTransformer(newMembers).operations(oldClusterTopology).get();
 
     // apply operations to generate new topology
     final ClusterConfiguration newTopology =
@@ -177,8 +209,55 @@ class ScaleRequestTransformerTest {
     // then
     final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
-    assertThat(newTopology.members().keySet())
-        .containsExactlyInAnyOrderElementsOf(getClusterMembers(newClusterSize));
+    assertThat(newTopology.members().keySet()).containsExactlyInAnyOrderElementsOf(newMembers);
+  }
+
+  @Test
+  void shouldScaleOutZoneAwareCluster() {
+    // given: 2 zones, RF=3 (zone-a contributes 2 replicas, zone-b contributes 1)
+    final var config =
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+
+    // old cluster: 2 zone-a brokers + 1 zone-b broker
+    final var oldMembers =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+
+    // new cluster: 4 zone-a brokers + 2 zone-b brokers
+    final var newMembers =
+        Set.of(
+            MemberId.from("zone-a", 0),
+            MemberId.from("zone-a", 1),
+            MemberId.from("zone-a", 2),
+            MemberId.from("zone-a", 3),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-b", 1));
+
+    shouldScaleAndReassign(3, 3, config, oldMembers, newMembers);
+  }
+
+  @Test
+  void shouldScaleInZoneAwareCluster() {
+    // given: 2 zones, RF=3 (zone-a contributes 2 replicas, zone-b contributes 1)
+    final var config =
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+
+    // old cluster: 4 zone-a brokers + 2 zone-b brokers
+    final var oldMembers =
+        Set.of(
+            MemberId.from("zone-a", 0),
+            MemberId.from("zone-a", 1),
+            MemberId.from("zone-a", 2),
+            MemberId.from("zone-a", 3),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-b", 1));
+
+    // new cluster: 2 zone-a brokers + 1 zone-b broker (minimal)
+    final var newMembers =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+
+    shouldScaleAndReassign(3, 3, config, oldMembers, newMembers);
   }
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
@@ -228,5 +307,34 @@ class ScaleRequestTransformerTest {
 
   SortedSet<Integer> partitionsInRange(final int from, final int to) {
     return new TreeSet<>(IntStream.range(from, to).boxed().toList());
+  }
+
+  @Nested
+  class ZoneAwareScaling {
+    static final Set<MemberId> SCALED_MEMBERS =
+        Set.of(
+            MemberId.from("zone-a", 0),
+            MemberId.from("zone-a", 1),
+            MemberId.from("zone-a", 2),
+            MemberId.from("zone-a", 3),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-b", 1));
+
+    static final Set<MemberId> UNSCALED_MEMBERS =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+
+    static final ZoneAwareConfig ZONE_AWARE_CONFIG =
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+
+    @Test
+    void shouldScaleOutZoneAwareCluster() {
+      shouldScaleAndReassign(3, 3, ZONE_AWARE_CONFIG, UNSCALED_MEMBERS, SCALED_MEMBERS);
+    }
+
+    @Test
+    void shouldScaleInZoneAwareCluster() {
+      shouldScaleAndReassign(3, 3, ZONE_AWARE_CONFIG, SCALED_MEMBERS, UNSCALED_MEMBERS);
+    }
   }
 }

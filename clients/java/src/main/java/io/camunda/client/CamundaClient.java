@@ -35,6 +35,7 @@ import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
@@ -3477,6 +3478,27 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for creating an agent instance
    */
   CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand();
+
+  /**
+   * Creates a command to append a conversation history item to an agent instance.
+   *
+   * <pre>
+   *   CreateAgentHistoryItemResponse response = camundaClient
+   *       .newCreateAgentHistoryItemCommand(agentInstanceKey)
+   *       .elementInstanceKey(elementInstanceKey)
+   *       .jobKey(jobKey)
+   *       .jobLease(jobLease)
+   *       .role(AgentHistoryRole.ASSISTANT)
+   *       .content(contentList)
+   *       .producedAt(OffsetDateTime.now())
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @param agentInstanceKey the key of the agent instance
+   * @return a builder for creating an agent history item
+   */
+  CreateAgentHistoryItemCommandStep1 newCreateAgentHistoryItemCommand(long agentInstanceKey);
 
   /**
    * Creates a command to update an existing agent instance.

@@ -6,12 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useRef} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {Button} from '@carbon/react';
+import {Button, Search} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
-import {StructuredList, VariableName} from './styled';
+import {
+  StructuredList,
+  VariableName,
+  FilterSwitcherContainer,
+  FilterSwitcher,
+  FilterSwitcherButton,
+  EmptyMessageWrapper,
+  DimmableResults,
+  VariablesSearch,
+} from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {OnLastVariableModificationRemoved} from './OnLastVariableModificationRemoved';
 import {FieldArray} from 'react-final-form-arrays';
 import {Operations} from './Operations';
@@ -24,6 +34,7 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {useDebouncedValue} from 'modules/hooks/useDebouncedValue';
 import {VariableValueCell} from './VariableValueCell';
 import {parseDocumentVariable} from './DocumentValueCell/parseDocumentVariable';
 import {DownloadDocumentButton} from './DownloadDocumentButton';
@@ -45,29 +56,42 @@ const VariablesTable: React.FC<Props> = ({
   const {initialValues} = useFormState<VariableFormValues>();
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
+  const [showDocumentsOnly, setShowDocumentsOnly] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const debouncedSearchValue = useDebouncedValue(searchValue);
 
   const {
     data: variablesData,
     fetchNextPage,
     hasNextPage,
+    isLoading,
+    isPlaceholderData,
     isFetchingNextPage,
-  } = useVariables();
+  } = useVariables({
+    documentsOnly: showDocumentsOnly,
+    keepPreviousResults: true,
+    searchTerm: debouncedSearchValue,
+  });
 
   const processedVariables = useMemo(() => {
     const allVariables =
       variablesData?.pages.flatMap((page) => page.items) ?? [];
 
-    return allVariables.map((variable) => ({
-      name: variable.name,
-      value: variable.value,
-      variableKey: variable.variableKey,
-      isTruncated: Boolean(variable.isTruncated),
-      documentResult: parseDocumentVariable(
-        variable.value,
-        Boolean(variable.isTruncated),
-      ),
-    }));
-  }, [variablesData]);
+    return allVariables
+      .map((variable) => ({
+        name: variable.name,
+        value: variable.value,
+        variableKey: variable.variableKey,
+        isTruncated: Boolean(variable.isTruncated),
+        documentResult: parseDocumentVariable(
+          variable.value,
+          Boolean(variable.isTruncated),
+        ),
+      }))
+      .filter((variable) =>
+        showDocumentsOnly ? variable.documentResult !== null : true,
+      );
+  }, [variablesData, showDocumentsOnly]);
 
   const isEditMode = (variableName: string) =>
     (initialValues?.name === variableName && isProcessInstanceRunning) ||
@@ -182,77 +206,130 @@ const VariablesTable: React.FC<Props> = ({
   );
 
   return (
-    <StructuredList
-      dataTestId="variables-list"
-      headerColumns={[
-        {cellContent: 'Name', width: '35%'},
-        {cellContent: 'Value', width: 'auto'},
-        {cellContent: '', width: '120px'},
-      ]}
-      headerSize="sm"
-      verticalCellPadding="var(--cds-spacing-02)"
-      label="Variable List"
-      onVerticalScrollEndReach={() => {
-        if (hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      }}
-      dynamicRows={
-        isVariableModificationAllowed ? (
-          <>
-            <OnLastVariableModificationRemoved />
-            <FieldArray name="newVariables">
-              {({fields}) => (
-                <StructuredRows
-                  verticalCellPadding="var(--cds-spacing-02)"
-                  rows={fields.map((variableName, index) => ({
-                    key: fields.value[index]?.id ?? variableName,
-                    dataTestId: `variable-${variableName}`,
-                    columns: [
-                      {
-                        cellContent: (
-                          <Name variableName={variableName} scopeId={scopeId} />
-                        ),
-                        width: '35%',
-                      },
-                      {
-                        cellContent: (
-                          <Value
-                            variableName={variableName}
-                            scopeId={scopeId}
-                          />
-                        ),
-                        width: 'auto',
-                      },
-                      {
-                        cellContent: (
-                          <Operations>
-                            <ViewFullVariableButton
-                              shouldSubmitOnApply={false}
-                              mode="add"
-                              scopeId={scopeId}
-                              variableName={variableName}
-                            />
-                            <Operation
-                              variableName={variableName}
-                              onRemove={() => {
-                                fields.remove(index);
-                              }}
-                            />
-                          </Operations>
-                        ),
-                        width: '120px',
-                      },
-                    ],
-                  }))}
-                />
-              )}
-            </FieldArray>
-          </>
-        ) : undefined
-      }
-      rows={rows}
-    />
+    <>
+      {!isModificationModeEnabled && (
+        <FilterSwitcherContainer>
+          <VariablesSearch>
+            <Search
+              size="sm"
+              labelText="Search variables by name"
+              placeholder="Search variables by name"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              onClear={() => setSearchValue('')}
+            />
+          </VariablesSearch>
+          <FilterSwitcher role="group" aria-label="Variable filter">
+            <FilterSwitcherButton
+              type="button"
+              aria-pressed={!showDocumentsOnly}
+              onClick={() => setShowDocumentsOnly(false)}
+            >
+              All
+            </FilterSwitcherButton>
+            <FilterSwitcherButton
+              type="button"
+              aria-pressed={showDocumentsOnly}
+              onClick={() => setShowDocumentsOnly(true)}
+            >
+              Documents
+            </FilterSwitcherButton>
+          </FilterSwitcher>
+        </FilterSwitcherContainer>
+      )}
+      {!isLoading &&
+      (showDocumentsOnly || debouncedSearchValue.trim() !== '') &&
+      processedVariables.length === 0 ? (
+        <DimmableResults $dimmed={isPlaceholderData}>
+          <EmptyMessageWrapper>
+            <EmptyMessage
+              message={
+                debouncedSearchValue.trim() !== ''
+                  ? 'No variables match your search'
+                  : 'There are no document variables'
+              }
+            />
+          </EmptyMessageWrapper>
+        </DimmableResults>
+      ) : (
+        <DimmableResults $dimmed={isPlaceholderData}>
+          <StructuredList
+            dataTestId="variables-list"
+            headerColumns={[
+              {cellContent: 'Name', width: '35%'},
+              {cellContent: 'Value', width: 'auto'},
+              {cellContent: '', width: '120px'},
+            ]}
+            headerSize="sm"
+            verticalCellPadding="var(--cds-spacing-02)"
+            label="Variable List"
+            onVerticalScrollEndReach={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            dynamicRows={
+              isVariableModificationAllowed ? (
+                <>
+                  <OnLastVariableModificationRemoved />
+                  <FieldArray name="newVariables">
+                    {({fields}) => (
+                      <StructuredRows
+                        verticalCellPadding="var(--cds-spacing-02)"
+                        rows={fields.map((variableName, index) => ({
+                          key: fields.value[index]?.id ?? variableName,
+                          dataTestId: `variable-${variableName}`,
+                          columns: [
+                            {
+                              cellContent: (
+                                <Name
+                                  variableName={variableName}
+                                  scopeId={scopeId}
+                                />
+                              ),
+                              width: '35%',
+                            },
+                            {
+                              cellContent: (
+                                <Value
+                                  variableName={variableName}
+                                  scopeId={scopeId}
+                                />
+                              ),
+                              width: 'auto',
+                            },
+                            {
+                              cellContent: (
+                                <Operations>
+                                  <ViewFullVariableButton
+                                    shouldSubmitOnApply={false}
+                                    mode="add"
+                                    scopeId={scopeId}
+                                    variableName={variableName}
+                                  />
+                                  <Operation
+                                    variableName={variableName}
+                                    onRemove={() => {
+                                      fields.remove(index);
+                                    }}
+                                  />
+                                </Operations>
+                              ),
+                              width: '120px',
+                            },
+                          ],
+                        }))}
+                      />
+                    )}
+                  </FieldArray>
+                </>
+              ) : undefined
+            }
+            rows={rows}
+          />
+        </DimmableResults>
+      )}
+    </>
   );
 };
 

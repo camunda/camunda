@@ -9,12 +9,12 @@ package io.camunda.zeebe.test;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.zeebe.test.ClusterHelper.configureBroker;
-import static io.camunda.zeebe.test.ClusterHelper.createProcessInstance;
-import static io.camunda.zeebe.test.ClusterHelper.currentVersion;
-import static io.camunda.zeebe.test.ClusterHelper.deployProcess;
-import static io.camunda.zeebe.test.ClusterHelper.newClient;
-import static io.camunda.zeebe.test.ClusterHelper.updateBroker;
+import static io.camunda.container.ClusterHelper.configureBroker;
+import static io.camunda.container.ClusterHelper.createProcessInstance;
+import static io.camunda.container.ClusterHelper.currentVersion;
+import static io.camunda.container.ClusterHelper.deployProcess;
+import static io.camunda.container.ClusterHelper.newClient;
+import static io.camunda.container.ClusterHelper.updateBroker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;

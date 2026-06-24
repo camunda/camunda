@@ -6,6 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {vi} from 'vitest';
+vi.mock('modules/featureFlags', () => ({IS_NAV_V2_ENABLED: true}));
+
 import {render, screen} from 'modules/testing/testing-library';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
@@ -52,9 +55,11 @@ describe('license note', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('banner', {name: 'Camunda Tasklist'}),
+    ).toBeInTheDocument();
 
-    await user.click(screen.getByText('Non-production license'));
+    await user.click(await screen.findByText('Non-production license'));
 
     expect(
       screen.getByText(
@@ -102,7 +107,9 @@ describe('license note', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('banner', {name: 'Camunda Tasklist'}),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText('Non-production license'),
     ).not.toBeInTheDocument();
@@ -125,8 +132,10 @@ describe('license note', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
-    expect(screen.getByText('Production license')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('banner', {name: 'Camunda Tasklist'}),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Production license')).toBeInTheDocument();
   });
 
   it('should hide commercial license note in self-managed if license is commercial', async () => {
@@ -146,7 +155,9 @@ describe('license note', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('banner', {name: 'Camunda Tasklist'}),
+    ).toBeInTheDocument();
 
     expect(
       screen.queryByText(/^Non-commercial license - expired$/i),
@@ -170,7 +181,9 @@ describe('license note', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('banner', {name: 'Camunda Tasklist'}),
+    ).toBeInTheDocument();
     expect(
       await screen.findByText(/^Non-commercial license - 0 day left$/i),
     ).toBeInTheDocument();

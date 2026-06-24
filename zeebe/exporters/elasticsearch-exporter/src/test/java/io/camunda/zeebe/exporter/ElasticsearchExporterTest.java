@@ -304,7 +304,8 @@ final class ElasticsearchExporterTest {
           || valueType == ValueType.INCIDENT
           || valueType == ValueType.USER_TASK
           || valueType == ValueType.DEPLOYMENT
-          || valueType == ValueType.JOB) {
+          || valueType == ValueType.JOB
+          || valueType == ValueType.AGENT_INSTANCE) {
         verify(client, times(1)).putIndexTemplate(valueType, version);
       } else {
         verify(client, never()).putIndexTemplate(any(), any());

@@ -78,6 +78,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public String getPhysicalTenantId() {
+    return camundaClientProperties.getPhysicalTenantId();
+  }
+
+  @Override
   public List<String> getDefaultJobWorkerTenantIds() {
     return camundaClientProperties.getWorker().getDefaults().getTenantIds();
   }

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.test.util.testcontainers;
 
 import java.time.Duration;
-import java.util.Objects;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.MariaDBContainer;
@@ -25,14 +24,12 @@ public final class TestSearchContainers {
   public static final String CAMUNDA_USER = "camunda";
   public static final String CAMUNDA_PASSWORD = "Strong_Pass123!";
 
+  // Keep in sync with version.elasticsearch.container in parent/pom.xml
   private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(
-              Objects.requireNonNullElse(
-                  org.elasticsearch.client.RestClient.class.getPackage().getImplementationVersion(),
-                  "8.19.11"));
+      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("8.19.16");
+  // Keep in sync with version.opensearch.container in parent/pom.xml
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.4");
+      DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.5");
   private static final DockerImageName POSTGRES_IMAGE =
       DockerImageName.parse("postgres").withTag("15.3-alpine");
   private static final DockerImageName MARIADB_IMAGE =

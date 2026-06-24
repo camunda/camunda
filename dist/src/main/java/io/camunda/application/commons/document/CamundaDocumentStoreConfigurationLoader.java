@@ -48,7 +48,7 @@ public final class CamundaDocumentStoreConfigurationLoader
 
   public CamundaDocumentStoreConfigurationLoader(final Camunda camunda) {
     this.document = camunda.getDocument();
-    legacyConfigurationLoader = new EnvironmentConfigurationLoader();
+    this.legacyConfigurationLoader = new EnvironmentConfigurationLoader();
   }
 
   @Override

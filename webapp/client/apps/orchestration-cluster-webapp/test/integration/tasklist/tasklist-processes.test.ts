@@ -11,11 +11,13 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -28,19 +30,17 @@ test.beforeEach(({network}) => {
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
 		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+		}),
 	);
 });
 
 test.describe('Tasklist processes page', () => {
-	test('should render Tasklist Processes page', async ({tasklistProcessesPage}) => {
+	test('should render Tasklist Processes page with navigation', async ({tasklistProcessesPage}) => {
 		await tasklistProcessesPage.goto();
 
 		await expect(tasklistProcessesPage.heading).toBeVisible();
-	});
-
-	test('should show Tasks and Processes nav items', async ({tasklistProcessesPage}) => {
-		await tasklistProcessesPage.goto();
-
 		await expect(tasklistProcessesPage.tasksNavItem).toBeVisible();
 		await expect(tasklistProcessesPage.processesNavItem).toBeVisible();
 	});

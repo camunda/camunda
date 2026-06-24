@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
@@ -65,5 +66,34 @@ class AnalyticsExporterConfigTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("maxBatchSize")
         .hasMessageContaining("maxQueueSize");
+  }
+
+  @Test
+  void shouldRejectSamplingRateBelowZero() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate(-0.1).validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("samplingRate");
+  }
+
+  @Test
+  void shouldRejectSamplingRateNaN() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate(Double.NaN).validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("samplingRate");
+  }
+
+  @Test
+  void shouldRejectSamplingRateAboveOne() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setSamplingRate(1.1).validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("samplingRate");
+  }
+
+  @Test
+  void shouldAcceptSamplingRateBoundaries() {
+    assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate(0.0).validate())
+        .doesNotThrowAnyException();
+    assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate(1.0).validate())
+        .doesNotThrowAnyException();
   }
 }

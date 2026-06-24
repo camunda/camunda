@@ -17,9 +17,11 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.gateway.api.util.TestBrokerClusterState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 final class PublishMessageDispatchStrategyTest {
@@ -37,7 +39,9 @@ final class PublishMessageDispatchStrategyTest {
             new TestBrokerClusterState(partitionCount), ClusterConfiguration.uninitialized());
 
     // then - the request is dispatched based on the partition count from the topology
-    assertThat(dispatchStrategy.determinePartition(topologyManager))
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
         .isEqualTo(
             SubscriptionUtil.getSubscriptionPartitionId(
                 BufferUtil.wrapString(correlationKey), partitionCount));
@@ -61,7 +65,9 @@ final class PublishMessageDispatchStrategyTest {
         new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
 
     // then - the request is dispatched based on the routing state
-    assertThat(dispatchStrategy.determinePartition(topologyManager))
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
         .isEqualTo(
             SubscriptionUtil.getSubscriptionPartitionId(
                 BufferUtil.wrapString(correlationKey), messagePartitionCount));
@@ -72,7 +78,7 @@ final class PublishMessageDispatchStrategyTest {
       implements BrokerTopologyManager {
 
     @Override
-    public BrokerClusterState getTopology() {
+    public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
       return topology;
     }
 

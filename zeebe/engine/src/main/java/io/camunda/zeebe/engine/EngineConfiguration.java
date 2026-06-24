@@ -81,6 +81,28 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL = Duration.ofSeconds(10);
 
   /**
+   * Grace period by which the cross-partition message-start dedup row on {@code P_B} is kept valid
+   * (for both re-reply lookups and the expiration sweep) <em>beyond</em> the originating message's
+   * deadline. It closes the near-deadline duplicate window: a retry ask {@code P_K} sends just
+   * before the message deadline {@code T} can be processed on {@code P_B} only at {@code T + L}
+   * (inter-partition delivery + processing latency); without grace the dedup row is already expired
+   * at {@code T}, so that late retry misses the dedup, re-evaluates live state, and — if the holder
+   * it would have re-replied has since auto-completed and freed the businessId — creates a
+   * duplicate instance. With grace the late retry still hits the dedup and re-replies the same
+   * instance.
+   *
+   * <p>The value must therefore cover the worst-case one-way inter-partition command latency plus
+   * clock skew between partitions. The default is deliberately generous: an over-large grace is
+   * essentially free — the dedup key is {@code (processDefinitionKey, messageKey)} and {@code
+   * messageKey} is unique per publish, so a stale row can never collide with a new publish; it only
+   * lingers slightly longer before the sweep GCs it. An under-sized grace re-opens the duplicate
+   * window. 30s comfortably exceeds realistic inter-partition latency and NTP-level skew even under
+   * load, and aligns with the feature's other 30s timescales (dedup sweep interval, lock-release
+   * max back-off).
+   */
+  public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_GRACE = Duration.ofSeconds(30);
+
+  /**
    * Base cadence at which {@code P_K} polls {@code P_B} for the completion of a cross-partition
    * message-start holder instance, and the interval at which a newly observed lock entry is first
    * polled. Each lock entry then backs off exponentially up to {@link
@@ -163,6 +185,7 @@ public final class EngineConfiguration {
   private int messageStartDedupExpirationSweepBatchLimit =
       DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
+  private Duration messageStartAskRetryGrace = DEFAULT_MESSAGE_START_ASK_RETRY_GRACE;
   private Duration messageStartLockReleasePollInterval =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
   private Duration messageStartLockReleasePollMaxBackoff =
@@ -584,6 +607,21 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessageStartAskRetryInterval(
       final Duration messageStartAskRetryInterval) {
     this.messageStartAskRetryInterval = messageStartAskRetryInterval;
+    return this;
+  }
+
+  /**
+   * Grace by which the {@code P_B} dedup row is kept valid (lookup re-replies and the expiration
+   * sweep) beyond the message deadline, to absorb a late in-flight retry and avoid a near-deadline
+   * duplicate. See {@link #DEFAULT_MESSAGE_START_ASK_RETRY_GRACE} for sizing rationale.
+   */
+  public Duration getMessageStartAskRetryGrace() {
+    return messageStartAskRetryGrace;
+  }
+
+  public EngineConfiguration setMessageStartAskRetryGrace(
+      final Duration messageStartAskRetryGrace) {
+    this.messageStartAskRetryGrace = messageStartAskRetryGrace;
     return this;
   }
 

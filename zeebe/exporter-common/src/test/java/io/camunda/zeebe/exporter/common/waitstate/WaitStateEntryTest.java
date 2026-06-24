@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -29,9 +28,7 @@ class WaitStateEntryTest {
   @Test
   void shouldExposeAllFieldsViaAccessors() {
     // given
-    final var details =
-        new JobWaitStateDetails(
-            42L, "payment", JobKind.BPMN_ELEMENT, JobListenerEventType.UNSPECIFIED, 3);
+    final var details = new JobWaitStateDetails(42L, "payment", JobKind.BPMN_ELEMENT, null, 3);
     final var entry =
         new WaitStateEntry()
             .setRootProcessInstanceKey(100L)
@@ -120,12 +117,13 @@ class WaitStateEntryTest {
     // when / then
     assertThat(WaitStateType.values())
         .containsExactlyInAnyOrder(
+            WaitStateType.CALL_ACTIVITY,
+            WaitStateType.CONDITION,
+            WaitStateType.INCIDENT,
             WaitStateType.JOB,
             WaitStateType.MESSAGE,
-            WaitStateType.USER_TASK,
-            WaitStateType.TIMER,
             WaitStateType.SIGNAL,
-            WaitStateType.INCIDENT,
-            WaitStateType.CALL_ACTIVITY);
+            WaitStateType.TIMER,
+            WaitStateType.USER_TASK);
   }
 }

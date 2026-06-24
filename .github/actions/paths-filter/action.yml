@@ -278,7 +278,6 @@ runs:
           - '.github/scripts/validate-flattened-poms.sh'
 
         dockerfile-change:
-          - 'Dockerfile'
           - '*.Dockerfile'
 
         markdown-change:
@@ -369,7 +368,6 @@ runs:
         zeebe-change:
           - 'zeebe/**'
           - 'clients/**'
-          - 'Dockerfile'
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-operate

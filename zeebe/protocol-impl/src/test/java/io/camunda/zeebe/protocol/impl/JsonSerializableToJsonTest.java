@@ -33,10 +33,12 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
@@ -1354,6 +1356,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(2L)
                   .setMessageKey(3L)
                   .setCorrelationKey(wrapString("test-key"))
+                  .setBusinessId(wrapString("test-business-id"))
                   .setVariables(VARIABLES_MSGPACK);
             },
         """
@@ -1365,6 +1368,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 2,
                   "messageKey": 3,
                   "correlationKey": "test-key",
+                  "businessId": "test-business-id",
                   "variables": {
                     "foo": "bar"
                   },
@@ -1396,6 +1400,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": -1,
                   "messageKey": -1,
                   "correlationKey": "",
+                  "businessId": "",
                   "variables": {},
                   "tenantId": "<default>"
                 }
@@ -1428,7 +1433,10 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey))
                   .setVariables(VARIABLES_MSGPACK)
-                  .setBusinessId("biz-42");
+                  .setBusinessId("biz-42")
+                  .setElementId("catch-1")
+                  .setRootProcessInstanceKey(99L)
+                  .setElementType(BpmnElementType.RECEIVE_TASK);
             },
         """
                 {
@@ -1444,7 +1452,10 @@ final class JsonSerializableToJsonTest {
                   },
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "businessId": "biz-42"
+                  "businessId": "biz-42",
+                  "elementId": "catch-1",
+                  "rootProcessInstanceKey": 99,
+                  "elementType": "RECEIVE_TASK"
                 }
                 """
       },
@@ -1475,7 +1486,10 @@ final class JsonSerializableToJsonTest {
                   "variables": {},
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "businessId": ""
+                  "businessId": "",
+                  "elementId": "",
+                  "rootProcessInstanceKey": -1,
+                  "elementType": "UNSPECIFIED"
                 }
                 """
       },
@@ -1511,7 +1525,8 @@ final class JsonSerializableToJsonTest {
                   .setCorrelationKey(wrapString(correlationKey))
                   .setElementId(wrapString("A"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
-                  .setBusinessId("biz-42");
+                  .setBusinessId("biz-42")
+                  .setElementType(BpmnElementType.RECEIVE_TASK);
             },
         """
                 {
@@ -1529,7 +1544,8 @@ final class JsonSerializableToJsonTest {
                   "interrupting": true,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 5678,
-                  "businessId": "biz-42"
+                  "businessId": "biz-42",
+                  "elementType": "RECEIVE_TASK"
                 }
                 """
       },
@@ -1564,7 +1580,8 @@ final class JsonSerializableToJsonTest {
                   "interrupting": true,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
-                  "businessId": ""
+                  "businessId": "",
+                  "elementType": "UNSPECIFIED"
                 }
                 """
       },
@@ -1601,7 +1618,11 @@ final class JsonSerializableToJsonTest {
                   "targetElementId": "node1",
                   "repetitions": 3,
                   "processDefinitionKey": 13,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "rootProcessInstanceKey": -1,
+                  "bpmnProcessId": "",
+                  "elementId": "node1",
+                  "elementType": "UNSPECIFIED"
                 }
                 """
       },
@@ -2543,15 +2564,19 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setCatchEventInstanceKey(3L)
+                  .setBpmnElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
                   .setTenantId("acme");
             },
         """
                 {
-                  "processDefinitionKey":22334,
-                  "signalName": "name",
                   "catchEventId": "startEvent",
-                  "bpmnProcessId": "process",
+                  "signalName": "name",
                   "catchEventInstanceKey":3,
+                  "bpmnElementType":"INTERMEDIATE_CATCH_EVENT",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "bpmnProcessId": "process",
                   "tenantId": "acme"
                 }
                 """
@@ -2572,11 +2597,14 @@ final class JsonSerializableToJsonTest {
             },
         """
                 {
-                  "processDefinitionKey":22334,
-                  "signalName":"",
                   "catchEventId":"",
-                  "bpmnProcessId":"",
+                  "signalName":"",
                   "catchEventInstanceKey":-1,
+                  "bpmnElementType":"UNSPECIFIED",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "bpmnProcessId":"",
                   "tenantId": "<default>"
                 }
                 """
@@ -2874,7 +2902,8 @@ final class JsonSerializableToJsonTest {
                     .setPriority(80)
                     .setDeniedReason("Reason to deny lifecycle transition")
                     .setListenersConfigKey(42L)
-                    .setRootProcessInstanceKey(4321L),
+                    .setRootProcessInstanceKey(4321L)
+                    .setBusinessId("order-4711"),
         """
                 {
                   "bpmnProcessId": "test-process",
@@ -2905,7 +2934,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "Reason to deny lifecycle transition",
                   "listenersConfigKey": 42,
-                  "rootProcessInstanceKey": 4321
+                  "rootProcessInstanceKey": 4321,
+                  "businessId": "order-4711"
                 }
                 """
       },
@@ -2944,7 +2974,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": ""
                 }
                 """
       },
@@ -2988,7 +3019,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": ""
                 }
                 """
       },
@@ -3256,6 +3288,52 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "time": 0
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ClusterVariableRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ClusterVariableRecord (global scope with metadata)",
+        (Supplier<ClusterVariableRecord>)
+            () ->
+                new ClusterVariableRecord()
+                    .setName("myVar")
+                    .setGlobalScope()
+                    .setTenantId("<default>")
+                    .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("42")))
+                    .setMetadata(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2")))),
+        """
+                {
+                  "name": "myVar",
+                  "value": "42",
+                  "scope": "GLOBAL",
+                  "tenantId": "<default>",
+                  "metadata": { "credentialType": "OAUTH2" }
+                }
+                """
+      },
+      {
+        "ClusterVariableRecord (tenant scope without metadata)",
+        (Supplier<ClusterVariableRecord>)
+            () ->
+                new ClusterVariableRecord()
+                    .setName("tenantVar")
+                    .setTenantScope()
+                    .setTenantId("tenant-1")
+                    .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("42"))),
+        """
+                {
+                  "name": "tenantVar",
+                  "value": "42",
+                  "scope": "TENANT",
+                  "tenantId": "tenant-1",
+                  "metadata": {}
                 }
                 """
       },
@@ -3855,6 +3933,7 @@ final class JsonSerializableToJsonTest {
                   "partitionIds": [1, 2, 3],
                   "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
                   "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
+                  "jobUpdatePlan":{"timeout":null,"retries":null,"priority":null,"changedAttributes":[],"empty":false,"encodedLength":48},
                   "authenticationBuffer": {"expandable":false},
                   "authorizationCheckBuffer": {"expandable":false},
                   "followUpCommand": {
@@ -3970,6 +4049,14 @@ final class JsonSerializableToJsonTest {
                      "empty": false,
                      "encodedLength": 265
                    },
+                   "jobUpdatePlan": {
+                     "retries": null,
+                     "timeout": null,
+                     "priority": null,
+                     "changedAttributes": [],
+                     "empty": false,
+                     "encodedLength": 48
+                   },
                    "authenticationBuffer": {
                      "expandable": false
                    },
@@ -3988,6 +4075,42 @@ final class JsonSerializableToJsonTest {
                       }
                     }
                  }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// UpdateJob BatchOperationCreationRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UpdateJob BatchOperationCreationRecord",
+        (Supplier<BatchOperationCreationRecord>)
+            () ->
+                new BatchOperationCreationRecord()
+                    .setBatchOperationKey(12345L)
+                    .setPartitionIds(List.of(1, 2, 3))
+                    .setBatchOperationType(BatchOperationType.UPDATE_JOB)
+                    .setEntityFilter(toMessagePack("{'type': 'myJobType'}"))
+                    .setJobUpdatePlan(
+                        new BatchOperationJobUpdatePlan().setPriority(80).setRetries(5)),
+        """
+                {
+                  "batchOperationKey": 12345,
+                  "batchOperationType": "UPDATE_JOB",
+                  "entityFilterBuffer": {"expandable":false},
+                  "entityFilter": "{\\"type\\":\\"myJobType\\"}",
+                  "partitionIds": [1, 2, 3],
+                  "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
+                  "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
+                  "jobUpdatePlan":{"retries":5,"timeout":null,"priority":80,"changedAttributes":["retries","priority"],"empty":false,"encodedLength":65},
+                  "authenticationBuffer": {"expandable":false},
+                  "authorizationCheckBuffer": {"expandable":false},
+                  "followUpCommand": {
+                    "valueType": "NULL_VAL",
+                    "intent": "UNKNOWN",
+                    "recordValue": null
+                  }
+                }
                 """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -4305,7 +4428,9 @@ final class JsonSerializableToJsonTest {
                     .setCondition(BufferUtil.wrapString("=x > 5"))
                     .setVariableNames(List.of("x", "y"))
                     .setVariableEvents(List.of("CREATED", "UPDATED"))
-                    .setInterrupting(true),
+                    .setInterrupting(true)
+                    .setRootProcessInstanceKey(999L)
+                    .setElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT),
         """
                 {
                   "tenantId":"tenant-1",
@@ -4318,7 +4443,9 @@ final class JsonSerializableToJsonTest {
                   "variableNames":["x","y"],
                   "variableEvents":["CREATED","UPDATED"],
                   "bpmnProcessId":"process-1",
-                  "processDefinitionKey":456
+                  "processDefinitionKey":456,
+                  "rootProcessInstanceKey":999,
+                  "elementType":"INTERMEDIATE_CATCH_EVENT"
                 }
                 """
       },
@@ -4343,7 +4470,9 @@ final class JsonSerializableToJsonTest {
                   "variableNames":[],
                   "variableEvents":[],
                   "bpmnProcessId":"",
-                  "processDefinitionKey":-1
+                  "processDefinitionKey":-1,
+                  "rootProcessInstanceKey":-1,
+                  "elementType":"UNSPECIFIED"
                 }
                 """
       },
@@ -4865,7 +4994,8 @@ final class JsonSerializableToJsonTest {
                       .setJobLease("job-lease-abc123")
                       .setIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
-                      .setProducedAt(1748860800000L);
+                      .setProducedAt(1748860800000L)
+                      .setBpmnProcessId("process");
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.TEXT)
@@ -4959,6 +5089,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "process",
           "processDefinitionKey": -1
         }
         """
@@ -4982,6 +5113,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
           "processDefinitionKey": -1
         }
         """

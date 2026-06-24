@@ -232,6 +232,19 @@
             </configuration>
           </execution>
 
+          <!-- 4. Frontend unit tests -->
+          <execution>
+            <id>npm-test</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>test</phase>
+            <configuration>
+              <skip>${skip.fe.build}</skip>
+              <arguments>test</arguments>
+            </configuration>
+          </execution>
+
         </executions>
       </plugin>
     </plugins>

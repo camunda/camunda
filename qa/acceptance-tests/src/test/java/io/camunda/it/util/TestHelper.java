@@ -41,6 +41,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
+import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -212,17 +213,6 @@ public final class TestHelper {
         .addResourceFromClasspath(resourceName)
         .tenantId(tenantId)
         .execute();
-  }
-
-  public static void createTenant(
-      final CamundaClient client,
-      final String tenantId,
-      final String tenantName,
-      final String... usernames) {
-    client.newCreateTenantCommand().tenantId(tenantId).name(tenantName).execute();
-    for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).execute();
-    }
   }
 
   public static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
@@ -1678,6 +1668,41 @@ public final class TestHelper {
         page -> camundaClient.newCorrelatedMessageSubscriptionSearchRequest().page(page).execute());
   }
 
+  /**
+   * Publishes a message with a correlation key so that a running process instance waiting on a
+   * matching intermediate catch event will be unblocked.
+   *
+   * @param camundaClient the Camunda client
+   * @param messageName the name of the message to publish
+   * @param correlationKey the correlation key used to match the waiting process instance
+   */
+  public static void publishMessage(
+      final CamundaClient camundaClient, final String messageName, final String correlationKey) {
+    camundaClient
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .timeToLive(Duration.ofMinutes(5))
+        .send()
+        .join();
+  }
+
+  /**
+   * Waits for the first active user task on the given process instance (state {@code CREATED}) and
+   * completes it.
+   *
+   * @param camundaClient the Camunda client
+   * @param processInstanceKey the key of the process instance whose user task to complete
+   */
+  public static void completeUserTask(
+      final CamundaClient camundaClient, final long processInstanceKey) {
+    final var userTask =
+        waitForUserTask(
+            camundaClient,
+            f -> f.processInstanceKey(processInstanceKey).state(UserTaskState.CREATED));
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
+  }
+
   public static void waitUntilAuthorizationVisible(
       final CamundaClient camundaClient, final String owner, final String resource) {
     Awaitility.await("should wait until authorization is visible")
@@ -2132,5 +2157,68 @@ public final class TestHelper {
         "should wait until audit log entries are available",
         expectedEntries,
         page -> camundaClient.newAuditLogSearchRequest().filter(filter).page(page).execute());
+  }
+
+  public static void waitForWaitStates(final CamundaClient camundaClient, final int expectedCount) {
+    Awaitility.await("should export %d wait states".formatted(expectedCount))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final List<ElementInstanceWaitStateResult> items =
+                  camundaClient.newElementInstanceWaitStateSearchRequest().send().join().items();
+              assertThat(items).hasSize(expectedCount);
+            });
+  }
+
+  public static void waitForUser(final CamundaClient client, final String username) {
+    Awaitility.await("user '%s' visible in secondary storage".formatted(username))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newUsersSearchRequest().filter(f -> f.username(username)).send().join();
+              assertThat(result.items())
+                  .as("user '%s' should be present in secondary storage", username)
+                  .hasSize(1);
+            });
+  }
+
+  public static void waitForRole(final CamundaClient client, final String roleId) {
+    Awaitility.await("role '%s' visible in secondary storage".formatted(roleId))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newRolesSearchRequest().filter(f -> f.roleId(roleId)).send().join();
+              assertThat(result.items())
+                  .as("role '%s' should be present in secondary storage", roleId)
+                  .hasSize(1);
+            });
+  }
+
+  public static void waitForGroup(final CamundaClient client, final String groupId) {
+    Awaitility.await("group '%s' visible in secondary storage".formatted(groupId))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newGroupsSearchRequest().filter(f -> f.groupId(groupId)).send().join();
+              assertThat(result.items())
+                  .as("group '%s' should be present in secondary storage", groupId)
+                  .hasSize(1);
+            });
+  }
+
+  public static void waitForTenant(final CamundaClient client, final String tenantId) {
+    Awaitility.await("tenant '%s' visible in secondary storage".formatted(tenantId))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newTenantsSearchRequest().filter(f -> f.tenantId(tenantId)).send().join();
+              assertThat(result.items())
+                  .as("tenant '%s' should be present in secondary storage", tenantId)
+                  .hasSize(1);
+            });
   }
 }

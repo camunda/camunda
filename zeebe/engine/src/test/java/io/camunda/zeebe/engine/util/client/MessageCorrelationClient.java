@@ -93,6 +93,11 @@ public final class MessageCorrelationClient {
     return this;
   }
 
+  public MessageCorrelationClient withBusinessId(final String businessId) {
+    messageCorrelationRecord.setBusinessId(businessId);
+    return this;
+  }
+
   public MessageCorrelationClient onPartition(final int partitionId) {
     this.partitionId = partitionId;
     return this;

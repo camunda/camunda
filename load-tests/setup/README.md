@@ -5,7 +5,7 @@ Welcome to the manual setup of a load test. :wave:
 There are two targets to run a load test against:
 
 * [Self-Managed Zeebe Cluster](#load-testing-self-managed-zeebe-cluster)
-* [Camunda Cloud Cluster](#load-testing-camunda-cloud-saas)
+* [Camunda SaaS Cluster](#load-testing-camunda-cloud-saas)
 
 All guides are targeted at a Linux system.
 
@@ -84,7 +84,20 @@ Shared baseline platform config lives in `camunda-platform-values-defaults.yaml`
 
 ### How to set up a load test namespace
 
-If you run `newLoadTest.sh` without arguments, it will display the following help message.
+The root `newLoadTest.sh` is a **version dispatcher** — it forwards to a version-specific script
+under `setup/<version>/newLoadTest.sh`, defaulting to `main`. Each stable version has its own
+subfolder (`stable-87`, `stable-88`, …) so all version setups live on `main` without backports.
+
+Run `./newLoadTest.sh --help` to see currently available versions. To target a specific version:
+
+```sh
+./newLoadTest.sh --target-version stable-89 my-test   # stable/8.9 setup
+./newLoadTest.sh --target-version stable-89 -h        # version-specific help
+```
+
+The rest of this section documents the `main` setup.
+
+Running `newLoadTest.sh` without arguments shows the `main` help:
 
 ```sh
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
@@ -112,9 +125,9 @@ Example:
 . ./newLoadTest.sh my-load-test-name
 ```
 
-This will source and run the `newLoadTest.sh` script. A new folder is created with the given name, containing a rendered Makefile, Helm values, and (under `resources/`) two Kubernetes manifests: `namespace.yaml` (labels, AZ pinning, TTL) and `camunda-credentials.yaml` (randomly generated passwords/tokens). The cluster itself is unchanged by this script — `make install` from inside the folder runs `kubectl apply -f resources/…` to create the namespace and secret. Reruns after a TTL deletion reapply the same manifests, so the orchestration secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
+This will source and run the `newLoadTest.sh` script. A new folder is created with the given name, containing a rendered Makefile, Helm values, and a local "load-test-setup" Helm chart under `charts/load-test-setup/`.
 
-The template files live under `setup/default/`:
+The template files live under `setup/main/`:
 
 - `Makefile` — rendered into the namespace folder with placeholders substituted.
 - `values/` — Helm values files. All installs start from
@@ -129,13 +142,22 @@ The template files live under `setup/default/`:
 - `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
   Helm chart). Copied into the namespace folder only when the matching
   storage is chosen.
-- `resources/` — namespace and credentials manifests (see PR #52882). Always
-  copied and rendered with random secrets.
+- `charts/load-test-setup/` — The "load-test-setup" Helm Chart. Always copied and rendered
+  with random secrets.
 
 **A namespace is bound to its storage choice at bootstrap.** To try a different
 storage, create a new namespace via `./newLoadTest.sh <new-name> <newStorage>`.
 
-`resources/camunda-credentials.yaml` is git-ignored (random secrets on disk; do not commit).
+The load-test-setup chart owns all the resources deployed for a single load tests:
+* the namespace (labels, AZ pinning, TTL annotation)
+* the `camunda-credentials` secret
+* the leader-balancer cronjob
+
+It is parameterized by a values file baked at scaffold time:
+
+* `load-test-setup-values.yaml`: namespace name, author label, `deadlineDate`, topology zone.
+
+Reruns `make install-load-test-setup` after a TTL deletion reinstall the same chart, so the orchestration OIDC secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
 
 If you used `.` before `./newLoadTest.sh`, the script will change your directory after running, so you can directly start to configure your load test.
 
@@ -210,29 +232,28 @@ To install/upgrade both the [Camunda Platform Helm](https://github.com/camunda/c
 make install
 ```
 
-`make install` first runs `check-deadline` (fails fast if today ≥ the baked `deadline-date` so we don't deploy into a namespace the TTL cleanup workflow is about to delete), then `create-namespace` and `create-credentials` which `kubectl apply -f resources/namespace.yaml` and `resources/camunda-credentials.yaml`. Both are idempotent, so reruns after a TTL deletion recreate the namespace and reapply the same credentials — the orchestration OIDC secret stays in sync with `load-test-values.yaml`.
+`make install` first runs `check-deadline` (fails fast if today ≥ the baked `deadlineDate` so we don't deploy into a namespace the TTL cleanup workflow is about to delete), then `install-load-test-setup` which `helm upgrade --install`s the local load-test-setup chart. The load-test-setup release creates the namespace, the `camunda-credentials` secret, the leader-balancer cronjob, and the Optimize indices cleanup job in a single, idempotent Helm release — so reruns after a TTL deletion reapply the same credentials and the orchestration OIDC secret stays in sync with `load-test-values.yaml`.
 
 Or install/upgrade them separately:
 
 ```shell
-# Apply the namespace + secret manifests (idempotent)
-make create-namespace
-make create-credentials
+# Install/upgrade the load-test-setup chart (namespace, credentials secret, leader balancer cronjob, cleanup job)
+make install-load-test-setup
 
-# Install/upgrade the Camunda Platform (includes leader balancer cronjob)
+# Install/upgrade the Camunda Platform
 make install-platform
 
 # Install/upgrade the load test (starter, worker, etc.)
 make install-load-test
 ```
 
-To bump the deadline of an existing namespace without re-scaffolding, edit `deadline-date` in `resources/namespace.yaml` (single source of truth — `check-deadline` reads it directly) and reapply:
+To bump the deadline of an existing namespace without re-scaffolding, edit `deadlineDate` in `load-test-setup-values.yaml` (single source of truth — `check-deadline` reads it directly) and reinstall the load-test-setup chart:
 
 ```sh
-make create-namespace
+make install-load-test-setup
 ```
 
-The Camunda Platform deployment automatically sets up a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
+The load-test-setup chart deploys a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
 
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 
@@ -325,9 +346,9 @@ cd c8-my-load-test-name
 make clean
 ```
 
-This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter), removes any secondary-storage chart/PVCs, drops the leader-balancer cronjob, and finally `kubectl delete -f resources/namespace.yaml --ignore-not-found` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
+This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter + load-test-setup), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
 
-The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reapply `resources/namespace.yaml` + `resources/camunda-credentials.yaml`), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
+The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 
 ## Running on stable VMs
 

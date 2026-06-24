@@ -40,6 +40,7 @@ const CopyButton: React.FC<Props> = ({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsCopied(false);
     resetTimeout();
   }, [value]);

@@ -14,13 +14,10 @@ import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
-import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
-import java.util.function.Consumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
@@ -28,7 +25,7 @@ public class TestStandaloneBackupManager
     extends TestSpringApplication<TestStandaloneBackupManager> {
 
   private Long backupId;
-  private final Camunda unifiedConfig;
+  private boolean skipSchemaCheck;
 
   public TestStandaloneBackupManager() {
     super(
@@ -38,8 +35,6 @@ public class TestStandaloneBackupManager
         NativeSearchClientsConfiguration.class,
         PhysicalTenantSearchClientReadersConfiguration.class,
         SearchClientReaderConfiguration.class);
-
-    unifiedConfig = new Camunda();
   }
 
   @Override
@@ -62,33 +57,29 @@ public class TestStandaloneBackupManager
     return false;
   }
 
-  /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneBackupManager withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
   @Override
   protected String[] commandLineArgs() {
-    return backupId == null ? super.commandLineArgs() : new String[] {String.valueOf(backupId)};
+    if (backupId == null) {
+      return super.commandLineArgs();
+    }
+
+    return skipSchemaCheck
+        ? new String[] {String.valueOf(backupId), "--skip-schema-check"}
+        : new String[] {String.valueOf(backupId)};
   }
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    // Flatten the in-memory unified config into camunda.* properties at the latest possible point.
-    // Refreshable so that fields cleared between stop/start don't remain.
-    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 
   public TestStandaloneBackupManager withBackupId(final Long backupId) {
     this.backupId = backupId;
+    return this;
+  }
+
+  public TestStandaloneBackupManager withSkipSchemaCheck(final boolean skipSchemaCheck) {
+    this.skipSchemaCheck = skipSchemaCheck;
     return this;
   }
 

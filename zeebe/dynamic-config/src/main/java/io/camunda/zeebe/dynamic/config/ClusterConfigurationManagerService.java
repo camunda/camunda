@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.Initializ
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -46,12 +47,8 @@ import java.util.Optional;
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
-  // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
-  // dynamically.
-  private static final int COORDINATOR_NODE_ID = 0;
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
-  private final boolean isCoordinator;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
   private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
@@ -62,6 +59,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private final MemberId localMemberId;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -80,7 +78,7 @@ public final class ClusterConfigurationManagerService
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final MemberId localMemberId = memberShipService.getLocalMember().id();
+    localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
@@ -98,7 +96,6 @@ public final class ClusterConfigurationManagerService
             config,
             clusterConfigurationManager::onGossipReceived,
             topologyMetrics);
-    isCoordinator = localMemberId.nodeIdx() == COORDINATOR_NODE_ID;
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
             clusterConfigurationManager, localMemberId, managerActor);
@@ -144,9 +141,13 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
-    // This initializer does not set the cluster ID, as it is not required for non-coordinators.
-    // Non-coordinators will receive the cluster ID from the coordinator via gossip.
+        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
+        // Must be initialized by the coordinator only. However, we still define it here because the
+        // actual coordinator might be different from what is provided in the static configuration.
+        // These initializers will be skipped if they are not running on the latest coordinator
+        // based on the initialized configuration.
+        .andThen(new PartitionDistributorInitializer(staticConfiguration))
+        .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
   }
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
@@ -171,7 +172,9 @@ public final class ClusterConfigurationManagerService
                 managerActor,
                 true))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
-        .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
+        // Must be initialized by the coordinator only
+        .andThen(new PartitionDistributorInitializer(staticConfiguration))
+        .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
@@ -194,6 +197,10 @@ public final class ClusterConfigurationManagerService
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
+    final var coordinatorMemberId =
+        ClusterConfigurationCoordinatorSupplier.ofMembers(staticConfiguration.clusterMembers())
+            .getDefaultCoordinator();
+    final var isCoordinator = coordinatorMemberId.equals(localMemberId);
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
         isCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
@@ -202,9 +209,7 @@ public final class ClusterConfigurationManagerService
     configurationRequestServer.start();
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
-    // it
-    // can
-    // immediately gossip it.
+    // it can immediately gossip it.
     actorSchedulingService
         .submitActor(managerActor)
         .onComplete(

@@ -10,9 +10,10 @@ package io.camunda.it.rdbms.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -26,7 +27,6 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -47,20 +47,9 @@ class RdbmsExporterBatchOperationsIT {
 
   private static final RecordFixtures FIXTURES = new RecordFixtures();
   private final ExporterTestController controller = new ExporterTestController();
-  private final VendorDatabaseProperties vendorDatabaseProperties =
-      new VendorDatabaseProperties(
-          new Properties() {
-            {
-              setProperty("databaseId", "h2");
-              setProperty("variableValue.previewSize", "100");
-              setProperty("userCharColumn.size", "50");
-              setProperty("errorMessage.size", "500");
-              setProperty("treePath.size", "500");
-              setProperty("disableFkBeforeTruncate", "true");
-            }
-          });
   @Autowired private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
@@ -69,9 +58,9 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   private void setup(final boolean exportPendingItems) {
-    exporter =
-        new RdbmsExporterWrapper(
-            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
     exporter.configure(
         new ExporterContext(
             null,
@@ -79,7 +68,7 @@ class RdbmsExporterBatchOperationsIT {
                 "foo",
                 Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
             1,
-            "default",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),

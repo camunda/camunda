@@ -37,11 +37,16 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -60,6 +65,7 @@ import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionConfig;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -270,6 +276,13 @@ final class ClusterApiUtils {
                   postScalingOperation.clusterMembers().stream()
                       .map(m -> brokerIdValue(m))
                       .toList());
+      case final UpdatePartitionDistributorConfigOperation
+              updatePartitionDistributorConfigOperation ->
+          new Operation()
+              .brokerId(brokerIdValue(updatePartitionDistributorConfigOperation.memberId()))
+              .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
+              .partitionDistributionConfig(
+                  toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -304,6 +317,7 @@ final class ClusterApiUtils {
       case LEAVING -> BrokerStateCode.LEAVING;
       case LEFT -> BrokerStateCode.LEFT;
       case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
+      case RECOVERING -> BrokerStateCode.RECOVERING;
     };
   }
 
@@ -362,7 +376,51 @@ final class ClusterApiUtils {
         .routingState()
         .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
     topology.clusterId().ifPresent(response::clusterId);
+    topology
+        .partitionDistributorConfig()
+        .ifPresent(
+            config -> response.partitionDistribution(mapPartitionDistributionConfig(config)));
     return response;
+  }
+
+  private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig
+      mapPartitionDistributionConfig(final PartitionDistributorConfig config) {
+    final var result = new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    switch (config) {
+      case final PartitionDistributorConfig.RoundRobinConfig ignored ->
+          result.type(
+              io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.ROUND_ROBIN);
+      case final PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
+          result
+              .type(
+                  io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum
+                      .ZONE_AWARE)
+              .zones(
+                  zoneAware.zones().stream()
+                      .map(
+                          z ->
+                              new io.camunda.zeebe.management.cluster.ZoneSpec()
+                                  .name(z.name())
+                                  .numberOfReplicas(z.numberOfReplicas())
+                                  .priority(z.priority()))
+                      .toList());
+      case final PartitionDistributorConfig.FixedConfig ignored ->
+          result.type(
+              io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.FIXED);
+    }
+    return result;
+  }
+
+  static PartitionDistributorConfig toPartitionDistributorConfig(
+      final io.camunda.zeebe.management.cluster.PartitionDistributionConfig dto) {
+    final List<PartitionDistributorConfig.ZoneSpec> zones =
+        dto.getZones().stream()
+            .map(
+                z ->
+                    new PartitionDistributorConfig.ZoneSpec(
+                        z.getName(), z.getNumberOfReplicas(), z.getPriority()))
+            .toList();
+    return new ZoneAwareConfig(zones);
   }
 
   private static io.camunda.zeebe.management.cluster.RoutingState mapRoutingState(
@@ -546,6 +604,15 @@ final class ClusterApiUtils {
                       postScalingOperation.clusterMembers().stream()
                           .map(m -> brokerIdValue(m))
                           .toList());
+          case final UpdatePartitionDistributorConfigOperation
+                  updatePartitionDistributorConfigOperation ->
+              new TopologyChangeCompletedInner()
+                  .brokerId(brokerIdValue(updatePartitionDistributorConfigOperation.memberId()))
+                  .operation(
+                      TopologyChangeCompletedInner.OperationEnum
+                          .UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
+                  .partitionDistributionConfig(
+                      toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
@@ -554,6 +621,30 @@ final class ClusterApiUtils {
     mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));
 
     return mappedOperation;
+  }
+
+  private static io.camunda.zeebe.management.cluster.PartitionDistributionConfig
+      toPartitionDistributionConfig(final UpdatePartitionDistributorConfigOperation operation) {
+    final var config = new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    switch (operation.config()) {
+      case final FixedConfig fixedConfig -> {
+        config.type(TypeEnum.FIXED);
+      }
+      case final RoundRobinConfig roundRobinConfig -> {
+        config.type(TypeEnum.ROUND_ROBIN);
+      }
+      case final ZoneAwareConfig zoneAwareConfig -> {
+        config.type(TypeEnum.ZONE_AWARE);
+        config.zones(
+            zoneAwareConfig.zones().stream()
+                .map(
+                    z ->
+                        new io.camunda.zeebe.management.cluster.ZoneSpec(
+                            z.name(), z.numberOfReplicas(), z.priority()))
+                .toList());
+      }
+    }
+    return config;
   }
 
   static List<ExporterStatus> aggregateExporterState(

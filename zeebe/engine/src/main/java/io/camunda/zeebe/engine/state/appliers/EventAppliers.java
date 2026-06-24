@@ -249,6 +249,7 @@ public final class EventAppliers implements EventApplier {
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
+    register(TimerIntent.CREATED, 2, new TimerCreatedV2Applier(state.getTimerState()));
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
     register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
     register(TimerIntent.MIGRATED, new TimerInstanceMigratedApplier(state.getTimerState()));
@@ -447,6 +448,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.UPDATED, 1, new JobUpdatedApplier(state));
     register(JobIntent.UPDATED, 2, NOOP_EVENT_APPLIER);
     register(JobIntent.MIGRATED, new JobMigratedApplier(state));
+    register(JobIntent.PRIORITY_UPDATED, new JobPriorityUpdatedApplier(state));
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {

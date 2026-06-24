@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -31,6 +32,7 @@ import org.immutables.value.Value;
  *   <li>{@link #getName()} – the unique name of the cluster variable.
  *   <li>{@link #getValue()} – the current value of the cluster variable, as a deserialized object.
  *   <li>{@link #getScope()} – the current scope of the cluster variable.
+ *   <li>{@link #getMetadata()} – the metadata attached to this cluster variable.
  * </ul>
  *
  * @see RecordValue;
@@ -65,4 +67,12 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
    * @return the variable scope (never {@code null})
    */
   ClusterVariableScope getScope();
+
+  /**
+   * Returns the metadata attached to this cluster variable. The engine stores, replicates, and
+   * exports the map as-is without validating its contents.
+   *
+   * @return the metadata map
+   */
+  Map<String, Object> getMetadata();
 }

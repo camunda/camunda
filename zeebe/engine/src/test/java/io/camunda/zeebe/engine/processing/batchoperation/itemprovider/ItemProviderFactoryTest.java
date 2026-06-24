@@ -12,7 +12,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.filter.DecisionInstanceFilter;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -109,6 +111,36 @@ class ItemProviderFactoryTest {
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
     assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldSetFiltersForUpdateJob() {
+    // Arrange
+    final var filter = new JobFilter.Builder().build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType()).thenReturn(BatchOperationType.UPDATE_JOB);
+    when(batchOperation.getEntityFilter(JobFilter.class)).thenReturn(filter);
+
+    // Act
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // Assert
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(JobItemProvider.class);
+
+    final var usedFilter = ((JobItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+    // the non-terminal job states are enriched onto the filter as a single 'in' operation
+    assertThat(usedFilter.stateOperations())
+        .containsExactly(
+            Operation.in(
+                JobState.CREATED.name(),
+                JobState.FAILED.name(),
+                JobState.ERROR_THROWN.name(),
+                JobState.TIMED_OUT.name(),
+                JobState.RETRIES_UPDATED.name(),
+                JobState.PRIORITY_UPDATED.name(),
+                JobState.MIGRATED.name()));
   }
 
   @Test

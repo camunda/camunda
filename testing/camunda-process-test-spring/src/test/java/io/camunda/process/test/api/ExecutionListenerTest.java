@@ -384,6 +384,26 @@ public class ExecutionListenerTest {
   }
 
   @Test
+  void shouldResetClockInBetweenTests() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    // CamundaManagementClient will attempt to call resetTime() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(listener);
+    listener.afterTestMethod(testContext);
+
+    // then
+    verify(camundaManagementClient).resetTime();
+  }
+
+  @Test
   void shouldCollectProcessCoverage() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener =

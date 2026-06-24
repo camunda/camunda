@@ -34,4 +34,18 @@ public interface ProcessGroupByInterpreterOS
       final Query baseQuery) {
     return Optional.empty();
   }
+
+  /**
+   * Declares the instance index field on which unfiltered per-group baseline counts should be
+   * aggregated for this group-by, or empty if the group-by does not need per-group baselines (the
+   * report-level baseline count is used instead). The execution plan interpreter performs the
+   * actual aggregation, keeping the database client out of the group-by layer. Defaults to empty.
+   *
+   * @param context command execution context
+   * @return the field to aggregate per-group baseline counts on, if applicable
+   */
+  default Optional<String> getBaselineCountAggregationField(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return Optional.empty();
+  }
 }

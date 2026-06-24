@@ -55,6 +55,7 @@ import org.mockito.Mockito;
 
 class RdbmsExporterTest {
 
+  private static final String PHYSICAL_TENANT_ID = "mytenant";
   private Controller controller;
   private RdbmsWriters rdbmsWriters;
   private RdbmsExporter exporter;
@@ -477,7 +478,7 @@ class RdbmsExporterTest {
         .hasMessage("Schema is not ready for use");
 
     // verify schema manager was checked
-    verify(schemaManager).isInitialized("default");
+    verify(schemaManager).isInitialized(PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -571,6 +572,42 @@ class RdbmsExporterTest {
 
     // then
     exceptionAssert.isInstanceOf(ExporterException.class);
+  }
+
+  @Test
+  void shouldNotReexportAlreadyProcessedRecordOnRetry() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    // when - the broker re-delivers the same record after a failed flush
+    exporter.export(record);
+    exporter.export(record);
+
+    // then - the handler runs only once (no re-enqueue that would duplicate the row in the batch)
+    verify(jobHandler, times(1)).export(record);
+    // but a flush is still attempted on each call: a normal flush first, then a forced retry flush
+    verify(rdbmsWriters).flush(false);
+    verify(rdbmsWriters).flush(true);
+  }
+
+  @Test
+  void shouldStillExportNewRecordAfterARetry() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+    final var firstRecord = mockRecord(ValueType.JOB, 1);
+    final var newRecord = mockRecord(ValueType.JOB, 2);
+
+    // when - first record is processed, re-delivered (retry), then a new record arrives
+    exporter.export(firstRecord);
+    exporter.export(firstRecord);
+    exporter.export(newRecord);
+
+    // then - the retry is skipped but the genuinely new record is still exported
+    verify(jobHandler, times(1)).export(firstRecord);
+    verify(jobHandler, times(1)).export(newRecord);
   }
 
   // ------------------------------------------------
@@ -687,7 +724,7 @@ class RdbmsExporterTest {
         new RdbmsExporter.Builder()
             .rdbmsWriter(rdbmsWriters)
             .partitionId(0)
-            .physicalTenantId("default")
+            .physicalTenantId(PHYSICAL_TENANT_ID)
             .flushInterval(Duration.ofMillis(500))
             .queueSize(100)
             .rdbmsSchemaManagerRegistry(schemaManager)

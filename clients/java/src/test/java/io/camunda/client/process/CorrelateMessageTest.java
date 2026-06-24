@@ -88,6 +88,28 @@ final class CorrelateMessageTest extends ClientRestTest {
   }
 
   @Test
+  void shouldCorrelateMessageWithBusinessId() {
+    // given
+    final String messageName = "name";
+    final String correlationKey = "correlationKey";
+    gatewayService.onCorrelateMessageRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCorrelateMessageCommand()
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .businessId("order-12345")
+        .send()
+        .join();
+
+    // then
+    final MessageCorrelationRequest request =
+        gatewayService.getLastRequest(MessageCorrelationRequest.class);
+    assertThat(request.getBusinessId()).isEqualTo("order-12345");
+  }
+
+  @Test
   void shouldThrowExceptionWhenVariablesAreNotInMapStructure() {
     // given
     final String messageName = "name";

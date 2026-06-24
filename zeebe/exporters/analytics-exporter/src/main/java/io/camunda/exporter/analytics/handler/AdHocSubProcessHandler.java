@@ -7,13 +7,12 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.ELEMENT_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_ADHOC_SUBPROCESS_ACTIVATED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_DEFINITION_KEY;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_INSTANCE_KEY;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.ADHOC_SUBPROCESS_ACTIVATED;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.DEFINITION_KEY;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.INSTANCE_KEY;
 
+import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -42,14 +41,16 @@ public final class AdHocSubProcessHandler implements AnalyticsHandler<ProcessIns
     }
 
     otelSdkManager.logEvent(
-        EVENT_ADHOC_SUBPROCESS_ACTIVATED,
+        ADHOC_SUBPROCESS_ACTIVATED,
         record.getPosition(),
         log ->
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
-                .setAttribute(PROCESS_DEFINITION_KEY, value.getProcessDefinitionKey())
-                .setAttribute(PROCESS_INSTANCE_KEY, value.getProcessInstanceKey())
-                .setAttribute(ELEMENT_ID, value.getElementId())
-                .setAttribute(TENANT_ID, value.getTenantId())
+                .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
+                .setAttribute(INSTANCE_KEY, value.getProcessInstanceKey())
+                // Element.ID and Tenant.ID share the unqualified name ID — use qualified form to
+                // disambiguate
+                .setAttribute(AnalyticsAttributes.Element.ID, value.getElementId())
+                .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 }

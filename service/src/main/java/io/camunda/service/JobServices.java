@@ -52,6 +52,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   private final int maxVariableNameLength;
 
   public JobServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
@@ -59,6 +60,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         activateJobsHandler,
@@ -69,6 +71,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   }
 
   public JobServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
@@ -77,6 +80,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -99,9 +103,10 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
+    // partition group) so job activation round-robins over the tenant's partition group. The
+    // handler reads brokerRequest.getPartitionGroup() when selecting partitions.
+    applyBrokerRequestMutators(brokerRequest, authentication);
     activateJobsHandler.activateJobs(
         brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
   }
@@ -150,7 +155,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final UpdateJobChangeset changeset,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
-        new BrokerUpdateJobRequest(jobKey, changeset.retries(), changeset.timeout());
+        new BrokerUpdateJobRequest(
+            jobKey, changeset.retries(), changeset.timeout(), changeset.priority());
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
     }
@@ -234,5 +240,5 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       List<String> fetchVariable,
       long requestTimeout) {}
 
-  public record UpdateJobChangeset(Integer retries, Long timeout) {}
+  public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}
 }

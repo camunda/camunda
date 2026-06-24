@@ -190,6 +190,18 @@ components:
           description: the tenant for which the message is published
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        businessId:
+          description: |
+            An optional business id used to enforce uniqueness of the process instance that a
+            message start event would create. If provided and uniqueness enforcement is enabled,
+            the engine rejects starting a new process instance when another root process instance
+            with the same business id is already active for the same process definition. It has no
+            effect when the message correlates to a catch, boundary, or intermediate event.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      x-properties-added-in-version:
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     MessageCorrelationResult:
       description: |
@@ -246,8 +258,20 @@ components:
           description: The tenant of the message sender.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        businessId:
+          description: |
+            An optional business id used to enforce uniqueness of the process instance that a
+            message start event would create. If provided and uniqueness enforcement is enabled,
+            the engine rejects starting a new process instance when another root process instance
+            with the same business id is already active for the same process definition. It has no
+            effect when the message correlates to a catch, boundary, or intermediate event.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
       required:
         - name
+      x-properties-added-in-version:
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     MessagePublicationResult:
       description: The message key of the published message.
@@ -567,6 +591,7 @@ components:
     CorrelatedMessageSubscriptionResult:
       type: object
       required:
+        - businessId
         - correlationKey
         - correlationTime
         - elementId
@@ -581,6 +606,17 @@ components:
         - elementInstanceKey
         - processDefinitionKey
       properties:
+        businessId:
+          description: |
+            The business id associated with this correlated message subscription. For a message
+            start event correlation, it is the business id carried by the correlating message that
+            was stamped on the started process instance to enforce its uniqueness. For a catch,
+            boundary, or intermediate event correlation, it is the business id of the subscribing
+            process instance, captured when the subscription was opened. It is `null` when the
+            relevant process instance has no business id.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
         correlationKey:
           description: The correlation key of the message.
           nullable: true
@@ -641,6 +677,8 @@ components:
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     CorrelatedMessageSubscriptionSearchQuery:
       type: object
@@ -665,6 +703,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - businessId
             - correlationKey
             - correlationTime
             - elementId
@@ -716,6 +755,14 @@ components:
       description: Correlated message subscriptions search filter.
       type: object
       properties:
+        businessId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: |
+            Filter by the business id stored on the correlated message subscription — for message
+            start event correlations the correlating message's business id, and for catch, boundary,
+            or intermediate event correlations the subscribing process instance's business id.
+            Supports advanced string filtering, including `$like` with `*`/`?` wildcards.
         correlationKey:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -764,6 +811,9 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The tenant ID associated with this correlated message subscription.
+      x-properties-added-in-version:
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     MessageSubscriptionTypeFilterProperty:
       description: MessageSubscriptionTypeEnum with full advanced search capabilities.

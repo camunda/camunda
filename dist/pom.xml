@@ -25,7 +25,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -36,7 +35,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -784,6 +782,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk18on</artifactId>
       <scope>runtime</scope>
@@ -1076,6 +1079,7 @@
                  at runtime (see PR #52064). -->
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-config</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:camunda-search-domain</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -1093,7 +1097,6 @@
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
-            <dependency>io.camunda:operate-webapp</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
 
@@ -1133,7 +1136,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.21.0</version>
+        <version>7.22.0</version>
         <executions>
           <execution>
             <id>backups</id>
@@ -1159,8 +1162,10 @@
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
               <minimalUpdate>true</minimalUpdate>
               <ignoreFileOverride>${project.basedir}/src/main/resources/api/cluster/.openapi-generator-ignore</ignoreFileOverride>
+              <openapiNormalizer>SIMPLIFY_ONEOF_ANYOF=false</openapiNormalizer>
               <configOptions>
                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                <useSealed>true</useSealed>
               </configOptions>
             </configuration>
           </execution>

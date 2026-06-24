@@ -7,12 +7,22 @@
  */
 package io.camunda.search.entities;
 
-public sealed interface WaitStateDetails permits WaitStateJobDetails, WaitStateMessageDetails {
+public sealed interface WaitStateDetails
+    permits WaitStateJobDetails,
+        WaitStateMessageDetails,
+        WaitStateUserTaskDetails,
+        WaitStateTimerDetails,
+        WaitStateSignalDetails,
+        WaitStateConditionDetails {
 
   WaitStateType waitStateType();
 
   enum WaitStateType {
     JOB,
-    MESSAGE
+    MESSAGE,
+    USER_TASK,
+    TIMER,
+    SIGNAL,
+    CONDITION
   }
 }

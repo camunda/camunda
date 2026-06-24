@@ -62,7 +62,13 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
         .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setPosition(record.getPosition())
-        .setBpmnProcessId(recordValue.getBpmnProcessId());
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey());
+
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

@@ -7,6 +7,7 @@
  */
 
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import cn from 'classnames';
 import {Outlet, useLocation} from 'react-router-dom';
 import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
@@ -21,6 +22,7 @@ import {Filters} from 'modules/tasks/available-tasks/Filters';
 import {AvailableTasks} from './AvailableTasks';
 import styles from 'modules/tasks/page.module.scss';
 import {CollapsiblePanel} from 'modules/tasks/available-tasks/CollapsiblePanel';
+import {IS_NAV_V2_ENABLED} from 'modules/featureFlags';
 
 function useAutoSelectNextTaskSideEffects() {
   const {enabled} = autoSelectNextTaskStore;
@@ -38,6 +40,7 @@ function useAutoSelectNextTaskSideEffects() {
   const [previousFilters, setPreviousFilters] = useState<string>(filtersKey);
   useEffect(() => {
     if (previousFilters !== filtersKey && !isFetching) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreviousFilters(filtersKey);
       const firstTask = tasks[0];
 
@@ -65,6 +68,7 @@ function useAutoSelectNextTaskSideEffects() {
   const [isFinishedLoading, setIsFinishedLoading] = useState(false);
   useEffect(() => {
     if (!isFinishedLoading && !isLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsFinishedLoading(true);
       const firstTask = tasks[0];
 
@@ -128,8 +132,12 @@ const TasksTab: React.FC = observer(() => {
   }, [fetchPreviousPage]);
 
   return (
-    <main className={styles.container}>
-      <CollapsiblePanel />
+    <main
+      className={cn(styles.container, {
+        [styles.navV2!]: IS_NAV_V2_ENABLED,
+      })}
+    >
+      {!IS_NAV_V2_ENABLED && <CollapsiblePanel />}
       <Stack
         as="section"
         className={styles.tasksPanel}

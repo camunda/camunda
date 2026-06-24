@@ -846,9 +846,17 @@ components:
         mapping:
           JOB: '#/components/schemas/JobWaitStateDetails'
           MESSAGE: '#/components/schemas/MessageWaitStateDetails'
+          USER_TASK: '#/components/schemas/UserTaskWaitStateDetails'
+          TIMER: '#/components/schemas/TimerWaitStateDetails'
+          SIGNAL: '#/components/schemas/SignalWaitStateDetails'
+          CONDITION: '#/components/schemas/ConditionWaitStateDetails'
       oneOf:
         - $ref: '#/components/schemas/JobWaitStateDetails'
         - $ref: '#/components/schemas/MessageWaitStateDetails'
+        - $ref: '#/components/schemas/UserTaskWaitStateDetails'
+        - $ref: '#/components/schemas/TimerWaitStateDetails'
+        - $ref: '#/components/schemas/SignalWaitStateDetails'
+        - $ref: '#/components/schemas/ConditionWaitStateDetails'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -856,6 +864,10 @@ components:
       enum:
         - JOB
         - MESSAGE
+        - USER_TASK
+        - TIMER
+        - SIGNAL
+        - CONDITION
 
     BaseWaitStateDetails:
       description: Common fields shared by all wait-state details variants.
@@ -917,6 +929,79 @@ components:
           description: The correlation key for the message subscription (null for start events).
           nullable: true
           type: string
+
+    UserTaskWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - taskKey
+        - dueDate
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        taskKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          description: The key of the user task.
+        dueDate:
+          description: The due date of the user task, if set.
+          nullable: true
+          type: string
+          format: date-time
+
+    TimerWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - dueDate
+        - repetitions
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        dueDate:
+          description: When the timer is due, as a UNIX epoch timestamp in milliseconds.
+          nullable: true
+          type: integer
+          format: int64
+        repetitions:
+          description: The number of remaining timer repetitions (-1 for infinite, 0 for non-repeating).
+          nullable: true
+          type: integer
+          format: int32
+
+    SignalWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - signalName
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        signalName:
+          description: The name of the signal being awaited.
+          type: string
+      x-added-in-version: "8.10"
+
+    ConditionWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - expression
+        - events
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        expression:
+          description: The condition expression that must evaluate to true to proceed.
+          type: string
+        events:
+          description: The variable events that trigger condition re-evaluation. Empty means all events.
+          type: array
+          items:
+            type: string
+            enum:
+              - create
+              - update
 
     AdHocSubProcessActivateActivityReference:
       type: object

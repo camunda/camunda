@@ -1,0 +1,146 @@
+// golden_test.go
+package golden
+
+import (
+	"flag"
+	"strconv"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+var update = flag.Bool("update-golden", false,
+	"regenerate golden files instead of comparing against them")
+
+// scenario defines one rendering configuration.
+// Name is used as the golden subdirectory and Go sub-test name.
+// Storage, Optimize, and Stable mirror the Makefile variables
+// secondary_storage, enable_optimize, and the install vs install-stable target.
+//
+// Workload, when set, selects a Makefile workload profile (scenario=<workload>).
+// Workload scenarios render only the load-tester chart — that is where the
+// workload flags apply — so they don't duplicate the storage-matrix renders.
+type scenario struct {
+	Name     string
+	Storage  string // elasticsearch | opensearch | postgresql | none
+	Optimize bool
+	Stable   bool
+	Workload string // "" = default profile; e.g. "max", "realistic"
+}
+
+// scenarios covers every unique rendering path produced by the Makefile.
+// postgresql is used as the representative rdbms backend (all rdbms types share
+// the same rdbms.yaml base; only the storage-specific file differs).
+//
+// The workload scenarios (max, realistic) are the profiles we run most often.
+// They only change load-tester flags, so they use elasticsearch as a fixed
+// backend and render just the load-tester chart. "realistic" pulls a values file
+// from the camunda-load-tests-helm repo at render time — the same live-latest
+// policy as the load-tester chart itself, so its golden is regenerated when that
+// file changes.
+var scenarios = []scenario{
+	{Name: "elasticsearch", Storage: "elasticsearch", Optimize: true, Stable: false},
+	{Name: "opensearch", Storage: "opensearch", Optimize: true, Stable: false},
+	{Name: "rdbms", Storage: "postgresql", Optimize: false, Stable: false},
+	{Name: "rdbms-optimize", Storage: "postgresql", Optimize: true, Stable: false},
+	{Name: "none", Storage: "none", Optimize: false, Stable: false},
+	{Name: "elasticsearch-stable", Storage: "elasticsearch", Optimize: true, Stable: true},
+	{Name: "opensearch-stable", Storage: "opensearch", Optimize: true, Stable: true},
+	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
+	{Name: "max", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "max"},
+	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
+}
+
+// versions lists the setup directories under test, each the name of a directory
+// under load-tests/setup/ that contains a newLoadTest.sh.
+//
+// Only "main" is active for now. The stable versions scaffold identically; to
+// enable one, uncomment its line and run:
+//
+//	go test -update-golden -run 'TestGoldenFiles/<version>' ./...
+//
+// to generate its golden files, then commit them. No other code change is needed.
+var versions = []string{
+	"main",
+	// "stable-89",
+	// "stable-88",
+	// "stable-87",
+}
+
+func TestGoldenFiles(t *testing.T) {
+	t.Logf("testing %d setup version(s): %v", len(versions), versions)
+
+	for _, version := range versions {
+		version := version
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
+			for _, s := range scenarios {
+				s := s
+				t.Run(s.Name, func(t *testing.T) {
+					t.Parallel()
+
+					// Namespace is unique per (version, scenario) to avoid directory
+					// collisions when all sub-tests run in parallel.
+					namespace := "c8-golden-" + version + "-" + s.Name
+
+					ns := Scaffold(t, version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
+					defer ns.Cleanup()
+
+					// Workload scenarios only affect the load-tester chart, so we
+					// render just that one with the workload profile applied.
+					if s.Workload != "" {
+						renderAndAssert(t, version, s.Name, "load-tester", ns, "template-load-test", s.Workload)
+						return
+					}
+
+					// The platform chart has separate make targets for the
+					// install vs install-stable values composition.
+					platformTarget := "template"
+					if s.Stable {
+						platformTarget = "template-stable"
+					}
+
+					renderAndAssert(t, version, s.Name, "platform", ns, platformTarget, "")
+					renderAndAssert(t, version, s.Name, "load-tester", ns, "template-load-test", "")
+					renderAndAssert(t, version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
+				})
+			}
+		})
+	}
+}
+
+// renderAndAssert renders a chart via the scaffolded Makefile's make target and
+// compares (or writes) the resulting manifest tree against the golden directory.
+func renderAndAssert(t *testing.T, version, scenario, chartName string, ns *ScaffoldedNamespace, makeTarget, workload string) {
+	t.Helper()
+
+	srcDir := ns.Render(t, makeTarget, workload)
+	assertGoldenDir(t, version, scenario, chartName, srcDir, *update)
+}
+
+// TestNormalize verifies that the normalize function strips expected fields
+// and is idempotent.
+func TestNormalize(t *testing.T) {
+	input := "metadata:\n" +
+		"  labels:\n" +
+		"    helm.sh/chart: camunda-platform-10.2.0\n" +
+		"    app.kubernetes.io/version: \"8.6.0\"\n" +
+		"    deadline-date: \"2025-12-31\"\n" +
+		"  annotations:\n" +
+		"    checksum/config: abc123def456\n" +
+		"spec:\n" +
+		"  containers:\n" +
+		"  - image: registry.example.com/camunda/zeebe:8.6.0\n"
+
+	got := normalize(input)
+
+	require.NotContains(t, got, "helm.sh/chart")
+	require.NotContains(t, got, "checksum/config")
+	require.NotContains(t, got, "2025-12-31")                  // date value normalized away
+	require.Contains(t, got, "deadline-date: TEST_DATE")       // label kept, value normalized
+	require.Contains(t, got, "image: registry.example.com/camunda/zeebe:TEST")
+	require.Contains(t, got, `app.kubernetes.io/version: "8.6.0"`) // kept
+
+	// Idempotent.
+	require.Equal(t, got, normalize(got))
+}

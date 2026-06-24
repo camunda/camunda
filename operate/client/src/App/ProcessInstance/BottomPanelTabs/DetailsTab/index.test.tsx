@@ -32,6 +32,7 @@ import type {
   UserTask,
   MessageSubscription,
 } from '@camunda/camunda-api-zod-schemas/8.10';
+import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
 
 const PROCESS_INSTANCE_ID = '111222333';
 const PROCESS_DEFINITION_KEY = '444555666';
@@ -291,6 +292,9 @@ describe('<DetailsTab />', () => {
     mockSearchProcessInstances().withSuccess(searchResult([]));
     mockSearchDecisionInstances().withSuccess(searchResult([]));
     mockSearchMessageSubscriptions().withSuccess(searchResult([]));
+    mockSearchAgentInstances().withSuccess(searchResult([]));
+    mockSearchAgentInstances().withSuccess(searchResult([]));
+    mockSearchElementInstanceInspection().withSuccess(searchResult([]));
   });
 
   it('should show multi-instance message when multiple instances exist', async () => {
@@ -906,31 +910,101 @@ describe('<DetailsTab />', () => {
     expect(screen.queryByTestId('waiting-status')).not.toBeInTheDocument();
   });
 
-  it('should render WaitingStatus with wait states when waitStatesEnabled is true and element is ACTIVE', async () => {
+  it('should not render WaitingStatus when an agent instance exists', async () => {
     mockFetchElementInstance('123456789').withSuccess({
       ...mockElementInstance,
       state: 'ACTIVE',
       endDate: null,
     });
-    mockSearchElementInstanceInspection().withSuccess({
-      items: [
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
         {
           rootProcessInstanceKey: PROCESS_INSTANCE_ID,
           processInstanceKey: PROCESS_INSTANCE_ID,
           elementInstanceKey: '123456789',
           elementId: 'Task_1',
           elementType: 'SERVICE_TASK',
-          waitStateType: 'JOB',
-          details: {jobType: 'customJob'},
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'customJob',
+            jobKind: 'BPMN_ELEMENT',
+            listenerEventType: null,
+            retries: null,
+          },
         },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
+      ]),
+    );
+    mockSearchAgentInstances().withSuccess(
+      searchResult([
+        {
+          agentInstanceKey: '2251799813851828',
+          status: 'TOOL_CALLING',
+          definition: {
+            model: 'gpt-4',
+            provider: 'openai',
+            systemPrompt: 'You are a helpful assistant.',
+          },
+          metrics: {
+            inputTokens: 100,
+            outputTokens: 50,
+            modelCalls: 3,
+            toolCalls: 2,
+          },
+          limits: {
+            maxModelCalls: 10,
+            maxToolCalls: 5,
+            maxTokens: 1000,
+          },
+          elementId: 'Task_1',
+          processInstanceKey: '123456789',
+          processDefinitionKey: '444555666',
+          tenantId: '<default>',
+          creationDate: '2025-01-15T10:00:00.000Z',
+          lastUpdatedDate: '2025-01-15T10:05:00.000Z',
+          completionDate: null,
+          elementInstanceKeys: ['123456789'],
+        },
+      ]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
     });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(screen.queryByTestId('waiting-status')).not.toBeInTheDocument();
+  });
+
+  it('should render WaitingStatus with wait states when waitStatesEnabled is true and element is ACTIVE', async () => {
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      state: 'ACTIVE',
+      endDate: null,
+    });
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
+        {
+          rootProcessInstanceKey: PROCESS_INSTANCE_ID,
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: '123456789',
+          elementId: 'Task_1',
+          elementType: 'SERVICE_TASK',
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'customJob',
+            jobKind: 'BPMN_ELEMENT',
+            listenerEventType: null,
+            retries: null,
+          },
+        },
+      ]),
+    );
 
     render(<DetailsTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
@@ -938,5 +1012,46 @@ describe('<DetailsTab />', () => {
 
     expect(await screen.findByTestId('waiting-status')).toBeInTheDocument();
     expect(screen.getByText('Waiting for job: customJob')).toBeInTheDocument();
+  });
+
+  it('should render the WaitingStatus before the element instance details', async () => {
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      state: 'ACTIVE',
+      endDate: null,
+    });
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
+        {
+          rootProcessInstanceKey: PROCESS_INSTANCE_ID,
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: '123456789',
+          elementId: 'Task_1',
+          elementType: 'SERVICE_TASK',
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'customJob',
+            jobKind: 'BPMN_ELEMENT',
+            listenerEventType: null,
+            retries: null,
+          },
+        },
+      ]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const waitingStatus = await screen.findByTestId('waiting-status');
+    const elementInstanceKey = await screen.findByText('Element Instance Key');
+
+    expect(
+      waitingStatus.compareDocumentPosition(elementInstanceKey) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

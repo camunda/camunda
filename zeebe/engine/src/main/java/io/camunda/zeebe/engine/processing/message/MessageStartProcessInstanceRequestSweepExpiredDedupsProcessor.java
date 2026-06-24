@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupS
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.Duration;
 import java.time.InstantSource;
 import org.agrona.collections.MutableLong;
 
@@ -39,6 +40,7 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
   private final TypedCommandWriter commandWriter;
   private final MessageStartProcessInstanceDedupState dedupState;
   private final int batchLimit;
+  private final Duration retryGrace;
   private final InstantSource clock;
 
   public MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor(
@@ -46,11 +48,13 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
       final TypedCommandWriter commandWriter,
       final MessageStartProcessInstanceDedupState dedupState,
       final int batchLimit,
+      final Duration retryGrace,
       final InstantSource clock) {
     this.stateWriter = stateWriter;
     this.commandWriter = commandWriter;
     this.dedupState = dedupState;
     this.batchLimit = batchLimit;
+    this.retryGrace = retryGrace;
     this.clock = clock;
   }
 
@@ -60,7 +64,9 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
     final var entry = new MessageStartProcessInstanceRequestRecord();
     final boolean hasMore =
         dedupState.visitExpiredEntries(
-            clock.millis(),
+            // keep a row for the grace window past its deadline so a near-deadline in-flight retry
+            // can still be re-replied from the dedup (see the request processor's lookup grace)
+            clock.millis() - retryGrace.toMillis(),
             (processDefinitionKey, messageKey) -> {
               if (visited.getAndIncrement() >= batchLimit) {
                 return false;

@@ -27,7 +27,15 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableTimerRecordValue.Builder.class)
-public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
+public interface TimerRecordValue
+    extends RecordValue, ProcessInstanceRelated, TenantOwned, WaitStateRelated {
+
+  /**
+   * @return the BPMN element type of the timer element (e.g. INTERMEDIATE_CATCH_EVENT,
+   *     BOUNDARY_EVENT, START_EVENT), or UNSPECIFIED if unknown.
+   * @since 8.10
+   */
+  BpmnElementType getElementType();
 
   /**
    * @return the key of the process in which this timer was created
@@ -64,4 +72,29 @@ public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated, T
    * @return the number of times this timer should trigger
    */
   int getRepetitions();
+
+  /**
+   * @return the root process instance key, or -1L if this is a start-event subscription
+   * @since 8.10
+   */
+  @Override
+  long getRootProcessInstanceKey();
+
+  /**
+   * @return the BPMN process id of the process that owns this timer
+   * @since 8.10
+   */
+  @Override
+  String getBpmnProcessId();
+
+  /**
+   * Delegates to {@link #getTargetElementId()}: the target element id IS the BPMN element id of the
+   * timer catch/boundary event.
+   *
+   * @since 8.10
+   */
+  @Override
+  default String getElementId() {
+    return getTargetElementId();
+  }
 }

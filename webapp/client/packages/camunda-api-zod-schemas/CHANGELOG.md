@@ -1,5 +1,60 @@
 # Changelog
 
+## v0.0.77
+
+### 🚀 Enhancements
+
+- Add MCP inbound channel fields to the 8.10 audit log schema ([#53594](https://github.com/camunda/camunda/issues/53594))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.76
+
+### 🩹 Fixes
+
+- Align agent instance types with their latest OpenAPI spec
+  - Add `UNKNOWN` to agent instance status enum
+  - Add available tools as `tools` to agent instances
+  - Add `rootProcessInstanceKey`, `processDefinitionId`, `processDefinitionVersion`, and `processDefinitionVersionTag` to agent instances
+- Reword `searchAgentInstances` -> `queryAgentInstances` and `searchAgentInstanceHistory` -> `queryAgentInstanceHistory` to align with the wording throughout the library
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.75
+
+### 🚀 Enhancements
+
+- Align element instance wait state (inspection) schemas with the OpenAPI definition for 8.10 ([#55099](https://github.com/camunda/camunda/issues/55099))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.74
+
+### 🚀 Enhancements
+
+- Add `priority` field to `jobChangesetSchema` for job update requests
+- Use `.int()` constraint on `retries` in `jobChangesetSchema` to match the OpenAPI `int32` schema
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@etcd](https://github.com/etcd))
+
+## v0.0.73
+
+### 🚀 Enhancements
+
+- Introduce `BEFORE_ALL` listener event type
+
+### ❤️ Contributors
+
+- Konstantinos Mylosis ([@konstantinos-mylosis](https://github.com/konstantinos-mylosis))
+
 ## v0.0.72
 
 ### 🚀 Enhancements

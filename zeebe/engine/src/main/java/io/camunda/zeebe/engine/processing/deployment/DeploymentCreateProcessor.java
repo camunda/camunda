@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -384,6 +385,9 @@ public final class DeploymentCreateProcessor
             processMetadata.getKey(),
             startEvent.getId(),
             processMetadata.getTenantId(),
+            NO_ELEMENT_INSTANCE,
+            processMetadata.getBpmnProcessId(),
+            BpmnElementType.START_EVENT,
             timerOrError.get());
       }
     }

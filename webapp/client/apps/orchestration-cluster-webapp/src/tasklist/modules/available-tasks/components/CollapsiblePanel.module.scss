@@ -56,7 +56,7 @@
 	box-sizing: border-box;
 
 	h2 {
-		@include type.type-style('heading-02');
+		@include type.type-style('heading-01');
 		color: var(--cds-text-primary);
 	}
 }
@@ -67,6 +67,27 @@
 
 	li {
 		max-height: layout.to-rem(40px);
+	}
+
+	.customFilterContainer {
+		max-height: layout.to-rem(40px);
+		display: flex;
+		flex-direction: row;
+		border-bottom: layout.to-rem(1px) solid var(--cds-border-subtle);
+
+		.customFilterNav {
+			width: layout.to-rem(155px);
+			border-bottom: none;
+		}
+
+		.selected,
+		&:hover .overflowMenu.selected {
+			background-color: var(--cds-background-selected);
+		}
+
+		&:hover .overflowMenu {
+			background-color: var(--cds-background-hover);
+		}
 	}
 }
 
@@ -82,7 +103,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	cursor: default;
+	text-decoration: none;
 
 	&.active:not(:focus) {
 		border-left: layout.to-rem(4px) solid var(--cds-border-interactive);

@@ -11,6 +11,8 @@ import {Toggle} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import {autoSelectNextTaskStore} from 'modules/tasks/next-task/autoSelectFirstTask';
 import styles from './styles.module.scss';
+import {IS_NAV_V2_ENABLED} from 'modules/featureFlags';
+import cn from 'classnames';
 
 type Props = {
   onAutoSelectToggle?: (state: boolean) => void;
@@ -20,7 +22,9 @@ const Options: React.FC<Props> = observer(({onAutoSelectToggle}) => {
 
   return (
     <section
-      className={styles.container}
+      className={cn(styles.container, {
+        [styles.containerV2!]: IS_NAV_V2_ENABLED,
+      })}
       aria-label={t('taskOptionsSectionAria')}
     >
       <Toggle

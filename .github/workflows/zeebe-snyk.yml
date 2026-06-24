@@ -77,6 +77,9 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   scan:
     name: Snyk Scan
@@ -118,7 +121,7 @@ jobs:
         if: inputs.build
       - name: Build Docker Image
         uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
+        id: build-camunda-docker
         if: inputs.build
         with:
           distball: ${{ steps.build-zeebe.outputs.distball }}
@@ -152,13 +155,13 @@ jobs:
           export VERSION_TAG
           export LIFECYCLE
 
-          # use inputs.dockerImage if present; otherwise if building, use the output of the build step; otherwise infer from version and default repository camunda/zeebe
+          # use inputs.dockerImage if present; otherwise if building, use the output of the build step; otherwise infer from version and default repository camunda/camunda
           if [ -n "${{ inputs.dockerImage }}" ]; then
             DOCKER_IMAGE="${{ inputs.dockerImage }}"
           elif [ "${{ inputs.build }}" == "true" ]; then
-            DOCKER_IMAGE="${{ steps.build-zeebe-docker.outputs.image }}"
+            DOCKER_IMAGE="${{ steps.build-camunda-docker.outputs.image }}"
           else
-            DOCKER_IMAGE="camunda/zeebe:${VERSION}"
+            DOCKER_IMAGE="camunda/camunda:${VERSION}"
           fi
           export DOCKER_IMAGE
 
@@ -226,9 +229,9 @@ jobs:
 
           # The `container` command does not yet support setting a target reference, as this is a beta
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
-          PROJECT_NAME="zeebe(${TARGET}):Dockerfile"
-          ensureExists "Dockerfile"
-          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" 'docker')" || exitCode=1
+          PROJECT_NAME="zeebe(${TARGET}):camunda.Dockerfile"
+          ensureExists "camunda.Dockerfile"
+          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=camunda.Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" 'docker')" || exitCode=1
 
           # Only fail if we entirely failed to parse the projects
           if [[ $exitCode -gt 1 ]]; then

@@ -49,7 +49,7 @@ public class OpensearchExporterMigrationIT {
     osContainer =
         new OpenSearchContainer<>(
                 DockerImageName.parse("opensearchproject/opensearch")
-                    .withTag(SupportedVersions.SUPPORTED_OPENSEARCH_VERSION))
+                    .withTag(SupportedVersions.TEST_OPENSEARCH_VERSION))
             .withNetwork(network)
             .withNetworkAliases(OS_NETWORK_ALIAS)
             .withStartupTimeout(Duration.ofMinutes(5))

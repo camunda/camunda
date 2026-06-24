@@ -67,6 +67,7 @@ public final class RdbmsTableNames {
           "USER_TASK_TAG",
           "USER_TASK",
           "USER_",
+          "PROCESS_DEF_VAR_NAME_LOOKUP",
           "VARIABLE",
           "WAIT_STATE",
           "WEB_SESSION",

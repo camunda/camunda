@@ -21,10 +21,10 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
 /**
- * This is an experimental archiver job for handling process instance data where we reindex
- * documents by id. Similar to the {@link ProcessInstanceArchiverJob} this job handles the archiving
- * of the process instance records itself and also delegates to the repository to move dependent
- * records (decisions, flow node instances, variable updates, etc).
+ * This is an archiver job for archiving process instance data where we reindex documents by id.
+ * Similar to the {@link ProcessInstanceArchiverJob} this job handles the archiving of the process
+ * instance records itself and also delegates to the repository to move dependent records
+ * (decisions, flow node instances, variable updates, etc).
  */
 public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
 
@@ -56,7 +56,8 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
     // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
     // from operate-list-view index
-    // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index
+    // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index;
+    // we use this as a catch-all clause to move all related documents.
     // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
     return archiveProcessDependants(batch)
         .thenComposeAsync(

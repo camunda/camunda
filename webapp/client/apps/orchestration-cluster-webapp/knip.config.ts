@@ -15,6 +15,10 @@ const config: KnipConfig = {
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',
 		'src/shared/http/request.ts',
+		'shared-test-modules/api-mocks/process-definitions.ts',
+		'shared-test-modules/api-mocks/user-tasks.ts',
+		'shared-test-modules/api-mocks/process-definition-statistics.ts',
+		'shared-test-modules/api-mocks/incident-statistics.ts',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 };

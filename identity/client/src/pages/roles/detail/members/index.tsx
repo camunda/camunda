@@ -29,23 +29,25 @@ const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
   const { t } = useTranslate("roles");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
+    "roles",
     getMembersByRole,
     {
       roleId,
     },
     isOIDC,
   );
+  const noop = () => {};
 
   const isUsersListEmpty = !users || users?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     isOIDC ? AssignMemberModal : AssignMembersModal,
-    reload,
+    noop,
     { assignedUsers: users },
   );
   const openAssignModal = () => assignUsers({ roleId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     {
       roleId,
     },

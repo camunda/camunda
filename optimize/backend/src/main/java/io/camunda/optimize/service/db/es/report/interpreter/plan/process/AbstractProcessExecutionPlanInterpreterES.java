@@ -14,11 +14,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.db.es.builders.OptimizeBoolQueryBuilderES;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
@@ -41,14 +36,6 @@ import java.util.stream.Stream;
 public abstract class AbstractProcessExecutionPlanInterpreterES
     extends AbstractExecutionPlanInterpreterES<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessExecutionPlanInterpreterES {
-  // Instance date filters should also reduce the total count (baseline) considered for report
-  // evaluation
-  private static final List<Class<? extends ProcessFilterDto<?>>> FILTERS_AFFECTING_BASELINE =
-      List.of(
-          InstanceStartDateFilterDto.class,
-          InstanceEndDateFilterDto.class,
-          FlowNodeStartDateFilterDto.class,
-          FlowNodeEndDateFilterDto.class);
 
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
@@ -90,20 +77,8 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   @Override
   protected BoolQuery.Builder setupUnfilteredBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    // Instance level date filters are also applied to the baseline so are included here
     final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
-        context.getReportData().groupFiltersByDefinitionIdentifier().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry ->
-                        entry.getValue().stream()
-                            .filter(
-                                filter ->
-                                    filter.getFilterLevel() == FilterApplicationLevel.INSTANCE)
-                            .filter(
-                                filter -> FILTERS_AFFECTING_BASELINE.contains(filter.getClass()))
-                            .collect(Collectors.toList())));
+        buildBaselineFiltersByDefinition(context);
     final BoolQuery.Builder multiDefinitionFilterQuery =
         buildDefinitionBaseQueryForFilters(context, instanceLevelDateFiltersByDefinitionKey);
 
@@ -119,12 +94,13 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   private BoolQuery.Builder buildDefinitionBaseQueryForFilters(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition) {
-    // If the user has access to no definitions, management reports may contain no processes in its
-    // data source so we exclude all instances from the result
-    if (context.getReportData().getDefinitions().isEmpty()
-        && context.getReportData().isManagementReport()) {
+    if (context.getReportData().getDefinitions().isEmpty()) {
       final BoolQuery.Builder builder = new OptimizeBoolQueryBuilderES();
-      builder.mustNot(m -> m.matchAll(i -> i));
+      if (context.getReportData().isManagementReport()) {
+        // Management report with no accessible definitions: exclude all instances from the result
+        builder.mustNot(m -> m.matchAll(i -> i));
+      }
+      // No definitions: skip definition-scoped filtering and let other query filters apply
       return builder;
     }
     final BoolQuery.Builder multiDefinitionFilterQuery =

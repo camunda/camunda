@@ -8,6 +8,8 @@
 package io.camunda.webapp;
 
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
+import io.camunda.spring.utils.PhysicalTenantContext;
+import io.camunda.spring.utils.SegmentStrippingResolver;
 import java.time.Duration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -43,5 +45,16 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
         .addResourceHandler(ASSETS_PATH_PATTERN)
         .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
         .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
+    // PathPattern.extractPathWithinPattern() starts at the first '*', so the resource path the
+    // resolver receives includes the tenant segment: "tenantId/webapp/assets/file.js".
+    // SegmentStrippingResolver strips the 3 leading segments to get "file.js" relative to the
+    // classpath location.
+    registry
+        .addResourceHandler(
+            PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*" + ASSETS_PATH_PATTERN)
+        .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
+        .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable())
+        .resourceChain(false)
+        .addResolver(new SegmentStrippingResolver(3));
   }
 }

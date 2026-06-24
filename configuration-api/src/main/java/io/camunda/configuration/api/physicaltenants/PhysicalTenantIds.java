@@ -16,5 +16,12 @@ import java.util.Set;
  */
 @FunctionalInterface
 public interface PhysicalTenantIds {
+
+  /** The canonical physical tenant ID used when no explicit tenant is configured. */
+  String DEFAULT_PHYSICAL_TENANT_ID = "default";
+
+  /** Default implementation returning only the canonical physical tenant ID. */
+  PhysicalTenantIds DEFAULT = () -> Set.of(DEFAULT_PHYSICAL_TENANT_ID);
+
   Set<String> known();
 }

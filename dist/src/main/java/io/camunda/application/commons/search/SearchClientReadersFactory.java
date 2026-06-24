@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.cache.ProcessCache;
+import io.camunda.search.clients.reader.AgentHistoryDocumentReader;
 import io.camunda.search.clients.reader.AgentInstanceDocumentReader;
 import io.camunda.search.clients.reader.AuditLogDocumentReader;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
@@ -66,6 +67,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -99,6 +101,8 @@ public final class SearchClientReadersFactory {
     // --- Phase 1: Simple readers (no cross-reader dependencies) ---
     final var agentInstanceReader =
         new AgentInstanceDocumentReader(executor, descriptors.get(AgentInstanceTemplate.class));
+    final var agentHistoryReader =
+        new AgentHistoryDocumentReader(executor, descriptors.get(AgentHistoryTemplate.class));
     final var authorizationReader =
         new AuthorizationDocumentReader(executor, descriptors.get(AuthorizationIndex.class));
     final var batchOperationReader =
@@ -214,6 +218,7 @@ public final class SearchClientReadersFactory {
     // --- Assemble ---
     return new SearchClientReaders(
         agentInstanceReader,
+        agentHistoryReader,
         authorizationReader,
         batchOperationReader,
         batchOperationItemReader,

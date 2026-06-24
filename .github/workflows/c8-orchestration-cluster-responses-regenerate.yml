@@ -13,7 +13,7 @@ name: C8 Orchestration Cluster Responses Regeneration
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: '0 13 * * *'
+    - cron: '0 12 * * *'
 
 defaults:
   run:
@@ -22,6 +22,9 @@ defaults:
 permissions:
   contents: read
   pull-requests: write
+
+env:
+  TEST_OWNER: '@camunda/core-features'
 
 jobs:
   regenerate:
@@ -161,6 +164,39 @@ jobs:
           # 'test:' prefix — commitlint rejects 'fix:' for this kind of change.
           git commit -m "test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec"
           git push origin "$branch"
+      
+      - name: Close stale regeneration PRs
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+          title="test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec"
+
+          # List all open PRs targeting this ref whose title matches exactly.
+          # --search narrows the result set; --jq enforces exact title equality.
+          export TITLE="$title"
+          export PREFIX="regenerate-responses-${SAFE}-"
+          stale=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --base "$TARGET_REF" \
+            --state open \
+            --limit 200 \
+            --search "in:title \"${title}\"" \
+            --json number,headRefName,title \
+            --jq '.[] | select(.title == env.TITLE) | select(.headRefName | startswith(env.PREFIX)) | "\(.number) \(.headRefName)"')
+
+          if [ -z "$stale" ]; then
+            echo "No stale PRs found."
+          else
+            while IFS=" " read -r number branch; do
+              echo "Closing stale PR #${number} (branch: ${branch})"
+              gh pr close "$number" \
+                --repo "$GITHUB_REPOSITORY" \
+                --comment "Superseded by a newer regeneration run — closing in favour of the incoming PR." \
+                --delete-branch
+            done <<< "$stale"
+          fi
 
       - name: Open pull request
         id: pr

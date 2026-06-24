@@ -79,6 +79,41 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchUserTaskByBusinessId() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.businessId("order-42")).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getBusinessId().get$Eq()).isEqualTo("order-42");
+  }
+
+  @Test
+  void shouldSearchUserTaskByBusinessIdStringFilter() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.businessId(b -> b.like("order-*")))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getBusinessId().get$Like()).isEqualTo("order-*");
+  }
+
+  @Test
+  void shouldSearchUserTaskSortByBusinessId() {
+    // when
+    client.newUserTaskSearchRequest().sort(s -> s.businessId().desc()).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getBodyAsString())
+        .contains("\"sort\":[{\"field\":\"businessId\",\"order\":\"DESC\"}]");
+  }
+
+  @Test
   void shouldSearchUserTaskByName() {
     // when
     client.newUserTaskSearchRequest().filter(f -> f.name("myTask")).send().join();

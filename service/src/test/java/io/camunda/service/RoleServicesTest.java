@@ -49,6 +49,7 @@ import org.mockito.ArgumentCaptor;
 
 public class RoleServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private RoleServices services;
   private RoleSearchClient client;
   private CamundaAuthentication authentication;
@@ -67,6 +68,7 @@ public class RoleServicesTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new RoleServices(
+            PHYSICAL_TENANT_ID,
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,

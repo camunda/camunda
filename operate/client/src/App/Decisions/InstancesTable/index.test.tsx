@@ -374,10 +374,14 @@ describe('<InstancesTable />', () => {
     });
     await user.click(firstRowCheckbox!);
 
-    expect(screen.getByText('1 item selected')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
+    const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
 
-    await user.click(screen.getByRole('button', {name: 'Discard'}));
+    expect(screen.getByText('1 item selected')).toBeInTheDocument();
+    expect(
+      within(toolbar).getByRole('button', {name: 'Delete'}),
+    ).toBeInTheDocument();
+
+    await user.click(within(toolbar).getByRole('button', {name: 'Discard'}));
 
     expect(
       screen.queryByRole('button', {name: /delete/i}),

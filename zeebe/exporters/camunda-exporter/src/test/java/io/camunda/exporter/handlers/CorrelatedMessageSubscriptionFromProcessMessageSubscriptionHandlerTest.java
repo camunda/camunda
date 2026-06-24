@@ -138,6 +138,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final String businessId = "businessId";
     final Intent intent = ProcessMessageSubscriptionIntent.CORRELATED;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -151,6 +152,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
             .withProcessInstanceKey(processInstanceKey)
             .withTenantId(tenantId)
             .withRootProcessInstanceKey(rootProcessInstanceKey)
+            .withBusinessId(businessId)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -187,6 +189,27 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     assertThat(entity.getSubscriptionType()).isEqualTo("PROCESS_EVENT");
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(entity.getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder().withBusinessId("").build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED).withValue(recordValue));
+
+    final CorrelatedMessageSubscriptionEntity entity =
+        underTest.createNewEntity(underTest.generateIds(record).getFirst());
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
   }
 
   @Test

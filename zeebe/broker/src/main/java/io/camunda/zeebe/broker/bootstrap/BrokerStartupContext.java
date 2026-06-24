@@ -8,11 +8,12 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -165,6 +166,6 @@ public interface BrokerStartupContext {
 
   NodeIdProvider getNodeIdProvider();
 
-  /** Returns the list of physical tenant IDs this broker should run. */
-  List<String> getPhysicalTenantIds();
+  /** Returns the physical tenant IDs this broker should run. */
+  PhysicalTenantIds getPhysicalTenantIds();
 }

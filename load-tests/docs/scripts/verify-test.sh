@@ -55,17 +55,39 @@ wait_for_pods() {
     wait_output=$(kubectl wait --for=condition=ready pod \
         -l "$label" \
         --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE" 2>&1) && {
+      echo "::group::⇒ kubectl wait output"
       echo "$wait_output"
+      echo "::endgroup::"
       echo "${description} are ready in $NAMESPACE"
       return 0
     }
-    echo "Output: '$wait_output'"
+    echo "::group::⇒ kubectl wait output"
+    echo "$wait_output"
+    echo "::endgroup::"
 
     # Retry on errors (pod rescheduled/timeouts);
     echo "::error::Not all ${description} are ready in $NAMESPACE"
     if [[ "$attempt" -lt "$max_retries" ]]; then
       echo "Pod wasn't ready yet. Retrying in ${retry_delay}s..."
       sleep "$retry_delay"
+    fi
+
+    # Get pod status
+    pods="$(kubectl get pod --no-headers -o wide -n "$NAMESPACE")"
+    echo "::group::Pods status"
+    echo "$pods"
+    echo "::endgroup::"
+
+    out_of_cpu_pods="$(echo "$pods" | grep OutOfCpu | awk '{print $1}')"
+    if [[ -n "$out_of_cpu_pods" ]]; then
+        echo "Detected pods with OutOfCpu status, will delete them..."
+        # Mitigation: sometimes, many pods are scheduled on the same node and the
+        # kubelet fails to start them with a "OutOfCpu" error.
+        # Although it looks like a Kubernetes bug, these pods stay and are being
+        # taken into account by the `kubectl wait` call above, which then never
+        # terminates successfully.
+        # As a mitigation, we delete these OutOfCpu pods as they are dead anyway.
+        echo "$out_of_cpu_pods" | xargs -t kubectl delete pod -n "$NAMESPACE"
     fi
   done
 
@@ -85,45 +107,54 @@ if ! wait_for_pods "app.kubernetes.io/component=zeebe-client" "load test client 
   exit 1
 fi
 
-# Port-forward to the clients service metrics endpoint
-local_port=$((METRICS_PORT + RANDOM % 1000))
-kubectl port-forward "svc/clients" "${local_port}:${METRICS_PORT}" -n "$NAMESPACE" &
-pf_pid=$!
-trap 'kill "$pf_pid" 2>/dev/null || true; wait "$pf_pid" 2>/dev/null || true' EXIT
-sleep 5  # wait for port-forward to establish
-
 # Check that the client has successfully connected to the gateway.
 # app_connected >= 1 confirms that the topology was received (i.e. the
 # client authenticated and connected successfully, regardless of REST or gRPC).
-interval=30
+interval=10
 max_attempts=$((CONNECTIVITY_TIMEOUT / interval))
 attempts=0
 verified=false
+app_connected=""
 
 while [[ $attempts -lt $max_attempts ]]; do
-  count=$( { curl -s "http://localhost:${local_port}/metrics" 2>/dev/null || true; } \
+  echo "::group::⇒ connectivity checks $attempts/$max_attempts"
+  echo "Checking clients connectivity: $attempts/$max_attempts"
+  # Port-forward to the clients service metrics endpoint
+  local_port=$((METRICS_PORT + RANDOM % 1000))
+  service="svc/clients"
+  echo "Opening port-forward to $service via port $local_port..."
+  kubectl port-forward "$service" "${local_port}:${METRICS_PORT}" -n "$NAMESPACE" &
+  pf_pid=$!
+  trap 'kill "$pf_pid" 2>/dev/null || true; wait "$pf_pid" 2>/dev/null || true' EXIT
+  sleep 2  # wait for port-forward to establish
+
+  app_connected=$( { curl -s "http://localhost:${local_port}/metrics" 2>/dev/null || true; } \
     | { grep '^app_connected ' || true; } \
     | awk '{print $2}' \
     | cut -d. -f1)
 
-  if [[ -n "$count" ]] && [[ "$count" -ge 1 ]]; then
-    echo "Namespace $NAMESPACE: client connected to gateway (app.connected=$count)"
+  echo "Stopping the port-forward..."
+  kill $pf_pid 2>/dev/null || true
+  wait $pf_pid 2>/dev/null || true
+  attempts=$((attempts + 1))
+
+  if [[ -n "$app_connected" ]] && [[ "$app_connected" -ge 1 ]]; then
     verified=true
+    echo "::endgroup::"
     break
   fi
 
-  attempts=$((attempts + 1))
   echo "Namespace $NAMESPACE: waiting for gateway connectivity (attempt $attempts/$max_attempts)"
+  echo "::endgroup::"
   sleep "$interval"
 done
-
-kill $pf_pid 2>/dev/null || true
-wait $pf_pid 2>/dev/null || true
 
 if [[ "$verified" != "true" ]]; then
   echo "::error::Namespace $NAMESPACE client did not connect to gateway within timeout (app.connected metric never reached 1)"
   echo "status=failure" >> "$GITHUB_OUTPUT"
   exit 1
+else
+  echo "Namespace $NAMESPACE: client connected to gateway (app.connected=$app_connected)"
 fi
 
 echo "status=success" >> "$GITHUB_OUTPUT"

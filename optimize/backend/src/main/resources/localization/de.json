@@ -6,12 +6,22 @@
     "description": "Überwachen Sie die Einführung, das Verhalten und die Zuverlässigkeit von KI-Agenten sowie den Token-Verbrauch prozessübergreifend.",
     "dateRange": "Zeitraum",
     "tokenUsage": "Token-Nutzung",
+    "reliabilityAndToolCalls": "Zuverlässigkeit & Tool-Aufrufe",
+    "duration": "Dauer",
+    "topNNotice": "Top {shown} von {total}.",
     "presets": {
       "last7Days": "Letzte 7 Tage",
       "last30Days": "Letzte 30 Tage",
       "last3Months": "Letzte 3 Monate",
       "last6Months": "Letzte 6 Monate",
       "last12Months": "Letzte 12 Monate"
+    },
+    "comparison": {
+      "wow": "WoW",
+      "mom": "MoM",
+      "qoq": "QoQ",
+      "hoh": "HoH",
+      "yoy": "YoY"
     },
     "processFilter": {
       "label": "Prozess",
@@ -30,7 +40,7 @@
     "appSwitcher": "App Switcher",
     "dashboards": "Dashboards",
     "collections": "Sammlungen",
-    "agenticControlPlane": "Agentische Steuerungsebene",
+    "agenticControlPlane": "Agentic Control Plane",
     "apps": {
       "zeebe": "Zeebe",
       "operate": "Operate",
@@ -43,7 +53,19 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support"
+    "feedback": "Feedback und Support",
+    "info": "Info",
+    "settings": "Einstellungen",
+    "notifications": "Benachrichtigungen",
+    "notificationsDismissAll": "Alle verwerfen",
+    "notificationsEmptyTitle": "Keine Benachrichtigungen",
+    "notificationsEmptyDescription": "Neue Updates zu Ihren Prozessen, Clustern und mehr erscheinen hier.",
+    "sidebarCollapse": "Einklappen",
+    "sidebarExpand": "Ausklappen",
+    "sidebarCollapseAria": "Seitenleiste einklappen",
+    "sidebarExpandAria": "Seitenleiste ausklappen",
+    "sidebarGroupCollapseAria": "{label} einklappen",
+    "sidebarGroupExpandAria": "{label} ausklappen"
   },
   "login": {
     "label": "Einloggen",
@@ -213,6 +235,10 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "outlierBand": {
+      "percentile": "P{value}",
+      "yAxis": "Token pro Ausführung"
+    },
     "textTile": "Textkachel",
     "externalUrl": "Externe URL",
     "create": "Bericht Erstellen",
@@ -302,7 +328,9 @@
       "variable": "Variable",
       "process": "Prozessansicht",
       "agentInstance": "Agenteninstanz",
-      "totalTokens": "Tokens insgesamt"
+      "totalTokens": "Tokens insgesamt",
+      "inputTokens": "Eingabe-Tokens",
+      "outputTokens": "Ausgabe-Tokens"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -1554,7 +1582,24 @@
       "agenticKpiExecutionAvgTokensName": "Durchschnittliche Tokens pro Ausführung",
       "agenticKpiExecutionAvgTokensDescription": "Durchschnittliche Gesamtanzahl der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum.",
       "agenticKpiExecutionMedianTokensName": "Mediane Tokens pro Ausführung",
-      "agenticKpiExecutionMedianTokensDescription": "Median der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum."
+      "agenticKpiExecutionMedianTokensDescription": "Median der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum.",
+      "agenticDurationStabilityName": "Ausführungsdauer-Stabilität (P50 / P95)",
+      "agenticDurationStabilityDescription": "P50- und P95-Ausführungsdauer abgeschlossener agentischer Prozessinstanzen über die Zeit im gewählten Zeitraum.",
+      "agenticKpiTokenTrendName": "Token-Trend",
+      "agenticKpiTokenTrendFootnote": "Wenn die Token-Nutzung ohne mehr Ausführungen steigt, wachsen möglicherweise die Prompts oder das Modell erzeugt längere Ausgaben. Engineering informieren.",
+      "agenticKpiTokenOutlierBandsName": "Token-Ausreißerbänder (P5 / P50 / P95)",
+      "agenticKpiTokenOutlierBandsDescription": "P5, P50 und P95 der insgesamt verbrauchten Token pro abgeschlossener agentischer Prozessinstanz im ausgewählten Zeitraum.",
+      "agenticKpiTokenOutlierBandsFootnote": "Eine größer werdende Lücke zwischen P5 und P95 bedeutet, dass sich Ausführungen inkonsistent verhalten. Achten Sie auf Prompt-Variabilität oder Nicht-Determinismus.",
+      "agenticKpiTokenConsumersName": "Top-Token-Verbraucher nach Prozess",
+      "agenticKpiTokenConsumersFootnote": "Die Reduzierung des größten Verbrauchers hat die größte Auswirkung auf die gesamten Token-Kosten.",
+      "agenticKpiDurationP50Name": "P50-Ausführungsdauer",
+      "agenticKpiDurationP50Description": "Median (P50) der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiDurationP95Name": "P95-Ausführungsdauer",
+      "agenticKpiDurationP95Description": "95. Perzentil der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
+      "agenticFailureRateByVersionName": "Vorfallsrate nach Prozessversion",
+      "agenticFailureRateByVersionDescription": "Prozentsatz der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall, aufgeschlüsselt nach Prozessdefinitionsversion.",
+      "agenticKpiToolCallsName": "Tool-Aufrufe gesamt",
+      "agenticKpiToolCallsDescription": "Gesamtzahl der Tool-Aufrufe durch Agenten in abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum."
     }
   },
   "managementDashboard": {

@@ -18,8 +18,9 @@ package io.camunda.client.api.search.response;
 import io.camunda.client.api.search.enums.WaitStateType;
 
 /**
- * Wait-state-specific details of an element instance. Resolves to {@link JobWaitStateDetails} or
- * {@link MessageWaitStateDetails} depending on {@link #getWaitStateType()}.
+ * Wait-state-specific details of an element instance. Resolves to {@link JobWaitStateDetails},
+ * {@link MessageWaitStateDetails}, or {@link ConditionWaitStateDetails} depending on {@link
+ * #getWaitStateType()}.
  */
 public interface WaitStateDetails {
 

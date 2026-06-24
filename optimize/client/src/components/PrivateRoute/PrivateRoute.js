@@ -9,6 +9,7 @@
 import React, {useEffect} from 'react';
 import {Route} from 'react-router-dom';
 import {addHandler, removeHandler} from 'request';
+import {IS_NAV_V2_ENABLED} from 'feature-flags';
 
 import {Header} from '..';
 
@@ -39,7 +40,11 @@ export function PrivateRoute({component: Component, ...rest}) {
           <>
             <Header />
             <main>
-              <div className="PrivateRoute">
+              <div
+                className={'PrivateRoute' + (IS_NAV_V2_ENABLED ? ' nav-v2' : '')}
+                id="main-content"
+                tabIndex={-1}
+              >
                 {rest.render ? rest.render(props) : <Component {...props} />}
               </div>
             </main>

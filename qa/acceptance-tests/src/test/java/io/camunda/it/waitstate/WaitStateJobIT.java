@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.search.enums.JobKind;
+import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.api.search.enums.WaitStateElementType;
 import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -158,63 +160,87 @@ public class WaitStateJobIT {
             WaitStateElementType.PROCESS);
   }
 
-  @ParameterizedTest(name = "{1} / {3}")
+  @ParameterizedTest(name = "{1} / {3} / listenerEventType={4}")
   @MethodSource("elementTypeTestCases")
   void shouldFilterByElementType(
       final WaitStateElementType elementType,
       final String expectedElementId,
       final String expectedJobType,
       final JobKind expectedJobKind,
+      final @Nullable ListenerEventType expectedListenerEventType,
       final int expectedRetries) {
     assertSingleJobWaitState(
-        elementType, expectedElementId, expectedJobType, expectedJobKind, expectedRetries);
+        elementType,
+        expectedElementId,
+        expectedJobType,
+        expectedJobKind,
+        expectedListenerEventType,
+        expectedRetries);
   }
 
   static Stream<Arguments> elementTypeTestCases() {
     return Stream.of(
         Arguments.of(
-            WaitStateElementType.SERVICE_TASK, SERVICE_TASK, "svc", JobKind.BPMN_ELEMENT, 3),
-        Arguments.of(WaitStateElementType.SEND_TASK, SEND_TASK, "snd", JobKind.BPMN_ELEMENT, 3),
-        Arguments.of(WaitStateElementType.SCRIPT_TASK, SCRIPT_TASK, "scr", JobKind.BPMN_ELEMENT, 3),
+            WaitStateElementType.SERVICE_TASK, SERVICE_TASK, "svc", JobKind.BPMN_ELEMENT, null, 3),
+        Arguments.of(
+            WaitStateElementType.SEND_TASK, SEND_TASK, "snd", JobKind.BPMN_ELEMENT, null, 3),
+        Arguments.of(
+            WaitStateElementType.SCRIPT_TASK, SCRIPT_TASK, "scr", JobKind.BPMN_ELEMENT, null, 3),
         Arguments.of(
             WaitStateElementType.BUSINESS_RULE_TASK,
             BUSINESS_RULE_TASK,
             "biz",
             JobKind.BPMN_ELEMENT,
+            null,
             3),
         Arguments.of(
             WaitStateElementType.SUB_PROCESS,
             SUBPROCESS_EL,
             "sub-listener",
             JobKind.EXECUTION_LISTENER,
+            ListenerEventType.START,
             3),
         Arguments.of(
             WaitStateElementType.USER_TASK,
             USER_TASK_TL,
             "task-listener",
             JobKind.TASK_LISTENER,
+            ListenerEventType.CREATING,
             3),
         Arguments.of(
             WaitStateElementType.USER_TASK,
             JOB_USER_TASK,
             "io.camunda.zeebe:userTask",
             JobKind.BPMN_ELEMENT,
+            null,
             1),
         Arguments.of(
             WaitStateElementType.INTERMEDIATE_THROW_EVENT,
             INT_MSG_THROW,
             "int-msg-svc",
             JobKind.BPMN_ELEMENT,
+            null,
             3),
         Arguments.of(
-            WaitStateElementType.END_EVENT, END_MSG_EVENT, "end-msg-svc", JobKind.BPMN_ELEMENT, 3),
+            WaitStateElementType.END_EVENT,
+            END_MSG_EVENT,
+            "end-msg-svc",
+            JobKind.BPMN_ELEMENT,
+            null,
+            3),
         Arguments.of(
-            WaitStateElementType.SUB_PROCESS, AHSP, "ahsp-job", JobKind.AD_HOC_SUB_PROCESS, 3),
+            WaitStateElementType.SUB_PROCESS,
+            AHSP,
+            "ahsp-job",
+            JobKind.AD_HOC_SUB_PROCESS,
+            null,
+            3),
         Arguments.of(
             WaitStateElementType.PROCESS,
             PROCESS_LISTENER_PROCESS_ID,
             "process-listener",
             JobKind.EXECUTION_LISTENER,
+            ListenerEventType.START,
             3));
   }
 
@@ -230,20 +256,6 @@ public class WaitStateJobIT {
 
     // then
     assertThat(result.items()).hasSize(11);
-  }
-
-  @Test
-  void shouldReturnEmptyForMessageWaitStateType() {
-    // when — no MESSAGE wait-state transformer exists yet, so the result must be empty
-    final var result =
-        camundaClient
-            .newElementInstanceWaitStateSearchRequest()
-            .filter(f -> f.waitStateType(WaitStateType.MESSAGE))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items()).isEmpty();
   }
 
   @Test
@@ -480,6 +492,7 @@ public class WaitStateJobIT {
       final String expectedElementId,
       final String expectedJobType,
       final JobKind expectedJobKind,
+      final @Nullable ListenerEventType expectedListenerEventType,
       final int expectedRetries) {
     // when
     final var result =
@@ -499,6 +512,7 @@ public class WaitStateJobIT {
     assertThat(jobDetails.getWaitStateType()).isEqualTo(WaitStateType.JOB);
     assertThat(jobDetails.getJobType()).isEqualTo(expectedJobType);
     assertThat(jobDetails.getJobKind()).isEqualTo(expectedJobKind);
+    assertThat(jobDetails.getListenerEventType()).isEqualTo(expectedListenerEventType);
     assertThat(jobDetails.getRetries()).isEqualTo(expectedRetries);
     assertThat(jobDetails.getJobKey()).isNotNull();
   }

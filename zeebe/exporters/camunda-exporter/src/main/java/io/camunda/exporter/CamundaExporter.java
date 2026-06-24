@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_HISTORY;
 import static io.camunda.zeebe.protocol.record.ValueType.AGENT_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CHUNK;
@@ -15,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_EXECUTI
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_INITIALIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.CONDITIONAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
@@ -27,6 +29,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB_METRICS_BATCH;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
@@ -35,7 +38,9 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFI
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.RESOURCE;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
+import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
@@ -401,6 +406,7 @@ public class CamundaExporter implements Exporter {
             VARIABLE,
             VARIABLE_DOCUMENT,
             PROCESS_MESSAGE_SUBSCRIPTION,
+            MESSAGE_SUBSCRIPTION,
             MESSAGE_START_EVENT_SUBSCRIPTION,
             JOB,
             INCIDENT,
@@ -419,7 +425,11 @@ public class CamundaExporter implements Exporter {
             HISTORY_DELETION,
             JOB_METRICS_BATCH,
             GLOBAL_LISTENER,
-            AGENT_INSTANCE);
+            AGENT_INSTANCE,
+            AGENT_HISTORY,
+            TIMER,
+            SIGNAL_SUBSCRIPTION,
+            CONDITIONAL_SUBSCRIPTION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

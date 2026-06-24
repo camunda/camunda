@@ -28,6 +28,7 @@
       <idArg column="SUBSCRIPTION_KEY" javaType="java.lang.Long"/>
       <arg column="SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.CorrelatedMessageSubscriptionEntity$MessageSubscriptionType" />
       <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
@@ -46,7 +47,8 @@
       ROOT_PROCESS_INSTANCE_KEY,
       SUBSCRIPTION_KEY,
       SUBSCRIPTION_TYPE,
-      TENANT_ID
+      TENANT_ID,
+      BUSINESS_ID
     )
     VALUES (
       #{correlationKey},
@@ -62,7 +64,8 @@
       #{rootProcessInstanceKey},
       #{subscriptionKey},
       #{subscriptionType},
-      #{tenantId}
+      #{tenantId},
+      #{businessId}
     )
   </insert>
 
@@ -92,7 +95,8 @@
         ROOT_PROCESS_INSTANCE_KEY,
         SUBSCRIPTION_KEY,
         SUBSCRIPTION_TYPE,
-        TENANT_ID
+        TENANT_ID,
+        BUSINESS_ID
       FROM ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION
     <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchAndAuthFilter"/>
     ) t
@@ -122,6 +126,12 @@
 
   <sql id="searchFilter">
     <!-- basic filter -->
+    <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+      <foreach collection="filter.businessIdOperations" item="operation">
+        AND BUSINESS_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.correlationKeyOperations != null and !filter.correlationKeyOperations.isEmpty()">
       <foreach collection="filter.correlationKeyOperations" item="operation">
         AND CORRELATION_KEY

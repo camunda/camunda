@@ -7,12 +7,19 @@
  */
 package io.camunda.webapps.backup;
 
+import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -22,24 +29,36 @@ import org.slf4j.LoggerFactory;
 
 public class BackupServiceImpl implements BackupService {
 
+  private static final String ANOTHER_BACKUP_RUNS_MSG = "Another backup is running at the moment";
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupServiceImpl.class);
-  private final Executor threadPoolTaskExecutor;
+
   private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
+  private final Executor threadPoolTaskExecutor;
   private final BackupPriorities backupPriorities;
+  private final BackupRepository repository;
   private final BackupRepositoryProps backupProps;
 
-  private final BackupRepository repository;
+  /* arguments needed for the alias integrity check */
+  private final SearchEngineConfiguration searchEngineConfiguration;
+  private final Collection<IndexDescriptor> indexDescriptors;
+  private final Collection<IndexTemplateDescriptor> templateDescriptors;
 
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
       final BackupRepositoryProps backupProps,
-      final BackupRepository repository) {
+      final BackupRepository repository,
+      final SearchEngineConfiguration searchEngineConfiguration,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexTemplateDescriptor> templateDescriptors) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     this.repository = repository;
     this.backupProps = backupProps;
+    this.searchEngineConfiguration = searchEngineConfiguration;
+    this.indexDescriptors = indexDescriptors;
+    this.templateDescriptors = templateDescriptors;
   }
 
   @Override
@@ -67,14 +86,43 @@ public class BackupServiceImpl implements BackupService {
   public TakeBackupResponseDto takeBackup(final TakeBackupRequestDto request) {
     repository.validateRepositoryExists(backupProps.repositoryName());
     repository.validateNoDuplicateBackupId(backupProps.repositoryName(), request.getBackupId());
+
+    // NOTE: The following checks are non-locking on purpose to be quick.
+
     if (!requestsQueue.isEmpty()) {
-      throw new InvalidRequestException("Another backup is running at the moment");
-    } // TODO remove duplicate
+      throw new InvalidRequestException(ANOTHER_BACKUP_RUNS_MSG);
+    }
+
+    if (!request.isSkipSchemaCheck()) {
+      try {
+        performSchemaIntegrityChecks();
+      } catch (IOException ex) {
+        throw new BackupException("Unexpected error when taking a backup", ex);
+      }
+    }
+
     synchronized (requestsQueue) {
       if (!requestsQueue.isEmpty()) {
-        throw new InvalidRequestException("Another backup is running at the moment");
+        throw new InvalidRequestException(ANOTHER_BACKUP_RUNS_MSG);
       }
+
       return scheduleSnapshots(request);
+    }
+  }
+
+  private void performSchemaIntegrityChecks() throws IOException {
+    try (final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
+        final SchemaManager schemaManager =
+            new SchemaManager(
+                clientAdapter.getSearchEngineClient(),
+                indexDescriptors,
+                templateDescriptors,
+                searchEngineConfiguration,
+                clientAdapter.objectMapper())) {
+      if (!schemaManager.validateIndices().isEmpty()) {
+        throw new InvalidRequestException("Indexes validation failed when taking a backup");
+      }
+      schemaManager.isAliasIntegrityValid(true);
     }
   }
 

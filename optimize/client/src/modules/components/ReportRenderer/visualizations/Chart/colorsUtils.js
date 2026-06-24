@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {color} from 'chart.js/helpers';
+
 import {formatters} from 'services';
 
 const {convertToMilliseconds} = formatters;
@@ -77,4 +79,8 @@ function getStripedColor(color) {
   canvasPattern.color = color;
 
   return canvasPattern;
+}
+
+export function addAlpha(colorString, opacity) {
+  return color(colorString).alpha(opacity).rgbString();
 }

@@ -15,6 +15,7 @@ import {AuthorizationCheck} from 'modules/auth/AuthorizationCheck';
 import {pages} from 'modules/routing';
 import {OSNotifications} from './OSNotifications';
 import {C3Provider} from './C3Provider';
+import styles from './styles.module.scss';
 
 const Layout: React.FC = () => {
   return (
@@ -23,7 +24,9 @@ const Layout: React.FC = () => {
         <AuthorizationCheck>
           <OSNotifications />
           <Header />
-          <Outlet />
+          <div id="main-content" tabIndex={-1} className={styles.mainContent}>
+            <Outlet />
+          </div>
         </AuthorizationCheck>
       </AuthenticationCheck>
     </C3Provider>

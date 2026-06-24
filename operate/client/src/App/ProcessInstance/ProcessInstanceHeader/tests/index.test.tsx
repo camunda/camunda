@@ -269,7 +269,7 @@ describe('InstanceHeader', () => {
 
     mockDeleteProcessInstance().withSuccess(null, {expectPolling: false});
 
-    await user.click(screen.getByRole('button', {name: /danger delete/i}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'info',

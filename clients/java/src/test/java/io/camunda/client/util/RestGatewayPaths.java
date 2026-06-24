@@ -23,6 +23,8 @@ public class RestGatewayPaths {
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
   private static final String URL_AGENT_INSTANCES = REST_API_PATH + "/agent-instances";
   private static final String URL_AGENT_INSTANCE = REST_API_PATH + "/agent-instances/%s";
+  private static final String URL_AGENT_HISTORY_ITEM =
+      REST_API_PATH + "/agent-instances/%s/history";
   private static final String URL_AGENT_INSTANCES_SEARCH =
       REST_API_PATH + "/agent-instances/search";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
@@ -118,6 +120,8 @@ public class RestGatewayPaths {
   private static final String URL_AUDIT_LOG_SEARCH = REST_API_PATH + "/audit-logs/search";
   private static final String URL_ELEMENT_INSTANCE_WAIT_STATE_SEARCH =
       REST_API_PATH + "/element-instances/wait-states/search";
+  private static final String URL_CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH =
+      REST_API_PATH + "/correlated-message-subscriptions/search";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_STATISTICS =
       REST_API_PATH + "/process-definitions/statistics/process-instances";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS =
@@ -444,6 +448,10 @@ public class RestGatewayPaths {
     return URL_ELEMENT_INSTANCE_WAIT_STATE_SEARCH;
   }
 
+  public static String getCorrelatedMessageSubscriptionsSearchUrl() {
+    return URL_CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH;
+  }
+
   public static String getUserTaskAuditLogSearchUrl(final long userTaskKey) {
     return String.format(URL_USER_TASK_AUDIT_LOG, userTaskKey);
   }
@@ -502,6 +510,10 @@ public class RestGatewayPaths {
 
   public static String getAgentInstanceUrl(final long agentInstanceKey) {
     return String.format(URL_AGENT_INSTANCE, agentInstanceKey);
+  }
+
+  public static String getAgentHistoryItemUrl(final long agentInstanceKey) {
+    return String.format(URL_AGENT_HISTORY_ITEM, agentInstanceKey);
   }
 
   public static String getAgentInstancesSearchUrl() {

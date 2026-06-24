@@ -15,13 +15,15 @@
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY,
+                           BUSINESS_ID,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
                                     PRIORITY, PARTITION_ID)
     VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate, jdbcType=TIMESTAMP},
             #{completionDate, jdbcType=TIMESTAMP},
             #{assignee}, #{state}, #{formKey},
-            #{processDefinitionKey}, #{processInstanceKey}, #{rootProcessInstanceKey}, #{elementInstanceKey}, #{tenantId},
+            #{processDefinitionKey}, #{processInstanceKey}, #{rootProcessInstanceKey},
+            #{businessId}, #{elementInstanceKey}, #{tenantId},
             #{dueDate, jdbcType=TIMESTAMP}, #{followUpDate, jdbcType=TIMESTAMP},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
             #{priority}, #{partitionId})
@@ -93,6 +95,7 @@
       javaType="java.lang.Long"/>
     <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
     <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+    <result property="businessId" column="BUSINESS_ID" javaType="java.lang.String"/>
     <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
     <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
     <result property="dueDate" column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
@@ -139,6 +142,7 @@
     ut.PROCESS_DEFINITION_KEY,
     ut.PROCESS_INSTANCE_KEY,
     ut.ROOT_PROCESS_INSTANCE_KEY,
+    ut.BUSINESS_ID,
     ut.ELEMENT_INSTANCE_KEY,
     ut.TENANT_ID,
     ut.DUE_DATE,
@@ -264,6 +268,12 @@
       <if test="filter.assigneeOperations != null and !filter.assigneeOperations.isEmpty()">
         <foreach collection="filter.assigneeOperations" item="operation">
           AND ut.ASSIGNEE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+        <foreach collection="filter.businessIdOperations" item="operation">
+          AND ut.BUSINESS_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>

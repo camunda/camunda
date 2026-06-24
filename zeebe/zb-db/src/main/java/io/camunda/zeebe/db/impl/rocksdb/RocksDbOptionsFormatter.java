@@ -67,7 +67,7 @@ final class RocksDbOptionsFormatter {
     }
 
     // Fallback to regular Java String.format
-    return String.format("%,f", value);
+    return String.format("%f", value);
   }
 
   private static boolean ensureLibCIsAvailable() {
@@ -84,11 +84,12 @@ final class RocksDbOptionsFormatter {
         libC = LibraryLoader.create(LibC.class).load("c");
       }
       runtime = Runtime.getRuntime(libC);
+      return true;
     } catch (final Throwable e) {
       libCUnavailable = true;
       LOG.warn("Failed to load libc for sprintf formatting, will fall back to String.format", e);
+      return false;
     }
-    return true;
   }
 
   /** Interface to access libc functions via JNR-FFI. */
@@ -98,9 +99,9 @@ final class RocksDbOptionsFormatter {
      *
      * @param str output buffer
      * @param format format string
-     * @param value the double value to format
+     * @param args the values to format
      * @return number of characters written (excluding null terminator)
      */
-    int sprintf(@Out Pointer str, @In String format, double value);
+    int sprintf(@Out Pointer str, @In String format, Object... args);
   }
 }

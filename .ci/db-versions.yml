@@ -16,7 +16,8 @@
 
 elasticsearch:
   es8:
-    - &saas "8.19.15"
+    # renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch
+    - &saas '8.19.16'
   es9:
     - "9.3.0"
     - "9.4.0"
@@ -24,7 +25,8 @@ elasticsearch:
 
 opensearch:
   os2:
-    - "2.19.4"
+    # renovate: datasource=docker depName=opensearchproject/opensearch
+    - '2.19.5'
   os3:
     - "3.5.0"
     - "3.6.0"
@@ -51,6 +53,10 @@ mariadb:
 mssql:
   - "2022-latest"
   - "2025-latest"
+
+azure-sql:
+  - "1.0.7"
+  - "2.0.0"
 
 oracle:
   - "21-slim-faststart"

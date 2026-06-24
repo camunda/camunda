@@ -20,6 +20,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessDistribu
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_PROCESS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_USER_TASK;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_VARIABLE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_ASSIGNEE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_CANDIDATE_GROUP;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_DURATION;
@@ -677,7 +678,7 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
       MAP),
   PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_PROCESS_DEFINITION_KEY(
       PROCESS_VIEW_AGENT_TOTAL_TOKENS,
-      PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY,
+      PROCESS_GROUP_BY_AGENT_PROCESS_DEFINITION_KEY,
       PROCESS_DISTRIBUTED_BY_NONE,
       MAP),
   PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_NONE(
@@ -730,6 +731,11 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
   @Override
   public boolean isRawDataReport() {
     return resultType == RAW_DATA;
+  }
+
+  @Override
+  public boolean supportsGroupByLimit() {
+    return groupBy.isTopNLimitSupported();
   }
 
   private String buildCommandKey() {

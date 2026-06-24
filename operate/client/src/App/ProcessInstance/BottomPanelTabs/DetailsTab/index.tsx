@@ -500,6 +500,9 @@ const DetailsTab: React.FC = () => {
     );
   }
 
+  const showAgentInstance =
+    agentInstance !== undefined || isAgentLoading || isAgentError;
+
   return (
     <Container data-testid="details-tab">
       {resolvedElementType === 'USER_TASK' &&
@@ -511,6 +514,9 @@ const DetailsTab: React.FC = () => {
             subtitle="Consider migrating to Camunda user tasks."
           />
         )}
+      {!showAgentInstance && clientConfig.waitStatesEnabled && (
+        <WaitingStatus waitStates={elementWaitStates} />
+      )}
       <StructuredList
         label="Element Instance Details"
         headerSize="sm"
@@ -520,15 +526,12 @@ const DetailsTab: React.FC = () => {
         ]}
         rows={rows}
       />
-      {(agentInstance !== undefined || isAgentLoading || isAgentError) && (
+      {showAgentInstance && (
         <AgentDetails
           agentInstance={agentInstance}
           isLoading={isAgentLoading}
           isError={isAgentError}
         />
-      )}
-      {clientConfig.waitStatesEnabled && (
-        <WaitingStatus waitStates={elementWaitStates} />
       )}
     </Container>
   );

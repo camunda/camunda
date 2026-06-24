@@ -12,11 +12,13 @@ import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockLogoutEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
 const currentUserMock = createCurrentUser();
 
@@ -30,6 +32,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
 		}),
 	);
 });
@@ -86,47 +91,23 @@ test.describe('notifications', () => {
 });
 
 test.describe('user sidebar', () => {
-	test('should display the user name', async ({tasklistIndexPage, page}) => {
+	test('should display user details in the sidebar', async ({tasklistIndexPage, page}) => {
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.header.openUserSidebar();
 
 		await expect(page.getByText(currentUserMock.displayName)).toBeVisible();
-	});
-
-	test('should display the language selector', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.goto();
-		await tasklistIndexPage.header.openUserSidebar();
-
 		await expect(tasklistIndexPage.header.languageSelector).toBeVisible();
 	});
 });
 
 test.describe('info sidebar', () => {
-	test('should show Documentation link', async ({tasklistIndexPage}) => {
+	test('should show expected links in the info sidebar', async ({tasklistIndexPage}) => {
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.header.openInfoSidebar();
 
 		await expect(tasklistIndexPage.header.documentationLink).toBeVisible();
-	});
-
-	test('should show Camunda Academy link', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.goto();
-		await tasklistIndexPage.header.openInfoSidebar();
-
 		await expect(tasklistIndexPage.header.camundaAcademyLink).toBeVisible();
-	});
-
-	test('should show Community Forum link', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.goto();
-		await tasklistIndexPage.header.openInfoSidebar();
-
 		await expect(tasklistIndexPage.header.communityForumLink).toBeVisible();
-	});
-
-	test('should not show Feedback and Support link for non-paid users', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.goto();
-		await tasklistIndexPage.header.openInfoSidebar();
-
 		await expect(tasklistIndexPage.header.feedbackAndSupportLink).not.toBeVisible();
 	});
 
@@ -157,7 +138,7 @@ test.describe('i18n', () => {
 		await tasklistIndexPage.header.openUserSidebar();
 		await tasklistIndexPage.header.selectLanguage('Deutsch');
 
-		await expect(page.getByRole('link', {name: 'Aufgaben'})).toBeVisible();
+		await expect(page.getByRole('link', {name: 'Aufgaben', exact: true})).toBeVisible();
 		await expect(page.getByRole('link', {name: 'Prozesse'})).toBeVisible();
 	});
 });

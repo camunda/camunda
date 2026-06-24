@@ -18,7 +18,7 @@ function getWaitStateLabel(
 
   // Timer wait states should not show a label on the diagram overlay
   const nonTimerWaitStates = waitStates.filter(
-    (ws) => ws.waitStateType !== 'TIMER',
+    (ws) => ws.details.waitStateType !== 'TIMER',
   );
 
   if (nonTimerWaitStates.length === 0) {
@@ -35,10 +35,10 @@ function getWaitStateStatusItems(
   let hasRenderedTimerStatus = false;
 
   return waitStates.flatMap((waitState) => {
-    switch (waitState.waitStateType) {
+    const {details} = waitState;
+    switch (details.waitStateType) {
       case 'MESSAGE': {
-        const messageName =
-          (waitState.details['messageName'] as string) ?? 'unknown';
+        const {messageName} = details;
         return {
           key: `${waitState.elementInstanceKey}-MESSAGE-${messageName}`,
           text: `Waiting for message: ${messageName}`,
@@ -50,10 +50,10 @@ function getWaitStateStatusItems(
         }
         hasRenderedTimerStatus = true;
 
-        if (earliestTimerDueDate) {
+        if (earliestTimerDueDate !== null) {
           return {
             key: `TIMER-${earliestTimerDueDate}`,
-            text: `Timer due: ${formatDate(earliestTimerDueDate)}`,
+            text: `Waiting for timer: due date ${formatDate(new Date(earliestTimerDueDate))}`,
           };
         }
 
@@ -63,8 +63,7 @@ function getWaitStateStatusItems(
         };
       }
       case 'SIGNAL': {
-        const signalName =
-          (waitState.details['signalName'] as string) ?? 'unknown';
+        const {signalName} = details;
         return {
           key: `${waitState.elementInstanceKey}-SIGNAL-${signalName}`,
           text: `Waiting for signal: ${signalName}`,
@@ -77,8 +76,7 @@ function getWaitStateStatusItems(
         };
       }
       case 'JOB': {
-        const jobType = (waitState.details['jobType'] as string) ?? 'unknown';
-        const jobKind = waitState.details['jobKind'] as string | undefined;
+        const {jobType, jobKind} = details;
         if (jobKind === 'EXECUTION_LISTENER' || jobKind === 'TASK_LISTENER') {
           return {
             key: `${waitState.elementInstanceKey}-JOB-${jobKind}-${jobType}`,
@@ -90,10 +88,10 @@ function getWaitStateStatusItems(
           text: `Waiting for job: ${jobType}`,
         };
       }
-      case 'CHILD_INSTANCE': {
+      case 'USER_TASK': {
         return {
-          key: `${waitState.elementInstanceKey}-CHILD_INSTANCE`,
-          text: 'Waiting for child instance to complete',
+          key: `${waitState.elementInstanceKey}-USER_TASK`,
+          text: 'Waiting for task completion',
         };
       }
       default:
@@ -107,27 +105,17 @@ function getWaitStateStatusItems(
 
 function getEarliestTimerDueDate(
   waitStates: ElementInstanceInspection[],
-): string | null {
-  const timerWaitStates = waitStates.filter(
-    (ws) => ws.waitStateType === 'TIMER' && ws.details['dueDate'],
-  );
+): number | null {
+  let earliestDueDate: number | null = null;
 
-  if (timerWaitStates.length === 0) {
-    return null;
-  }
+  waitStates.forEach((waitState) => {
+    const {details} = waitState;
+    if (details.waitStateType !== 'TIMER' || details.dueDate === null) {
+      return;
+    }
 
-  let earliestDueDate: string | null = null;
-  let earliestDueDateInMillis = Number.POSITIVE_INFINITY;
-
-  timerWaitStates.forEach((waitState) => {
-    const dueDate = waitState.details['dueDate'] as string;
-    const dueDateInMillis = Date.parse(dueDate);
-
-    if (
-      !Number.isNaN(dueDateInMillis) &&
-      dueDateInMillis < earliestDueDateInMillis
-    ) {
-      earliestDueDateInMillis = dueDateInMillis;
+    const dueDate = details.dueDate;
+    if (earliestDueDate === null || dueDate < earliestDueDate) {
       earliestDueDate = dueDate;
     }
   });
@@ -135,4 +123,20 @@ function getEarliestTimerDueDate(
   return earliestDueDate;
 }
 
-export {getWaitStateLabel, getWaitStateStatusItems, getEarliestTimerDueDate};
+function isBeforeAllExecutionListenerWaitState(
+  item: ElementInstanceInspection,
+): boolean {
+  return (
+    item.elementType === 'MULTI_INSTANCE_BODY' &&
+    item.details.waitStateType === 'JOB' &&
+    item.details.jobKind === 'EXECUTION_LISTENER' &&
+    item.details.listenerEventType === 'BEFORE_ALL'
+  );
+}
+
+export {
+  getWaitStateLabel,
+  getWaitStateStatusItems,
+  getEarliestTimerDueDate,
+  isBeforeAllExecutionListenerWaitState,
+};

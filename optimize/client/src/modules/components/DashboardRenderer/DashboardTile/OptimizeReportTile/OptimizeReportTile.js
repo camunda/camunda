@@ -24,6 +24,10 @@ import {useErrorHandling} from 'hooks';
 import {track} from 'tracking';
 import {t} from 'translation';
 
+import KpiDeltaBadge from './KpiDeltaBadge';
+import useComparisonData from './useComparisonData';
+import {comparisonLabelKey, getRollingPeriod, propertyToValueUnit} from './comparison';
+
 import './OptimizeReportTile.scss';
 
 export default function OptimizeReportTile({
@@ -42,6 +46,14 @@ export default function OptimizeReportTile({
   const history = useHistory();
   const prevTile = useRef(tile);
   const prevFilter = useRef(filter);
+
+  const comparisonPeriod = tile.configuration?.comparisonPeriod;
+  const {priorData, loadPriorData, resetPriorData} = useComparisonData({
+    tile,
+    filter,
+    loadTile,
+    enabled: comparisonPeriod,
+  });
 
   const loadTileData = useCallback(
     (params) => {
@@ -67,17 +79,18 @@ export default function OptimizeReportTile({
 
   const loadInitialTile = useCallback(async () => {
     setLoading(true);
-    await loadTileData({});
+    await Promise.all([loadTileData({}), loadPriorData()]);
     setLoading(false);
-  }, [loadTileData]);
+  }, [loadTileData, loadPriorData]);
 
   useEffect(() => {
     if (!deepEqual(tile, prevTile.current) || !deepEqual(filter, prevFilter.current)) {
       prevTile.current = tile;
       prevFilter.current = filter;
+      resetPriorData();
       loadInitialTile();
     }
-  }, [tile, filter, loadInitialTile]);
+  }, [tile, filter, loadInitialTile, resetPriorData]);
 
   useEffect(() => {
     loadInitialTile();
@@ -93,8 +106,16 @@ export default function OptimizeReportTile({
 
   const refreshTile = () => loadTileData(lastParams);
   const tileLink = customizeTileLink(data?.id || tile?.id);
+
+  const isNumberViz = data?.data?.visualization === 'number';
+  const currentValue = data?.result?.measures?.[0]?.data;
+  const showDeltaBadge = isNumberViz && comparisonPeriod && currentValue != null;
+  const labelKey = showDeltaBadge && comparisonLabelKey(getRollingPeriod(filter));
+  const periodLabel = labelKey ? t(`agenticControlPlane.comparison.${labelKey}`).toString() : '';
   let tileProps = {
-    className: 'OptimizeReportTile DashboardTile',
+    className: classnames('OptimizeReportTile DashboardTile', {
+      hasComparisonPeriod: comparisonPeriod,
+    }),
   };
 
   if (!disableNameLink) {
@@ -148,9 +169,25 @@ export default function OptimizeReportTile({
         </div>
       )}
       <div className="visualization">
-        <ReportRenderer error={error} report={data} context="dashboard" loadReport={loadTileData} />
+        <ReportRenderer
+          error={error}
+          report={data}
+          context="dashboard"
+          loadReport={loadTileData}
+          overlay={
+            showDeltaBadge ? (
+              <KpiDeltaBadge
+                currentValue={currentValue}
+                priorValue={priorData?.result?.measures?.[0]?.data ?? null}
+                unit={propertyToValueUnit(data.data.view?.properties?.[0])}
+                deltaGoodDirection={tile.configuration?.deltaGoodDirection}
+                periodLabel={periodLabel}
+              />
+            ) : null
+          }
+        />
       </div>
-      {children?.({loadTileData: refreshTile})}
+      {children?.({loadTileData: refreshTile, data})}
     </div>
   );
 }

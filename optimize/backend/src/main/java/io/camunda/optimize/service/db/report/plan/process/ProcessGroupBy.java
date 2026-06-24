@@ -34,6 +34,11 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_PROCESS_INSTANCE_RUNNING_DATE(new RunningDateGroupByDto()),
   PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE(new StartDateGroupByDto()),
   PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY(new ProcessDefinitionKeyGroupByDto()),
+  // Same group-by shape as PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY but routed to a dedicated
+  // interpreter that supports server-side top-N limiting (used by the agentic top token consumers
+  // tile). Reusing the same DTO keeps the report command key unchanged; the distinct enum value
+  // only selects the interpreter, and the flag advertises that a limit-only pagination is allowed.
+  PROCESS_GROUP_BY_AGENT_PROCESS_DEFINITION_KEY(new ProcessDefinitionKeyGroupByDto(), true),
   PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION(new ProcessDefinitionVersionGroupByDto()),
   PROCESS_GROUP_BY_NONE(new NoneGroupByDto()),
   PROCESS_INCIDENT_GROUP_BY_NONE(new NoneGroupByDto()),
@@ -44,12 +49,22 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_VARIABLE(new VariableGroupByDto());
 
   private final ProcessGroupByDto<?> dto;
+  private final boolean topNLimitSupported;
 
   private ProcessGroupBy(final ProcessGroupByDto<?> dto) {
+    this(dto, false);
+  }
+
+  private ProcessGroupBy(final ProcessGroupByDto<?> dto, final boolean topNLimitSupported) {
     this.dto = dto;
+    this.topNLimitSupported = topNLimitSupported;
   }
 
   public ProcessGroupByDto<?> getDto() {
     return this.dto;
+  }
+
+  public boolean isTopNLimitSupported() {
+    return topNLimitSupported;
   }
 }

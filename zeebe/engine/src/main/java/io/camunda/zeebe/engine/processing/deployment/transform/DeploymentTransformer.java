@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -27,11 +26,9 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
 
 public final class DeploymentTransformer {
 
-  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final DeploymentValidator validator;
   private final List<DeploymentResourceTransformer> resourceTransformers;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
@@ -146,7 +143,7 @@ public final class DeploymentTransformer {
           errors.add(result.getLeft().getMessage());
         }
       } catch (final RuntimeException e) {
-        logAndCollectUnexpectedError(deploymentResource.getResourceName(), e, errors);
+        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
       }
     }
 
@@ -175,7 +172,7 @@ public final class DeploymentTransformer {
       try {
         transformer.writeRecords(deploymentResource, deploymentEvent);
       } catch (final RuntimeException e) {
-        logAndCollectUnexpectedError(deploymentResource.getResourceName(), e, errors);
+        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
       }
     }
 
@@ -190,14 +187,6 @@ public final class DeploymentTransformer {
             () ->
                 new IllegalStateException(
                     "No transformer found for resource: " + resource.getResourceName()));
-  }
-
-  private static void logAndCollectUnexpectedError(
-      final String resourceName,
-      final RuntimeException exception,
-      final DeploymentErrorCollector errors) {
-    LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
-    errors.add("'%s': %s", resourceName, exception.getMessage());
   }
 
   private record ResourceWithTransformer(

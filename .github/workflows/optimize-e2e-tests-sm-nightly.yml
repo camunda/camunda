@@ -18,6 +18,9 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
+  TEST_PRODUCT: 'optimize'
+  TEST_TYPE: 'E2E Self-Managed'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 permissions:
@@ -26,7 +29,11 @@ permissions:
 
 jobs:
   e2e-full:
-    name: "E2E Self-Managed (Full + Visual)"
+    name: "E2E Self-Managed (Full + Visual) [${{ matrix.branch }}]"
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [main, stable/8.8, stable/8.9]
     permissions:
       contents: read
       id-token: write # for authenticating with GCP
@@ -34,11 +41,15 @@ jobs:
     timeout-minutes: 120
     env:
       TEST_TYPE: E2E
-      TEST_OWNER: Core Features
 
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Set branch slug
+        run: echo "BRANCH_SLUG=$(echo '${{ matrix.branch }}' | tr '/' '-')" >> "$GITHUB_ENV"
 
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -88,13 +99,14 @@ jobs:
 
       - name: Wait for import to complete
         run: |
+          expected=${{ matrix.branch == 'stable/8.8' && '49' || '17' }}
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq 49 ]]; then
+            if [[ $count -eq $expected ]]; then
               echo "Import Completed"
               break
             fi
-            echo "Index has $count entities. Waiting for 49..."
+            echo "Index has $count entities. Waiting for $expected..."
             sleep 10
           done
 
@@ -115,21 +127,21 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: optimize-e2e-nightly-logs
+          name: optimize-e2e-nightly-logs-${{ env.BRANCH_SLUG }}
           path: ./optimize/client/build/*.log
 
       - name: Upload diff images as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: visual-regression-report
+          name: visual-regression-report-${{ env.BRANCH_SLUG }}
           path: ./optimize/client/e2e/screenshots/
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
         with:
-          archive_name: optimize-e2e-nightly-docker-logs
+          archive_name: optimize-e2e-nightly-docker-logs-${{ env.BRANCH_SLUG }}
 
       - name: Observe build status
         if: always()
@@ -137,7 +149,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: ${{ github.job }}-${{ env.BRANCH_SLUG }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"

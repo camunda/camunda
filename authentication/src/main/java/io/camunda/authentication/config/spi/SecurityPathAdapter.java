@@ -19,15 +19,15 @@ public class SecurityPathAdapter implements SecurityPathPort {
 
   public static final SecurityPathAdapter INSTANCE = new SecurityPathAdapter();
 
+  // Tenant-prefixed paths (/physical-tenants/<id>/...) are deliberately NOT listed here. They are
+  // owned exclusively by the per-tenant scoped security chains that PhysicalTenantScopeProvider
+  // contributes (CSL derives each scope's matcher as basePath + these apiPaths, e.g.
+  // /physical-tenants/<id>/v2/**). The cluster chain and a scoped chain share ORDER_WEBAPP_API, so
+  // listing the tenant prefix here would let the cluster chain also match a tenant request and, if
+  // it wins the same-order tie-break, validate the token against the cluster's providers instead of
+  // the tenant's — breaking per-tenant audience isolation. Keep this list cluster-only.
   private static final Set<String> API_PATHS =
-      Set.of(
-          "/api/**",
-          "/v1/**",
-          "/v2/**",
-          "/physical-tenants/{physicalTenantId}/v2/**",
-          "/mcp/**",
-          "/physical-tenants/{physicalTenantId}/mcp/**",
-          "/.well-known/oauth-protected-resource/**");
+      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
 
   private static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
@@ -86,7 +86,8 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/webapp/custom.css",
           "/webapp/favicon.ico");
 
-  private static final Set<String> WEB_COMPONENT_NAMES = Set.of("admin", "operate", "tasklist");
+  // Single source of truth for the web component names; see WebAppProviderAdapter#WEB_APPS.
+  private static final Set<String> WEB_COMPONENT_NAMES = WebAppProviderAdapter.WEB_APPS;
 
   private static final Set<String> ADMIN_FILTER_BYPASS_PATHS =
       Set.of(

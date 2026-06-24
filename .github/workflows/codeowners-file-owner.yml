@@ -19,6 +19,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
@@ -29,7 +30,6 @@ jobs:
     permissions:
       contents: read
     env:
-      TEST_OWNER: Orchestration Cluster
       TEST_PRODUCT: Orchestration Cluster
       TEST_TYPE: CI Helper
     steps:

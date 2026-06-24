@@ -43,6 +43,7 @@ message ClusterScaleRequest {
   optional uint32 newPartitionCount = 2;
   optional uint32 newReplicationFactor = 3;
   bool dryRun = 4;
+  optional string zone= 5;
 }
 
 message ClusterPatchRequest {
@@ -55,6 +56,11 @@ message ClusterPatchRequest {
 
 message UpdateRoutingStateRequest{
   topology_protocol.RoutingState routing_state = 1;
+  bool dryRun = 2;
+}
+
+message UpdatePartitionDistributorConfigRequest {
+  topology_protocol.PartitionDistributorConfig config = 1;
   bool dryRun = 2;
 }
 

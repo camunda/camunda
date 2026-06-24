@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.filter;
 
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
  *   <li>INCIDENT: {@link IncidentIntent#CREATED}, {@link IncidentIntent#RESOLVED}
  *   <li>USER_TASK: ASSIGNED, CANCELED, COMPLETED, CREATING
  *   <li>VARIABLE: CREATED, UPDATED
+ *   <li>AGENT_INSTANCE: CREATED, UPDATED, COMPLETED
  * </ul>
  *
  * <p>The filter is applied only if the broker version is at least 8.9.0.
@@ -67,6 +69,10 @@ public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVer
   private static final EnumSet<VariableIntent> ALLOWED_VARIABLE_INTENTS =
       EnumSet.of(VariableIntent.CREATED, VariableIntent.UPDATED);
 
+  private static final EnumSet<AgentInstanceIntent> ALLOWED_AGENT_INSTANCE_INTENTS =
+      EnumSet.of(
+          AgentInstanceIntent.CREATED, AgentInstanceIntent.UPDATED, AgentInstanceIntent.COMPLETED);
+
   @Override
   public boolean accept(final Record<?> record) {
     final boolean accepted =
@@ -76,6 +82,7 @@ public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVer
           case INCIDENT -> isAcceptedIncident(record);
           case USER_TASK -> isAcceptedUserTask(record);
           case VARIABLE -> isAcceptedVariable(record);
+          case AGENT_INSTANCE -> isAcceptedAgentInstance(record);
           default -> false;
         };
     if (!accepted && LOG.isDebugEnabled()) {
@@ -120,6 +127,11 @@ public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVer
   private boolean isAcceptedVariable(final Record<?> record) {
     final var intent = (VariableIntent) record.getIntent();
     return ALLOWED_VARIABLE_INTENTS.contains(intent);
+  }
+
+  private boolean isAcceptedAgentInstance(final Record<?> record) {
+    final var intent = (AgentInstanceIntent) record.getIntent();
+    return ALLOWED_AGENT_INSTANCE_INTENTS.contains(intent);
   }
 
   @Override

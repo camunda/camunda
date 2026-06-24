@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
+import io.camunda.client.protocol.rest.AgentInstanceHistoryItemCreationResult;
 import io.camunda.client.protocol.rest.AgentInstanceResult;
 import io.camunda.client.protocol.rest.AgentInstanceSearchQueryResult;
 import io.camunda.client.protocol.rest.AuditLogResult;
@@ -372,6 +373,11 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getAgentInstancesUrl(), response);
   }
 
+  public void onCreateAgentHistoryItemRequest(
+      final long agentInstanceKey, final AgentInstanceHistoryItemCreationResult response) {
+    registerPost(RestGatewayPaths.getAgentHistoryItemUrl(agentInstanceKey), response);
+  }
+
   public void onUpdateAgentInstanceRequest(final long agentInstanceKey) {
     mockInfo
         .getWireMock()
@@ -487,6 +493,12 @@ public class RestGatewayService {
   public void onSearchElementInstanceWaitStatesRequest(
       final io.camunda.client.protocol.rest.ElementInstanceWaitStateQueryResult response) {
     registerPost(RestGatewayPaths.getElementInstanceWaitStateSearchUrl(), response);
+  }
+
+  public void onSearchCorrelatedMessageSubscriptionsRequest(
+      final io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult
+          response) {
+    registerPost(RestGatewayPaths.getCorrelatedMessageSubscriptionsSearchUrl(), response);
   }
 
   public void onSearchUserTaskAuditLogRequest(

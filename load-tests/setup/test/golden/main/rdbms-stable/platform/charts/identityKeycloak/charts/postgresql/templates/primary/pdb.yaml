@@ -1,0 +1,21 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: keycloak-postgresql
+  namespace: "c8-golden-main-rdbms-stable"
+  labels:
+    app.kubernetes.io/instance: c8-golden-main-rdbms-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 17.4.0
+
+    app.kubernetes.io/component: primary
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: c8-golden-main-rdbms-stable
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/component: primary

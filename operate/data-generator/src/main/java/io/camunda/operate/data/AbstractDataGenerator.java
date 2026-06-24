@@ -12,8 +12,9 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
-import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -45,7 +46,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   private boolean shutdown = false;
 
   @Autowired(required = false)
-  private ProcessDefinitionSearchClient processDefinitionSearchClient;
+  private SearchClientsProxy searchClientsProxy;
 
   @PostConstruct
   private void startDataGenerator() {
@@ -108,15 +109,16 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   public boolean shouldCreateData(final boolean manuallyCalled) {
-    if (processDefinitionSearchClient == null) {
+    if (searchClientsProxy == null) {
       LOGGER.warn(
-          "ProcessDefinitionSearchClient is null. Assuming no data exists and it should be created...");
+          "SearchClientsProxy is null. Assuming no data exists and it should be created...");
       return true;
     }
     if (!manuallyCalled) { // when called manually, always create the data
       final boolean exists;
       exists =
-          processDefinitionSearchClient
+          searchClientsProxy
+                  .withPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                   .withSecurityContext(
                       SecurityContext.of(b -> b.withAuthentication(a -> a.anonymous(true))))
                   .searchProcessDefinitions(ProcessDefinitionQuery.of(q -> q))

@@ -25,7 +25,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -35,7 +35,7 @@ vi.mock('modules/stores/notifications', () => ({
 }));
 
 const TestSelectionControls: React.FC = () => {
-  const {selectElementInstance} = useProcessInstanceElementSelection();
+  const {selectElementInstance} = useProcessInstanceElementSelectActions();
   return (
     <>
       <button

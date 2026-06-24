@@ -44,7 +44,7 @@ import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelectio
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate, matchPath, type Location} from 'react-router-dom';
 import {Locations, Paths} from 'modules/Routes';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {BottomPanelTabs} from './BottomPanelTabs';
 import {
   ResizablePanel,
@@ -86,6 +86,7 @@ const BottomPanelContent: React.FC = () => {
 
   if (isDesktop) {
     const panelMinWidth =
+      // eslint-disable-next-line react-hooks/refs
       (containerRef.current?.clientWidth ?? 0) / 4 || undefined;
 
     return (
@@ -123,7 +124,7 @@ const ProcessInstance: React.FC = observer(() => {
   );
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const navigate = useNavigate();
-  const {clearSelection} = useProcessInstanceElementSelection();
+  const {clearSelection} = useProcessInstanceElementSelectActions();
 
   const [isInfoModalOpen, setInfoModalOpen] = useState(
     () => !getStateLocally()?.hideProcessInstanceHelperModal,

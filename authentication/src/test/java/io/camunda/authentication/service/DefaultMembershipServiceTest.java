@@ -9,6 +9,7 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
@@ -23,22 +24,33 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultMembershipServiceTest {
+
+  private static final String TENANT_A = "tenanta";
 
   @Mock private MappingRuleServices mappingRuleServices;
   @Mock private TenantServices tenantServices;
   @Mock private RoleServices roleServices;
   @Mock private GroupServices groupServices;
+  @Mock private GroupServices tenantAGroupServices;
+  @Mock private TenantServices tenantATenantServices;
+  @Mock private RoleServices tenantARoleServices;
+  @Mock private MappingRuleServices tenantAMappingRuleServices;
 
   private DefaultMembershipService service;
 
@@ -50,8 +62,19 @@ class DefaultMembershipServiceTest {
                 b.mappingRuleServices("default", mappingRuleServices)
                     .groupServices("default", groupServices)
                     .roleServices("default", roleServices)
-                    .tenantServices("default", tenantServices));
+                    .tenantServices("default", tenantServices)
+                    .groupServices(TENANT_A, tenantAGroupServices)
+                    .tenantServices(TENANT_A, tenantATenantServices)
+                    .roleServices(TENANT_A, tenantARoleServices)
+                    .mappingRuleServices(TENANT_A, tenantAMappingRuleServices));
     service = new DefaultMembershipService(serviceRegistry, new CamundaSecurityLibraryProperties());
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+  }
+
+  @AfterEach
+  void clearRequestScope() {
+    RequestContextHolder.resetRequestAttributes();
   }
 
   private MembershipQuery baseQuery() {
@@ -101,5 +124,70 @@ class DefaultMembershipServiceTest {
             .withRoleIds(List.of("r1"));
 
     assertThat(service.tenantIds(query)).containsExactly("t1");
+  }
+
+  @Test
+  void shouldRouteGroupLookupToRequestPhysicalTenant() {
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    when(tenantAGroupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "ga1", "group", null)));
+    final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
+
+    assertThat(service.groupIds(query)).containsExactly("ga1");
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldRouteTenantLookupToRequestPhysicalTenant() {
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    when(tenantATenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new TenantEntity(1L, "ta1", "tenant", null)));
+    final var query =
+        baseQuery()
+            .withMappingRuleIds(List.of())
+            .withGroupIds(List.of("g1"))
+            .withRoleIds(List.of("r1"));
+
+    assertThat(service.tenantIds(query)).containsExactly("ta1");
+    verifyNoInteractions(tenantServices);
+  }
+
+  @Test
+  void shouldRouteRoleLookupToRequestPhysicalTenant() {
+    // given
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    when(tenantARoleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new RoleEntity(1L, "ra1", "role", null)));
+    final var query = baseQuery().withMappingRuleIds(List.of()).withGroupIds(List.of("g1"));
+
+    // when
+    final var result = service.roleIds(query);
+
+    // then
+    assertThat(result).containsExactly("ra1");
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldRouteMappingRuleLookupToRequestPhysicalTenant() {
+    // given
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    when(tenantAMappingRuleServices.getMatchingMappingRules(any(), any()))
+        .thenReturn(Stream.of(new MappingRuleEntity("mra1", 1L, "claim", "value", "rule")));
+
+    // when
+    final var result = service.mappingRuleIds(baseQuery());
+
+    // then
+    assertThat(result).containsExactly("mra1");
+    verifyNoInteractions(mappingRuleServices);
   }
 }

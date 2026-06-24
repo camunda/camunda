@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -101,9 +102,9 @@ final class OpenSearchArchiverRepositoryIT {
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final OpenSearchTransport transport = createTransport();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final HistoryConfiguration config = new HistoryConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
+  private HistoryConfiguration config;
   private String processInstanceIndex;
   private String batchOperationIndex;
   private String auditLogIndex;
@@ -123,6 +124,7 @@ final class OpenSearchArchiverRepositoryIT {
 
   @BeforeEach
   void beforeEach() {
+    config = new HistoryConfiguration();
     config.setRetention(retention);
     indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
     resourceProvider = new TestExporterResourceProvider(indexPrefix, false);
@@ -139,7 +141,7 @@ final class OpenSearchArchiverRepositoryIT {
   @Test
   void shouldDeleteDocuments() throws IOException {
     // given
-    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID();
     final var repository = createRepository();
     final var documents =
         List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
@@ -990,11 +992,18 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
-  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
+  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly()
+      throws IOException {
     // given
     retention.setEnabled(true);
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
+    // setIndexLifeCycle now short-circuits when the target index doesn't exist (to avoid
+    // poisoning the applied-policy cache for indices that haven't been created yet), so the
+    // test must create both the policy and the indices before exercising the cache behavior.
+    createLifeCyclePolicies();
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
 
     final var asyncClient = createOpenSearchAsyncClient();
     final var genericClientSpy =
@@ -1044,6 +1053,12 @@ final class OpenSearchArchiverRepositoryIT {
     retention.setEnabled(true);
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
+    // setIndexLifeCycle now short-circuits when the target index doesn't exist (to avoid
+    // poisoning the applied-policy cache for indices that haven't been created yet), so the
+    // test must create both the policy and the indices before exercising the cache behavior.
+    createLifeCyclePolicies();
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
 
     final var asyncClient = createOpenSearchAsyncClient();
     final var genericClientSpy =
@@ -1183,7 +1198,7 @@ final class OpenSearchArchiverRepositoryIT {
                 verify(
                         genericClientSpy,
                         times(
-                            44) // number of index templates * 2 (for change policy requests and add
+                            46) // number of index templates * 2 (for change policy requests and add
                         // policy requests)
                         )
                     .executeAsync(captor.capture()));
@@ -1191,7 +1206,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
         .filteredOn(req -> req.getEndpoint().contains("_ism/add"))
-        .hasSize(22)
+        .hasSize(23)
         .allSatisfy(
             request -> {
               final var indexPattern =
@@ -1258,11 +1273,12 @@ final class OpenSearchArchiverRepositoryIT {
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
     createProcessInstanceIndex();
-    documents.forEach(doc -> index(processInstanceIndex, doc));
+    documents.forEach(
+        doc -> index(processInstanceIndex, doc, String.valueOf(doc.processInstanceKey())));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when searching for process instance key 111
-    // then - we expect documents with IDs 1,2 and 4 to be returned
+    // then - we expect documents with IDs 1,2 and 4 to be returned with routing=111
     final var batch =
         repository
             .getArchiveDocIdsBatch(
@@ -1270,10 +1286,14 @@ final class OpenSearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                config.getReindexBatchSize())
             .join();
 
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "4");
+    assertThat(batch.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "2", "4");
+    assertThat(batch.documents()).extracting(IdWithRouting::routing).containsOnly("111");
     assertThat(batch.searchAfter()).hasSize(1);
     assertThat(batch.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
@@ -1286,16 +1306,16 @@ final class OpenSearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("999")),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                config.getReindexBatchSize())
             .join();
 
     assertThat(emptyBatch.isEmpty()).isTrue();
-    assertThat(emptyBatch.ids()).isEmpty();
+    assertThat(emptyBatch.documents()).isEmpty();
     assertThat(emptyBatch.searchAfter()).isEmpty();
 
     // when searching for process instance key 111 with reindex batch size of 2
     // then - we expect documents with IDs 1 and 2 to be returned
-    config.setReindexBatchSize(2);
     final var batchPg1 =
         repository
             .getArchiveDocIdsBatch(
@@ -1303,15 +1323,17 @@ final class OpenSearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                2)
             .join();
 
-    assertThat(batchPg1.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batchPg1.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "2");
     assertThat(batchPg1.searchAfter().getFirst().stringValue()).isEqualTo("2");
 
     // when searching for process instance key 111 with searchAfter from page 1
     // then - we expect document with ID 4 to be returned
-    config.setReindexBatchSize(2);
     final var batchPg2 =
         repository
             .getArchiveDocIdsBatch(
@@ -1319,15 +1341,15 @@ final class OpenSearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                batchPg1.searchAfter())
+                batchPg1.searchAfter(),
+                2)
             .join();
 
-    assertThat(batchPg2.ids()).containsExactlyInAnyOrder("4");
+    assertThat(batchPg2.documents()).extracting(IdWithRouting::id).containsExactlyInAnyOrder("4");
     assertThat(batchPg2.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
     // when searching for process instance key 111 with searchAfter from page 2
     // then - we expect no documents to be returned
-    config.setReindexBatchSize(2);
     final var batchPg3 =
         repository
             .getArchiveDocIdsBatch(
@@ -1335,16 +1357,16 @@ final class OpenSearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                batchPg2.searchAfter())
+                batchPg2.searchAfter(),
+                2)
             .join();
 
     assertThat(batchPg3.isEmpty()).isTrue();
-    assertThat(batchPg3.ids()).isEmpty();
+    assertThat(batchPg3.documents()).isEmpty();
     assertThat(batchPg3.searchAfter()).isEmpty();
 
     // when searching for process instance key 111 with exclusion filter for joinRelation=activity
     // then - we expect only documents with joinRelation != activity (IDs 1 and 4)
-    config.setReindexBatchSize(100);
     final var batchExcluded =
         repository
             .getArchiveDocIdsBatch(
@@ -1352,10 +1374,13 @@ final class OpenSearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of("joinRelation", "activity"),
-                null)
+                null,
+                100)
             .join();
 
-    assertThat(batchExcluded.ids()).containsExactlyInAnyOrder("1", "4");
+    assertThat(batchExcluded.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "4");
 
     // when searching for process instance key 111 with inclusion filter for joinRelation=variable
     // and exclusion filter for joinRelation=activity
@@ -1367,10 +1392,13 @@ final class OpenSearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of("joinRelation", "variable"),
                 Map.of("joinRelation", "activity"),
-                null)
+                null,
+                100)
             .join();
 
-    assertThat(batchBothFilters.ids()).containsExactlyInAnyOrder("1", "4");
+    assertThat(batchBothFilters.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "4");
   }
 
   @Test
@@ -1387,7 +1415,8 @@ final class OpenSearchArchiverRepositoryIT {
 
     // when - reindex the first two documents
     final var result =
-        repository.reindexDocumentsById(sourceIndexName, destIndexName, List.of("1", "2"));
+        repository.reindexDocumentsById(
+            sourceIndexName, destIndexName, List.of(IdWithRouting.of("1"), IdWithRouting.of("2")));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -1419,7 +1448,9 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(indexName));
 
     // when - delete the first two documents
-    final var result = repository.deleteDocumentsById(indexName, List.of("1", "2"));
+    final var result =
+        repository.deleteDocumentsById(
+            indexName, List.of(IdWithRouting.of("1"), IdWithRouting.of("2")));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -1432,6 +1463,74 @@ final class OpenSearchArchiverRepositoryIT {
         .first()
         .extracting(Hit::id)
         .isEqualTo("3");
+  }
+
+  @Test
+  void shouldDeleteDocumentsByIdWithRoutingOnMultiShardIndex() throws IOException {
+    // given - a 3-shard index seeded with docs whose custom routing differs from their id.
+    // On a multi-shard index, a delete-by-id without routing is routed by hash(_id); for
+    // docs indexed with custom routing this lands on the wrong shard and OS silently
+    // returns result=not_found. This test proves the bulk delete carries routing through
+    // and that getDeletedDocCount only counts items actually deleted.
+    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    testClient
+        .indices()
+        .create(r -> r.index(indexName).settings(s -> s.numberOfShards(3).numberOfReplicas(0)));
+
+    final var repository = createRepository();
+    final int total = 50;
+    final var docs =
+        IntStream.rangeClosed(1, total).mapToObj(i -> new TestDocument(String.valueOf(i))).toList();
+    // routing is deliberately different from id, so hash(routing) != hash(id) for most
+    // docs across 3 shards.
+    docs.forEach(d -> index(indexName, d, "r-" + (Integer.parseInt(d.id()) % 7)));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when - delete with the routing each doc was indexed under
+    final var idsWithRouting =
+        docs.stream()
+            .map(d -> new IdWithRouting(d.id(), "r-" + (Integer.parseInt(d.id()) % 7)))
+            .toList();
+    final var result = repository.deleteDocumentsById(indexName, idsWithRouting);
+
+    // then - every doc reports result=deleted, and the index is empty
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(result.join())
+        .as(
+            "all docs must report result=deleted on multi-shard index when routing is carried"
+                + " through; if this drops below %d the routing param is being ignored",
+            total)
+        .isEqualTo(total);
+    testClient.indices().refresh(r -> r.index(indexName));
+    assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
+  }
+
+  @Test
+  void shouldNotCountNotFoundResultsAsDeleted() throws IOException {
+    // given - an index with a single real doc; we will issue a bulk delete that mixes the
+    // real id with non-existent ids so OS returns result=not_found for the latter. The
+    // tightened getDeletedDocCount must exclude not_found items, otherwise the archiver
+    // loop would falsely report progress whenever a delete missed (wrong shard / wrong
+    // routing / already-deleted doc).
+    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var repository = createRepository();
+    index(indexName, new TestDocument("1"));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when - delete a mix of one existing id and two non-existent ids
+    final var result =
+        repository.deleteDocumentsById(
+            indexName,
+            List.of(
+                IdWithRouting.of("1"),
+                IdWithRouting.of("does-not-exist-a"),
+                IdWithRouting.of("does-not-exist-b")));
+
+    // then - only the existing doc counts as deleted
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(result.join()).as("not_found items must not be counted as deleted").isEqualTo(1L);
+    testClient.indices().refresh(r -> r.index(indexName));
+    assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
   }
 
   @Test
@@ -1452,7 +1551,8 @@ final class OpenSearchArchiverRepositoryIT {
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
     createProcessInstanceIndex();
-    documents.forEach(doc -> index(processInstanceIndex, doc));
+    documents.forEach(
+        doc -> index(processInstanceIndex, doc, String.valueOf(doc.processInstanceKey())));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when moving documents by id
@@ -1682,13 +1782,19 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
+    index(index, document, null);
+  }
+
+  private <T extends TDocument> void index(
+      final String index, final T document, final String routing) {
     Awaitility.await()
         .ignoreException(OpenSearchException.class)
         .timeout(SEARCH_DB.dataAvailabilityTimeout())
         .until(
             () -> {
               final IndexResponse result =
-                  testClient.index(b -> b.index(index).document(document).id(document.id()));
+                  testClient.index(
+                      b -> b.index(index).document(document).id(document.id()).routing(routing));
               return result != null
                   && (result.result() == Result.Created
                       || result.result() == Result.Updated

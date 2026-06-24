@@ -40,6 +40,19 @@ it('should render ProcessReportRenderer if the report type is process', () => {
   expect(node.find('ProcessReportRenderer')).toExist();
 });
 
+it('should forward the overlay prop to the view component', () => {
+  const overlay = <span>overlay</span>;
+  const node = shallow(<ReportRenderer report={reportTemplate} overlay={overlay} />);
+
+  expect(node.find('ProcessReportRenderer').prop('overlay')).toBe(overlay);
+});
+
+it('should forward an undefined overlay prop when overlay is not provided', () => {
+  const node = shallow(<ReportRenderer report={reportTemplate} />);
+
+  expect(node.find('ProcessReportRenderer').prop('overlay')).toBeUndefined();
+});
+
 it('should include the instance count if indicated in the config', () => {
   const report = {
     ...reportTemplate,

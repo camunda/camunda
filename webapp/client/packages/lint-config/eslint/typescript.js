@@ -7,7 +7,7 @@
  */
 
 import tsPlugin from '@typescript-eslint/eslint-plugin';
-import importPlugin from 'eslint-plugin-import';
+import importPlugin from 'eslint-plugin-import-x';
 import tsParser from '@typescript-eslint/parser';
 import globals from 'globals';
 
@@ -39,7 +39,7 @@ function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, 
 		},
 		{
 			files: [...browserFiles, ...testFiles],
-			plugins: {import: importPlugin},
+			plugins: {'import-x': importPlugin},
 			languageOptions: {
 				ecmaVersion: 2022,
 				sourceType: 'module',
@@ -56,10 +56,10 @@ function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, 
 				},
 			},
 			rules: {
-				'import/no-default-export': 'error',
-				'import/exports-last': 'error',
-				'import/group-exports': 'error',
-				'import/extensions': [
+				'import-x/no-default-export': 'error',
+				'import-x/exports-last': 'error',
+				'import-x/group-exports': 'error',
+				'import-x/extensions': [
 					'error',
 					'ignorePackages',
 					{
@@ -71,7 +71,7 @@ function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, 
 				],
 			},
 			settings: {
-				'import/resolver': {
+				'import-x/resolver': {
 					node: {
 						extensions: ['.js', '.jsx', '.ts', '.tsx'],
 					},
@@ -81,9 +81,9 @@ function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, 
 		{
 			files: ['**/__mocks__/**', '**/*.d.ts'],
 			rules: {
-				'import/no-default-export': 'off',
-				'import/exports-last': 'off',
-				'import/group-exports': 'off',
+				'import-x/no-default-export': 'off',
+				'import-x/exports-last': 'off',
+				'import-x/group-exports': 'off',
 			},
 		},
 		{

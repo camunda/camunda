@@ -9,12 +9,12 @@
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
-import { useApiCall } from "src/utility/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authorizationMutations } from "src/utility/api/authorizations/mutations";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalCustomProps } from "src/components/modal";
 import {
   ALL_RESOURCE_TYPES,
-  createAuthorization,
   NewAuthorization,
   RESOURCE_TYPES_WITHOUT_TENANT,
   OWNER_TYPES,
@@ -60,12 +60,12 @@ export const AddModal: FC<
 }) => {
   const { t, Translate } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, error }] = useApiCall<undefined, NewAuthorization>(
-    createAuthorization,
-    {
-      suppressErrorNotification: true,
-    },
-  );
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(authorizationMutations.create(qc));
 
   const { DropdownAutoFocus } = useDropdownAutoFocus(open);
 
@@ -83,19 +83,19 @@ export const AddModal: FC<
   const permissionsForType = resourcePermissions[watchedResourceType] ?? [];
   const hasPermissions = permissionsForType.length > 0;
 
-  const onSubmit = async (data: NewAuthorization) => {
-    const { success } = await apiCall(data);
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("authorizationCreated"),
-        subtitle: t("authorizationCreatedSuccess", {
-          resourceType: data.resourceType,
-        }),
-      });
-      onSuccess();
-    }
+  const onSubmit = (data: NewAuthorization) => {
+    mutate(data, {
+      onSuccess: () => {
+        enqueueNotification({
+          kind: "success",
+          title: t("authorizationCreated"),
+          subtitle: t("authorizationCreatedSuccess", {
+            resourceType: data.resourceType,
+          }),
+        });
+        onSuccess();
+      },
+    });
   };
 
   useEffect(() => {

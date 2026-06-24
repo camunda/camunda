@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -283,17 +284,22 @@ final class ExporterFilterIT {
         processInstanceRecord(
             "any-process", ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SEQUENCE_FLOW);
 
+    // AgentInstanceIntent.CREATED is in the Optimize-allowed set
+    final var agentInstanceCreated = agentInstanceRecord(AgentInstanceIntent.CREATED);
+
     // when
     exportFiltered(variableCreated);
     exportFiltered(variableMigrated);
     exportFiltered(piCompleted);
     exportFiltered(piSequenceFlow);
+    exportFiltered(agentInstanceCreated);
 
     // then
     assertIndexed(variableCreated);
     assertNotIndexed(variableMigrated);
     assertIndexed(piCompleted);
     assertNotIndexed(piSequenceFlow);
+    assertIndexed(agentInstanceCreated);
 
     // and: disabling optimize mode again restores full export for the same records
     config.index.setOptimizeModeEnabled(false);
@@ -681,6 +687,15 @@ final class ExporterFilterIT {
                 .withRecordType(RecordType.EVENT)
                 .withIntent(VariableIntent.CREATED)
                 .withValue(value));
+  }
+
+  private Record<?> agentInstanceRecord(final AgentInstanceIntent intent) {
+    return factory.generateRecord(
+        ValueType.AGENT_INSTANCE,
+        r ->
+            r.withBrokerVersion(BROKER_VERSION)
+                .withRecordType(RecordType.EVENT)
+                .withIntent(intent));
   }
 
   private Record<ProcessInstanceRecordValue> processInstanceRecord(

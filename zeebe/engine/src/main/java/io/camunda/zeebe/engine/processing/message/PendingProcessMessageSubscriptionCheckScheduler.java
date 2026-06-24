@@ -110,7 +110,10 @@ public final class PendingProcessMessageSubscriptionCheckScheduler
         subscription.getRecord().getCorrelationKeyBuffer(),
         subscription.getRecord().isInterrupting(),
         subscription.getRecord().getTenantId(),
-        subscription.getRecord().getBusinessIdBuffer());
+        subscription.getRecord().getBusinessIdBuffer(),
+        subscription.getRecord().getElementIdBuffer(),
+        subscription.getRecord().getRootProcessInstanceKey(),
+        subscription.getRecord().getElementType());
   }
 
   private void sendCloseCommand(final ProcessMessageSubscription subscription) {

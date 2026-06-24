@@ -28,6 +28,7 @@ public class AnthropicChatModelAdapterProvider implements ChatModelAdapterProvid
 
   @Override
   public ChatModelAdapter create(final ProviderConfig config) {
-    return AnthropicChatModelBuilder.build((BaseProviderConfig.AnthropicConfig) config)::chat;
+    return new LangChain4jChatModelAdapter(
+        AnthropicChatModelBuilder.build((BaseProviderConfig.AnthropicConfig) config));
   }
 }

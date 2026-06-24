@@ -7,7 +7,8 @@
  */
 package io.camunda.tasklist.qa.util;
 
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
+import static io.camunda.webapps.schema.SupportedVersions.TEST_ELASTICSEARCH_VERSION;
+import static io.camunda.webapps.schema.SupportedVersions.TEST_OPENSEARCH_VERSION;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -89,7 +90,6 @@ public class TestContainerUtil {
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
   private static final String DOCKER_OPENSEARCH_IMAGE_NAME = "opensearchproject/opensearch";
-  private static final String DOCKER_OPENSEARCH_IMAGE_VERSION = "2.19.4";
   private static final String ZEEBE = "zeebe";
   private static final String KEYCLOAK_ZEEBE_SECRET = "zecret";
   private static final String USER_MEMBER_TYPE = "USER";
@@ -258,8 +258,7 @@ public class TestContainerUtil {
     osContainer =
         (OpenSearchContainer)
             new OpenSearchContainer(
-                    String.format(
-                        "%s:%s", DOCKER_OPENSEARCH_IMAGE_NAME, DOCKER_OPENSEARCH_IMAGE_VERSION))
+                    String.format("%s:%s", DOCKER_OPENSEARCH_IMAGE_NAME, TEST_OPENSEARCH_VERSION))
                 .withNetwork(Network.SHARED)
                 .withEnv("path.repo", "~/")
                 .withNetworkAliases(OS_NETWORK_ALIAS)
@@ -284,8 +283,7 @@ public class TestContainerUtil {
     LOGGER.info("************ Starting Elasticsearch ************");
     elsContainer =
         new ElasticsearchContainer(
-                String.format(
-                    "%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, SUPPORTED_ELASTICSEARCH_VERSION))
+                String.format("%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, TEST_ELASTICSEARCH_VERSION))
             .withNetwork(Network.SHARED)
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")

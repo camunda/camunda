@@ -6,6 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {vi} from 'vitest';
+vi.mock('modules/featureFlags', () => ({IS_NAV_V2_ENABLED: true}));
+
 import {render, screen} from 'modules/testing/testing-library';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
@@ -13,7 +16,7 @@ import {Header} from '..';
 import {getWrapper} from './mocks';
 import {currentUser, saasLicense} from '@camunda/c8-mocks';
 
-describe('Info bar', () => {
+describe('Info bar (V2)', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
@@ -49,36 +52,26 @@ describe('Info bar', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
-
     await user.click(
       await screen.findByRole('button', {
         name: /info/i,
       }),
     );
 
-    await user.click(screen.getByRole('button', {name: 'Documentation'}));
+    await user.click(
+      await screen.findByRole('button', {name: 'Documentation'}),
+    );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://docs.camunda.io/',
       '_blank',
     );
 
     await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
+      await screen.findByRole('button', {name: 'Camunda Academy'}),
     );
-
-    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank',
-    );
-
-    await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
     );
 
     expect(
@@ -112,36 +105,26 @@ describe('Info bar', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
-
     await user.click(
       await screen.findByRole('button', {
         name: /info/i,
       }),
     );
 
-    await user.click(screen.getByRole('button', {name: 'Documentation'}));
+    await user.click(
+      await screen.findByRole('button', {name: 'Documentation'}),
+    );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://docs.camunda.io/',
       '_blank',
     );
 
     await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
+      await screen.findByRole('button', {name: 'Camunda Academy'}),
     );
-
-    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank',
-    );
-
-    await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
     );
 
     expect(
@@ -175,40 +158,30 @@ describe('Info bar', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
-
     await user.click(
       await screen.findByRole('button', {
         name: /info/i,
       }),
     );
 
-    await user.click(screen.getByRole('button', {name: 'Documentation'}));
+    await user.click(
+      await screen.findByRole('button', {name: 'Documentation'}),
+    );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://docs.camunda.io/',
       '_blank',
     );
 
     await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
+      await screen.findByRole('button', {name: 'Camunda Academy'}),
     );
-
-    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank',
     );
 
     await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
-    );
-
-    await user.click(
-      screen.getByRole('button', {name: 'Feedback and Support'}),
+      await screen.findByRole('button', {name: 'Feedback and Support'}),
     );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://jira.camunda.com/projects/SUPPORT/queues',
@@ -242,40 +215,30 @@ describe('Info bar', () => {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
-
     await user.click(
       await screen.findByRole('button', {
         name: /info/i,
       }),
     );
 
-    await user.click(screen.getByRole('button', {name: 'Documentation'}));
+    await user.click(
+      await screen.findByRole('button', {name: 'Documentation'}),
+    );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://docs.camunda.io/',
       '_blank',
     );
 
     await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
+      await screen.findByRole('button', {name: 'Camunda Academy'}),
     );
-
-    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank',
     );
 
     await user.click(
-      await screen.findByRole('button', {
-        name: /info/i,
-      }),
-    );
-
-    await user.click(
-      screen.getByRole('button', {name: 'Feedback and Support'}),
+      await screen.findByRole('button', {name: 'Feedback and Support'}),
     );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://jira.camunda.com/projects/SUPPORT/queues',

@@ -1303,6 +1303,41 @@ public final class CamundaUserTaskTest {
         .containsExactlyInAnyOrder("vip", "region-eu", "priority-high");
   }
 
+  @Test
+  public void shouldInheritBusinessIdFromProcessInstance() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when - create process instance with a business id
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withBusinessId("order-4711").create();
+
+    // then - user task should inherit the business id from the owning process instance
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(userTask.getValue().getBusinessId()).isEqualTo("order-4711");
+  }
+
+  @Test
+  public void shouldHaveEmptyBusinessIdWhenProcessInstanceHasNone() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when - create process instance without a business id
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then - user task carries no business id
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(userTask.getValue().getBusinessId()).isEmpty();
+  }
+
   private static Predicate<Record<?>> isTaskTransitionRelatedRecord(
       final UserTaskRecordValue userTaskRecordValue) {
     final var userTaskElementInstanceKey = userTaskRecordValue.getElementInstanceKey();

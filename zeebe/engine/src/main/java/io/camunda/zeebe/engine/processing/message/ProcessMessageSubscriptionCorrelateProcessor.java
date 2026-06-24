@@ -128,7 +128,13 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     record
         .setElementId(subscriptionRecord.getElementIdBuffer())
         .setInterrupting(subscriptionRecord.isInterrupting())
-        .setRootProcessInstanceKey(subscriptionRecord.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(subscriptionRecord.getRootProcessInstanceKey())
+        // The correlate command sent from the message partition does not carry the businessId; it
+        // was captured from the subscribing process instance at subscription-open time and
+        // persisted on the subscription.
+        // Copy it onto the CORRELATED event so the correlated-message read path can expose the
+        // businessId for catch / boundary / intermediate correlations too.
+        .setBusinessId(subscriptionRecord.getBusinessIdBuffer());
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);

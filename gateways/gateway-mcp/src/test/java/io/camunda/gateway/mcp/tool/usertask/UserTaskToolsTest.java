@@ -88,6 +88,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           23L,
           42L,
           null,
+          "businessId-123",
           17L,
           "tenantId",
           null,
@@ -148,6 +149,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     assertThat(userTask.getName()).isEqualTo("Task Name");
     assertThat(userTask.getState()).isEqualTo(UserTaskStateEnum.CREATED);
     assertThat(userTask.getAssignee()).isEqualTo("john.doe");
+    assertThat(userTask.getBusinessId()).isEqualTo("businessId-123");
     assertThat(userTask.getElementId()).isEqualTo("elementId");
     assertThat(userTask.getCandidateGroups()).containsExactly("group1", "group2");
     assertThat(userTask.getCandidateUsers()).containsExactly("user1", "user2");
@@ -300,7 +302,15 @@ class UserTaskToolsTest extends OperationalToolsTest {
                   .arguments(
                       Map.of(
                           "filter",
-                          Map.of("state", "CREATED", "assignee", "john.doe", "priority", 50),
+                          Map.of(
+                              "state",
+                              "CREATED",
+                              "assignee",
+                              "john.doe",
+                              "businessId",
+                              "order-42",
+                              "priority",
+                              50),
                           "sort",
                           List.of(Map.of("field", "creationDate", "order", "DESC")),
                           "page",
@@ -333,6 +343,10 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(filter.assigneeOperations())
           .extracting(Operation::operator, Operation::value)
           .containsExactly(tuple(Operator.EQUALS, "john.doe"));
+
+      assertThat(filter.businessIdOperations())
+          .extracting(Operation::operator, Operation::value)
+          .containsExactly(tuple(Operator.EQUALS, "order-42"));
 
       assertThat(filter.priorityOperations())
           .extracting(Operation::operator, Operation::value)

@@ -426,20 +426,18 @@ public class CamundaMultiDBExtension
             .orElse(false);
     if (shouldSetupKeycloak) {
       setupKeycloak();
-      // Push via withProperty (rather than mutating SecurityConfiguration in withSecurityConfig)
-      // so the values land in Spring's property sources. Both OC's SecurityConfiguration and
-      // CSL's CamundaSecurityLibraryProperties bind under camunda.security.* and need to see
-      // the OIDC client config — CSL's clientRegistrationRepository reads its own typed bean,
-      // not OC's, so a post-binding mutation would leave CSL with an empty OIDC config.
       final var issuerUri =
           keycloakContainer.getAuthServerUrl()
               + "/realms/"
               + CamundaMultiDBExtension.KEYCLOAK_REALM;
       applicationUnderTest
           .application()
-          .withProperty("camunda.security.authentication.oidc.client-id", "example")
-          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
-          .withProperty("camunda.security.authentication.oidc.issuer-uri", issuerUri);
+          .withSecurityConfig(
+              c -> {
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("example.com");
+                c.getAuthentication().getOidc().setIssuerUri(issuerUri);
+              });
     }
 
     if (shouldSetupKeycloak) {

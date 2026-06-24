@@ -6,6 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {vi} from 'vitest';
+
+vi.mock('modules/featureFlags', () => ({IS_NAV_V2_ENABLED: true}));
+
 import {render, screen} from 'modules/testing/testing-library';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
@@ -13,7 +17,7 @@ import {Header} from '..';
 import {getWrapper} from './mocks';
 import {currentUser, invalidLicense} from '@camunda/c8-mocks';
 
-describe('<Header />', () => {
+describe('<Header /> (V2)', () => {
   it('should render a header', async () => {
     nodeMockServer.use(
       http.get(
@@ -44,14 +48,13 @@ describe('<Header />', () => {
     });
 
     expect(
-      screen.getByRole('banner', {name: 'Camunda Tasklist'}),
+      await screen.findByRole('banner', {name: 'Camunda Tasklist'}),
     ).toBeInTheDocument();
     expect(
       await screen.findByText('Non-production license'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Open Info'})).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: 'Open Settings'}),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Non-commercial license')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Info'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Settings'})).toBeInTheDocument();
   });
 });

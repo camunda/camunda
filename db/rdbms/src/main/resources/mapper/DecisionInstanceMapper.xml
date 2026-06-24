@@ -37,7 +37,10 @@
     di.STATE,
     di.TYPE, /* TODO really save it there? */
     di.EVALUATION_DATE,
-    di.RESULT,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="di.FULL_RESULT"/>
+      <property name="nonClobColumn" value="di.RESULT"/>
+    </include> AS RESULT,
     di.EVALUATION_FAILURE,
     di.EVALUATION_FAILURE_MESSAGE,
     di.TENANT_ID,
@@ -243,7 +246,7 @@
                                             TYPE,
                                             STATE,
                                             EVALUATION_DATE,
-                                            RESULT,
+                                            FULL_RESULT,
                                             EVALUATION_FAILURE,
                                             EVALUATION_FAILURE_MESSAGE,
                                             TENANT_ID,
@@ -257,7 +260,7 @@
             #{flowNodeInstanceKey}, #{flowNodeId},
             #{rootDecisionDefinitionKey},
             #{decisionType}, #{state},
-            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure},
+            #{evaluationDate, jdbcType=TIMESTAMP}, #{result, jdbcType=CLOB}, #{evaluationFailure},
             #{evaluationFailureMessage},
             #{tenantId}, #{partitionId},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
@@ -265,18 +268,18 @@
 
   <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME,
-    INPUT_VALUE)
+    FULL_INPUT_VALUE)
     VALUES
     <foreach collection="evaluatedInputs" item="item" separator=", ">
-      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
+      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB})
     </foreach>
   </insert>
 
   <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel" databaseId="oracle">
     INSERT ALL
     <foreach collection="evaluatedInputs" item="item">
-      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, INPUT_VALUE)
-      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
+      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, FULL_INPUT_VALUE)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB})
     </foreach>
     SELECT 1 FROM DUAL
   </insert>
@@ -288,7 +291,10 @@
     DECISION_INSTANCE_ID,
     INPUT_ID,
     INPUT_NAME,
-    INPUT_VALUE
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_INPUT_VALUE"/>
+      <property name="nonClobColumn" value="INPUT_VALUE"/>
+    </include> AS INPUT_VALUE
     FROM ${prefix}DECISION_INSTANCE_INPUT
     WHERE DECISION_INSTANCE_ID IN (<foreach collection="list" item="id" separator=", ">
     #{id}</foreach>)
@@ -307,9 +313,9 @@
   <insert id="insertOutput"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE_OUTPUT
-    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
+    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
     <foreach collection="evaluatedOutputs" item="item" separator=", ">
-      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId},
+      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB}, #{item.ruleId},
       #{item.ruleIndex})
     </foreach>
   </insert>
@@ -319,8 +325,8 @@
     databaseId="oracle">
     INSERT ALL
     <foreach collection="evaluatedOutputs" item="item">
-      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX)
-      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId}, #{item.ruleIndex})
+      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB}, #{item.ruleId}, #{item.ruleIndex})
     </foreach>
     SELECT 1 FROM DUAL
   </insert>
@@ -331,7 +337,10 @@
     DECISION_INSTANCE_ID,
     OUTPUT_ID,
     OUTPUT_NAME,
-    OUTPUT_VALUE,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_OUTPUT_VALUE"/>
+      <property name="nonClobColumn" value="OUTPUT_VALUE"/>
+    </include> AS OUTPUT_VALUE,
     RULE_ID,
     RULE_INDEX
     FROM ${prefix}DECISION_INSTANCE_OUTPUT

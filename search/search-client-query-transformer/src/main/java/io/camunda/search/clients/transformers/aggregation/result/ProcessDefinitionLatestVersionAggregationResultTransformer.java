@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.aggregation.result;
 
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_BY_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_LATEST_DEFINITION;
+import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_TOTAL_COUNT;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
@@ -23,7 +24,7 @@ public class ProcessDefinitionLatestVersionAggregationResultTransformer
   @Override
   public ProcessDefinitionLatestVersionAggregationResult apply(
       final Map<String, AggregationResult> aggregations) {
-    return new ProcessDefinitionLatestVersionAggregationResult(
+    final var items =
         aggregations.get(AGGREGATION_NAME_BY_PROCESS_ID).aggregations().values().stream()
             .flatMap(
                 aggregationResult -> {
@@ -35,7 +36,10 @@ public class ProcessDefinitionLatestVersionAggregationResultTransformer
                       .map(ProcessEntity.class::cast)
                       .map(new ProcessDefinitionEntityTransfomer()::apply);
                 })
-            .toList(),
-        aggregations.get(AGGREGATION_NAME_BY_PROCESS_ID).endCursor());
+            .toList();
+    final var totalItems =
+        Math.toIntExact(aggregations.get(AGGREGATION_NAME_TOTAL_COUNT).docCount());
+    final var endCursor = aggregations.get(AGGREGATION_NAME_BY_PROCESS_ID).endCursor();
+    return new ProcessDefinitionLatestVersionAggregationResult(items, totalItems, endCursor);
   }
 }

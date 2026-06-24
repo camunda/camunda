@@ -11,11 +11,13 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.sql.DataSource;
+import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.jdbc.DatabaseDriver;
@@ -38,26 +40,30 @@ public final class RdbmsDataSources implements AutoCloseable {
 
   private final Map<String, HikariDataSource> dataSources;
   private final Map<String, VendorDatabaseProperties> vendorProperties;
+  private final Map<String, DatabaseIdProvider> databaseIdProviders;
 
   private RdbmsDataSources(
       final Map<String, HikariDataSource> dataSources,
-      final Map<String, VendorDatabaseProperties> vendorProperties) {
+      final Map<String, VendorDatabaseProperties> vendorProperties,
+      final Map<String, DatabaseIdProvider> databaseIdProviders) {
     this.dataSources = dataSources;
     this.vendorProperties = vendorProperties;
+    this.databaseIdProviders = databaseIdProviders;
   }
 
-  public static RdbmsDataSources of(
-      final Map<String, Rdbms> physicalTenantConfigs,
-      final RdbmsDatabaseIdProvider databaseIdProvider)
+  public static RdbmsDataSources of(final Map<String, Rdbms> physicalTenantConfigs)
       throws IOException {
     final var dataSources = new LinkedHashMap<String, HikariDataSource>();
     final var vendorProperties = new LinkedHashMap<String, VendorDatabaseProperties>();
+    final var databaseIdProviders = new LinkedHashMap<String, DatabaseIdProvider>();
     for (final var entry : physicalTenantConfigs.entrySet()) {
       final var currentPhysicalTenantId = entry.getKey();
       final var rdbms = entry.getValue();
       try {
         final var ds = buildDataSource(currentPhysicalTenantId, rdbms);
         dataSources.put(currentPhysicalTenantId, ds);
+        final var databaseIdProvider = new RdbmsDatabaseIdProvider(rdbms.getDatabaseVendorId());
+        databaseIdProviders.put(currentPhysicalTenantId, databaseIdProvider);
         final var databaseId = databaseIdProvider.getDatabaseId(ds);
         LOGGER.info(
             "Detected databaseId '{}' for physical tenant '{}'",
@@ -74,7 +80,7 @@ public final class RdbmsDataSources implements AutoCloseable {
         throw e;
       }
     }
-    return new RdbmsDataSources(dataSources, vendorProperties);
+    return new RdbmsDataSources(dataSources, vendorProperties, databaseIdProviders);
   }
 
   public Set<String> physicalTenantIds() {
@@ -90,6 +96,10 @@ public final class RdbmsDataSources implements AutoCloseable {
     return ds;
   }
 
+  public Map<String, DataSource> dataSources() {
+    return Map.copyOf(dataSources);
+  }
+
   public VendorDatabaseProperties vendorPropertiesFor(final String physicalTenantId) {
     final var props = vendorProperties.get(physicalTenantId);
     if (props == null) {
@@ -97,6 +107,15 @@ public final class RdbmsDataSources implements AutoCloseable {
           "No VendorDatabaseProperties configured for physical tenant " + physicalTenantId);
     }
     return props;
+  }
+
+  public DatabaseIdProvider databaseIdProviderFor(final String physicalTenantId) {
+    final var databaseIdProvider = databaseIdProviders.get(physicalTenantId);
+    if (databaseIdProvider == null) {
+      throw new IllegalArgumentException(
+          "No DatabaseIdProvider configured for physical tenant " + physicalTenantId);
+    }
+    return databaseIdProvider;
   }
 
   @Override
@@ -126,7 +145,8 @@ public final class RdbmsDataSources implements AutoCloseable {
     return ds;
   }
 
-  private static void closeQuietly(final HikariDataSource ds) {
+  @VisibleForTesting
+  static void closeQuietly(final HikariDataSource ds) {
     try {
       ds.close();
     } catch (final Exception e) {

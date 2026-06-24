@@ -45,6 +45,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  TEST_OWNER: '@camunda/distribution'
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
   HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
@@ -267,7 +268,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            OWNER_TEAM="@camunda/core-features"
             FAILURE_CATEGORY="orchestration_frontend_build"
           fi
           jq -n \
@@ -323,7 +324,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            OWNER_TEAM="@camunda/core-features"
             FAILURE_CATEGORY="orchestration_frontend_build"
           fi
           jq -n \
@@ -379,7 +380,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            OWNER_TEAM="@camunda/core-features"
             FAILURE_CATEGORY="orchestration_frontend_build"
           fi
           jq -n \
@@ -513,7 +514,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            OWNER_TEAM="@camunda/core-features"
             FAILURE_CATEGORY="orchestration_build_and_push"
           fi
           jq -n \

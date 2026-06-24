@@ -22,6 +22,7 @@ import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,7 +65,7 @@ public class DefaultMembershipService implements MembershipPort {
     }
     final var ids =
         serviceRegistry
-            .mappingRuleServices("default") // TODO replace with contextual physicalTenantId
+            .mappingRuleServices(PhysicalTenantContext.current())
             .getMatchingMappingRules(query.tokenClaims(), CamundaAuthentication.anonymous())
             .map(MappingRuleEntity::mappingRuleId)
             .collect(Collectors.toSet());
@@ -87,7 +88,7 @@ public class DefaultMembershipService implements MembershipPort {
     final var owners = buildOwners(query);
     final var ids =
         serviceRegistry
-            .groupServices("default") // TODO replace with contextual physicalTenantId
+            .groupServices(PhysicalTenantContext.current())
             .getGroupsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
             .stream()
             .map(GroupEntity::groupId)
@@ -103,7 +104,7 @@ public class DefaultMembershipService implements MembershipPort {
     }
     final var ids =
         serviceRegistry
-            .roleServices("default") // TODO replace with contextual physicalTenantId
+            .roleServices(PhysicalTenantContext.current())
             .getRolesByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
             .stream()
             .map(RoleEntity::roleId)
@@ -121,7 +122,7 @@ public class DefaultMembershipService implements MembershipPort {
       owners.put(EntityType.ROLE, new HashSet<>(query.resolvedRoleIds()));
     }
     return serviceRegistry
-        .tenantServices("default") // TODO replace with contextual physicalTenantId
+        .tenantServices(PhysicalTenantContext.current())
         .getTenantsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
         .stream()
         .map(TenantEntity::tenantId)

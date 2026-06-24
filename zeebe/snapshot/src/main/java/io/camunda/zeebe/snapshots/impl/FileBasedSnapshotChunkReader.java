@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -109,9 +110,9 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
     try (final var file = new RandomAccessFile(filePath, "r")) {
       final var fileLength = file.length();
       final var bytesToRead = Math.min(maximumChunkSize, fileLength - offset);
-      final byte[] buffer = new byte[(int) bytesToRead];
-      file.seek(offset);
-      file.readFully(buffer);
+      final var buffer = ByteBuffer.allocateDirect(Math.toIntExact(bytesToRead));
+      readFully(file, buffer, offset);
+      buffer.flip();
 
       final var fileBlockPosition = offset;
       offset += bytesToRead;
@@ -124,6 +125,19 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
           snapshotID, totalCount, fileName, buffer, fileBlockPosition, fileLength);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  private static void readFully(
+      final RandomAccessFile file, final ByteBuffer buffer, final long position)
+      throws IOException {
+    long bytesRead = 0;
+    while (buffer.hasRemaining()) {
+      final int read = file.getChannel().read(buffer, position + bytesRead);
+      if (read < 0) {
+        throw new EOFException("Unexpected end of snapshot chunk file");
+      }
+      bytesRead += read;
     }
   }
 }

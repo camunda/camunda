@@ -35,6 +35,23 @@ public interface MutableMessageStartProcessInstanceAskState
   void remove(long messageKey, long processDefinitionKey);
 
   /**
+   * Records a rejection of the pending ask by incrementing its persisted {@code rejectionCount}
+   * (capped), keeping the ask so it is retried under back-off instead of being dropped. Called from
+   * the {@code UNIQUENESS_REJECTED} / {@code NO_SUBSCRIPTION_REJECTED} appliers in place of {@link
+   * #remove(long, long)}.
+   *
+   * <p>The advance is a pure, clock-free function of the prior persisted count, so it is
+   * deterministic on replay; the scheduler turns the count into the next-retry interval. This
+   * deliberately does <strong>not</strong> touch the transient last-sent tracking: resetting it
+   * would make the ask immediately eligible again and defeat the back-off. A no-op if no ask exists
+   * for the key (e.g. it was already removed by a racing success/expiry).
+   *
+   * @param messageKey the key of the message that triggered the ask
+   * @param processDefinitionKey the key of the process definition the ask targets
+   */
+  void backOff(long messageKey, long processDefinitionKey);
+
+  /**
    * Removes all pending asks for the given {@code messageKey}, regardless of process definition.
    * Called from the message-expire applier so that retries never outlive the buffered message they
    * refer to: when the message TTLs off on {@code P_K}, the dedup row on {@code P_B} (whose

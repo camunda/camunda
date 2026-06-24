@@ -31,6 +31,9 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Ind
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +50,8 @@ import org.slf4j.LoggerFactory;
 public class SchemaManager implements CloseableSilently {
 
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+  private static final String INDICES_MISSING_ALIAS = "Indices missing their expected alias: ";
+  private static final String ALIAS_INTEGRITY_ERR = "Alias '%s' points to more than 1 index: [%s]";
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -166,7 +171,7 @@ public class SchemaManager implements CloseableSilently {
     // missing index templates after a backup restore
     initialiseIndexTemplates();
     if (upgradeSchema) {
-      final var newIndexProperties = validateIndices(allIndexDescriptors);
+      final var newIndexProperties = validateIndices();
       // create any missing indices
       initialiseIndices();
 
@@ -480,20 +485,19 @@ public class SchemaManager implements CloseableSilently {
         .getOrDefault(indexName, config.index().getRefreshInterval());
   }
 
-  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
-      final Collection<IndexDescriptor> indexDescriptors) {
-    if (indexDescriptors.isEmpty()) {
+  public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices() {
+    if (allIndexDescriptors.isEmpty()) {
       LOG.info("No validation of indices, as there are no descriptors");
       return Map.of();
     }
 
     final var currentIndices =
-        searchEngineClient.getMappings(allIndexNames(indexDescriptors), MappingSource.INDEX);
+        searchEngineClient.getMappings(allIndexNames(allIndexDescriptors), MappingSource.INDEX);
     LOG.info(
         "Validate '{}' existing indices based on '{}' descriptors",
         currentIndices.size(),
-        indexDescriptors.size());
-    return schemaValidator.validateIndexMappings(currentIndices, indexDescriptors);
+        allIndexDescriptors.size());
+    return schemaValidator.validateIndexMappings(currentIndices, allIndexDescriptors);
   }
 
   private Set<String> existingIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
@@ -518,9 +522,11 @@ public class SchemaManager implements CloseableSilently {
     if (!config.schemaManager().isCreateSchema()) {
       return true;
     }
+
     return getMissingIndices(allIndexDescriptors).isEmpty()
         && getMissingIndexTemplates(indexTemplateDescriptors).isEmpty()
-        && validateIndices(allIndexDescriptors).isEmpty();
+        && validateIndices().isEmpty()
+        && isAliasIntegrityValid(false);
   }
 
   public boolean isAllIndicesExist() {
@@ -530,5 +536,62 @@ public class SchemaManager implements CloseableSilently {
   @Override
   public void close() {
     virtualThreadExecutor.close();
+  }
+
+  public boolean isAliasIntegrityValid(final boolean throwException) {
+    final List<String> indexNames =
+        allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+
+    final Map<String, Set<String>> aliasByIndex = searchEngineClient.getAliases(indexNames);
+
+    final Set<String> indexesWithMissingAliases = new LinkedHashSet<>();
+    final Map<String, Set<String>> aliasToIndices = new HashMap<>();
+
+    for (final IndexDescriptor indexDescriptor : allIndexDescriptors) {
+      final Set<String> aliases =
+          aliasByIndex.getOrDefault(indexDescriptor.getFullQualifiedName(), Set.of());
+
+      /* index with missing alias */
+      if (!aliases.contains(indexDescriptor.getAlias())) {
+        indexesWithMissingAliases.add(indexDescriptor.getFullQualifiedName());
+      }
+
+      /* alias that points to multiple indexes */
+      for (final String alias : aliases) {
+        aliasToIndices
+            .computeIfAbsent(alias, k -> new HashSet<>())
+            .add(indexDescriptor.getFullQualifiedName());
+      }
+    }
+
+    final var duplicateAliases =
+        aliasToIndices.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    if (indexesWithMissingAliases.isEmpty() && duplicateAliases.isEmpty()) {
+      return true;
+    }
+
+    final StringBuilder sb = new StringBuilder();
+    if (!indexesWithMissingAliases.isEmpty()) {
+      sb.append(INDICES_MISSING_ALIAS)
+          .append(String.join(", ", indexesWithMissingAliases))
+          .append("\n");
+    }
+    duplicateAliases.forEach(
+        (alias, indices) -> {
+          sb.append(String.format(ALIAS_INTEGRITY_ERR, alias, String.join(", ", indices)));
+          sb.append("\n");
+        });
+
+    final String errorMessage =
+        String.format("Errors when validating alias integrity: %s", sb.toString());
+    if (throwException) {
+      throw new IllegalStateException(errorMessage);
+    }
+
+    LOG.warn(errorMessage);
+    return false;
   }
 }

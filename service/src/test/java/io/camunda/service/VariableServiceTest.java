@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 public class VariableServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private VariableServices services;
   private VariableSearchClient client;
   private CamundaAuthentication authentication;
@@ -44,6 +45,7 @@ public class VariableServiceTest {
     authentication = mock(CamundaAuthentication.class);
     services =
         new VariableServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

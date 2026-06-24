@@ -28,14 +28,14 @@
 	},
 	"packageManager": "npm@11.16.0",
 	"devDependencies": {
-		"@eslint/js": "9.39.4",
+		"@eslint/js": "10.0.1",
 		"@tanstack/eslint-plugin-query": "5.101.0",
 		"@vitest/eslint-plugin": "1.6.20",
-		"eslint": "9.39.4",
-		"eslint-plugin-import": "2.32.0",
+		"eslint": "10.5.0",
+		"eslint-plugin-import-x": "4.16.2",
 		"eslint-plugin-license-header": "0.9.0",
 		"eslint-plugin-react-hooks": "7.1.1",
-		"eslint-plugin-react-refresh": "0.5.2",
+		"eslint-plugin-react-refresh": "0.5.3",
 		"globals": "17.6.0",
 		"prettier": "3.8.4",
 		"typescript-eslint": "8.61.0"

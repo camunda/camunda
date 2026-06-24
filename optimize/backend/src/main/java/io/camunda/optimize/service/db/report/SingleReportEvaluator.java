@@ -71,21 +71,54 @@ public class SingleReportEvaluator {
         .peek(executionPlan -> validatePaginationValues(reportEvaluationContext, executionPlan));
   }
 
-  private <T extends ReportDefinitionDto<?>> void validatePaginationValues(
-      final ReportEvaluationContext<T> reportEvaluationContext, final ExecutionPlan executionPlan) {
+  private void validatePaginationValues(
+      final ReportEvaluationContext<?> reportEvaluationContext, final ExecutionPlan executionPlan) {
     if (executionPlan.isRawDataReport()) {
       addDefaultMissingPaginationValues(reportEvaluationContext);
-    } else {
-      reportEvaluationContext
-          .getPagination()
-          .ifPresent(
-              pagination -> {
-                if (pagination.getLimit() != null || pagination.getOffset() != null) {
-                  throw new OptimizeValidationException(
-                      "Pagination can only be applied to raw data reports");
-                }
-              });
+      return;
     }
+    if (executionPlan.supportsGroupByLimit()) {
+      validateGroupByLimitPagination(reportEvaluationContext);
+      return;
+    }
+    rejectPagination(reportEvaluationContext);
+  }
+
+  /**
+   * A grouped top-N request only carries a limit: the group-by interpreter applies {@code
+   * size=limit} but ignores the offset, so paging into the results is not supported. A non-zero
+   * offset is rejected rather than silently returning a first page that contradicts the request,
+   * and a missing offset is defaulted to 0. This keeps the resulting {@link
+   * io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto} valid so the "top N
+   * of total" count is serialized back to the client, while injecting no limit and leaving every
+   * other report untouched.
+   */
+  private void validateGroupByLimitPagination(
+      final ReportEvaluationContext<?> reportEvaluationContext) {
+    reportEvaluationContext
+        .getPagination()
+        .ifPresent(
+            pagination -> {
+              if (pagination.getOffset() != null
+                  && pagination.getOffset() != PAGINATION_DEFAULT_OFFSET) {
+                throw new OptimizeValidationException(
+                    "A grouped top-N report only supports a limit; a non-zero pagination offset "
+                        + "is not supported");
+              }
+              pagination.setOffset(PAGINATION_DEFAULT_OFFSET);
+            });
+  }
+
+  private void rejectPagination(final ReportEvaluationContext<?> reportEvaluationContext) {
+    reportEvaluationContext
+        .getPagination()
+        .ifPresent(
+            pagination -> {
+              if (pagination.getLimit() != null || pagination.getOffset() != null) {
+                throw new OptimizeValidationException(
+                    "Pagination can only be applied to raw data reports");
+              }
+            });
   }
 
   private <T extends ReportDefinitionDto<?>> void addDefaultMissingPaginationValues(

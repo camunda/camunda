@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.descriptors.template.BatchOperationTempl
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
-import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_TOTAL_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 
 import io.camunda.exporter.tasks.util.OpensearchRepository;
@@ -151,8 +150,6 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
             update.failedOperationsCount(),
             OPERATIONS_COMPLETED_COUNT,
             update.completedOperationsCount(),
-            OPERATIONS_TOTAL_COUNT,
-            update.totalOperationsCount(),
             END_DATE,
             OffsetDateTime.now());
     return new UpdateOperation.Builder<>()
@@ -172,13 +169,17 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
         .inline(
             s ->
                 s.source(
-                        "if ((ctx._source.state == null || ctx._source.state == 'COMPLETED') "
-                            + " && params.operationsTotalCount <= params.operationsFinishedCount) { "
-                            + "   ctx._source.endDate = params.endDate; "
-                            + "} "
-                            + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;"
-                            + "ctx._source.operationsCompletedCount = params.operationsCompletedCount;"
-                            + "ctx._source.operationsFailedCount = params.operationsFailedCount;")
+                        """
+                    def storedTotal = ctx._source.operationsTotalCount;
+                    if (ctx._source.state == 'COMPLETED'
+                        && storedTotal != null
+                        && storedTotal <= params.operationsFinishedCount) {
+                      ctx._source.endDate = params.endDate;
+                    }
+                    ctx._source.operationsFinishedCount = params.operationsFinishedCount;
+                    ctx._source.operationsCompletedCount = params.operationsCompletedCount;
+                    ctx._source.operationsFailedCount = params.operationsFailedCount;
+                    """)
                     .lang(ScriptLanguage.builder().builtin(BuiltinScriptLanguage.Painless).build())
                     .params(parameters))
         .build();

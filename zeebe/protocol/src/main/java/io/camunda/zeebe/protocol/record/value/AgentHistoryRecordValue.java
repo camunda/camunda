@@ -43,6 +43,9 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the key of the root process instance in the hierarchy. */
   long getRootProcessInstanceKey();
 
+  /** Returns the BPMN process ID of the process definition associated with this entry. */
+  String getBpmnProcessId();
+
   /**
    * @return the key of the process definition
    */

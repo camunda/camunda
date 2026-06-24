@@ -25,6 +25,7 @@ public record UserTaskFilter(
     List<Operation<String>> nameOperations,
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<String>> assigneeOperations,
+    List<Operation<String>> businessIdOperations,
     List<Operation<Integer>> priorityOperations,
     List<Operation<String>> stateOperations,
     List<Operation<Long>> processInstanceKeyOperations,
@@ -50,6 +51,7 @@ public record UserTaskFilter(
     private List<Operation<String>> nameOperations;
     private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<String>> assigneeOperations;
+    private List<Operation<String>> businessIdOperations;
     private List<Operation<Integer>> priorityOperations;
     private List<Operation<String>> stateOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
@@ -128,6 +130,21 @@ public record UserTaskFilter(
     public final Builder assigneeOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return assigneeOperations(collectValues(operation, operations));
+    }
+
+    public Builder businessIdOperations(final List<Operation<String>> operations) {
+      businessIdOperations = addValuesToList(businessIdOperations, operations);
+      return this;
+    }
+
+    public Builder businessIds(final String value, final String... values) {
+      return businessIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder businessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return businessIdOperations(collectValues(operation, operations));
     }
 
     public Builder priorityOperations(final List<Operation<Integer>> operations) {
@@ -320,6 +337,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(nameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(assigneeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(businessIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),

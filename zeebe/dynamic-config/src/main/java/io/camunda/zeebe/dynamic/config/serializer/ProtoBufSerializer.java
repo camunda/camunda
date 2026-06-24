@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
@@ -57,12 +58,14 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
@@ -158,13 +161,17 @@ public class ProtoBufSerializer
             ? decodeRoutingState(encodedClusterTopology.getRoutingState())
             : Optional.empty();
 
+    final Optional<PartitionDistributorConfig> partitionDistributorConfig =
+        encodedClusterTopology.hasPartitionDistributor()
+            ? decodePartitionDistributorConfig(encodedClusterTopology.getPartitionDistributor())
+            : Optional.empty();
+
     final Optional<String> clusterId =
         encodedClusterTopology.getClusterId().isEmpty()
             ? Optional.empty()
             : Optional.of(encodedClusterTopology.getClusterId());
 
     final long incarnationNumber = encodedClusterTopology.getIncarnationNumber();
-    final boolean recovery = encodedClusterTopology.getRecovery();
 
     return new ClusterConfiguration(
         encodedClusterTopology.getVersion(),
@@ -174,7 +181,7 @@ public class ProtoBufSerializer
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        partitionDistributorConfig);
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -192,8 +199,7 @@ public class ProtoBufSerializer
         Topology.ClusterTopology.newBuilder()
             .setVersion(clusterConfiguration.version())
             .putAllMembers(members)
-            .setIncarnationNumber(clusterConfiguration.incarnationNumber())
-            .setRecovery(clusterConfiguration.recovery());
+            .setIncarnationNumber(clusterConfiguration.incarnationNumber());
 
     clusterConfiguration
         .lastChange()
@@ -204,6 +210,10 @@ public class ProtoBufSerializer
     clusterConfiguration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+    clusterConfiguration
+        .partitionDistributorConfig()
+        .ifPresent(
+            config -> builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
     clusterConfiguration.clusterId().ifPresent(builder::setClusterId);
 
     return builder.build();
@@ -356,6 +366,7 @@ public class ProtoBufSerializer
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
       case LEFT -> Topology.State.LEFT;
+      case RECOVERING -> Topology.State.RECOVERING;
     };
   }
 
@@ -366,6 +377,7 @@ public class ProtoBufSerializer
       case JOINING -> MemberState.State.JOINING;
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
+      case RECOVERING -> MemberState.State.RECOVERING;
       case BOOTSTRAPPING ->
           throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
     };
@@ -373,7 +385,7 @@ public class ProtoBufSerializer
 
   private PartitionState.State toPartitionState(final Topology.State state) {
     return switch (state) {
-      case UNRECOGNIZED, UNKNOWN, LEFT -> PartitionState.State.UNKNOWN;
+      case UNRECOGNIZED, UNKNOWN, LEFT, RECOVERING -> PartitionState.State.UNKNOWN;
       case ACTIVE -> PartitionState.State.ACTIVE;
       case JOINING -> PartitionState.State.JOINING;
       case LEAVING -> PartitionState.State.LEAVING;
@@ -524,6 +536,11 @@ public class ProtoBufSerializer
               Topology.PostScalingOperation.newBuilder()
                   .addAllClusterMembers(
                       postScalingOperation.clusterMembers().stream().map(MemberId::id).toList())
+                  .build());
+      case final UpdatePartitionDistributorConfigOperation msg ->
+          builder.setUpdatePartitionDistributorConfig(
+              Topology.UpdatePartitionDistributorConfigOperation.newBuilder()
+                  .setConfig(encodePartitionDistributorConfig(msg.config()))
                   .build());
     }
     return builder.build();
@@ -677,6 +694,52 @@ public class ProtoBufSerializer
     };
   }
 
+  private static Topology.PartitionDistributorConfig encodePartitionDistributorConfig(
+      final PartitionDistributorConfig config) {
+    final var builder = Topology.PartitionDistributorConfig.newBuilder();
+    switch (config) {
+      case final PartitionDistributorConfig.RoundRobinConfig ignored ->
+          builder.setRoundRobin(
+              Topology.PartitionDistributorConfig.RoundRobinDistributor.getDefaultInstance());
+      case final PartitionDistributorConfig.FixedConfig ignored ->
+          builder.setFixed(
+              Topology.PartitionDistributorConfig.FixedDistributor.getDefaultInstance());
+      case final PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
+          builder.setZoneAware(
+              Topology.PartitionDistributorConfig.ZoneAwareDistributor.newBuilder()
+                  .addAllZones(
+                      zoneAware.zones().stream()
+                          .map(
+                              z ->
+                                  Topology.PartitionDistributorConfig.ZoneSpec.newBuilder()
+                                      .setName(z.name())
+                                      .setNumberOfReplicas(z.numberOfReplicas())
+                                      .setPriority(z.priority())
+                                      .build())
+                          .toList())
+                  .build());
+    }
+    return builder.build();
+  }
+
+  private static Optional<PartitionDistributorConfig> decodePartitionDistributorConfig(
+      final Topology.PartitionDistributorConfig proto) {
+    return switch (proto.getKindCase()) {
+      case ROUNDROBIN -> Optional.of(new PartitionDistributorConfig.RoundRobinConfig());
+      case FIXED -> Optional.of(new PartitionDistributorConfig.FixedConfig());
+      case ZONEAWARE ->
+          Optional.of(
+              new PartitionDistributorConfig.ZoneAwareConfig(
+                  proto.getZoneAware().getZonesList().stream()
+                      .map(
+                          z ->
+                              new PartitionDistributorConfig.ZoneSpec(
+                                  z.getName(), z.getNumberOfReplicas(), z.getPriority()))
+                      .toList()));
+      case KIND_NOT_SET -> Optional.empty();
+    };
+  }
+
   private io.camunda.zeebe.dynamic.config.state.CompletedChange decodeCompletedChange(
       final CompletedChange completedChange) {
     return new io.camunda.zeebe.dynamic.config.state.CompletedChange(
@@ -793,6 +856,14 @@ public class ProtoBufSerializer
           postScalingOperation.getClusterMembersList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()));
+    } else if (topologyChangeOperation.hasUpdatePartitionDistributorConfig()) {
+      final var proto = topologyChangeOperation.getUpdatePartitionDistributorConfig().getConfig();
+      return decodePartitionDistributorConfig(proto)
+          .map(config -> new UpdatePartitionDistributorConfigOperation(memberId, config))
+          .orElseThrow(
+              () ->
+                  new IllegalStateException(
+                      "UpdatePartitionDistributorConfig operation has empty config"));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -919,9 +990,10 @@ public class ProtoBufSerializer
     final var builder =
         Requests.ClusterScaleRequest.newBuilder().setDryRun(clusterScaleRequest.dryRun());
 
-    clusterScaleRequest.newClusterSize().ifPresent(builder::setNewClusterSize);
+    clusterScaleRequest.brokerCount().ifPresent(builder::setNewClusterSize);
     clusterScaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
     clusterScaleRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
+    clusterScaleRequest.zone().ifPresent(builder::setZone);
 
     return builder.build().toByteArray();
   }
@@ -964,6 +1036,16 @@ public class ProtoBufSerializer
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
 
     return builder.build().toByteArray();
+  }
+
+  @Override
+  public byte[] encodeUpdatePartitionDistributorConfigRequest(
+      final UpdatePartitionDistributorConfigRequest request) {
+    return Requests.UpdatePartitionDistributorConfigRequest.newBuilder()
+        .setConfig(encodePartitionDistributorConfig(request.config()))
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
   }
 
   @Override
@@ -1116,9 +1198,19 @@ public class ProtoBufSerializer
           clusterScaleRequest.hasNewPartitionCount()
               ? Optional.of(clusterScaleRequest.getNewPartitionCount())
               : Optional.empty();
+      final Optional<String> zone =
+          clusterScaleRequest.hasZone()
+              ? Optional.of(clusterScaleRequest.getZone())
+              : Optional.empty();
       return new ClusterScaleRequest(
-          newClusterSize, newPartitionCount, newReplicationFactor, clusterScaleRequest.getDryRun());
+          newClusterSize,
+          newPartitionCount,
+          newReplicationFactor,
+          zone,
+          clusterScaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    } catch (final IllegalArgumentException e) {
       throw new DecodingFailed(e);
     }
   }
@@ -1254,6 +1346,25 @@ public class ProtoBufSerializer
     }
     final var routingState = decodeRoutingState(proto.getRoutingState());
     return new UpdateRoutingStateRequest(routingState, proto.getDryRun());
+  }
+
+  @Override
+  public UpdatePartitionDistributorConfigRequest decodeUpdatePartitionDistributorConfigRequest(
+      final byte[] bytes) {
+    final Requests.UpdatePartitionDistributorConfigRequest proto;
+    try {
+      proto = Requests.UpdatePartitionDistributorConfigRequest.parseFrom(bytes);
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+    final var config =
+        decodePartitionDistributorConfig(proto.getConfig())
+            .orElseThrow(
+                () ->
+                    new DecodingFailed(
+                        new IllegalArgumentException(
+                            "UpdatePartitionDistributorConfigRequest has empty config")));
+    return new UpdatePartitionDistributorConfigRequest(config, proto.getDryRun());
   }
 
   public Builder encodeTopologyChangeResponse(

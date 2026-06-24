@@ -46,18 +46,20 @@ import org.springframework.core.env.Environment;
  * for any property the tenant did not override, those getters resolve legacy properties exactly as
  * they would on the root {@code Camunda}.
  *
- * <p>If no {@value #DEFAULT_PHYSICAL_TENANT_ID} tenant is declared under {@code
- * camunda.physical-tenants.*}, an entry under that key is synthesized from the root configuration
- * so that consumers can always address the root configuration as a tenant. An explicit {@code
- * default} declaration is honored as-is.
+ * <p>If no {@value
+ * io.camunda.configuration.api.physicaltenants.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} tenant
+ * is declared under {@code camunda.physical-tenants.*}, an entry under that key is synthesized from
+ * the root configuration so that consumers can always address the root configuration as a tenant.
+ * An explicit {@code default} declaration is honored as-is.
  */
 public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
-  public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
   static final int MAX_TENANT_ID_LENGTH = 64;
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
   static final ConfigurationPropertyName PREFIX_NAME =
       ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
+  // Mirrored in PhysicalTenantScopeProvider (authentication module) — see the note there for why
+  // this is duplicated rather than shared. Keep the two in sync.
   private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
   /**
@@ -85,6 +87,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   public static PhysicalTenantResolver of(final Environment environment, final Camunda camunda) {
     final Set<String> physicalTenantIds = discover(environment);
     PhysicalTenantOverridePolicyValidation.validate(environment);
+    PhysicalTenantRequiredOverrideValidation.validate(environment);
+    PhysicalTenantAssignedProvidersValidation.validate(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
     for (final String physicalTenantId : physicalTenantIds) {
@@ -94,8 +98,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
-    if (!resolvedPhysicalTenants.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
-      resolvedPhysicalTenants.put(DEFAULT_PHYSICAL_TENANT_ID, camunda);
+    if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
+      resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
     CROSS_TENANT_VALIDATIONS.forEach(validation -> validation.validate(resolvedPhysicalTenants));
     return new PhysicalTenantResolver(resolvedPhysicalTenants);

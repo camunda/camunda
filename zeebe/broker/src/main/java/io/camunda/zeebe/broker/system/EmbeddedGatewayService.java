@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.broker.system;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -42,7 +43,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final OidcClaimsProvider oidcClaimsProvider,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final PhysicalTenantIds physicalTenantIds) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
@@ -59,7 +61,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             jwtDecoder,
             oidcClaimsProvider,
             meterRegistry,
-            configuration.getExperimental().getEngine().getValidators().getMaxNameFieldLength());
+            configuration.getExperimental().getEngine().getValidators().getMaxNameFieldLength(),
+            physicalTenantIds);
   }
 
   @Override

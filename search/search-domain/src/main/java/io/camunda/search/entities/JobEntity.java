@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
@@ -259,8 +260,14 @@ public record JobEntity(
     ERROR_THROWN,
     FAILED,
     MIGRATED,
+    PRIORITY_UPDATED,
     RETRIES_UPDATED,
-    TIMED_OUT,
+    TIMED_OUT;
+
+    public static List<JobState> nonTerminalStates() {
+      return List.of(
+          CREATED, FAILED, ERROR_THROWN, TIMED_OUT, RETRIES_UPDATED, PRIORITY_UPDATED, MIGRATED);
+    }
   }
 
   public enum JobKind {

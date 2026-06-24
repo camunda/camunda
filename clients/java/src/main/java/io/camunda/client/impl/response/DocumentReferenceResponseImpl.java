@@ -46,7 +46,10 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
     storeId = documentReference.getStoreId();
     contentHash = documentReference.getContentHash();
 
-    metadata = new DocumentMetadataImpl(documentReference.getMetadata());
+    metadata =
+        documentReference.getMetadata() != null
+            ? new DocumentMetadataImpl(documentReference.getMetadata())
+            : null;
   }
 
   @Override

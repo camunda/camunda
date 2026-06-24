@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
 import static java.time.ZoneOffset.UTC;
@@ -15,8 +16,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -114,7 +116,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,34 +140,25 @@ class RdbmsExporterIT {
 
   private static final RecordFixtures FIXTURES = new RecordFixtures();
   private final ExporterTestController controller = new ExporterTestController();
-  private final VendorDatabaseProperties vendorDatabaseProperties =
-      new VendorDatabaseProperties(
-          new Properties() {
-            {
-              setProperty("databaseId", "h2");
-              setProperty("variableValue.previewSize", "100");
-              setProperty("userCharColumn.size", "50");
-              setProperty("errorMessage.size", "500");
-              setProperty("treePath.size", "500");
-              setProperty("disableFkBeforeTruncate", "true");
-            }
-          });
   @Autowired private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
-  @Autowired private RdbmsService rdbmsService;
-  @Autowired private ExporterPositionMapper exporterPositionMapper;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  @Autowired private Map<String, RdbmsMapperBundle> rdbmsMapperBundles;
+  private RdbmsService rdbmsService;
+  private ExporterPositionMapper exporterPositionMapper;
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
   void setUp() {
-    exporter =
-        new RdbmsExporterWrapper(
-            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    exporterPositionMapper =
+        rdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
+    exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
     exporter.configure(
         new ExporterContext(
             null,
             new ExporterConfiguration("foo", Map.of("queueSize", 0)),
             1,
-            "default",
+            DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
@@ -350,14 +342,7 @@ class RdbmsExporterIT {
   public void shouldExportAll() {
     // given
     final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
-
-    final Record<RecordValue> variableCreated =
-        ImmutableRecord.builder()
-            .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
-            .withIntent(VariableIntent.CREATED)
-            .withPosition(2L)
-            .withTimestamp(System.currentTimeMillis())
-            .build();
+    final var variableCreated = FIXTURES.getVariableCreatedRecord();
     final List<Record<RecordValue>> recordList = List.of(processInstanceRecord, variableCreated);
 
     // when
@@ -1006,6 +991,8 @@ class RdbmsExporterIT {
         .isEqualTo(recordValue.getProcessInstanceKey());
     assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
         .isEqualTo(recordValue.getRootProcessInstanceKey());
+    assertThat(correlatedMessageSubscription.get().businessId())
+        .isEqualTo(recordValue.getBusinessId());
   }
 
   @Test
@@ -1034,6 +1021,8 @@ class RdbmsExporterIT {
         .isEqualTo(processInstanceKey);
     assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
         .isEqualTo(processInstanceKey);
+    assertThat(correlatedMessageSubscription.get().businessId())
+        .isEqualTo(recordValue.getBusinessId());
   }
 
   @Test
@@ -1482,14 +1471,13 @@ class RdbmsExporterIT {
     // Use partitionId=2 to avoid interfering with other tests that use partitionId=1
     final var intervalController = new ExporterTestController();
     final var intervalExporter =
-        new RdbmsExporterWrapper(
-            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
+        new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
     intervalExporter.configure(
         new ExporterContext(
             null,
             new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100)),
             2,
-            "default",
+            DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),

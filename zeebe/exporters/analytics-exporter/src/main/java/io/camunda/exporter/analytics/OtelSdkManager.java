@@ -7,17 +7,19 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.BROKER_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_HEARTBEAT;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_SEQUENCE_NUMBER;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EXPORTER_VERSION;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_EXPORT_WINDOW;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.HEARTBEAT;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.NAME;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.SAMPLE_RATE;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.SEQUENCE_NUMBER;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Heartbeat.BROKER_VERSION;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Heartbeat.EXPORTER_VERSION;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
+import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.camunda.zeebe.util.VersionUtil;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.LogRecordBuilder;
@@ -53,6 +55,7 @@ public class OtelSdkManager implements AutoCloseable {
   private static final String OTLP_METRICS_PATH = "/v1/metrics";
   private static final String SERVICE_NAME_VALUE = "camunda-zeebe";
 
+  private double defaultSamplingRate = HashSampler.MAX_SAMPLE_RATE;
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
   private Meter otelMeter;
@@ -66,6 +69,7 @@ public class OtelSdkManager implements AutoCloseable {
       final AnalyticsExporterContext context,
       final AnalyticsExporterMetadata metadata) {
     this.metadata = metadata;
+    this.defaultSamplingRate = config.getSamplingRate();
     counters.clear();
     metricWindow.reset();
     final var loggerProvider = createLoggerProvider(config, context);
@@ -87,14 +91,29 @@ public class OtelSdkManager implements AutoCloseable {
 
   public void logEvent(
       final String eventName, final long logPosition, final Consumer<LogRecordBuilder> builder) {
+    logEvent(eventName, logPosition, HashSampler.MAX_SAMPLE_RATE, builder);
+  }
+
+  public void logEvent(
+      final String eventName,
+      final long logPosition,
+      final double samplingRate,
+      final Consumer<LogRecordBuilder> builder) {
+    final double appliedRate = Math.min(defaultSamplingRate, samplingRate);
+    if (!HashSampler.shouldSample(logPosition, appliedRate)) {
+      return;
+    }
     final var record =
         otelLogger
             .logRecordBuilder()
             .setSeverity(Severity.INFO)
             .setSeverityText("INFO")
-            .setAttribute(EVENT_NAME, eventName)
-            .setAttribute(LOG_POSITION, logPosition)
-            .setAttribute(EVENT_SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber());
+            .setAttribute(NAME, eventName)
+            .setAttribute(POSITION, logPosition)
+            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber());
+    if (appliedRate < HashSampler.MAX_SAMPLE_RATE) {
+      record.setAttribute(SAMPLE_RATE, appliedRate);
+    }
     builder.accept(record);
     record.emit();
   }
@@ -104,7 +123,7 @@ public class OtelSdkManager implements AutoCloseable {
         .logRecordBuilder()
         .setSeverity(Severity.INFO)
         .setSeverityText("INFO")
-        .setAttribute(EVENT_NAME, EVENT_HEARTBEAT)
+        .setAttribute(NAME, HEARTBEAT)
         .setAttribute(BROKER_VERSION, VersionUtil.getVersion())
         .setAttribute(EXPORTER_VERSION, AnalyticsExporterVersion.get())
         .emit();
@@ -143,7 +162,7 @@ public class OtelSdkManager implements AutoCloseable {
   @SuppressWarnings("resource") // gauge lifecycle is managed by sdk.shutdown(), not by us
   private void registerExportWindowGauge() {
     otelMeter
-        .gaugeBuilder(METRIC_EXPORT_WINDOW)
+        .gaugeBuilder(EXPORT_WINDOW)
         .ofLongs()
         .buildWithCallback(
             measurement -> {

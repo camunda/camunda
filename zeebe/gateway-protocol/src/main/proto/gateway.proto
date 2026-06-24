@@ -652,6 +652,11 @@ message PublishMessageRequest {
   string variables = 5;
   // the tenant id of the message
   string tenantId = 6;
+  // an optional business id used to enforce uniqueness of the process instance that a message
+  // start event would create. If provided and uniqueness enforcement is enabled, the engine
+  // rejects starting a new process instance when another root process instance with the same
+  // business id is already active for the same process definition.
+  optional string businessId = 7;
 }
 
 message PublishMessageResponse {
@@ -754,6 +759,18 @@ message UpdateJobTimeoutRequest {
 }
 
 message UpdateJobTimeoutResponse {
+}
+
+message UpdateJobPriorityRequest {
+  // the unique job identifier, as obtained from ActivateJobsResponse
+  int64 jobKey = 1;
+  // the new priority value for the job
+  optional int32 priority = 2;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 3;
+}
+
+message UpdateJobPriorityResponse {
 }
 
 message SetVariablesRequest {
@@ -920,6 +937,7 @@ message BatchOperationCreatedResult {
     RESOLVE_INCIDENT = 7;
     UPDATE_VARIABLE = 8;
     DELETE_DECISION_INSTANCE = 9;
+    UPDATE_JOB = 10;
   }
 
   // The batch operation key created to delete the resource.
@@ -1278,6 +1296,22 @@ service Gateway {
       - no deadline exists for the given job key
  */
   rpc UpdateJobTimeout (UpdateJobTimeoutRequest) returns (UpdateJobTimeoutResponse) {
+  }
+
+  /*
+    Updates the priority of a job.
+
+    Errors:
+      NOT_FOUND:
+        - no job exists with the given key
+
+      INVALID_ARGUMENT:
+        - priority is not provided
+
+      INVALID_STATE:
+        - job is in a terminal state
+   */
+  rpc UpdateJobPriority (UpdateJobPriorityRequest) returns (UpdateJobPriorityResponse) {
   }
 
   /*

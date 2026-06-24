@@ -3,7 +3,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    "github>camunda/infra-renovate-config:herodevs.json5"
+    "github>camunda/infra-renovate-config:herodevs.json5",
+    "github>camunda/infra-renovate-config:rebase.json5"
   ],
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [
@@ -91,6 +92,39 @@
       "enabled": false
     },
     {
+      "description": "For stable branches, keep the connectors bundle Docker image override in process test on the latest patch level.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "camunda/connectors-bundle"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "For stable branches, prevent minor/major connectors bundle Docker image updates in process test.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "camunda/connectors-bundle"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Disable npm patch updates for frontend apps on stable branches.",
       "matchManagers": [
         "npm"
@@ -157,11 +191,8 @@
         "dockerfile"
       ],
       "matchFileNames": [
-        "Dockerfile",
         "camunda.Dockerfile",
-        "operate.Dockerfile",
-        "optimize.Dockerfile",
-        "tasklist.Dockerfile"
+        "optimize.Dockerfile"
       ],
       "prPriority": 10
     },
@@ -213,6 +244,26 @@
         "minor"
       ],
       "enabled": false
+    },
+    {
+      "description": "Group ES container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      "matchPackageNames": [
+        "docker.elastic.co/elasticsearch/elasticsearch"
+      ],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "groupName": "elasticsearch container version"
+    },
+    {
+      "description": "Group OS container version bumps so db-versions.yml and parent/pom.xml are always updated together.",
+      "matchPackageNames": [
+        "opensearchproject/opensearch"
+      ],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "groupName": "opensearch container version"
     },
     {
       "description": "Skip lucene major updates to avoid breaking changes.",
@@ -287,7 +338,6 @@
         "dockerfile"
       ],
       "matchFileNames": [
-        "Dockerfile",
         "camunda.Dockerfile"
       ],
       "matchUpdateTypes": [
@@ -768,6 +818,28 @@
       ],
       "depNameTemplate": "org.junit.jupiter:junit-jupiter",
       "datasourceTemplate": "maven"
+    },
+    {
+      "description": "Track ES/OS container versions in parent/pom.xml XML comment annotations.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^parent/pom\\.xml$/"
+      ],
+      "matchStrings": [
+        "<!-- renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+) -->\\s*<[^>]+>(?<currentValue>[^<]+)</"
+      ]
+    },
+    {
+      "description": "Track the connectors bundle Docker image override in process test pom.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/testing/camunda-process-test-java/pom\\.xml$/"
+      ],
+      "matchStrings": [
+        "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>\\d+\\.\\d+\\.\\d+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>"
+      ],
+      "depNameTemplate": "camunda/connectors-bundle",
+      "datasourceTemplate": "docker"
     }
   ]
 }

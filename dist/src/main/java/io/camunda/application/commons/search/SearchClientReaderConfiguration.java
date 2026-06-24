@@ -7,14 +7,12 @@
  */
 package io.camunda.application.commons.search;
 
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.AuthorizationReader;
-import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
@@ -26,13 +24,6 @@ import org.springframework.context.annotation.Configuration;
   SecondaryStorageType.opensearch
 })
 public class SearchClientReaderConfiguration {
-
-  @Bean
-  public IndexDescriptors indexDescriptors(
-      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors) {
-    return requireDefault(
-        physicalTenantScopedIndexDescriptors, "physicalTenantScopedIndexDescriptors");
-  }
 
   @Bean
   public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
@@ -53,27 +44,22 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
-  public SearchClientBasedQueryExecutor searchClientBasedQueryExecutor(
-      final Map<String, SearchClientBasedQueryExecutor> physicalTenantQueryExecutors) {
-    return requireDefault(physicalTenantQueryExecutors, "physicalTenantQueryExecutors");
-  }
-
-  @Bean
-  public SearchClientReaders documentReaders(
-      final Map<String, SearchClientReaders> physicalTenantSearchClientReaders) {
-    return requireDefault(physicalTenantSearchClientReaders, "physicalTenantSearchClientReaders");
-  }
-
-  @Bean
-  public AuthorizationReader authorizationReader(final SearchClientReaders documentReaders) {
-    return documentReaders.authorizationReader();
+  public AuthorizationReader authorizationReader(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
+    return requireDefault(
+            physicalTenantSearchClientReaders.readersByPhysicalTenant(),
+            "physicalTenantSearchClientReaders")
+        .authorizationReader();
   }
 
   private static <T> T requireDefault(final Map<String, T> beansByTenant, final String beanName) {
-    final var defaultBean = beansByTenant.get(DEFAULT_PHYSICAL_TENANT_ID);
+    final var defaultBean = beansByTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     if (defaultBean == null) {
       throw new IllegalStateException(
-          "Missing '" + DEFAULT_PHYSICAL_TENANT_ID + "' tenant entry in " + beanName);
+          "Missing '"
+              + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID
+              + "' tenant entry in "
+              + beanName);
     }
     return defaultBean;
   }

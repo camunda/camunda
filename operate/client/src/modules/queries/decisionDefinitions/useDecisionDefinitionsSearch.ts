@@ -37,7 +37,10 @@ const useDecisionDefinitionsSearch = <
         throw error;
       }
 
-      if (response.page.totalItems <= response.items.length) {
+      if (
+        response.page.totalItems <= response.items.length ||
+        response.page.endCursor === null
+      ) {
         return response.items;
       }
 
@@ -45,8 +48,8 @@ const useDecisionDefinitionsSearch = <
         await searchDecisionDefinitions({
           ...options?.payload,
           page: {
-            from: response.items.length,
-            limit: response.page.totalItems,
+            after: response.page.endCursor,
+            limit: response.page.totalItems - response.items.length,
           },
         });
       if (remainingError) {

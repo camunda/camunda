@@ -27,6 +27,7 @@ import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.JobWaitStateDetails;
 import io.camunda.client.api.search.response.MessageWaitStateDetails;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.UserTaskWaitStateDetails;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.ElementInstanceWaitStateFilter;
@@ -170,7 +171,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     jobDetails.setJobKey("999");
     jobDetails.setJobType("payment");
     jobDetails.setJobKind(JobKindEnum.BPMN_ELEMENT);
-    jobDetails.setListenerEventType(JobListenerEventTypeEnum.UNSPECIFIED);
+    jobDetails.setListenerEventType(null);
     jobDetails.setRetries(3);
 
     final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
@@ -207,8 +208,47 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(details.getJobKey()).isEqualTo("999");
     assertThat(details.getJobType()).isEqualTo("payment");
     assertThat(details.getJobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
-    assertThat(details.getListenerEventType()).isEqualTo(ListenerEventType.UNSPECIFIED);
+    assertThat(details.getListenerEventType()).isNull();
     assertThat(details.getRetries()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldMapListenerJobResponseFields() {
+    // given — an EXECUTION_LISTENER job with START listenerEventType
+    final io.camunda.client.protocol.rest.JobWaitStateDetails jobDetails =
+        new io.camunda.client.protocol.rest.JobWaitStateDetails();
+    jobDetails.setWaitStateType("JOB");
+    jobDetails.setJobKey("888");
+    jobDetails.setJobType("exec-listener");
+    jobDetails.setJobKind(JobKindEnum.EXECUTION_LISTENER);
+    jobDetails.setListenerEventType(JobListenerEventTypeEnum.START);
+    jobDetails.setRetries(3);
+
+    final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
+        new io.camunda.client.protocol.rest.ElementInstanceWaitStateResult();
+    item.setProcessInstanceKey("200");
+    item.setRootProcessInstanceKey("100");
+    item.setElementInstanceKey("300");
+    item.setElementId("sub-el");
+    item.setTenantId("<default>");
+    item.setBpmnProcessId("el-process");
+    item.setDetails(jobDetails);
+
+    final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
+    response.addItemsItem(item);
+    gatewayService.onSearchElementInstanceWaitStatesRequest(response);
+
+    // when
+    final SearchResponse<io.camunda.client.api.search.response.ElementInstanceWaitStateResult>
+        result = client.newElementInstanceWaitStateSearchRequest().send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final io.camunda.client.api.search.response.ElementInstanceWaitStateResult mapped =
+        result.items().get(0);
+    final JobWaitStateDetails details = (JobWaitStateDetails) mapped.getDetails();
+    assertThat(details.getJobKind()).isEqualTo(JobKind.EXECUTION_LISTENER);
+    assertThat(details.getListenerEventType()).isEqualTo(ListenerEventType.START);
   }
 
   @Test
@@ -245,6 +285,42 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(details.getWaitStateType()).isEqualTo(WaitStateType.MESSAGE);
     assertThat(details.getMessageName()).isEqualTo("order-received");
     assertThat(details.getCorrelationKey()).isEqualTo("order-42");
+  }
+
+  @Test
+  public void shouldMapUserTaskResponseFields() {
+    // given
+    final io.camunda.client.protocol.rest.UserTaskWaitStateDetails userTaskDetails =
+        new io.camunda.client.protocol.rest.UserTaskWaitStateDetails();
+    userTaskDetails.setTaskKey("999");
+    userTaskDetails.setDueDate("2026-10-13T10:00:00+01:00");
+
+    final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
+        new io.camunda.client.protocol.rest.ElementInstanceWaitStateResult();
+    item.setProcessInstanceKey("200");
+    item.setElementInstanceKey("300");
+    item.setElementId("approve-1");
+    item.setTenantId("<default>");
+    item.setDetails(userTaskDetails);
+
+    final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
+    response.addItemsItem(item);
+    gatewayService.onSearchElementInstanceWaitStatesRequest(response);
+
+    // when
+    final SearchResponse<io.camunda.client.api.search.response.ElementInstanceWaitStateResult>
+        result = client.newElementInstanceWaitStateSearchRequest().send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final io.camunda.client.api.search.response.ElementInstanceWaitStateResult mapped =
+        result.items().get(0);
+    assertThat(mapped.getWaitStateType()).isEqualTo(WaitStateType.USER_TASK);
+    assertThat(mapped.getDetails()).isInstanceOf(UserTaskWaitStateDetails.class);
+    final UserTaskWaitStateDetails details = (UserTaskWaitStateDetails) mapped.getDetails();
+    assertThat(details.getWaitStateType()).isEqualTo(WaitStateType.USER_TASK);
+    assertThat(details.getTaskKey()).isEqualTo("999");
+    assertThat(details.getDueDate()).isEqualTo("2026-10-13T10:00:00+01:00");
   }
 
   private static ElementInstanceWaitStateQueryResult buildEmptyResponse() {

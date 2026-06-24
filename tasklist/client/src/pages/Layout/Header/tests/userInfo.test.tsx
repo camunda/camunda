@@ -6,6 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {vi} from 'vitest';
+vi.mock('modules/featureFlags', () => ({IS_NAV_V2_ENABLED: true}));
+
 import {act} from 'react';
 import {
   render,

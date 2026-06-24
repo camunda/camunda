@@ -12,28 +12,39 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 final class TestTopologyManager implements BrokerTopologyManager {
-  private final TestBrokerClusterState topology;
+  private final Map<String, TestBrokerClusterState> topologies = new HashMap<>();
   private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
 
   TestTopologyManager() {
-    topology = new TestBrokerClusterState();
+    this(new TestBrokerClusterState());
   }
 
   TestTopologyManager(final TestBrokerClusterState topology) {
-    this.topology = topology;
+    if (topology != null) {
+      topologies.put(Protocol.DEFAULT_PARTITION_GROUP_NAME, topology);
+    }
   }
 
   TestTopologyManager addPartition(final int id, final BrokerMemberId leaderId) {
+    return addPartition(Protocol.DEFAULT_PARTITION_GROUP_NAME, id, leaderId);
+  }
+
+  TestTopologyManager addPartition(
+      final String partitionGroup, final int id, final BrokerMemberId leaderId) {
+    final var topology =
+        topologies.computeIfAbsent(partitionGroup, group -> new TestBrokerClusterState());
     if (leaderId != null) {
       topology.addBrokerIfAbsent(leaderId);
       topology.setPartitionLeader(id, leaderId);
@@ -49,8 +60,8 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public BrokerClusterState getTopology() {
-    return topology;
+  public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
+    return topologies.get(physicalTenantId);
   }
 
   @Override

@@ -1262,15 +1262,15 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda/camunda-composite-components@^0.23.0":
-  version "0.23.3"
-  resolved "https://registry.npmjs.org/@camunda/camunda-composite-components/-/camunda-composite-components-0.23.3.tgz"
-  integrity sha512-/q4NeHifKu+NgI4G2U34+X7vW+C0aQxxXs87eSFgM0NPptSSNRW9GmILJU2f1Me+gPgNB9MiIxjQ3ti9zYQWWQ==
+"@camunda/camunda-composite-components@^0.25.0":
+  version "0.25.0"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.25.0.tgz#86dd4bb896da42d6466f551c1676f6cd501cc089"
+  integrity sha512-ssf47QUuNxgXEROUX+0Ti8bwIN8ekj+4r/vz9nSu2QnSZjMaFpgwRWP2x+fm3EvAt41UX5l6Q+WrYn8WLttPuw==
   dependencies:
     jwt-decode "4.0.0"
-    react-error-boundary "6.1.1"
+    react-error-boundary "6.1.2"
     react-markdown "10.1.0"
-    semver "7.7.4"
+    semver "7.8.4"
 
 "@carbon/colors@^11.30.0":
   version "11.30.0"
@@ -13650,10 +13650,10 @@ react-draggable@^4.4.6:
     clsx "^2.1.1"
     prop-types "^15.8.1"
 
-react-error-boundary@6.1.1:
-  version "6.1.1"
-  resolved "https://registry.npmjs.org/react-error-boundary/-/react-error-boundary-6.1.1.tgz"
-  integrity sha512-BrYwPOdXi5mqkk5lw+Uvt0ThHx32rCt3BkukS4X23A2AIWDPSGX6iaWTc0y9TU/mHDA/6qOSGel+B2ERkOvD1w==
+react-error-boundary@6.1.2:
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/react-error-boundary/-/react-error-boundary-6.1.2.tgz#d213780329ceb3678cec7813a76a00e2a7584f48"
+  integrity sha512-3DpCr5HVdZ0caUjYE/kIHBEJN0mNP3ZCgf16c48uJ5TbWjorKVp+YG8W3XqlJ7vJAVNw6wNIImyPXmFydwmyng==
 
 react-error-boundary@^6.0.0:
   version "6.1.0"
@@ -14569,10 +14569,10 @@ semver@7.5.3:
   dependencies:
     lru-cache "^6.0.0"
 
-semver@7.7.4:
-  version "7.7.4"
-  resolved "https://registry.npmjs.org/semver/-/semver-7.7.4.tgz"
-  integrity sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==
+semver@7.8.4:
+  version "7.8.4"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.8.4.tgz#c73eceebae0616934be8dff28a7fd70757c8e696"
+  integrity sha512-rUCObTnP32Q08R2uuIrt7r9PlEonuTmtuXYcW6s5kjdlj3xbnwe+21yXptAUYcMAABLkYYTtnmzb3w3EDZfueA==
 
 semver@^6.0.0, semver@^6.3.0, semver@^6.3.1:
   version "6.3.1"

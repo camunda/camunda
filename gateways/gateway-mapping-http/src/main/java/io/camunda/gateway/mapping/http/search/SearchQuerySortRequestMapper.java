@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_UNKN
 
 import io.camunda.gateway.protocol.model.*;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQuerySortRequest.FieldEnum;
+import io.camunda.search.sort.AgentInstanceHistorySort;
 import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.BatchOperationItemSort;
@@ -756,6 +757,7 @@ public class SearchQuerySortRequestMapper {
         case DUE_DATE -> builder.dueDate();
         case PRIORITY -> builder.priority();
         case NAME -> builder.name();
+        case BUSINESS_ID -> builder.businessId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -930,6 +932,7 @@ public class SearchQuerySortRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
+        case BUSINESS_ID -> builder.businessId();
         case CORRELATION_KEY -> builder.correlationKey();
         case CORRELATION_TIME -> builder.correlationTime();
         case ELEMENT_ID -> builder.flowNodeId();
@@ -1088,6 +1091,29 @@ public class SearchQuerySortRequestMapper {
     }
 
     return Either.right(null);
+  }
+
+  static List<SearchQuerySortRequest<AgentInstanceHistorySearchQuerySortRequest.FieldEnum>>
+      fromAgentInstanceHistorySearchQuerySortRequest(
+          final List<AgentInstanceHistorySearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<String> applyAgentInstanceHistorySortField(
+      final AgentInstanceHistorySearchQuerySortRequest.FieldEnum field,
+      final AgentInstanceHistorySort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case HISTORY_ITEM_KEY -> builder.historyItemKey();
+        case ITERATION -> builder.iteration();
+        case PRODUCED_AT -> builder.producedAt();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
   }
 
   private static void applySortOrder(

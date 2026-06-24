@@ -86,6 +86,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @NestedConfigurationProperty
   private RdbmsConnectionPool connectionPool = new RdbmsConnectionPool();
 
+  /**
+   * The database vendor id. It is used to determine the dialect to use for the database. If not
+   * set, the dialect is determined automatically.
+   *
+   * <p>Supported values are: h2, postgresql, oracle, mariadb, mysql, mssql
+   */
+  private String databaseVendorId;
+
   public boolean getAutoDdl() {
     return autoDdl;
   }
@@ -228,5 +236,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setConnectionPool(final RdbmsConnectionPool connectionPool) {
     this.connectionPool = connectionPool;
+  }
+
+  public String getDatabaseVendorId() {
+    return databaseVendorId;
+  }
+
+  public void setDatabaseVendorId(final String databaseVendorId) {
+    this.databaseVendorId = databaseVendorId;
   }
 }

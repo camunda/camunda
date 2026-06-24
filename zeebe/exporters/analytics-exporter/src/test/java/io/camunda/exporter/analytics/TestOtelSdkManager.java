@@ -20,12 +20,23 @@ public final class TestOtelSdkManager {
 
   /** Creates an initialized OtelSdkManager that captures events in the given exporter. */
   public static OtelSdkManager inMemory(final InMemoryLogRecordExporter memoryExporter) {
-    return inMemoryWithMetrics(memoryExporter, InMemoryMetricReader.create());
+    return inMemory(memoryExporter, new AnalyticsExporterConfig());
   }
 
-  /** Creates an initialized OtelSdkManager with in-memory log and metric capture. */
+  public static OtelSdkManager inMemory(
+      final InMemoryLogRecordExporter memoryExporter, final AnalyticsExporterConfig config) {
+    return inMemoryWithMetrics(memoryExporter, InMemoryMetricReader.create(), config);
+  }
+
   public static OtelSdkManager inMemoryWithMetrics(
       final InMemoryLogRecordExporter logExporter, final InMemoryMetricReader metricReader) {
+    return inMemoryWithMetrics(logExporter, metricReader, new AnalyticsExporterConfig());
+  }
+
+  public static OtelSdkManager inMemoryWithMetrics(
+      final InMemoryLogRecordExporter logExporter,
+      final InMemoryMetricReader metricReader,
+      final AnalyticsExporterConfig config) {
     final var manager =
         new OtelSdkManager() {
           @Override
@@ -48,7 +59,7 @@ public final class TestOtelSdkManager {
           }
         };
     manager.initialize(
-        new AnalyticsExporterConfig(),
+        config,
         AnalyticsExporterContext.create("test-license", "test-cluster", 1),
         new AnalyticsExporterMetadata());
     return manager;

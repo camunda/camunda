@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.StandaloneCamunda;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.configuration.Camunda;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -20,7 +18,6 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
-import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
@@ -54,8 +51,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final Camunda unifiedConfig;
-  private final CamundaSecurityLibraryProperties cslProperties;
   private boolean isGatewayEnabled = true;
   private final Map<String, Consumer<Map<String, Object>>> exporterMutators = new HashMap<>();
 
@@ -64,8 +59,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
         NodeIdProviderConfiguration.class);
-
-    unifiedConfig = new Camunda();
 
     // Initialize unified config with test-friendly defaults
     initializeUnifiedConfigDefaults();
@@ -80,10 +73,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     withAdditionalProfile(Profile.BROKER);
 
-    cslProperties = new CamundaSecurityLibraryProperties();
-    cslProperties.getAuthorizations().setEnabled(false);
-    cslProperties.getAuthentication().setUnprotectedApi(true);
-    cslProperties
+    unifiedConfig.getSecurity().getAuthorizations().setEnabled(false);
+    unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(true);
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
         .setUsers(
             List.of(
@@ -92,7 +85,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                     InitializationConfiguration.DEFAULT_USER_PASSWORD,
                     InitializationConfiguration.DEFAULT_USER_NAME,
                     InitializationConfiguration.DEFAULT_USER_EMAIL)));
-    cslProperties
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
         .setMappingRules(
             List.of(
@@ -100,7 +94,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                     DEFAULT_MAPPING_RULE_ID,
                     DEFAULT_MAPPING_RULE_CLAIM_NAME,
                     DEFAULT_MAPPING_RULE_CLAIM_VALUE)));
-    cslProperties
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
         .setDefaultRoles(
             Map.of(
@@ -110,13 +105,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                     List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
                     "mappingRules",
                     List.of(DEFAULT_MAPPING_RULE_ID))));
-
-    withBean("cslProperties", cslProperties, CamundaSecurityLibraryProperties.class);
-    withProperty(
-        AuthenticationProperties.API_UNPROTECTED,
-        cslProperties.getAuthentication().isUnprotectedApi());
-    withProperty(
-        "camunda.security.authorizations.enabled", cslProperties.getAuthorizations().isEnabled());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
@@ -133,21 +121,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   @Override
-  public TestStandaloneBroker withProperty(final String key, final Object value) {
-    // Since the security config is not constructed from the properties, we need to manually update
-    // it when we override a property.
-    AuthenticationProperties.applyToSecurityConfig(cslProperties, key, value);
-    return super.withProperty(key, value);
-  }
-
-  @Override
   public TestStandaloneBroker withAuthenticationMethod(
       final AuthenticationMethod authenticationMethod) {
     // as mode is OIDC, and we have a user created by default in `TestStandaloneBroker`
     // we need to reset the list of users to empty list as having pre-configured user in
     // OIDC is not allowed
     if (authenticationMethod == AuthenticationMethod.OIDC) {
-      cslProperties.getInitialization().setUsers(new ArrayList<>());
+      unifiedConfig.getSecurity().getInitialization().setUsers(new ArrayList<>());
     }
     return super.withAuthenticationMethod(authenticationMethod);
   }
@@ -160,17 +140,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty(
         "zeebe.broker.gateway.enable",
         property("zeebe.broker.gateway.enable", Boolean.class, isGatewayEnabled));
-    // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
-    // so every withClusterConfig/withDataConfig/... call made up to now is captured. Refreshable
-    // so that fields cleared between stop/start (e.g. an exporter removed) don't remain.
-    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder();
   }
 
   public TestStandaloneBroker withAuthorizationsEnabled() {
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
-    withProperty("camunda.security.authorizations.enabled", true);
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
@@ -217,22 +192,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return isGatewayEnabled;
   }
 
-  /**
-   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
-   * configure test brokers going forward.
-   *
-   * <p>The unified configuration will be merged into BrokerBasedProperties at Spring application
-   * startup via BrokerBasedPropertiesOverride, with unified config taking precedence.
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneBroker withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
   public TestStandaloneBroker withGatewayEnabled(final boolean enabled) {
     // Gateway enable flag is set via property (not fully in unified config yet)
     isGatewayEnabled = enabled;
@@ -255,20 +214,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     throw new UnsupportedOperationException("Brokers do not support the gateway health indicators");
   }
 
-  /**
-   * Returns the unified configuration object. This provides access to the camunda.* configuration
-   * structure and is the primary way to read/configure the test broker.
-   *
-   * @return the Camunda unified configuration object
-   */
-  @Override
-  public Camunda unifiedConfig() {
-    return unifiedConfig;
-  }
-
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
-    withProperty("camunda.security.multiTenancy.checksEnabled", "true");
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
   }
 
@@ -421,7 +368,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public TestStandaloneBroker withSecurityConfig(
       final Consumer<CamundaSecurityLibraryProperties> modifier) {
-    modifier.accept(cslProperties);
+    modifier.accept(unifiedConfig.getSecurity());
     return this;
   }
 

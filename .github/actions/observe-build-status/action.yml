@@ -19,7 +19,7 @@ inputs:
     description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status.'
     required: false
   user_description:
-    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status.'
+    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status. When empty, falls back to the TEST_OWNER environment variable.'
     required: false
   job_name:
     description: 'Optional string, the job whose status is being observed; defaults to $GITHUB_JOB when omitted'
@@ -102,5 +102,5 @@ runs:
         build_status: "${{ inputs.build_status }}"
         build_duration_millis: "${{ steps.get-build-duration-millis.outputs.result }}"
         user_reason: "${{ inputs.user_reason }}"
-        user_description: "${{ inputs.user_description }}"
+        user_description: "${{ inputs.user_description != '' && inputs.user_description || env.TEST_OWNER }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"

@@ -43,6 +43,7 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1;
 import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
@@ -230,6 +231,7 @@ import io.camunda.client.impl.command.CancelBatchOperationCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
+import io.camunda.client.impl.command.CreateAgentHistoryItemCommandImpl;
 import io.camunda.client.impl.command.CreateAgentInstanceCommandImpl;
 import io.camunda.client.impl.command.CreateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.CreateBatchOperationCommandImpl.CreateBatchOperationCommandStep1Impl;
@@ -414,6 +416,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -571,9 +574,12 @@ public final class CamundaClientImpl implements CamundaClient {
       final ManagedChannel channel, final CamundaClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
-    if (!config.getInterceptors().isEmpty()) {
-      return gatewayStub.withInterceptors(
-          config.getInterceptors().toArray(new ClientInterceptor[] {}));
+    final List<ClientInterceptor> allInterceptors = new ArrayList<>(config.getInterceptors());
+    if (config.getPhysicalTenantId() != null) {
+      allInterceptors.add(new PhysicalTenantInterceptor(config.getPhysicalTenantId()));
+    }
+    if (!allInterceptors.isEmpty()) {
+      return gatewayStub.withInterceptors(allInterceptors.toArray(new ClientInterceptor[] {}));
     }
     return gatewayStub;
   }
@@ -1723,6 +1729,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ResourceContentGetRequest newResourceContentBinaryGetRequest(final long resourceKey) {
     return new ResourceContentBinaryGetRequestImpl(httpClient, resourceKey);
+  }
+
+  @Override
+  public CreateAgentHistoryItemCommandStep1 newCreateAgentHistoryItemCommand(
+      final long agentInstanceKey) {
+    return new CreateAgentHistoryItemCommandImpl(httpClient, jsonMapper, agentInstanceKey);
   }
 
   @Override

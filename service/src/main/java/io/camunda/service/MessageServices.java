@@ -22,15 +22,17 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 
-public final class MessageServices extends ApiServices<MessageServices> {
+public final class MessageServices extends PhysicalTenantScopedApiServices<MessageServices> {
   private final int maxVariableNameLength;
 
   public MessageServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -39,12 +41,14 @@ public final class MessageServices extends ApiServices<MessageServices> {
   }
 
   public MessageServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -67,7 +71,8 @@ public final class MessageServices extends ApiServices<MessageServices> {
         new BrokerCorrelateMessageRequest(
                 correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
-            .setTenantId(correlationRequest.tenantId);
+            .setTenantId(correlationRequest.tenantId)
+            .setBusinessId(correlationRequest.businessId);
     if (channelType != null) {
       brokerRequest.setChannelType(channelType);
     }
@@ -84,12 +89,25 @@ public final class MessageServices extends ApiServices<MessageServices> {
             .setTimeToLive(request.timeToLive)
             .setMessageId(request.messageId)
             .setVariables(getDocumentOrEmpty(request.variables))
-            .setTenantId(request.tenantId);
+            .setTenantId(request.tenantId)
+            .setBusinessId(request.businessId);
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
   public record CorrelateMessageRequest(
-      String name, String correlationKey, Map<String, Object> variables, String tenantId) {}
+      String name,
+      String correlationKey,
+      Map<String, Object> variables,
+      String tenantId,
+      @Nullable String businessId) {
+    public CorrelateMessageRequest(
+        final String name,
+        final String correlationKey,
+        final Map<String, Object> variables,
+        final String tenantId) {
+      this(name, correlationKey, variables, tenantId, null);
+    }
+  }
 
   public record PublicationMessageRequest(
       String name,
@@ -97,5 +115,6 @@ public final class MessageServices extends ApiServices<MessageServices> {
       Long timeToLive,
       String messageId,
       Map<String, Object> variables,
-      String tenantId) {}
+      String tenantId,
+      @Nullable String businessId) {}
 }

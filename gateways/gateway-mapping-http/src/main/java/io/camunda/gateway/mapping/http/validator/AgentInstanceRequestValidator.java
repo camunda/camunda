@@ -10,10 +10,15 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validatePositiveKeyFormat;
 
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
+import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,6 +72,68 @@ public class AgentInstanceRequestValidator {
         });
   }
 
+  @SuppressWarnings("ConstantValue")
+  public Optional<ProblemDetail> validateHistoryItemRequest(
+      final String agentInstanceKey, final AgentInstanceHistoryItemRequest request) {
+    return validate(
+        () -> {
+          final List<String> violations = new ArrayList<>();
+
+          validatePositiveKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
+
+          if (request.getElementInstanceKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
+          } else {
+            validatePositiveKeyFormat(
+                request.getElementInstanceKey(), "elementInstanceKey", violations);
+          }
+
+          if (request.getJobKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
+          } else {
+            validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
+          }
+
+          // TODO: validate jobLease once job leasing is implemented (#55033)
+          // if (request.getJobLease() == null || request.getJobLease().isBlank()) {
+          //   violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLease"));
+          // }
+
+          if (request.getRole() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("role"));
+          }
+
+          if (request.getContent() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content"));
+          } else {
+            for (int i = 0; i < request.getContent().size(); i++) {
+              final var content = request.getContent().get(i);
+              if (content instanceof final AgentInstanceTextContent text) {
+                if (text.getText() == null || text.getText().isBlank()) {
+                  violations.add(
+                      ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + i + "].text"));
+                }
+              } else if (content instanceof final AgentInstanceDocumentContent doc) {
+                validateDocumentContentItem(i, doc, violations);
+              } else if (content instanceof final AgentInstanceObjectContent obj) {
+                if (obj.getObject() == null) {
+                  violations.add(
+                      ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + i + "].object"));
+                }
+              }
+            }
+          }
+
+          if (request.getProducedAt() == null || request.getProducedAt().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("producedAt"));
+          } else {
+            validateDate(request.getProducedAt(), "producedAt", violations);
+          }
+
+          return violations;
+        });
+  }
+
   // Note: even if some properties are marked @NotNull in AgentInstanceUpdateRequest,
   // no validation is performed during deserialization, so it is still necessary to validate it here
   @SuppressWarnings("ConstantValue")
@@ -103,6 +170,30 @@ public class AgentInstanceRequestValidator {
 
           return violations;
         });
+  }
+
+  private void validateDocumentContentItem(
+      final int index, final AgentInstanceDocumentContent doc, final List<String> violations) {
+    final var ref = doc.getDocumentReference();
+    if (ref == null) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + index + "].documentReference"));
+      return;
+    }
+    if (ref.getDocumentId() == null || ref.getDocumentId().isBlank()) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(
+              "content[" + index + "].documentReference.documentId"));
+      return;
+    }
+    if (ref.getMetadata() == null) {
+      return;
+    }
+    final var expiresAt = ref.getMetadata().getExpiresAt();
+    if (expiresAt != null && !expiresAt.isBlank()) {
+      validateDate(
+          expiresAt, "content[" + index + "].documentReference.metadata.expiresAt", violations);
+    }
   }
 
   private List<String> validateLimit(final String limitName, final Number limit) {

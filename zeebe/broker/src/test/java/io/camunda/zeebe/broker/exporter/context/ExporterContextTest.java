@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.exporter.context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -29,7 +30,8 @@ public class ExporterContextTest {
 
   public ExporterContext makeExporterContext(
       final int partitionId, final String exporterId, final MeterRegistry underlying) {
-    return makeExporterContext(partitionId, "default", exporterId, underlying);
+    return makeExporterContext(
+        partitionId, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, exporterId, underlying);
   }
 
   public ExporterContext makeExporterContext(
@@ -57,7 +59,7 @@ public class ExporterContextTest {
     final var physicalTenantId = context.getPhysicalTenantId();
 
     // then
-    assertThat(physicalTenantId).isEqualTo("default");
+    assertThat(physicalTenantId).isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test

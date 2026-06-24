@@ -27,11 +27,59 @@ class TasklistIndexPage extends BasePage {
 	}
 
 	get tasksNavItem() {
-		return this.page.getByRole('link', {name: 'Tasks'});
+		return this.page.getByRole('link', {name: 'Tasks', exact: true});
 	}
 
 	get processesNavItem() {
 		return this.page.getByRole('link', {name: 'Processes'});
+	}
+
+	taskItem(name: string) {
+		return this.page.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
+	}
+
+	get noTasksMessage() {
+		return this.page.getByText('No tasks found');
+	}
+
+	get expandFiltersButton() {
+		return this.page.getByRole('button', {name: 'Expand to show filters'});
+	}
+
+	get collapseFiltersButton() {
+		return this.page.getByRole('button', {name: 'Collapse'});
+	}
+
+	get filterTasksButton() {
+		return this.page.getByRole('button', {name: 'Filter tasks'});
+	}
+
+	get newFilterButton() {
+		return this.page.getByRole('button', {name: 'New filter'});
+	}
+
+	get filterControlsNav() {
+		return this.page.getByRole('navigation', {name: 'Filter controls'});
+	}
+
+	filterLink(name: 'All open tasks' | 'Assigned to me' | 'Unassigned' | 'Completed') {
+		return this.page.getByRole('link', {name});
+	}
+
+	async expandFilters() {
+		await this.expandFiltersButton.click();
+	}
+
+	get sortButton() {
+		return this.page.getByRole('button', {name: 'Sort tasks'});
+	}
+
+	sortOption(name: 'Creation date' | 'Due date' | 'Follow-up date' | 'Completion date' | 'Priority') {
+		return this.page.getByRole('menuitem', {name});
+	}
+
+	async openSortMenu() {
+		await this.sortButton.click();
 	}
 }
 

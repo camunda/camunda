@@ -78,6 +78,7 @@ public final class UserTaskServices
   private final int maxVariableNameLength;
 
   public UserTaskServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
@@ -89,6 +90,7 @@ public final class UserTaskServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         userTaskSearchClient,
@@ -103,6 +105,7 @@ public final class UserTaskServices
   }
 
   public UserTaskServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
@@ -115,6 +118,7 @@ public final class UserTaskServices
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

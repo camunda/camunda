@@ -41,7 +41,7 @@ final class ClusterEndpointResponseIT {
           // language=JSON
           """
           {
-            "version": 1,
+            "version": 2,
             "brokers": [
               {
                 "id": 0,
@@ -73,7 +73,8 @@ final class ClusterEndpointResponseIT {
                 "partitionCount": 1
               }
             },
-            "clusterId": "cluster-id"
+            "clusterId": "cluster-id",
+            "partitionDistribution":{"type":"ROUND_ROBIN","zones":[]}
           }""");
     }
   }

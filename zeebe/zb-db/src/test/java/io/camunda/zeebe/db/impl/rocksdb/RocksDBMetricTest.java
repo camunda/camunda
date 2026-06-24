@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbIoStallMetricsDoc;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbMetricsDoc;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import java.util.Arrays;
@@ -30,6 +31,24 @@ public class RocksDBMetricTest {
     final var metric =
         Arrays.stream(metrics)
             .filter(m -> m.getName().equals("zeebe.rocksdb.memory.cur.size.all.mem.tables"))
+            .findFirst();
+    assertThat(metric).isPresent();
+  }
+
+  @Test
+  public void shouldNameIoStallMetricsCorrectly() {
+    final var metrics = (ExtendedMeterDocumentation[]) RocksDbIoStallMetricsDoc.values();
+    assertThat(metrics)
+        .allSatisfy(
+            m ->
+                assertThat(m.getName())
+                    .startsWith("zeebe.rocksdb.")
+                    .doesNotContain("..")
+                    .doesNotContain("-")
+                    .doesNotContain("_"));
+    final var metric =
+        Arrays.stream(metrics)
+            .filter(m -> m.getName().equals("zeebe.rocksdb.writes.io.stalls.stop"))
             .findFirst();
     assertThat(metric).isPresent();
   }

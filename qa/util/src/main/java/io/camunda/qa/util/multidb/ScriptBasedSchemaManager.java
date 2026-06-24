@@ -7,6 +7,8 @@
  */
 package io.camunda.qa.util.multidb;
 
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.LiquibaseScriptGenerator;
 import io.camunda.db.rdbms.LiquibaseScriptGenerator.DatabaseVersion;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
@@ -40,11 +42,13 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, Ini
   private volatile boolean initialized = false;
 
   public ScriptBasedSchemaManager(
-      final DataSource dataSource,
-      final VendorDatabaseProperties vendorDatabaseProperties,
+      final RdbmsDataSources rdbmsDataSources,
       @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
-    this.dataSource = dataSource;
-    this.vendorDatabaseProperties = vendorDatabaseProperties;
+    LOGGER.info(
+        "Using 'default' physical tenant DataSource and VendorDatabaseProperties for ScriptBasedSchemaManager");
+    dataSource = rdbmsDataSources.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    vendorDatabaseProperties =
+        rdbmsDataSources.vendorPropertiesFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     this.prefix = prefix;
   }
 

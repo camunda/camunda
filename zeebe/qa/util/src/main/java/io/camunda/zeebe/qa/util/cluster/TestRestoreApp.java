@@ -10,21 +10,18 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.configuration.Camunda;
-import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
-  private final Camunda config;
   private long[] backupId;
   private Instant from;
   private Instant to;
@@ -34,8 +31,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   }
 
   public TestRestoreApp(final Camunda config) {
-    super(RestoreApp.class);
-    this.config = config;
+    super(config, RestoreApp.class);
     withAdditionalProfile(Profile.RESTORE);
   }
 
@@ -46,7 +42,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
   }
 
   @Override
@@ -57,12 +53,6 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   @Override
   public boolean isGateway() {
     return false;
-  }
-
-  @Override
-  public TestRestoreApp withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(config);
-    return this;
   }
 
   @Override
@@ -81,9 +71,6 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    // Flatten the in-memory unified config into camunda.* properties at the latest possible point.
-    // Refreshable so that fields cleared between stop/start don't linger.
-    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(config));
     return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 

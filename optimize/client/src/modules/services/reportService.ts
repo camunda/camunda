@@ -48,13 +48,18 @@ export async function evaluateReport(
   payload: ReportEvaluationPayload,
   filter = [],
   query = {},
-  definitions: {key: string; versions: string[]}[] = []
+  definitions: {key: string; versions: string[]}[] = [],
+  groupByDateUnit?: string
 ): Promise<Report> {
   let response;
 
   if (typeof payload !== 'object') {
     // evaluate saved report
-    const body = definitions.length > 0 ? {filter, definitions} : {filter};
+    const body: Record<string, unknown> =
+      definitions.length > 0 ? {filter, definitions} : {filter};
+    if (groupByDateUnit) {
+      body.groupByDateUnit = groupByDateUnit;
+    }
     response = await post(`api/report/${payload}/evaluate`, body, {query});
   } else {
     // evaluate unsaved report

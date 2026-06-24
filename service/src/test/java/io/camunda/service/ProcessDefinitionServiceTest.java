@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 public class ProcessDefinitionServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private ProcessDefinitionServices services;
   private ProcessDefinitionSearchClient processDefinitionSearchClient;
   private SecurityContextProvider securityContextProvider;
@@ -55,6 +56,7 @@ public class ProcessDefinitionServiceTest {
 
     services =
         new ProcessDefinitionServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             processDefinitionSearchClient,

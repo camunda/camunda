@@ -30,17 +30,19 @@ const Groups: FC<GroupsProps> = ({ tenantId, isCamundaGroupsEnabled }) => {
 
   const { groups, loading, success, reload, paginationProps } =
     useEnrichedGroups(
+      "tenants",
       getGroupsByTenantId,
       {
         tenantId,
       },
       isCamundaGroupsEnabled,
     );
+  const noop = () => {};
 
   const isGroupsEmpty = !groups || groups.length === 0;
   const [assignGroups, assignGroupsModal] = useEntityModal(
     isCamundaGroupsEnabled ? AssignGroupsModal : AssignGroupModal,
-    reload,
+    noop,
     {
       assignedGroups: groups,
     },
@@ -48,7 +50,7 @@ const Groups: FC<GroupsProps> = ({ tenantId, isCamundaGroupsEnabled }) => {
   const openAssignModal = () => assignGroups({ tenantId });
   const [unassignGroup, unassignGroupModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     {
       tenant: tenantId,
     },

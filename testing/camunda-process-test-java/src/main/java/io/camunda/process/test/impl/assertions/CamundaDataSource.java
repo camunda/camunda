@@ -16,6 +16,8 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
@@ -36,7 +38,11 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class CamundaDataSource {
@@ -47,6 +53,25 @@ public class CamundaDataSource {
 
   public CamundaDataSource(final CamundaClient client) {
     this.client = client;
+  }
+
+  public byte[] getDocumentContent(final DocumentReferenceResponse reference) {
+    try (final InputStream stream = client.newDocumentContentGetRequest(reference).send().join()) {
+      return readAllBytes(stream);
+    } catch (final Exception e) {
+      throw new IllegalStateException(
+          "Failed to download Camunda document '" + reference.getDocumentId() + "'", e);
+    }
+  }
+
+  private static byte[] readAllBytes(final InputStream stream) throws IOException {
+    final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    final byte[] buffer = new byte[8192];
+    int read;
+    while ((read = stream.read(buffer)) != -1) {
+      out.write(buffer, 0, read);
+    }
+    return out.toByteArray();
   }
 
   public List<ElementInstance> findElementInstancesByProcessInstanceKey(
@@ -115,6 +140,16 @@ public class CamundaDataSource {
 
   public Variable getVariable(final long variableKey) {
     return client.newVariableGetRequest(variableKey).send().join();
+  }
+
+  public EvaluateExpressionResponse evaluateExpression(
+      final String expression, final Map<String, Object> variables) {
+    return client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .variables(variables)
+        .send()
+        .join();
   }
 
   public List<ProcessInstance> findProcessInstances() {

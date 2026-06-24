@@ -75,7 +75,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final ResponseObserver<T> responseObserver,
       final Consumer<Runnable> setCancelHandler,
       final long requestTimeout) {
-    final var topology = topologyManager.getTopology();
+    final var topology = topologyManager.getTopology(request.getPartitionGroup());
     if (topology != null) {
       final var inflightRequest =
           new InflightActivateJobsRequest<>(
@@ -98,7 +98,9 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final BiConsumer<Integer, Boolean> onCompleted) {
     final var jobType = request.getType();
     final var maxJobsToActivate = request.getMaxJobsToActivate();
-    final var partitionIterator = partitionIdIteratorForType(jobType, partitionsCount);
+    final var partitionIterator =
+        partitionIdIteratorForType(
+            jobType, partitionsCount, request.getRequest().getPartitionGroup());
 
     final var requestState =
         new InflightActivateJobsRequestState(partitionIterator, maxJobsToActivate);
@@ -297,13 +299,14 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   }
 
   private PartitionIdIterator partitionIdIteratorForType(
-      final String jobType, final int partitionsCount) {
+      final String jobType, final int partitionsCount, final String partitionGroup) {
     final var nextPartitionSupplier =
         jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
     return new PartitionIdIterator(
-        nextPartitionSupplier.determinePartition(topologyManager),
+        nextPartitionSupplier.determinePartition(topologyManager, partitionGroup),
         partitionsCount,
-        topologyManager);
+        topologyManager,
+        partitionGroup);
   }
 
   private record ResponseObserverDelegate(

@@ -1,7 +1,7 @@
 # description: Runs Request Validation tests on the C8 Orchestration Cluster REST API for 8.8+ versions nightly
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/request-validation
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda-ex-team
 ---
 name: C8 Orchestration Cluster V2 Stateless Tests Nightly
 
@@ -11,6 +11,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  TEST_OWNER: '@camunda-ex-team'
 
 jobs:
   request-validation-tests:
@@ -63,7 +66,7 @@ jobs:
             tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
             operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
             identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
-            
+
             if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true

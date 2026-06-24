@@ -10,6 +10,7 @@ import {
   render,
   waitForElementToBeRemoved,
   screen,
+  waitFor,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {TopPanel} from './index';
@@ -37,6 +38,8 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
+import {mockSearchElementInstanceInspection} from 'modules/mocks/api/v2/elementInstanceInspection/searchElementInstanceInspection';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {
   SearchParamsUpdater,
   updateSearchParams,
@@ -231,10 +234,13 @@ describe('TopPanel', () => {
     mockSearchElementInstances().withSuccess(searchResult([]));
 
     mockSearchAgentInstances().withSuccess(searchResult([]));
+
+    mockSearchElementInstanceInspection().withSuccess(searchResult([]));
   });
 
   afterEach(() => {
     modificationsStore.reset();
+    diagramOverlaysStore.reset();
   });
 
   it('should render spinner while loading', async () => {
@@ -472,5 +478,55 @@ describe('TopPanel', () => {
     expect(
       screen.queryByTestId(/^agent-shine-overlay-/),
     ).not.toBeInTheDocument();
+  });
+
+  it('should add an active overlay for a multi-instance body waiting for a beforeAll execution listener', async () => {
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
+        {
+          rootProcessInstanceKey: 'instance_id',
+          processInstanceKey: 'instance_id',
+          elementInstanceKey: '9999',
+          elementId: 'multi-instance-task',
+          elementType: 'MULTI_INSTANCE_BODY',
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '8888',
+            jobType: 'io.camunda:execution-listener:1',
+            jobKind: 'EXECUTION_LISTENER',
+            listenerEventType: 'BEFORE_ALL',
+            retries: null,
+          },
+        },
+      ]),
+    );
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+    await waitFor(() => {
+      expect(
+        diagramOverlaysStore.state.overlays.find(
+          ({elementId, type}) =>
+            elementId === 'multi-instance-task' && type === 'elementState',
+        ),
+      ).toBeDefined();
+    });
+
+    const activeOverlay = diagramOverlaysStore.state.overlays.find(
+      ({elementId, type}) =>
+        elementId === 'multi-instance-task' && type === 'elementState',
+    );
+
+    const payload = activeOverlay?.payload as {
+      elementState: string;
+      count?: number;
+    };
+    expect(payload?.elementState).toBe('active');
+    expect(payload?.count).toBeUndefined();
   });
 });

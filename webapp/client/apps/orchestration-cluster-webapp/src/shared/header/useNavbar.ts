@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRouterState, type RegisteredRouter} from '@tanstack/react-router';
+import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
+import {useCallback} from 'react';
 
 type NavbarConfig = {
 	app: C3NavigationAppProps;
@@ -27,14 +28,27 @@ const tabRoutes = {
 	tasklistProcesses: '/tasklist/processes',
 	admin: '/admin',
 	operate: '/operate',
+	operateProcesses: '/operate/processes',
+	operateDecisions: '/operate/decisions',
+	operateOperationsLog: '/operate/operations-log',
+	operateBatchOperations: '/operate/batch-operations',
 } as const satisfies Record<string, FileRouteTypes['to']>;
 
 function useNavbar(currentUser: CurrentUser): NavbarConfig {
 	const {t} = useTranslation();
-	const pathname = useRouterState({select: ({location}) => location.pathname});
+	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;
 
-	if (pathname.startsWith(tabRoutes['tasklistIndex'])) {
+	const hasRouteMatch = useCallback(
+		(...routes: FileRouteTypes['to'][]) => routes.some((to) => matchRoute({to}) !== false),
+		[matchRoute],
+	);
+	const hasComponentRouteMatch = useCallback(
+		(component: 'tasklist' | 'admin' | 'operate') => matchRoute({to: `/${component}`, fuzzy: true}) !== false,
+		[matchRoute],
+	);
+
+	if (hasComponentRouteMatch('tasklist')) {
 		const hasTasklistAccess = isAuthorized('tasklist', authorizedComponents);
 
 		return {
@@ -52,23 +66,25 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 				? [
 						{
 							key: 'tasks',
-							label: t('headerNavItemTasks'),
-							isCurrentPage: pathname === tabRoutes['tasklistIndex'],
+							label: t('tasklist.headerNavItemTasks'),
+							isCurrentPage: !hasRouteMatch('/tasklist/processes') && hasRouteMatch('/tasklist', '/tasklist/$id'),
 							routeProps: {
 								to: tabRoutes['tasklistIndex'],
-								activeOptions: {exact: true},
 								onClick: () => {
 									tracking.track({
 										eventName: 'tasklist:navigation',
 										link: 'header-tasks',
 									});
 								},
+								activeOptions: {
+									exact: true,
+								},
 							},
 						},
 						{
 							key: 'processes',
-							label: t('headerNavItemProcesses'),
-							isCurrentPage: pathname.startsWith(tabRoutes['tasklistProcesses']),
+							label: t('tasklist.headerNavItemProcesses'),
+							isCurrentPage: hasRouteMatch('/tasklist/processes'),
 							routeProps: {
 								to: tabRoutes['tasklistProcesses'],
 								onClick: () => {
@@ -84,7 +100,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 		};
 	}
 
-	if (pathname.startsWith(tabRoutes['admin'])) {
+	if (hasComponentRouteMatch('admin')) {
 		const hasAdminAccess = isAuthorized('admin', authorizedComponents);
 
 		return {
@@ -102,7 +118,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 		};
 	}
 
-	if (pathname.startsWith(tabRoutes['operate'])) {
+	if (hasComponentRouteMatch('operate')) {
 		const hasOperateAccess = isAuthorized('operate', authorizedComponents);
 
 		return {
@@ -116,7 +132,73 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 					},
 				},
 			},
-			elements: hasOperateAccess ? [] : [],
+			elements: hasOperateAccess
+				? [
+						{
+							key: 'dashboard',
+							label: t('operate.dashboard.title'),
+							isCurrentPage: hasRouteMatch('/operate'),
+							routeProps: {
+								to: tabRoutes['operate'],
+								activeOptions: {exact: true},
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-dashboard'});
+								},
+							},
+						},
+						{
+							key: 'processes',
+							label: t('operate.processes.title'),
+							isCurrentPage: hasRouteMatch('/operate/processes'),
+							routeProps: {
+								to: tabRoutes['operateProcesses'],
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-processes'});
+								},
+							},
+						},
+						{
+							key: 'decisions',
+							label: t('operate.decisions.title'),
+							isCurrentPage: hasRouteMatch('/operate/decisions'),
+							routeProps: {
+								to: tabRoutes['operateDecisions'],
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-decisions'});
+								},
+							},
+						},
+						{
+							key: 'operations',
+							label: t('operate.operations.title'),
+							isCurrentPage: hasRouteMatch('/operate/operations-log') || hasRouteMatch('/operate/batch-operations'),
+							subElements: [
+								{
+									key: 'operations-log',
+									label: t('operate.operationsLog.title'),
+									isCurrentPage: hasRouteMatch('/operate/operations-log'),
+									routeProps: {
+										to: tabRoutes['operateOperationsLog'],
+										onClick: () => {
+											tracking.track({eventName: 'operate:navigation', link: 'header-operations-log'});
+										},
+									},
+								},
+								{
+									key: 'batch-operations',
+									label: t('operate.batchOperations.title'),
+									isCurrentPage: hasRouteMatch('/operate/batch-operations'),
+									routeProps: {
+										to: tabRoutes['operateBatchOperations'],
+										onClick: () => {
+											tracking.track({eventName: 'operate:navigation', link: 'header-batch-operations'});
+										},
+									},
+								},
+							],
+						},
+					]
+				: [],
 		};
 	}
 

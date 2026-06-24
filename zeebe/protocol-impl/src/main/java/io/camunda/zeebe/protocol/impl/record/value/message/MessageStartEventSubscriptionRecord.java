@@ -33,6 +33,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
   private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
@@ -46,12 +47,13 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageStartEventSubscriptionRecord() {
-    super(9);
+    super(10);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)
@@ -59,6 +61,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
         .declareProperty(processInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(correlationKeyProp)
+        .declareProperty(businessIdProp)
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp);
   }
@@ -71,6 +74,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     messageKeyProp.setValue(record.getMessageKey());
     correlationKeyProp.setValue(record.getCorrelationKeyBuffer());
+    businessIdProp.setValue(record.getBusinessIdBuffer());
     variablesProp.setValue(record.getVariablesBuffer());
     tenantIdProp.setValue(record.getTenantId());
   }
@@ -127,6 +131,21 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
 
   public MessageStartEventSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  public MessageStartEventSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
     return this;
   }
 

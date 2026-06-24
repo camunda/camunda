@@ -8,15 +8,13 @@
 
 import styled, { createGlobalStyle } from "styled-components";
 import { FC, ReactNode, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { styles } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
-import { useApi } from "src/utility/api";
-import { getAuthentication } from "src/utility/api/authentication";
+import { useQuery } from "@tanstack/react-query";
+import { authenticationQueries } from "src/utility/api/authentication/queries";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
-import { addHandler, removeHandler } from "src/utility/api/request";
 import { activateSession } from "src/utility/auth";
 import { C3Provider } from "../layout/C3Provider";
 import { ThemeProvider } from "src/common/theme/ThemeProvider";
@@ -60,32 +58,19 @@ const GridMain = styled.div`
   display: grid;
   grid-template-rows: 1fr auto;
   grid-template-columns: 1fr;
-  padding-top: 48px;
+  padding-top: var(--c3-header-height, 48px);
 `;
 
 const GridMainContent = styled.div`
   grid-area: 1 / 1 / 1 / 4;
+  padding-left: var(--c3-sidebar-width, 0);
+  transition: padding-left 0.15s ease-out;
 `;
 
 const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
-  const { data: camundaUser, loading } = useApi(getAuthentication);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const handleResponse = (response: Response) => {
-      if (
-        response.status === 401 &&
-        !window.location.pathname.includes("/login")
-      ) {
-        void navigate(`/login?next=${window.location.pathname}`);
-      }
-    };
-
-    addHandler(handleResponse);
-    return () => {
-      removeHandler(handleResponse);
-    };
-  }, [navigate]);
+  const { data: camundaUser, isLoading: loading } = useQuery(
+    authenticationQueries.me(),
+  );
 
   useEffect(() => {
     if (camundaUser) {
@@ -107,7 +92,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
           <AppHeader hideNavLinks />
         </GridHeader>
         <GridMain>
-          <GridMainContent>
+          <GridMainContent id="main-content" tabIndex={-1}>
             <ForbiddenComponent />
           </GridMainContent>
         </GridMain>
@@ -120,7 +105,9 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
         <AppHeader />
       </GridHeader>
       <GridMain>
-        <GridMainContent>{children}</GridMainContent>
+        <GridMainContent id="main-content" tabIndex={-1}>
+          {children}
+        </GridMainContent>
       </GridMain>
     </>
   );

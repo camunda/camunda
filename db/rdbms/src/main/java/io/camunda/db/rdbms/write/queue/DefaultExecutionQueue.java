@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.util.PerMessageThrottledLogger;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.slf4j.Logger;
@@ -241,6 +243,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     final var optimizedItems = optimizeQueueOrder(queue);
 
     try {
+      assertManualCommitMode(session);
+
       if (!inTransactionHooks.isEmpty()) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call in-transaction hooks", partitionId);
         for (final InTransactionHook hook : inTransactionHooks) {
@@ -269,6 +273,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       session.commit();
+
       queue.clear();
       if (!postFlushListeners.isEmpty()) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
@@ -282,9 +287,19 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       return flushedElements;
     } catch (final Exception e) {
-      LOG.error("[RDBMS ExecutionQueue, Partition {}] Error while executing queue", partitionId, e);
-      session.rollback();
-
+      LOG.error(
+          "[RDBMS ExecutionQueue, Partition {}] Error while executing queue ({} items)",
+          partitionId,
+          optimizedItems.size(),
+          e);
+      try {
+        session.rollback();
+      } catch (final Exception rollbackError) {
+        LOG.error(
+            "[RDBMS ExecutionQueue, Partition {}] Rollback failed after flush error",
+            partitionId,
+            rollbackError);
+      }
       throw e;
     } finally {
       session.close();
@@ -326,6 +341,28 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     }
 
     return resultList;
+  }
+
+  /**
+   * Verifies that the session's connection manages commits manually ({@code autoCommit = false}).
+   *
+   * <p>The flush relies on every statement of a batch committing or rolling back atomically via
+   * {@link org.apache.ibatis.session.SqlSession#commit()} / {@link
+   * org.apache.ibatis.session.SqlSession#rollback()}. Failing fast here turns that silent
+   * corruption into an immediate, diagnosable error and guards against a misconfigured data source.
+   */
+  private static void assertManualCommitMode(final SqlSession session) {
+    try {
+      if (session.getConnection().getAutoCommit()) {
+        throw new IllegalStateException(
+            "RDBMS connection is in autoCommit=true mode, but the execution queue requires "
+                + "autoCommit=false so that all statements of a flush commit or roll back atomically. "
+                + "Aborting flush to prevent partially-committed batches and duplicate-key errors on retry.");
+      }
+    } catch (final SQLException e) {
+      throw new IllegalStateException(
+          "Failed to verify autoCommit mode of the RDBMS connection before flushing", e);
+    }
   }
 
   LinkedList<QueueItem> getQueue() {

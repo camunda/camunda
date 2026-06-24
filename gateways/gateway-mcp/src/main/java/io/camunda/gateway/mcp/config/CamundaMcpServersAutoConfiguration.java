@@ -7,15 +7,15 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID;
-import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
+import static io.camunda.spring.utils.PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.server.RequestHandlerCustomizer;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.util.VersionUtil;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
@@ -51,7 +51,7 @@ import tools.jackson.databind.json.JsonMapper;
  *       {@code /mcp/processes} and {@code /physical-tenants/{physicalTenantId}/mcp/processes}
  * </ul>
  *
- * <p>The default URL stamps the {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID default}
+ * <p>The default URL stamps the {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID default}
  * physical tenant; the {@code /physical-tenants/...} URL resolves and validates the tenant from the
  * path. Both URLs share one transport per server, since the transport handler reads only the
  * request body and is path-agnostic — the resolved tenant flows through {@link
@@ -237,11 +237,11 @@ public class CamundaMcpServersAutoConfiguration {
    * Builds a router function that serves a transport's base endpoint at both the default URL and
    * the physical-tenant-scoped URL.
    *
-   * <p>The default branch stamps the {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID
-   * default} tenant. The tenant branch nests the same base router under {@link
-   * #PHYSICAL_TENANT_URI_PREFIX} so the {@code physicalTenantId} path variable is captured, then
-   * validates and stamps it via {@link #tenantFilter}. The transport handler reads only the request
-   * body, so the same instance serves both routes.
+   * <p>The default branch stamps the {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID default}
+   * tenant. The tenant branch nests the same base router under {@link #PHYSICAL_TENANT_URI_PREFIX}
+   * so the {@code physicalTenantId} path variable is captured, then validates and stamps it via
+   * {@link #tenantFilter}. The transport handler reads only the request body, so the same instance
+   * serves both routes.
    */
   private static RouterFunction<ServerResponse> dualPathRouterFunction(
       final WebMvcStatelessServerTransport transport,
@@ -266,13 +266,13 @@ public class CamundaMcpServersAutoConfiguration {
 
   /**
    * {@link HandlerFilterFunction} that records the {@link
-   * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID default} physical tenant id on the request, so
+   * PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID default} physical tenant id on the request, so
    * tools can call {@link PhysicalTenantContext#current()} consistently regardless of the URL used.
    */
   static HandlerFilterFunction<ServerResponse, ServerResponse> defaultTenantFilter() {
     return (request, next) -> {
       PhysicalTenantContext.setPhysicalTenantId(
-          request.servletRequest(), PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+          request.servletRequest(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
       return next.handle(request);
     };
   }
@@ -289,7 +289,7 @@ public class CamundaMcpServersAutoConfiguration {
       final var knownTenants =
           tenantIds != null
               ? tenantIds.known()
-              : Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+              : Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
       final String tenantId = request.pathVariable(PATH_VARIABLE_PHYSICAL_TENANT_ID);
       if (!knownTenants.contains(tenantId)) {
         return unknownPhysicalTenantResponse(tenantId);

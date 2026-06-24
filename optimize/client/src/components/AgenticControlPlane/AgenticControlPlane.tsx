@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useMemo} from 'react';
 
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
@@ -20,6 +20,8 @@ import type {DashboardTile} from 'types';
 
 import {DATE_PRESETS, FilterBar} from './FilterBar';
 import {loadAgenticDashboard} from './service';
+import {TileFooter} from './TileFooter';
+import {getTileTopNLimit} from './tilePagination';
 
 import './AgenticControlPlane.scss';
 
@@ -27,6 +29,8 @@ interface AgenticTileConfiguration {
   visibleInL0Only?: boolean;
   visibleInL1Only?: boolean;
   section?: string;
+  footnote?: string;
+  topN?: string;
 }
 
 interface RollingFilter {
@@ -39,6 +43,12 @@ interface RollingFilter {
     excludeUndefined: boolean;
     includeUndefined: boolean;
   };
+}
+
+function presetToGroupByDateUnit(presetId: string): string {
+  if (presetId === '7d') return 'day';
+  if (presetId === '30d') return 'week';
+  return 'month';
 }
 
 function presetToFilter(preset: (typeof DATE_PRESETS)[number]): RollingFilter {
@@ -79,6 +89,39 @@ export function AgenticControlPlane() {
     [processScope]
   );
 
+  const tileLimitById = useMemo(() => {
+    const map: Record<string, number> = {};
+    dashboard?.tiles?.forEach((tile) => {
+      const limit = getTileTopNLimit(tile);
+      if (limit != null && tile.id) {
+        map[tile.id] = limit;
+      }
+    });
+    return map;
+  }, [dashboard]);
+
+  const scopedEvaluateTokenTrendReport = useCallback(
+    (
+      id: ReportEvaluationPayload,
+      tileFilter: Parameters<typeof evaluateReport>[1],
+      query: Parameters<typeof evaluateReport>[2]
+    ) => {
+      // The top consumers tile only renders the top N processes; the backend computes that
+      // subset server-side when a limit is supplied, so we never fetch every process.
+      const limit = typeof id === 'string' ? tileLimitById[id] : undefined;
+      const scopedQuery = limit ? {...query, limit} : query;
+      return evaluateReport(
+        id,
+        tileFilter,
+        scopedQuery,
+        definitions,
+        presetToGroupByDateUnit(preset)
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [processScope, preset, tileLimitById]
+  );
+
   if (!dashboard) {
     return <Loading />;
   }
@@ -96,7 +139,17 @@ export function AgenticControlPlane() {
 
   const sections = [
     {key: 'kpi', loadTile: scopedEvaluateReport},
-    {key: 'token', titleKey: 'agenticControlPlane.tokenUsage', loadTile: scopedEvaluateReport},
+    {
+      key: 'token',
+      titleKey: 'agenticControlPlane.tokenUsage',
+      loadTile: scopedEvaluateTokenTrendReport,
+    },
+    {
+      key: 'reliabilityAndToolCalls',
+      titleKey: 'agenticControlPlane.reliabilityAndToolCalls',
+      loadTile: scopedEvaluateReport,
+    },
+    {key: 'duration', titleKey: 'agenticControlPlane.duration', loadTile: scopedEvaluateReport},
   ];
 
   return (
@@ -113,7 +166,8 @@ export function AgenticControlPlane() {
       />
       {sections.map(({key, titleKey, loadTile}) => {
         const tiles = visibleTiles?.filter(
-          (tile) => ((tile.configuration as AgenticTileConfiguration | undefined)?.section ?? 'kpi') === key
+          (tile) =>
+            ((tile.configuration as AgenticTileConfiguration | undefined)?.section ?? 'kpi') === key
         );
         return (
           <div key={key}>
@@ -129,6 +183,7 @@ export function AgenticControlPlane() {
                 loadTile={loadTile}
                 tiles={tiles}
                 filter={filter}
+                addons={[<TileFooter key="tile-footer" />]}
               />
             </div>
           </div>

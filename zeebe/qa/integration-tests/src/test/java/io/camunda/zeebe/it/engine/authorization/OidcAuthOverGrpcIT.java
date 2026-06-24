@@ -76,19 +76,13 @@ public class OidcAuthOverGrpcIT {
           .withProperty(
               "camunda.data.secondary-storage.elasticsearch.url",
               "http://" + CONTAINER.getHttpHostAddress())
-          // OIDC client config goes through withProperty (not withSecurityConfig) so CSL's
-          // CamundaSecurityLibraryProperties — bound from Spring's property sources — sees the
-          // values. Mutating SecurityConfiguration post-binding would only update OC's typed
-          // config and leave CSL's clientRegistrationRepository looking at an empty OIDC block.
-          .withProperty(
-              "camunda.security.authentication.oidc.issuer-uri",
-              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
-          // The following two properties are only needed for the webapp login flow which we don't
-          // test here, but CSL requires client-id to build a ClientRegistrationRepository.
-          .withProperty("camunda.security.authentication.oidc.client-id", "example")
-          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
+                c.getAuthentication()
+                    .getOidc()
+                    .setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("example.com");
                 c.getAuthorizations().setEnabled(true);
                 c.getInitialization()
                     .setMappingRules(

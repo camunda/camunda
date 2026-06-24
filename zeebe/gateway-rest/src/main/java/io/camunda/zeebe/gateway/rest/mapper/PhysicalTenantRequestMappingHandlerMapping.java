@@ -7,21 +7,30 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper;
 
-import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
+import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
-import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
-  private static final String V2 = "/v2";
+  // Route roots eligible for a per-physical-tenant sibling. This is the primary safeguard for PT
+  // enrollment: shouldPrefix() deliberately admits any non-cluster-scoped controller, so a route
+  // only gets a PT-prefixed sibling when its pattern starts with one of these roots (see prefix()).
+  // Controllers on other paths are therefore never auto-enrolled in PT routing.
+  private static final Set<String> PREFIXABLE_ROOTS =
+      Stream.concat(
+              Stream.of("/v2", "/webapp"), WebAppProviderAdapter.WEB_APPS.stream().map("/"::concat))
+          .collect(Collectors.toUnmodifiableSet());
 
   @Override
   protected void registerHandlerMethod(
@@ -40,11 +49,16 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
     }
   }
 
+  /**
+   * Whether a controller is eligible for per-physical-tenant route prefixing. Deliberately broad —
+   * any controller that is not {@link ClusterScoped}. Eligibility does not mean enrollment: {@link
+   * #PREFIXABLE_ROOTS} is the actual gate, since a route only gets a PT-prefixed sibling when its
+   * pattern starts with a prefixable root. So a non-cluster-scoped controller on an unrelated path
+   * is admitted here but never auto-enrolled in PT routing.
+   */
   @VisibleForTesting
   boolean shouldPrefix(final Class<?> beanType) {
-    return beanType != null
-        && AnnotatedElementUtils.hasAnnotation(beanType, CamundaRestController.class)
-        && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
+    return beanType != null && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
   }
 
   @VisibleForTesting
@@ -74,16 +88,15 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
   }
 
   private String prefix(final String pattern) {
-    if (pattern == null || !pattern.startsWith(V2)) {
-      // Only /v2 routes participate in the physical-tenant addressing scheme.
+    if (pattern == null) {
       return null;
     }
-    final String tail = pattern.substring(V2.length());
-    if (!tail.isEmpty() && !tail.startsWith("/")) {
-      // Avoid prefixing things like "/v2foo".
-      return null;
+    for (final String root : PREFIXABLE_ROOTS) {
+      if (pattern.equals(root) || pattern.startsWith(root + "/")) {
+        return PHYSICAL_TENANT_URI_PREFIX + pattern;
+      }
     }
-    return PHYSICAL_TENANT_URI_PREFIX + pattern;
+    return null;
   }
 
   private Class<?> resolveBeanType(final Object handler) {

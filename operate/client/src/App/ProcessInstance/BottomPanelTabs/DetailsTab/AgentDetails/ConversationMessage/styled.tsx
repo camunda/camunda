@@ -6,17 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {AgentInstanceHistoryRole} from '@camunda/camunda-api-zod-schemas/8.10';
 import styled from 'styled-components';
 
-type ActorType = 'user' | 'assistant' | 'system';
+type ActorType = AgentInstanceHistoryRole | 'SYSTEM';
 
 const accentColorByActor: Record<ActorType, string> = {
-  system: 'var(--cds-status-gray)',
-  assistant: 'var(--cds-status-purple)',
-  user: 'var(--cds-status-blue)',
+  SYSTEM: 'var(--cds-status-gray)',
+  ASSISTANT: 'var(--cds-status-purple)',
+  USER: 'var(--cds-status-blue)',
+  TOOL_RESULT: 'var(--cds-status-gray)',
 };
 
-const Container = styled.div<{$actor: ActorType}>`
+const Container = styled.article<{$actor: ActorType}>`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-02);
@@ -28,7 +30,7 @@ const Container = styled.div<{$actor: ActorType}>`
 
 const ActorLabel = styled.h5`
   font-size: var(--cds-label-01-font-size);
-  font-weight: var(--cds-label-01-font-weight);
+  font-weight: var(--cds-heading-compact-01-font-weight);
   line-height: var(--cds-label-01-line-height);
   letter-spacing: var(--cds-label-01-letter-spacing);
   color: var(--cds-text-secondary);
@@ -54,7 +56,7 @@ const MessageBlock = styled.div`
   }
 `;
 
-const Message = styled.div`
+const TextContent = styled.div`
   flex: 1;
   overflow-y: auto;
   font-size: var(--cds-body-compact-01-font-size);
@@ -64,4 +66,72 @@ const Message = styled.div`
   color: var(--cds-text-primary);
 `;
 
-export {Container, MessageBlock, ActorLabel, Message, MessageActions};
+const ObjectContent = styled.pre`
+  flex: 1;
+  overflow: auto;
+  border-radius: 4px;
+  padding: var(--cds-spacing-03);
+  background-color: var(--cds-layer-03);
+  font-family: var(--cds-code-01-font-family);
+  font-size: var(--cds-code-01-font-size);
+  font-weight: var(--cds-code-01-font-weight);
+  line-height: var(--cds-code-01-line-height);
+  letter-spacing: var(--cds-code-01-letter-spacing);
+  white-space: pre-wrap;
+  word-break: break-word;
+`;
+
+const AttachmentsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-block-start: var(--cds-spacing-04);
+  gap: var(--cds-spacing-02);
+`;
+
+const AttachmentsLabel = styled.h6`
+  font-size: var(--cds-label-01-font-size);
+  font-weight: var(--cds-label-01-font-weight);
+  line-height: var(--cds-label-01-line-height);
+  letter-spacing: var(--cds-label-01-letter-spacing);
+  color: var(--cds-text-secondary);
+`;
+
+const AttachmentButton = styled.button`
+  appearance: none;
+  background-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+  padding: var(--cds-spacing-01) var(--cds-spacing-03);
+  border-radius: 100px; // pill shape
+  font-size: var(--cds-label-01-font-size);
+  font-weight: var(--cds-label-01-font-weight);
+  line-height: var(--cds-label-01-line-height);
+  letter-spacing: var(--cds-label-01-letter-spacing);
+  color: var(--cds-link-primary);
+  border: 1px solid var(--cds-border-subtle-01);
+  white-space: nowrap;
+  cursor: pointer;
+
+  & > svg {
+    color: var(--cds-icon-secondary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: var(--cds-text-primary);
+  }
+`;
+
+export {
+  Container,
+  MessageBlock,
+  ActorLabel,
+  TextContent,
+  ObjectContent,
+  MessageActions,
+  AttachmentsContainer,
+  AttachmentsLabel,
+  AttachmentButton,
+};

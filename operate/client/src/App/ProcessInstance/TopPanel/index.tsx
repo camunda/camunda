@@ -24,6 +24,7 @@ import {
   WAITING_BADGE,
   AGENT_STATUS_TAG,
   AGENT_SHINE,
+  WAITING_BADGE_NARROW,
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
@@ -60,7 +61,10 @@ import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessS
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
-import {getWaitStateLabel} from 'modules/utils/waitStates';
+import {
+  getWaitStateLabel,
+  isBeforeAllExecutionListenerWaitState,
+} from 'modules/utils/waitStates';
 import type {
   AgentShinePayload,
   AgentStatusPayload,
@@ -79,6 +83,19 @@ const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
 const OVERLAY_TYPE_WAITING_STATE = 'waitingState';
 const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
 const OVERLAY_TYPE_AGENT_SHINE = 'agentShine';
+
+// Gateways and events are narrow (~36px) symbols.
+const NARROW_WAIT_STATE_ELEMENT_TYPES = new Set<string>([
+  'EXCLUSIVE_GATEWAY',
+  'PARALLEL_GATEWAY',
+  'INCLUSIVE_GATEWAY',
+  'EVENT_BASED_GATEWAY',
+  'START_EVENT',
+  'END_EVENT',
+  'INTERMEDIATE_CATCH_EVENT',
+  'INTERMEDIATE_THROW_EVENT',
+  'BOUNDARY_EVENT',
+]);
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -184,6 +201,23 @@ const TopPanel: React.FC = observer(() => {
       ...subprocessOverlays,
     ];
 
+    if (inspectionData?.items?.length) {
+      const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
+      for (const item of inspectionData.items) {
+        if (
+          isBeforeAllExecutionListenerWaitState(item) &&
+          !elementIdsInStats.has(item.elementId)
+        ) {
+          allElementStateOverlays.push({
+            payload: {elementState: 'active' as const},
+            type: OVERLAY_TYPE_STATE,
+            elementId: item.elementId,
+            position: overlayPositions.active,
+          });
+        }
+      }
+    }
+
     const notCompletedElementStateOverlays = allElementStateOverlays?.filter(
       (stateOverlay) => stateOverlay.payload.elementState !== 'completed',
     );
@@ -193,7 +227,7 @@ const TopPanel: React.FC = observer(() => {
       : notCompletedElementStateOverlays;
   }, [statistics, businessObjects, isExecutionCountVisible]);
 
-  const waitingStateOverlays = useMemo(() => {
+  const allWaitingStateOverlays = useMemo(() => {
     if (!inspectionData?.items?.length) {
       return [];
     }
@@ -216,10 +250,13 @@ const TopPanel: React.FC = observer(() => {
     for (const [elementId, waitStates] of waitStatesByElement) {
       const label = getWaitStateLabel(waitStates);
       if (label) {
+        const isNarrowElement = waitStates.some((waitState) =>
+          NARROW_WAIT_STATE_ELEMENT_TYPES.has(waitState.elementType),
+        );
         overlays.push({
           elementId,
           type: OVERLAY_TYPE_WAITING_STATE,
-          position: WAITING_BADGE,
+          position: isNarrowElement ? WAITING_BADGE_NARROW : WAITING_BADGE,
           payload: {label},
         });
       }
@@ -228,42 +265,51 @@ const TopPanel: React.FC = observer(() => {
     return overlays;
   }, [inspectionData]);
 
-  const agentOverlays = useMemo(() => {
+  const {agentOverlays, elementsWithAgent} = useMemo(() => {
     if (!agentInstancesData?.items?.length) {
-      return [];
+      return {agentOverlays: [], elementsWithAgent: new Set<string>()};
     }
 
-    const mappedElementIds = new Set<string>();
+    const elementsWithAgent = new Set<string>();
 
-    return agentInstancesData.items.flatMap<OverlayData>((agentInstance) => {
-      // We expect only one active agent instance per element. But there *can* be multiple.
-      // For now, only add an overlay to an element for first matching agent instance.
-      if (mappedElementIds.has(agentInstance.elementId)) {
-        return [];
-      }
+    const agentOverlays = agentInstancesData.items.flatMap<OverlayData>(
+      (agentInstance) => {
+        // We expect only one active agent instance per element. But there *can* be multiple.
+        // For now, only add an overlay to an element for first matching agent instance.
+        if (elementsWithAgent.has(agentInstance.elementId)) {
+          return [];
+        }
 
-      mappedElementIds.add(agentInstance.elementId);
-      return [
-        {
-          type: OVERLAY_TYPE_AGENT_STATUS,
-          elementId: agentInstance.elementId,
-          position: AGENT_STATUS_TAG,
-          payload: {
-            status: agentInstance.status,
-            agentInstanceKey: agentInstance.agentInstanceKey,
-          } satisfies AgentStatusPayload,
-        },
-        {
-          type: OVERLAY_TYPE_AGENT_SHINE,
-          elementId: agentInstance.elementId,
-          position: AGENT_SHINE,
-          payload: {
-            agentInstanceKey: agentInstance.agentInstanceKey,
-          } satisfies AgentShinePayload,
-        },
-      ];
-    });
+        elementsWithAgent.add(agentInstance.elementId);
+        return [
+          {
+            type: OVERLAY_TYPE_AGENT_STATUS,
+            elementId: agentInstance.elementId,
+            position: AGENT_STATUS_TAG,
+            payload: {
+              status: agentInstance.status,
+              agentInstanceKey: agentInstance.agentInstanceKey,
+            } satisfies AgentStatusPayload,
+          },
+          {
+            type: OVERLAY_TYPE_AGENT_SHINE,
+            elementId: agentInstance.elementId,
+            position: AGENT_SHINE,
+            payload: {
+              agentInstanceKey: agentInstance.agentInstanceKey,
+            } satisfies AgentShinePayload,
+          },
+        ];
+      },
+    );
+    return {agentOverlays, elementsWithAgent};
   }, [agentInstancesData]);
+
+  const waitingStateOverlays = useMemo(() => {
+    return allWaitingStateOverlays.filter(
+      (overlay) => !elementsWithAgent.has(overlay.elementId),
+    );
+  }, [allWaitingStateOverlays, elementsWithAgent]);
 
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId

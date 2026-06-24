@@ -14,13 +14,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -389,11 +389,11 @@ final class SystemContextTest {
         mock(UserServices.class),
         mock(PasswordEncoder.class),
         mock(JwtDecoder.class),
-        new NoopOidcClaimsProvider(),
+        (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
         mock(SearchClientsProxy.class),
         mock(BrokerRequestAuthorizationConverter.class),
         mock(NodeIdProvider.class),
-        List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
+        PhysicalTenantIds.DEFAULT);
   }
 
   @Test

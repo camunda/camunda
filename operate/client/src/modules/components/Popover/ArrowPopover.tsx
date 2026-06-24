@@ -69,6 +69,7 @@ const ArrowPopover: React.FC<Props> = ({
     middleware: [
       ...middlewareOptions,
       shift({padding: {top: APP_HEADER_HEIGHT}}),
+      // eslint-disable-next-line react-hooks/refs
       arrow({element: arrowElementRef}),
     ],
     whileElementsMounted: autoUpdatePosition ? autoUpdate : undefined,
@@ -81,6 +82,7 @@ const ArrowPopover: React.FC<Props> = ({
 
   useEffect(() => {
     if (middlewareData.hide && floating?.current !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsHidden(!!middlewareData.hide.referenceHidden);
     }
   }, [floating, middlewareData]);

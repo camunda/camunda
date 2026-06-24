@@ -15,16 +15,20 @@ import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
 import io.camunda.db.rdbms.write.service.WaitStateWriter;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer;
+import io.camunda.zeebe.exporter.common.waitstate.transformers.UserTaskBasedWaitStateTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -169,5 +173,67 @@ class WaitStateAddHandlerTest {
         .contains("\"jobType\":\"payment-service\"")
         .contains("\"jobKind\":\"BPMN_ELEMENT\"")
         .contains("\"retries\":3");
+  }
+
+  @Test
+  void shouldInsertWaitStateRowOnUserTaskCreated() {
+    // given
+    final WaitStateAddHandler<UserTaskRecordValue> userTaskHandler =
+        new WaitStateAddHandler<>(
+            waitStateWriter, new UserTaskBasedWaitStateTransformer(), objectMapper);
+    final Record<UserTaskRecordValue> record =
+        userTaskRecord(UserTaskIntent.CREATED, "approve-task");
+
+    // when
+    userTaskHandler.export(record);
+
+    // then
+    verify(waitStateWriter).create(modelCaptor.capture());
+    final WaitStateDbModel model = modelCaptor.getValue();
+    assertThat(model.waitStateKey()).isEqualTo(999L);
+    assertThat(model.elementId()).isEqualTo("approve-task");
+    assertThat(model.elementType()).isEqualTo(BpmnElementType.USER_TASK.name());
+    assertThat(model.waitStateType()).isEqualTo(WaitStateType.USER_TASK.name());
+    assertThat(model.details())
+        .contains("\"taskKey\":999")
+        .contains("\"dueDate\":\"2026-10-13T10:00:00+01:00\"");
+  }
+
+  @Test
+  void shouldUpdateWaitStateRowOnUserTaskUpdated() {
+    // given
+    final WaitStateAddHandler<UserTaskRecordValue> userTaskHandler =
+        new WaitStateAddHandler<>(
+            waitStateWriter, new UserTaskBasedWaitStateTransformer(), objectMapper);
+    final Record<UserTaskRecordValue> record =
+        userTaskRecord(UserTaskIntent.UPDATED, "approve-task");
+
+    // when
+    userTaskHandler.export(record);
+
+    // then — UPDATED is an update intent, so update (not insert) is called
+    verify(waitStateWriter).update(modelCaptor.capture());
+    final WaitStateDbModel model = modelCaptor.getValue();
+    assertThat(model.waitStateKey()).isEqualTo(999L);
+    assertThat(model.elementId()).isEqualTo("approve-task");
+    assertThat(model.waitStateType()).isEqualTo(WaitStateType.USER_TASK.name());
+  }
+
+  private Record<UserTaskRecordValue> userTaskRecord(
+      final UserTaskIntent intent, final String elementId) {
+    final UserTaskRecordValue value =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withUserTaskKey(999L)
+            .withDueDate("2026-10-13T10:00:00+01:00")
+            .withElementId(elementId)
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+    return factory.generateRecord(
+        ValueType.USER_TASK,
+        r -> r.withKey(999L).withRecordType(RecordType.EVENT).withIntent(intent).withValue(value));
   }
 }

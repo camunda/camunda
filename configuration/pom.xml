@@ -221,7 +221,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-library-api</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

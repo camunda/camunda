@@ -281,6 +281,27 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByPartitionId() {
+    // Given
+    final var filter = FilterBuilders.job(b -> b.partitionId(3));
+
+    // When
+    final var searchQuery = transformQuery(filter);
+
+    // Then
+    final var queryVariant = searchQuery.queryOption();
+
+    assertThat(queryVariant)
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("partitionId");
+              assertThat(t.value().intValue()).isEqualTo(3);
+            });
+  }
+
+  @Test
   public void shouldQueryByTenantId() {
     // Given
     final var filter = FilterBuilders.job(b -> b.tenantIds("tenant_1"));

@@ -12,11 +12,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
+import io.camunda.gateway.protocol.model.JobWaitStateDetails;
 import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -49,11 +60,15 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateConditionDetails;
+import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryResponseMapperTest {
@@ -192,6 +207,7 @@ class SearchQueryResponseMapperTest {
             789L, // processDefinitionKey
             456L, // processInstanceKey
             999L, // rootProcessInstanceKey
+            "business-1", // businessId
             111L, // elementInstanceKey
             "tenant", // tenantId
             null, // dueDate
@@ -209,6 +225,7 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getBusinessId()).isEqualTo("business-1");
   }
 
   @Test
@@ -553,6 +570,66 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapBusinessIdForCorrelatedMessageSubscription() {
+    // given
+    final var entity =
+        CorrelatedMessageSubscriptionEntity.builder()
+            .correlationKey("corrKey")
+            .correlationTime(OffsetDateTime.now())
+            .flowNodeId("messageCatch")
+            .flowNodeInstanceKey(111L)
+            .messageKey(222L)
+            .messageName("testMessage")
+            .partitionId(1)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
+            .processInstanceKey(789L)
+            .rootProcessInstanceKey(999L)
+            .subscriptionKey(333L)
+            .tenantId("tenant")
+            .businessId("order-12345")
+            .build();
+
+    // when
+    final var subscriptions =
+        SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
+            new SearchQueryResult<CorrelatedMessageSubscriptionEntity>(
+                1, false, List.of(entity), null, null));
+
+    // then
+    assertThat(subscriptions.getItems().getFirst().getBusinessId()).isEqualTo("order-12345");
+  }
+
+  @Test
+  void shouldMapNullBusinessIdForCorrelatedMessageSubscription() {
+    // given
+    final var entity =
+        CorrelatedMessageSubscriptionEntity.builder()
+            .correlationKey("corrKey")
+            .correlationTime(OffsetDateTime.now())
+            .flowNodeId("flowNode")
+            .messageKey(222L)
+            .messageName("testMessage")
+            .partitionId(1)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
+            .processInstanceKey(789L)
+            .subscriptionKey(333L)
+            .tenantId("tenant")
+            .businessId(null)
+            .build();
+
+    // when
+    final var subscriptions =
+        SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
+            new SearchQueryResult<CorrelatedMessageSubscriptionEntity>(
+                1, false, List.of(entity), null, null));
+
+    // then
+    assertThat(subscriptions.getItems().getFirst().getBusinessId()).isNull();
+  }
+
+  @Test
   void shouldMapRootProcessInstanceKeyForSequenceFlow() {
     // given
     final var entity =
@@ -690,6 +767,7 @@ class SearchQueryResponseMapperTest {
             789L, // processDefinitionKey
             456L, // processInstanceKey
             null, // rootProcessInstanceKey
+            null, // businessId
             111L, // elementInstanceKey
             "tenant", // tenantId
             null, // dueDate
@@ -973,6 +1051,244 @@ class SearchQueryResponseMapperTest {
           .as("ListenerEventType.%s should map without error", type)
           .isNotNull()
           .isEqualTo(JobListenerEventTypeEnum.fromValue(type.name()));
+    }
+  }
+
+  @Test
+  void shouldMapUnspecifiedListenerEventTypeToNullInWaitStateJobDetails() {
+    // given
+    final var jobDetails =
+        new WaitStateJobDetails(
+            111L, // jobKey
+            "service-task-job", // jobType
+            JobKind.BPMN_ELEMENT, // jobKind
+            ListenerEventType.UNSPECIFIED, // listenerEventType — sentinel for non-listener jobs
+            3); // retries
+    final var entity =
+        new WaitStateEntity.Builder()
+            .processInstanceKey(789L)
+            .elementInstanceKey(111L)
+            .elementId("serviceTask")
+            .elementType(FlowNodeType.SERVICE_TASK)
+            .rootProcessInstanceKey(999L)
+            .bpmnProcessId("process1")
+            .details(jobDetails)
+            .tenantId("default")
+            .build();
+
+    // when
+    final var result =
+        SearchQueryResponseMapper.toElementInstanceWaitStateQueryResult(
+            new SearchQueryResult<>(1, false, List.of(entity), null, null));
+
+    // then
+    final var responseDetails = (JobWaitStateDetails) result.getItems().getFirst().getDetails();
+    assertThat(responseDetails.getListenerEventType()).isNull();
+  }
+
+  @Test
+  void shouldMapConditionWaitStateDetails() {
+    // given
+    final var conditionDetails =
+        new WaitStateConditionDetails("= x > 5", List.of("create", "update"));
+    final var entity =
+        new WaitStateEntity.Builder()
+            .processInstanceKey(789L)
+            .elementInstanceKey(111L)
+            .elementId("cond-ice")
+            .elementType(FlowNodeType.INTERMEDIATE_CATCH_EVENT)
+            .rootProcessInstanceKey(999L)
+            .bpmnProcessId("process1")
+            .details(conditionDetails)
+            .tenantId("default")
+            .build();
+
+    // when
+    final var result =
+        SearchQueryResponseMapper.toElementInstanceWaitStateQueryResult(
+            new SearchQueryResult<>(1, false, List.of(entity), null, null));
+
+    // then
+    final var responseDetails =
+        (ConditionWaitStateDetails) result.getItems().getFirst().getDetails();
+    assertThat(responseDetails.getExpression()).isEqualTo("= x > 5");
+    assertThat(responseDetails.getEvents())
+        .extracting(ConditionWaitStateDetails.EventsEnum::getValue)
+        .containsExactly("create", "update");
+  }
+
+  @Nested
+  class AgentHistoryItemResult {
+
+    @Test
+    void shouldMapTextContentItem() {
+      // given
+      final var producedAt = OffsetDateTime.parse("2025-01-01T10:00:00Z");
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              100L,
+              200L,
+              300L,
+              400L,
+              500L,
+              "process-1",
+              "tenant-1",
+              600L,
+              "lease-1",
+              3,
+              AgentInstanceHistoryRole.USER,
+              List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
+              List.of(),
+              new Metrics(10, 20, 30),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              producedAt);
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getHistoryItemKey()).isEqualTo("100");
+      assertThat(result.getAgentInstanceKey()).isEqualTo("200");
+      assertThat(result.getElementInstanceKey()).isEqualTo("300");
+      assertThat(result.getJobKey()).isEqualTo("600");
+      assertThat(result.getJobLease()).isEqualTo("lease-1");
+      assertThat(result.getIteration()).isEqualTo(3);
+      assertThat(result.getRole().getValue()).isEqualTo("USER");
+      assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
+      assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
+      assertThat(result.getMetrics().getOutputTokens()).isEqualTo(20);
+      assertThat(result.getMetrics().getDurationMs()).isEqualTo(30);
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().get(0).getContentType()).isEqualTo("TEXT");
+    }
+
+    @Test
+    void shouldMapDocumentContentItem() {
+      // given
+      final var docMeta =
+          new DocumentMetadata("text/pdf", "report.pdf", null, 1024L, "pd-1", 999L, Map.of());
+      final var docRef = new DocumentReference("store-1", "doc-1", "hash-abc", docMeta);
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "pd-1",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.ASSISTANT,
+              List.of(new ContentItem(ContentType.DOCUMENT, null, docRef, null)),
+              List.of(),
+              new Metrics(0, 0, 0),
+              AgentInstanceHistoryCommitStatus.PENDING,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getContent()).hasSize(1);
+      final var content = result.getContent().get(0);
+      assertThat(content.getContentType()).isEqualTo("DOCUMENT");
+      assertThat(result.getRole().getValue()).isEqualTo("ASSISTANT");
+    }
+
+    @Test
+    void shouldMapNullContentAndToolCallsAsEmptyLists() {
+      // given
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.TOOL_RESULT,
+              null,
+              null,
+              new Metrics(0, 0, 0),
+              AgentInstanceHistoryCommitStatus.DISCARDED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getContent()).isEmpty();
+      assertThat(result.getToolCalls()).isEmpty();
+    }
+
+    @Test
+    void shouldMapToolCalls() {
+      // given
+      final var toolCall = new ToolCall("tc-1", "MyTool", "elem-1", Map.of("param", "value"));
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              1,
+              AgentInstanceHistoryRole.ASSISTANT,
+              List.of(),
+              List.of(toolCall),
+              new Metrics(5, 10, 100),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getToolCalls()).hasSize(1);
+      assertThat(result.getToolCalls().get(0).getToolCallId()).isEqualTo("tc-1");
+      assertThat(result.getToolCalls().get(0).getToolName()).isEqualTo("MyTool");
+      assertThat(result.getToolCalls().get(0).getElementId()).isEqualTo("elem-1");
+    }
+
+    @Test
+    void shouldWrapEntityListInSearchQueryResult() {
+      // given
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              42L,
+              7L,
+              8L,
+              9L,
+              10L,
+              "",
+              "<default>",
+              11L,
+              "",
+              null,
+              AgentInstanceHistoryRole.USER,
+              List.of(),
+              List.of(),
+              new Metrics(0, 0, 0),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+      final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
+
+      // when
+      final var response = SearchQueryResponseMapper.toAgentHistorySearchQueryResponse(queryResult);
+
+      // then
+      assertThat(response.getItems()).hasSize(1);
+      assertThat(response.getItems().get(0).getHistoryItemKey()).isEqualTo("42");
     }
   }
 }

@@ -18,6 +18,7 @@ package io.camunda.zeebe.exporter.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
@@ -88,7 +89,8 @@ public final class ExporterTest {
     final var context = new TestContext();
 
     // then
-    assertThat(context.getPhysicalTenantId()).isEqualTo("default");
+    assertThat(context.getPhysicalTenantId())
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private static final class TestExporterContainer {
@@ -162,7 +164,7 @@ public final class ExporterTest {
 
     @Override
     public String getPhysicalTenantId() {
-      return "default";
+      return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     }
 
     @Override

@@ -63,6 +63,61 @@ public class AssertVariableInstructionTest {
       new AssertVariableInstructionHandler();
 
   @Nested
+  class SatisfiesExpression {
+
+    private static final String EXPRESSION = "agentResponse.status = \"approved\"";
+
+    @Test
+    void shouldAssertGlobalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesExpression(EXPRESSION)
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      verify(mockAssert).hasVariableSatisfiesExpression(eq(VARIABLE_NAME), eq(EXPRESSION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+
+    @Test
+    void shouldAssertLocalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesExpression(EXPRESSION)
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      verify(mockAssert)
+          .hasLocalVariableSatisfiesExpression(
+              any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPRESSION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+  }
+
+  @Nested
   class SatisfiesJudge {
 
     private static final String EXPECTATION = "should contain a valid summary";
@@ -143,7 +198,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
@@ -180,7 +235,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
@@ -218,7 +273,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.9);
       assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
 
@@ -258,7 +313,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.7);
       assertThat(updatedConfig.getCustomPrompt()).hasValue("Local variable evaluation criteria");
 

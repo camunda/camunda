@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.DeleteProcessI
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.UpdateJobBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommands;
@@ -78,6 +79,9 @@ public final class BatchOperationSetupProcessors {
                 writers.command(), brokerRequestAuthorizationConverter),
             BatchOperationType.DELETE_DECISION_INSTANCE,
             new DeleteDecisionInstanceBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.UPDATE_JOB,
+            new UpdateJobBatchOperationExecutor(
                 writers.command(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =

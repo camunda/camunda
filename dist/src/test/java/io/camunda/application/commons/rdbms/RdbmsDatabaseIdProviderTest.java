@@ -15,16 +15,19 @@ import static org.mockito.Mockito.when;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 class RdbmsDatabaseIdProviderTest {
 
-  @Test
-  void shouldReturnOverrideWhenSet() {
+  @ParameterizedTest
+  @ValueSource(strings = {"h2", "postgresql", "mysql", "mariadb", "oracle", "mssql"})
+  void shouldReturnOverrideWhenSet(final String override) {
     final var dataSource = mock(DataSource.class);
-    final var databaseIdProvider = new RdbmsDatabaseIdProvider("h2");
+    final var databaseIdProvider = new RdbmsDatabaseIdProvider(override);
 
-    assertThat(databaseIdProvider.getDatabaseId(dataSource)).isEqualTo("h2");
+    assertThat(databaseIdProvider.getDatabaseId(dataSource)).isEqualTo(override);
   }
 
   @Test

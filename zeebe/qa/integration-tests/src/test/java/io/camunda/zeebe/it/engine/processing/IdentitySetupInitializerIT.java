@@ -167,20 +167,15 @@ final class IdentitySetupInitializerIT {
     assertThat(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword())).isTrue();
   }
 
-  @Test
-  void shouldInitializeWithMappingRulesAndRoleMemberships() {
+  // Each key form is exercised in its own broker: config is flattened to camunda.* properties and
+  // re-bound by Spring, which collapses case-variant map keys into a single canonical key. Putting
+  // several variants in one default-roles map would therefore drop all but one, so we verify the
+  // forms independently — matching how a real user supplies a single form via YAML/env.
+  @ParameterizedTest
+  @ValueSource(strings = {"mappingRules", "mappingrules", "mapping-rules"})
+  void shouldInitializeWithMappingRulesAndRoleMemberships(final String mappingRulesKey) {
     // given a broker with authorization enabled
-    final var mappingRules1 =
-        new ConfiguredMappingRule(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString());
-    final var mappingRules2 =
-        new ConfiguredMappingRule(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString());
-    final var mappingRules3 =
+    final var mappingRule =
         new ConfiguredMappingRule(
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
@@ -189,18 +184,10 @@ final class IdentitySetupInitializerIT {
         true,
         1,
         cfg -> {
-          cfg.getInitialization()
-              .setMappingRules(List.of(mappingRules1, mappingRules2, mappingRules3));
+          cfg.getInitialization().setMappingRules(List.of(mappingRule));
           final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
           defaultRoles.put(
-              "admin",
-              Map.of(
-                  "mappingRules",
-                  List.of(mappingRules1.getMappingRuleId()),
-                  "mappingrules",
-                  List.of(mappingRules2.getMappingRuleId()),
-                  "mapping-rules",
-                  List.of(mappingRules3.getMappingRuleId())));
+              "admin", Map.of(mappingRulesKey, List.of(mappingRule.getMappingRuleId())));
           cfg.getInitialization().setDefaultRoles(defaultRoles);
         });
 
@@ -213,30 +200,12 @@ final class IdentitySetupInitializerIT {
     final var firstMappingRule = record.getMappingRules().getFirst();
     Assertions.assertThat(firstMappingRule)
         .isNotNull()
-        .hasMappingRuleId(mappingRules1.getMappingRuleId())
-        .hasClaimName(mappingRules1.getClaimName())
-        .hasClaimValue(mappingRules1.getClaimValue());
-
-    final var secondMappingRule = record.getMappingRules().get(1);
-    Assertions.assertThat(secondMappingRule)
-        .isNotNull()
-        .hasMappingRuleId(mappingRules2.getMappingRuleId())
-        .hasClaimName(mappingRules2.getClaimName())
-        .hasClaimValue(mappingRules2.getClaimValue());
-
-    final var thirdMappingRule = record.getMappingRules().get(2);
-    Assertions.assertThat(thirdMappingRule)
-        .isNotNull()
-        .hasMappingRuleId(mappingRules3.getMappingRuleId())
-        .hasClaimName(mappingRules3.getClaimName())
-        .hasClaimValue(mappingRules3.getClaimValue());
+        .hasMappingRuleId(mappingRule.getMappingRuleId())
+        .hasClaimName(mappingRule.getClaimName())
+        .hasClaimValue(mappingRule.getClaimValue());
 
     final var members = record.getRoleMembers().stream().map(RoleRecordValue::getEntityId).toList();
-    assertThat(members)
-        .containsExactlyInAnyOrder(
-            mappingRules1.getMappingRuleId(),
-            mappingRules2.getMappingRuleId(),
-            mappingRules3.getMappingRuleId());
+    assertThat(members).containsExactly(mappingRule.getMappingRuleId());
   }
 
   private void createBroker(
@@ -246,8 +215,8 @@ final class IdentitySetupInitializerIT {
       final Consumer<CamundaSecurityLibraryProperties> securityCfg) {
     broker =
         new TestStandaloneBroker()
-            .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
-            .withSecurityConfig(securityCfg)
+            .withSecurityConfig(
+                securityCfg.andThen(sc -> sc.getAuthorizations().setEnabled(authorizationsEnabled)))
             .withClusterConfig(cluster -> cluster.setPartitionCount(partitionCount))
             .withRecordingExporter(true);
 

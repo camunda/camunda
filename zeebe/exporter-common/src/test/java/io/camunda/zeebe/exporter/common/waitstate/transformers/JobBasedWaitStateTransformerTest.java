@@ -36,7 +36,6 @@ class JobBasedWaitStateTransformerTest {
             .from(factory.generateObject(JobRecordValue.class))
             .withType("payment-service")
             .withJobKind(JobKind.BPMN_ELEMENT)
-            .withJobListenerEventType(JobListenerEventType.UNSPECIFIED)
             .withRetries(3)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .withElementId("task-payment")
@@ -76,7 +75,7 @@ class JobBasedWaitStateTransformerTest {
     assertThat(details.jobKey()).isEqualTo(999L);
     assertThat(details.jobType()).isEqualTo("payment-service");
     assertThat(details.jobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
-    assertThat(details.listenerEventType()).isEqualTo(JobListenerEventType.UNSPECIFIED);
+    assertThat(details.listenerEventType()).isNull();
     assertThat(details.retries()).isEqualTo(3);
   }
 
@@ -95,6 +94,114 @@ class JobBasedWaitStateTransformerTest {
     assertThat(transformer.supports(record)).isTrue();
     assertThat(transformer.triggersAdd(record)).isTrue();
     assertThat(transformer.triggersRemoval(record)).isFalse();
+  }
+
+  @Test
+  void shouldRetainListenerEventTypeForExecutionListenerJob() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("exec-listener")
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withJobListenerEventType(JobListenerEventType.START)
+            .withRetries(3)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("exec-el")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withKey(999L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(JobIntent.CREATED)
+                    .withValue(value));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then
+    final var details = (JobWaitStateDetails) entry.getDetails();
+    assertThat(details.jobKind()).isEqualTo(JobKind.EXECUTION_LISTENER);
+    assertThat(details.listenerEventType()).isEqualTo(JobListenerEventType.START);
+  }
+
+  @Test
+  void shouldRetainListenerEventTypeForTaskListenerJob() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("task-listener")
+            .withJobKind(JobKind.TASK_LISTENER)
+            .withJobListenerEventType(JobListenerEventType.CREATING)
+            .withRetries(3)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withElementId("user-task-tl")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withKey(999L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(JobIntent.CREATED)
+                    .withValue(value));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then
+    final var details = (JobWaitStateDetails) entry.getDetails();
+    assertThat(details.jobKind()).isEqualTo(JobKind.TASK_LISTENER);
+    assertThat(details.listenerEventType()).isEqualTo(JobListenerEventType.CREATING);
+  }
+
+  @Test
+  void shouldEmitNullListenerEventTypeForAdHocSubProcess() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("ahsp-job")
+            .withJobKind(JobKind.AD_HOC_SUB_PROCESS)
+            .withJobListenerEventType(JobListenerEventType.UNSPECIFIED)
+            .withRetries(3)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .withElementId("ahsp")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withKey(999L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(JobIntent.CREATED)
+                    .withValue(value));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then
+    final var details = (JobWaitStateDetails) entry.getDetails();
+    assertThat(details.jobKind()).isEqualTo(JobKind.AD_HOC_SUB_PROCESS);
+    assertThat(details.listenerEventType()).isNull();
   }
 
   @Test

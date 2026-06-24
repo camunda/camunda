@@ -16,13 +16,22 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
+import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryCommitStatusEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemResult;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceHistorySearchQueryResult;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
+import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceResult;
 import io.camunda.gateway.protocol.model.AgentInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.AgentInstanceStatusEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
+import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentTool;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -36,6 +45,7 @@ import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
+import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemSearchQueryResult;
 import io.camunda.gateway.protocol.model.BatchOperationResponse;
 import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
@@ -46,6 +56,7 @@ import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchResult;
+import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
@@ -57,6 +68,7 @@ import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
+import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
@@ -137,6 +149,7 @@ import io.camunda.gateway.protocol.model.RoleSearchQueryResult;
 import io.camunda.gateway.protocol.model.RoleUserResult;
 import io.camunda.gateway.protocol.model.RoleUserSearchResult;
 import io.camunda.gateway.protocol.model.SearchQueryPageResponse;
+import io.camunda.gateway.protocol.model.SignalWaitStateDetails;
 import io.camunda.gateway.protocol.model.StatusMetric;
 import io.camunda.gateway.protocol.model.TenantClientResult;
 import io.camunda.gateway.protocol.model.TenantClientSearchResult;
@@ -146,25 +159,30 @@ import io.camunda.gateway.protocol.model.TenantResult;
 import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
 import io.camunda.gateway.protocol.model.TenantUserResult;
 import io.camunda.gateway.protocol.model.TenantUserSearchResult;
+import io.camunda.gateway.protocol.model.TimerWaitStateDetails;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponseItem;
+import io.camunda.gateway.protocol.model.UsageMetricsResponseItem.Builder;
 import io.camunda.gateway.protocol.model.UserResult;
 import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
+import io.camunda.gateway.protocol.model.UserTaskWaitStateDetails;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.gateway.protocol.model.WaitStateElementTypeEnum;
 import io.camunda.gateway.protocol.model.WaitStateTypeEnum;
 import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -196,6 +214,7 @@ import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEnti
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
@@ -208,9 +227,13 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUSta
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
+import io.camunda.search.entities.WaitStateSignalDetails;
+import io.camunda.search.entities.WaitStateTimerDetails;
+import io.camunda.search.entities.WaitStateUserTaskDetails;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.user.CamundaUserDTO;
@@ -256,7 +279,7 @@ public final class SearchQueryResponseMapper {
                       key -> {
                         final UsageMetricStatisticsEntityTenant stats = tenants1.get(key);
                         final UsageMetricTUStatisticsEntityTenant tuStats = tenants2.get(key);
-                        return UsageMetricsResponseItem.Builder.create()
+                        return Builder.create()
                             .processInstances(stats != null ? stats.rpi() : 0L)
                             .decisionInstances(stats != null ? stats.edi() : 0L)
                             .assignees(tuStats != null ? tuStats.tu() : 0L)
@@ -692,6 +715,7 @@ public final class SearchQueryResponseMapper {
                       .jobKind(JobKindEnum.fromValue(jobKind.name()))
                       .listenerEventType(
                           listenerEventType == null
+                                  || listenerEventType == JobEntity.ListenerEventType.UNSPECIFIED
                               ? null
                               : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
                       .retries(retries)
@@ -703,6 +727,42 @@ public final class SearchQueryResponseMapper {
                       .waitStateType(WaitStateTypeEnum.MESSAGE.name())
                       .messageName(messageName)
                       .correlationKey(correlationKey)
+                      .build())
+              .build();
+      case WaitStateConditionDetails(final var expression, final var events) ->
+          base.details(
+                  ConditionWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.CONDITION.name())
+                      .expression(expression)
+                      .events(
+                          events == null
+                              ? null
+                              : events.stream()
+                                  .map(ConditionWaitStateDetails.EventsEnum::fromValue)
+                                  .collect(Collectors.toList()))
+                      .build())
+              .build();
+      case WaitStateUserTaskDetails(final var taskKey, final var dueDate) ->
+          base.details(
+                  UserTaskWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.USER_TASK.name())
+                      .taskKey(keyToString(taskKey))
+                      .dueDate(dueDate == null || dueDate.isBlank() ? null : dueDate)
+                      .build())
+              .build();
+      case WaitStateTimerDetails(final var dueDate, final var repetitions) ->
+          base.details(
+                  TimerWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.TIMER.name())
+                      .dueDate(dueDate)
+                      .repetitions(repetitions)
+                      .build())
+              .build();
+      case WaitStateSignalDetails(final var signalName) ->
+          base.details(
+                  SignalWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.SIGNAL.name())
+                      .signalName(signalName)
                       .build())
               .build();
     };
@@ -887,9 +947,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
         .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))
         .endDate(formatDateOrNull(p.endDate()))
-        .state(
-            toProtocolState(
-                requireNonNullElse(p.state(), ProcessInstanceEntity.ProcessInstanceState.ACTIVE)))
+        .state(toProtocolState(requireNonNullElse(p.state(), ProcessInstanceState.ACTIVE)))
         .hasIncident(Boolean.TRUE.equals(p.hasIncident()))
         .tenantId(p.tenantId())
         .processInstanceKey(keyToString(p.processInstanceKey()))
@@ -968,7 +1026,7 @@ public final class SearchQueryResponseMapper {
         // `processInstanceKey` is null for batch-op targets that are not process instances (e.g.
         // DELETE_DECISION_INSTANCE, DELETE_DECISION_DEFINITION). Spec declares it nullable.
         .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
-        .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()))
+        .state(StateEnum.fromValue(entity.state().name()))
         .build();
   }
 
@@ -1249,6 +1307,7 @@ public final class SearchQueryResponseMapper {
   private static CorrelatedMessageSubscriptionResult toCorrelatedMessageSubscription(
       final CorrelatedMessageSubscriptionEntity correlatedMessageSubscription) {
     return CorrelatedMessageSubscriptionResult.Builder.create()
+        .businessId(correlatedMessageSubscription.businessId())
         .correlationKey(correlatedMessageSubscription.correlationKey())
         .correlationTime(formatDate(correlatedMessageSubscription.correlationTime()))
         .elementId(correlatedMessageSubscription.flowNodeId())
@@ -1273,6 +1332,7 @@ public final class SearchQueryResponseMapper {
         .name(t.name())
         .processInstanceKey(keyToString(t.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
+        .businessId(t.businessId())
         .processDefinitionKey(keyToString(t.processDefinitionKey()))
         .elementInstanceKey(keyToString(t.elementInstanceKey()))
         .processDefinitionId(t.processDefinitionId())
@@ -1546,7 +1606,7 @@ public final class SearchQueryResponseMapper {
           case TENANT -> ClusterVariableScopeEnum.TENANT;
         };
     final String tenantId =
-        clusterVariableEntity.scope() == io.camunda.search.entities.ClusterVariableScope.TENANT
+        clusterVariableEntity.scope() == ClusterVariableScope.TENANT
             ? clusterVariableEntity.tenantId()
             : null;
     return ClusterVariableSearchResult.Builder.create()
@@ -1572,7 +1632,7 @@ public final class SearchQueryResponseMapper {
           case TENANT -> ClusterVariableScopeEnum.TENANT;
         };
     final String tenantId =
-        clusterVariableEntity.scope() == io.camunda.search.entities.ClusterVariableScope.TENANT
+        clusterVariableEntity.scope() == ClusterVariableScope.TENANT
             ? clusterVariableEntity.tenantId()
             : null;
     return ClusterVariableResult.Builder.create()
@@ -1685,9 +1745,8 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  private static ProcessInstanceStateEnum toProtocolState(
-      final ProcessInstanceEntity.ProcessInstanceState value) {
-    if (value == ProcessInstanceEntity.ProcessInstanceState.CANCELED) {
+  private static ProcessInstanceStateEnum toProtocolState(final ProcessInstanceState value) {
+    if (value == ProcessInstanceState.CANCELED) {
       return ProcessInstanceStateEnum.TERMINATED;
     }
     return ProcessInstanceStateEnum.fromValue(value.name());
@@ -1966,7 +2025,7 @@ public final class SearchQueryResponseMapper {
         .versionTag(entity.versionTag())
         .resourceId(entity.resourceId())
         .tenantId(entity.tenantId())
-        .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
+        .resourceKey(keyToString(entity.resourceKey()))
         .build();
   }
 
@@ -2051,6 +2110,122 @@ public final class SearchQueryResponseMapper {
                             .map(SearchQueryResponseMapper::toAgentInstanceResult)
                             .toList())
                 .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  public static AgentInstanceHistoryItemResult toAgentHistoryItemResult(
+      final AgentInstanceHistoryEntity entity) {
+    final var content =
+        ofNullable(entity.content())
+            .map(
+                items ->
+                    items.stream()
+                        .map(SearchQueryResponseMapper::toAgentInstanceMessageContent)
+                        .toList())
+            .orElseGet(Collections::emptyList);
+
+    final var toolCalls =
+        ofNullable(entity.toolCalls())
+            .map(
+                calls ->
+                    calls.stream().map(SearchQueryResponseMapper::toAgentInstanceToolCall).toList())
+            .orElseGet(Collections::emptyList);
+
+    final var m = entity.metrics();
+    final var metrics =
+        AgentInstanceHistoryItemMetrics.Builder.create()
+            .inputTokens(m.inputTokens())
+            .outputTokens(m.outputTokens())
+            .durationMs(m.durationMs())
+            .build();
+
+    return AgentInstanceHistoryItemResult.Builder.create()
+        .historyItemKey(keyToString(entity.historyItemKey()))
+        .agentInstanceKey(keyToString(entity.agentInstanceKey()))
+        .elementInstanceKey(keyToString(entity.elementInstanceKey()))
+        .jobKey(keyToString(entity.jobKey()))
+        .jobLease(entity.jobLease())
+        .iteration(entity.iteration())
+        .role(AgentInstanceHistoryRoleEnum.fromValue(entity.role().name()))
+        .content(content)
+        .toolCalls(toolCalls)
+        .metrics(metrics)
+        .commitStatus(AgentInstanceHistoryCommitStatusEnum.fromValue(entity.commitStatus().name()))
+        .producedAt(formatDate(entity.producedAt()))
+        .build();
+  }
+
+  public static AgentInstanceHistorySearchQueryResult toAgentHistorySearchQueryResponse(
+      final SearchQueryResult<AgentInstanceHistoryEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return AgentInstanceHistorySearchQueryResult.Builder.create()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        items.stream()
+                            .map(SearchQueryResponseMapper::toAgentHistoryItemResult)
+                            .toList())
+                .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  private static AgentInstanceMessageContent toAgentInstanceMessageContent(
+      final AgentInstanceHistoryEntity.ContentItem item) {
+    return switch (item.contentType()) {
+      case TEXT ->
+          AgentInstanceTextContent.Builder.create()
+              .contentType(item.contentType().name())
+              .text(requireNonNullElse(item.text(), ""))
+              .build();
+      case DOCUMENT ->
+          AgentInstanceDocumentContent.Builder.create()
+              .contentType(item.contentType().name())
+              .documentReference(
+                  toDocumentReference(
+                      requireNonNull(item.documentReference(), "documentReference")))
+              .build();
+      case OBJECT ->
+          AgentInstanceObjectContent.Builder.create()
+              .contentType(item.contentType().name())
+              .object(requireNonNullElse(item.object(), Collections.emptyMap()))
+              .build();
+    };
+  }
+
+  private static io.camunda.gateway.protocol.model.DocumentReference toDocumentReference(
+      final AgentInstanceHistoryEntity.DocumentReference ref) {
+    return io.camunda.gateway.protocol.model.DocumentReference.Builder.create()
+        .camundaDocumentType(
+            io.camunda.gateway.protocol.model.DocumentReference.CamundaDocumentTypeEnum.CAMUNDA)
+        .storeId(ref.storeId())
+        .documentId(ref.documentId())
+        .contentHash(ref.contentHash())
+        .metadata(toDocumentMetadataResponse(ref.metadata()))
+        .build();
+  }
+
+  private static DocumentMetadataResponse toDocumentMetadataResponse(
+      final AgentInstanceHistoryEntity.DocumentMetadata meta) {
+    return DocumentMetadataResponse.Builder.create()
+        .fileName(meta.fileName())
+        .expiresAt(formatDateOrNull(meta.expiresAt()))
+        .size(meta.size())
+        .contentType(meta.contentType())
+        .customProperties(meta.customProperties())
+        .processDefinitionId(meta.processDefinitionId())
+        .processInstanceKey(keyToStringOrNull(meta.processInstanceKey()))
+        .build();
+  }
+
+  private static AgentInstanceToolCall toAgentInstanceToolCall(
+      final AgentInstanceHistoryEntity.ToolCall call) {
+    return AgentInstanceToolCall.Builder.create()
+        .toolCallId(call.toolCallId())
+        .toolName(call.toolName())
+        .elementId(call.elementId())
+        .arguments(call.arguments())
         .build();
   }
 

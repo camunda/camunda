@@ -787,6 +787,10 @@
                 "type": "string",
                 "description": "The assignee of the user task."
               },
+              "businessId": {
+                "type": "string",
+                "description": "The business ID of the owning process instance the user task belongs to. This only works for user tasks created with 8.10 and onwards. Tasks from prior versions don't contain this data and cannot be found. "
+              },
               "completionDate": {
                 "type": "object",
                 "properties": {
@@ -981,7 +985,8 @@
                     "followUpDate",
                     "dueDate",
                     "priority",
-                    "name"
+                    "name",
+                    "businessId"
                   ],
                   "description": "The field to sort by."
                 },

@@ -67,6 +67,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
+    queries.addAll(getBusinessIdQuery(filter.businessIdOperations()));
     queries.addAll(getPrioritiesQuery(filter.priorityOperations()));
     queries.addAll(getStatesQuery(filter.stateOperations()));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
@@ -194,6 +195,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private List<SearchQuery> getAssigneesQuery(final List<Operation<String>> assignees) {
     return stringOperations(ASSIGNEE, assignees);
+  }
+
+  private List<SearchQuery> getBusinessIdQuery(final List<Operation<String>> businessIds) {
+    return stringOperations(BUSINESS_ID, businessIds);
   }
 
   private List<SearchQuery> getPrioritiesQuery(final List<Operation<Integer>> priorities) {
