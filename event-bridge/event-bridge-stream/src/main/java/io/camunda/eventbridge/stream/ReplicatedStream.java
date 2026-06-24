@@ -83,10 +83,11 @@ public abstract class ReplicatedStream<C extends Enum<? extends EnumValue> & Enu
   protected abstract Supplier<RecordValues> recordValues();
 
   /**
-   * The processors to register, built after {@link #onStarting()} so they can capture the state it
+   * The single {@link RecordProcessor} (typically a {@link RecordProcessingEngine}) this stream
+   * runs, built after {@link #onStarting()} so its processors/appliers can capture the state it
    * creates.
    */
-  protected abstract List<RecordProcessor> createProcessors();
+  protected abstract RecordProcessor createRecordProcessor();
 
   /**
    * Hook invoked after the log stream is built but before the processors are created — the place to
@@ -128,7 +129,7 @@ public abstract class ReplicatedStream<C extends Enum<? extends EnumValue> & Enu
             .logStream(logStream)
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
-            .recordProcessors(createProcessors())
+            .recordProcessors(List.of(createRecordProcessor()))
             .recordValues(recordValues())
             .commandResponseWriter(new NoopCommandResponseWriter())
             .partitionCommandSender(new NoopInterPartitionCommandSender())

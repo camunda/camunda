@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -88,8 +89,11 @@ final class OffsetStateAndProcessorTest {
 
   @Test
   void shouldApplyCommittedEventOnReplay() {
-    // given — a follower replaying an OFFSET_COMMITTED event
-    final var processor = new OffsetCommitProcessor(state);
+    // given — a follower replaying an OFFSET_COMMITTED event through the engine's applier registry
+    final var engine =
+        RecordProcessingEngine.builder()
+            .withEventApplier(CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(state))
+            .build();
     final var event =
         new OffsetCommitRecord().setGroupId("group-a").setPartitionId(3).setOffset(42);
     final TypedRecord record = mock(TypedRecord.class);
@@ -97,7 +101,7 @@ final class OffsetStateAndProcessorTest {
     when(record.getIntent()).thenReturn(CoordinatorIntent.OFFSET_COMMITTED);
 
     // when
-    processor.replay(record);
+    engine.replay(record);
 
     // then — follower state matches what a leader would have committed
     assertThat(state.getOffset("group-a", 3)).isEqualTo(42);

@@ -15,9 +15,9 @@ import java.util.Objects;
 
 /**
  * Registry of {@link TypedEventApplier}s keyed by event intent — the event-bridge counterpart of
- * the Zeebe engine's {@code EventAppliers}. A {@code StreamRecordProcessor} registers one applier
- * per event intent in its constructor; adding a new event type is then a single {@link #register}
- * call. {@link #applyState} dispatches a committed event to the matching applier.
+ * the Zeebe engine's {@code EventAppliers}. A {@link RecordProcessingEngine} registers one applier
+ * per event intent; adding a new event type is then a single {@link #register} call. {@link
+ * #applyState} dispatches a committed event to the matching applier.
  */
 public final class EventAppliers implements EventApplier {
 

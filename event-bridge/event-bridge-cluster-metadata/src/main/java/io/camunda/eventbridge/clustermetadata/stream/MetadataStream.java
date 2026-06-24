@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
+import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -29,9 +30,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The metadata group's replicated topic registry: a {@link ReplicatedStream} over the metadata Raft
- * partition's log. Topic register/delete mutations are written as commands; the {@link
- * TopicProcessor} applies them to {@link DbTopicState} and emits committed events, which followers
- * and passive observers replay into their own state.
+ * partition's log. Topic register/delete mutations are written as commands; the engine's command
+ * processors turn them into committed events that {@link TopicRegisteredApplier} / {@link
+ * TopicDeletedApplier} apply to {@link DbTopicState}, and which followers and passive observers
+ * replay into their own state.
  *
  * <p>This is the registry-only half of what used to be the {@code CoordinatorStream}: consumer
  * offsets and group metadata stay in the coordinator group; the topic registry lives here in its
@@ -41,8 +43,8 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataStream.class);
 
-  // Thread-safe in-memory mirror of the topic registry, maintained by the TopicProcessor on the
-  // stream's actor (on every applied register/delete). Reads (topicsSnapshot) go through this so
+  // Thread-safe in-memory mirror of the topic registry, maintained by the topic event appliers on
+  // the stream's actor (on every applied register/delete). Reads (topicsSnapshot) go through this so
   // callers on other actors — the leader's MetadataManager and each broker's reconcile — never
   // touch the stream-owned RocksDB state cross-thread. DbTopicState remains the durable source of
   // truth; this is seeded from it on start (covering snapshot recovery).
@@ -84,8 +86,21 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   }
 
   @Override
-  protected List<RecordProcessor> createProcessors() {
-    return List.of(new TopicProcessor(topicState, registryCache));
+  protected RecordProcessor createRecordProcessor() {
+    return RecordProcessingEngine.builder()
+        .onCommand(
+            MetadataRecordValues.TOPIC_VALUE_TYPE,
+            MetadataIntent.REGISTER_TOPIC,
+            new TopicRegisterProcessor())
+        .onCommand(
+            MetadataRecordValues.TOPIC_VALUE_TYPE,
+            MetadataIntent.DELETE_TOPIC,
+            new TopicDeleteProcessor())
+        .withEventApplier(
+            MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState, registryCache))
+        .withEventApplier(
+            MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState, registryCache))
+        .build();
   }
 
   /**

@@ -7,35 +7,24 @@
  */
 package io.camunda.eventbridge.consumergroups.stream;
 
-import io.camunda.eventbridge.stream.StreamRecordProcessor;
+import io.camunda.eventbridge.stream.StateWriter;
+import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Replicates consumer-group metadata on the coordinator partition. Following the engine's
- * command-processor / event-applier split, it does <em>not</em> mutate state directly: on a
- * rebalance command it appends a {@code GROUP_METADATA_COMMITTED} follow-up event via the {@link
- * io.camunda.eventbridge.stream.StateWriter}, which both writes the event and applies it through
- * the registered {@link GroupMetadataCommittedApplier}. The same applier runs on replay, so every
- * replica rebuilds identical membership and a new leader can restore the registry after failover.
+ * Handles the {@code REBALANCE_GROUP} command: turns it into a {@code GROUP_METADATA_COMMITTED}
+ * follow-up event, which {@link GroupMetadataCommittedApplier} applies to the replicated
+ * consumer-group metadata. Holds no state.
  */
-public final class GroupMetadataProcessor extends StreamRecordProcessor {
-
-  public GroupMetadataProcessor(final DbGroupMetadataState groupMetadataState) {
-    super(EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE);
-    appliers()
-        .register(
-            CoordinatorIntent.GROUP_METADATA_COMMITTED,
-            new GroupMetadataCommittedApplier(groupMetadataState));
-  }
+public final class GroupMetadataProcessor implements TypedRecordProcessor<GroupMetadataRecord> {
 
   @Override
-  protected void processCommand(final TypedRecord command) {
-    final var cmd = (GroupMetadataRecord) command.getValue();
-
+  public void processRecord(
+      final TypedRecord<GroupMetadataRecord> command, final StateWriter stateWriter) {
+    final var cmd = command.getValue();
     final var event =
         new GroupMetadataRecord().setGroupId(cmd.getGroupId()).setPayload(cmd.getPayload());
-
-    stateWriter()
-        .appendFollowUpEvent(command.getKey(), CoordinatorIntent.GROUP_METADATA_COMMITTED, event);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), CoordinatorIntent.GROUP_METADATA_COMMITTED, event);
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.stream;
 
+import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -21,7 +22,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,9 +79,22 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   }
 
   @Override
-  protected List<RecordProcessor> createProcessors() {
-    return List.of(
-        new OffsetCommitProcessor(offsetState), new GroupMetadataProcessor(groupMetadataState));
+  protected RecordProcessor createRecordProcessor() {
+    return RecordProcessingEngine.builder()
+        .onCommand(
+            EventBridgeRecordValues.OFFSET_VALUE_TYPE,
+            CoordinatorIntent.COMMIT_OFFSET,
+            new OffsetCommitProcessor())
+        .onCommand(
+            EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE,
+            CoordinatorIntent.REBALANCE_GROUP,
+            new GroupMetadataProcessor())
+        .withEventApplier(
+            CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(offsetState))
+        .withEventApplier(
+            CoordinatorIntent.GROUP_METADATA_COMMITTED,
+            new GroupMetadataCommittedApplier(groupMetadataState))
+        .build();
   }
 
   @Override

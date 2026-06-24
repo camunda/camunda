@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata.TopicStatus;
+import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -117,9 +118,15 @@ final class TopicStateAndProcessorTest {
 
   @Test
   void shouldApplyRegisterAndDeleteOnReplay() {
-    // given — a follower replaying topic events
+    // given — a follower replaying topic events through the engine's applier registry
     final var registryCache = new java.util.concurrent.ConcurrentHashMap<String, TopicMetadata>();
-    final var processor = new TopicProcessor(state, registryCache);
+    final var engine =
+        RecordProcessingEngine.builder()
+            .withEventApplier(
+                MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(state, registryCache))
+            .withEventApplier(
+                MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(state, registryCache))
+            .build();
 
     final var registered =
         new TopicRecord()
@@ -128,14 +135,14 @@ final class TopicStateAndProcessorTest {
             .setPartitionCount(8)
             .setReplicationFactor(3)
             .setStatus(TopicStatus.ACTIVE);
-    processor.replay(recordOf(registered));
+    engine.replay(recordOf(registered));
     assertThat(state.get("orders")).isEqualTo(new TopicMetadata(8, 3, TopicStatus.ACTIVE));
     // the thread-safe cache mirrors the durable state in lockstep
     assertThat(registryCache).containsEntry("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE));
 
     // when — a delete event replays
     final var deleted = new TopicRecord().setName("orders").setOp(TopicRecord.OP_DELETE);
-    processor.replay(recordOf(deleted));
+    engine.replay(recordOf(deleted));
 
     // then — follower state matches a leader that registered then deleted
     assertThat(state.get("orders")).isNull();
