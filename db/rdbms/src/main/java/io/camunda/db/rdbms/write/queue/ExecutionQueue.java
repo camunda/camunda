@@ -80,9 +80,7 @@ public interface ExecutionQueue {
    * pre-flush listeners, post-flush listeners, and in-transaction hooks.
    *
    * <p>Call this at the start of {@code open()} before registering new listeners to prevent
-   * duplicate registrations when an exporter is reopened after a recoverable failure. Also call it
-   * after catching a {@link PositionMismatchException} to discard stale writes before the next
-   * flush.
+   * duplicate registrations when an exporter is reopened after a recoverable failure.
    */
   void reset();
 }

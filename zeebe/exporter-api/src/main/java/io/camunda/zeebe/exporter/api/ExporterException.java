@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.exporter.api;
 
-import org.jspecify.annotations.NonNull;
-
 public class ExporterException extends RuntimeException {
   private static final long serialVersionUID = 9144017472787012481L;
   private final Compensation compensation;
@@ -38,7 +36,7 @@ public class ExporterException extends RuntimeException {
    * instead of simply logging the failure and skipping the record.
    */
   public ExporterException(
-      final String message, final Throwable cause, @NonNull final Compensation compensation) {
+      final String message, final Throwable cause, final Compensation compensation) {
     super(message, cause);
     this.compensation = compensation;
   }
@@ -49,14 +47,14 @@ public class ExporterException extends RuntimeException {
    * io.camunda.zeebe.broker.exporter.stream.ExporterContainer} will close and reopen the exporter
    * instead of simply logging the failure and skipping the record.
    */
-  public ExporterException(final String message, @NonNull final Compensation compensation) {
+  public ExporterException(final String message, final Compensation compensation) {
     super(message);
     this.compensation = compensation;
   }
 
   /**
-   * Returns the compensation action the caller should take, or {@code null} if no specific action
-   * is requested (the exception will be logged and the record skipped).
+   * Returns the compensation action the caller should take. Defaults to {@link Compensation#RETRY}
+   * when not explicitly set.
    */
   public Compensation getCompensation() {
     return compensation;
