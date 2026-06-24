@@ -11,7 +11,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.clustermetadata.transport.MetadataRequestHandler;
-import io.camunda.eventbridge.coordinator.transport.CoordinationRequestHandler;
+import io.camunda.eventbridge.consumergroups.transport.CoordinationRequestHandler;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
