@@ -25,6 +25,13 @@
     applied — identically on the leader (on write) and on followers (on replay).</description>
 
   <dependencies>
+    <!-- Request-handler registry shared by the partition lifecycles -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-transport</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- Stream processor platform: RecordProcessor, ProcessingResultBuilder, TypedRecord -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -38,6 +45,54 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+    <!-- LogStream append-only log -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-logstreams</artifactId>
+    </dependency>
+    <!-- Actor scheduler threading model -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
+    <!-- RocksDB-backed ZeebeDb for replicated state -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+    <!-- Broker partition primitives: StateController, AtomixLogStorage, AsyncSnapshotDirector,
+         TopologyManagerImpl, AtomixRecordEntrySupplier -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+    </dependency>
+    <!-- Snapshot store (snapshot creation, replication, recovery) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-snapshots</artifactId>
+    </dependency>
+    <!-- RAFT consensus and SWIM cluster membership -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <!-- Test -->
