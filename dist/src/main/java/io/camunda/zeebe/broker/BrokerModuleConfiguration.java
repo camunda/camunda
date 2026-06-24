@@ -76,6 +76,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final org.springframework.core.env.Environment environment;
   private final io.camunda.service.registry.ServiceRegistry serviceRegistry;
   private final io.camunda.security.spring.oidc.ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+  private final io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory
+      scopedOidcClaimsProviderFactory;
 
   private Broker broker;
 
@@ -102,10 +104,14 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false)
           final io.camunda.service.registry.ServiceRegistry serviceRegistry,
       @Autowired(required = false)
-          final io.camunda.security.spring.oidc.ScopedJwtDecoderFactory scopedJwtDecoderFactory) {
+          final io.camunda.security.spring.oidc.ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false)
+          final io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory
+              scopedOidcClaimsProviderFactory) {
     this.environment = environment;
     this.serviceRegistry = serviceRegistry;
     this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
+    this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -186,10 +192,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     return broker;
   }
 
-  /**
-   * #55755 spike: identical to GatewayModuleConfiguration#buildPtHandlerRegistry (see #55752 stub
-   * note).
-   */
+  /** #55755 spike: identical to GatewayModuleConfiguration#buildPtHandlerRegistry. */
   private java.util.Map<String, io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler>
       buildPtHandlerRegistry() {
     final java.util.Map<String, io.camunda.security.api.model.config.AuthenticationConfiguration>
@@ -198,17 +201,11 @@ public class BrokerModuleConfiguration implements CloseableSilently {
                 environment);
     final boolean authEnabled = !engineSecurityConfig.getAuthentication().isUnprotectedApi();
 
-    // STUB for #55752 — replace with CSL ScopedOidcClaimsProviderFactory.
-    final java.util.function.Function<
-            io.camunda.security.api.model.config.AuthenticationConfiguration,
-            io.camunda.security.api.context.OidcClaimsProvider>
-        claimsProviderFactory = cfg -> (jwtClaims, tokenValue) -> jwtClaims;
-
     return io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantHandlerRegistry.build(
         authConfigsByTenantId,
         authEnabled,
         cfg -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(cfg),
-        claimsProviderFactory,
+        scopedOidcClaimsProviderFactory::buildClaimsProvider,
         ptId -> serviceRegistry.userServices(ptId),
         passwordEncoder);
   }
