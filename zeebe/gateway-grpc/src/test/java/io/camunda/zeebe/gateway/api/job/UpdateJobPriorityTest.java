@@ -53,6 +53,25 @@ public class UpdateJobPriorityTest extends GatewayTest {
   }
 
   @Test
+  public void shouldMapRequestAndResponseWithPriorityZero() {
+    // given
+    final UpdateJobPriorityStub stub = new UpdateJobPriorityStub();
+    stub.registerWith(brokerClient);
+    final UpdateJobPriorityRequest request =
+        UpdateJobPriorityRequest.newBuilder().setJobKey(stub.getKey()).setPriority(0).build();
+
+    // when
+    final UpdateJobPriorityResponse response = client.updateJobPriority(request);
+
+    // then
+    assertThat(response).isNotNull();
+    final BrokerUpdateJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final JobRecord brokerRequestValue = (JobRecord) brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getPriority()).isZero();
+    assertThat(brokerRequestValue.getChangedAttributes()).contains(JobRecord.PRIORITY);
+  }
+
+  @Test
   public void shouldRejectWhenPriorityIsNotProvided() {
     // given
     final UpdateJobPriorityRequest request =
