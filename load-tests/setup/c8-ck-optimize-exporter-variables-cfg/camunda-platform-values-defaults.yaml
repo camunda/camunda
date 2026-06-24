@@ -279,7 +279,7 @@ orchestration:
         # Camunda Exporter configuration
         zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
         zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
-        zeebe.broker.exporters.elasticsearch.args.index.variable-name-inclusion-start-with: "customer"
+        zeebe.broker.exporters.elasticsearch.args.index.variableNameInclusionStartWith[0]: "customer"
 
         # Configure a rate limit for all writes, so that we can visualize flow control metrics.
         zeebe.broker.flowControl.write.enabled: "true"
