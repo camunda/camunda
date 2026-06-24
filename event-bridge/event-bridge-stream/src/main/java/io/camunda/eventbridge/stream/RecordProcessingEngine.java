@@ -15,6 +15,7 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -47,6 +48,7 @@ public final class RecordProcessingEngine implements RecordProcessor {
   private final EventAppliers eventAppliers = new EventAppliers();
   private final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors;
   private final Set<ValueType> acceptedValueTypes;
+  private final List<RecordProcessors.FixedRateTask> scheduledTasks;
 
   public RecordProcessingEngine(final RecordProcessorsFactory recordProcessorsFactory) {
     final var writers = new Writers(resultBuilderMutex, eventAppliers);
@@ -54,11 +56,15 @@ public final class RecordProcessingEngine implements RecordProcessor {
     recordProcessorsFactory.createProcessors(processors);
     commandProcessors = processors.commandProcessors();
     acceptedValueTypes = Set.copyOf(commandProcessors.keySet());
+    scheduledTasks = processors.scheduledTasks();
   }
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    // Processors and appliers are wired in the constructor; nothing to initialize here.
+    // Register background tasks (e.g. the rebalance assignor) on the async task group; the platform
+    // runs them only while processing (leader), off the command-processing path.
+    final var scheduleService = recordProcessorContext.getScheduleService();
+    scheduledTasks.forEach(t -> scheduleService.runAtFixedRateAsync(t.interval(), t.task()));
   }
 
   @Override

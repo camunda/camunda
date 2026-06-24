@@ -11,8 +11,12 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.scheduling.Task;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,6 +32,7 @@ public final class RecordProcessors {
   private final EventAppliers eventAppliers;
   private final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors =
       new EnumMap<>(ValueType.class);
+  private final List<FixedRateTask> scheduledTasks = new ArrayList<>();
 
   RecordProcessors(final Writers writers, final EventAppliers eventAppliers) {
     this.writers = writers;
@@ -60,7 +65,25 @@ public final class RecordProcessors {
     return this;
   }
 
+  /**
+   * Registers a background {@link Task} the engine runs at a fixed rate on the async task group
+   * (leader only, off the command-processing path) — for work like computing a rebalance. The task
+   * may read thread-safe state mirrors and append follow-up commands via its {@code
+   * TaskResultBuilder}; it cannot touch the stream's RocksDB directly.
+   */
+  public RecordProcessors scheduleAtFixedRate(final Duration interval, final Task task) {
+    scheduledTasks.add(new FixedRateTask(interval, task));
+    return this;
+  }
+
   Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors() {
     return commandProcessors;
   }
+
+  List<FixedRateTask> scheduledTasks() {
+    return scheduledTasks;
+  }
+
+  /** A background task and the fixed interval at which the engine schedules it. */
+  record FixedRateTask(Duration interval, Task task) {}
 }
