@@ -194,6 +194,7 @@ test.describe('Decision Navigation', () => {
         .getByRole('link', {
           name: `View process instance ${processInstanceKey}`,
         })
+        .first()
         .click();
     });
 
