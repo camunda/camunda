@@ -1,0 +1,127 @@
+# description: Daily cleanup — closes open failing-test-fix PRs from the previous
+#              day that were not merged. Runs before the morning triage so the triage
+#              agent starts each day with no in-flight bot PRs blocking dispatch.
+#
+# Pairing:
+#   03:00 UTC Mon-Fri  c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml (this)
+#   04:00 UTC Mon-Fri  c8-orchestration-cluster-e2e-nightly-triage.yml
+#
+# Targets: PRs labelled "failing-test-fix" opened by the nightly fix agent.
+#
+# Single exception: PRs labelled "do-not-close" are kept across days. That label is
+# the only way for a reviewer to hold a bot PR. Review comments alone do NOT keep a
+# PR alive — merge it the same day or apply the label.
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: Close Stale Fix PRs
+
+on:
+  schedule:
+    - cron: '0 3 * * 1-5' # 03:00 UTC Mon-Fri, 1h before triage
+  workflow_dispatch:
+    inputs:
+      stale_days:
+        description: 'Close PRs untouched for N days (default 1 — daily fresh start)'
+        default: '1'
+        required: false
+      dry_run:
+        description: 'Print actions but do not close anything'
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  TEST_OWNER: '@camunda/qa-engineering'
+
+jobs:
+  close-stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Identify and close stale fix PRs
+        env:
+          GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          STALE_DAYS: ${{ inputs.stale_days || '1' }}
+          DRY_RUN:    ${{ inputs.dry_run || 'false' }}
+          REPO:       ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          cutoff_epoch=$(date -u -d "${STALE_DAYS} days ago" +%s 2>/dev/null \
+                       || date -u -v-"${STALE_DAYS}"d +%s)
+          echo "Closing PRs not updated since $(date -u -d "@${cutoff_epoch}" +%FT%TZ 2>/dev/null || echo "${STALE_DAYS} days ago")"
+          echo "Dry-run: ${DRY_RUN}"
+
+          # Pull all open PRs with the bot label, excluding those held by do-not-close.
+          mapfile -t prs < <(
+            gh pr list \
+              --repo "$REPO" \
+              --state open \
+              --limit 200 \
+              --json number,url,title,createdAt,labels \
+              --jq '
+                .[] |
+                select(
+                  ([.labels[].name] | any(. == "failing-test-fix"))
+                  and ([.labels[].name] | any(. == "do-not-close") | not)
+                ) |
+                @json
+              '
+          )
+
+          closed=0
+          kept=0
+          for raw in "${prs[@]}"; do
+            number=$(echo "$raw"  | jq -r '.number')
+            title=$(echo "$raw"   | jq -r '.title')
+            created=$(echo "$raw" | jq -r '.createdAt')
+
+            created_epoch=$(date -u -d "$created" +%s 2>/dev/null \
+                          || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$created" +%s 2>/dev/null \
+                          || echo 0)
+
+            if [ "$created_epoch" -ge "$cutoff_epoch" ]; then
+              echo "  KEEP   #$number — created $created (within window): $title"
+              kept=$((kept + 1))
+              continue
+            fi
+
+            echo "  CLOSE  #$number — created $created: $title"
+            if [ "$DRY_RUN" != "true" ]; then
+              gh pr close "$number" \
+                --repo "$REPO" \
+                --delete-branch \
+                --comment "Closed by close-stale-fix-prs workflow: bot PRs are closed daily before triage. Add the \`do-not-close\` label to hold this PR across the daily reset, or re-trigger the fix agent to start fresh." \
+                || echo "::warning::Failed to close #$number"
+            fi
+            closed=$((closed + 1))
+          done
+
+          echo ""
+          echo "Result: ${closed} closed, ${kept} kept"
+          {
+            printf '## Close Stale Fix PRs\n\n'
+            printf 'Threshold: **%s days**, dry-run: **%s**\n\n' "$STALE_DAYS" "$DRY_RUN"
+            printf -- '- Closed: **%s**\n' "$closed"
+            printf -- '- Kept (within window or `do-not-close` label): **%s**\n' "$kept"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Checkout
+        if: always()
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
