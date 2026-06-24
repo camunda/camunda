@@ -108,6 +108,10 @@ public class RecordFixtures {
     return POSITION.incrementAndGet();
   }
 
+  public long currentPosition() {
+    return POSITION.get();
+  }
+
   public ImmutableRecord<RecordValue> getProcessInstanceStartedRecord() {
     return getProcessInstanceStartedRecord(NO_PARENT_EXISTS_KEY);
   }
