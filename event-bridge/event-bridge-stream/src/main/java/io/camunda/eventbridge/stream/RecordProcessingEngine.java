@@ -7,8 +7,6 @@
  */
 package io.camunda.eventbridge.stream;
 
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
@@ -17,54 +15,50 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * The single {@link RecordProcessor} a {@link ReplicatedStream} runs — the event-bridge counterpart
  * of the Zeebe engine's {@code Engine}. It owns a registry of command {@link TypedRecordProcessor}s
  * (keyed by {@code (ValueType, Intent)}) and a single {@link EventAppliers} registry (keyed by
- * event intent), sharing one {@link StateWriter}.
+ * event intent). As in the engine, a {@link StateWriter} is built once against a {@link
+ * ProcessingResultBuilderMutex} and handed to the command processors at <em>construction</em> (via
+ * the {@link RecordProcessorsFactory}); {@link #process} only opens a {@link
+ * ProcessingResultBuilderScope} so those writers target the current result builder.
  *
  * <ul>
  *   <li>{@link #process} (leader) looks up the command processor for the record's value type and
- *       intent and runs it; the processor appends follow-up events via the state writer, which
+ *       intent and runs it; the processor appends follow-up events via its state writer, which
  *       applies them through the event appliers in the same step.
  *   <li>{@link #replay} (follower/observer) dispatches the committed event to its applier by
  *       intent.
  * </ul>
  *
- * <p>Build one per stream via {@link #builder()}: register a processor per command intent and an
- * applier per event intent. Both commands and their resulting events share a value type, so {@link
- * #accepts} covers replay as well.
+ * <p>Both commands and their resulting events share a value type, so {@link #accepts} (derived from
+ * the command registrations) covers replay as well.
  */
 public final class RecordProcessingEngine implements RecordProcessor {
 
+  private final ProcessingResultBuilderMutex resultBuilderMutex =
+      new ProcessingResultBuilderMutex();
+  private final EventAppliers eventAppliers = new EventAppliers();
   private final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors;
-  private final EventAppliers eventAppliers;
   private final Set<ValueType> acceptedValueTypes;
-  private final StateWriter stateWriter;
 
-  private ProcessingResultBuilder currentResultBuilder;
-
-  private RecordProcessingEngine(
-      final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors,
-      final EventAppliers eventAppliers) {
-    this.commandProcessors = commandProcessors;
-    this.eventAppliers = eventAppliers;
+  public RecordProcessingEngine(final RecordProcessorsFactory recordProcessorsFactory) {
+    final var stateWriter = new StateWriter(resultBuilderMutex, eventAppliers);
+    final var processors = new RecordProcessors(stateWriter, eventAppliers);
+    recordProcessorsFactory.createProcessors(processors);
+    commandProcessors = processors.commandProcessors();
     acceptedValueTypes = Set.copyOf(commandProcessors.keySet());
-    stateWriter = new StateWriter(() -> currentResultBuilder, eventAppliers);
-  }
-
-  public static Builder builder() {
-    return new Builder();
   }
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    // State is captured by the registered processors/appliers; nothing to initialize here.
+    // Processors and appliers are wired in the constructor; nothing to initialize here.
   }
 
   @Override
@@ -80,22 +74,19 @@ public final class RecordProcessingEngine implements RecordProcessor {
   @Override
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
-    currentResultBuilder = processingResultBuilder;
-    try {
+    try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
       final var byIntent = commandProcessors.get(record.getValueType());
       final var processor = byIntent == null ? null : byIntent.get(record.getIntent());
       if (processor != null) {
         invoke(processor, record);
       }
-      return processingResultBuilder.build();
-    } finally {
-      currentResultBuilder = null;
     }
+    return processingResultBuilder.build();
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void invoke(final TypedRecordProcessor processor, final TypedRecord record) {
-    processor.processRecord(record, stateWriter);
+    processor.processRecord(record);
   }
 
   @Override
@@ -106,38 +97,42 @@ public final class RecordProcessingEngine implements RecordProcessor {
     return EmptyProcessingResult.INSTANCE;
   }
 
-  /** Registers the command processors and event appliers for one stream's engine. */
-  public static final class Builder {
+  /**
+   * Holds the result builder for the duration of a single {@link #process} call so the writers
+   * built against it (in the constructor) resolve to the right builder. Mirrors the engine's mutex.
+   */
+  private static final class ProcessingResultBuilderMutex
+      implements Supplier<ProcessingResultBuilder> {
 
-    private final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors =
-        new EnumMap<>(ValueType.class);
-    private final EventAppliers eventAppliers = new EventAppliers();
+    private ProcessingResultBuilder resultBuilder;
 
-    private Builder() {}
+    private void setResultBuilder(final ProcessingResultBuilder resultBuilder) {
+      this.resultBuilder = Objects.requireNonNull(resultBuilder);
+    }
 
-    /** Registers the processor that handles the given command intent. */
-    public <T extends UnifiedRecordValue> Builder onCommand(
-        final ValueType valueType, final Intent intent, final TypedRecordProcessor<T> processor) {
-      final var previous =
-          commandProcessors
-              .computeIfAbsent(valueType, unused -> new HashMap<>())
-              .putIfAbsent(intent, processor);
-      if (previous != null) {
-        throw new IllegalArgumentException(
-            "Command processor for %s/%s is already registered".formatted(valueType, intent));
+    private void unsetResultBuilder() {
+      resultBuilder = null;
+    }
+
+    @Override
+    public ProcessingResultBuilder get() {
+      if (resultBuilder == null) {
+        throw new IllegalStateException("Attempt to retrieve resultBuilder out of scope.");
       }
-      return this;
+      return resultBuilder;
+    }
+  }
+
+  /** Scopes the result builder to one {@link #process} call (set on enter, unset on close). */
+  private final class ProcessingResultBuilderScope implements AutoCloseable {
+
+    private ProcessingResultBuilderScope(final ProcessingResultBuilder processingResultBuilder) {
+      resultBuilderMutex.setResultBuilder(processingResultBuilder);
     }
 
-    /** Registers the applier that mutates state for the given event intent. */
-    public <I extends Intent, V extends RecordValue> Builder withEventApplier(
-        final I intent, final TypedEventApplier<I, V> applier) {
-      eventAppliers.register(intent, applier);
-      return this;
-    }
-
-    public RecordProcessingEngine build() {
-      return new RecordProcessingEngine(commandProcessors, eventAppliers);
+    @Override
+    public void close() {
+      resultBuilderMutex.unsetResultBuilder();
     }
   }
 }

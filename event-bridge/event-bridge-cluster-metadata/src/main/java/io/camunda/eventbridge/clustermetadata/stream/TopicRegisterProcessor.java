@@ -17,8 +17,14 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 final class TopicRegisterProcessor implements TypedRecordProcessor<TopicRecord> {
 
+  private final StateWriter stateWriter;
+
+  TopicRegisterProcessor(final StateWriter stateWriter) {
+    this.stateWriter = stateWriter;
+  }
+
   @Override
-  public void processRecord(final TypedRecord<TopicRecord> command, final StateWriter stateWriter) {
+  public void processRecord(final TypedRecord<TopicRecord> command) {
     final var cmd = command.getValue();
     final var event =
         new TopicRecord()

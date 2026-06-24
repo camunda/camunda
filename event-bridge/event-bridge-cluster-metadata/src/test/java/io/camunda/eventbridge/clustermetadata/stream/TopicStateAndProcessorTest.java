@@ -121,12 +121,15 @@ final class TopicStateAndProcessorTest {
     // given — a follower replaying topic events through the engine's applier registry
     final var registryCache = new java.util.concurrent.ConcurrentHashMap<String, TopicMetadata>();
     final var engine =
-        RecordProcessingEngine.builder()
-            .withEventApplier(
-                MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(state, registryCache))
-            .withEventApplier(
-                MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(state, registryCache))
-            .build();
+        new RecordProcessingEngine(
+            processors ->
+                processors
+                    .withEventApplier(
+                        MetadataIntent.TOPIC_REGISTERED,
+                        new TopicRegisteredApplier(state, registryCache))
+                    .withEventApplier(
+                        MetadataIntent.TOPIC_DELETED,
+                        new TopicDeletedApplier(state, registryCache)));
 
     final var registered =
         new TopicRecord()

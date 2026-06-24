@@ -91,9 +91,10 @@ final class OffsetStateAndProcessorTest {
   void shouldApplyCommittedEventOnReplay() {
     // given — a follower replaying an OFFSET_COMMITTED event through the engine's applier registry
     final var engine =
-        RecordProcessingEngine.builder()
-            .withEventApplier(CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(state))
-            .build();
+        new RecordProcessingEngine(
+            processors ->
+                processors.withEventApplier(
+                    CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(state)));
     final var event =
         new OffsetCommitRecord().setGroupId("group-a").setPartitionId(3).setOffset(42);
     final TypedRecord record = mock(TypedRecord.class);

@@ -45,9 +45,9 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   // Thread-safe in-memory mirror of the topic registry, maintained by the topic event appliers on
   // the stream's actor (on every applied register/delete). Reads (topicsSnapshot) go through this so
-  // callers on other actors — the leader's MetadataManager and each broker's reconcile — never
-  // touch the stream-owned RocksDB state cross-thread. DbTopicState remains the durable source of
-  // truth; this is seeded from it on start (covering snapshot recovery).
+  // callers on other actors — the leader's MetadataManager and each broker's reconcile — never touch
+  // the stream-owned RocksDB state cross-thread. DbTopicState remains the durable source of truth;
+  // this is seeded from it on start (covering snapshot recovery).
   private final Map<String, TopicMetadata> registryCache = new ConcurrentHashMap<>();
 
   private DbTopicState topicState;
@@ -87,20 +87,23 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   @Override
   protected RecordProcessor createRecordProcessor() {
-    return RecordProcessingEngine.builder()
-        .onCommand(
-            MetadataRecordValues.TOPIC_VALUE_TYPE,
-            MetadataIntent.REGISTER_TOPIC,
-            new TopicRegisterProcessor())
-        .onCommand(
-            MetadataRecordValues.TOPIC_VALUE_TYPE,
-            MetadataIntent.DELETE_TOPIC,
-            new TopicDeleteProcessor())
-        .withEventApplier(
-            MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState, registryCache))
-        .withEventApplier(
-            MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState, registryCache))
-        .build();
+    return new RecordProcessingEngine(
+        processors ->
+            processors
+                .onCommand(
+                    MetadataRecordValues.TOPIC_VALUE_TYPE,
+                    MetadataIntent.REGISTER_TOPIC,
+                    new TopicRegisterProcessor(processors.stateWriter()))
+                .onCommand(
+                    MetadataRecordValues.TOPIC_VALUE_TYPE,
+                    MetadataIntent.DELETE_TOPIC,
+                    new TopicDeleteProcessor(processors.stateWriter()))
+                .withEventApplier(
+                    MetadataIntent.TOPIC_REGISTERED,
+                    new TopicRegisteredApplier(topicState, registryCache))
+                .withEventApplier(
+                    MetadataIntent.TOPIC_DELETED,
+                    new TopicDeletedApplier(topicState, registryCache)));
   }
 
   /**

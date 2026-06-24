@@ -18,9 +18,14 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 public final class GroupMetadataProcessor implements TypedRecordProcessor<GroupMetadataRecord> {
 
+  private final StateWriter stateWriter;
+
+  public GroupMetadataProcessor(final StateWriter stateWriter) {
+    this.stateWriter = stateWriter;
+  }
+
   @Override
-  public void processRecord(
-      final TypedRecord<GroupMetadataRecord> command, final StateWriter stateWriter) {
+  public void processRecord(final TypedRecord<GroupMetadataRecord> command) {
     final var cmd = command.getValue();
     final var event =
         new GroupMetadataRecord().setGroupId(cmd.getGroupId()).setPayload(cmd.getPayload());

@@ -80,21 +80,22 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
 
   @Override
   protected RecordProcessor createRecordProcessor() {
-    return RecordProcessingEngine.builder()
-        .onCommand(
-            EventBridgeRecordValues.OFFSET_VALUE_TYPE,
-            CoordinatorIntent.COMMIT_OFFSET,
-            new OffsetCommitProcessor())
-        .onCommand(
-            EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE,
-            CoordinatorIntent.REBALANCE_GROUP,
-            new GroupMetadataProcessor())
-        .withEventApplier(
-            CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(offsetState))
-        .withEventApplier(
-            CoordinatorIntent.GROUP_METADATA_COMMITTED,
-            new GroupMetadataCommittedApplier(groupMetadataState))
-        .build();
+    return new RecordProcessingEngine(
+        processors ->
+            processors
+                .onCommand(
+                    EventBridgeRecordValues.OFFSET_VALUE_TYPE,
+                    CoordinatorIntent.COMMIT_OFFSET,
+                    new OffsetCommitProcessor(processors.stateWriter()))
+                .onCommand(
+                    EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE,
+                    CoordinatorIntent.REBALANCE_GROUP,
+                    new GroupMetadataProcessor(processors.stateWriter()))
+                .withEventApplier(
+                    CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(offsetState))
+                .withEventApplier(
+                    CoordinatorIntent.GROUP_METADATA_COMMITTED,
+                    new GroupMetadataCommittedApplier(groupMetadataState)));
   }
 
   @Override
