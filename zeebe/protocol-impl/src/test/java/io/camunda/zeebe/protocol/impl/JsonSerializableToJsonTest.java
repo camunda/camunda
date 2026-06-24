@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
@@ -3283,6 +3284,52 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "time": 0
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ClusterVariableRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ClusterVariableRecord (global scope with metadata)",
+        (Supplier<ClusterVariableRecord>)
+            () ->
+                new ClusterVariableRecord()
+                    .setName("myVar")
+                    .setGlobalScope()
+                    .setTenantId("<default>")
+                    .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("42")))
+                    .setMetadata(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2")))),
+        """
+                {
+                  "name": "myVar",
+                  "value": "42",
+                  "scope": "GLOBAL",
+                  "tenantId": "<default>",
+                  "metadata": { "credentialType": "OAUTH2" }
+                }
+                """
+      },
+      {
+        "ClusterVariableRecord (tenant scope without metadata)",
+        (Supplier<ClusterVariableRecord>)
+            () ->
+                new ClusterVariableRecord()
+                    .setName("tenantVar")
+                    .setTenantScope()
+                    .setTenantId("tenant-1")
+                    .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("42"))),
+        """
+                {
+                  "name": "tenantVar",
+                  "value": "42",
+                  "scope": "TENANT",
+                  "tenantId": "tenant-1",
+                  "metadata": {}
                 }
                 """
       },

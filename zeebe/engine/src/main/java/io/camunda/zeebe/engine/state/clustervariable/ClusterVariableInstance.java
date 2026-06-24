@@ -27,6 +27,10 @@ public final class ClusterVariableInstance extends UnpackedObject implements DbV
     clusterVariable.getValue().copyFrom(clusterVariableRecord);
   }
 
+  public ClusterVariableRecord getRecord() {
+    return clusterVariable.getValue();
+  }
+
   public DirectBuffer getValueBuffer() {
     return clusterVariable.getValue().getValueBuffer();
   }
