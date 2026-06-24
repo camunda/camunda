@@ -19,7 +19,7 @@ import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorPartition;
 import io.camunda.eventbridge.coordinator.stream.MetadataPartition;
-import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
+import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
@@ -28,10 +28,12 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
@@ -80,7 +82,7 @@ final class PartitionBootstrapper {
   private DefaultPartitionManagementService managementService;
   private MessagingService brokerMessagingService;
   private MemberId localMemberId;
-  private TopicAssignmentGossip.Publisher topicAssignmentPublisher;
+  private Consumer<Map<String, TopicMetadata>> registryReconciler;
   private java.util.concurrent.atomic.AtomicReference<
           java.util.function.BiConsumer<String, java.util.List<Integer>>>
       provisionedSinkRef;
@@ -108,7 +110,7 @@ final class PartitionBootstrapper {
       final TopologyManagerImpl coordinatorTopologyManager,
       final TopologyManagerImpl metadataTopologyManager,
       final MessagingService brokerMessagingService,
-      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
+      final Consumer<Map<String, TopicMetadata>> registryReconciler,
       final java.util.concurrent.atomic.AtomicReference<
               java.util.function.BiConsumer<String, java.util.List<Integer>>>
           provisionedSinkRef,
@@ -118,7 +120,7 @@ final class PartitionBootstrapper {
     final var membershipService = cluster.getMembershipService();
     localMemberId = membershipService.getLocalMember().id();
     this.brokerMessagingService = brokerMessagingService;
-    this.topicAssignmentPublisher = topicAssignmentPublisher;
+    this.registryReconciler = registryReconciler;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
 
@@ -279,24 +281,30 @@ final class PartitionBootstrapper {
         new RoundRobinPartitionDistributor(PartitionFactory.METADATA_GROUP_NAME)
             .distributePartitions(members, 1, replicationFactor);
 
-    distribution.stream()
-        .filter(p -> p.members().contains(localMemberId))
-        .forEach(
-            partition ->
-                bootstrapMetadataPartition(
-                    partition.id().id(),
-                    Set.copyOf(partition.members()),
-                    localMemberId,
-                    factory,
-                    managementService,
-                    brokerMessagingService,
-                    metadataTopologyManager));
+    // Every broker observes the metadata group so it can reconcile its topic groups from the
+    // group's replicated registry: the RF chosen brokers are voting members (bootstrap), all others
+    // join as non-voting PASSIVE observers (they replicate the registry without affecting quorum).
+    distribution.forEach(
+        partition -> {
+          final var votingMembers = Set.copyOf(partition.members());
+          final var observe = !votingMembers.contains(localMemberId);
+          bootstrapMetadataPartition(
+              partition.id().id(),
+              votingMembers,
+              localMemberId,
+              observe,
+              factory,
+              managementService,
+              brokerMessagingService,
+              metadataTopologyManager);
+        });
   }
 
   private void bootstrapMetadataPartition(
       final int partitionId,
       final Set<MemberId> members,
       final MemberId localMemberId,
+      final boolean observe,
       final PartitionFactory factory,
       final DefaultPartitionManagementService managementService,
       final MessagingService brokerMessagingService,
@@ -321,31 +329,38 @@ final class PartitionBootstrapper {
             runtimeDirectory,
             (ConstructableSnapshotStore) created.snapshotStore(),
             metadataTopologyManager,
-            topicAssignmentPublisher,
+            registryReconciler,
             provisionedSinkRef,
             reconfigurationExecutor);
     metadataPartitions.add(metadataPartition);
     actorScheduler.submitActor(metadataPartition);
 
-    // Bootstrap FIRST, then register the role-change listener (replays the current role) — see the
-    // note in bootstrapCoordinatorPartition. Registering before bootstrap would create the
-    // StreamProcessor's committed reader against the still-initializing journal, pinning it to a
-    // segment that bootstrap closes, so followers would never replay the topic registry.
-    created
-        .raftPartition()
-        .bootstrap(managementService, created.snapshotStore())
-        .whenComplete(
-            (rp, error) -> {
-              if (error != null) {
-                LOG.error("Failed to bootstrap metadata raft partition {}", partitionId, error);
-              } else {
-                LOG.info("Metadata raft partition {} bootstrapped", partitionId);
-                created
-                    .raftPartition()
-                    .addRoleChangeListener(
-                        (role, term) -> metadataPartition.onRoleChange(role, term));
-              }
-            });
+    // Voting members bootstrap the group; everyone else joins as a non-voting passive observer.
+    // In both cases register the role-change listener only AFTER the Raft partition is started
+    // (replays the current role) — see the note in bootstrapCoordinatorPartition: registering
+    // before would pin the StreamProcessor's committed reader to a segment that startup resets.
+    final var started =
+        observe
+            ? created.raftPartition().joinAsPassive(managementService, created.snapshotStore())
+            : created.raftPartition().bootstrap(managementService, created.snapshotStore());
+    started.whenComplete(
+        (rp, error) -> {
+          if (error != null) {
+            LOG.error(
+                "Failed to {} metadata raft partition {}",
+                observe ? "observe (passive join)" : "bootstrap",
+                partitionId,
+                error);
+          } else {
+            LOG.info(
+                "Metadata raft partition {} {}",
+                partitionId,
+                observe ? "observed (passive)" : "bootstrapped");
+            created
+                .raftPartition()
+                .addRoleChangeListener((role, term) -> metadataPartition.onRoleChange(role, term));
+          }
+        });
   }
 
   void stop() {

@@ -16,20 +16,28 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 
 /**
- * Maintains the replicated topic registry on the coordinator partition. On {@link #process}
- * (leader) it applies the mutation to {@link DbTopicState} and emits a committed event; on {@link
- * #replay} (follower/recovery) it re-applies it — so every replica holds the same topic set and a
+ * Maintains the replicated topic registry on the metadata partition. On {@link #process} (leader)
+ * it applies the mutation to {@link DbTopicState} and emits a committed event; on {@link #replay}
+ * (follower/observer/recovery) it re-applies it — so every replica holds the same topic set and a
  * new leader restores it after failover. Register vs delete is read from the record's own {@code
  * op} field (see {@link TopicRecord}), not the record intent.
+ *
+ * <p>Each apply also updates an in-memory {@code registryCache} (owned by {@link MetadataStream})
+ * in lockstep with {@link DbTopicState}; this runs on the stream's actor, so reads from other
+ * actors go through the thread-safe cache rather than the stream-owned state DB.
  */
 public final class TopicProcessor implements RecordProcessor {
 
   private final DbTopicState topicState;
+  private final Map<String, TopicMetadata> registryCache;
 
-  public TopicProcessor(final DbTopicState topicState) {
+  public TopicProcessor(
+      final DbTopicState topicState, final Map<String, TopicMetadata> registryCache) {
     this.topicState = topicState;
+    this.registryCache = registryCache;
   }
 
   @Override
@@ -78,8 +86,10 @@ public final class TopicProcessor implements RecordProcessor {
   private void apply(final TopicRecord record) {
     if (record.isDelete()) {
       topicState.delete(record.getName());
+      registryCache.remove(record.getName());
     } else {
       topicState.put(record.getName(), record.toMetadata());
+      registryCache.put(record.getName(), record.toMetadata());
     }
   }
 

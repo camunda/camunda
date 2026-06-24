@@ -24,8 +24,10 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,13 @@ public final class MetadataStream {
   private final ZeebeDb<EventBridgeColumnFamilies> zeebeDb;
   private final InstantSource clock;
   private final MeterRegistry meterRegistry;
+
+  // Thread-safe in-memory mirror of the topic registry, maintained by the TopicProcessor on the
+  // stream's actor (on every applied register/delete). Reads (topicsSnapshot) go through this so
+  // callers on other actors — the leader's MetadataManager and each broker's reconcile — never
+  // touch the stream-owned RocksDB state cross-thread. DbTopicState remains the durable source of
+  // truth; this is seeded from it on start (covering snapshot recovery).
+  private final Map<String, TopicMetadata> registryCache = new ConcurrentHashMap<>();
 
   private LogStream logStream;
   private DbTopicState topicState;
@@ -103,6 +112,10 @@ public final class MetadataStream {
             .build();
 
     topicState = new DbTopicState(zeebeDb, zeebeDb.createContext());
+    // Seed the cache from durable state before the processor starts (no concurrent access yet),
+    // so a replica that recovered topics from a snapshot exposes them even before any replay.
+    registryCache.clear();
+    registryCache.putAll(topicState.readAll());
 
     final var builder =
         StreamProcessor.builder()
@@ -111,7 +124,7 @@ public final class MetadataStream {
             .logStream(logStream)
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
-            .recordProcessors(List.of(new TopicProcessor(topicState)))
+            .recordProcessors(List.of(new TopicProcessor(topicState, registryCache)))
             .recordValues(EventBridgeRecordValues::create)
             .commandResponseWriter(new NoopCommandResponseWriter())
             .partitionCommandSender(new NoopInterPartitionCommandSender())
@@ -167,7 +180,7 @@ public final class MetadataStream {
 
   /** All registered topics ({@code topicName → metadata}) for failover rebuild / listing. */
   public Map<String, TopicMetadata> topicsSnapshot() {
-    return topicState.readAll();
+    return new LinkedHashMap<>(registryCache);
   }
 
   private void writeTopicCommand(

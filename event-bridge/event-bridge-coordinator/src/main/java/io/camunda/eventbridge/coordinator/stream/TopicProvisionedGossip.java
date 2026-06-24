@@ -13,9 +13,10 @@ import java.util.List;
 
 /**
  * A broker's report that it has provisioned (started) some of a topic's partitions, sent back to
- * the coordinator so the registry-shard leader can advance the topic {@code CREATING -> ACTIVE}
- * once every partition is covered. The reverse direction of {@link TopicAssignmentGossip}: the
- * coordinator broadcasts the desired registry, brokers report what they provisioned.
+ * the metadata-group leader so it can advance the topic {@code CREATING -> ACTIVE} once every
+ * partition is covered. The registry itself flows the other way by replication (each broker
+ * observes the metadata Raft group); this small completion signal still travels over cluster
+ * messaging because passive observers cannot write to the metadata log.
  */
 public final class TopicProvisionedGossip {
 

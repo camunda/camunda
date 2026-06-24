@@ -40,8 +40,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,12 +54,16 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li><b>Leader</b>: {@code PROCESSING} mode + {@code MetadataManager} + request handler +
- *       snapshot director; serves topic admin (create/delete/reassign/list), broadcasts the
- *       registry, runs the {@code CREATING -> ACTIVE} transition and the change-coordinator.
- *   <li><b>Follower</b>: {@code REPLAY} mode (read-only log, no-op appender) — continuously applies
- *       committed topic events to its own state, so on promotion it only replays the tail and takes
- *       over quickly.
+ *       snapshot director; serves topic admin (create/delete/reassign/list), runs the {@code
+ *       CREATING -> ACTIVE} transition and the change-coordinator.
+ *   <li><b>Follower / passive observer</b>: {@code REPLAY} mode (read-only log, no-op appender) —
+ *       continuously applies committed topic events to its own state, so on promotion it only
+ *       replays the tail and takes over quickly.
  * </ul>
+ *
+ * <p>On <em>every</em> role this partition periodically feeds its local replicated registry to a
+ * reconcile sink, so each broker provisions its assigned topic Raft groups from its own observed
+ * copy of the registry rather than from a leader-side network broadcast.
  *
  * <p>Mirrors {@link CoordinatorPartition}; the two differ only in which stream/manager they run
  * (registry here, consumer offsets + group coordination there).
@@ -66,6 +72,9 @@ public final class MetadataPartition extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataPartition.class);
   private static final Duration SNAPSHOT_PERIOD = Duration.ofSeconds(30);
+  // Per-broker reconcile cadence: re-asserting the local replicated registry is the anti-entropy
+  // that lets a broker that missed an update still converge (replaces the old 2s leader broadcast).
+  private static final Duration RECONCILE_INTERVAL = Duration.ofSeconds(1);
   private static final ZeebeLogAppender NOOP_APPENDER = (entry, listener) -> {};
 
   private final int partitionId;
@@ -78,7 +87,7 @@ public final class MetadataPartition extends Actor {
   private final ZeebeDbFactory<EventBridgeColumnFamilies> dbFactory;
   private final RequestHandlerRegistry requestHandlerRegistry;
   private final TopologyManagerImpl metadataTopologyManager;
-  private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
+  private final Consumer<Map<String, TopicMetadata>> registryReconciler;
   private final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef;
   private final ReconfigurationExecutor reconfigurationExecutor;
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -106,7 +115,7 @@ public final class MetadataPartition extends Actor {
       final Path runtimeDirectory,
       final ConstructableSnapshotStore snapshotStore,
       final TopologyManagerImpl metadataTopologyManager,
-      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
+      final Consumer<Map<String, TopicMetadata>> registryReconciler,
       final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
@@ -117,7 +126,7 @@ public final class MetadataPartition extends Actor {
     this.runtimeDirectory = runtimeDirectory;
     this.snapshotStore = snapshotStore;
     this.metadataTopologyManager = metadataTopologyManager;
-    this.topicAssignmentPublisher = topicAssignmentPublisher;
+    this.registryReconciler = registryReconciler;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
     requestHandlerRegistry = new RequestHandlerRegistry(partitionId, messagingService);
@@ -135,10 +144,32 @@ public final class MetadataPartition extends Actor {
   }
 
   @Override
+  protected void onActorStarted() {
+    scheduleReconcile();
+  }
+
+  @Override
   protected void onActorClosing() {
     tearDownStream();
     closeState();
     requestHandlerRegistry.close();
+  }
+
+  /**
+   * Periodically hands this broker's local replicated registry to the reconcile sink, on every role
+   * (leader, follower, passive observer). {@code topicsSnapshot()} reads the stream's thread-safe
+   * in-memory cache, so this is safe to call from the partition actor; the sink dispatches the
+   * actual provisioning off-actor. No-op until the stream has started.
+   */
+  private void scheduleReconcile() {
+    if (registryReconciler != null && metadataStream != null) {
+      try {
+        registryReconciler.accept(metadataStream.topicsSnapshot());
+      } catch (final Exception e) {
+        LOG.warn("Metadata partition {} — registry reconcile failed", partitionId, e);
+      }
+    }
+    actor.schedule(RECONCILE_INTERVAL, this::scheduleReconcile);
   }
 
   /** Wired from the Raft partition's role-change listener. */
@@ -252,12 +283,7 @@ public final class MetadataPartition extends Actor {
   private void startMetadataManager() {
     metadataManager =
         new MetadataManager(
-            partitionId,
-            clusterSize,
-            metadataStream,
-            topicAssignmentPublisher,
-            provisionedSinkRef,
-            reconfigurationExecutor);
+            partitionId, clusterSize, metadataStream, provisionedSinkRef, reconfigurationExecutor);
     actorScheduler.submitActor(metadataManager);
     requestHandlerRegistry.register(
         MetadataRequestHandler.topicName(partitionId),

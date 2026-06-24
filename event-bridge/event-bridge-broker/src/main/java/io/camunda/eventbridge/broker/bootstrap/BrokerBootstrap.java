@@ -13,7 +13,7 @@ import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
-import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
+import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.coordinator.stream.TopicProvisionedGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
@@ -25,6 +25,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -172,19 +173,13 @@ public final class BrokerBootstrap {
         new TopicReconciler(
             partitionBootstrapper, topologySetup, localMemberId, provisionedPublisher);
 
-    // 4b. Wire the topic-registry propagation channel (Option 1: the registry-shard coordinator
-    // leader broadcasts the registry; every broker reconciles its local topic Raft groups from it).
-    // The local node also needs the registry, but cluster broadcast excludes the sender, so the
-    // publisher additionally delivers to the local sink. The subscriber receives broadcasts from
-    // remote registry leaders.
-    final Consumer<byte[]> registrySink =
-        payload -> topicReconciler.reconcile(TopicAssignmentGossip.decode(payload));
-    comm.consume(TopicAssignmentGossip.SUBJECT, Function.identity(), registrySink, executorService);
-    final TopicAssignmentGossip.Publisher topicAssignmentPublisher =
-        payload -> {
-          comm.broadcast(TopicAssignmentGossip.SUBJECT, payload, Function.identity(), true);
-          registrySink.accept(payload);
-        };
+    // 4b. Topic-registry propagation is pull-from-observed-state, not push: every broker is a
+    // member or passive observer of the metadata Raft group and periodically hands its local
+    // replicated registry to this sink (see MetadataPartition), which reconciles the broker's local
+    // topic Raft groups. The reconcile runs off the metadata partition's actor thread (the snapshot
+    // read already happened on it). This replaces the old 2s whole-registry broadcast.
+    final Consumer<Map<String, TopicMetadata>> registryReconciler =
+        desired -> executorService.execute(() -> topicReconciler.reconcile(desired));
 
     // 4c. Change-coordinator command channel (CC-3). The broker that must act on a reassignment
     // step
@@ -222,7 +217,7 @@ public final class BrokerBootstrap {
         topologySetup.getCoordinatorTopologyManager(),
         topologySetup.getMetadataTopologyManager(),
         brokerMessagingService,
-        topicAssignmentPublisher,
+        registryReconciler,
         provisionedSinkRef,
         reconfigurationExecutor);
 

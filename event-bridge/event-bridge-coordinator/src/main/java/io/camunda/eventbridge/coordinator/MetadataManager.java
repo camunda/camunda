@@ -14,7 +14,6 @@ import io.camunda.eventbridge.coordinator.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.coordinator.stream.MetadataStream;
-import io.camunda.eventbridge.coordinator.stream.TopicAssignmentGossip;
 import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -42,23 +41,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Owns the topic registry on the coordinator: topic admin (create/delete/reassign/list), central
- * placement, the anti-entropy broadcast of the registry to brokers, the {@code CREATING -> ACTIVE}
- * transition, and the change-coordinator that drives committed assignment toward a target one safe
- * Raft step at a time. Leader-only; the broadcast/sink/change-coordinator act only on the registry
- * shard ({@link CoordinatorRouting#TOPIC_REGISTRY_SHARD}).
+ * Owns the topic registry on the metadata group: topic admin (create/delete/reassign/list), central
+ * placement, the {@code CREATING -> ACTIVE} transition, and the change-coordinator that drives
+ * committed assignment toward a target one safe Raft step at a time. Leader-only; the
+ * sink/change-coordinator act only on the registry shard ({@link
+ * CoordinatorRouting#TOPIC_REGISTRY_SHARD}).
  *
  * <p>This is the metadata control plane: it runs on the dedicated single-partition {@code
  * event-bridge-metadata} Raft group (its leader), over a {@link MetadataStream}. Consumer-group
  * coordination + offsets stay in the coordinator group ({@code CoordinationManager}).
+ *
+ * <p>Propagation to brokers is no longer a push from here: every broker observes the metadata Raft
+ * group (follower or passive observer) and reconciles its local topic groups from its own
+ * replicated registry copy, so this actor no longer broadcasts the registry.
  */
 public class MetadataManager extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataManager.class);
   private static final Pattern TOPIC_NAME = Pattern.compile("[a-zA-Z0-9._-]{1,249}");
 
-  // Anti-entropy broadcast of the topic registry to brokers (registry-shard leader only).
-  private static final Duration TOPIC_BROADCAST_INTERVAL = Duration.ofSeconds(2);
   // Change-coordinator kickoff/retry/anti-entropy tick.
   private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
 
@@ -66,7 +67,6 @@ public class MetadataManager extends Actor {
   private final int clusterSize;
   private final MetadataStream metadataStream;
   private final PlacementStrategy placement = new RoundRobinPlacement();
-  private final TopicAssignmentGossip.Publisher topicAssignmentPublisher;
 
   // Brokers report provisioned partitions here; the registry-shard leader registers itself as the
   // sink. Per-topic covered partition ids drive the CREATING -> ACTIVE transition.
@@ -82,13 +82,11 @@ public class MetadataManager extends Actor {
       final int partitionId,
       final int clusterSize,
       final MetadataStream metadataStream,
-      final TopicAssignmentGossip.Publisher topicAssignmentPublisher,
       final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
     this.clusterSize = clusterSize;
     this.metadataStream = metadataStream;
-    this.topicAssignmentPublisher = topicAssignmentPublisher;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
   }
@@ -204,7 +202,6 @@ public class MetadataManager extends Actor {
 
   @Override
   protected void onActorStarted() {
-    scheduleTopicBroadcast();
     if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD && provisionedSinkRef != null) {
       provisionedSinkRef.set(
           (topic, partitions) -> actor.run(() -> onTopicProvisioned(topic, partitions)));
@@ -219,25 +216,6 @@ public class MetadataManager extends Actor {
     if (provisionedSinkRef != null) {
       provisionedSinkRef.set(null);
     }
-  }
-
-  /**
-   * Periodically broadcasts the topic registry to all brokers so each can reconcile its local topic
-   * Raft groups. Only the registry shard's leader broadcasts. Re-asserting the full registry on an
-   * interval is the anti-entropy that lets a broker that missed an update still converge.
-   */
-  protected void scheduleTopicBroadcast() {
-    if (topicAssignmentPublisher == null
-        || partitionId != CoordinatorRouting.TOPIC_REGISTRY_SHARD) {
-      return;
-    }
-    try {
-      topicAssignmentPublisher.publish(
-          TopicAssignmentGossip.encode(metadataStream.topicsSnapshot()));
-    } catch (final Exception e) {
-      LOG.warn("Failed to broadcast topic registry", e);
-    }
-    schedule(TOPIC_BROADCAST_INTERVAL, this::scheduleTopicBroadcast);
   }
 
   /**
