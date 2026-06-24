@@ -12,6 +12,8 @@ import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
+import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
+import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.transport.RequestHandler;
 import java.util.concurrent.CompletableFuture;
 

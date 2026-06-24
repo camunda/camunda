@@ -17,9 +17,9 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
+import io.camunda.eventbridge.clustermetadata.stream.MetadataPartition;
+import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata;
 import io.camunda.eventbridge.coordinator.stream.CoordinatorPartition;
-import io.camunda.eventbridge.coordinator.stream.MetadataPartition;
-import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
@@ -86,7 +86,7 @@ final class PartitionBootstrapper {
   private java.util.concurrent.atomic.AtomicReference<
           java.util.function.BiConsumer<String, java.util.List<Integer>>>
       provisionedSinkRef;
-  private io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor
+  private io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor
       reconfigurationExecutor;
 
   PartitionBootstrapper(
@@ -114,7 +114,7 @@ final class PartitionBootstrapper {
       final java.util.concurrent.atomic.AtomicReference<
               java.util.function.BiConsumer<String, java.util.List<Integer>>>
           provisionedSinkRef,
-      final io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor
+      final io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor
           reconfigurationExecutor) {
 
     final var membershipService = cluster.getMembershipService();

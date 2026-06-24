@@ -5,31 +5,31 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.coordinator.stream;
+package io.camunda.eventbridge.clustermetadata.stream;
 
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 
 /**
- * Column families for the event bridge coordinator's replicated state, stored in the coordinator
- * partition's {@code ZeebeDb}. Kept entirely separate from the engine's {@code ZbColumnFamilies} —
- * the coordinator runs its own {@code StreamProcessor} with its own RocksDB instance.
+ * Column families for the metadata group's replicated state, stored in the metadata partition's
+ * {@code ZeebeDb}. Kept entirely separate from the engine's {@code ZbColumnFamilies} and from the
+ * consumer-group coordinator's families — this is a dedicated {@code StreamProcessor}/RocksDB
+ * instance holding only the topic registry.
  */
-public enum EventBridgeColumnFamilies implements EnumValue, ScopedColumnFamily {
+public enum MetadataColumnFamilies implements EnumValue, ScopedColumnFamily {
   /** Reserved default (RocksDB requires a default CF). */
   DEFAULT(0, ColumnFamilyScope.PARTITION_LOCAL),
 
-  /** Committed consumer offsets keyed by {@code (groupId, partitionId)} → next position. */
-  CONSUMER_OFFSETS(1, ColumnFamilyScope.PARTITION_LOCAL),
-
-  /** Replicated consumer-group metadata keyed by {@code groupId} → encoded members/assignment. */
-  GROUP_METADATA(2, ColumnFamilyScope.PARTITION_LOCAL);
+  /**
+   * Topic registry (desired state) keyed by {@code topicName} → encoded partition/replica config.
+   */
+  TOPIC_REGISTRY(1, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;
 
-  EventBridgeColumnFamilies(final int value, final ColumnFamilyScope scope) {
+  MetadataColumnFamilies(final int value, final ColumnFamilyScope scope) {
     this.value = value;
     this.scope = scope;
   }

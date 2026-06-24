@@ -42,7 +42,6 @@ public final class EventBridgeRecordValues {
   // then these tags are safe but deliberately misleading by name.
   public static final ValueType OFFSET_VALUE_TYPE = ValueType.CHECKPOINT;
   public static final ValueType GROUP_METADATA_VALUE_TYPE = ValueType.CLOCK;
-  public static final ValueType TOPIC_VALUE_TYPE = ValueType.SCALE;
 
   private EventBridgeRecordValues() {}
 
@@ -51,7 +50,6 @@ public final class EventBridgeRecordValues {
         new HashMap<>(UnifiedRecordValue.allRecordsMap());
     values.put(OFFSET_VALUE_TYPE, new OffsetCommitRecord());
     values.put(GROUP_METADATA_VALUE_TYPE, new GroupMetadataRecord());
-    values.put(TOPIC_VALUE_TYPE, new TopicRecord());
     return new RecordValues(values);
   }
 }

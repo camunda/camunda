@@ -11,10 +11,10 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
-import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationCommand;
-import io.camunda.eventbridge.coordinator.reconfig.ReconfigurationExecutor;
-import io.camunda.eventbridge.coordinator.stream.TopicMetadata;
-import io.camunda.eventbridge.coordinator.stream.TopicProvisionedGossip;
+import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
+import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
+import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.stream.TopicProvisionedGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -188,7 +188,9 @@ public final class BrokerBootstrap {
         ReconfigurationCommand.SUBJECT,
         ReconfigurationCommand::decode,
         cmd ->
-            (cmd.kind() == io.camunda.eventbridge.coordinator.reconfig.ReconfigurationOp.Kind.JOIN
+            (cmd.kind()
+                        == io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationOp.Kind
+                            .JOIN
                     ? topicReconciler.join(
                         cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount())
                     : topicReconciler.leave(cmd.topic(), cmd.partitionId()))

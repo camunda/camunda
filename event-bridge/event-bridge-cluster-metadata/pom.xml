@@ -16,12 +16,15 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>event-bridge-broker</artifactId>
+  <artifactId>event-bridge-cluster-metadata</artifactId>
   <packaging>jar</packaging>
-  <name>Event Bridge Broker</name>
+  <name>Event Bridge Cluster Metadata</name>
+  <description>Cluster-wide control plane: the topic registry on its own Raft group, replicated via a
+    Zeebe StreamProcessor. Every broker observes it (voter or passive) and reconciles its local topic
+    Raft groups; the leader serves topic admin, placement, and reassignment.</description>
 
   <dependencies>
-    <!-- Event Bridge shared types and protocol -->
+    <!-- Event Bridge shared types, protocol, and transport primitives -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>event-bridge-core</artifactId>
@@ -32,28 +35,9 @@
       <artifactId>event-bridge-protocol</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- Shared request/response transport primitives -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>event-bridge-transport</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <!-- Messaging data plane (assembled onto data partitions by the lifecycle steps) -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>event-bridge-messaging</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <!-- Consumer-group coordinator (the broker bootstrap assembles its partitions) -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>event-bridge-coordinator</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <!-- Cluster metadata control plane (topic registry partition + reconfiguration) -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>event-bridge-cluster-metadata</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -67,13 +51,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
     </dependency>
-
     <!-- Actor scheduler threading model -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>
     </dependency>
-
     <!-- Zeebe protocol for LogAppendEntry / RecordMetadata -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -83,31 +65,31 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
-
-    <!-- Zeebe snapshot store (snapshot creation and recovery) -->
+    <!-- Snapshot store (snapshot creation, replication, recovery) -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
     </dependency>
-
-    <!-- Stream processor platform: coordinator state processing + follower replay + snapshots -->
+    <!-- Stream processor platform: state processing + follower replay + snapshots -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-stream-platform</artifactId>
     </dependency>
-    <!-- RocksDB-backed ZeebeDb for the coordinator's replicated offset state -->
+    <!-- RocksDB-backed ZeebeDb for the replicated topic registry -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-db</artifactId>
     </dependency>
-
-    <!-- Zeebe journal (underlying segment storage accessed for truncation) -->
+    <!-- Broker partition primitives: StateController, AtomixLogStorage, AsyncSnapshotDirector,
+         TopologyManagerImpl, AtomixRecordEntrySupplier -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-journal</artifactId>
     </dependency>
-
-    <!-- Zeebe util -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
@@ -117,21 +99,9 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
     </dependency>
-
-    <!-- Agrona for direct buffers -->
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
-    </dependency>
-
-    <!-- Spring Boot -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot</artifactId>
     </dependency>
 
     <!-- Logging -->
@@ -160,14 +130,6 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-transport</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker</artifactId>
     </dependency>
   </dependencies>
 
