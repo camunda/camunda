@@ -476,7 +476,6 @@ final class ClusterApiUtilsTest {
 
         // PartitionDistributorConfig
         new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()),
-        new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
 
         // Mode change operations
         new ModeChangeOperation(memberId1, Mode.RECOVERING),

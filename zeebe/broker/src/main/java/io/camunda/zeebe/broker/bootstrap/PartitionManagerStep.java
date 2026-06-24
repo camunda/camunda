@@ -50,6 +50,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getClusterServices().getMembershipService(),
             brokerInfo.withPartitionGroup(physicalTenantId));
 
+    // Register mode handler before starting the respective partition manager so that cluster
+    // services already have the executor value set
     modeHandler = new PartitionModeHandler(brokerStartupContext, physicalTenantId, topologyManager);
     modeHandler.register();
 
@@ -63,6 +65,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
                   (partitionManager) -> {
                     brokerStartupContext.addPartitionManager(physicalTenantId, partitionManager);
 
+                    // We intentionally do not wait for start() to complete: broker startup only
+                    // needs the partition manager registered. Individual partitions bootstrap
+                    // asynchronously afterwards
                     partitionManager.start();
                   });
 
