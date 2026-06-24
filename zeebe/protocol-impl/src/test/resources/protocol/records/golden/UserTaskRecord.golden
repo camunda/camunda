@@ -111,6 +111,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_VALUE, -1L);
+  private final StringProperty businessIdProp = new StringProperty("businessId", EMPTY_STRING);
 
   /**
    * Tracks the names of user task attributes that are intended to be modified (e.g. on `UPDATE`),
@@ -155,7 +156,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty listenersConfigKeyProp = new LongProperty("listenersConfigKey", -1L);
 
   public UserTaskRecord() {
-    super(25);
+    super(26);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -180,7 +181,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(deniedReasonProp)
         .declareProperty(tagsProp)
         .declareProperty(listenersConfigKeyProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(businessIdProp);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -210,6 +212,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     setTags(record.getTags());
     listenersConfigKeyProp.setValue(record.getListenersConfigKey());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    businessIdProp.setValue(record.getBusinessIdBuffer());
   }
 
   /**
@@ -461,6 +464,26 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public UserTaskRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
     rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public UserTaskRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public UserTaskRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
   }
 
   public UserTaskRecord setProcessDefinitionVersion(final int version) {

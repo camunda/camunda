@@ -67,6 +67,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
                         "rootProcessInstanceKey": "37",
+                        "businessId": "biz-77",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -290,6 +291,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
                         "rootProcessInstanceKey": "37",
+                        "businessId": "biz-77",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -345,6 +347,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       2L, // processDefinitionId
                       1L, // processInstanceId
                       37L, // rootProcessInstanceId
+                      "biz-77", // businessId
                       3L, // elementInstanceId
                       "t", // tenantId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // dueDate
@@ -441,6 +444,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 2L,
                 1L,
                 37L,
+                "biz-77",
                 3L,
                 "t",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),

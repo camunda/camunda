@@ -645,6 +645,7 @@ components:
         - name
         - processInstanceKey
         - rootProcessInstanceKey
+        - businessId
         - processDefinitionKey
         - elementInstanceKey
         - processDefinitionId
@@ -763,6 +764,14 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        businessId:
+          description: |
+            The business ID of the owning process instance, inherited when the user task was
+            created. This is `null` for user tasks created before version 8.10, and for user tasks
+            whose owning process instance has no business ID.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
         formKey:
           description: The key of the form.
           nullable: true
@@ -815,6 +824,8 @@ components:
           addedInVersion: "8.6"
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
+        - propertyName: businessId
+          addedInVersion: "8.10"
         - propertyName: formKey
           addedInVersion: "8.6"
         - propertyName: tags

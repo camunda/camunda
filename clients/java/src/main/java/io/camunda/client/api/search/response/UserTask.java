@@ -69,6 +69,17 @@ public interface UserTask {
    */
   Long getRootProcessInstanceKey();
 
+  /**
+   * Returns the business ID of the owning process instance, inherited when the user task was
+   * created.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for user tasks created before version
+   * 8.10, and when the owning process instance has no business ID.
+   *
+   * @return the business ID, or {@code null} when not set
+   */
+  String getBusinessId();
+
   /** Key of the form */
   Long getFormKey();
 

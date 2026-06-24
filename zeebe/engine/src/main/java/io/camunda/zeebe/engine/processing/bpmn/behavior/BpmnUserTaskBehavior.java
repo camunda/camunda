@@ -198,7 +198,8 @@ public final class BpmnUserTaskBehavior {
             .setPriority(userTaskProperties.getPriority())
             .setCreationTimestamp(clock.millis())
             .setTags(getTagsFromProcessInstance(context))
-            .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
+            .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+            .setBusinessId(getBusinessIdFromProcessInstance(context));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
@@ -211,6 +212,15 @@ public final class BpmnUserTaskBehavior {
     }
     final var processInstance = elementInstance.getValue();
     return processInstance != null ? processInstance.getTags() : Collections.emptySet();
+  }
+
+  private String getBusinessIdFromProcessInstance(final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (elementInstance == null) {
+      return "";
+    }
+    final var processInstance = elementInstance.getValue();
+    return processInstance != null ? processInstance.getBusinessId() : "";
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(

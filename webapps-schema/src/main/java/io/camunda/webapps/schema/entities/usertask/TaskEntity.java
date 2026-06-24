@@ -147,6 +147,11 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long rootProcessInstanceKey;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String businessId;
+
   public TaskEntity() {}
 
   public long getKey() {
@@ -445,6 +450,15 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
 
   public TaskEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public TaskEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
     return this;
   }
 

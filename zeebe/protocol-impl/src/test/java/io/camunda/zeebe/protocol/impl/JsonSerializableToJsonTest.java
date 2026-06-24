@@ -2901,7 +2901,8 @@ final class JsonSerializableToJsonTest {
                     .setPriority(80)
                     .setDeniedReason("Reason to deny lifecycle transition")
                     .setListenersConfigKey(42L)
-                    .setRootProcessInstanceKey(4321L),
+                    .setRootProcessInstanceKey(4321L)
+                    .setBusinessId("order-4711"),
         """
                 {
                   "bpmnProcessId": "test-process",
@@ -2932,7 +2933,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "Reason to deny lifecycle transition",
                   "listenersConfigKey": 42,
-                  "rootProcessInstanceKey": 4321
+                  "rootProcessInstanceKey": 4321,
+                  "businessId": "order-4711"
                 }
                 """
       },
@@ -2971,7 +2973,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": ""
                 }
                 """
       },
@@ -3015,7 +3018,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": ""
                 }
                 """
       },

@@ -1332,6 +1332,7 @@ public final class SearchQueryResponseMapper {
         .name(t.name())
         .processInstanceKey(keyToString(t.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
+        .businessId(t.businessId())
         .processDefinitionKey(keyToString(t.processDefinitionKey()))
         .elementInstanceKey(keyToString(t.elementInstanceKey()))
         .processDefinitionId(t.processDefinitionId())

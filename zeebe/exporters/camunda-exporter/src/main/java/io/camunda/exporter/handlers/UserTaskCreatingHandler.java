@@ -147,6 +147,10 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
     if (rootProcessInstanceKey > 0) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
+    final String businessId = record.getValue().getBusinessId();
+    if (!ExporterUtil.isEmpty(businessId)) {
+      entity.setBusinessId(businessId);
+    }
     final TaskJoinRelationship joinRelation = new TaskJoinRelationship();
     joinRelation.setName(TaskJoinRelationshipType.TASK.getType());
     joinRelation.setParent(Long.parseLong(entity.getProcessInstanceId()));

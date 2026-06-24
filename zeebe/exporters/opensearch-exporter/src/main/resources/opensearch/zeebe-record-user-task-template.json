@@ -99,6 +99,9 @@
             },
             "rootProcessInstanceKey": {
               "type": "long"
+            },
+            "businessId": {
+              "type": "keyword"
             }
           }
         }
