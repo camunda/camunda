@@ -13,14 +13,16 @@ import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
-import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.transport.RequestHandler;
+import io.camunda.zeebe.msgpack.UnpackedObject;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handles consumer-group coordination requests (join/heartbeat/leave/commit) on the coordinator
- * Raft group. Topic admin (create/delete/reassign/list) is served by {@link MetadataRequestHandler}
- * on the separate metadata Raft group.
+ * Routes consumer-group coordination requests (join/heartbeat/leave/commit) on the coordinator Raft
+ * group to the {@link ConsumerGroupCoordinator}. Topic admin is served by {@code
+ * MetadataRequestHandler} on the metadata Raft group; the two handlers are deliberately symmetric:
+ * each parses the {@link CoordinationRequest} and dispatches to its manager, which returns the reply
+ * already framed for the broker client.
  */
 public final class CoordinationRequestHandler implements RequestHandler {
 
@@ -33,91 +35,31 @@ public final class CoordinationRequestHandler implements RequestHandler {
   // (coordinator-group) partition's leader from gossip.
   private static final String TOPIC_FORMAT = COORDINATOR_ROUTING_GROUP + "-coordinate-api-%d";
 
-  private final int partitionId;
-  private final ConsumerGroupCoordinator consumerGroupCoordinator;
+  private final ConsumerGroupCoordinator coordinator;
 
   public CoordinationRequestHandler(
-      final int partitionId, final ConsumerGroupCoordinator consumerGroupCoordinator) {
-    this.partitionId = partitionId;
-    this.consumerGroupCoordinator = consumerGroupCoordinator;
+      final int partitionId, final ConsumerGroupCoordinator coordinator) {
+    this.coordinator = coordinator;
   }
 
   @Override
   public CompletableFuture<byte[]> handle(final byte[] requestBytes) {
     final var request = CoordinationRequest.from(requestBytes);
-
     return switch (request.type()) {
-      case JOIN_GROUP -> handleJoinGroup(request);
-      case LEAVE_GROUP -> handleLeaveGroup(request);
-      case HEARTBEAT -> handleHeartbeat(request);
-      case COMMIT -> handleCommit(request);
+      case JOIN_GROUP -> coordinator.handleJoinGroup(read(new JoinGroupRequest(), request));
+      case LEAVE_GROUP -> coordinator.handleLeaveGroup(read(new LeaveGroupRequest(), request));
+      case HEARTBEAT -> coordinator.handleHeartbeat(read(new HeartbeatRequest(), request));
+      case COMMIT -> coordinator.handleCommit(read(new CommitOffsetRequest(), request));
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));
     };
   }
 
-  private CompletableFuture<byte[]> handleCommit(final CoordinationRequest request) {
-    final var commit = new CommitOffsetRequest();
-    commit.wrap(request.value());
-
-    // The coordinator stream replies with the serialized CommitOffsetResponse once the command has
-    // been processed and committed (validation + response now happen in the processor); frame it in
-    // the ExecuteCoordinateResponse envelope the gateway's broker client decodes.
-    return consumerGroupCoordinator
-        .handleCommit(commit)
-        .thenApply(CoordinationResponseEncoder::encodeValue);
-  }
-
-  private CompletableFuture<byte[]> handleJoinGroup(final CoordinationRequest request) {
-    final var joinGroup = new JoinGroupRequest();
-    joinGroup.wrap(request.value());
-
-    // Join now replies through the stream after the command commits (the processor assigns the
-    // member id/epoch and stages the response); frame the serialized reply for the broker client.
-    return consumerGroupCoordinator
-        .handleJoinGroup(joinGroup)
-        .thenApply(CoordinationResponseEncoder::encodeValue);
-  }
-
-  private CompletableFuture<byte[]> handleLeaveGroup(final CoordinationRequest request) {
-    final var leaveGroup = new LeaveGroupRequest();
-    leaveGroup.wrap(request.value());
-
-    return consumerGroupCoordinator
-        .handleLeaveGroup(leaveGroup)
-        .thenApply(CoordinationResponseEncoder::encodeValue);
-  }
-
-  private CompletableFuture<byte[]> handleHeartbeat(final CoordinationRequest request) {
-    final var heartbeat = new HeartbeatRequest();
-    heartbeat.wrap(request.value());
-
-    return toFuture(
-        consumerGroupCoordinator.handleHeartbeat(heartbeat),
-        CoordinationResponseEncoder::encodeHeartbeat);
-  }
-
-  /**
-   * Bridges an {@link io.camunda.zeebe.scheduler.future.ActorFuture} to a {@link
-   * CompletableFuture}, encoding the response with the given encoder.
-   */
-  private <T> CompletableFuture<byte[]> toFuture(
-      final io.camunda.zeebe.scheduler.future.ActorFuture<T> actorFuture,
-      final java.util.function.Function<T, byte[]> encoder) {
-
-    final var result = new CompletableFuture<byte[]>();
-
-    actorFuture.onComplete(
-        (response, error) -> {
-          if (error != null) {
-            result.completeExceptionally(error);
-          } else {
-            result.complete(encoder.apply(response));
-          }
-        });
-
-    return result;
+  /** Decodes the request's value payload into the given DTO. */
+  private static <T extends UnpackedObject> T read(final T dto, final CoordinationRequest request) {
+    dto.wrap(request.value());
+    return dto;
   }
 
   public static String topicName(final int partitionId) {

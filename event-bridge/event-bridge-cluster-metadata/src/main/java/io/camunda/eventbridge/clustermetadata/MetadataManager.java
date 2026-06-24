@@ -25,7 +25,7 @@ import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -119,7 +119,7 @@ public class MetadataManager extends Actor {
               .setPartitionCount(request.getPartitionCount())
               .setReplicationFactor(request.getReplicationFactor())
               .setStatus(TopicMetadata.TopicStatus.CREATING)
-              .setAssignment(TopicMetadata.encodeAssignment(assignment));
+              .setAssignment(assignment);
         },
         metadataStream::createTopic);
   }
@@ -156,21 +156,32 @@ public class MetadataManager extends Actor {
             command
                 .setPartitionCount(meta.partitionCount())
                 .setStatus(meta.status())
-                .setAssignment(TopicMetadata.encodeAssignment(meta.assignment()))
-                .setTarget(TopicMetadata.encodeAssignment(target));
+                .setAssignment(meta.assignment())
+                .setTarget(target);
           }
           return command;
         },
         metadataStream::reassignTopic);
   }
 
-  public ActorFuture<ListTopicsResponse> handleListTopics(final ListTopicsRequest request) {
-    return actor.call(this::listTopics);
+  /** Lists topics (request/response, no log write) and returns the framed reply. */
+  public CompletableFuture<byte[]> handleListTopics(final ListTopicsRequest request) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () -> {
+          try {
+            result.complete(CoordinationResponseEncoder.encode(listTopics()));
+          } catch (final RuntimeException e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
   }
 
   /**
-   * Builds a topic command on the actor (so placement reads live state safely) and writes it
-   * through the stream, bridging the encoded-response future back to the caller.
+   * Builds a topic command on the actor (so placement reads live state safely), writes it through
+   * the stream, and completes with the committed reply framed for the broker client — so every
+   * handler method returns ready-to-send bytes and the transport layer only routes.
    */
   private CompletableFuture<byte[]> writeTopicRequest(
       final Supplier<TopicRecord> commandBuilder,
@@ -185,7 +196,7 @@ public class MetadataManager extends Actor {
                       if (error != null) {
                         result.completeExceptionally(error);
                       } else {
-                        result.complete(response);
+                        result.complete(CoordinationResponseEncoder.encodeValue(response));
                       }
                     }));
     return result;
@@ -202,22 +213,18 @@ public class MetadataManager extends Actor {
   }
 
   private ListTopicsResponse listTopics() {
-    final var sb = new StringBuilder();
+    final var response = new ListTopicsResponse().setErrorCode(NONE);
     metadataStream
         .topicsSnapshot()
         .forEach(
             (name, meta) ->
-                sb.append(name)
-                    .append(';')
-                    .append(meta.partitionCount())
-                    .append(';')
-                    .append(meta.replicationFactor())
-                    .append(';')
-                    .append(meta.status().name())
-                    .append(';')
-                    .append(meta.encodedAssignment())
-                    .append('\n'));
-    return new ListTopicsResponse().setErrorCode(NONE).setPayload(sb.toString());
+                response.addTopic(
+                    name,
+                    meta.partitionCount(),
+                    meta.replicationFactor(),
+                    meta.status().name(),
+                    meta.assignment()));
+    return response;
   }
 
   @Override

@@ -7,13 +7,16 @@
  */
 package io.camunda.eventbridge.clustermetadata.record;
 
+import io.camunda.eventbridge.clustermetadata.state.topic.PartitionReplicas;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
-
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A mutation of the topic registry on the coordinator partition. The {@code op} field — not the
@@ -37,10 +40,12 @@ public final class TopicRecord extends UnifiedRecordValue {
   private final StringProperty statusProp =
       new StringProperty("status", TopicMetadata.TopicStatus.CREATING.name());
 
-  // Centrally-decided placement (partition id -> replica node ids), encoded by TopicMetadata.
-  private final StringProperty assignmentProp = new StringProperty("assignment", "");
-  // In-flight reassignment target (same encoding); empty when no reconfiguration is in progress.
-  private final StringProperty targetProp = new StringProperty("target", "");
+  // Centrally-decided placement (partition id -> replica node ids), as structured msgpack.
+  private final ArrayProperty<PartitionReplicas> assignmentProp =
+      new ArrayProperty<>("assignment", PartitionReplicas::new);
+  // In-flight reassignment target (same shape); empty when no reconfiguration is in progress.
+  private final ArrayProperty<PartitionReplicas> targetProp =
+      new ArrayProperty<>("target", PartitionReplicas::new);
 
   public TopicRecord() {
     super(7);
@@ -114,21 +119,23 @@ public final class TopicRecord extends UnifiedRecordValue {
     return this;
   }
 
-  public String getAssignment() {
-    return BufferUtil.bufferAsString(assignmentProp.getValue());
+  /** The committed placement as {@code partition → replica node ids}. */
+  public Map<Integer, List<Integer>> getAssignment() {
+    return PartitionReplicas.read(assignmentProp);
   }
 
-  public TopicRecord setAssignment(final String assignment) {
-    assignmentProp.setValue(assignment);
+  public TopicRecord setAssignment(final Map<Integer, List<Integer>> assignment) {
+    PartitionReplicas.write(assignmentProp, assignment);
     return this;
   }
 
-  public String getTarget() {
-    return BufferUtil.bufferAsString(targetProp.getValue());
+  /** The in-flight reassignment target as {@code partition → replica node ids} (empty when none). */
+  public Map<Integer, List<Integer>> getTarget() {
+    return PartitionReplicas.read(targetProp);
   }
 
-  public TopicRecord setTarget(final String target) {
-    targetProp.setValue(target);
+  public TopicRecord setTarget(final Map<Integer, List<Integer>> target) {
+    PartitionReplicas.write(targetProp, target);
     return this;
   }
 
@@ -138,7 +145,7 @@ public final class TopicRecord extends UnifiedRecordValue {
         getPartitionCount(),
         getReplicationFactor(),
         TopicMetadata.TopicStatus.valueOf(getStatus()),
-        TopicMetadata.decodeAssignment(getAssignment()),
-        TopicMetadata.decodeAssignment(getTarget()));
+        getAssignment(),
+        getTarget());
   }
 }

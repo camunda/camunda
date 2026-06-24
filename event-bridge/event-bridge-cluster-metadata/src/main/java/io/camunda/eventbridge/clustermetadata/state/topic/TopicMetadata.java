@@ -7,15 +7,13 @@
  */
 package io.camunda.eventbridge.clustermetadata.state.topic;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
- * The desired configuration of a topic as held in the coordinator's replicated registry (keyed by
- * topic name). Encoded to a compact string for {@link DbTopicState}.
+ * The desired configuration of a topic as held in the metadata group's replicated registry (keyed
+ * by topic name) — the immutable domain/mirror value. It is stored as structured msgpack via {@link
+ * PersistedTopic}; this record carries no encoding of its own.
  *
  * <p>Placement is decided centrally by the coordinator and carried here as {@code assignment}
  * (partition id &rarr; replica broker node ids): brokers do not derive placement, they obey this
@@ -66,67 +64,5 @@ public record TopicMetadata(
     ACTIVE,
     /** Marked for removal; its Raft group is being torn down. */
     DELETING
-  }
-
-  String encode() {
-    return partitionCount
-        + ";"
-        + replicationFactor
-        + ";"
-        + status.name()
-        + ";"
-        + encodeAssignment(assignment)
-        + ";"
-        + encodeAssignment(target);
-  }
-
-  /**
-   * The committed assignment encoded as {@code pid=n1,n2|...} (for payloads outside this package).
-   */
-  public String encodedAssignment() {
-    return encodeAssignment(assignment);
-  }
-
-  static TopicMetadata decode(final String encoded) {
-    final var parts = encoded.split(";", 5);
-    return new TopicMetadata(
-        Integer.parseInt(parts[0]),
-        Integer.parseInt(parts[1]),
-        TopicStatus.valueOf(parts[2]),
-        parts.length > 3 ? decodeAssignment(parts[3]) : Map.of(),
-        parts.length > 4 ? decodeAssignment(parts[4]) : Map.of());
-  }
-
-  /**
-   * Encodes the assignment as {@code pid=n1,n2|pid=n1,n2|...} (empty string when no assignment).
-   */
-  public static String encodeAssignment(final Map<Integer, List<Integer>> assignment) {
-    return assignment.entrySet().stream()
-        .map(
-            e ->
-                e.getKey()
-                    + "="
-                    + e.getValue().stream().map(String::valueOf).collect(Collectors.joining(",")))
-        .collect(Collectors.joining("|"));
-  }
-
-  public static Map<Integer, List<Integer>> decodeAssignment(final String encoded) {
-    final Map<Integer, List<Integer>> assignment = new LinkedHashMap<>();
-    if (encoded == null || encoded.isBlank()) {
-      return assignment;
-    }
-    for (final var entry : encoded.split("\\|")) {
-      final var eq = entry.indexOf('=');
-      final var partitionId = Integer.parseInt(entry.substring(0, eq));
-      final List<Integer> replicas = new ArrayList<>();
-      final var ids = entry.substring(eq + 1);
-      if (!ids.isBlank()) {
-        for (final var id : ids.split(",")) {
-          replicas.add(Integer.parseInt(id));
-        }
-      }
-      assignment.put(partitionId, replicas);
-    }
-    return assignment;
   }
 }

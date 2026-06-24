@@ -13,14 +13,15 @@ import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
-import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.transport.RequestHandler;
+import io.camunda.zeebe.msgpack.UnpackedObject;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handles topic admin requests (create/delete/reassign/list) on the dedicated metadata Raft group.
- * Consumer-group coordination (join/heartbeat/leave/commit) is served by {@link
- * CoordinationRequestHandler} on the coordinator Raft group.
+ * Routes topic admin requests (create/delete/reassign/list) on the dedicated metadata Raft group to
+ * the {@link MetadataManager}. Symmetric with {@code CoordinationRequestHandler} on the coordinator
+ * group: each parses the {@link CoordinationRequest} and dispatches to its manager, which returns
+ * the reply already framed for the broker client.
  */
 public final class MetadataRequestHandler implements RequestHandler {
 
@@ -33,83 +34,31 @@ public final class MetadataRequestHandler implements RequestHandler {
   // (metadata-group) partition's leader from gossip.
   private static final String TOPIC_FORMAT = METADATA_ROUTING_GROUP + "-coordinate-api-%d";
 
-  private final int partitionId;
   private final MetadataManager metadataManager;
 
   public MetadataRequestHandler(final int partitionId, final MetadataManager metadataManager) {
-    this.partitionId = partitionId;
     this.metadataManager = metadataManager;
   }
 
   @Override
   public CompletableFuture<byte[]> handle(final byte[] requestBytes) {
     final var request = CoordinationRequest.from(requestBytes);
-
     return switch (request.type()) {
-      case CREATE_TOPIC -> handleCreateTopic(request);
-      case DELETE_TOPIC -> handleDeleteTopic(request);
-      case REASSIGN_TOPIC -> handleReassignTopic(request);
-      case LIST_TOPICS -> handleListTopics(request);
+      case CREATE_TOPIC -> metadataManager.handleCreateTopic(read(new CreateTopicRequest(), request));
+      case DELETE_TOPIC -> metadataManager.handleDeleteTopic(read(new DeleteTopicRequest(), request));
+      case REASSIGN_TOPIC ->
+          metadataManager.handleReassignTopic(read(new ReassignTopicRequest(), request));
+      case LIST_TOPICS -> metadataManager.handleListTopics(read(new ListTopicsRequest(), request));
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));
     };
   }
 
-  // create/delete/reassign reply through the stream after the command commits (the processor
-  // validates and stages the response); the manager returns the already-encoded reply future.
-  private CompletableFuture<byte[]> handleCreateTopic(final CoordinationRequest request) {
-    final var create = new CreateTopicRequest();
-    create.wrap(request.value());
-    // The stream replies with the serialized response after the command commits; frame it in the
-    // ExecuteCoordinateResponse envelope the gateway's broker client decodes.
-    return metadataManager
-        .handleCreateTopic(create)
-        .thenApply(CoordinationResponseEncoder::encodeValue);
-  }
-
-  private CompletableFuture<byte[]> handleDeleteTopic(final CoordinationRequest request) {
-    final var delete = new DeleteTopicRequest();
-    delete.wrap(request.value());
-    return metadataManager
-        .handleDeleteTopic(delete)
-        .thenApply(CoordinationResponseEncoder::encodeValue);
-  }
-
-  private CompletableFuture<byte[]> handleReassignTopic(final CoordinationRequest request) {
-    final var reassign = new ReassignTopicRequest();
-    reassign.wrap(request.value());
-    return metadataManager
-        .handleReassignTopic(reassign)
-        .thenApply(CoordinationResponseEncoder::encodeValue);
-  }
-
-  private CompletableFuture<byte[]> handleListTopics(final CoordinationRequest request) {
-    final var list = new ListTopicsRequest();
-    list.wrap(request.value());
-    return toFuture(metadataManager.handleListTopics(list), CoordinationResponseEncoder::encode);
-  }
-
-  /**
-   * Bridges an {@link io.camunda.zeebe.scheduler.future.ActorFuture} to a {@link
-   * CompletableFuture}, encoding the response with the given encoder.
-   */
-  private <T> CompletableFuture<byte[]> toFuture(
-      final io.camunda.zeebe.scheduler.future.ActorFuture<T> actorFuture,
-      final java.util.function.Function<T, byte[]> encoder) {
-
-    final var result = new CompletableFuture<byte[]>();
-
-    actorFuture.onComplete(
-        (response, error) -> {
-          if (error != null) {
-            result.completeExceptionally(error);
-          } else {
-            result.complete(encoder.apply(response));
-          }
-        });
-
-    return result;
+  /** Decodes the request's value payload into the given DTO. */
+  private static <T extends UnpackedObject> T read(final T dto, final CoordinationRequest request) {
+    dto.wrap(request.value());
+    return dto;
   }
 
   public static String topicName(final int partitionId) {

@@ -10,8 +10,8 @@ package io.camunda.eventbridge.gateway.controller;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.CreateTopicRequest;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.TopicDto;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.service.CoordinatorService;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -104,30 +104,20 @@ public class TopicController {
               if (error != null) {
                 return coordinatorUnavailable();
               }
-              return ResponseEntity.ok((Object) parseTopics(res.getPayload()));
+              return ResponseEntity.ok((Object) toDtos(res));
             });
   }
 
-  /**
-   * Parses the registry payload (one {@code name;partitionCount;replicationFactor;status} per
-   * line).
-   */
-  private static List<TopicDto> parseTopics(final String payload) {
-    final List<TopicDto> topics = new ArrayList<>();
-    if (payload == null || payload.isBlank()) {
-      return topics;
-    }
-    for (final var line : payload.split("\n")) {
-      if (line.isBlank()) {
-        continue;
-      }
-      // name;partitionCount;replicationFactor;status[;assignment] — assignment is used by the
-      // topology endpoint, ignored here.
-      final var parts = line.split(";", 5);
-      topics.add(
-          new TopicDto(parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), parts[3]));
-    }
-    return topics;
+  private static List<TopicDto> toDtos(final ListTopicsResponse response) {
+    return response.getTopics().stream()
+        .map(
+            topic ->
+                new TopicDto(
+                    topic.name(),
+                    topic.partitionCount(),
+                    topic.replicationFactor(),
+                    topic.status()))
+        .toList();
   }
 
   private static HttpStatus createStatus(final CoordinationErrorCode code) {

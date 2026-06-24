@@ -11,8 +11,8 @@ import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PartitionTopology;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.TopicTopology;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.TopologyResponse;
+import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.service.CoordinatorService;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
@@ -51,56 +51,22 @@ public class TopologyController {
               if (error != null) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
               }
-              return ResponseEntity.ok(
-                  (Object) new TopologyResponse(brokers, parseTopics(res.getPayload())));
+              return ResponseEntity.ok((Object) new TopologyResponse(brokers, toTopologies(res)));
             });
   }
 
-  /**
-   * Parses the registry payload: {@code name;partitionCount;replicationFactor;status;assignment}.
-   */
-  private static List<TopicTopology> parseTopics(final String payload) {
-    final List<TopicTopology> topics = new ArrayList<>();
-    if (payload == null || payload.isBlank()) {
-      return topics;
-    }
-    for (final var line : payload.split("\n")) {
-      if (line.isBlank()) {
-        continue;
-      }
-      final var parts = line.split(";", 5);
-      final var assignment = parts.length > 4 ? parts[4] : "";
-      topics.add(
-          new TopicTopology(
-              parts[0],
-              Integer.parseInt(parts[1]),
-              Integer.parseInt(parts[2]),
-              parts[3],
-              parsePartitions(assignment)));
-    }
-    return topics;
-  }
-
-  /**
-   * Parses {@code pid=n1,n2|pid=n1,n2|...} into partition placements (empty when not yet assigned).
-   */
-  private static List<PartitionTopology> parsePartitions(final String assignment) {
-    final List<PartitionTopology> partitions = new ArrayList<>();
-    if (assignment == null || assignment.isBlank()) {
-      return partitions;
-    }
-    for (final var entry : assignment.split("\\|")) {
-      final var eq = entry.indexOf('=');
-      final var partitionId = Integer.parseInt(entry.substring(0, eq));
-      final List<Integer> replicas = new ArrayList<>();
-      final var ids = entry.substring(eq + 1);
-      if (!ids.isBlank()) {
-        for (final var id : ids.split(",")) {
-          replicas.add(Integer.parseInt(id));
-        }
-      }
-      partitions.add(new PartitionTopology(partitionId, replicas));
-    }
-    return partitions;
+  private static List<TopicTopology> toTopologies(final ListTopicsResponse response) {
+    return response.getTopics().stream()
+        .map(
+            topic ->
+                new TopicTopology(
+                    topic.name(),
+                    topic.partitionCount(),
+                    topic.replicationFactor(),
+                    topic.status(),
+                    topic.assignment().entrySet().stream()
+                        .map(e -> new PartitionTopology(e.getKey(), e.getValue()))
+                        .toList()))
+        .toList();
   }
 }

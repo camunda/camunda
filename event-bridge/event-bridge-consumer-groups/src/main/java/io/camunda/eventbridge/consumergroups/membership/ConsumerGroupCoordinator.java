@@ -22,8 +22,8 @@ import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
+import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
@@ -117,8 +117,18 @@ public class ConsumerGroupCoordinator extends Actor {
     return result;
   }
 
-  public ActorFuture<HeartbeatResponse> handleHeartbeat(final HeartbeatRequest request) {
-    return actor.call(() -> heartbeat(request));
+  /** Serves a heartbeat (request/response, no log write) and returns the framed reply. */
+  public CompletableFuture<byte[]> handleHeartbeat(final HeartbeatRequest request) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () -> {
+          try {
+            result.complete(CoordinationResponseEncoder.encodeHeartbeat(heartbeat(request)));
+          } catch (final RuntimeException e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
   }
 
   /**
@@ -255,12 +265,17 @@ public class ConsumerGroupCoordinator extends Actor {
     reconciliations.keySet().removeIf(groupId -> coordinatorStream.groupSnapshot(groupId) == null);
   }
 
+  /**
+   * Completes {@code result} with the committed stream reply, framed in the {@code
+   * ExecuteCoordinateResponse} envelope the gateway's broker client decodes — so every handler
+   * method returns ready-to-send bytes and the transport layer only routes.
+   */
   private BiConsumer<byte[], Throwable> bridge(final CompletableFuture<byte[]> result) {
     return (response, error) -> {
       if (error != null) {
         result.completeExceptionally(error);
       } else {
-        result.complete(response);
+        result.complete(CoordinationResponseEncoder.encodeValue(response));
       }
     };
   }
