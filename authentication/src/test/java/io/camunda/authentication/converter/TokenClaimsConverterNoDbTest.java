@@ -127,6 +127,75 @@ public class TokenClaimsConverterNoDbTest {
   }
 
   @Test
+  void shouldRejectEntraV1AccessToken() {
+    // given - a Microsoft Entra v1.0 access token (issuer sts.windows.net, ver=1.0)
+    final Map<String, Object> claims =
+        Map.of(
+            "preferred_username",
+            "testuser",
+            "iss",
+            "https://sts.windows.net/9188040d-6c67-4c5b-b112-36a304b66dad/",
+            "ver",
+            "1.0");
+
+    // when & then
+    assertThatThrownBy(() -> tokenClaimsConverter.convert(claims))
+        .isInstanceOf(OAuth2AuthenticationException.class)
+        .hasMessageContaining("requestedAccessTokenVersion");
+  }
+
+  @Test
+  void shouldAcceptEntraV2AccessToken() {
+    // given - a Microsoft Entra v2.0 access token
+    final Map<String, Object> claims =
+        Map.of(
+            "preferred_username",
+            "testuser",
+            "iss",
+            "https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0",
+            "ver",
+            "2.0");
+
+    // when
+    final var result = tokenClaimsConverter.convert(claims);
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.authenticatedUsername()).isEqualTo("testuser");
+  }
+
+  @Test
+  void shouldRejectEntraTokenWithoutVersionClaim() {
+    // given - a Microsoft issuer but no ver claim (treated as non-v2)
+    final Map<String, Object> claims =
+        Map.of(
+            "preferred_username",
+            "testuser",
+            "iss",
+            "https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0");
+
+    // when & then
+    assertThatThrownBy(() -> tokenClaimsConverter.convert(claims))
+        .isInstanceOf(OAuth2AuthenticationException.class)
+        .hasMessageContaining("requestedAccessTokenVersion");
+  }
+
+  @Test
+  void shouldNotApplyEntraGuardToNonMicrosoftIssuer() {
+    // given - a non-Microsoft issuer (e.g. Keycloak) with no ver claim
+    final Map<String, Object> claims =
+        Map.of(
+            "preferred_username", "testuser", "iss", "https://keycloak.example.com/realms/camunda");
+
+    // when
+    final var result = tokenClaimsConverter.convert(claims);
+
+    // then - unaffected by the Entra guard
+    assertThat(result).isNotNull();
+    assertThat(result.authenticatedUsername()).isEqualTo("testuser");
+  }
+
+  @Test
   void shouldHandleNoGroupsClaimConfiguration() {
     // given - service with no groups claim configured
     final var oidcConfig = new OidcAuthenticationConfiguration();

@@ -58,6 +58,7 @@ public class OidcAuthenticationConfiguration {
   private boolean userInfoEnabled = true;
   private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
       new OidcUserInfoAugmentationConfiguration();
+  private OidcDiagnosticsConfiguration diagnostics = new OidcDiagnosticsConfiguration();
 
   @PostConstruct
   public void validate() {
@@ -279,6 +280,14 @@ public class OidcAuthenticationConfiguration {
     this.userInfoAugmentation = userInfoAugmentation;
   }
 
+  public OidcDiagnosticsConfiguration getDiagnostics() {
+    return diagnostics;
+  }
+
+  public void setDiagnostics(final OidcDiagnosticsConfiguration diagnostics) {
+    this.diagnostics = diagnostics;
+  }
+
   public boolean isSet() {
     return issuerUri != null
         || clientId != null
@@ -310,7 +319,8 @@ public class OidcAuthenticationConfiguration {
         || assertionConfiguration.getKidDigestAlgorithm() != KidDigestAlgorithm.SHA256
         || assertionConfiguration.getKidEncoding() != KidEncoding.BASE64URL
         || assertionConfiguration.getKidCase() != null
-        || !DEFAULT_CLOCK_SKEW.equals(clockSkew);
+        || !DEFAULT_CLOCK_SKEW.equals(clockSkew)
+        || diagnostics.isEnabled();
   }
 
   public static Builder builder() {
@@ -345,6 +355,7 @@ public class OidcAuthenticationConfiguration {
     private boolean userInfoEnabled = true;
     private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
         new OidcUserInfoAugmentationConfiguration();
+    private OidcDiagnosticsConfiguration diagnostics = new OidcDiagnosticsConfiguration();
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
@@ -474,6 +485,11 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder diagnostics(final OidcDiagnosticsConfiguration diagnostics) {
+      this.diagnostics = diagnostics;
+      return this;
+    }
+
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
@@ -501,6 +517,7 @@ public class OidcAuthenticationConfiguration {
       config.setClockSkew(clockSkew);
       config.setUserInfoEnabled(userInfoEnabled);
       config.setUserInfoAugmentation(userInfoAugmentation);
+      config.setDiagnostics(diagnostics);
       return config;
     }
   }
