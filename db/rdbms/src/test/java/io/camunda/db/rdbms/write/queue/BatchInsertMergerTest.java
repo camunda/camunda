@@ -201,28 +201,11 @@ class BatchInsertMergerTest {
 
   @Test
   void shouldNotMergeWhenBatchSizeLimitReached() {
-    final var variable =
-        new VariableDbModel(
-            1L,
-            "var",
-            ValueTypeEnum.STRING,
-            null,
-            null,
-            "value",
-            null,
-            false,
-            100L,
-            200L,
-            200L,
-            "process1",
-            "tenant1",
-            1,
-            -1L,
-            null);
+    // distinct keys so the batch-size limit (not duplicate-key absorption) is what blocks the merge
+    final var merger = new InsertVariableMerger(newVariable(3L), 2); // Max batch size of 2
 
-    final var merger = new InsertVariableMerger(variable, 2); // Max batch size of 2
-
-    final var parameter = new BatchInsertDto<>(List.of(variable, variable)); // Already at max size
+    final var parameter =
+        new BatchInsertDto<>(List.of(newVariable(1L), newVariable(2L))); // Already at max size
 
     final var queueItem =
         new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
@@ -232,33 +215,78 @@ class BatchInsertMergerTest {
 
   @Test
   void shouldNotMergeWhenMaxBatchSizeIsOne() {
-    final var variable =
-        new VariableDbModel(
-            1L,
-            "var",
-            ValueTypeEnum.STRING,
-            null,
-            null,
-            "value",
-            null,
-            false,
-            100L,
-            200L,
-            200L,
-            "process1",
-            "tenant1",
-            1,
-            -1L,
-            null);
+    // distinct key so the maxBatchSize==1 short-cut (not duplicate-key absorption) blocks the merge
+    final var merger = new InsertVariableMerger(newVariable(2L), 1); // Max batch size of 1
 
-    final var merger = new InsertVariableMerger(variable, 1); // Max batch size of 1
-
-    final var parameter = new BatchInsertDto<>(List.of(variable));
+    final var parameter = new BatchInsertDto<>(List.of(newVariable(1L)));
 
     final var queueItem =
         new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
 
     // Should return false immediately due to maxBatchSize == 1 short-cut
     assertThat(merger.canBeMerged(queueItem)).isFalse();
+  }
+
+  @Test
+  void shouldDropDuplicateWhenKeyAlreadyPresentInBatch() {
+    final var original = newVariable(1L);
+    // a different model instance carrying the SAME key, mirroring a re-enqueued record on retry
+    final var duplicate = newVariable(1L);
+
+    final var merger = new InsertVariableMerger(duplicate, 50);
+    final var parameter = new BatchInsertDto<>(List.of(original));
+    final var queueItem =
+        new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
+
+    // the merger claims the item so the writer does NOT enqueue a second batch item ...
+    assertThat(merger.canBeMerged(queueItem)).isTrue();
+
+    // ... and merge() is a no-op: the key stays in the batch exactly once
+    final var mergedItem = merger.merge(queueItem);
+    assertThat(mergedItem.parameter())
+        .asInstanceOf(InstanceOfAssertFactories.type(BatchInsertDto.class))
+        .satisfies(
+            p -> {
+              assertThat(p.dbModels()).hasSize(1);
+              assertThat(p.dbModels().get(0)).isEqualTo(original);
+            });
+  }
+
+  @Test
+  void shouldClaimAndDropDuplicateEvenWhenBatchIsFull() {
+    final var duplicateOfFirst = newVariable(1L);
+    final var merger = new InsertVariableMerger(duplicateOfFirst, 2); // batch is at max size
+
+    final var parameter = new BatchInsertDto<>(List.of(newVariable(1L), newVariable(2L)));
+    final var queueItem =
+        new QueueItem(ContextType.VARIABLE, WriteStatementType.INSERT, 1L, "statement", parameter);
+
+    // even though the batch is full, a present key is claimed so it is not spilled into a new batch
+    assertThat(merger.canBeMerged(queueItem)).isTrue();
+
+    final var mergedItem = merger.merge(queueItem);
+    assertThat(mergedItem.parameter())
+        .asInstanceOf(InstanceOfAssertFactories.type(BatchInsertDto.class))
+        .satisfies(p -> assertThat(p.dbModels()).hasSize(2));
+  }
+
+  private static VariableDbModel newVariable(final long key) {
+    return new VariableDbModel(
+        key,
+        "var" + key,
+        ValueTypeEnum.STRING,
+        null,
+        null,
+        "value" + key,
+        null,
+        false,
+        100L,
+        200L,
+        200L,
+        "process1",
+        "tenant1",
+        1,
+        -1L,
+        null);
   }
 }

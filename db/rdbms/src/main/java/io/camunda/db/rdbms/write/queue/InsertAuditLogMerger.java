@@ -12,6 +12,6 @@ import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 public class InsertAuditLogMerger extends BatchInsertMerger<AuditLogDbModel> {
 
   public InsertAuditLogMerger(final AuditLogDbModel auditLog, final int maxBatchSize) {
-    super(ContextType.AUDIT_LOG, auditLog, maxBatchSize);
+    super(ContextType.AUDIT_LOG, auditLog, maxBatchSize, AuditLogDbModel::auditLogKey);
   }
 }

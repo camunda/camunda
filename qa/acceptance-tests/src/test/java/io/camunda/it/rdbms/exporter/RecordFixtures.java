@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -442,6 +443,15 @@ public class RecordFixtures {
                 .withEncodedStrings(encodedStrings)
                 .withRecordSizeLimitExceeded(recordSizeLimitExceeded)
                 .build())
+        .build();
+  }
+
+  public ImmutableRecord<RecordValue> getVariableCreatedRecord() {
+    return ImmutableRecord.builder()
+        .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
+        .withIntent(VariableIntent.CREATED)
+        .withPosition(nextPosition())
+        .withTimestamp(System.currentTimeMillis())
         .build();
   }
 
