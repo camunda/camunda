@@ -19,6 +19,7 @@ type ProcessInstance = {processInstanceKey: number};
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
+let orderProcessFiltersValue: string;
 
 test.beforeAll(async () => {
   await deploy([
@@ -33,11 +34,12 @@ test.beforeAll(async () => {
   await createInstances('processWithMultipleVersions', 2, 1);
 
   await deploy(['./resources/orderProcess_v_1.bpmn']);
+  orderProcessFiltersValue = Date.now().toString();
   orderProcessInstance = {
     processInstanceKey: Number(
       (
         await createSingleInstance('orderProcess', 1, {
-          filtersTest: 123,
+          filtersTest: Number(orderProcessFiltersValue),
         })
       ).processInstanceKey,
     ),
@@ -166,11 +168,19 @@ test.describe('Process Instances Filters', () => {
 
       await operateFiltersPanelPage.fillSingleConditionInline(
         'filtersTest',
-        '123',
+        orderProcessFiltersValue,
       );
     });
 
     await test.step('Inline filter narrows the list', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           orderProcessInstanceKey,
@@ -190,7 +200,7 @@ test.describe('Process Instances Filters', () => {
         operateFiltersPanelPage.variableFilterDialog.getByTestId(
           'variable-filter-value-0',
         ),
-      ).toHaveValue('123');
+      ).toHaveValue(orderProcessFiltersValue);
       await operateFiltersPanelPage.variableFilterDialog
         .getByRole('button', {name: 'Cancel'})
         .click();
@@ -865,4 +875,5 @@ test.describe('Process Instances Filters', () => {
     });
   });
 });
+
 
