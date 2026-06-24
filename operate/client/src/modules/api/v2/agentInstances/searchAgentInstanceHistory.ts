@@ -8,19 +8,19 @@
 
 import {
   endpoints,
-  type SearchAgentInstanceHistoryRequestBody,
-  type SearchAgentInstanceHistoryResponseBody,
+  type QueryAgentInstanceHistoryRequestBody,
+  type QueryAgentInstanceHistoryResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {requestWithThrow} from 'modules/request';
 
 const searchAgentInstanceHistory = async (
   agentInstanceKey: string,
-  payload: SearchAgentInstanceHistoryRequestBody,
+  payload: QueryAgentInstanceHistoryRequestBody,
   signal?: AbortSignal,
 ) => {
-  return requestWithThrow<SearchAgentInstanceHistoryResponseBody>({
-    url: endpoints.searchAgentInstanceHistory.getUrl({agentInstanceKey}),
-    method: endpoints.searchAgentInstanceHistory.method,
+  return requestWithThrow<QueryAgentInstanceHistoryResponseBody>({
+    url: endpoints.queryAgentInstanceHistory.getUrl({agentInstanceKey}),
+    method: endpoints.queryAgentInstanceHistory.method,
     body: payload,
     signal,
   });

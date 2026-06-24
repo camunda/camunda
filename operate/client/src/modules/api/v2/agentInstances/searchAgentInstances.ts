@@ -18,8 +18,8 @@ const searchAgentInstances = async (
   signal?: AbortSignal,
 ) => {
   return requestWithThrow<QueryAgentInstancesResponseBody>({
-    url: endpoints.searchAgentInstances.getUrl(),
-    method: endpoints.searchAgentInstances.method,
+    url: endpoints.queryAgentInstances.getUrl(),
+    method: endpoints.queryAgentInstances.method,
     body: payload,
     signal,
   });

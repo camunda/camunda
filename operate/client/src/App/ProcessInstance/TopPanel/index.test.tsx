@@ -26,7 +26,6 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/sequenceFlows';
 import type {
-  AgentInstance,
   ElementInstance,
   ProcessInstance,
   SequenceFlow,
@@ -44,6 +43,7 @@ import {
   SearchParamsUpdater,
   updateSearchParams,
 } from 'modules/testUtils/SearchParamsUpdater';
+import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -116,26 +116,6 @@ const mockProcessInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
-};
-
-const mockAgentInstance: AgentInstance = {
-  agentInstanceKey: 'agent-key-1',
-  status: 'THINKING',
-  definition: {
-    model: 'gpt-4',
-    provider: 'openai',
-    systemPrompt: 'you are a helpful agent',
-  },
-  metrics: {inputTokens: 0, outputTokens: 0, modelCalls: 0, toolCalls: 0},
-  limits: {maxModelCalls: 10, maxToolCalls: 10, maxTokens: 1000},
-  elementId: 'service-task-1',
-  processInstanceKey: 'instance_id',
-  processDefinitionKey: '2',
-  tenantId: '<default>',
-  creationDate: '2026-05-28',
-  lastUpdatedDate: '2026-05-28',
-  completionDate: null,
-  elementInstanceKeys: [],
 };
 
 const mockElementInstance: ElementInstance = {
@@ -452,7 +432,9 @@ describe('TopPanel', () => {
   });
 
   it('should render the agent status overlay for an active agent instance', async () => {
-    mockSearchAgentInstances().withSuccess(searchResult([mockAgentInstance]));
+    mockSearchAgentInstances().withSuccess(
+      searchResult([mockAgentInstance({status: 'THINKING'})]),
+    );
 
     render(<TopPanel />, {wrapper: getWrapper()});
 

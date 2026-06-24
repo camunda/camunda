@@ -9,8 +9,8 @@
 import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
 import type {
   QuerySortOrder,
-  SearchAgentInstanceHistoryRequestBody,
-  SearchAgentInstanceHistoryResponseBody,
+  QueryAgentInstanceHistoryRequestBody,
+  QueryAgentInstanceHistoryResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {searchAgentInstanceHistory} from 'modules/api/v2/agentInstances/searchAgentInstanceHistory';
 import {queryKeys} from '../queryKeys';
@@ -21,16 +21,16 @@ type QueryOptions<T> = {
   enabled?: boolean;
   enablePeriodicRefetch?: boolean;
   sortOrder?: QuerySortOrder;
-  select?: (result: InfiniteData<SearchAgentInstanceHistoryResponseBody>) => T;
+  select?: (result: InfiniteData<QueryAgentInstanceHistoryResponseBody>) => T;
 };
 
 const useAgentInstanceHistory = <
-  T = InfiniteData<SearchAgentInstanceHistoryResponseBody>,
+  T = InfiniteData<QueryAgentInstanceHistoryResponseBody>,
 >(
   agentInstanceKey: string,
   options?: QueryOptions<T>,
 ) => {
-  const historyPayload: SearchAgentInstanceHistoryRequestBody = {
+  const historyPayload: QueryAgentInstanceHistoryRequestBody = {
     sort: [{field: 'producedAt', order: options?.sortOrder ?? 'desc'}],
     filter: {commitStatus: 'COMMITTED'},
   };

@@ -27,7 +27,7 @@ import type {
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   QueryUserTasksRequestBody,
-  SearchAgentInstanceHistoryRequestBody,
+  QueryAgentInstanceHistoryRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
@@ -44,7 +44,7 @@ const queryKeys = {
   agentInstanceHistory: {
     search: (
       agentInstanceKey: string,
-      payload?: SearchAgentInstanceHistoryRequestBody,
+      payload?: QueryAgentInstanceHistoryRequestBody,
     ) => ['agentInstanceHistorySearch', agentInstanceKey, payload],
     latestAgentMessage: (agentInstanceKey: string) => [
       'agentInstanceHistorySearch',
