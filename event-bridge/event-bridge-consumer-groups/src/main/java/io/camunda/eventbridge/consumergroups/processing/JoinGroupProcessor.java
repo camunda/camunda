@@ -18,20 +18,16 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * Handles the {@code JOIN_GROUP} command. Like every command processor here it always results in a
- * follow-up event (on success) or a rejection (on failure), then replies to the request:
+ * follow-up event (on success) or a rejection (on failure), then replies to the request.
  *
- * <ul>
- *   <li><b>Static member, already known</b>: an idempotent rejoin — appends a {@code MEMBER_JOINED}
- *       event that re-states the existing member id + epoch at the <em>unchanged</em> group epoch
- *       (so the applier is a no-op that preserves the member's target and triggers no rebalance),
- *       and replies with the current identity. Writing the event keeps the "every command yields an
- *       event or a rejection" invariant, and a retried join or a restart within the session timeout
- *       does not cause a "perpetual rejoin storm".
- *   <li><b>New member</b> (dynamic, or a static member whose record was evicted): bumps the group
- *       epoch, sets the member epoch to it, and appends a {@code MEMBER_JOINED} event.
- * </ul>
+ * <p>A successful join is always a <em>new</em> member: it bumps the group epoch, sets the member
+ * epoch to it, and appends a {@code MEMBER_JOINED} event. A static member whose {@code
+ * group.instance.id} is already held by a live member is rejected upstream by {@link
+ * CoordinationChecks#validateJoin} with {@code UNRELEASED_INSTANCE_ID} (KIP-848 fences the new
+ * joiner); the incumbent's slot is freed only when it leaves or the eviction loop expires it. There
+ * is therefore no idempotent "rejoin" path — and no no-op event.
  *
- * Either way the reply is {@code REBALANCE_IN_PROGRESS}: the member learns its assignment from the
+ * <p>The reply is {@code REBALANCE_IN_PROGRESS}: the member learns its assignment from the
  * subsequent heartbeats once the async assignor has computed a target.
  */
 public final class JoinGroupProcessor implements TypedRecordProcessor<MembershipRecord> {
@@ -56,25 +52,10 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
 
   private void join(final TypedRecord<MembershipRecord> command) {
     final var cmd = command.getValue();
-    final var groupId = cmd.getGroupId();
-    final var instanceId = cmd.getInstanceId();
-
-    if (instanceId != null) {
-      final var existingMemberId = state.findMemberByInstanceId(groupId, instanceId);
-      if (existingMemberId != null) {
-        // Idempotent static rejoin — re-state the member at the current group epoch (no bump).
-        final var existing = state.getMember(groupId, existingMemberId);
-        final var groupEpoch = state.getGroup(groupId).getGroupEpoch();
-        appendMemberJoined(
-            command, existingMemberId, instanceId, existing.getMemberEpoch(), groupEpoch);
-        respondJoined(command, existingMemberId, existing.getMemberEpoch());
-        return;
-      }
-    }
-
-    final var group = state.getGroup(groupId);
+    final var group = state.getGroup(cmd.getGroupId());
     final var newGroupEpoch = (group == null ? 0 : group.getGroupEpoch()) + 1;
-    appendMemberJoined(command, cmd.getMemberId(), instanceId, newGroupEpoch, newGroupEpoch);
+    appendMemberJoined(
+        command, cmd.getMemberId(), cmd.getInstanceId(), newGroupEpoch, newGroupEpoch);
     respondJoined(command, cmd.getMemberId(), newGroupEpoch);
   }
 

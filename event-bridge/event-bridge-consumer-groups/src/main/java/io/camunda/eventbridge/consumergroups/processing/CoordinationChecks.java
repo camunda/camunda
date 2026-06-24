@@ -31,9 +31,15 @@ public final class CoordinationChecks {
     this.state = state;
   }
 
-  /** A join needs only a valid group id; the member is resolved (or created) by the processor. */
+  /**
+   * A join needs a valid group id, and — for a static member — an instance id that is not already
+   * held by a live member. A duplicate {@code group.instance.id} fences the <em>new</em> joiner
+   * (KIP-848): the incumbent keeps the identity until it leaves or its session expires (the
+   * eviction loop then frees the slot). A new member id is minted by the processor.
+   */
   public Either<Rejection, Void> validateJoin(final MembershipRecord command) {
-    return groupIdPresent(command.getGroupId());
+    return groupIdPresent(command.getGroupId())
+        .flatMap(ok -> instanceIdAvailable(command.getGroupId(), command.getInstanceId()));
   }
 
   /** A leave must reference an existing member presenting a current epoch. */
@@ -49,6 +55,22 @@ public final class CoordinationChecks {
         .flatMap(ok -> memberExists(command.getGroupId(), command.getMemberId()))
         .flatMap(member -> epochUpToDate(member, command.getMemberEpoch()).map(ok -> member))
         .flatMap(member -> ownsPartition(member, command.getPartitionId()).map(ok -> member));
+  }
+
+  private Either<Rejection, Void> instanceIdAvailable(
+      final String groupId, final String instanceId) {
+    if (instanceId == null) {
+      return VALID; // dynamic member — no instance id to contend for
+    }
+    final var holder = state.findMemberByInstanceId(groupId, instanceId);
+    if (holder != null) {
+      return Either.left(
+          new Rejection(
+              CoordinationErrorCode.UNRELEASED_INSTANCE_ID,
+              "instance id '%s' is still in use by member '%s' in group '%s'; it must leave first"
+                  .formatted(instanceId, holder, groupId)));
+    }
+    return VALID;
   }
 
   private Either<Rejection, Void> groupIdPresent(final String groupId) {

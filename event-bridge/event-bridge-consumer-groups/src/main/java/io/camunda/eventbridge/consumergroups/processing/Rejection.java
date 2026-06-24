@@ -25,6 +25,7 @@ public record Rejection(CoordinationErrorCode code, String reason) {
       case FENCED_MEMBER_EPOCH,
           FENCED_MEMBER_ACTIVE,
           NOT_PARTITION_OWNER,
+          UNRELEASED_INSTANCE_ID,
           TOPIC_ALREADY_EXISTS,
           REBALANCE_IN_PROGRESS ->
           RejectionType.INVALID_STATE;

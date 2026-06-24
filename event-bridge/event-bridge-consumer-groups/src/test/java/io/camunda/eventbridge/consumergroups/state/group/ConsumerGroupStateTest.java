@@ -103,16 +103,26 @@ final class ConsumerGroupStateTest {
   }
 
   @Test
-  void shouldPreserveExistingTargetOnIdempotentRejoin() {
-    // given — a member with a confirmed target
+  void shouldStartJoiningMemberOwningNothing() {
+    // when — a member joins (the assignor has not run yet)
     memberJoined.applyState(1, join("g", "m1", "instance-a", 1, 1, 4));
-    groupRebalanced.applyState(2, rebalance("g", 1, Map.of("m1", List.of(1, 2, 3, 4))));
 
-    // when — the same static member re-joins at the unchanged group epoch (idempotent)
-    memberJoined.applyState(3, join("g", "m1", "instance-a", 1, 1, 4));
+    // then — it owns no partitions until a rebalance gives it a target
+    assertThat(state.getMember("g", "m1").getTargetPartitions()).isEmpty();
+  }
 
-    // then — its target assignment is preserved, not reset
-    assertThat(state.getMember("g", "m1").getTargetPartitions()).containsExactly(1, 2, 3, 4);
+  @Test
+  void shouldFenceDuplicateStaticInstanceIdOnJoin() {
+    // given — a static member already holds an instance id
+    memberJoined.applyState(1, join("g", "m1", "instance-a", 1, 1, 4));
+    final var checks = new CoordinationChecks(state);
+
+    // then — a second join for that instance id is fenced (KIP-848 fences the new joiner)
+    assertThat(checks.validateJoin(join("g", "m2", "instance-a", 0, 0, 4)).getLeft().code())
+        .isEqualTo(CoordinationErrorCode.UNRELEASED_INSTANCE_ID);
+    // but a dynamic join (no instance id) and a join for a free instance id are allowed
+    assertThat(checks.validateJoin(join("g", "m2", null, 0, 0, 4)).isRight()).isTrue();
+    assertThat(checks.validateJoin(join("g", "m2", "instance-b", 0, 0, 4)).isRight()).isTrue();
   }
 
   @Test

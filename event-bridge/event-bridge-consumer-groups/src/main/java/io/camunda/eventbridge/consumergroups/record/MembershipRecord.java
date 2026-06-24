@@ -24,8 +24,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
  * <ul>
  *   <li>{@code instanceId} — set for a static member (KIP-345), empty for a dynamic member.
  *   <li>{@code memberId} — assigned by the coordinator; on a {@code JOIN_GROUP} command it is the
- *       <em>candidate</em> id to use if the member is new (ignored for an idempotent static
- *       rejoin).
+ *       new member's id (a join whose static instance id is already in use is rejected, so every
+ *       successful join mints a fresh member rather than re-using an existing one).
  *   <li>{@code memberEpoch} — the member's generation, set to the group epoch at join.
  *   <li>{@code groupEpoch} — the group epoch after this change (the desired-state version the
  *       assignor reconciles toward).

@@ -13,6 +13,10 @@ public enum CoordinationErrorCode {
   FENCED_MEMBER_EPOCH("fenced_member_epoch"),
   FENCED_MEMBER_ACTIVE("fenced_member_active"),
   INVALID_GROUP_ID("invalid_group_id"),
+  // A static member (group.instance.id) tried to join while that instance id is still held by a
+  // live member. The new joiner is fenced (KIP-848); it must wait for the incumbent to
+  // leave/expire.
+  UNRELEASED_INSTANCE_ID("unreleased_instance_id"),
   // The member is valid but does not own the partition it is trying to commit (stale assignment).
   NOT_PARTITION_OWNER("not_partition_owner"),
 

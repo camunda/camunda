@@ -16,11 +16,12 @@ import io.camunda.eventbridge.stream.TypedEventApplier;
 import java.util.List;
 
 /**
- * Applies {@code MEMBER_JOINED}: creates the group on first join, sets its (possibly unchanged)
- * group epoch, and adds the member to the roster. Idempotent — a re-applied join for an existing
- * member (a static rejoin) preserves that member's current target assignment rather than resetting
- * it. The decision logic lives here; {@link MutableConsumerGroupState} only does granular put/get.
- * Runs identically on leader (after {@code JoinGroupProcessor}) and follower (on replay).
+ * Applies {@code MEMBER_JOINED}: creates the group on first join, bumps its group epoch, and adds
+ * the new member (owning nothing until the assignor gives it a target). A join always carries a
+ * fresh member id — a duplicate {@code group.instance.id} is rejected before reaching here — so
+ * this only ever adds a member, never re-states an existing one. The decision logic lives here;
+ * {@link MutableConsumerGroupState} only does granular put/get. Runs identically on leader (after
+ * {@code JoinGroupProcessor}) and follower (on replay).
  */
 public final class MemberJoinedApplier
     implements TypedEventApplier<CoordinatorIntent, MembershipRecord> {
@@ -42,12 +43,11 @@ public final class MemberJoinedApplier
     group.setGroupEpoch(value.getGroupEpoch());
     state.putGroup(groupId, group);
 
-    final var existing = state.getMember(groupId, value.getMemberId());
-    final var member = existing == null ? new MemberState() : existing;
-    member.setInstanceId(value.getInstanceId()).setMemberEpoch(value.getMemberEpoch());
-    if (existing == null) {
-      member.setTargetPartitions(List.of());
-    }
+    final var member =
+        new MemberState()
+            .setInstanceId(value.getInstanceId())
+            .setMemberEpoch(value.getMemberEpoch())
+            .setTargetPartitions(List.of());
     state.putMember(groupId, value.getMemberId(), member);
   }
 }
