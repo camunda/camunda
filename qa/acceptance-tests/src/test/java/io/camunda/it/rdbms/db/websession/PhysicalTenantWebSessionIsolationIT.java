@@ -22,6 +22,7 @@ import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
 import io.camunda.security.api.model.session.PersistentSession;
 import io.camunda.security.core.port.out.SessionStorePort;
 import io.camunda.spring.utils.PhysicalTenantContext;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,8 @@ class PhysicalTenantWebSessionIsolationIT {
 
   private static PersistentSession session(final String id) {
     final long now = System.currentTimeMillis();
-    return new PersistentSession(id, now, now, 1800L, Map.of("test", "v".getBytes()));
+    return new PersistentSession(
+        id, now, now, 1800L, Map.of("test", "v".getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test
