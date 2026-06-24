@@ -69,6 +69,18 @@ public interface DecisionInstance {
   Long getRootProcessInstanceKey();
 
   /**
+   * Returns the business ID of the owning process instance, inherited when the decision instance
+   * was evaluated.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for decision instances created before
+   * version 8.10, for standalone decision evaluations, and when the owning process instance has no
+   * business ID.
+   *
+   * @return the business ID, or {@code null} when not set
+   */
+  String getBusinessId();
+
+  /**
    * @return the element instance key of the decision instance
    */
   Long getElementInstanceKey();

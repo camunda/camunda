@@ -335,6 +335,7 @@ components:
     DecisionInstanceResult:
       type: object
       required:
+        - businessId
         - decisionDefinitionId
         - decisionDefinitionKey
         - decisionDefinitionName
@@ -353,6 +354,15 @@ components:
         - state
         - tenantId
       properties:
+        businessId:
+          description: |
+            The business ID of the owning process instance, inherited when the decision instance was
+            evaluated. This is `null` for decision instances created before version 8.10, for
+            standalone decision evaluations, and for decision instances whose owning process instance
+            has no business ID.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
         decisionDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
@@ -421,6 +431,8 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
       x-properties-added-in-version:
+        - propertyName: businessId
+          addedInVersion: "8.10"
         - propertyName: decisionDefinitionId
           addedInVersion: "8.6"
         - propertyName: decisionDefinitionKey

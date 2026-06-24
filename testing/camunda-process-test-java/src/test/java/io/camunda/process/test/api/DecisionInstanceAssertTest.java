@@ -117,6 +117,7 @@ public class DecisionInstanceAssertTest {
         Long.parseLong(PROCESS_DEFINITION_KEY),
         Long.parseLong(PROCESS_INSTANCE_KEY),
         Long.parseLong(PROCESS_INSTANCE_KEY),
+        null,
         Long.parseLong(ELEMENT_INSTANCE_KEY),
         Long.parseLong(DECISION_DEFINITION_KEY),
         "decisionDefinitionId",
