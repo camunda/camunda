@@ -267,6 +267,26 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryByBusinessId() {
+    // given
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.businessIds("businessId1"));
+
+    // when
+    final var searchRequest = transformQuery(decisionInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("businessId");
+              assertThat(t.value().stringValue()).isEqualTo("businessId1");
+            });
+  }
+
+  @Test
   void shouldQueryByPartitionId() {
     // given
     final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.partitionId(3));

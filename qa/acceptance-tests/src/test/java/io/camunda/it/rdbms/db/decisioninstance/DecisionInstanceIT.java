@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.decisioninstance;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
 import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAndSaveDecisionInstance;
 import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAndSaveRandomDecisionInstance;
 import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAndSaveRandomDecisionInstances;
@@ -219,6 +220,7 @@ public class DecisionInstanceIT {
                                     .states(instance.state())
                                     .decisionTypes(instance.decisionType())
                                     .processInstanceKeys(instance.processInstanceKey())
+                                    .businessIds(instance.businessId())
                                     .evaluationFailures(instance.evaluationFailure())
                                     .evaluationDateOperations(
                                         List.of(
@@ -226,6 +228,58 @@ public class DecisionInstanceIT {
                                                 instance.evaluationDate().minusSeconds(1)))))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().decisionInstanceId())
+        .isEqualTo(instance.decisionInstanceId());
+  }
+
+  @TestTemplate
+  public void shouldFindDecisionInstanceByBusinessIdEq(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
+
+    final String businessId = generateRandomString("businessId");
+    final var instance =
+        createAndSaveRandomDecisionInstance(rdbmsWriters, b -> b.businessId(businessId));
+    createAndSaveRandomDecisionInstances(rdbmsWriters);
+
+    final var searchResult =
+        decisionInstanceReader.search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.businessIdOperations(Operation.eq(businessId)))
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().decisionInstanceId())
+        .isEqualTo(instance.decisionInstanceId());
+  }
+
+  @TestTemplate
+  public void shouldFindDecisionInstanceByBusinessIdLike(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
+
+    final String prefix = generateRandomString("business-transaction");
+    final var instance =
+        createAndSaveRandomDecisionInstance(rdbmsWriters, b -> b.businessId(prefix + "-v1"));
+    createAndSaveRandomDecisionInstances(rdbmsWriters);
+
+    final var searchResult =
+        decisionInstanceReader.search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.businessIdOperations(Operation.like(prefix + "*")))
+                        .page(p -> p.from(0).size(10))));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);

@@ -44,6 +44,7 @@ public class DecisionInstanceTemplate extends AbstractTemplateDescriptor
   public static final String EVALUATED_INPUTS = "evaluatedInputs";
   public static final String EVALUATED_OUTPUTS = "evaluatedOutputs";
   public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
+  public static final String BUSINESS_ID = "businessId";
 
   public DecisionInstanceTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
