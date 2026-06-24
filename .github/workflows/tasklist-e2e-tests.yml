@@ -1,33 +1,9 @@
 ---
 name: Tasklist E2E Tests
 on:
-  push:
-    branches:
-      - "main"
-      - "stable/**"
-    paths:
-      - ".ci/**"
-      - ".github/actions/**"
-      - ".github/workflows/tasklist-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "tasklist/**"
-      - "tasklist.Dockerfile"
-      - "webapps-common/**"
-      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
-  pull_request:
-    paths:
-      - ".ci/**"
-      - ".github/actions/**"
-      - ".github/workflows/tasklist-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "tasklist/**"
-      - "tasklist.Dockerfile"
-      - "webapps-common/**"
-      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
+  # Temporarily disabled - tests run nightly instead
+  # See: https://github.com/camunda/camunda/issues/50125
+  workflow_dispatch: {}
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidence
