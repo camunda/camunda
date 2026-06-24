@@ -124,11 +124,20 @@ jobs:
           -P dl-nightly,parallel-tests \
           verify
 
+      - name: Sanitize branch name for artifact names
+        id: sanitize
+        if: always()
+        shell: bash
+        run: |
+          branch="${{ matrix.branch }}"
+          safe_branch="${branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
       - name: Upload test artifacts on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: data-layer-nightly-test-failures-${{ matrix.branch }}
+          name: data-layer-nightly-test-failures-${{ steps.sanitize.outputs.safe_branch }}
           path: qa/acceptance-tests/target/failsafe-reports/
           retention-days: 7
       - name: Observe build status

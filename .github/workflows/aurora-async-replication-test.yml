@@ -16,7 +16,7 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        default: 'feat/ecs-dual-region-rdbms'
+        default: 'main'
       skip_destroy:
         description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -28,7 +28,7 @@ on:
         description: 'Ref of camunda/camunda-deployment-references to use'
         type: string
         required: false
-        default: 'feat/ecs-dual-region-rdbms'
+        default: 'main'
       skip_destroy:
         description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -83,7 +83,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: camunda/camunda-deployment-references
-          ref: ${{ inputs.deployment_references_ref || 'feat/ecs-dual-region-rdbms' }}
+          ref: ${{ inputs.deployment_references_ref || 'main' }}
           path: camunda-deployment-references
 
       - name: Import secrets from Vault
