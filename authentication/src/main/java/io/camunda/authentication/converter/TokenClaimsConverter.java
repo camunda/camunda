@@ -110,6 +110,11 @@ public class TokenClaimsConverter {
   }
 
   private static boolean isMicrosoftIssuer(final String issuerUri) {
-    return issuerUri.contains(MS_ISSUER_V2_HOST) || issuerUri.contains(MS_ISSUER_V1_HOST);
+    try {
+      final String host = java.net.URI.create(issuerUri).getHost();
+      return MS_ISSUER_V2_HOST.equalsIgnoreCase(host) || MS_ISSUER_V1_HOST.equalsIgnoreCase(host);
+    } catch (final RuntimeException e) {
+      return false;
+    }
   }
 }
