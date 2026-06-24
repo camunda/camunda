@@ -54,6 +54,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -134,7 +135,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         throw new NotFoundException(
             String.format("%s with id %s was not found", taskTemplate.getIndexName(), userTaskKey));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -300,8 +301,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     try {
       final SearchHit[] response = getTasksRawResponse(ids);
       return mapSearchHits(response, objectMapper, TaskEntity.class);
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
+    } catch (final IOException | ElasticsearchException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
@@ -469,7 +470,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         }
       }
       return tasks;
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);

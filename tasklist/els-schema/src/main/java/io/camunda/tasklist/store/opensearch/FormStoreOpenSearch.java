@@ -96,7 +96,7 @@ public class FormStoreOpenSearch implements FormStore {
             .fields(f -> f.field(FormIndex.ID));
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -169,12 +169,12 @@ public class FormStoreOpenSearch implements FormStore {
       } else {
         return Optional.empty();
       }
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String formIdNotFoundMessage =
           String.format(
               "Error retrieving the association for the formId: [%s] and processDefinitionId: [%s]",
               formId, processDefinitionId);
-      throw new TasklistRuntimeException(formIdNotFoundMessage);
+      throw new TasklistRuntimeException(formIdNotFoundMessage, e);
     }
   }
 
@@ -209,12 +209,12 @@ public class FormStoreOpenSearch implements FormStore {
       } else {
         return Optional.empty();
       }
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String formIdNotFoundMessage =
           String.format(
               "Error retrieving the association for the formId: [%s] and processDefinitionId: [%s]",
               formId, processDefinitionId);
-      throw new TasklistRuntimeException(formIdNotFoundMessage);
+      throw new TasklistRuntimeException(formIdNotFoundMessage, e);
     }
   }
 
@@ -287,10 +287,10 @@ public class FormStoreOpenSearch implements FormStore {
       } else {
         return null;
       }
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
-      throw new TasklistRuntimeException(formIdNotFoundMessage);
+      throw new TasklistRuntimeException(formIdNotFoundMessage, e);
     }
   }
 

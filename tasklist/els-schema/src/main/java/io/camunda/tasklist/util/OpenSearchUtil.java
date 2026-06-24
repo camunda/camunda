@@ -234,7 +234,7 @@ public abstract class OpenSearchUtil {
           }
         }
         LOGGER.debug("************* FLUSH BULK FINISH *************");
-      } catch (final IOException ex) {
+      } catch (final IOException | OpenSearchException ex) {
         throw new PersistenceException(
             "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
       }

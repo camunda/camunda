@@ -378,7 +378,7 @@ public abstract class ElasticsearchUtil {
           }
         }
         LOGGER.debug("************* FLUSH BULK FINISH *************");
-      } catch (final IOException ex) {
+      } catch (final IOException | ElasticsearchException ex) {
         throw new PersistenceException(
             "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
       }

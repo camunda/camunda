@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -99,7 +100,7 @@ public class FormStoreElasticSearch implements FormStore {
                     .fetchField(FormIndex.ID));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -118,7 +119,7 @@ public class FormStoreElasticSearch implements FormStore {
                 (String) sourceAsMap.get(FormIndex.BPMN_ID),
                 ((Number) sourceAsMap.get(FormIndex.VERSION)).longValue()));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(
           String.format("Error retrieving the last version for the formKey: %s", formKey), e);
     }
@@ -132,7 +133,7 @@ public class FormStoreElasticSearch implements FormStore {
           getRawResponseWithTenantCheck(
               formId, formIndex, QueryType.ONLY_RUNTIME, tenantAwareClient);
       return fromSearchHit(formSearchHit.getSourceAsString(), objectMapper, FormEntity.class);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     } catch (final NotFoundException e) {
       return null;
@@ -179,10 +180,10 @@ public class FormStoreElasticSearch implements FormStore {
         formEntity.setIsDeleted((Boolean) sourceAsMap.get(FormIndex.IS_DELETED));
         return formEntity;
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
-      throw new TasklistRuntimeException(formIdNotFoundMessage);
+      throw new TasklistRuntimeException(formIdNotFoundMessage, e);
     }
     return null;
   }
@@ -216,10 +217,10 @@ public class FormStoreElasticSearch implements FormStore {
       } else {
         return Optional.empty();
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
-      throw new TasklistRuntimeException(formIdNotFoundMessage);
+      throw new TasklistRuntimeException(formIdNotFoundMessage, e);
     }
   }
 
@@ -247,10 +248,10 @@ public class FormStoreElasticSearch implements FormStore {
       } else {
         return Optional.empty();
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
-      throw new TasklistRuntimeException(formIdNotFoundMessage);
+      throw new TasklistRuntimeException(formIdNotFoundMessage, e);
     }
   }
 }
