@@ -539,7 +539,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .build())),
         Arguments.of(
-            "assert variable: satisfies judge with expectation, threshold, prompt",
+            "assert variable: satisfies judge with expectation, threshold, prompt, attachDocuments",
             singleTestCase(
                 ImmutableAssertVariableInstruction.builder()
                     .processInstanceSelector(
@@ -554,20 +554,6 @@ public class PojoCompatibilityTest {
                             .expectation("should be a properly formatted JSON response")
                             .threshold(0.8)
                             .customPrompt("You are evaluating data accuracy")
-                            .build())
-                    .build())),
-        Arguments.of(
-            "assert variable: satisfies judge with attachDocuments",
-            singleTestCase(
-                ImmutableAssertVariableInstruction.builder()
-                    .processInstanceSelector(
-                        ImmutableProcessInstanceSelector.builder()
-                            .processDefinitionId("ai-agent-process")
-                            .build())
-                    .variableName("invoice")
-                    .satisfiesJudge(
-                        ImmutableJudgeAssertion.builder()
-                            .expectation("The attached invoice PDF shows a total of 100 EUR")
                             .attachDocuments(true)
                             .build())
                     .build())),

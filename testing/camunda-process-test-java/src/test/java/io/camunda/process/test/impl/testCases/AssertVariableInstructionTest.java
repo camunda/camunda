@@ -40,6 +40,8 @@ import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -324,8 +326,9 @@ public class AssertVariableInstructionTest {
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    void shouldApplyAttachDocumentsOverrideTrue() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldApplyAttachDocumentsOverride(final boolean attachDocuments) {
       // given
       final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
       when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
@@ -340,7 +343,7 @@ public class AssertVariableInstructionTest {
               .satisfiesJudge(
                   ImmutableJudgeAssertion.builder()
                       .expectation(EXPECTATION)
-                      .attachDocuments(true)
+                      .attachDocuments(attachDocuments)
                       .build())
               .build();
 
@@ -353,45 +356,10 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
-      assertThat(updatedConfig.isAttachDocuments()).isTrue();
-
-      verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void shouldApplyAttachDocumentsOverrideFalse() {
-      // given
-      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-      when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
-
-      final AssertVariableInstruction instruction =
-          ImmutableAssertVariableInstruction.builder()
-              .processInstanceSelector(
-                  ImmutableProcessInstanceSelector.builder()
-                      .processDefinitionId(PROCESS_DEFINITION_ID)
-                      .build())
-              .variableName(VARIABLE_NAME)
-              .satisfiesJudge(
-                  ImmutableJudgeAssertion.builder()
-                      .expectation(EXPECTATION)
-                      .attachDocuments(false)
-                      .build())
-              .build();
-
-      // when
-      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
-
-      // then
-      final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigCaptor =
-          ArgumentCaptor.forClass(UnaryOperator.class);
-      verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
-
-      final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, true));
-      assertThat(updatedConfig.isAttachDocuments()).isFalse();
+          judgeConfigCaptor
+              .getValue()
+              .apply(new JudgeConfigImpl(s -> s, 0.0, null, !attachDocuments));
+      assertThat(updatedConfig.isAttachDocuments()).isEqualTo(attachDocuments);
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
       verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
