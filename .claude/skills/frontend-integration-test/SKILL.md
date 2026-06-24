@@ -1,7 +1,7 @@
 ---
 
 name: frontend-integration-test
-description: Use when writing, modifying, or debugging Playwright-based tests in the orchestration cluster webapp — integration tests, visual regression tests, or accessibility tests. Use when working with MSW network-level mocking via @msw/playwright, Page Object Models, axe-core accessibility checks, or screenshot comparisons. Trigger whenever someone is working in the test/ directory of the OC webapp at webapp/client/apps/orchestration-cluster-webapp/test/.
+description: Use when writing, modifying, or debugging Playwright tests in the orchestration cluster webapp — integration tests, visual regression, or accessibility tests; MSW mocking, Page Object Models, or axe-core. Test directory: webapp/client/apps/orchestration-cluster-webapp/test/.
 
 ---
 
