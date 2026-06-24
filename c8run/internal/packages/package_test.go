@@ -1141,6 +1141,64 @@ func TestStripConscryptNativeLibsIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestStripConscryptNativeLibsErrorsWhenSuffixMismatch(t *testing.T) {
+	// given: JAR has native entries but none match the expected suffix.
+	// This catches suffix mapping errors that would silently drop all native libs.
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "conscrypt-openjdk-uber-2.5.2.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	// Only entries that do NOT match linux-x86_64 suffix
+	for _, name := range []string{
+		"META-INF/MANIFEST.MF",
+		"META-INF/native/conscrypt_openjdk_jni-windows-x86_64.dll",
+		"META-INF/native/libconscrypt_openjdk_jni-osx-x86_64.dylib",
+	} {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary")); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64 — suffix is "-linux-x86_64." but no entry matches
+	err = stripConscryptNativeLibs(version, "linux", "x86_64")
+
+	// then: should error, not silently drop all native entries
+	if err == nil {
+		t.Fatal("expected error when native entries exist but none match suffix, got nil")
+	}
+}
+
 func TestStripConscryptNativeLibsSkipsWhenJarMissing(t *testing.T) {
 	// given: empty temp dir
 	cwd, err := os.Getwd()

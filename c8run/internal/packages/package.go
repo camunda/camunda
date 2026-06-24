@@ -512,20 +512,29 @@ func stripConscryptNativeLibs(camundaVersion, osType, arch string) error {
 	}
 
 	// Pre-scan: count entries to drop and verify idempotency.
+	// When suffix is non-empty, also verify at least one entry matches —
+	// prevents silently dropping all native libs if the suffix mapping is wrong.
 	r, err := zip.OpenReader(jars[0])
 	if err != nil {
 		return fmt.Errorf("stripConscryptNativeLibs: open %s: %w", jars[0], err)
 	}
 	var toDrop int
+	var kept int
 	for _, f := range r.File {
 		if isConscryptNativeEntry(f.Name) {
 			if suffix == "" || !strings.Contains(f.Name, suffix) {
 				toDrop++
+			} else {
+				kept++
 			}
 		}
 	}
 	if err := r.Close(); err != nil {
 		return fmt.Errorf("stripConscryptNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if suffix != "" && toDrop > 0 && kept == 0 {
+		return fmt.Errorf("stripConscryptNativeLibs: native entries exist in %s but none match suffix %q: verify conscryptNativeSuffix mapping", jars[0], suffix)
 	}
 
 	if toDrop == 0 {
