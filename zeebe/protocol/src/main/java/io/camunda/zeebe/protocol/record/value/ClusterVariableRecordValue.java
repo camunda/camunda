@@ -69,12 +69,10 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
   ClusterVariableScope getScope();
 
   /**
-   * Returns the metadata attached to this cluster variable.
+   * Returns the metadata attached to this cluster variable. The engine stores, replicates, and
+   * exports the map as-is without validating its contents.
    *
-   * <p>The engine stores, replicates, and exports the map as-is without validating its contents.
-   * Records serialized without this field deserialize with an empty map.
-   *
-   * @return the metadata map (never {@code null}, may be empty)
+   * @return the metadata map
    */
   Map<String, Object> getMetadata();
 }
