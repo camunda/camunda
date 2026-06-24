@@ -8,11 +8,11 @@
 package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -20,11 +20,8 @@ import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -47,9 +44,6 @@ final class PhysicalTenantRestIsolationIT {
   private final TestStandaloneBroker broker =
       TENANTS.configure(new TestStandaloneBroker().withUnauthenticatedAccess());
 
-  private final HttpClient httpClient = HttpClient.newHttpClient();
-  private final ObjectMapper objectMapper = new ObjectMapper();
-
   @Test
   void shouldIsolateProcessDefinitionsAndInstancesAcrossPhysicalTenantsOverRest() throws Exception {
     // given
@@ -62,7 +56,8 @@ final class PhysicalTenantRestIsolationIT {
 
     final long processDefinitionKey;
     final long processInstanceKey;
-    try (final CamundaClient tenantAClient = TENANTS.newClientBuilder(broker, TENANT_A).build()) {
+    try (final CamundaClient tenantAClient = TENANTS.newClientBuilder(broker, TENANT_A).build();
+        final CamundaClient defaultClient = TENANTS.newClientBuilder(broker, DEFAULT).build()) {
       processDefinitionKey =
           await("deployment to tenant A succeeds")
               .atMost(Duration.ofSeconds(30))
@@ -87,51 +82,39 @@ final class PhysicalTenantRestIsolationIT {
               .send()
               .join()
               .getProcessInstanceKey();
+
+      // when
+      await("tenant A's process definition and instance are queryable over REST")
+          .atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofMillis(500))
+          .untilAsserted(
+              () -> {
+                assertThat(tenantAClient.newProcessDefinitionSearchRequest().send().join().items())
+                    .hasSize(1);
+                assertThat(tenantAClient.newProcessInstanceSearchRequest().send().join().items())
+                    .hasSize(1);
+              });
+
+      // then - the process definition is readable in tenant A but invisible to the default tenant
+      assertThat(tenantAClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join())
+          .isNotNull();
+      assertNotFound(
+          () -> defaultClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join());
+      assertThat(defaultClient.newProcessDefinitionSearchRequest().send().join().items()).isEmpty();
+
+      // and - the process instance is readable in tenant A but invisible to the default tenant
+      assertThat(tenantAClient.newProcessInstanceGetRequest(processInstanceKey).send().join())
+          .isNotNull();
+      assertNotFound(
+          () -> defaultClient.newProcessInstanceGetRequest(processInstanceKey).send().join());
+      assertThat(defaultClient.newProcessInstanceSearchRequest().send().join().items()).isEmpty();
     }
-
-    // when
-    await("tenant A's process definition and instance are queryable over REST")
-        .atMost(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofMillis(500))
-        .untilAsserted(
-            () -> {
-              assertThat(searchCount(TENANT_A, "process-definitions")).isEqualTo(1);
-              assertThat(searchCount(TENANT_A, "process-instances")).isEqualTo(1);
-            });
-
-    // then - the process definition is readable in tenant A but invisible to the default tenant
-    assertThat(getStatus(TENANT_A, "process-definitions/" + processDefinitionKey)).isEqualTo(200);
-    assertThat(getStatus(DEFAULT, "process-definitions/" + processDefinitionKey)).isEqualTo(404);
-    assertThat(searchCount(DEFAULT, "process-definitions")).isZero();
-
-    // and - the process instance is readable in tenant A but invisible to the default tenant
-    assertThat(getStatus(TENANT_A, "process-instances/" + processInstanceKey)).isEqualTo(200);
-    assertThat(getStatus(DEFAULT, "process-instances/" + processInstanceKey)).isEqualTo(404);
-    assertThat(searchCount(DEFAULT, "process-instances")).isZero();
   }
 
-  private int getStatus(final String tenantId, final String path) throws Exception {
-    final HttpResponse<Void> response =
-        httpClient.send(
-            HttpRequest.newBuilder(uri(tenantId, path)).GET().build(),
-            HttpResponse.BodyHandlers.discarding());
-    return response.statusCode();
-  }
-
-  private int searchCount(final String tenantId, final String resource) throws Exception {
-    final HttpResponse<String> response =
-        httpClient.send(
-            HttpRequest.newBuilder(uri(tenantId, resource + "/search"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString("{}"))
-                .build(),
-            HttpResponse.BodyHandlers.ofString());
-    assertThat(response.statusCode()).isEqualTo(200);
-    final JsonNode items = objectMapper.readTree(response.body()).get("items");
-    return items == null ? 0 : items.size();
-  }
-
-  private URI uri(final String tenantId, final String path) {
-    return URI.create(TENANTS.restBaseFor(broker, tenantId) + "/" + path);
+  private void assertNotFound(final ThrowingCallable callable) {
+    assertThatThrownBy(callable)
+        .isInstanceOf(ProblemException.class)
+        .extracting(t -> ((ProblemException) t).code())
+        .isEqualTo(404);
   }
 }
