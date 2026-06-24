@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.api.util.GatewayTestFactory;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -102,7 +103,7 @@ class UnavailableBrokersTest {
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
     gateway =
-        new Gateway(
+        GatewayTestFactory.create(
             config,
             EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,

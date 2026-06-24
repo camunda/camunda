@@ -39,7 +39,6 @@ import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
-import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -48,7 +47,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.TlsConfigUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.BindableService;
@@ -114,38 +112,6 @@ public final class Gateway implements CloseableSilently {
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
   private final PhysicalTenantIds physicalTenantIds;
-
-  /**
-   * Convenience constructor for tests and single-tenant callers. The given {@code
-   * securityConfiguration}, {@code jwtDecoder} and {@code userServices} are wired for the {@code
-   * default} physical tenant only; OIDC claims are passed through unchanged.
-   */
-  @VisibleForTesting
-  public Gateway(
-      final GatewayCfg gatewayCfg,
-      final EngineSecurityConfig securityConfiguration,
-      final BrokerClient brokerClient,
-      final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices,
-      final PasswordEncoder passwordEncoder,
-      final MeterRegistry meterRegistry,
-      final JwtDecoder jwtDecoder) {
-    this(
-        DEFAULT_SHUTDOWN_TIMEOUT,
-        gatewayCfg,
-        Map.of(DEFAULT_PHYSICAL_TENANT_ID, securityConfiguration),
-        brokerClient,
-        actorSchedulingService,
-        jobStreamer,
-        authConfig -> jwtDecoder,
-        authConfig -> (jwtClaims, tokenValue) -> jwtClaims,
-        tenantId -> userServices,
-        passwordEncoder,
-        meterRegistry,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH,
-        PhysicalTenantIds.DEFAULT);
-  }
 
   public Gateway(
       final Duration shutdownDuration,
