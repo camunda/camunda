@@ -28,7 +28,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
-  private int retryCount;
+  private volatile int retryCount;
 
   public RecoverableRetryStrategy(final ActorControl actor) {
     this(actor, Integer.MAX_VALUE);
@@ -56,6 +56,11 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
     actor.run(this::run);
 
     return currentFuture;
+  }
+
+  @Override
+  public int getRetryCount() {
+    return retryCount;
   }
 
   private void run() {

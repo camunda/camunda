@@ -18,6 +18,7 @@ public final class AbortableRetryStrategy implements RetryStrategy {
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
   private CompletableActorFuture<Boolean> currentFuture;
+  private volatile int retryCount;
 
   public AbortableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
@@ -33,6 +34,7 @@ public final class AbortableRetryStrategy implements RetryStrategy {
   public ActorFuture<Boolean> runWithRetry(
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
+    retryCount = 0;
     retryMechanism.wrap(callable, condition, currentFuture);
 
     actor.run(this::run);
@@ -40,10 +42,16 @@ public final class AbortableRetryStrategy implements RetryStrategy {
     return currentFuture;
   }
 
+  @Override
+  public int getRetryCount() {
+    return retryCount;
+  }
+
   private void run() {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
+        retryCount++;
         actor.run(this::run);
         actor.yieldThread();
       }

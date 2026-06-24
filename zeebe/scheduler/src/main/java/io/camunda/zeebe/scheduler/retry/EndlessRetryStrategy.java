@@ -27,7 +27,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
-  private int retryCount;
+  private volatile int retryCount;
 
   public EndlessRetryStrategy(final ActorControl actor) {
     this(actor, Integer.MAX_VALUE);
@@ -55,6 +55,11 @@ public final class EndlessRetryStrategy implements RetryStrategy {
     actor.run(this::run);
 
     return currentFuture;
+  }
+
+  @Override
+  public int getRetryCount() {
+    return retryCount;
   }
 
   private void run() {

@@ -39,6 +39,16 @@ public interface RetryStrategy {
   ActorFuture<Boolean> runWithRetry(OperationToRetry callable, BooleanSupplier terminateCondition);
 
   /**
+   * Returns how many retry attempts have been scheduled for the current operation.
+   *
+   * <p>The initial execution is not counted as a retry. Implementations reset the counter when a
+   * new operation is passed to {@link #runWithRetry(OperationToRetry, BooleanSupplier)}.
+   *
+   * @return the number of retry attempts for the current operation
+   */
+  int getRetryCount();
+
+  /**
    * Checks whether the retry limit has been exceeded. If the limit is exceeded, logs an error and
    * completes the given future exceptionally with a {@link RetryLimitExceededException}.
    *

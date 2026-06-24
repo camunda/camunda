@@ -23,6 +23,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier currentTerminateCondition;
   private OperationToRetry currentCallable;
+  private volatile int retryCount;
 
   public BackOffRetryStrategy(final ActorControl actor, final Duration maxBackOff) {
     this(actor, maxBackOff, Duration.ofSeconds(1));
@@ -47,10 +48,16 @@ public final class BackOffRetryStrategy implements RetryStrategy {
     currentTerminateCondition = terminateCondition;
     currentCallable = callable;
     backOffDuration = initialBackOff;
+    retryCount = 0;
 
     actor.run(this::run);
 
     return currentFuture;
+  }
+
+  @Override
+  public int getRetryCount() {
+    return retryCount;
   }
 
   private void run() {
@@ -72,6 +79,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
   }
 
   private void backOff() {
+    retryCount++;
     final boolean notReachedMaxBackOff = !backOffDuration.equals(maxBackOff);
     if (notReachedMaxBackOff) {
       final Duration nextBackOff = backOffDuration.multipliedBy(2);
