@@ -9,7 +9,7 @@
 import React, {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
-import {CollapsablePanel} from '../CollapsablePanel';
+import {CollapsablePanel} from '../CollapsablePanel/CollapsablePanel';
 import {Button} from '@carbon/react';
 import {Footer} from './styled';
 

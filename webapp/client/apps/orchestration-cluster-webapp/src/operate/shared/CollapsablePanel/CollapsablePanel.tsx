@@ -9,7 +9,7 @@
 import React, {forwardRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Panel, Header, Collapsable, ExpandIcon, CollapseIcon, IconButton, Content} from './styled';
-import {PanelTitle} from '../PanelTitle';
+import {Title as PanelTitle} from '../PanelTitle/styled';
 import {Layer} from '@carbon/react';
 
 type Props = {
@@ -22,7 +22,7 @@ type Props = {
 	footer?: React.ReactNode;
 	maxWidth: number;
 	scrollable?: boolean;
-	collapsablePanelRef?: React.RefObject<HTMLDivElement | null>;
+	collapsablePanelRef?: React.RefObject<HTMLElement | null>;
 };
 
 const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
