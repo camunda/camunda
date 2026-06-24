@@ -10,12 +10,12 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -29,6 +29,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -63,7 +66,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
-  private final EngineSecurityConfig engineSecurityConfig;
+  private final Map<String, EngineSecurityConfig> engineSecurityConfigsByPhysicalTenant;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -84,7 +87,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
-      final CamundaSecurityLibraryProperties securityProperties,
+      final PhysicalTenantResolver physicalTenantResolver,
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
@@ -101,14 +104,18 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
-    this.engineSecurityConfig =
-        new EngineSecurityConfig(
-            securityProperties.getAuthentication(),
-            securityProperties.getAuthorizations().isEnabled(),
-            securityProperties.getMultiTenancy().isChecksEnabled(),
-            securityProperties.getInitialization(),
-            securityProperties.getCompiledIdValidationPattern(),
-            securityProperties.getCompiledGroupIdValidationPattern());
+    this.engineSecurityConfigsByPhysicalTenant =
+        physicalTenantResolver.mapValues(
+            camunda -> {
+              final var s = camunda.getSecurity();
+              return new EngineSecurityConfig(
+                  s.getAuthentication(),
+                  s.getAuthorizations().isEnabled(),
+                  s.getMultiTenancy().isChecksEnabled(),
+                  s.getInitialization(),
+                  s.getCompiledIdValidationPattern(),
+                  s.getCompiledGroupIdValidationPattern());
+            });
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
@@ -132,6 +139,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean(destroyMethod = "close")
   public Broker broker(final ExporterRepository exporterRepository) {
+    final Map<String, BrokerRequestAuthorizationConverter>
+        brokerRequestAuthorizationConvertersByPhysicalTenant =
+            engineSecurityConfigsByPhysicalTenant.entrySet().stream()
+                .collect(
+                    Collectors.toUnmodifiableMap(
+                        Entry::getKey,
+                        entry -> new BrokerRequestAuthorizationConverter(entry.getValue())));
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
@@ -141,13 +155,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             cluster,
             brokerClient,
             meterRegistry,
-            engineSecurityConfig,
+            engineSecurityConfigsByPhysicalTenant,
             userServices,
             passwordEncoder,
             jwtDecoder,
             oidcClaimsProvider,
             searchClientsProxy,
-            new BrokerRequestAuthorizationConverter(engineSecurityConfig),
+            brokerRequestAuthorizationConvertersByPhysicalTenant,
             nodeIdProvider,
             physicalTenantIds);
     springBrokerBridge.registerShutdownHelper(

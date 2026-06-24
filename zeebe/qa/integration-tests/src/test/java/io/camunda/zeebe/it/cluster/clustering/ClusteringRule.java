@@ -49,6 +49,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
@@ -390,7 +391,7 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
             brokerSpringConfig.shutdownTimeout(),
             brokerCfg,
             null,

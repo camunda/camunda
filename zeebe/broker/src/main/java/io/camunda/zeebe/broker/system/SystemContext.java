@@ -130,17 +130,22 @@ public final class SystemContext {
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
-  private final EngineSecurityConfig securityConfiguration;
+  private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
-  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final Map<String, BrokerRequestAuthorizationConverter>
+      brokerRequestAuthorizationConvertersByPhysicalTenant;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
 
+  /**
+   * Creates a {@code SystemContext} where each physical tenant carries its own {@link
+   * EngineSecurityConfig} and {@link BrokerRequestAuthorizationConverter}.
+   */
   public SystemContext(
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
@@ -149,13 +154,14 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final EngineSecurityConfig securityConfiguration,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final Map<String, BrokerRequestAuthorizationConverter>
+          brokerRequestAuthorizationConvertersByPhysicalTenant,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
@@ -165,14 +171,16 @@ public final class SystemContext {
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
-    this.securityConfiguration = securityConfiguration;
+    this.securityConfigurationsByPhysicalTenant =
+        Collections.unmodifiableMap(securityConfigurationsByPhysicalTenant);
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.oidcClaimsProvider =
         Objects.requireNonNull(oidcClaimsProvider, "oidcClaimsProvider must not be null");
     this.searchClientsProxy = searchClientsProxy;
-    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+    this.brokerRequestAuthorizationConvertersByPhysicalTenant =
+        Collections.unmodifiableMap(brokerRequestAuthorizationConvertersByPhysicalTenant);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
@@ -490,10 +498,16 @@ public final class SystemContext {
   // actually initializing the entities will be done in IdentitySetupInitializer.
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
+    securityConfigurationsByPhysicalTenant.forEach(
+        (physicalTenantId, securityConfig) ->
+            validateInitializationConfigForTenant(physicalTenantId, securityConfig));
+  }
+
+  private void validateInitializationConfigForTenant(
+      final String physicalTenantId, final EngineSecurityConfig securityConfig) {
     final IdentifierValidator identifierValidator =
         new IdentifierValidator(
-            securityConfiguration.getIdValidationPattern(),
-            securityConfiguration.getGroupIdValidationPattern());
+            securityConfig.getIdValidationPattern(), securityConfig.getGroupIdValidationPattern());
     final AuthorizationConfigurer authorizationConfigurer =
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
@@ -504,40 +518,44 @@ public final class SystemContext {
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
         authorizationConfigurer.configureEntities(
-            securityConfiguration.getInitialization().getAuthorizations());
+            securityConfig.getInitialization().getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
-        tenantConfigurer.configureEntities(securityConfiguration.getInitialization().getTenants());
+        tenantConfigurer.configureEntities(securityConfig.getInitialization().getTenants());
     final Either<List<String>, List<GroupRecord>> configuredGroups =
-        groupConfigurer.configureEntities(securityConfiguration.getInitialization().getGroups());
+        groupConfigurer.configureEntities(securityConfig.getInitialization().getGroups());
     final Either<List<String>, List<RoleRecord>> configuredRoles =
-        roleConfigurer.configureEntities(securityConfiguration.getInitialization().getRoles());
+        roleConfigurer.configureEntities(securityConfig.getInitialization().getRoles());
 
     // TODO: after adding more entity types, change this, so it accounts for all violations all
     //   together.
     configuredAuthorizations.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured authorizations: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured authorizations for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
     configuredTenants.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured tenants: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured tenants for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
     configuredRoles.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured roles: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured roles for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
 
     configuredGroups.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured groups: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured groups for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
   }
 
@@ -705,8 +723,39 @@ public final class SystemContext {
     return meterRegistry;
   }
 
+  /** Returns the per-physical-tenant security configuration map (unmodifiable). */
+  public Map<String, EngineSecurityConfig> getSecurityConfigurationsByPhysicalTenant() {
+    return securityConfigurationsByPhysicalTenant;
+  }
+
+  /**
+   * Returns the security configuration for the {@code default} physical tenant. Requires a {@value
+   * io.camunda.configuration.api.physicaltenants.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}
+   * entry to be registered.
+   *
+   * @throws IllegalStateException if no security configuration is registered for the default
+   *     physical tenant
+   */
   public EngineSecurityConfig getSecurityConfiguration() {
-    return securityConfiguration;
+    final var config =
+        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (config == null) {
+      throw new IllegalStateException(
+          "No security configuration registered for the default physical tenant");
+    }
+    return config;
+  }
+
+  /**
+   * Returns the security configuration for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  public EngineSecurityConfig getSecurityConfiguration(final String physicalTenantId) {
+    if (!securityConfigurationsByPhysicalTenant.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return securityConfigurationsByPhysicalTenant.get(physicalTenantId);
   }
 
   public UserServices getUserServices() {
@@ -729,8 +778,23 @@ public final class SystemContext {
     return searchClientsProxy;
   }
 
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
-    return brokerRequestAuthorizationConverter;
+  /**
+   * Returns the request authorization converter for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
+      final String physicalTenantId) {
+    if (!brokerRequestAuthorizationConvertersByPhysicalTenant.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return brokerRequestAuthorizationConvertersByPhysicalTenant.get(physicalTenantId);
+  }
+
+  /** Returns the per-physical-tenant request authorization converter map (unmodifiable). */
+  public Map<String, BrokerRequestAuthorizationConverter>
+      getBrokerRequestAuthorizationConvertersByPhysicalTenant() {
+    return brokerRequestAuthorizationConvertersByPhysicalTenant;
   }
 
   public NodeIdProvider getNodeIdProvider() {
