@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.clustervariable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -27,6 +29,7 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private static final StringValue VALUE_KEY = new StringValue("value");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue SCOPE_KEY = new StringValue("scope");
+  private static final StringValue METADATA_KEY = new StringValue("metadata");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp =
@@ -34,13 +37,15 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private final EnumProperty<ClusterVariableScope> scopeProp =
       new EnumProperty<>(SCOPE_KEY, ClusterVariableScope.class, ClusterVariableScope.UNSPECIFIED);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
+  private final DocumentProperty metadataProp = new DocumentProperty(METADATA_KEY);
 
   public ClusterVariableRecord() {
-    super(4);
+    super(5);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(metadataProp);
   }
 
   @Override
@@ -99,6 +104,21 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   public ClusterVariableRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @Override
+  public Map<String, Object> getMetadata() {
+    return MsgPackConverter.convertToMap(metadataProp.getValue());
+  }
+
+  public ClusterVariableRecord setMetadata(final DirectBuffer metadata) {
+    metadataProp.setValue(metadata);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getMetadataBuffer() {
+    return metadataProp.getValue();
   }
 
   @JsonIgnore

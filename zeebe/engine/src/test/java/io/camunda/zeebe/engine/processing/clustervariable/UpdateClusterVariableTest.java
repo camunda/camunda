@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -317,5 +320,34 @@ public final class UpdateClusterVariableTest {
         .hasIntent(ClusterVariableIntent.UPDATED)
         .hasRecordType(RecordType.EVENT);
     Assertions.assertThat(record2.getValue()).hasValue("\"VALUE_3\"");
+  }
+
+  @Test
+  public void shouldCarryMetadataThroughUpdateEvent() {
+    // given
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_META_UPDATE")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .create();
+
+    final var metadata = Map.<String, Object>of("type", "OAUTH2");
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_META_UPDATE")
+            .setGlobalScope()
+            .withValue("\"UPDATED_VALUE\"")
+            .withMetadata(metadata)
+            .update();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
   }
 }

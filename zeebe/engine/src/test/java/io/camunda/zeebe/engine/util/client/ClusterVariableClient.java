@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.LongFunction;
 import org.agrona.DirectBuffer;
@@ -67,6 +68,12 @@ public final class ClusterVariableClient {
 
   public ClusterVariableClient withTenantId(final String tenantId) {
     clusterVariableRecord.setTenantId(tenantId);
+    return this;
+  }
+
+  public ClusterVariableClient withMetadata(final Map<String, Object> metadata) {
+    clusterVariableRecord.setMetadata(
+        new UnsafeBuffer(MsgPackConverter.convertToMsgPack(metadata)));
     return this;
   }
 
