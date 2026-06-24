@@ -10,10 +10,8 @@ package io.camunda.zeebe.gateway.impl.broker;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
@@ -178,10 +176,9 @@ public final class RequestRetryHandler {
               if (error == null && response.isResponse()) {
                 responseConsumer.accept(response.getKey(), response.getResponse());
               } else if (shouldRetryWithNextPartition(response, error)) {
-                LOGGER.trace("Failed to create process on partition {}", partitionId, error);
-                if (error != null) {
-                  errors.add(error);
-                }
+                final var cause = toException(response, error);
+                LOGGER.trace("Failed to create process on partition {}", partitionId, cause);
+                errors.add(cause);
                 sendRequestWithRetry(
                     request,
                     requestSender,
@@ -191,8 +188,7 @@ public final class RequestRetryHandler {
                     throwableConsumer,
                     errors);
               } else {
-                throwableConsumer.accept(
-                    error == null ? toBrokerResponseException(response) : error);
+                throwableConsumer.accept(toException(response, error));
               }
             });
   }
@@ -253,18 +249,11 @@ public final class RequestRetryHandler {
     if (response.isResponse()) {
       responseConsumer.accept(response.getKey(), response.getResponse());
     } else {
-      throwableConsumer.accept(toBrokerResponseException(response));
+      throwableConsumer.accept(response.toException());
     }
   }
 
-  private Throwable toBrokerResponseException(final BrokerResponse<?> response) {
-    if (response.isError()) {
-      return new BrokerErrorException(response.getError());
-    } else if (response.isRejection()) {
-      return new BrokerRejectionException(response.getRejection());
-    }
-
-    return new IllegalBrokerResponseException(
-        "Expected broker response to be either response, rejection, or error, but is neither of them");
+  private Throwable toException(final BrokerResponse<?> response, final Throwable error) {
+    return error == null ? response.toException() : error;
   }
 }

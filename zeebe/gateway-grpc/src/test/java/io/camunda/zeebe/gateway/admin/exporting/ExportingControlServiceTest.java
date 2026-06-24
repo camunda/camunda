@@ -23,7 +23,9 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
+import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -114,7 +116,8 @@ public class ExportingControlServiceTest {
 
     when(topologyManager.getTopology()).thenReturn(topology);
     when(client.getTopologyManager()).thenReturn(topologyManager);
-    when(client.sendRequest(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(client.sendRequest(any()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(new AdminResponse())));
     return client;
   }
 

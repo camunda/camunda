@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
@@ -203,9 +202,7 @@ final class BrokerRequestManager extends Actor {
         responseFuture.complete(response);
         return RequestResult.failed(response.getError().getCode());
       } else {
-        responseFuture.completeExceptionally(
-            new IllegalBrokerResponseException(
-                "Expected broker response to be either response, rejection, or error, but is neither of them"));
+        responseFuture.completeExceptionally(response.toException());
       }
     } catch (final RuntimeException e) {
       responseFuture.completeExceptionally(new BrokerResponseException(e));

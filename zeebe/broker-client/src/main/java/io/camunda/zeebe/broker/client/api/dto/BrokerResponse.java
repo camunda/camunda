@@ -7,7 +7,16 @@
  */
 package io.camunda.zeebe.broker.client.api.dto;
 
+import io.camunda.zeebe.broker.client.api.BrokerClientException;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
+
 public class BrokerResponse<T> {
+  private static final String ILLEGAL_SUCCESS_RESPONSE_MESSAGE =
+      "Expected broker response to be error or rejection, but received response";
+  private static final String ILLEGAL_RESPONSE_MESSAGE =
+      "Expected broker response to be either response, rejection, or error, but is neither of them";
 
   private final boolean isResponse;
   private final T response;
@@ -54,6 +63,26 @@ public class BrokerResponse<T> {
 
   public T getResponse() {
     return response;
+  }
+
+  public T getResponseOrThrow() {
+    if (isResponse()) {
+      return response;
+    }
+
+    throw toException();
+  }
+
+  public BrokerClientException toException() {
+    if (isResponse()) {
+      return new IllegalBrokerResponseException(ILLEGAL_SUCCESS_RESPONSE_MESSAGE);
+    } else if (isError()) {
+      return new BrokerErrorException(getError());
+    } else if (isRejection()) {
+      return new BrokerRejectionException(getRejection());
+    }
+
+    return new IllegalBrokerResponseException(ILLEGAL_RESPONSE_MESSAGE);
   }
 
   public int getPartitionId() {

@@ -9,9 +9,6 @@ package io.camunda.zeebe.broker.transport.snapshotapi;
 
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.BrokerErrorException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
-import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.DeleteSnapshotForBootstrapResponse;
@@ -179,19 +176,12 @@ public class SnapshotApiRequestHandler
         .sendRequestWithRetry(new GetScaleUpProgress())
         .thenApplyAsync(
             r -> {
-              if (r.isError()) {
-                throw new BrokerErrorException(r.getError());
-              } else if (r.isRejection()) {
-                throw new BrokerRejectionException(r.getRejection());
-              } else if (!r.isResponse()) {
-                throw new IllegalBrokerResponseException(
-                    "Expected broker response to be either response, rejection, or error, but is neither of them");
-              }
+              final var response = r.getResponseOrThrow();
 
               LOG.atLevel(Level.DEBUG)
                   .addKeyValue("transferId", transferId)
-                  .log("Received response from broker {}", r.getResponse());
-              return r.getResponse().getScalingPosition();
+                  .log("Received response from broker {}", response);
+              return response.getScalingPosition();
             },
             actor)
         .whenCompleteAsync(lastProcessedPosition, actor);

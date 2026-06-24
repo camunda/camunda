@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.broker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
@@ -120,6 +121,31 @@ final class RequestRetryHandlerTest {
     assertThat(error.get()).isNull();
     assertThat(result.get()).isEqualTo("result");
     assertThat(brokerClient.partitionsHit).containsExactly(1, 2);
+  }
+
+  @Test
+  void shouldKeepBrokerErrorDetailsWhenRetriesAreExhausted() {
+    // given
+    final var request = new TestBrokerRequest(Optional.empty());
+    brokerClient.setResponse(
+        new BrokerErrorResponse<>(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")));
+
+    // when
+    final var error = new AtomicReference<Throwable>();
+    retryHandler.sendRequest(request, (key, response) -> {}, error::set);
+
+    // then
+    assertThat(error.get()).isInstanceOf(RequestRetriesExhaustedException.class);
+    assertThat(error.get().getSuppressed())
+        .hasSize(PARTITION_COUNT)
+        .allSatisfy(
+            suppressed ->
+                assertThat(suppressed)
+                    .isInstanceOfSatisfying(
+                        BrokerErrorException.class,
+                        brokerError ->
+                            assertThat(brokerError.getError().getCode())
+                                .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED)));
   }
 
   @Test

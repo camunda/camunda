@@ -87,7 +87,9 @@ public class ExportingControlService implements ExportingControlApi {
                   request.setBrokerId(brokerId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
-                  return brokerClient.sendRequest(request);
+                  return brokerClient
+                      .sendRequest(request)
+                      .thenApply(response -> response.getResponseOrThrow());
                 })
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(requests);

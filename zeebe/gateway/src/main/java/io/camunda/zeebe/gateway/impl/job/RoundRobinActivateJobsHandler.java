@@ -12,7 +12,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
@@ -282,19 +281,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final InflightActivateJobsRequestState state,
       final ResponseObserverDelegate delegate,
       final BrokerResponse<JobBatchRecord> response) {
-    if (response.isRejection()) {
-      handleResponseError(
-          request, state, delegate, new BrokerRejectionException(response.getRejection()));
-    } else if (response.isError()) {
-      handleResponseError(request, state, delegate, new BrokerErrorException(response.getError()));
-    } else {
-      handleResponseError(
-          request,
-          state,
-          delegate,
-          new IllegalBrokerResponseException(
-              "Expected broker response to be either response, rejection, or error, but is neither of them"));
-    }
+    handleResponseError(request, state, delegate, response.toException());
   }
 
   private boolean isRejection(final Throwable error) {
