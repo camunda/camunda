@@ -94,6 +94,7 @@ final class OffsetStateAndProcessorTest {
         new OffsetCommitRecord().setGroupId("group-a").setPartitionId(3).setOffset(42);
     final TypedRecord record = mock(TypedRecord.class);
     when(record.getValue()).thenReturn(event);
+    when(record.getIntent()).thenReturn(CoordinatorIntent.OFFSET_COMMITTED);
 
     // when
     processor.replay(record);

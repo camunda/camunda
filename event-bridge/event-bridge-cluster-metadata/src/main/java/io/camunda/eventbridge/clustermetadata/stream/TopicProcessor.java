@@ -7,97 +7,50 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.stream.api.EmptyProcessingResult;
-import io.camunda.zeebe.stream.api.ProcessingResult;
-import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.eventbridge.stream.StreamRecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Map;
 
 /**
- * Maintains the replicated topic registry on the metadata partition. On {@link #process} (leader)
- * it applies the mutation to {@link DbTopicState} and emits a committed event; on {@link #replay}
- * (follower/observer/recovery) it re-applies it — so every replica holds the same topic set and a
- * new leader restores it after failover. Register vs delete is read from the record's own {@code
- * op} field (see {@link TopicRecord}), not the record intent.
+ * Command processor for the topic registry on the metadata partition. Following the engine's
+ * command-processor / event-applier split, it does <em>not</em> mutate state directly: on a {@code
+ * REGISTER}/{@code DELETE} command it appends the matching {@code TOPIC_REGISTERED}/{@code
+ * TOPIC_DELETED} follow-up event via the {@link io.camunda.eventbridge.stream.StateWriter}, which
+ * both writes the event and applies it through the registered {@link
+ * io.camunda.eventbridge.stream.TypedEventApplier}. The same appliers run on replay, so every
+ * replica converges and a new leader restores the registry after failover.
  *
- * <p>Each apply also updates an in-memory {@code registryCache} (owned by {@link MetadataStream})
- * in lockstep with {@link DbTopicState}; this runs on the stream's actor, so reads from other
- * actors go through the thread-safe cache rather than the stream-owned state DB.
+ * <p>Register vs delete is read from the command's own {@code op} field (see {@link TopicRecord}).
  */
-public final class TopicProcessor implements RecordProcessor {
-
-  private final DbTopicState topicState;
-  private final Map<String, TopicMetadata> registryCache;
+public final class TopicProcessor extends StreamRecordProcessor {
 
   public TopicProcessor(
       final DbTopicState topicState, final Map<String, TopicMetadata> registryCache) {
-    this.topicState = topicState;
-    this.registryCache = registryCache;
+    super(MetadataRecordValues.TOPIC_VALUE_TYPE);
+    appliers()
+        .register(
+            MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState, registryCache))
+        .register(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState, registryCache));
   }
 
   @Override
-  public void init(final RecordProcessorContext recordProcessorContext) {
-    // State is injected; nothing to initialize.
-  }
+  protected void processCommand(final TypedRecord command) {
+    final var cmd = (TopicRecord) command.getValue();
 
-  @Override
-  public boolean accepts(final ValueType valueType) {
-    return valueType == MetadataRecordValues.TOPIC_VALUE_TYPE;
-  }
-
-  @Override
-  public void replay(final TypedRecord record) {
-    apply((TopicRecord) record.getValue());
-  }
-
-  @Override
-  public ProcessingResult process(
-      final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
-    final var command = (TopicRecord) record.getValue();
-    apply(command);
-
+    // Command handling produces the follow-up event; the registered applier (not the command)
+    // mutates state, so the leader applies exactly what a follower will replay.
     final var event =
         new TopicRecord()
-            .setName(command.getName())
-            .setOp(command.getOp())
-            .setPartitionCount(command.getPartitionCount())
-            .setReplicationFactor(command.getReplicationFactor())
-            .setStatus(TopicMetadata.TopicStatus.valueOf(command.getStatus()))
-            .setAssignment(command.getAssignment())
-            .setTarget(command.getTarget());
-    final var metadata =
-        new RecordMetadata()
-            .recordType(RecordType.EVENT)
-            .valueType(MetadataRecordValues.TOPIC_VALUE_TYPE)
-            .intent(
-                command.isDelete()
-                    ? MetadataIntent.TOPIC_DELETED
-                    : MetadataIntent.TOPIC_REGISTERED);
+            .setName(cmd.getName())
+            .setOp(cmd.getOp())
+            .setPartitionCount(cmd.getPartitionCount())
+            .setReplicationFactor(cmd.getReplicationFactor())
+            .setStatus(TopicMetadata.TopicStatus.valueOf(cmd.getStatus()))
+            .setAssignment(cmd.getAssignment())
+            .setTarget(cmd.getTarget());
+    final var intent =
+        cmd.isDelete() ? MetadataIntent.TOPIC_DELETED : MetadataIntent.TOPIC_REGISTERED;
 
-    processingResultBuilder.appendRecord(record.getKey(), event, metadata);
-    return processingResultBuilder.build();
-  }
-
-  private void apply(final TopicRecord record) {
-    if (record.isDelete()) {
-      topicState.delete(record.getName());
-      registryCache.remove(record.getName());
-    } else {
-      topicState.put(record.getName(), record.toMetadata());
-      registryCache.put(record.getName(), record.toMetadata());
-    }
-  }
-
-  @Override
-  public ProcessingResult onProcessingError(
-      final Throwable processingException,
-      final TypedRecord record,
-      final ProcessingResultBuilder processingResultBuilder) {
-    return EmptyProcessingResult.INSTANCE;
+    stateWriter().appendFollowUpEvent(command.getKey(), intent, event);
   }
 }

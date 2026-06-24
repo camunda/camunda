@@ -7,69 +7,35 @@
  */
 package io.camunda.eventbridge.consumergroups.stream;
 
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.stream.api.EmptyProcessingResult;
-import io.camunda.zeebe.stream.api.ProcessingResult;
-import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.eventbridge.stream.StreamRecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Replicates consumer-group metadata on the coordinator partition. On {@link #process} (leader) it
- * applies the metadata to {@link DbGroupMetadataState} and emits a committed event; on {@link
- * #replay} (follower/recovery) it re-applies the event — so every replica rebuilds identical
- * membership and a new leader can restore the registry after failover.
+ * Replicates consumer-group metadata on the coordinator partition. Following the engine's
+ * command-processor / event-applier split, it does <em>not</em> mutate state directly: on a
+ * rebalance command it appends a {@code GROUP_METADATA_COMMITTED} follow-up event via the {@link
+ * io.camunda.eventbridge.stream.StateWriter}, which both writes the event and applies it through
+ * the registered {@link GroupMetadataCommittedApplier}. The same applier runs on replay, so every
+ * replica rebuilds identical membership and a new leader can restore the registry after failover.
  */
-public final class GroupMetadataProcessor implements RecordProcessor {
-
-  private final DbGroupMetadataState groupMetadataState;
+public final class GroupMetadataProcessor extends StreamRecordProcessor {
 
   public GroupMetadataProcessor(final DbGroupMetadataState groupMetadataState) {
-    this.groupMetadataState = groupMetadataState;
+    super(EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE);
+    appliers()
+        .register(
+            CoordinatorIntent.GROUP_METADATA_COMMITTED,
+            new GroupMetadataCommittedApplier(groupMetadataState));
   }
 
   @Override
-  public void init(final RecordProcessorContext recordProcessorContext) {
-    // State is injected; nothing to initialize.
-  }
-
-  @Override
-  public boolean accepts(final ValueType valueType) {
-    return valueType == EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE;
-  }
-
-  @Override
-  public void replay(final TypedRecord record) {
-    final var event = (GroupMetadataRecord) record.getValue();
-    groupMetadataState.put(event.getGroupId(), event.getPayload());
-  }
-
-  @Override
-  public ProcessingResult process(
-      final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
-    final var command = (GroupMetadataRecord) record.getValue();
-    groupMetadataState.put(command.getGroupId(), command.getPayload());
+  protected void processCommand(final TypedRecord command) {
+    final var cmd = (GroupMetadataRecord) command.getValue();
 
     final var event =
-        new GroupMetadataRecord().setGroupId(command.getGroupId()).setPayload(command.getPayload());
-    final var metadata =
-        new RecordMetadata()
-            .recordType(RecordType.EVENT)
-            .valueType(EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE)
-            .intent(CoordinatorIntent.GROUP_METADATA_COMMITTED);
+        new GroupMetadataRecord().setGroupId(cmd.getGroupId()).setPayload(cmd.getPayload());
 
-    processingResultBuilder.appendRecord(record.getKey(), event, metadata);
-    return processingResultBuilder.build();
-  }
-
-  @Override
-  public ProcessingResult onProcessingError(
-      final Throwable processingException,
-      final TypedRecord record,
-      final ProcessingResultBuilder processingResultBuilder) {
-    return EmptyProcessingResult.INSTANCE;
+    stateWriter()
+        .appendFollowUpEvent(command.getKey(), CoordinatorIntent.GROUP_METADATA_COMMITTED, event);
   }
 }

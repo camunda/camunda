@@ -25,6 +25,7 @@
     <module>event-bridge-protocol</module>
     <module>event-bridge-transport</module>
     <module>event-bridge-messaging</module>
+    <module>event-bridge-stream</module>
     <module>event-bridge-cluster-metadata</module>
     <module>event-bridge-consumer-groups</module>
     <module>event-bridge-broker</module>

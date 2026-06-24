@@ -146,6 +146,9 @@ final class TopicStateAndProcessorTest {
     @SuppressWarnings("unchecked")
     final TypedRecord<TopicRecord> record = mock(TypedRecord.class);
     when(record.getValue()).thenReturn(value);
+    when(record.getIntent())
+        .thenReturn(
+            value.isDelete() ? MetadataIntent.TOPIC_DELETED : MetadataIntent.TOPIC_REGISTERED);
     return record;
   }
 }
