@@ -323,7 +323,7 @@ public class CamundaMultiDBExtension
             + "-"
             + UUID.randomUUID()
             + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
-    final var rootSecurity = springApplication.unifiedConfig().getSecurity();
+    final var rootInit = springApplication.unifiedConfig().getSecurity().getInitialization();
     springApplication.withPtConfig(
         physicalTenantId,
         camunda -> {
@@ -335,11 +335,10 @@ public class CamundaMultiDBExtension
           rdbms.setPassword("");
           rdbms.setPrefix(testPrefix);
 
-          final var security = camunda.getSecurity();
-          security.getAuthentication().setMethod(rootSecurity.getAuthentication().getMethod());
-          security.getAuthorizations().setEnabled(rootSecurity.getAuthorizations().isEnabled());
-          final var rootInit = rootSecurity.getInitialization();
-          final var init = security.getInitialization();
+          // Physical tenants must declare their own security.initialization — the resolver
+          // forbids inheriting it from root (see PhysicalTenantRequiredOverrideValidation).
+          // auth method and authorizations.enabled DO inherit from root, so they are not copied.
+          final var init = camunda.getSecurity().getInitialization();
           init.setUsers(rootInit.getUsers());
           init.setRoles(rootInit.getRoles());
           init.setMappingRules(rootInit.getMappingRules());
