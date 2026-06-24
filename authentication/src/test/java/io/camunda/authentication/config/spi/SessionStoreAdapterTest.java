@@ -345,8 +345,9 @@ class SessionStoreAdapterTest {
     RequestContextHolder.resetRequestAttributes();
 
     // then — resolves to the default physical tenant instead of throwing
-    assertThat(adapter.get("s1")).isNotNull();
-    assertThat(adapter.get("s1").id()).isEqualTo("s1");
+    final var stored = adapter.get("s1");
+    assertThat(stored).isNotNull();
+    assertThat(stored.id()).isEqualTo("s1");
   }
 
   @Test
