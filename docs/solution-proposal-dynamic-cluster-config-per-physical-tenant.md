@@ -132,17 +132,18 @@ record ClusterConfiguration(
     long version,                // always INITIAL_VERSION; reserved for future root-level merge
     ClusterMembership clusterMembership,
     Map<String, PartitionGroupConfiguration> partitionGroups,
-    Optional<PhasedChangePlan> phasedChangePlan,
-    Optional<PartitionDistributorConfig> partitionDistributorConfig // cluster-level partition distribution config
+    Optional<PhasedChangePlan> phasedChangePlan
 )
 ```
 
-**`ClusterMembership`** holds every broker in the cluster with its lifecycle state. It does not
-carry partition assignment. Fields: `version`, `members` (all brokers as `BrokerState`, carrying
-only `State state`, `long version`, and `Instant lastUpdated`), `pendingChanges` (for membership
-operations), `lastChange`, `clusterId`.
+**`ClusterMembership`** holds every broker in the cluster with its lifecycle state and all
+cluster-level config. It does not carry partition assignment. Fields: `version`, `members` (all
+brokers as `BrokerState`, carrying only `State state`, `long version`, and `Instant lastUpdated`),
+`pendingChanges` (for membership operations), `lastChange`, `clusterId`,
+`partitionDistributorConfig`.
 Member lifecycle operations (`MemberJoinOperation`, `MemberLeaveOperation`,
-`MemberRemoveOperation`, `PreScalingOperation`, `PostScalingOperation`) apply exclusively here.
+`MemberRemoveOperation`, `PreScalingOperation`, `PostScalingOperation`) and
+`UpdatePartitionDistributorConfigOperation` apply exclusively here.
 
 > **POC note:** The POC Java code reuses `MemberState` for `ClusterMembership.members` with a
 > contract that `partitions` is always empty. `BrokerState` (no `partitions` field) is the
@@ -161,10 +162,6 @@ cluster-wide.
 **`PhasedChangePlan`** records the coordinator-generated phased execution plan for operations that
 span cluster membership and partition groups. It is present only when such a cross-phase operation
 is in progress. Pure single-group operations do not use it.
-
-**`partitionDistributorConfig`** holds the cluster-level partition distribution configuration
-(zone layout, distribution mode). Absent until explicitly set. Applies across all partition groups.
-Target for: `UpdatePartitionDistributorConfigOperation`.
 
 ### 3.2 Two kinds of operations
 
@@ -308,6 +305,8 @@ wholesale. If equal (concurrent writes during plan execution), they merge field-
   different content throws — protected by coordinator exclusivity.
 - **`incarnationNumber`** (PartitionGroupConfiguration only): `Math.max()`.
 - **`clusterId`** (ClusterMembership only): first non-empty wins.
+- **`partitionDistributorConfig`** (ClusterMembership only): non-empty wins over absent; if both
+  present, `this` wins (coordinator is the sole writer).
 - **`recovery`** (PartitionGroupConfiguration only): OR semantics per group (either `true` wins).
 - **`lastChange`**: taken from `this`. Safe because `lastChange` is written only on plan
   completion, which bumps the config version — `lastChange` disagreements only occur at different
@@ -512,13 +511,14 @@ message MemberPartitionState {
   google.protobuf.Timestamp lastUpdated = 3;
 }
 
-// Encodes ClusterMembership
+// Encodes ClusterMembership: broker lifecycle state and cluster-level config
 message ClusterMembership {
   int64 version = 1;
   map<string, BrokerState> members = 2;
   CompletedChange lastChange = 3;
   ClusterChangePlan pendingChanges = 4;
   optional string clusterId = 5;
+  PartitionDistributorConfig partitionDistributorConfig = 6;
 }
 
 // Encodes PartitionGroupConfiguration
@@ -536,7 +536,6 @@ message PartitionGroupAwareClusterConfiguration {
   ClusterMembership clusterMembership = 1;
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
-  PartitionDistributorConfig partitionDistributorConfig = 4;
   int64 version = 5; // always INITIAL_VERSION; reserved for future root-level version-based merge
 }
 
@@ -587,11 +586,11 @@ coordinator would stall waiting for state changes that it never sees.
 - If absent (message from an old broker) → read `clusterTopology` (field 1) and migrate via
   `ofDefault()`:
   - `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped);
-    `clusterId` preserved; `recovery` absent (no `recovery` field in `ClusterTopology` proto)
+    `clusterId` preserved; `partitionDistributorConfig` taken from `ClusterTopology.partitionDistributor`
+    directly; `recovery` absent (no `recovery` field in `ClusterTopology` proto)
   - `partitionGroups["default"]` = all members as `MemberPartitionState` (partitions extracted,
     state dropped); `routingState` and `incarnationNumber` preserved; `recovery` defaults to
     `false`
-  - `partitionDistributorConfig` = taken from `ClusterTopology.partitionDistributor` directly
   - `version` = `INITIAL_VERSION`
   - `pendingPlan` = absent
 

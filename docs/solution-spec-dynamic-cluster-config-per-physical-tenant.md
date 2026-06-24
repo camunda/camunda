@@ -37,10 +37,9 @@ Module paths:
 ```java
 record PartitionGroupAwareClusterConfiguration(
     long version,                                      // always INITIAL_VERSION; reserved for future root-level merge
-    ClusterMembership clusterMembership,               // ALL brokers; BrokerState (lifecycle state only)
+    ClusterMembership clusterMembership,               // ALL brokers + cluster-level config
     Map<String, PartitionGroupConfiguration> partitionGroups, // one per partition group ID
-    Optional<PhasedChangePlan> pendingPlan,            // only for cluster-spanning operations
-    Optional<PartitionDistributorConfig> partitionDistributorConfig // cluster-level partition distribution config
+    Optional<PhasedChangePlan> pendingPlan             // only for cluster-spanning operations
 )
 ```
 
@@ -48,9 +47,9 @@ record PartitionGroupAwareClusterConfiguration(
 - Holds every broker with its lifecycle state (`JOINING → ACTIVE → LEAVING → LEFT`).
 - Each member is a `BrokerState`: only `State state`, `long version`, `Instant lastUpdated` —
 no partition assignments.
-- `clusterId` lives here.
+- All cluster-level config lives here: `clusterId`, `partitionDistributorConfig`.
 - Target for: `MemberJoinOperation`, `MemberLeaveOperation`, `MemberRemoveOperation`,
-`PreScalingOperation`, `PostScalingOperation`.
+`PreScalingOperation`, `PostScalingOperation`, `UpdatePartitionDistributorConfigOperation`.
 
 **`partitionGroups`** — `Map<String, PartitionGroupConfiguration>`
 - One `PartitionGroupConfiguration` per partition group, keyed by group ID (e.g. `"default"`,
@@ -70,11 +69,6 @@ no partition assignments.
 - Present only during cluster-spanning operations (those requiring member join/leave).
 - Absent for single-group operations (exporter changes, per-group routing updates, etc.).
 
-**`partitionDistributorConfig`** — `Optional<PartitionDistributorConfig>`
-- Cluster-level partition distribution configuration (zone layout, distribution mode).
-- Absent until explicitly configured; applies across all partition groups.
-- Target for: `UpdatePartitionDistributorConfigOperation`.
-
 ### `ClusterMembership` fields
 
 ```java
@@ -83,7 +77,8 @@ record ClusterMembership(
     SortedMap<MemberId, BrokerState> members,  // lifecycle state only, no partition assignments
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges,
-    Optional<String> clusterId
+    Optional<String> clusterId,
+    Optional<PartitionDistributorConfig> partitionDistributorConfig
 )
 
 record BrokerState(
@@ -256,12 +251,9 @@ PartitionGroupAwareClusterConfiguration merge(PartitionGroupAwareClusterConfigur
         mergedGroups.merge(groupId, config, PartitionGroupConfiguration::merge));
 
     final var mergedPlan = mergePlan(pendingPlan, other.pendingPlan);
-    // Non-empty wins; if both present, this wins (coordinator is the sole writer).
-    final var mergedDistributorConfig =
-        partitionDistributorConfig.or(() -> other.partitionDistributorConfig);
     // version always stays INITIAL_VERSION; not used in merge decisions.
     return new PartitionGroupAwareClusterConfiguration(
-        INITIAL_VERSION, mergedMembership, Map.copyOf(mergedGroups), mergedPlan, mergedDistributorConfig);
+        INITIAL_VERSION, mergedMembership, Map.copyOf(mergedGroups), mergedPlan);
 }
 ```
 
@@ -278,6 +270,8 @@ never removed by a merge.** (Deletion of tenants must be handled in a later iter
 - If equal: members merged element-wise by `BrokerState.version`; `ClusterChangePlan` by plan
   version.
 - `clusterId`: non-empty value wins over empty.
+- `partitionDistributorConfig`: non-empty wins over absent; if both present, `this` wins
+  (coordinator is the sole writer).
 - `lastChange` invariant: never write `lastChange` without bumping the membership version.
 
 ### `PhasedChangePlan.merge()`
@@ -350,13 +344,14 @@ message MemberPartitionState {
   google.protobuf.Timestamp lastUpdated = 3;
 }
 
-// Encodes ClusterMembership: all brokers with lifecycle state only.
+// Encodes ClusterMembership: broker lifecycle state and cluster-level config.
 message ClusterMembership {
   int64 version = 1;
   map<string, BrokerState> members = 2;
   CompletedChange lastChange = 3;
   ClusterChangePlan pendingChanges = 4;
   optional string clusterId = 5;
+  PartitionDistributorConfig partitionDistributorConfig = 6;
 }
 
 // Encodes PartitionGroupConfiguration: per-group partition assignment state.
@@ -374,7 +369,6 @@ message PartitionGroupAwareClusterConfiguration {
   ClusterMembership clusterMembership = 1;
   map<string, PartitionGroupConfiguration> partitionGroups = 2;
   PhasedChangePlan pendingPlan = 3;
-  PartitionDistributorConfig partitionDistributorConfig = 4;
   int64 version = 5; // always INITIAL_VERSION; reserved for future root-level version-based merge
 }
 
@@ -408,7 +402,7 @@ message PartitionGroupOperationList {
 
 Existing messages used unchanged: `ClusterChangePlan`, `CompletedChange`, `RoutingState`,
 `PartitionState`, `TopologyChangeOperation` (and all operation sub-messages), `State` enum,
-`PartitionDistributorConfig` (reused directly in `PartitionGroupAwareClusterConfiguration` field 4).
+`PartitionDistributorConfig` (reused directly in `ClusterMembership` field 6).
 `ClusterTopology` and `MemberState` are kept for the legacy `GossipState` field 1 migration path
 and must not be removed.
 
@@ -426,11 +420,11 @@ message GossipState {
 - If `partitionGroupAwareClusterConfiguration` (field 2) is present → decode directly.
 - If absent (old broker or pre-upgrade snapshot) → read `clusterTopology` (field 1) and migrate:
 - `clusterMembership` = all members as `BrokerState` (state extracted, partitions dropped);
-`clusterId` preserved; `recovery` absent (no `recovery` field in `ClusterTopology` proto)
+`clusterId` preserved; `partitionDistributorConfig` taken from `ClusterTopology.partitionDistributor`
+directly; `recovery` absent (no `recovery` field in `ClusterTopology` proto)
 - `partitionGroups["default"]` = original members as `MemberPartitionState` (partitions
 extracted, state dropped); `routingState` and `incarnationNumber` preserved; `recovery` defaults
 to `false`
-- `partitionDistributorConfig` = taken from `ClusterTopology.partitionDistributor` directly
 - `version` = `INITIAL_VERSION`
 - `pendingPlan` = absent
 
