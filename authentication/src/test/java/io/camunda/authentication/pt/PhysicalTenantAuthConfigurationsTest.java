@@ -582,6 +582,125 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
+  // forAllPhysicalTenants
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldReturnOnlyDefaultWhenNoPtsConfigured() {
+    // given
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root"));
+
+    // when
+    final var result = PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env);
+
+    // then
+    assertThat(result).containsOnlyKeys("default");
+    final AuthenticationConfiguration defaultCfg = result.get("default");
+    assertThat(defaultCfg.getOidc().getClientId()).isEqualTo("root-client");
+    assertThat(defaultCfg.getOidc().getIssuerUri()).isEqualTo("http://idp/root");
+  }
+
+  @Test
+  void shouldReturnDefaultEqualToForPhysicalTenantDefault() {
+    // given
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root"));
+
+    // when
+    final var result = PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env);
+    final AuthenticationConfiguration direct =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", env);
+
+    // then
+    final AuthenticationConfiguration fromMap = result.get("default");
+    assertThat(fromMap).usingRecursiveComparison().isEqualTo(direct);
+  }
+
+  @Test
+  void shouldReturnAllConfiguredPtsPlusDefault() {
+    // given
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method",
+                "oidc",
+                "camunda.security.authentication.oidc.client-id",
+                "root-client",
+                "camunda.security.authentication.oidc.issuer-uri",
+                "http://idp/root",
+                "camunda.physical-tenants.tenanta.security.authentication.oidc.client-id",
+                "tenanta-client",
+                "camunda.physical-tenants.tenanta.security.authentication.oidc.issuer-uri",
+                "http://idp/tenanta",
+                "camunda.physical-tenants.tenantb.security.authentication.oidc.client-id",
+                "tenantb-client",
+                "camunda.physical-tenants.tenantb.security.authentication.oidc.issuer-uri",
+                "http://idp/tenantb"));
+
+    // when
+    final var result = PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env);
+
+    // then — exactly these ids, no extras, and "default" first (documented order)
+    assertThat(result).containsOnlyKeys("default", "tenanta", "tenantb");
+    assertThat(result.keySet().iterator().next()).isEqualTo("default");
+    // each entry equals what forPhysicalTenant returns for the same id
+    for (final var entry : result.entrySet()) {
+      final AuthenticationConfiguration direct =
+          PhysicalTenantAuthConfigurations.forPhysicalTenant(entry.getKey(), env);
+      assertThat(entry.getValue()).usingRecursiveComparison().isEqualTo(direct);
+    }
+  }
+
+  @Test
+  void shouldNotDuplicateDefaultWhenExplicitlyConfigured() {
+    // given — "default" appears as explicit PT overlay
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method",
+                "oidc",
+                "camunda.security.authentication.oidc.client-id",
+                "root-client",
+                "camunda.security.authentication.oidc.issuer-uri",
+                "http://idp/root",
+                "camunda.physical-tenants.default.security.authentication.oidc.client-id",
+                "explicit-default-client"));
+
+    // when
+    final var result = PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env);
+
+    // then — only one "default" entry, no duplication
+    assertThat(result).containsOnlyKeys("default");
+    assertThat(result.get("default").getOidc().getClientId()).isEqualTo("explicit-default-client");
+  }
+
+  @Test
+  void shouldReturnUnmodifiableMap() {
+    // given
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root"));
+
+    // when
+    final var result = PhysicalTenantAuthConfigurations.forAllPhysicalTenants(env);
+
+    // then — the public cross-module accessor returns an unmodifiable map
+    assertThat(result).isUnmodifiable();
+  }
+
+  // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 

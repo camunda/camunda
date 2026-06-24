@@ -7,18 +7,26 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
 import org.springframework.core.env.Environment;
 
 /**
@@ -69,6 +77,18 @@ public final class PhysicalTenantAuthConfigurations {
   private static final String PT_PREFIX_TEMPLATE =
       "camunda.physical-tenants.%s.security.authentication";
 
+  private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
+  private static final ConfigurationPropertyName PHYSICAL_TENANTS_PREFIX_NAME =
+      ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
+
+  // Valid tenant id: lowercase alphanumeric, no dashes — so the yaml form
+  // (camunda.physical-tenants.<id>.*) and its relaxed-binding env-var form address the same tenant.
+  // Intentionally duplicated from PhysicalTenantResolver (configuration module): it is a one-line
+  // rule, and no module that both 'configuration' and 'authentication' depend on fits a plain-Java
+  // validator (spring-utils is Spring-specific; depending on 'configuration' would invert the
+  // dependency). Keep the two in sync.
+  private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
+
   /**
    * Reserved {@code providers.assigned} id for the unnamed default slot — CSL's {@link
    * OidcConfiguration#DEFAULT_REGISTRATION_ID} ({@code "oidc"}), the registration id of the default
@@ -80,6 +100,70 @@ public final class PhysicalTenantAuthConfigurations {
   private static final String DEFAULT_SLOT_ASSIGNED_ID = OidcConfiguration.DEFAULT_REGISTRATION_ID;
 
   private PhysicalTenantAuthConfigurations() {}
+
+  /**
+   * Returns a map from physical-tenant id to its resolved {@link AuthenticationConfiguration},
+   * always including the {@code default} tenant even when no PTs are explicitly configured.
+   *
+   * <p>The map contains one entry per explicitly configured physical tenant (discovered via {@link
+   * #discoverExplicitTenantIds}) plus a {@code default} entry. Each value is computed via {@link
+   * #forPhysicalTenant(String, Environment)}. The returned map is unmodifiable and
+   * insertion-ordered with {@code default} always present; explicit tenant order is discovery
+   * order.
+   *
+   * @param environment Spring {@link Environment} used for both discovery and config binding
+   * @return unmodifiable, insertion-ordered map of tenant id → merged auth config
+   */
+  public static Map<String, AuthenticationConfiguration> forAllPhysicalTenants(
+      final Environment environment) {
+    final Set<String> tenantIds = discoverExplicitTenantIds(environment);
+    final Map<String, AuthenticationConfiguration> result = new LinkedHashMap<>();
+    result.put(
+        DEFAULT_PHYSICAL_TENANT_ID, forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID, environment));
+    for (final String tenantId : tenantIds) {
+      if (!tenantId.equals(DEFAULT_PHYSICAL_TENANT_ID)) {
+        result.put(tenantId, forPhysicalTenant(tenantId, environment));
+      }
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  /**
+   * Walks the {@link Environment} and returns the set of explicitly configured physical-tenant ids
+   * (those with at least one key under {@code camunda.physical-tenants.<id>.*}).
+   *
+   * <p>Tenant ids must be lowercase alphanumeric ({@code [a-z0-9]+}) — no dashes. This matches the
+   * constraint enforced by {@code PhysicalTenantResolver} to keep yaml and env-var forms addressing
+   * the same tenant.
+   *
+   * <p>Package-private so {@code PhysicalTenantScopeProvider} can delegate to it; must not be
+   * tightened to {@code private}.
+   */
+  static Set<String> discoverExplicitTenantIds(final Environment environment) {
+    final Set<String> tenants = new LinkedHashSet<>();
+    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
+      if (source instanceof final IterableConfigurationPropertySource iter) {
+        iter.stream()
+            .filter(PHYSICAL_TENANTS_PREFIX_NAME::isAncestorOf)
+            .forEach(
+                name -> {
+                  if (name.getNumberOfElements()
+                      > PHYSICAL_TENANTS_PREFIX_NAME.getNumberOfElements()) {
+                    final String tenantId =
+                        name.getElement(
+                            PHYSICAL_TENANTS_PREFIX_NAME.getNumberOfElements(),
+                            ConfigurationPropertyName.Form.UNIFORM);
+                    if (tenantId != null
+                        && !tenantId.isEmpty()
+                        && VALID_TENANT_ID.matcher(tenantId).matches()) {
+                      tenants.add(tenantId);
+                    }
+                  }
+                });
+      }
+    }
+    return tenants;
+  }
 
   /**
    * Produces a merged {@link AuthenticationConfiguration} for the given physical tenant id. The
