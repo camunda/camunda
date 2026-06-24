@@ -104,6 +104,36 @@ public class OidcRedirectDiagnosticsFilterTest {
   }
 
   @Test
+  void shouldComputeExpectedRedirectUriFromBracketedIpv6ForwardedHost() throws Exception {
+    // given - the request comes through a reverse proxy reporting a bracketed IPv6 host + port.
+    // A naive ':' split would corrupt the IPv6 literal; the expected redirect_uri in the mismatch
+    // warning must preserve the full bracketed authority and its port.
+    final MockHttpServletRequest request =
+        new MockHttpServletRequest("GET", "/oauth2/authorization/oidc");
+    request.setServerName("internal-host");
+    request.addHeader("X-Forwarded-Proto", "https");
+    request.addHeader("X-Forwarded-Host", "[2001:db8::1]:8443");
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final FilterChain chain =
+        (req, res) ->
+            ((MockHttpServletResponse) res)
+                .setHeader(
+                    HttpHeaders.LOCATION,
+                    "https://idp.example.com/authorize?client_id=x&redirect_uri=https://wrong-host/sso-callback");
+
+    // when
+    filter.doFilter(request, response, chain);
+
+    // then - the expected URI is derived correctly from the bracketed IPv6 authority + port
+    assertThat(warnMessages())
+        .anySatisfy(
+            message ->
+                assertThat(message)
+                    .contains("redirect_uri mismatch")
+                    .contains("https://[2001:db8::1]:8443/sso-callback"));
+  }
+
+  @Test
   void shouldWarnWhenCallbackReceivesCodeWithoutSession() throws Exception {
     // given - a callback carrying an authorization code but no HTTP session
     final MockHttpServletRequest request = new MockHttpServletRequest("GET", CALLBACK_PATH);
