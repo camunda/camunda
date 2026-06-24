@@ -19,6 +19,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
 import {sleep} from 'utils/sleep';
+import {defaultAssertionOptions} from 'utils/constants';
 
 const JSON_VARIABLE_NAME = 'jsonVar';
 const JSON_VARIABLE_VALUE = {name: 'Alice', age: 30};
@@ -201,6 +202,26 @@ test.describe('Process Instance Variables', () => {
       await operateProcessesPage.clickProcessInstanceLink();
     });
 
+    // A single scrollIntoViewIfNeeded occasionally lands just short of the
+    // infinite-scroll trigger (or the next batch is slow to arrive on a
+    // loaded cluster), so the row count never advances and the assertion
+    // times out at the page-1 count. Re-scroll the boundary variable until
+    // the next batch has loaded, so the count reflects the loaded state
+    // rather than a single missed scroll event.
+    const scrollToLoadMore = async (
+      boundaryVariable: string,
+      expectedRowCount: number,
+    ) => {
+      await expect(async () => {
+        await page
+          .getByText(boundaryVariable, {exact: true})
+          .scrollIntoViewIfNeeded();
+        await expect(
+          operateProcessInstancePage.variablesList.getByRole('row'),
+        ).toHaveCount(expectedRowCount, {timeout: 5000});
+      }).toPass(defaultAssertionOptions);
+    };
+
     await test.step('Scroll through variables and verify row count increases progressively', async () => {
       await expect(operateProcessInstancePage.variablesList).toBeVisible();
       await expect(
@@ -210,25 +231,16 @@ test.describe('Process Instance Variables', () => {
       await expect(page.getByText('aa', {exact: true})).toBeVisible();
       await expect(page.getByText('bx', {exact: true})).toBeVisible();
 
-      await page.getByText('bx', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(101);
+      await scrollToLoadMore('bx', 101);
 
       await expect(page.getByText('dv', {exact: true})).toBeVisible();
-      await page.getByText('dv', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(151);
+      await scrollToLoadMore('dv', 151);
 
       await expect(page.getByText('ft', {exact: true})).toBeVisible();
-      await page.getByText('ft', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(201);
+      await scrollToLoadMore('ft', 201);
 
       await expect(page.getByText('hr', {exact: true})).toBeVisible();
-      await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
+      await scrollToLoadMore('hr', 251);
 
       await expectInViewport(page.getByTestId('variable-aa'), false);
       await expect(page.getByText('by', {exact: true})).toBeVisible();
