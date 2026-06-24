@@ -15,6 +15,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
@@ -49,6 +50,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -69,10 +71,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
   private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
-  private final UserServices userServices;
+  private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
+  private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
@@ -108,10 +110,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
       final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
-      final UserServices userServices,
+      final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
       final Map<String, BrokerRequestAuthorizationConverter>
           brokerRequestAuthorizationConvertersByPhysicalTenant,
@@ -131,10 +133,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.meterRegistry = requireNonNull(meterRegistry);
     this.securityConfigurationsByPhysicalTenant =
         Collections.unmodifiableMap(securityConfigurationsByPhysicalTenant);
-    this.userServices = userServices;
+    this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider = oidcClaimsProvider;
+    this.jwtDecoderFactory = jwtDecoderFactory;
+    this.oidcClaimsProviderFactory = oidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
@@ -384,8 +386,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public UserServices getUserServices() {
-    return userServices;
+  public Function<String, UserServices> getUserServicesForTenant() {
+    return userServicesForTenant;
   }
 
   @Override
@@ -394,13 +396,13 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public JwtDecoder getJwtDecoder() {
-    return jwtDecoder;
+  public Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory() {
+    return jwtDecoderFactory;
   }
 
   @Override
-  public OidcClaimsProvider getOidcClaimsProvider() {
-    return oidcClaimsProvider;
+  public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
+    return oidcClaimsProviderFactory;
   }
 
   @Override

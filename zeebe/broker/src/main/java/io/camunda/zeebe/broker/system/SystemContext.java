@@ -14,6 +14,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.validation.AuthorizationValidator;
@@ -76,6 +77,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -131,10 +133,10 @@ public final class SystemContext {
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
   private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
-  private final UserServices userServices;
+  private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
+  private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final Map<String, BrokerRequestAuthorizationConverter>
       brokerRequestAuthorizationConvertersByPhysicalTenant;
@@ -155,10 +157,10 @@ public final class SystemContext {
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
       final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
-      final UserServices userServices,
+      final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
       final Map<String, BrokerRequestAuthorizationConverter>
           brokerRequestAuthorizationConvertersByPhysicalTenant,
@@ -173,11 +175,12 @@ public final class SystemContext {
     this.meterRegistry = meterRegistry;
     this.securityConfigurationsByPhysicalTenant =
         Collections.unmodifiableMap(securityConfigurationsByPhysicalTenant);
-    this.userServices = userServices;
+    this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider =
-        Objects.requireNonNull(oidcClaimsProvider, "oidcClaimsProvider must not be null");
+    this.jwtDecoderFactory = jwtDecoderFactory;
+    this.oidcClaimsProviderFactory =
+        Objects.requireNonNull(
+            oidcClaimsProviderFactory, "oidcClaimsProviderFactory must not be null");
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConvertersByPhysicalTenant =
         Collections.unmodifiableMap(brokerRequestAuthorizationConvertersByPhysicalTenant);
@@ -758,20 +761,20 @@ public final class SystemContext {
     return securityConfigurationsByPhysicalTenant.get(physicalTenantId);
   }
 
-  public UserServices getUserServices() {
-    return userServices;
+  public Function<String, UserServices> getUserServicesForTenant() {
+    return userServicesForTenant;
   }
 
   public PasswordEncoder getPasswordEncoder() {
     return passwordEncoder;
   }
 
-  public OidcClaimsProvider getOidcClaimsProvider() {
-    return oidcClaimsProvider;
+  public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
+    return oidcClaimsProviderFactory;
   }
 
-  public JwtDecoder getJwtDecoder() {
-    return jwtDecoder;
+  public Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory() {
+    return jwtDecoderFactory;
   }
 
   public SearchClientsProxy getSearchClientsProxy() {

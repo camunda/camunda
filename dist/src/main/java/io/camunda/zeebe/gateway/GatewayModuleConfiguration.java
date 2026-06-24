@@ -10,10 +10,14 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
@@ -23,9 +27,11 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -54,16 +60,16 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final GatewayBasedConfiguration configuration;
-  private final EngineSecurityConfig engineSecurityConfig;
+  private final Map<String, EngineSecurityConfig> engineSecurityConfigsByPhysicalTenant;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
   private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
-  private final UserServices userServices;
+  private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+  private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
   private final PhysicalTenantIds physicalTenantIds;
@@ -73,38 +79,42 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   @Autowired
   public GatewayModuleConfiguration(
       final GatewayBasedConfiguration configuration,
-      final CamundaSecurityLibraryProperties securityProperties,
+      final PhysicalTenantResolver physicalTenantResolver,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient,
-      @Autowired(required = false) final UserServices userServices,
+      @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
-      @Autowired(required = false) final JwtDecoder jwtDecoder,
-      @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
+      @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false)
+          final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final MeterRegistry meterRegistry,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final PhysicalTenantIds physicalTenantIds) {
     this.configuration = configuration;
-    this.engineSecurityConfig =
-        new EngineSecurityConfig(
-            securityProperties.getAuthentication(),
-            securityProperties.getAuthorizations().isEnabled(),
-            securityProperties.getMultiTenancy().isChecksEnabled(),
-            securityProperties.getInitialization(),
-            securityProperties.getCompiledIdValidationPattern(),
-            securityProperties.getCompiledGroupIdValidationPattern());
+    engineSecurityConfigsByPhysicalTenant =
+        physicalTenantResolver.mapValues(
+            camunda -> {
+              final var s = camunda.getSecurity();
+              return new EngineSecurityConfig(
+                  s.getAuthentication(),
+                  s.getAuthorizations().isEnabled(),
+                  s.getMultiTenancy().isChecksEnabled(),
+                  s.getInitialization(),
+                  s.getCompiledIdValidationPattern(),
+                  s.getCompiledGroupIdValidationPattern());
+            });
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
-    this.userServices = userServices;
+    this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider =
-        oidcClaimsProvider != null ? oidcClaimsProvider : (jwtClaims, tokenValue) -> jwtClaims;
+    this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
+    this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.meterRegistry = meterRegistry;
     maxVariableNameLength = gatewayRestConfiguration.getMaxNameFieldLength();
     this.physicalTenantIds = physicalTenantIds;
@@ -126,18 +136,25 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     // topology to be set up, otherwise the callback may be lost
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
+    final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
+        authConfig -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig);
+    final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
+        authConfig -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authConfig);
+    final Function<String, UserServices> userServicesForTenant =
+        tenantId -> serviceRegistry.userServices(tenantId);
+
     gateway =
         new Gateway(
             configuration.shutdownTimeout(),
             configuration.config(),
-            engineSecurityConfig,
+            engineSecurityConfigsByPhysicalTenant,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            userServices,
+            jwtDecoderFactory,
+            oidcClaimsProviderFactory,
+            userServicesForTenant,
             passwordEncoder,
-            jwtDecoder,
-            oidcClaimsProvider,
             meterRegistry,
             maxVariableNameLength,
             physicalTenantIds);

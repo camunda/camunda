@@ -19,9 +19,10 @@ import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.beans.GatewayBasedProperties;
-import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.mock.env.MockEnvironment;
 
 final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
@@ -279,9 +281,14 @@ final class StandaloneGatewaySecurityTest {
     final var gatewayRestConfiguration = new GatewayRestConfiguration();
     gatewayRestConfiguration.setMaxNameFieldLength(32 * 1024);
 
+    // this test exercises only TLS startup, so run with an unprotected API to avoid wiring real
+    // per-tenant authentication factories
+    final var camunda = new Camunda();
+    camunda.getSecurity().getAuthentication().setUnprotectedApi(true);
+
     return new GatewayModuleConfiguration(
         gatewayConfig,
-        new CamundaSecurityLibraryProperties(),
+        PhysicalTenantResolver.of(new MockEnvironment(), camunda),
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,

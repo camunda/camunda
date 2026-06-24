@@ -12,6 +12,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
@@ -42,6 +43,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -154,13 +156,13 @@ public interface BrokerStartupContext {
    */
   EngineSecurityConfig getSecurityConfiguration(String physicalTenantId);
 
-  UserServices getUserServices();
+  Function<String, UserServices> getUserServicesForTenant();
 
   PasswordEncoder getPasswordEncoder();
 
-  JwtDecoder getJwtDecoder();
+  Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory();
 
-  OidcClaimsProvider getOidcClaimsProvider();
+  Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory();
 
   SnapshotApiRequestHandler getSnapshotApiRequestHandler();
 

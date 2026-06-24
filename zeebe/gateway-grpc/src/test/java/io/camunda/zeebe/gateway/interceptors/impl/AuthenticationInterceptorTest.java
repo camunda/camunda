@@ -7,813 +7,191 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.CLIENT_ID;
-import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.GROUPS_CLAIMS;
-import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.USERNAME;
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.AuthResultValues;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.LatencyKeyNames;
-import io.grpc.Context;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
+import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.grpc.Metadata;
-import io.grpc.Metadata.Key;
 import io.grpc.MethodDescriptor;
-import io.grpc.ServerCallHandler;
 import io.grpc.Status;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.Date;
-import java.util.List;
+import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import org.assertj.core.api.ListAssert;
-import org.assertj.core.api.MapAssert;
-import org.assertj.core.api.StringAssert;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtException;
 
-public class AuthenticationInterceptorTest {
+final class AuthenticationInterceptorTest {
+
+  private static final Metadata.Key<String> AUTH_KEY =
+      Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
+  private final AuthenticationMetrics metrics =
+      new AuthenticationMetrics(new SimpleMeterRegistry(), AuthenticationMethod.OIDC);
 
   @Test
-  public void missingAuthenticationInformationIsRejected() {
+  void shouldStampResolvedTenantIntoContextForUnprotectedApi() {
+    // given
+    final var interceptor =
+        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), false, metrics);
+    final var headers = new Metadata();
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "tenant-a");
+    final AtomicReference<String> captured = new AtomicReference<>();
+
     // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor(null)
-        .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
+    interceptor.interceptCall(
+        new NoopServerCall<>() {},
+        headers,
+        (call, h) -> {
+          captured.set(InterceptorUtil.getPhysicalTenantIdKey().get());
+          return null;
+        });
 
     // then
-    assertThat(closeStatusCapturingServerCall.closeStatus)
+    assertThat(captured).hasValue("tenant-a");
+  }
+
+  @Test
+  void shouldDefaultToDefaultTenantWhenHeaderAbsent() {
+    // given
+    final var interceptor =
+        new AuthenticationInterceptor(Set.of(DEFAULT_PHYSICAL_TENANT_ID), Map.of(), false, metrics);
+    final AtomicReference<String> captured = new AtomicReference<>();
+
+    // when
+    interceptor.interceptCall(
+        new NoopServerCall<>() {},
+        new Metadata(),
+        (call, h) -> {
+          captured.set(InterceptorUtil.getPhysicalTenantIdKey().get());
+          return null;
+        });
+
+    // then
+    assertThat(captured).hasValue(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldRejectUnknownTenantWithNotFound() {
+    // given
+    final var interceptor =
+        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), true, metrics);
+    final var headers = new Metadata();
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "unknown");
+    final var closedCall = new CloseStatusCapturingServerCall<String, String>();
+
+    // when
+    interceptor.interceptCall(closedCall, headers, (call, h) -> null);
+
+    // then
+    assertThat(closedCall.closeStatus)
         .hasValueSatisfying(
             status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription())
-                  .isEqualTo(
-                      "Expected authentication information at header with key [authorization], but found nothing");
+              assertThat(status.getCode()).isEqualTo(Status.NOT_FOUND.getCode());
+              assertThat(status.getDescription()).contains("unknown");
             });
   }
 
-  // BASIC AUTH tests
   @Test
-  public void validBasicAuthIsAccepted() {
-    // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-    final Metadata metadata = new Metadata();
-    // demo:demo
-    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
-    final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
-    final var passwordEncoder = mock(PasswordEncoder.class);
-    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-    new AuthenticationInterceptor(new BasicAuth(userServices, passwordEncoder))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    // then
-    assertThat(closeStatusCapturingServerCall.closeStatus).hasValue(Status.OK);
-  }
-
-  @Test
-  public void addUserKeyToContext() {
+  void shouldRejectMissingAuthorizationWithUnauthenticatedWhenProtected() {
     // given
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-    final Metadata metadata = new Metadata();
-    // demo:demo
-    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
-    final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
-    new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertUsername().isEqualTo(1L);
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
+    final var interceptor =
+        new AuthenticationInterceptor(
+            Set.of(DEFAULT_PHYSICAL_TENANT_ID),
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, alwaysAllow()),
+            true,
+            metrics);
+    final var closedCall = new CloseStatusCapturingServerCall<String, String>();
 
-  @Test
-  public void missingUserIsRejected() {
     // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-    final Metadata metadata = new Metadata();
-    // demo:demo
-    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
-    final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
-        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
-    new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
-        .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
+    interceptor.interceptCall(closedCall, new Metadata(), (call, h) -> null);
 
     // then
-    assertThat(closeStatusCapturingServerCall.closeStatus)
+    assertThat(closedCall.closeStatus)
         .hasValueSatisfying(
-            status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription()).isEqualTo("Invalid credentials");
-            });
+            status -> assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode()));
   }
 
   @Test
-  public void notValidPasswordIsRejected() {
+  void shouldSelectPerTenantHandlerAndPropagateRejection() {
+    // given an allowing handler for tenant-a and a denying one for tenant-b
+    final var interceptor =
+        new AuthenticationInterceptor(
+            Set.of("tenant-a", "tenant-b"),
+            Map.of("tenant-a", alwaysAllow(), "tenant-b", alwaysDeny()),
+            true,
+            metrics);
+    final var headers = new Metadata();
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "tenant-b");
+    headers.put(AUTH_KEY, "Bearer token");
+    final var closedCall = new CloseStatusCapturingServerCall<String, String>();
+
+    // when the denying handler for tenant-b is selected
+    interceptor.interceptCall(closedCall, headers, (call, h) -> null);
+
+    // then the handler's rejection status is propagated
+    assertThat(closedCall.closeStatus)
+        .hasValueSatisfying(
+            status -> assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode()));
+  }
+
+  @Test
+  void shouldStampTenantAfterSuccessfulAuthentication() {
+    // given
+    final var interceptor =
+        new AuthenticationInterceptor(
+            Set.of("tenant-a"), Map.of("tenant-a", alwaysAllow()), true, metrics);
+    final var headers = new Metadata();
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "tenant-a");
+    headers.put(AUTH_KEY, "Bearer token");
+    final AtomicReference<String> captured = new AtomicReference<>();
+
     // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-    final Metadata metadata = new Metadata();
-    // demo:demo
-    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
-    final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
-    final var passwordEncoder = mock(PasswordEncoder.class);
-    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
-    new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
-        .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
+    interceptor.interceptCall(
+        new NoopServerCall<>() {},
+        headers,
+        (call, h) -> {
+          captured.set(InterceptorUtil.getPhysicalTenantIdKey().get());
+          return null;
+        });
 
     // then
-    assertThat(closeStatusCapturingServerCall.closeStatus)
-        .hasValueSatisfying(
-            status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription()).isEqualTo("Invalid credentials");
-            });
+    assertThat(captured).hasValue("tenant-a");
   }
 
-  // OIDC auth tests
-  @Test
-  public void validTokenIsAccepted() {
-    // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims =
-        Map.of(
-            "role", "admin",
-            "foo", "bar",
-            "baz", "qux",
-            "username", "test-user");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            createAuthHeader(),
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    // then
-    assertThat(closeStatusCapturingServerCall.closeStatus).hasValue(Status.OK);
+  /** A real OIDC handler whose fake decoder yields a token carrying the default username claim. */
+  private static AuthenticationHandler alwaysAllow() {
+    final var oidcConfig = new OidcConfiguration();
+    return new AuthenticationHandler.Oidc(
+        token ->
+            new Jwt(
+                token,
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                Map.of("alg", "none"),
+                Map.of(oidcConfig.getUsernameClaim(), "test-user")),
+        (jwtClaims, tokenValue) -> jwtClaims,
+        oidcConfig);
   }
 
-  @Test
-  public void missingUsernameAndClientIdIsRejected() {
-    // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("username", "test-user");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("sub");
-    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
-
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            createAuthHeader(),
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    assertThat(closeStatusCapturingServerCall.closeStatus)
-        .hasValueSatisfying(
-            status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription())
-                  .isEqualTo(
-                      "Expected either a username (claim: sub) or client ID (claim: client_id) on the token, but no matching claim found");
-            });
+  /** A real OIDC handler whose decoder always rejects, yielding UNAUTHENTICATED. */
+  private static AuthenticationHandler alwaysDeny() {
+    return new AuthenticationHandler.Oidc(
+        token -> {
+          throw new JwtException("rejected");
+        },
+        (jwtClaims, tokenValue) -> jwtClaims,
+        new OidcConfiguration());
   }
 
-  @Test
-  public void nonStringUsernameIsRejected() {
-    // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("username", List.of("test-user"));
-    when(jwt.getClaims()).thenReturn(claims);
-
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            createAuthHeader(),
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    assertThat(closeStatusCapturingServerCall.closeStatus)
-        .hasValueSatisfying(
-            status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription()).isEqualTo("Failed to load OIDC principals");
-              assertThat(status.getCause()).isNull();
-            });
-  }
-
-  @Test
-  public void nonStringClientIdIsRejected() {
-    // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("client_id", List.of("test-user"));
-    when(jwt.getClaims()).thenReturn(claims);
-
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
-
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            createAuthHeader(),
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    assertThat(closeStatusCapturingServerCall.closeStatus)
-        .hasValueSatisfying(
-            status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription()).isEqualTo("Failed to load OIDC principals");
-              assertThat(status.getCause()).isNull();
-            });
-  }
-
-  @Test
-  public void addsUserClaimsToContext() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims =
-        Map.of(
-            "role", "admin",
-            "foo", "bar",
-            "baz", "qux",
-            "username", "test-user");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    // when
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertUserClaims().containsKey("role").containsKey("foo").containsKey("baz");
-              assertUsername().isEqualTo("test-user");
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
-  public void addsUsernameInOidcToContext() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("username", "test-user");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    // when
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertUsername().isEqualTo("test-user");
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
-  public void addsClientIdInOidcToContext() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("untested", "test-user", "application_id", "app-id");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    // when
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then;
-              assertClientId().isEqualTo("app-id");
-
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
-  public void
-      addsUsernameToOidcContextWhenPreferUsernameClaimIsTrueWhenUsernameAndClientIdClaimsArePresent() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("username", "test-user", "application_id", "app-id");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-    oidcAuthenticationConfiguration.setPreferUsernameClaim(true);
-
-    // when
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertUsername().isEqualTo("test-user");
-              assertClientId().isNull();
-
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
-  public void defaultsToUsernameWhenPreferUsernameClaimIsFalseAndClientIdIsNotPresent() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("username", "test-user", "application_id", "app-id");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("missing_claim");
-
-    // when
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertUsername().isEqualTo("test-user");
-              assertClientId().isNull();
-
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
-  public void
-      addsClientIdToOidcContextWhenPreferUsernameClaimIsFalseWhenUsernameAndClientIdClaimsArePresent() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("username", "test-user", "application_id", "app-id");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    // when
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertUsername().isNull();
-              assertClientId().isEqualTo("app-id");
-
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
-  public void addsGroupsInOidcToContext() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims =
-        Map.of("username", "test-user", "groups", List.of("foo", "bar"));
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-    oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
-
-    // when
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertGroups().containsExactlyInAnyOrder("foo", "bar");
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
-  public void nonStringArrayGroupsIsRejected() {
-    // when
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims =
-        Map.of("username", "test-user", "groups", List.of(Map.of("foo", "bar")));
-
-    when(jwt.getClaims()).thenReturn(claims);
-
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
-    oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
-
-    new AuthenticationInterceptor(
-            new Oidc(
-                jwtDecoder,
-                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            createAuthHeader(),
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    assertThat(closeStatusCapturingServerCall.closeStatus)
-        .hasValueSatisfying(
-            status -> {
-              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription()).isEqualTo("Failed to load OIDC groups");
-              assertThat(status.getCause()).isNull();
-            });
-  }
-
-  @Test
-  void shouldMeasureLatency() {
-    // given
-    final var meterRegistry = new SimpleMeterRegistry();
-    final var metrics = new AuthenticationMetrics(meterRegistry, AuthenticationMethod.BASIC);
-    final var capturingCall = new CloseStatusCapturingServerCall();
-    final Metadata metadata = new Metadata();
-    // demo:demo
-    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
-    final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
-    final var passwordEncoder = mock(PasswordEncoder.class);
-    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-    new AuthenticationInterceptor(new BasicAuth(userServices, passwordEncoder), metrics)
-        .interceptCall(
-            capturingCall,
-            metadata,
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    // then
-    final var timer =
-        meterRegistry
-            .get(AuthenticationMetricsDoc.LATENCY.getName())
-            .tag(LatencyKeyNames.AUTH_METHOD.asString(), "BASIC")
-            .tag(LatencyKeyNames.AUTH_RESULT.asString(), AuthResultValues.SUCCESS.getValue())
-            .timer();
-    assertThat(timer.count()).isOne();
-    assertThat(timer.mean(TimeUnit.MILLISECONDS)).isGreaterThan(0);
-    assertThat(capturingCall.closeStatus).hasValue(Status.OK);
-  }
-
-  @Test
-  void shouldMeasureFailureLatency() {
-    // given
-    final var meterRegistry = new SimpleMeterRegistry();
-    final var metrics = new AuthenticationMetrics(meterRegistry, AuthenticationMethod.BASIC);
-    final var capturingCall = new CloseStatusCapturingServerCall();
-    final Metadata metadata = new Metadata();
-    // not demo:demo
-    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1b");
-    final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
-    final var passwordEncoder = mock(PasswordEncoder.class);
-    when(passwordEncoder.matches("demo", "demo")).thenReturn(true);
-    new AuthenticationInterceptor(new BasicAuth(userServices, passwordEncoder), metrics)
-        .interceptCall(
-            capturingCall,
-            metadata,
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    // then
-    final var timer =
-        meterRegistry
-            .get(AuthenticationMetricsDoc.LATENCY.getName())
-            .tag(LatencyKeyNames.AUTH_METHOD.asString(), "BASIC")
-            .tag(LatencyKeyNames.AUTH_RESULT.asString(), AuthResultValues.FAILURE.getValue())
-            .timer();
-    assertThat(timer.count()).isOne();
-    assertThat(timer.mean(TimeUnit.MILLISECONDS)).isGreaterThan(0);
-    assertThat(capturingCall.closeStatus.get().getCode())
-        .isEqualTo(Status.UNAUTHENTICATED.getCode());
-  }
-
-  @Test
-  void shouldMeasureFailureLatencyWhenNoAuthGiven() {
-    // given
-    final var meterRegistry = new SimpleMeterRegistry();
-    final var metrics = new AuthenticationMetrics(meterRegistry, AuthenticationMethod.BASIC);
-    final var capturingCall = new CloseStatusCapturingServerCall();
-    final Metadata metadata = new Metadata();
-    final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
-    final var passwordEncoder = mock(PasswordEncoder.class);
-    when(passwordEncoder.matches("demo", "demo")).thenReturn(true);
-    new AuthenticationInterceptor(new BasicAuth(userServices, passwordEncoder), metrics)
-        .interceptCall(
-            capturingCall,
-            metadata,
-            (call, headers) -> {
-              call.close(Status.OK, headers);
-              return null;
-            });
-
-    // then
-    final var timer =
-        meterRegistry
-            .get(AuthenticationMetricsDoc.LATENCY.getName())
-            .tag(LatencyKeyNames.AUTH_METHOD.asString(), "BASIC")
-            .tag(LatencyKeyNames.AUTH_RESULT.asString(), AuthResultValues.FAILURE.getValue())
-            .timer();
-    assertThat(timer.count()).isOne();
-    assertThat(timer.mean(TimeUnit.MILLISECONDS)).isGreaterThan(0);
-    assertThat(capturingCall.closeStatus.get().getCode())
-        .isEqualTo(Status.UNAUTHENTICATED.getCode());
-  }
-
-  private Metadata createAuthHeader() {
-    final Metadata metadata = new Metadata();
-    metadata.put(
-        Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Bearer " + generateToken());
-    return metadata;
-  }
-
-  private String generateToken() {
-    final Algorithm algorithm = Algorithm.HMAC256("secret-key");
-
-    return JWT.create()
-        .withIssuer("test-issuer")
-        .withSubject("test-user")
-        .withAudience("test-audience")
-        .withClaim("role", "admin")
-        .withClaim("foo", "bar")
-        .withClaim("baz", "qux")
-        .withExpiresAt(new Date(System.currentTimeMillis() + 60 * 60 * 1000)) // Expires in 1 hour
-        .sign(algorithm);
-  }
-
-  private static MapAssert<String, Object> assertUserClaims() {
-    try {
-      return assertThat(Context.current().call(() -> Oidc.USER_CLAIMS.get()));
-    } catch (final Exception e) {
-      throw new RuntimeException("Unable to retrieve user claims from context", e);
-    }
-  }
-
-  private static ListAssert<String> assertGroups() {
-    try {
-      return assertThat(Context.current().call(() -> GROUPS_CLAIMS.get()));
-    } catch (final Exception e) {
-      throw new RuntimeException("Unable to retrieve user key from context", e);
-    }
-  }
-
-  private static StringAssert assertUsername() {
-    try {
-      return (StringAssert) assertThat(Context.current().call(() -> USERNAME.get()));
-    } catch (final Exception e) {
-      throw new RuntimeException("Unable to retrieve user key from context", e);
-    }
-  }
-
-  private static StringAssert assertClientId() {
-    try {
-      return (StringAssert) assertThat(Context.current().call(() -> CLIENT_ID.get()));
-    } catch (final Exception e) {
-      throw new RuntimeException("Unable to retrieve user key from context", e);
-    }
-  }
-
-  private ServerCallHandler<Object, Object> failingNextHandler() {
-    return (call, headers) -> {
-      throw new RuntimeException("Should not be invoked");
-    };
-  }
-
-  private UserEntity createUserEntity() {
-    return new UserEntity(1L, "demo", "name", "email", "demo");
-  }
-
-  private static final class CloseStatusCapturingServerCall extends NoopServerCall<Object, Object> {
+  private static final class CloseStatusCapturingServerCall<ReqT, RespT>
+      extends NoopServerCall<ReqT, RespT> {
     private final AtomicReference<Status> closeStatus = new AtomicReference<>();
 
     @Override
@@ -822,7 +200,8 @@ public class AuthenticationInterceptorTest {
     }
 
     @Override
-    public MethodDescriptor<Object, Object> getMethodDescriptor() {
+    @SuppressWarnings("unchecked")
+    public MethodDescriptor<ReqT, RespT> getMethodDescriptor() {
       return mock(MethodDescriptor.class);
     }
   }
