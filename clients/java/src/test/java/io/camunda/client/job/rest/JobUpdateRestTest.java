@@ -421,7 +421,26 @@ public class JobUpdateRestTest extends ClientRestTest {
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
-    assertThat(request.getChangeset().getPriority()).isEqualTo(0);
+    assertThat(request.getChangeset().getPriority()).isNotNull().isEqualTo(0);
+  }
+
+  @Test
+  public void shouldSetRequestTimeoutForUpdatePriorityCommand() {
+    // given
+    final long jobKey = 12;
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client
+        .newUpdateJobPriorityCommand(jobKey)
+        .priority(5)
+        .requestTimeout(requestTimeout)
+        .send()
+        .join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getPriority()).isEqualTo(5);
   }
 
   @Test
