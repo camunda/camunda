@@ -50,6 +50,7 @@ concurrency:
 env:
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  TARGET_VERSION: ${{ inputs.target-version }}
 
 defaults:
   run:
@@ -74,16 +75,20 @@ jobs:
           max_length: 10
       - id: compute-namespace
         name: Compute safe namespace from PR author, number and version
+        env:
+          AUTHOR: ${{ steps.sanitize-author.outputs.branch_name || github.actor }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.run_id }}
         run: |
-          author="${{ steps.sanitize-author.outputs.branch_name || github.actor }}"
-          pr_number="${{ github.event.pull_request.number || github.run_id }}"
-          version_slug="${{ inputs.target-version || 'main' }}"
+          author="${AUTHOR}"
+          pr_number="${PR_NUMBER}"
+          version_slug="${TARGET_VERSION:-main}"
           version_slug_sanitized="${version_slug//-/}"
           echo "namespace=c8-smoke-${author}-${pr_number}-${version_slug_sanitized}" >> "$GITHUB_OUTPUT"
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
