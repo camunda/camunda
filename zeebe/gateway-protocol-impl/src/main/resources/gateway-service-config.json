@@ -34,6 +34,7 @@
         {"service": "gateway_protocol.Gateway", "method": "PublishMessage"},
         {"service": "gateway_protocol.Gateway", "method": "SetVariables"},
         {"service": "gateway_protocol.Gateway", "method": "ThrowError"},
+        {"service": "gateway_protocol.Gateway", "method": "UpdateJobPriority"},
         {"service": "gateway_protocol.Gateway", "method": "UpdateJobRetries"},
         {"service": "gateway_protocol.Gateway", "method": "UpdateJobTimeout"}
       ],

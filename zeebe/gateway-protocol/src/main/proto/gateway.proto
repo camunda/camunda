@@ -761,6 +761,18 @@ message UpdateJobTimeoutRequest {
 message UpdateJobTimeoutResponse {
 }
 
+message UpdateJobPriorityRequest {
+  // the unique job identifier, as obtained from ActivateJobsResponse
+  int64 jobKey = 1;
+  // the new priority value for the job
+  optional int32 priority = 2;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 3;
+}
+
+message UpdateJobPriorityResponse {
+}
+
 message SetVariablesRequest {
   // the unique identifier of a particular element; can be the process instance key (as
   // obtained during instance creation), or a given element, such as a service task (see
@@ -1284,6 +1296,22 @@ service Gateway {
       - no deadline exists for the given job key
  */
   rpc UpdateJobTimeout (UpdateJobTimeoutRequest) returns (UpdateJobTimeoutResponse) {
+  }
+
+  /*
+    Updates the priority of a job.
+
+    Errors:
+      NOT_FOUND:
+        - no job exists with the given key
+
+      INVALID_ARGUMENT:
+        - priority is not provided
+
+      INVALID_STATE:
+        - job is in a terminal state
+   */
+  rpc UpdateJobPriority (UpdateJobPriorityRequest) returns (UpdateJobPriorityResponse) {
   }
 
   /*
