@@ -126,20 +126,21 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
+            secret/data/products/qa/ci/common GH_TOKEN ;
             secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
 
-      - name: Configure git
+      - name: Configure git with bot PAT
         env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
         run: |
           git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
-          git config --global user.name  "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name  "Nightly Fix Agent"
+          git config --global user.email "nightly-fix-agent@camunda.com"
 
       - name: Ensure failing-test-fix label exists
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
         run: |
           gh label create "failing-test-fix" \
             --repo "${{ github.repository }}" \
@@ -216,7 +217,7 @@ jobs:
       - name: Run Claude Code fix agent
         env:
           ANTHROPIC_API_KEY:   ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
-          GH_TOKEN:            ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN:            ${{ steps.secrets.outputs.GH_TOKEN }}
           VERSION:             ${{ github.event.inputs.version }}
           TARGET_REF:          ${{ steps.target.outputs.ref }}
           SAFE_VERSION:        ${{ steps.target.outputs.safe_version }}
@@ -385,7 +386,7 @@ jobs:
       - name: Re-label PRs (idempotent)
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           if [ -f /tmp/fix-meta.json ]; then

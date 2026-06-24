@@ -76,8 +76,8 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
+            secret/data/products/qa/ci/common GH_TOKEN ;
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
-
 
       - name: Show tool versions
         run: |
@@ -87,7 +87,7 @@ jobs:
       - name: Scan nightly workflows and extract failures
         id: scan
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -245,7 +245,7 @@ jobs:
       - name: Normalize, filter and group by version
         id: group
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:     ${{ github.repository }}
           DAILY_CAP: ${{ github.event.inputs.daily_cap || '4' }}
         run: |
@@ -447,7 +447,7 @@ jobs:
       - name: Write job summary
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -626,12 +626,12 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
+            secret/data/products/qa/ci/common GH_TOKEN ;
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
-
 
       - name: Dispatch one fix-agent run per version
         env:
-          GH_TOKEN:                  ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN:                  ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:                      ${{ github.repository }}
           DISPATCHES_B64:            ${{ needs.triage.outputs.dispatches }}
           TRIAGE_RUN_URL:            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
