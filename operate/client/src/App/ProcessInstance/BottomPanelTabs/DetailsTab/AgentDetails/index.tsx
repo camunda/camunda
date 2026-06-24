@@ -37,7 +37,6 @@ import {SectionTitle} from './SectionTitle';
 import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
-import {IS_CONVERSATION_HISTORY_ENABLED} from 'modules/feature-flags';
 import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
@@ -124,19 +123,16 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         <AccordionItem
           data-testid="agent-status-section"
           open
-          disabled={!IS_CONVERSATION_HISTORY_ENABLED}
           title={
             <SectionTitle icon={<StatusIcon status={agentInstance.status} />}>
               Status: {statusLabel}
             </SectionTitle>
           }
         >
-          {IS_CONVERSATION_HISTORY_ENABLED && (
-            <LatestAgentMessage
-              agentInstanceKey={agentInstance.agentInstanceKey}
-              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
-            />
-          )}
+          <LatestAgentMessage
+            agentInstanceKey={agentInstance.agentInstanceKey}
+            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+          />
         </AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
@@ -160,24 +156,22 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             />
           </MetricsRow>
         </AccordionItem>
-        {IS_CONVERSATION_HISTORY_ENABLED && (
-          <AccordionItem
-            data-testid="agent-conversation-history-section"
-            open={isConversationHistoryOpen}
-            onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
-            title={
-              <SectionTitle icon={<Chat size={16} />}>
-                Conversation history
-              </SectionTitle>
-            }
-          >
-            <ConversationHistory
-              agentInstanceKey={agentInstance.agentInstanceKey}
-              isVisible={isConversationHistoryOpen}
-              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
-            />
-          </AccordionItem>
-        )}
+        <AccordionItem
+          data-testid="agent-conversation-history-section"
+          open={isConversationHistoryOpen}
+          onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
+          title={
+            <SectionTitle icon={<Chat size={16} />}>
+              Conversation history
+            </SectionTitle>
+          }
+        >
+          <ConversationHistory
+            agentInstanceKey={agentInstance.agentInstanceKey}
+            isVisible={isConversationHistoryOpen}
+            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+          />
+        </AccordionItem>
         <AccordionItem
           data-testid="agent-system-prompt-section"
           title={

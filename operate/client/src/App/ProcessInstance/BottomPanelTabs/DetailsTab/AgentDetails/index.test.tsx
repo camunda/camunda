@@ -24,10 +24,6 @@ import {AgentDetails} from './index';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
 
-vi.mock('modules/feature-flags', () => ({
-  IS_CONVERSATION_HISTORY_ENABLED: true,
-}));
-
 function createWrapper() {
   const queryClient = getMockQueryClient();
   return ({children}: {children: ReactNode}) => {
