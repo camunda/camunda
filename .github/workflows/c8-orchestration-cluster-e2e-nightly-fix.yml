@@ -134,9 +134,9 @@ jobs:
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
         with:
           github-app-id-vault-key: GITHUB_APP_ID
-          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
           github-app-private-key-vault-key: GITHUB_APP_SECRET
-          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
           vault-auth-method: approle
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -149,8 +149,8 @@ jobs:
           TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
-          git config --global user.name  "qa-processes[bot]"
-          git config --global user.email "qa-processes[bot]@users.noreply.github.com"
+          git config --global user.name  "quality-assurance-ci[bot]"
+          git config --global user.email "quality-assurance-ci[bot]@users.noreply.github.com"
 
       - name: Ensure failing-test-fix label exists
         env:
