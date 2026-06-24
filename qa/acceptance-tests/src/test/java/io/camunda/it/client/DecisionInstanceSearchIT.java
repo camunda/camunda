@@ -565,6 +565,33 @@ class DecisionInstanceSearchIT {
   }
 
   @Test
+  public void shouldSortDecisionInstancesByBusinessId(final CamundaClient camundaClient) {
+    // when - filter to the in-process decisions (the standalone evaluations carry a null
+    // businessId, which sorts inconsistently across backends) and order by businessId
+    final var resultAsc =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().asc())
+            .send()
+            .join();
+    final var resultDesc =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().desc())
+            .send()
+            .join();
+
+    // then - the businessId sort is accepted and applied end-to-end on both backends; both
+    // in-process decision instances share the owning instance's businessId
+    assertThat(resultAsc.items()).hasSize(2);
+    assertThat(resultDesc.items()).hasSize(2);
+    assertThat(resultAsc.items()).extracting("businessId").containsOnly(BUSINESS_ID);
+    assertThat(resultDesc.items()).extracting("businessId").containsOnly(BUSINESS_ID);
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByStateAndType() {
     // when
     final DecisionInstanceState state = DecisionInstanceState.EVALUATED;

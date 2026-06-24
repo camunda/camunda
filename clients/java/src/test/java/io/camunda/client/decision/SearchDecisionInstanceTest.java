@@ -236,14 +236,16 @@ class SearchDecisionInstanceTest extends ClientRestTest {
                     .decisionDefinitionType()
                     .asc()
                     .tenantId()
-                    .asc())
+                    .asc()
+                    .businessId()
+                    .desc())
         .send()
         .join();
 
     // then
     final DecisionInstanceSearchQuery request =
         gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
-    assertThat(request.getSort().size()).isEqualTo(12);
+    assertThat(request.getSort().size()).isEqualTo(13);
     assertThat(request.getSort().get(0).getField())
         .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
@@ -280,5 +282,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(request.getSort().get(11).getField())
         .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.TENANT_ID);
     assertThat(request.getSort().get(11).getOrder()).isEqualTo(SortOrderEnum.ASC);
+    assertThat(request.getSort().get(12).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.BUSINESS_ID);
+    assertThat(request.getSort().get(12).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }
