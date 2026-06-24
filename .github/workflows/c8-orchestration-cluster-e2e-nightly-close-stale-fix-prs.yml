@@ -12,7 +12,7 @@
 # the only way for a reviewer to hold a bot PR. Review comments alone do NOT keep a
 # PR alive — merge it the same day or apply the label.
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/test-automation-team
 ---
 name: Close Stale Fix PRs
 
@@ -36,7 +36,7 @@ permissions:
   pull-requests: write
 
 env:
-  TEST_OWNER: '@camunda/qa-engineering'
+  TEST_OWNER: '@camunda/test-automation-team'
 
 jobs:
   close-stale:
