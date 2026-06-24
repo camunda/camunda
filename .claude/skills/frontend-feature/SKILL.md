@@ -1,7 +1,7 @@
 ---
 
 name: frontend-feature
-description: Use when creating new pages, components, modules, or features in the orchestration cluster webapp at webapp/client/apps/orchestration-cluster-webapp/. Use when adding routes, data loading, forms, API integration, or UI components. Trigger whenever someone is building or modifying frontend feature code in webapp/client/, even for small changes like adding a column, filter, or panel.
+description: Use when building or modifying pages, components, modules, routes, data loading, forms, API integration, or UI features — including small changes like a column, filter, or panel — in the orchestration cluster webapp (webapp/client/apps/orchestration-cluster-webapp/).
 
 ---
 

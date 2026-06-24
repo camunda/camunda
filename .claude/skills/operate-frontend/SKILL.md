@@ -1,7 +1,7 @@
 ---
 
 name: operate-frontend
-description: Use when fixing bugs, making changes, writing tests, or understanding code in the Operate legacy frontend at operate/client/. Trigger for any work touching operate/client/src/, including component changes, test modifications, API hook updates, styled-components edits, MobX store changes, or React Router route adjustments. Also use when someone asks about Operate frontend patterns, conventions, or architecture. This is the legacy process monitoring UI being phased out in favor of the orchestration cluster webapp.
+description: Use for any work in the Operate legacy frontend (operate/client/) — bugs, changes, tests, components, API hooks, styled-components, MobX stores, React Router, or questions about Operate patterns, conventions, or architecture.
 
 ---
 
