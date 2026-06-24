@@ -333,6 +333,37 @@ class SessionStoreAdapterTest {
     assertThat(sessions).extracting(PersistentSession::id).containsExactlyInAnyOrder("s1", "s2");
   }
 
+  @Test
+  void shouldFallBackToDefaultTenantOnGetWhenOffRequest() {
+    // given — a session stored under the default physical tenant
+    final var client = new PersistentWebSessionClientStub();
+    final var adapter = adapterWith(client);
+    client.upsertPersistentWebSession(
+        new PersistentWebSessionEntity("s1", 100L, 200L, 1800L, Map.of()));
+
+    // when — no request scope bound (Spring Session commits after the request scope is torn down)
+    RequestContextHolder.resetRequestAttributes();
+
+    // then — resolves to the default physical tenant instead of throwing
+    assertThat(adapter.get("s1")).isNotNull();
+    assertThat(adapter.get("s1").id()).isEqualTo("s1");
+  }
+
+  @Test
+  void shouldFallBackToDefaultTenantOnUpsertWhenOffRequest() {
+    // given
+    final var client = new PersistentWebSessionClientStub();
+    final var adapter = adapterWith(client);
+    final var session = new PersistentSession("s1", 100L, 200L, 1800L, Map.of());
+
+    // when — no request scope bound
+    RequestContextHolder.resetRequestAttributes();
+    adapter.upsert(session);
+
+    // then — stored under the default physical tenant
+    assertThat(client.getPersistentWebSession("s1")).isNotNull();
+  }
+
   private static void setRequestContext(final String physicalTenantId) {
     final var req = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(req, physicalTenantId);

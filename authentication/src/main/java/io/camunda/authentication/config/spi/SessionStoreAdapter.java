@@ -34,9 +34,10 @@ import org.slf4j.LoggerFactory;
  * save path. This resilience policy lives here (rather than in the library) because it inspects the
  * search-specific {@link CamundaSearchException} reasons to decide what is transient.
  *
- * <p>Read and write operations ({@link #get}, {@link #upsert}, and in-request {@link #delete}) are
- * routed to the physical tenant resolved from the current request context. Background operations
- * ({@link #getAll} and off-request {@link #delete}) fan out across all known physical tenants.
+ * <p>Read and write operations ({@link #get} and {@link #upsert}) are routed to the physical tenant
+ * resolved from the current request context; when no request scope is bound (e.g. Spring Session's
+ * commit phase, which runs after the request scope is torn down), they fall back to the default
+ * physical tenant, matching the behaviour of {@link #delete} and {@link #getAll}.
  */
 public class SessionStoreAdapter implements SessionStorePort {
 
@@ -73,17 +74,22 @@ public class SessionStoreAdapter implements SessionStorePort {
     return throwable instanceof RuntimeException;
   }
 
+  private String currentPhysicalTenantOrDefault() {
+    final String currentTenant = PhysicalTenantContext.currentOrNull();
+    return currentTenant != null ? currentTenant : PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+  }
+
   @Override
   public PersistentSession get(final String sessionId) {
     return toPersistentSession(
         sessionClients
-            .withPhysicalTenant(PhysicalTenantContext.current())
+            .withPhysicalTenant(currentPhysicalTenantOrDefault())
             .getPersistentWebSession(sessionId));
   }
 
   @Override
   public void upsert(final PersistentSession session) {
-    final var client = sessionClients.withPhysicalTenant(PhysicalTenantContext.current());
+    final var client = sessionClients.withPhysicalTenant(currentPhysicalTenantOrDefault());
     final var entity = toEntity(session);
     try {
       Retry.decorateRunnable(UPSERT_RETRY, () -> client.upsertPersistentWebSession(entity)).run();
