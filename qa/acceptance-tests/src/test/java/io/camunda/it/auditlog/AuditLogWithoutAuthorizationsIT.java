@@ -23,7 +23,6 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -33,7 +32,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  * identity claims were dropped along with authorization claims.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogWithoutAuthorizationsIT {
 
   @MultiDbTestApplication
