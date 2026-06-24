@@ -9,15 +9,16 @@
 import {Information} from '@carbon/icons-react';
 import {Toggletip, ToggletipActions, ToggletipButton, ToggletipContent} from '@carbon/react';
 
-// imported via its direct path rather than the 'components' barrel to avoid a barrel
-// initialization cycle (this component itself lives in that barrel)
-import {DocsLink} from 'components/DocsLink';
+// DocsLink is imported relatively (not via the 'components' barrel) — see this folder's index.tsx.
+import {DocsLink} from '../DocsLink';
+import {useUiConfig} from 'hooks';
 import {t} from 'translation';
 
-// Path (relative to the docs base resolved by DocsLink) of the exporter docs page that explains
-// process- and variable-export filtering. Each variant links to the relevant anchor on that page.
-const EXPORTER_DOCS_PAGE =
-  'self-managed/components/orchestration-cluster/zeebe/exporters/elasticsearch-exporter/';
+// The exporter docs page depends on which store the cluster exports to. We use Optimize's own
+// database as the signal (the Zeebe exporter writes to the same store Optimize reads from). Both
+// the Elasticsearch and OpenSearch exporter pages expose the same filter anchors.
+const exporterDocsPage = (database: 'opensearch' | 'elasticsearch') =>
+  `self-managed/components/orchestration-cluster/zeebe/exporters/${database}-exporter/`;
 
 // The contexts the hint is shown in. Each maps to its own explanation and docs anchor:
 // - variable: variable filters (variable-name export filtering)
@@ -35,6 +36,7 @@ interface ExportFilterHintProps {
 }
 
 export default function ExportFilterHint({variant}: ExportFilterHintProps): JSX.Element {
+  const {optimizeDatabase} = useUiConfig();
   const {textKey, docsAnchor} = VARIANTS[variant];
 
   return (
@@ -45,7 +47,9 @@ export default function ExportFilterHint({variant}: ExportFilterHintProps): JSX.
       <ToggletipContent>
         <span>{t(textKey)}</span>
         <ToggletipActions>
-          <DocsLink location={EXPORTER_DOCS_PAGE + docsAnchor}>{t('common.seeDocs')}</DocsLink>
+          <DocsLink location={exporterDocsPage(optimizeDatabase) + docsAnchor}>
+            {t('common.seeDocs')}
+          </DocsLink>
         </ToggletipActions>
       </ToggletipContent>
     </Toggletip>

@@ -14,8 +14,7 @@ import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
 import {Filter} from 'filter';
 import {useDocs, useErrorHandling} from 'hooks';
-// imported via its direct path rather than the 'components' barrel to avoid a barrel
-// initialization cycle that leaves the export undefined when pulled alongside other barrel imports
+// not via the 'components' barrel — see components/ExportFilterHint/index.tsx
 import {ExportFilterHint} from 'components/ExportFilterHint';
 import {
   getFlowNodeNames,

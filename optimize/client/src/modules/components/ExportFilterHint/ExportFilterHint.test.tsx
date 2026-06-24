@@ -8,12 +8,19 @@
 
 import {shallow} from 'enzyme';
 
-import {DocsLink} from 'components/DocsLink';
+import {useUiConfig} from 'hooks';
+
+import {DocsLink} from '../DocsLink';
 
 import ExportFilterHint from './ExportFilterHint';
 
-const EXPORTER_DOCS_PAGE =
+jest.mock('hooks', () => ({
+  useUiConfig: jest.fn(() => ({optimizeDatabase: 'elasticsearch'})),
+}));
+
+const esPage =
   'self-managed/components/orchestration-cluster/zeebe/exporters/elasticsearch-exporter/';
+const osPage = 'self-managed/components/orchestration-cluster/zeebe/exporters/opensearch-exporter/';
 
 it('should render an info toggletip with the localized hint text and icon label', () => {
   const node = shallow(<ExportFilterHint variant="variable" />);
@@ -26,12 +33,20 @@ it('should render an info toggletip with the localized hint text and icon label'
 it('should link the variable variant to the variable-name filter documentation', () => {
   const node = shallow(<ExportFilterHint variant="variable" />);
 
-  expect(node.find(DocsLink).prop('location')).toBe(EXPORTER_DOCS_PAGE + '#variable-name-filters');
+  expect(node.find(DocsLink).prop('location')).toBe(esPage + '#variable-name-filters');
 });
 
 it('should link the report-setup variant to the bpmn process filter documentation', () => {
   const node = shallow(<ExportFilterHint variant="reportSetup" />);
 
-  expect(node.find(DocsLink).prop('location')).toBe(EXPORTER_DOCS_PAGE + '#bpmn-process-filters');
+  expect(node.find(DocsLink).prop('location')).toBe(esPage + '#bpmn-process-filters');
   expect(node.find('span').text()).toContain('processes and variables');
+});
+
+it('should link to the opensearch exporter docs when optimize runs on opensearch', () => {
+  (useUiConfig as jest.Mock).mockReturnValueOnce({optimizeDatabase: 'opensearch'});
+
+  const node = shallow(<ExportFilterHint variant="variable" />);
+
+  expect(node.find(DocsLink).prop('location')).toBe(osPage + '#variable-name-filters');
 });

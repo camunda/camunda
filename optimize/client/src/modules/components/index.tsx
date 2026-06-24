@@ -47,9 +47,6 @@ export {BulkDeleter} from './BulkDeleter';
 export {MenuDropdown} from './MenuDropdown';
 export {MenuButton} from './MenuButton';
 export {MultiValueInput} from './MultiValueInput';
-// ExportFilterHint is intentionally NOT re-exported here: importing it through this barrel
-// alongside other barrel members triggers an initialization cycle that resolves it to undefined.
-// Import it directly from 'components/ExportFilterHint' instead.
 
 export type {User, Identity} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';
