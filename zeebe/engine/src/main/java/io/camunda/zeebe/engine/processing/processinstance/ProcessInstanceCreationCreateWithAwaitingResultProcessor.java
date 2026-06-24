@@ -65,6 +65,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     persistedProcess
         .flatMap(process -> helper.isAuthorized(command, process))
         .flatMap(process -> helper.validateCommand(command.getValue(), process))
+        .flatMap(
+            process -> helper.validateVariables(command.getValue().getVariablesBuffer(), process))
         .ifRightOrLeft(
             process -> createProcessInstance(command, process),
             rejection -> reject(command, rejection.type(), rejection.reason()));

@@ -275,6 +275,21 @@ public final class ProcessInstanceClient {
           record,
           username);
     }
+
+    public Record<ProcessInstanceCreationRecordValue> createExpectingRejection() {
+      final long position =
+          writer.writeCommand(
+              requestStreamId,
+              requestId,
+              ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+              record);
+
+      return RecordingExporter.processInstanceCreationRecords()
+          .onlyCommandRejections()
+          .withIntent(ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT)
+          .withSourceRecordPosition(position)
+          .getFirst();
+    }
   }
 
   public static class ExistingInstanceClient {

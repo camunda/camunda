@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -54,6 +55,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final TypedRejectionWriter rejectionWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final RoutingInfo routingInfo;
+  private final VariableBehavior variableBehavior;
 
   public MessagePublishProcessor(
       final int partitionId,
@@ -71,7 +73,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final RoutingInfo routingInfo,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final VariableBehavior variableBehavior) {
     this.partitionId = partitionId;
     this.messageState = messageState;
     this.keyGenerator = keyGenerator;
@@ -80,6 +83,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     rejectionWriter = writers.rejection();
     this.authCheckBehavior = authCheckBehavior;
     this.routingInfo = routingInfo;
+    this.variableBehavior = variableBehavior;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -133,6 +137,17 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
       return;
     }
+    final var variablesValidation =
+        variableBehavior.validateDocument(-1L, messageRecord.getVariablesBuffer());
+    if (variablesValidation.isLeft()) {
+      final var failure = variablesValidation.getLeft();
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, failure.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, failure.getMessage());
+      return;
+    }
+
     if (messageRecord.hasMessageId()
         && messageState.exist(
             messageRecord.getNameBuffer(),

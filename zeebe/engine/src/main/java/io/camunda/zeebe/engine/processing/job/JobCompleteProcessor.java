@@ -53,6 +53,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 
 public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecord> {
 
@@ -178,8 +179,9 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(job -> validateJobVariables(record.getValue().getVariablesBuffer(), job))
         .ifRightOrLeft(
-            job -> completeJob(record, job, session),
+            (JobRecord job) -> completeJob(record, job, session),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
@@ -335,6 +337,17 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
         targetAdHocSubProcessInstanceValue.getTenantId(),
         completingJobRecord.getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord> validateJobVariables(
+      final DirectBuffer variables, final JobRecord job) {
+    final var validation =
+        variableBehavior.validateDocument(job.getElementInstanceKey(), variables);
+    if (validation.isLeft()) {
+      return Either.left(
+          new Rejection(RejectionType.INVALID_ARGUMENT, validation.getLeft().getMessage()));
+    }
+    return Either.right(job);
   }
 
   private Either<Rejection, JobRecord>

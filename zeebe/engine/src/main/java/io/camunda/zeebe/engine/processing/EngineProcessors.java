@@ -708,7 +708,8 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             commandDistributionBehavior,
-            authCheckBehavior);
+            authCheckBehavior,
+            bpmnBehaviors.variableBehavior());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }

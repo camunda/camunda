@@ -240,7 +240,6 @@ public class ProcessInstanceCreationHelper {
 
   public void setVariablesFromDocument(
       final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer) {
-
     variableBehavior.mergeLocalDocument(
         processInstance.getProcessInstanceKey(),
         processInstance.getProcessDefinitionKey(),
@@ -474,6 +473,16 @@ public class ProcessInstanceCreationHelper {
     }
 
     return VALID;
+  }
+
+  public Either<Rejection, DeployedProcess> validateVariables(
+      final DirectBuffer variablesBuffer, final DeployedProcess process) {
+    final var validation = variableBehavior.validateDocument(process.getKey(), variablesBuffer);
+    if (validation.isLeft()) {
+      return Either.left(
+          new Rejection(RejectionType.INVALID_ARGUMENT, validation.getLeft().getMessage()));
+    }
+    return Either.right(process);
   }
 
   private boolean doesElementBelongToAnEventBasedGateway(

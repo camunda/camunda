@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -49,6 +50,7 @@ public class AdHocSubProcessInstructionActivateProcessor
   private final ProcessState processState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final BpmnAdHocSubProcessBehavior bpmnAdHocSubProcessBehavior;
+  private final VariableBehavior variableBehavior;
 
   public AdHocSubProcessInstructionActivateProcessor(
       final Writers writers,
@@ -62,6 +64,7 @@ public class AdHocSubProcessInstructionActivateProcessor
     elementInstanceState = processingState.getElementInstanceState();
     this.authCheckBehavior = authCheckBehavior;
     bpmnAdHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
+    variableBehavior = bpmnBehaviors.variableBehavior();
   }
 
   @Override
@@ -159,6 +162,18 @@ public class AdHocSubProcessInstructionActivateProcessor
 
     if (command.getValue().isCancelRemainingInstances()) {
       bpmnAdHocSubProcessBehavior.terminateChildInstances(bpmnElementContext);
+    }
+
+    // validate variable documents before activating any elements
+    for (final var elementValue : command.getValue().activateElements()) {
+      final var validation =
+          variableBehavior.validateDocument(
+              adHocSubProcessElementInstance.getKey(), elementValue.getVariablesBuffer());
+      if (validation.isLeft()) {
+        writeRejectionError(
+            command, RejectionType.INVALID_ARGUMENT, validation.getLeft().getMessage());
+        return;
+      }
     }
 
     // activate the elements

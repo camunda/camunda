@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -101,9 +103,14 @@ public final class MessageStreamProcessorTest {
           final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
           when(mockAuthCheckBehavior.isAuthorizedOrInternalCommand(any(AuthorizationRequest.class)))
               .thenReturn(Either.right(null));
+          final var mockBpmnBehaviors = mock(BpmnBehaviors.class);
+          final var mockVariableBehavior = mock(VariableBehavior.class);
+          when(mockVariableBehavior.validateDocument(anyLong(), any(DirectBuffer.class)))
+              .thenReturn(Either.right(null));
+          when(mockBpmnBehaviors.variableBehavior()).thenReturn(mockVariableBehavior);
           MessageEventProcessors.addMessageProcessors(
               PARTITION_ID,
-              mock(BpmnBehaviors.class),
+              mockBpmnBehaviors,
               typedRecordProcessors,
               processingState,
               scheduledTaskState,

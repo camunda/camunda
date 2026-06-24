@@ -12,8 +12,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class AdHocSubProcessActivityClient {
@@ -69,6 +71,16 @@ public class AdHocSubProcessActivityClient {
     for (final String elementId : elementIds) {
       adHocSubProcessInstructionRecord.activateElements().add().setElementId(elementId);
     }
+    return this;
+  }
+
+  public AdHocSubProcessActivityClient withElementIdAndVariables(
+      final String elementId, final Map<String, Object> variables) {
+    adHocSubProcessInstructionRecord
+        .activateElements()
+        .add()
+        .setElementId(elementId)
+        .setVariables(MsgPackUtil.asMsgPack(variables));
     return this;
   }
 

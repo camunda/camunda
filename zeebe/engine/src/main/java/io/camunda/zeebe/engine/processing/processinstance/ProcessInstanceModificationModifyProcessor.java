@@ -335,6 +335,16 @@ public final class ProcessInstanceModificationModifyProcessor
       return;
     }
 
+    final var variableValidationResult =
+        validateActivationVariables(activateInstructions, processInstance.getKey());
+    if (variableValidationResult.isLeft()) {
+      final var rejection = variableValidationResult.getLeft();
+      enrichRejectionCommand(command, processInstance.getValue());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var extendedRecord = new ProcessInstanceModificationRecord();
     extendedRecord
         .setProcessInstanceKey(value.getProcessInstanceKey())
@@ -1333,6 +1343,25 @@ public final class ProcessInstanceModificationModifyProcessor
             String.join(", ", conflictingActivations));
 
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, Void> validateActivationVariables(
+      final List<? extends ProcessInstanceModificationActivateInstructionValue> instructions,
+      final long scopeKey) {
+    for (final var instruction : instructions) {
+      for (final var vi : instruction.getVariableInstructions()) {
+        if (vi
+            instanceof final ProcessInstanceModificationVariableInstruction variableInstruction) {
+          final var validation =
+              variableBehavior.validateDocument(scopeKey, variableInstruction.getVariablesBuffer());
+          if (validation.isLeft()) {
+            return Either.left(
+                new Rejection(RejectionType.INVALID_ARGUMENT, validation.getLeft().getMessage()));
+          }
+        }
+      }
+    }
+    return Either.right(null);
   }
 
   public void executeVariableInstruction(

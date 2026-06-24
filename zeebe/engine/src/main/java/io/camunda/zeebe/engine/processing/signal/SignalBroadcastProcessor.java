@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -51,6 +52,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final VariableBehavior variableBehavior;
 
   public SignalBroadcastProcessor(
       final Writers writers,
@@ -59,7 +61,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final VariableBehavior variableBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -69,6 +72,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     elementInstanceState = processingState.getElementInstanceState();
     this.authCheckBehavior = authCheckBehavior;
+    this.variableBehavior = variableBehavior;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -96,6 +100,17 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
         return;
       }
+    }
+
+    final var variablesValidation =
+        variableBehavior.validateDocument(-1L, signalRecord.getVariablesBuffer());
+    if (variablesValidation.isLeft()) {
+      final var failure = variablesValidation.getLeft();
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, failure.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, failure.getMessage());
+      return;
     }
 
     triggerSignal(command, eventKey, isAuthNeeded);

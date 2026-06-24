@@ -82,8 +82,7 @@ public final class VariableDocumentUpdateProcessor
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
-    this.bannedInstanceCheck =
-        new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
+    bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
   @Override
@@ -131,6 +130,21 @@ public final class VariableDocumentUpdateProcessor
     }
 
     final String tenantId = scope.getValue().getTenantId();
+
+    if (hasVariables(value)) {
+      final var validation =
+          variableBehavior.validateDocument(scope.getKey(), value.getVariablesBuffer());
+      if (validation.isLeft()) {
+        final var failure = validation.getLeft();
+        writers
+            .rejection()
+            .appendRejection(record, RejectionType.INVALID_ARGUMENT, failure.getMessage());
+        writers
+            .response()
+            .writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, failure.getMessage());
+        return;
+      }
+    }
 
     if (isCamundaUserTask(scope)) {
       final long userTaskKey = scope.getUserTaskKey();

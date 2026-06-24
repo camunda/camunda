@@ -34,6 +34,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -104,6 +105,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(job -> validateVariables(record.getValue().getVariablesBuffer(), job))
         .ifRightOrLeft(
             failedJob -> failJob(record, failedJob),
             rejection -> {
@@ -205,6 +207,17 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
       case JobKind.AD_HOC_SUB_PROCESS -> ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES;
     };
+  }
+
+  private Either<Rejection, JobRecord> validateVariables(
+      final DirectBuffer variables, final JobRecord job) {
+    final var validation =
+        variableBehavior.validateDocument(job.getElementInstanceKey(), variables);
+    if (validation.isLeft()) {
+      return Either.left(
+          new Rejection(RejectionType.INVALID_ARGUMENT, validation.getLeft().getMessage()));
+    }
+    return Either.right(job);
   }
 
   private Either<Rejection, JobRecord> checkAuthorization(
