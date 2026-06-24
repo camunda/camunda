@@ -96,7 +96,7 @@ public final class PhysicalTenantContext {
    * PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} for an unstamped request), otherwise from a value
    * propagated onto this thread (e.g. by {@code PhysicalTenantPropagatingExecutorService}).
    */
-  static String currentOrNull() {
+  public static String currentOrNull() {
     final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
     if (attributes != null) {
       final String value =
