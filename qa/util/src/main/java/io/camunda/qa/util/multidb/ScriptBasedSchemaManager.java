@@ -8,7 +8,7 @@
 package io.camunda.qa.util.multidb;
 
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.LiquibaseScriptGenerator;
 import io.camunda.db.rdbms.LiquibaseScriptGenerator.DatabaseVersion;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
@@ -21,8 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 
 /**
  * Bypasses Liquibase by pre-generating DDL SQL once per JVM (cached by databaseId) and executing it
@@ -42,18 +40,15 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, Ini
   private static final String PREFIX_PLACEHOLDER = "__PREFIX__";
 
   private final RdbmsDataSources rdbmsDataSources;
-  private final Environment environment;
-  private final String defaultPrefix;
+  private final PhysicalTenantResolver physicalTenantResolver;
 
   private final Set<String> initializedTenants = ConcurrentHashMap.newKeySet();
 
   public ScriptBasedSchemaManager(
       final RdbmsDataSources rdbmsDataSources,
-      final Environment environment,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String defaultPrefix) {
+      final PhysicalTenantResolver physicalTenantResolver) {
     this.rdbmsDataSources = rdbmsDataSources;
-    this.environment = environment;
-    this.defaultPrefix = defaultPrefix;
+    this.physicalTenantResolver = physicalTenantResolver;
   }
 
   @Override
@@ -114,12 +109,12 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, Ini
   }
 
   private String prefixFor(final String physicalTenantId) {
-    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      return defaultPrefix;
-    }
-    return environment.getProperty(
-        "camunda.physical-tenants." + physicalTenantId + ".data.secondary-storage.rdbms.prefix",
-        "");
+    return physicalTenantResolver
+        .forPhysicalTenant(physicalTenantId)
+        .getData()
+        .getSecondaryStorage()
+        .getRdbms()
+        .getPrefix();
   }
 
   @Override
