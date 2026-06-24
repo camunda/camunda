@@ -300,9 +300,12 @@ test.describe('Dashboard', () => {
           await operateDashboardPage.expandItem(firstInstanceByError);
           await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
 
-          await operateDashboardPage.expectProcessInstancesCountAtLeast(
-            incidentCount,
-          );
+          await expect(
+            operateDashboardPage.processInstancesHeading(
+              incidentCount,
+              Number(incidentCount) > 1,
+            ),
+          ).toBeVisible();
         },
         onFailure: async () => {
           await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);

@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
-import {defaultAssertionOptions} from 'utils/constants';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -1042,16 +1041,6 @@ class OperateProcessInstancePage {
       const incidentRow = await this.getIncidentRowByErrorType(errorType);
       await expect(incidentRow).toBeVisible({timeout: 30000});
     }
-  }
-
-  async scrollVariablesUntilRowCount(expectedRowCount: number): Promise<void> {
-    await expect(async () => {
-      await this.variablesList.getByRole('row').last().scrollIntoViewIfNeeded();
-      await expect(this.variablesList.getByRole('row')).toHaveCount(
-        expectedRowCount,
-        {timeout: 2_000},
-      );
-    }).toPass(defaultAssertionOptions);
   }
 }
 

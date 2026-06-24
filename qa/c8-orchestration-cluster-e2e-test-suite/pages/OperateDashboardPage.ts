@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
+import {Page, Locator} from '@playwright/test';
 
 export class OperateDashboardPage {
   private page: Page;
@@ -137,20 +137,5 @@ export class OperateDashboardPage {
 
   async clickFirstLinkInItem(item: Locator): Promise<void> {
     await this.firstLinkFromItem(item).click();
-  }
-
-  async expectProcessInstancesCountAtLeast(min: number): Promise<void> {
-    // The badge count read before navigation and the filtered Process
-    // Instances heading are computed from independent queries on an
-    // actively loaded cluster, so an exact match is racy. Instances are
-    // only ever added during a run, never removed, so the destination
-    // count is at least the count read moments earlier on the badge.
-    const heading = this.page.getByRole('heading', {
-      name: /^Process Instances - [\d,]+ results?$/,
-    });
-    await expect(heading).toBeVisible();
-    const headingText = await heading.innerText();
-    const actual = Number(headingText.replace(/[^\d]/g, ''));
-    expect(actual).toBeGreaterThanOrEqual(min);
   }
 }
