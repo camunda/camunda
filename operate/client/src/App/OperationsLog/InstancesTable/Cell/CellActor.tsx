@@ -42,6 +42,7 @@ const CellActor: React.FC<Props> = ({item}) => {
     <OperationLogName>
       {hasActorIcon(item) && (
         <Tooltip
+          autoAlign
           align="bottom-start"
           description={getTooltipActorContent(item.actorType)}
         >
@@ -50,6 +51,7 @@ const CellActor: React.FC<Props> = ({item}) => {
       )}
       {item.agentElementId && (
         <Tooltip
+          autoAlign
           align="bottom-start"
           description={getTooltipActorContent('AGENT')}
         >
@@ -58,6 +60,7 @@ const CellActor: React.FC<Props> = ({item}) => {
       )}
       {item.inboundChannelType === 'MCP' && (
         <Tooltip
+          autoAlign
           align="bottom-start"
           description={
             <AuthorTooltip>
