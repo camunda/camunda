@@ -1,7 +1,7 @@
 # description: Runs Request Validation tests on the C8 Orchestration Cluster REST API for 8.8+ versions nightly
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/request-validation
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda-ex-team
 ---
 name: C8 Orchestration Cluster V2 Stateless Tests Nightly
 
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  TEST_OWNER: '@camunda/qa-engineering'
+  TEST_OWNER: '@camunda-ex-team'
 
 jobs:
   request-validation-tests:
