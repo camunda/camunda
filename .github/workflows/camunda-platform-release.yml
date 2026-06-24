@@ -329,6 +329,11 @@ jobs:
           FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout -P\!include-optimize)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
           git diff --quiet HEAD || git commit -am "build(project): update java compat versions"
+      - name: Debug Compat Version
+        if: ${{ inputs.dryRun }}
+        run: |
+          echo "=== Compat Version after Update Compat Version step ==="
+          ./mvnw -B help:evaluate -Dexpression=backwards.compat.version -q -DforceStdout -P\!include-optimize
       - name: Delete version-specific allowed API breaking changes
         run: |
           IFS=$'\n' readarray -t files <<< "$(find . -name 'ignored-changes.json')"
