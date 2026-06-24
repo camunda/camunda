@@ -1097,7 +1097,6 @@
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
-            <dependency>io.camunda:operate-webapp</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
 
