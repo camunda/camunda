@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "00edac47f972dece1bad7a19369353a389566de4",
-    "generatedAt": "2026-06-22T13:55:03.891Z",
+    "commit": "b6c554e8c28541536356bc055f5afab2e55dcb90",
+    "generatedAt": "2026-06-24T12:45:55.700Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "41269f0c6ab6af36d8dab5a9aef5360708ae3f3f255afcc24f964c5d44d2ce61"
+    "specSha256": "be3216f639867ce0f5838436fd67052f792816ad9d0dfb9484df86b2473ed949"
   },
   "responses": [
     {
@@ -8262,6 +8262,11 @@
                   "nullable": true
                 },
                 {
+                  "name": "businessId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "candidateGroups",
                   "type": "array<string>"
                 },
@@ -8419,6 +8424,11 @@
         "required": [
           {
             "name": "assignee",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "businessId",
             "type": "string",
             "nullable": true
           },
