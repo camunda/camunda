@@ -852,6 +852,320 @@ func TestStripZstdJniNativeLibsErrorsWhenKeepPrefixAbsent(t *testing.T) {
 	}
 }
 
+func TestConscryptNativeSuffix(t *testing.T) {
+	tests := []struct {
+		osType   string
+		arch     string
+		expected string
+	}{
+		{"linux", "x86_64", "-linux-x86_64."},
+		{"darwin", "x86_64", "-osx-x86_64."},
+		{"windows", "x86_64", "-windows-x86_64."},
+		// No native lib for aarch64 — empty suffix means "drop all".
+		{"linux", "aarch64", ""},
+		{"darwin", "aarch64", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.osType+"/"+tt.arch, func(t *testing.T) {
+			got := conscryptNativeSuffix(tt.osType, tt.arch)
+			if got != tt.expected {
+				t.Fatalf("conscryptNativeSuffix(%q, %q) = %q, want %q", tt.osType, tt.arch, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestIsConscryptNativeEntry(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected bool
+	}{
+		{"META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so", true},
+		{"META-INF/native/libconscrypt_openjdk_jni-osx-x86_64.dylib", true},
+		{"META-INF/native/conscrypt_openjdk_jni-windows-x86_64.dll", true},
+		{"META-INF/native/conscrypt_openjdk_jni-windows-x86.dll", true},
+		{"META-INF/MANIFEST.MF", false},
+		{"META-INF/native/", false}, // directory entry
+		{"org/conscrypt/Conscrypt.class", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isConscryptNativeEntry(tt.name)
+			if got != tt.expected {
+				t.Fatalf("isConscryptNativeEntry(%q) = %v, want %v", tt.name, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestStripConscryptNativeLibsStripsJar(t *testing.T) {
+	// given
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "conscrypt-openjdk-uber-2.5.2.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	entries := []string{
+		"META-INF/MANIFEST.MF",
+		"org/conscrypt/Conscrypt.class",
+		"META-INF/native/conscrypt_openjdk_jni-windows-x86.dll",
+		"META-INF/native/conscrypt_openjdk_jni-windows-x86_64.dll",
+		"META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so",
+		"META-INF/native/libconscrypt_openjdk_jni-osx-x86_64.dylib",
+	}
+	for _, name := range entries {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary-" + name)); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64
+	err = stripConscryptNativeLibs(version, "linux", "x86_64")
+
+	// then
+	if err != nil {
+		t.Fatalf("stripConscryptNativeLibs returned error: %v", err)
+	}
+
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		t.Fatalf("failed to open stripped jar: %v", err)
+	}
+	defer func() {
+		if err := r.Close(); err != nil {
+			t.Errorf("failed to close stripped jar: %v", err)
+		}
+	}()
+
+	kept := make(map[string]bool)
+	for _, entry := range r.File {
+		kept[entry.Name] = true
+	}
+
+	// Should keep: non-native entries + linux-x86_64
+	for _, mustKeep := range []string{
+		"META-INF/MANIFEST.MF",
+		"org/conscrypt/Conscrypt.class",
+		"META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so",
+	} {
+		if !kept[mustKeep] {
+			t.Fatalf("expected entry %q to be preserved, got entries: %v", mustKeep, kept)
+		}
+	}
+
+	// Should drop: all other native entries
+	for _, mustDrop := range []string{
+		"META-INF/native/conscrypt_openjdk_jni-windows-x86.dll",
+		"META-INF/native/conscrypt_openjdk_jni-windows-x86_64.dll",
+		"META-INF/native/libconscrypt_openjdk_jni-osx-x86_64.dylib",
+	} {
+		if kept[mustDrop] {
+			t.Fatalf("expected entry %q to be dropped, but it was kept", mustDrop)
+		}
+	}
+}
+
+func TestStripConscryptNativeLibsDropsAllOnAarch64(t *testing.T) {
+	// given: conscrypt has no aarch64 native libs — all should be dropped
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "conscrypt-openjdk-uber-2.5.2.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	entries := []string{
+		"META-INF/MANIFEST.MF",
+		"org/conscrypt/Conscrypt.class",
+		"META-INF/native/conscrypt_openjdk_jni-windows-x86_64.dll",
+		"META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so",
+		"META-INF/native/libconscrypt_openjdk_jni-osx-x86_64.dylib",
+	}
+	for _, name := range entries {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary-" + name)); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for darwin/aarch64 — no matching lib exists
+	err = stripConscryptNativeLibs(version, "darwin", "aarch64")
+
+	// then
+	if err != nil {
+		t.Fatalf("stripConscryptNativeLibs returned error: %v", err)
+	}
+
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		t.Fatalf("failed to open stripped jar: %v", err)
+	}
+	defer func() {
+		if err := r.Close(); err != nil {
+			t.Errorf("failed to close stripped jar: %v", err)
+		}
+	}()
+
+	kept := make(map[string]bool)
+	for _, entry := range r.File {
+		kept[entry.Name] = true
+	}
+
+	// Should keep: non-native entries only
+	for _, mustKeep := range []string{
+		"META-INF/MANIFEST.MF",
+		"org/conscrypt/Conscrypt.class",
+	} {
+		if !kept[mustKeep] {
+			t.Fatalf("expected entry %q to be preserved, got entries: %v", mustKeep, kept)
+		}
+	}
+
+	// Should drop: ALL native entries (none match aarch64)
+	for _, mustDrop := range []string{
+		"META-INF/native/conscrypt_openjdk_jni-windows-x86_64.dll",
+		"META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so",
+		"META-INF/native/libconscrypt_openjdk_jni-osx-x86_64.dylib",
+	} {
+		if kept[mustDrop] {
+			t.Fatalf("expected entry %q to be dropped on aarch64, but it was kept", mustDrop)
+		}
+	}
+}
+
+func TestStripConscryptNativeLibsIsIdempotent(t *testing.T) {
+	// given: JAR already stripped
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "conscrypt-openjdk-uber-2.5.2.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	// Only the kept lib — simulates already stripped.
+	fw, err := w.Create("META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := fw.Write([]byte("binary")); err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: first and second call
+	if err := stripConscryptNativeLibs(version, "linux", "x86_64"); err != nil {
+		t.Fatalf("first call failed: %v", err)
+	}
+	if err := stripConscryptNativeLibs(version, "linux", "x86_64"); err != nil {
+		t.Fatalf("second call (idempotency) failed: %v", err)
+	}
+}
+
+func TestStripConscryptNativeLibsSkipsWhenJarMissing(t *testing.T) {
+	// given: empty temp dir
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	// when: no jar exists — should warn and return nil
+	err = stripConscryptNativeLibs("8.10.0-test", "linux", "x86_64")
+
+	// then
+	if err != nil {
+		t.Fatalf("expected nil error when jar is missing (graceful skip), got: %v", err)
+	}
+}
+
 func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
 	// given — minimal class file header with major version matching helperJavaRelease
 	dir := t.TempDir()
