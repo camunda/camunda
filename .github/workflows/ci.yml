@@ -667,29 +667,35 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
+      actions: read  # read the prior per-PR sticky-state run artifact via the Artifacts API
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
+        with:
+          # Sticky alert reconciliation uses `git log -L` for method-level
+          # modification detection; needs full history reachable from HEAD.
+          fetch-depth: 0
 
       - name: Check for bypass label
         id: bypass
         shell: bash
         run: |
           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}" == "true" ]]; then
-            echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — skipping new flaky test gate."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — sticky entries will be cleared via bypass."
+            echo "present=true" >> "$GITHUB_OUTPUT"
           else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Read Integration tests matrix outputs
-        if: steps.bypass.outputs.skip != 'true'
+        if: steps.bypass.outputs.present != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: integration-matrix-read
         with:
           matrix-step-name: integration-tests
 
       - name: Collect flaky test results
-        if: steps.bypass.outputs.skip != 'true'
+        if: steps.bypass.outputs.present != 'true'
         id: collect-results
         uses: ./.github/actions/collect-flaky-tests
         with:
@@ -711,7 +717,7 @@ jobs:
           integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
 
       - name: Check if there are flaky tests to analyze
-        if: steps.bypass.outputs.skip != 'true'
+        if: steps.bypass.outputs.present != 'true'
         id: check
         env:
           FLAKY_DATA: ${{ steps.collect-results.outputs.flaky_tests_data }}
@@ -722,6 +728,32 @@ jobs:
           else
             echo "has_flaky_tests=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Build ran-jobs JSON
+        if: steps.bypass.outputs.present != 'true'
+        id: ran-jobs
+        shell: bash
+        env:
+          DOCKER_CHECKS: ${{ needs.docker-checks.result }}
+          INTEGRATION: ${{ needs.integration-tests.result }}
+          ARCHUNIT: ${{ needs.archunit-tests.result }}
+        run: |
+          set -euo pipefail
+          declare -A jobs=(
+            ["docker-checks"]="$DOCKER_CHECKS"
+            ["integration-tests"]="$INTEGRATION"
+            ["archunit-tests"]="$ARCHUNIT"
+          )
+          ran=()
+          for k in "${!jobs[@]}"; do
+            [[ "${jobs[$k]}" != "skipped" && -n "${jobs[$k]}" ]] && ran+=("$k")
+          done
+          if [[ ${#ran[@]} -eq 0 ]]; then
+            json="[]"
+          else
+            json=$(printf '%s\n' "${ran[@]}" | jq -R . | jq -sc .)
+          fi
+          echo "json=${json}" >> "$GITHUB_OUTPUT"
 
       - name: Import Secrets
         if: steps.check.outputs.has_flaky_tests == 'true'
@@ -767,25 +799,31 @@ jobs:
              FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
              LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
                ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name
+              AND (
+                (bs.build_trigger="merge_group" AND (bs.build_base_ref="refs/heads/main" OR bs.build_base_ref LIKE "refs/heads/stable/%"))
+                OR (bs.build_trigger="push" AND (bs.build_ref="refs/heads/main" OR bs.build_ref LIKE "refs/heads/stable/%"))
+                OR (bs.build_trigger="schedule" AND (bs.build_ref="refs/heads/main" OR bs.build_ref LIKE "refs/heads/stable/%"))
+                OR (bs.build_trigger="pull_request" AND bs.build_ref != @pr_ref)
+              )
              WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
                AND ts.ci_url="https://github.com/camunda/camunda"
-               AND test_status IN ("flaky","failure","error")
-               AND (
-                 (build_trigger="merge_group" AND (build_base_ref="refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
-                 OR (build_trigger="push" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-                 OR (build_trigger="schedule" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-                 OR (build_trigger="pull_request" AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
-               )' > "$RUNNER_TEMP/known-flaky-tests.json"
+               AND ts.test_status IN ("flaky","failure","error")
+               AND bs.ci_url IS NOT NULL' > "$RUNNER_TEMP/known-flaky-tests.json"
           echo "known_flaky_tests_file=$RUNNER_TEMP/known-flaky-tests.json" >> "$GITHUB_OUTPUT"
 
       - name: Detect new flaky tests
-        if: steps.check.outputs.has_flaky_tests == 'true'
+        id: detect
         uses: ./.github/actions/detect-new-flaky-tests
         with:
-          pr-flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
+          pr-flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data || ''[]'' }}'
           known-flaky-tests-file: '${{ steps.query-known-flaky.outputs.known_flaky_tests_file }}'
           pr-number: ${{ github.event.pull_request.number }}
-          blocking: 'false'
+          blocking: 'false'  # pilot: observe + comment only, do not fail check-results yet
+          ran-jobs-json: ${{ steps.ran-jobs.outputs.json || '[]' }}
+          bypass-label-present: ${{ steps.bypass.outputs.present }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+          base-ref: ${{ github.event.pull_request.base.ref }}
+          base-sha: ${{ github.event.pull_request.base.sha }}
 
       - name: Delete matrix job generated artifacts
         if: always()
