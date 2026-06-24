@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.consumergroups.membership;
+package io.camunda.eventbridge.consumergroups.session;
 
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The coordinator's <em>ephemeral</em> per-group reconciliation handshake, held in memory on the
- * leader's {@link ConsumerGroupCoordinator} actor. It drives each member from the partitions it
+ * leader's {@code ConsumerGroupCoordinator} actor. It drives each member from the partitions it
  * currently reports owning toward the group's durable target assignment (read from the replicated
  * {@link GroupSnapshot} mirror), using the incremental-cooperative protocol: a partition is not
  * assigned to its new owner until the previous owner confirms revoking it.
@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * heartbeats after a coordinator failover (sessions are seeded as already-converged to their
  * current target, so re-attaching consumers are not driven to revoke everything).
  */
-final class GroupReconciliation {
+public final class GroupReconciliation {
 
   private final Map<String, MemberSession> sessions = new ConcurrentHashMap<>();
 
@@ -45,7 +45,7 @@ final class GroupReconciliation {
    * Reconciles one heartbeat: detects a newly arrived target, refreshes liveness, and returns the
    * assign/revoke delta to send the member.
    */
-  ReconciliationResult reconcile(
+  public ReconciliationResult reconcile(
       final GroupSnapshot group,
       final String memberId,
       final List<Integer> owned,
@@ -71,7 +71,7 @@ final class GroupReconciliation {
   /**
    * Whether the group is mid-rebalance (target computed, but not every member has confirmed it).
    */
-  boolean isRebalancing(final GroupSnapshot group) {
+  public boolean isRebalancing(final GroupSnapshot group) {
     return group.isRebalancePending() || isStabilizing(group);
   }
 
@@ -80,7 +80,7 @@ final class GroupReconciliation {
    * member's last heartbeat and confirmed epoch, plus the rebalance start. Published by the
    * heartbeat handler after each reconcile and read off-actor by the eviction task.
    */
-  GroupLiveness liveness() {
+  public GroupLiveness liveness() {
     final var members = new HashMap<String, GroupLiveness.MemberLiveness>();
     sessions.forEach(
         (memberId, session) ->
@@ -92,7 +92,8 @@ final class GroupReconciliation {
   }
 
   /** Seeds a session as already-converged to its current target (used on leader activation). */
-  void seedSession(final MemberSnapshot member, final long assignmentEpoch, final Instant now) {
+  public void seedSession(
+      final MemberSnapshot member, final long assignmentEpoch, final Instant now) {
     sessions.put(
         member.memberId(),
         new MemberSession(member.memberId(), member.targetPartitions(), assignmentEpoch, now));

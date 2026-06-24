@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.consumergroups.membership;
+package io.camunda.eventbridge.consumergroups.session;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -14,7 +14,7 @@ import java.util.Set;
 
 /**
  * The coordinator's <em>ephemeral</em> per-member reconciliation state, held in memory on the
- * leader's {@link ConsumerGroupCoordinator} actor (never replicated). It tracks the member's
+ * leader's {@code ConsumerGroupCoordinator} actor (never replicated). It tracks the member's
  * liveness (last heartbeat) and the assignment it has confirmed owning, so the heartbeat handler
  * can drive the assign/revoke handshake toward the durable target. A new leader rebuilds this from
  * heartbeats after failover; the durable membership + target come from replicated state.

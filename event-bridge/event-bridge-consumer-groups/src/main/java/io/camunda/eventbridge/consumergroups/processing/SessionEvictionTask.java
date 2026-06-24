@@ -7,9 +7,9 @@
  */
 package io.camunda.eventbridge.consumergroups.processing;
 
-import io.camunda.eventbridge.consumergroups.membership.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;

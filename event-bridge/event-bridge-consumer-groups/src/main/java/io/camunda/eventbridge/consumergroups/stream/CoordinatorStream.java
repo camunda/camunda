@@ -8,7 +8,6 @@
 package io.camunda.eventbridge.consumergroups.stream;
 
 import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
-import io.camunda.eventbridge.consumergroups.membership.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
 import io.camunda.eventbridge.consumergroups.processing.JoinGroupProcessor;
 import io.camunda.eventbridge.consumergroups.processing.LeaveGroupProcessor;
@@ -20,6 +19,7 @@ import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.EventBridgeRecordValues;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
+import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;

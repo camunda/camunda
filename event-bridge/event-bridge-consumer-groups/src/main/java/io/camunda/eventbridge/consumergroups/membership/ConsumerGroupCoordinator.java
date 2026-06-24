@@ -14,6 +14,8 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
+import io.camunda.eventbridge.consumergroups.session.GroupReconciliation;
+import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
