@@ -92,6 +92,39 @@
       "enabled": false
     },
     {
+      "description": "For stable branches, keep the connectors bundle Docker image override in process test on the latest patch level.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "camunda/connectors-bundle"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "For stable branches, prevent minor/major connectors bundle Docker image updates in process test.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "camunda/connectors-bundle"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Disable npm patch updates for frontend apps on stable branches.",
       "matchManagers": [
         "npm"
@@ -795,6 +828,18 @@
       "matchStrings": [
         "<!-- renovate: datasource=(?<datasource>[^\\s]+) depName=(?<depName>[^\\s]+) -->\\s*<[^>]+>(?<currentValue>[^<]+)</"
       ]
+    },
+    {
+      "description": "Track the connectors bundle Docker image override in process test pom.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/testing/camunda-process-test-java/pom\\.xml$/"
+      ],
+      "matchStrings": [
+        "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>[^<]+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>"
+      ],
+      "depNameTemplate": "camunda/connectors-bundle",
+      "datasourceTemplate": "docker"
     }
   ]
 }
