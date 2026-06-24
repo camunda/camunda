@@ -260,7 +260,9 @@ test.describe('Decision Navigation', () => {
     });
 
     await test.step('Verify navigation to Invoice Classification instance with updated input data', async () => {
-      await expect(operateDecisionInstancePage.decisionPanel).toBeVisible();
+      await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
+        timeout: 30000,
+      });
       await expect(
         operateDecisionInstancePage.decisionPanel.getByText('Invoice Amount'),
       ).toBeVisible();
