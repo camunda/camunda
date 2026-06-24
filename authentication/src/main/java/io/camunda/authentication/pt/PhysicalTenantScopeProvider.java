@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.core.env.Environment;
 
 /**
@@ -111,13 +112,10 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
           tenantId,
           basePath,
           describeProviders(authConfig));
-    } catch (final IllegalStateException e) {
-      // Log the exception itself (last arg) so the full cause chain — e.g. a deeply-nested Spring
-      // Binder failure — is captured for operator diagnostics, not just its top-level message.
-      LOG.warn(
-          "Skipping scoped security chain for physical tenant '{}': {}",
-          tenantId,
-          e.getMessage(),
+    } catch (final BindException | IllegalStateException e) {
+      throw new IllegalStateException(
+          "Failed to build scoped security configuration for physical tenant '%s': %s — cluster startup aborted."
+              .formatted(tenantId, e.getMessage()),
           e);
     }
   }
