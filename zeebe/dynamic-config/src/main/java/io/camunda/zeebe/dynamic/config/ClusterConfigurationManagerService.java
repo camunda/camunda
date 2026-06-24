@@ -247,13 +247,15 @@ public final class ClusterConfigurationManagerService
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
-    clusterConfigurationManager.registerTopologyChangeAppliers(
-        new ConfigurationChangeAppliersImpl(
-            partitionChangeExecutor,
-            new NoopClusterMembershipChangeExecutor(),
-            partitionScalingChangeExecutor,
-            clusterChangeExecutor,
-            modeChangeExecutor));
+    managerActor.run(
+        () ->
+            clusterConfigurationManager.registerTopologyChangeAppliers(
+                new ConfigurationChangeAppliersImpl(
+                    partitionChangeExecutor,
+                    new NoopClusterMembershipChangeExecutor(),
+                    partitionScalingChangeExecutor,
+                    clusterChangeExecutor,
+                    modeChangeExecutor)));
   }
 
   public void removePartitionChangeExecutor() {
@@ -261,11 +263,11 @@ public final class ClusterConfigurationManagerService
   }
 
   public void registerModeChangeExecutor(final ModeChangeExecutor modeChangeExecutor) {
-    this.modeChangeExecutor = modeChangeExecutor;
+    managerActor.run(() -> this.modeChangeExecutor = modeChangeExecutor);
   }
 
   public void removeModeChangeExecutor() {
-    modeChangeExecutor = null;
+    managerActor.run(() -> modeChangeExecutor = null);
   }
 
   public void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {
