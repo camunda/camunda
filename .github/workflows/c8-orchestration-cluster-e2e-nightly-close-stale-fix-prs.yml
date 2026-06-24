@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       stale_days:
-        description: 'Close PRs untouched for N days (default 1 — daily fresh start)'
+        description: 'Close PRs created more than N days ago (default 1 — daily fresh start)'
         default: '1'
         required: false
       dry_run:
@@ -55,7 +55,7 @@ jobs:
 
           cutoff_epoch=$(date -u -d "${STALE_DAYS} days ago" +%s 2>/dev/null \
                        || date -u -v-"${STALE_DAYS}"d +%s)
-          echo "Closing PRs not updated since $(date -u -d "@${cutoff_epoch}" +%FT%TZ 2>/dev/null || echo "${STALE_DAYS} days ago")"
+          echo "Closing PRs created before $(date -u -d "@${cutoff_epoch}" +%FT%TZ 2>/dev/null || echo "${STALE_DAYS} days ago")"
           echo "Dry-run: ${DRY_RUN}"
 
           # Pull all open PRs with the bot label, excluding those held by do-not-close.
