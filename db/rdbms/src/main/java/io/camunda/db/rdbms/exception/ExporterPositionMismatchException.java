@@ -8,11 +8,11 @@
 package io.camunda.db.rdbms.exception;
 
 /**
- * Thrown during an in-transaction flush when the exporter position stored in the database is
- * <em>more advanced</em> than the local {@code lastFlushedPosition}.
+ * Thrown during an in-transaction flush when the exporter position stored in the database differs
+ * from the local expected position.
  *
- * <p>This typically indicates that a concurrent exporter instance for the same partition has
- * already written records beyond the current instance's last acknowledged position.
+ * <p>This can indicate either a concurrent exporter instance writing ahead (DB position > expected)
+ * or an operator/DB rollback which moved the position backwards (DB position < expected).
  */
 public final class ExporterPositionMismatchException extends RuntimeException {
 
@@ -23,9 +23,7 @@ public final class ExporterPositionMismatchException extends RuntimeException {
       final int partitionId, final long expectedPosition, final long actualPosition) {
     super(
         String.format(
-            "Exporter position for partition %d is ahead of the local position:"
-                + " expected %d but found %d in the database."
-                + " Another exporter instance may have already exported to this partition.",
+            "Exporter position mismatch for partition %d: expected %d but found %d in the database.",
             partitionId, expectedPosition, actualPosition));
 
     this.expectedPosition = expectedPosition;
