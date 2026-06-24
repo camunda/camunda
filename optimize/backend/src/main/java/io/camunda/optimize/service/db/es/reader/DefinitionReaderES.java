@@ -8,9 +8,7 @@
 package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
-import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.VERSION_FOR_SORTING_AGGREGATION;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
@@ -31,7 +29,6 @@ import co.elastic.clients.elasticsearch._types.ScriptSortType;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregationSource;
@@ -206,62 +203,6 @@ public class DefinitionReaderES implements DefinitionReader {
     }
 
     return getLatestFullyImportedDefinitionPerTenant(type, definitionKey);
-  }
-
-  @Override
-  public Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey) {
-    final TermsAggregation termsAggregation =
-        TermsAggregation.of(
-            t -> t.field(DATA_SOURCE + "." + DataSourceDto.Fields.name).size(LIST_FETCH_LIMIT));
-    final SearchRequest searchRequest =
-        OptimizeSearchRequestBuilderES.of(
-            s ->
-                s.optimizeIndex(
-                        esClient,
-                        DefinitionType.PROCESS.equals(type)
-                            ? PROCESS_DEFINITION_INDEX_NAME
-                            : DECISION_DEFINITION_INDEX_NAME)
-                    .query(
-                        q ->
-                            q.bool(
-                                b ->
-                                    b.must(
-                                            m ->
-                                                m.term(
-                                                    t ->
-                                                        t.field(
-                                                                resolveDefinitionKeyFieldFromType(
-                                                                    type))
-                                                            .value(definitionKey)))
-                                        .must(
-                                            m ->
-                                                m.term(
-                                                    t ->
-                                                        t.field(DEFINITION_DELETED).value(false)))))
-                    // no search results needed, we only need the aggregation
-                    .size(0)
-                    .aggregations(
-                        ENGINE_AGGREGATION, Aggregation.of(a -> a.terms(termsAggregation))));
-
-    final SearchResponse<?> searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, Object.class);
-    } catch (final IOException e) {
-      final String reason =
-          String.format(
-              "Was not able to fetch engines for definition key [%s] and type [%s]",
-              definitionKey, type);
-      LOG.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    final Buckets<StringTermsBucket> buckets =
-        searchResponse.aggregations().get(ENGINE_AGGREGATION).sterms().buckets();
-    if (buckets.isArray()) {
-      return buckets.array().stream().map(b -> b.key().stringValue()).collect(Collectors.toSet());
-    } else {
-      return buckets.keyed().keySet();
-    }
   }
 
   @Override

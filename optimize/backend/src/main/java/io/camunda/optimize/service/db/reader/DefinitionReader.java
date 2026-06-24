@@ -73,8 +73,6 @@ public interface DefinitionReader {
       List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
           final DefinitionType type, final String definitionKey);
 
-  Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey);
-
   Map<String, TenantIdWithDefinitionsDto> getDefinitionsGroupedByTenant();
 
   String getLatestVersionToKey(final DefinitionType type, final String key);
