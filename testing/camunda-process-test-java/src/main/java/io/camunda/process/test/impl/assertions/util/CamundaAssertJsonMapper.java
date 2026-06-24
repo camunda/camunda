@@ -62,7 +62,11 @@ public class CamundaAssertJsonMapper {
   }
 
   private JsonNode write(final Object value) {
-    return jsonMapper.transform(value, JsonNode.class);
+    // Serialize to JSON string and parse back to normalize numeric node types (e.g. LongNode ->
+    // IntNode for small values, FloatNode -> DoubleNode, BigDecimalNode -> DoubleNode). This
+    // ensures the expected value uses the same JsonNode type that Jackson produces when reading
+    // a variable value from its JSON representation.
+    return jsonMapper.fromJson(jsonMapper.toJson(value), JsonNode.class);
   }
 
   public static class JsonMappingException extends RuntimeException {
