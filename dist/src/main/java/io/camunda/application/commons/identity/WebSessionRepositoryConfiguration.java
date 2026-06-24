@@ -11,16 +11,10 @@ import io.camunda.authentication.config.spi.SessionStoreAdapter;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
-import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
-import io.camunda.db.rdbms.read.service.PersistentWebSessionRdbmsClient;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
-import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;
-import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PersistentWebSessionClient;
-import io.camunda.search.clients.PersistentWebSessionSearchImpl;
-import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
 import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.security.core.port.out.SessionStorePort;
@@ -32,7 +26,6 @@ import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDesc
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,43 +79,16 @@ public class WebSessionRepositoryConfiguration {
   public PhysicalTenantScoped<PersistentWebSessionClient> persistentWebSessionClientProviderSearch(
       final Map<String, DocumentBasedSearchClient> physicalTenantDocumentSearchClients,
       final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors) {
-    final var byTenant = new LinkedHashMap<String, PersistentWebSessionClient>();
-    physicalTenantDocumentSearchClients.forEach(
-        (tenantId, client) -> {
-          final var descriptors = physicalTenantScopedIndexDescriptors.get(tenantId);
-          if (descriptors == null) {
-            throw new IllegalStateException(
-                "Missing IndexDescriptors for physical tenant '" + tenantId + "'");
-          }
-          if (!(client instanceof final DocumentBasedWriteClient writeClient)) {
-            throw new IllegalStateException(
-                "Search client for physical tenant '"
-                    + tenantId
-                    + "' does not implement DocumentBasedWriteClient: "
-                    + client.getClass().getName());
-          }
-          final var descriptor = descriptors.get(PersistentWebSessionIndexDescriptor.class);
-          byTenant.put(
-              tenantId, new PersistentWebSessionSearchImpl(client, writeClient, descriptor));
-        });
-    return new PhysicalTenantScopedPersistentWebSessionClient(Map.copyOf(byTenant));
+    return PhysicalTenantScopedPersistentWebSessionClientFactory.fromDocumentSearchClients(
+        physicalTenantDocumentSearchClients, physicalTenantScopedIndexDescriptors);
   }
 
   @Bean("persistentWebSessionClientProvider")
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
   public PhysicalTenantScoped<PersistentWebSessionClient> persistentWebSessionClientProviderRdbms(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles) {
-    final var byTenant = new LinkedHashMap<String, PersistentWebSessionClient>();
-    rdbmsMapperBundles.forEach(
-        (tenantId, bundle) -> {
-          final var mapper = bundle.persistentWebSessionMapper();
-          byTenant.put(
-              tenantId,
-              new PersistentWebSessionRdbmsClient(
-                  new PersistentWebSessionDbReader(mapper),
-                  new PersistentWebSessionWriter(mapper)));
-        });
-    return new PhysicalTenantScopedPersistentWebSessionClient(Map.copyOf(byTenant));
+    return PhysicalTenantScopedPersistentWebSessionClientFactory.fromRdbmsMapperBundles(
+        rdbmsMapperBundles);
   }
 
   @Bean
