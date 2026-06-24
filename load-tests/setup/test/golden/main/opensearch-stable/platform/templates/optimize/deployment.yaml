@@ -1,0 +1,221 @@
+---
+# Source: camunda-platform/templates/optimize/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: optimize
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/instance: c8-golden-main-opensearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.10.0-alpha1"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: opensearch
+      app.kubernetes.io/instance: c8-golden-main-opensearch-stable
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: optimize
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: opensearch
+        app.kubernetes.io/instance: c8-golden-main-opensearch-stable
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
+
+        app.kubernetes.io/component: optimize
+        app.kubernetes.io/version: "8.10.0-alpha1"
+      annotations:
+
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      initContainers:
+        - name: migration
+          image: camunda/optimize:TEST
+          command: ['./upgrade/upgrade.sh', '--skip-warning']
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            
+            - name: CAMUNDA_OPTIMIZE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
+              value: "9200"
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
+              value: "opensearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: "c8-golden-main-opensearch-stable-elasticsearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+            - name: OPTIMIZE_LOG_APPENDER
+              value: Stackdriver
+            - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
+              value: "true"
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+              value: http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
+              value: "3"
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
+              value: "3"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
+              value: "1000"
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            - name: environment-config
+              mountPath: /optimize/config/application.yml
+              subPath: application.yml
+      containers:
+        - name: optimize
+          image: camunda/optimize:TEST
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            
+            - name: CAMUNDA_OPTIMIZE_DATABASE
+              value: opensearch
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT
+              value: "9200"
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_HOST
+              value: "opensearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: "c8-golden-main-opensearch-stable-elasticsearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "ccsm"
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
+            - name: OPTIMIZE_LOG_LEVEL
+              value: "info"
+            - name: UPGRADE_LOG_LEVEL
+              value: "info"
+            - name: ES_LOG_LEVEL
+              value: "warn"
+            - name: OPTIMIZE_LOG_APPENDER
+              value: Stackdriver
+            - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
+              value: "true"
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+              value: http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs
+            - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
+              value: "3"
+            - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
+              value: "3"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
+              value: "1000"
+          envFrom:
+            - configMapRef:
+                name: c8-golden-main-opensearch-stable-identity-env-vars
+            - configMapRef:
+                name: c8-golden-main-opensearch-stable-documentstore-env-vars
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          ports:
+            - containerPort: 8090
+              name: http
+              protocol: TCP
+            - containerPort: 8092
+              name: management
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /api/readyz
+              scheme: HTTP
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+            - name: environment-config
+              mountPath: /optimize/config/application.yml
+              subPath: application.yml
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+        - name: environment-config
+          configMap:
+            name: optimize-configuration
+            defaultMode: 492
+      serviceAccountName: optimize
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        component: benchmark-n2-standard-4
+        topology.kubernetes.io/zone: europe-west1-b
+      tolerations:
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-4

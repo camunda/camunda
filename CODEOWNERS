@@ -144,6 +144,7 @@
 # Performance + Load testing
 /load-tests/ @camunda/reliability-testing
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
+/.tool-versions @camunda/reliability-testing
 
 #################
 ## Agentic AI  ##

@@ -111,7 +111,7 @@ else
   availability_zone="~"
 fi
 
-git_author=$(compute_git_author)
+git_author=${GIT_AUTHOR:-$(compute_git_author)}
 
 # Compute deadline-date once at scaffold time. The Makefile's check-deadline
 # target compares this against today; if it has passed, install fails fast.

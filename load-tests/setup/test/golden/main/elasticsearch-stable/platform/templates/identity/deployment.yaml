@@ -1,0 +1,153 @@
+---
+# Source: camunda-platform/templates/identity/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-main-elasticsearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.10.0-alpha1"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: c8-golden-main-elasticsearch-stable
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: identity
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: c8-golden-main-elasticsearch-stable
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
+
+        app.kubernetes.io/component: identity
+        app.kubernetes.io/version: "8.10.0-alpha1"
+      annotations:
+
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      initContainers:
+        []
+      containers:
+        - name: camunda-platform
+          image: camunda/identity:TEST
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            
+            - name: VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: connectors-security-authentication-oidc-secret
+            - name: VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: orchestration-security-authentication-oidc-secret
+            - name: VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
+            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-keycloak-admin-password
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-firstuser-password
+            - name: VALUES_OPTIMIZE-LOADTEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-optimize-loadtest-client-secret
+            - name: IDENTITY_LOG_APPENDER
+              value: Stackdriver
+          envFrom:
+            - configMapRef:
+                name: c8-golden-main-elasticsearch-stable-camunda-platform-documentstore-env-vars
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 400Mi
+          ports:
+            - containerPort: 8084
+              name: http
+              protocol: TCP
+            - containerPort: 8082
+              name: metrics
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              scheme: HTTP
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /app/config/application.yaml
+              subPath: application.yaml
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: identity-configuration
+      serviceAccountName: identity
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        
+        component: benchmark-n2-standard-4
+        topology.kubernetes.io/zone: europe-west1-c
+      tolerations:
+        
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-4

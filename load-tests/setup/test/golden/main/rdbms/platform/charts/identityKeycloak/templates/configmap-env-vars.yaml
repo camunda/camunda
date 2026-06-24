@@ -1,0 +1,32 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/templates/configmap-env-vars.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-env-vars
+  namespace: "c8-golden-main-rdbms"
+  labels:
+    app.kubernetes.io/instance: c8-golden-main-rdbms
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 26.3.3
+
+    app.kubernetes.io/component: keycloak
+data:
+  KC_BOOTSTRAP_ADMIN_USERNAME: "admin"
+  KEYCLOAK_HTTP_PORT: "8080"
+  KC_PROXY_HEADERS: "xforwarded"
+  KC_METRICS_ENABLED: "false"
+  KEYCLOAK_DATABASE_HOST: "keycloak-postgresql"
+  KEYCLOAK_DATABASE_PORT: "5432"
+  KEYCLOAK_DATABASE_NAME: "camunda"
+  KEYCLOAK_DATABASE_SCHEMA: "public"
+  KEYCLOAK_DATABASE_USER: "camunda"
+  KEYCLOAK_PRODUCTION: "false"
+  KEYCLOAK_ENABLE_HTTPS: "false"
+  KC_CACHE_TYPE: "ispn"
+  KC_CACHE_STACK: "kubernetes"
+  KC_CACHE_CONFIG_FILE: "cache-ispn.xml"
+  JAVA_OPTS_APPEND: "-Djgroups.dns.query=keycloak-headless.c8-golden-main-rdbms.svc.cluster.local"
+  KC_LOG_CONSOLE_OUTPUT: "default"
+  KC_LOG_LEVEL: "INFO"

@@ -1,0 +1,27 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: "c8-golden-main-rdbms-stable"
+  labels:
+    app.kubernetes.io/instance: c8-golden-main-rdbms-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 26.3.3
+
+    app.kubernetes.io/component: keycloak
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+      nodePort: null
+  selector:
+    app.kubernetes.io/instance: c8-golden-main-rdbms-stable
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: keycloak

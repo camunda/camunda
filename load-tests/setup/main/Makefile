@@ -1,5 +1,6 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
+template_output_dir ?= .
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -254,35 +255,39 @@ install-load-test:
 .PHONY: template
 template:
 	helm template $(namespace) $(helm_chart_platform) \
+		--namespace $(namespace) \
 		$(platform_values) \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
-		--output-dir .
+		--output-dir $(template_output_dir)
 
 .PHONY: template-stable
 template-stable:
 	helm template $(namespace) $(helm_chart_platform) \
+		--namespace $(namespace) \
 		$(platform_values_stable) \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
-		--output-dir .
+		--output-dir $(template_output_dir)
 
 .PHONY: template-load-test-setup
 template-load-test-setup:
 	helm template load-test-setup $(helm_chart_load_test_setup) \
+		--namespace $(namespace) \
 		$(load_test_setup_values) \
 		$(additional_load_test_setup_configuration) \
-		--output-dir .
+		--output-dir $(template_output_dir)
 
 # Generates templates from the load test helm chart
 .PHONY: template-load-test
 template-load-test:
 	helm template $(namespace)-test $(helm_chart_load_tests) \
+		--namespace $(namespace) \
 		-f load-test-values.yaml \
 		$(_scenario_load_test_flags) \
 		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_configuration) \
-		--output-dir .
+		--output-dir $(template_output_dir)
 
 # Print the resolved scenario flags without running any Helm commands
 .PHONY: print-scenario

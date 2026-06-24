@@ -1,0 +1,30 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/svc-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-postgresql-hl
+  namespace: "c8-golden-main-rdbms-stable"
+  labels:
+    app.kubernetes.io/instance: c8-golden-main-rdbms-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 17.4.0
+
+    app.kubernetes.io/component: primary
+  annotations:
+spec:
+  type: ClusterIP
+  clusterIP: None
+  # We want all pods in the StatefulSet to have their addresses published for
+  # the sake of the other Postgresql pods even before they're ready, since they
+  # have to be able to talk to each other in order to become ready.
+  publishNotReadyAddresses: true
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+  selector:
+    app.kubernetes.io/instance: c8-golden-main-rdbms-stable
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/component: primary
