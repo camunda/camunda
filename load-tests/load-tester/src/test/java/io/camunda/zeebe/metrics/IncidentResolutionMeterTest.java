@@ -312,9 +312,14 @@ class IncidentResolutionMeterTest {
     }
 
     @Override
-    public CompletionStage<List<IncidentSnapshot>> lookup(final List<Long> incidentKeys) {
+    public CompletionStage<List<IncidentSnapshot>> rescan(
+        final OffsetDateTime createdAtOrAfter, final int from, final int limit) {
+      if (from > 0) {
+        // single page only: signal no further pages
+        return CompletableFuture.completedFuture(List.of());
+      }
       final List<IncidentSnapshot> result =
-          lookupStates.stream().filter(s -> incidentKeys.contains(s.incidentKey())).toList();
+          lookupStates.stream().filter(s -> !s.creationTime().isBefore(createdAtOrAfter)).toList();
       return CompletableFuture.completedFuture(result);
     }
 

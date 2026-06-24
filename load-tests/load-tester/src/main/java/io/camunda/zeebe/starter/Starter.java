@@ -15,7 +15,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -258,28 +257,30 @@ public class Starter implements CommandLineRunner {
             starterCfg.getIncidentResolutionWatchCap(),
             starterCfg.getIncidentResolutionCancelRate(),
             new IncidentSource() {
+              // Wire-compatibility note: keep these queries to filter forms an 8.8 server
+              // understands (creationTime gte + sort + pagination). 8.8 has no `$in` list-filter,
+              // so do NOT add `state(s -> s.in(...))` or `incidentKey(k -> k.in(...))` here — an
+              // 8.9+ client would emit `$in` filters that an 8.8 server ignores, returning nothing.
+              // The meter classifies state client-side instead.
               @Override
               public CompletionStage<List<IncidentSnapshot>> discover(
                   final OffsetDateTime createdAtOrAfter, final int from, final int limit) {
-                return client
-                    .newIncidentSearchRequest()
-                    .filter(
-                        f ->
-                            f.creationTime(d -> d.gte(createdAtOrAfter))
-                                .state(s -> s.in(IncidentState.PENDING, IncidentState.ACTIVE)))
-                    .sort(s -> s.creationTime().asc())
-                    .page(p -> p.from(from).limit(limit))
-                    .send()
-                    .thenApply(
-                        response -> response.items().stream().map(this::toSnapshot).toList());
+                return search(createdAtOrAfter, from, limit);
               }
 
               @Override
-              public CompletionStage<List<IncidentSnapshot>> lookup(final List<Long> incidentKeys) {
+              public CompletionStage<List<IncidentSnapshot>> rescan(
+                  final OffsetDateTime createdAtOrAfter, final int from, final int limit) {
+                return search(createdAtOrAfter, from, limit);
+              }
+
+              private CompletionStage<List<IncidentSnapshot>> search(
+                  final OffsetDateTime createdAtOrAfter, final int from, final int limit) {
                 return client
                     .newIncidentSearchRequest()
-                    .filter(f -> f.incidentKey(k -> k.in(incidentKeys)))
-                    .page(p -> p.limit(incidentKeys.size()))
+                    .filter(f -> f.creationTime(d -> d.gte(createdAtOrAfter)))
+                    .sort(s -> s.creationTime().asc())
+                    .page(p -> p.from(from).limit(limit))
                     .send()
                     .thenApply(
                         response -> response.items().stream().map(this::toSnapshot).toList());

@@ -49,13 +49,14 @@ import org.slf4j.LoggerFactory;
  * <p>Each tick the meter:
  *
  * <ul>
- *   <li><b>discovers</b> incidents created at or after a {@code creationTime} cursor, over states
- *       {@code {PENDING, ACTIVE}}: an {@code ACTIVE} and unmeasured incident is recorded
- *       immediately (capturing the healthy baseline of incidents born and promoted within one
- *       tick); a {@code PENDING} incident is put in the watch-map;
- *   <li><b>confirms</b> the watch-map by looking incidents up by key in batches; any that flipped
- *       to {@code ACTIVE} is recorded, its process instance enqueued for cancellation, and it is
- *       removed from the watch-map;
+ *   <li><b>discovers</b> incidents created at or after a {@code creationTime} cursor: an {@code
+ *       ACTIVE} and unmeasured incident is recorded immediately (capturing the healthy baseline of
+ *       incidents born and promoted within one tick); a {@code PENDING} incident is put in the
+ *       watch-map. States are classified client-side from {@code incident.state()};
+ *   <li><b>confirms</b> the watch-map by re-scanning incidents created at or after the oldest
+ *       still-watched incident's creation time (paginated, no state filter); any returned incident
+ *       that is now {@code ACTIVE} and still watched is recorded, its process instance enqueued for
+ *       cancellation, and it is removed from the watch-map;
  *   <li><b>expires</b> watch-map entries past the watch cap (records the capped elapsed and
  *       increments the timeout counter — survivorship-safe — then drops them);
  *   <li><b>cancels</b> a rate-limited batch of measured process instances (cancel-after-
@@ -69,7 +70,6 @@ public class IncidentResolutionMeter implements AutoCloseable {
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
   private static final int DISCOVERY_PAGE_SIZE = 100;
   private static final int MAX_DISCOVERY_PAGES = 50;
-  private static final int LOOKUP_BATCH_SIZE = 100;
 
   private final Clock clock;
   private final Supplier<Instant> wallClock;
@@ -159,11 +159,16 @@ public class IncidentResolutionMeter implements AutoCloseable {
   }
 
   /**
-   * Pulls incidents created at or after the cursor, over states {@code {PENDING, ACTIVE}}, sorted
-   * by creation time ascending. {@code ACTIVE} & unmeasured are recorded immediately; {@code
-   * PENDING} go to the watch-map. The cursor advances to the latest creation time observed;
-   * re-scanning the boundary is harmless because the {@code measured} set and the watch-map key
-   * deduplicate.
+   * Pulls incidents created at or after the cursor, sorted by creation time ascending, and
+   * classifies each by state client-side: {@code ACTIVE} & unmeasured are recorded immediately;
+   * {@code PENDING} go to the watch-map (other states are ignored). The cursor advances to the
+   * latest creation time observed; re-scanning the boundary is harmless because the {@code
+   * measured} set and the watch-map key deduplicate.
+   *
+   * <p>No server-side state filter is applied: 8.8 servers do not understand the {@code $in}
+   * list-filter that an 8.9+ client would emit for {@code state(s -> s.in(...))}, so the query is
+   * kept to forms (creationTime gte + sort + pagination) the 8.8 wire understands and the state is
+   * classified here instead. Do not reintroduce a list/{@code .in(...)} state filter.
    */
   private void discover() {
     final OffsetDateTime from = cursor.get();
@@ -199,24 +204,44 @@ public class IncidentResolutionMeter implements AutoCloseable {
   }
 
   /**
-   * Re-queries the watched incidents by key in batches and records any that flipped to {@code
-   * ACTIVE}.
+   * Re-scans incidents created at or after the oldest still-watched incident's creation time
+   * (paginated, no state filter) and records any returned incident that is now {@code ACTIVE} and
+   * still in the watch-map.
+   *
+   * <p>This deliberately avoids a per-key batch lookup: 8.8 servers do not understand the {@code
+   * $in} list-filter an 8.9+ client would emit for {@code incidentKey(k -> k.in(keys))}. A
+   * creationTime-range re-scan uses only forms (creationTime gte + sort + pagination) the 8.8 wire
+   * understands, and scales with the watch window rather than per-key. Do not reintroduce a {@code
+   * incidentKey.in(...)} batch lookup.
    */
   private void confirm() {
     if (watchMap.isEmpty()) {
       return;
     }
-    final List<Long> keys = new ArrayList<>(watchMap.keySet());
-    for (int start = 0; start < keys.size(); start += LOOKUP_BATCH_SIZE) {
-      final List<Long> batch =
-          keys.subList(start, Math.min(start + LOOKUP_BATCH_SIZE, keys.size()));
-      final List<IncidentSnapshot> snapshots = join(incidentSource.lookup(batch));
+    OffsetDateTime oldestWatched = null;
+    for (final WatchedIncident watched : watchMap.values()) {
+      if (oldestWatched == null || watched.creationTime().isBefore(oldestWatched)) {
+        oldestWatched = watched.creationTime();
+      }
+    }
+    if (oldestWatched == null) {
+      return;
+    }
+    int page = 0;
+    boolean more = true;
+    while (more && page < MAX_DISCOVERY_PAGES) {
+      final List<IncidentSnapshot> snapshots =
+          join(
+              incidentSource.rescan(
+                  oldestWatched, page * DISCOVERY_PAGE_SIZE, DISCOVERY_PAGE_SIZE));
       for (final IncidentSnapshot snapshot : snapshots) {
         if (snapshot.state() == IncidentState.ACTIVE
             && watchMap.containsKey(snapshot.incidentKey())) {
           recordPromotion(snapshot);
         }
       }
+      more = snapshots.size() == DISCOVERY_PAGE_SIZE;
+      page++;
     }
   }
 
@@ -380,15 +405,22 @@ public class IncidentResolutionMeter implements AutoCloseable {
   public interface IncidentSource {
 
     /**
-     * Discovers incidents created at or after the given time, over states {@code {PENDING,
-     * ACTIVE}}, sorted by creation time ascending, returning the page starting at {@code from} with
-     * at most {@code limit} items.
+     * Discovers incidents created at or after the given time, sorted by creation time ascending,
+     * returning the page starting at {@code from} with at most {@code limit} items. No state filter
+     * is applied (the meter classifies state client-side) — the implementation must use only filter
+     * forms an 8.8 server understands (no {@code state(s -> s.in(...))} list-filter).
      */
     java.util.concurrent.CompletionStage<List<IncidentSnapshot>> discover(
         OffsetDateTime createdAtOrAfter, int from, int limit);
 
-    /** Looks up the current state of the given incident keys. */
-    java.util.concurrent.CompletionStage<List<IncidentSnapshot>> lookup(List<Long> incidentKeys);
+    /**
+     * Re-scans incidents created at or after the given time (same query shape as {@link #discover},
+     * no state filter), used to confirm watched pending incidents have flipped to {@code ACTIVE}.
+     * The implementation must not use an {@code incidentKey.in(...)} batch filter, which an 8.8
+     * server does not understand.
+     */
+    java.util.concurrent.CompletionStage<List<IncidentSnapshot>> rescan(
+        OffsetDateTime createdAtOrAfter, int from, int limit);
 
     /** Cancels the given process instance (cancel-after-measurement cleanup). */
     java.util.concurrent.CompletionStage<Void> cancel(long processInstanceKey);
