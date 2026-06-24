@@ -35,6 +35,7 @@ import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -96,7 +97,10 @@ public class VariableAssertTest {
     return Stream.of(
         Arguments.of("null", null),
         Arguments.of("1", 1),
+        Arguments.of("1", 1L),
+        Arguments.of("1.0", 1.0f),
         Arguments.of("1.5", 1.5),
+        Arguments.of("1.1", new BigDecimal("1.1")),
         Arguments.of("\"a\"", "a"),
         Arguments.of("true", true),
         Arguments.of("[1,2]", Arrays.asList(1, 2)),
