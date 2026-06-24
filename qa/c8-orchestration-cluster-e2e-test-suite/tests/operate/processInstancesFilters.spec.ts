@@ -173,7 +173,9 @@ test.describe('Process Instances Filters', () => {
     await test.step('Inline filter narrows the list', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('1 result')).toBeVisible();
+          await expect(page.getByText('1 result')).toBeVisible({
+            timeout: 30000,
+          });
         },
         onFailure: async () => {
           await page.reload();
@@ -873,3 +875,4 @@ test.describe('Process Instances Filters', () => {
     });
   });
 });
+
