@@ -37,6 +37,36 @@ final class ExporterConfigurationTest {
   }
 
   @ParameterizedTest
+  @ValueSource(strings = {"number-of-shards", "NUMBER-OF-SHARDS"})
+  void shouldInstantiateConfigWithKebabCaseProperties(final String property) {
+    // given
+    final var args = Map.<String, Object>of(property, 1);
+    final var expected = new Config(1);
+    final var config = new ExporterConfiguration("id", args);
+
+    // when
+    final var instance = config.instantiate(Config.class);
+
+    // then
+    assertThat(instance).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"number-of-shards", "NUMBER-OF-SHARDS"})
+  void shouldInstantiateNestedConfigWithKebabCaseProperties(final String property) {
+    // given
+    final var args = Map.<String, Object>of("nested", Map.of(property, 1));
+    final var expected = new ContainerConfig(new Config(1));
+    final var config = new ExporterConfiguration("id", args);
+
+    // when
+    final var instance = config.instantiate(ContainerConfig.class);
+
+    // then
+    assertThat(instance).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
   @ValueSource(strings = {"numberofshards", "numberOfShards", "NUMBEROFSHARDS"})
   void shouldInstantiateNestedConfigWithCaseInsensitiveProperties(final String property) {
     // given
