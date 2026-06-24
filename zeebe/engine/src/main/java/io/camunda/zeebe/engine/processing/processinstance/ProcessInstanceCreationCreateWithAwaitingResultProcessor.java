@@ -11,12 +11,15 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -66,7 +69,13 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
         .flatMap(process -> helper.isAuthorized(command, process))
         .flatMap(process -> helper.validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(command, process),
+            process -> {
+              try {
+                createProcessInstance(command, (DeployedProcess) process);
+              } catch (final ValidationException e) {
+                reject(command, RejectionType.INVALID_ARGUMENT, e.getMessage());
+              }
+            },
             rejection -> reject(command, rejection.type(), rejection.reason()));
   }
 
@@ -95,7 +104,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
   }
 
   private void createProcessInstance(
-      final TypedRecord<ProcessInstanceCreationRecord> command, final DeployedProcess process) {
+      final TypedRecord<ProcessInstanceCreationRecord> command, final DeployedProcess process)
+      throws VariableValidationException {
 
     final long processInstanceKey = keyGenerator.nextKey();
     final var commandKey = command.getKey();

@@ -58,7 +58,7 @@ public final class VariableNestingDepthValidatorTest {
   @Test
   void shouldReturnRightForNullBuffer() {
     // when
-    final var result = VariableNestingDepthValidator.validate(-1, null, 1000);
+    final var result = VariableNestingDepthValidator.validate(null, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -70,7 +70,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = new UnsafeBuffer(new byte[0]);
 
     // when
-    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -82,7 +82,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(1000));
 
     // when
-    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -94,7 +94,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(1001));
 
     // when
-    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
 
     // then
     assertThat(result.isLeft()).isTrue();
@@ -110,7 +110,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(50_000));
 
     // when / then — must not throw
-    final var result = VariableNestingDepthValidator.validate(-1, buffer, 1000);
+    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
 
     assertThat(result.isLeft()).isTrue();
 
@@ -122,11 +122,7 @@ public final class VariableNestingDepthValidatorTest {
    * {@code {"k":{"k":{"k":1}}}}.
    */
   private static String buildNestedJson(final int depth) {
-    final var sb = new StringBuilder();
-    sb.repeat("{\"k\":", Math.max(0, depth));
-    sb.append("1");
-    sb.repeat("}", Math.max(0, depth));
-    return sb.toString();
+    return "{\"k\":".repeat(depth) + "1" + "}".repeat(depth);
   }
 
   private static UnsafeBuffer msgPackOf(final String json) {

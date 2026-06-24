@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -105,7 +107,9 @@ public final class VariableBehavior {
       final long rootProcessInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document) {
+      final DirectBuffer document)
+      throws VariableValidationException {
+    validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
@@ -157,7 +161,9 @@ public final class VariableBehavior {
       final long rootProcessInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document) {
+      final DirectBuffer document)
+      throws VariableValidationException {
+    validateBuffer(scopeKey, document);
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
@@ -284,14 +290,26 @@ public final class VariableBehavior {
   }
 
   /**
-   * Validates that the given document does not exceed the configured maximum nesting depth.
+   * Validates the given variable buffer. This is exposed for clients that need validation upfront
+   * or are not using {@code mergeDocument}/{@code mergeLocalDocument}.
    *
-   * @return {@link Either#right(Object)} with the given document if it is valid; otherwise, {@link
-   *     Either#left(Object)} with a {@link Failure} describing the error
+   * @param variableBuffer buffer to validate
+   * @return Either with Rejection if validation fails, or Void if validation succeeds
    */
-  public Either<Failure, DirectBuffer> validateDocument(
-      final long scopeKey, final DirectBuffer document) {
-    return VariableNestingDepthValidator.validate(scopeKey, document, maxVariableNestingDepth)
-        .map(unused -> document);
+  public Either<Rejection, Void> validateVariables(final DirectBuffer variableBuffer) {
+    return VariableNestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth)
+        .mapLeft(failure -> new Rejection(RejectionType.INVALID_ARGUMENT, failure.getMessage()));
+  }
+
+  private void validateBuffer(final long scopeKey, final DirectBuffer variableBuffer)
+      throws VariableValidationException {
+    final Either<Failure, Void> validate =
+        VariableNestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth);
+    if (validate.isLeft()) {
+      throw new VariableValidationException(
+          String.format(
+              "Failed to validate document for scope %d: %s",
+              scopeKey, validate.getLeft().getMessage()));
+    }
   }
 }

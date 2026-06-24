@@ -253,16 +253,24 @@ public class EventTriggerBehavior {
         eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
 
     if (variables.capacity() > 0) {
-      // set as local variables of the element instance to use them for the variable output
-      // mapping
-      variableBehavior.mergeLocalDocument(
-          eventInstanceKey,
-          elementRecord.getProcessDefinitionKey(),
-          elementRecord.getProcessInstanceKey(),
-          elementRecord.getRootProcessInstanceKey(),
-          elementRecord.getBpmnProcessIdBuffer(),
-          elementRecord.getTenantId(),
-          variables);
+      try {
+        // set as local variables of the element instance to use them for the variable output
+        // mapping
+        variableBehavior.mergeLocalDocument(
+            eventInstanceKey,
+            elementRecord.getProcessDefinitionKey(),
+            elementRecord.getProcessInstanceKey(),
+            elementRecord.getRootProcessInstanceKey(),
+            elementRecord.getBpmnProcessIdBuffer(),
+            elementRecord.getTenantId(),
+            variables);
+      } catch (final ValidationException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Variable validation failed for triggered event '%s' with key '%d': %s",
+                triggeredEvent.getId(), eventInstanceKey, e.getMessage()),
+            e);
+      }
     }
 
     commandWriter.appendFollowUpCommand(

@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -120,7 +120,6 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
           JobListenerEventType.COMPLETING);
 
   private final UserTaskState userTaskState;
-  private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final JobCommandPreconditionValidator preconditionChecker;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -146,7 +145,6 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       final boolean includeVariablesInJobCompletedEvent) {
     processState = state;
     userTaskState = state.getUserTaskState();
-    jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     commandWriter = writers.command();
     stateWriter = writers.state();
@@ -181,6 +179,11 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(
+            job ->
+                variableBehavior
+                    .validateVariables(record.getValue().getVariablesBuffer())
+                    .map(unused -> job))
         .ifRightOrLeft(
             job -> completeJob(record, job, session),
             rejection -> {
@@ -336,15 +339,21 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private void propagateJobVariablesToAdHocSubProcess(
       final JobRecord completingJobRecord, final ElementInstance targetAdHocSubProcess) {
     final var targetAdHocSubProcessInstanceValue = targetAdHocSubProcess.getValue();
-
-    variableBehavior.mergeDocument(
-        targetAdHocSubProcess.getKey(),
-        targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
-        targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
-        targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
-        targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
-        targetAdHocSubProcessInstanceValue.getTenantId(),
-        completingJobRecord.getVariablesBuffer());
+    try {
+      variableBehavior.mergeDocument(
+          targetAdHocSubProcess.getKey(),
+          targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
+          targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
+          targetAdHocSubProcessInstanceValue.getRootProcessInstanceKey(),
+          targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
+          targetAdHocSubProcessInstanceValue.getTenantId(),
+          completingJobRecord.getVariablesBuffer());
+    } catch (final ValidationException e) {
+      throw new IllegalArgumentException(
+          "Failed to propagate job variables to ad-hoc sub-process instance %d"
+              .formatted(targetAdHocSubProcess.getKey()),
+          e);
+    }
   }
 
   private Either<Rejection, JobRecord>

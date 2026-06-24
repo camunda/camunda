@@ -12,17 +12,18 @@ import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAut
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -149,7 +150,14 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
         final var variableDocumentState = optionalVariableDocumentState.get();
         final var variableDocumentRecord = variableDocumentState.getRecord();
-        mergeVariables(userTaskRecord, variableDocumentRecord);
+        try {
+          VariableDocumentUpdateProcessor.mergeVariables(
+              variableDocumentRecord, userTaskRecord, variableBehavior);
+        } catch (final ValidationException e) {
+          throw new IllegalStateException(
+              "Failed to merge variables for user task update triggered by a variable document update.",
+              e);
+        }
 
         // Write follow-up events
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
@@ -184,33 +192,5 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
                 command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE))
         .map(ignored -> persistedUserTask);
-  }
-
-  private void mergeVariables(
-      final UserTaskRecord userTaskRecord, final VariableDocumentRecord variableRecord) {
-    switch (variableRecord.getUpdateSemantics()) {
-      case LOCAL ->
-          variableBehavior.mergeLocalDocument(
-              userTaskRecord.getElementInstanceKey(),
-              userTaskRecord.getProcessDefinitionKey(),
-              userTaskRecord.getProcessInstanceKey(),
-              userTaskRecord.getRootProcessInstanceKey(),
-              userTaskRecord.getBpmnProcessIdBuffer(),
-              userTaskRecord.getTenantId(),
-              variableRecord.getVariablesBuffer());
-      case PROPAGATE ->
-          variableBehavior.mergeDocument(
-              userTaskRecord.getElementInstanceKey(),
-              userTaskRecord.getProcessDefinitionKey(),
-              userTaskRecord.getProcessInstanceKey(),
-              userTaskRecord.getRootProcessInstanceKey(),
-              userTaskRecord.getBpmnProcessIdBuffer(),
-              userTaskRecord.getTenantId(),
-              variableRecord.getVariablesBuffer());
-      default ->
-          throw new IllegalStateException(
-              "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
-                  .formatted(variableRecord.getUpdateSemantics()));
-    }
   }
 }

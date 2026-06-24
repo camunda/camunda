@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
@@ -22,9 +23,11 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NonNull;
 
 public final class BpmnVariableMappingBehavior {
   private final ExpressionProcessor expressionProcessor;
@@ -59,28 +62,12 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context, final ExecutableFlowNode element) {
     final long scopeKey = context.getElementInstanceKey();
     final String tenantId = context.getTenantId();
-    final long processDefinitionKey = context.getProcessDefinitionKey();
-    final long processInstanceKey = context.getProcessInstanceKey();
-    final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
-    final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
 
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
-          .flatMap(result -> variableBehavior.validateDocument(scopeKey, result))
-          .map(
-              result -> {
-                variableBehavior.mergeLocalDocument(
-                    scopeKey,
-                    processDefinitionKey,
-                    processInstanceKey,
-                    rootProcessInstanceKey,
-                    bpmnProcessId,
-                    context.getTenantId(),
-                    result);
-                return null;
-              });
+          .flatMap(result -> mapLocalVariables(context, element, result));
     }
     return Either.right(null);
   }
@@ -98,9 +85,6 @@ public final class BpmnVariableMappingBehavior {
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = record.getProcessDefinitionKey();
     final long processInstanceKey = record.getProcessInstanceKey();
-    final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
-    final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
-    final long scopeKey = getVariableScopeKey(context);
     final String tenantId = context.getTenantId();
     final Optional<Expression> outputMappingExpression = element.getOutputMappings();
 
@@ -121,69 +105,91 @@ public final class BpmnVariableMappingBehavior {
           element.getId());
     }
 
-    // validate variables
-    final Either<Failure, DirectBuffer> validation =
-        variableBehavior.validateDocument(scopeKey, variables);
-    if (validation.isLeft()) {
-      return Either.left(validation.getLeft());
-    }
-
     if (outputMappingExpression.isPresent()) {
       // set as local variables
       if (hasVariables) {
-        variableBehavior.mergeLocalDocument(
-            elementInstanceKey,
-            processDefinitionKey,
-            processInstanceKey,
-            rootProcessInstanceKey,
-            bpmnProcessId,
-            context.getTenantId(),
-            variables);
+        final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
+        if (variableEither.isLeft()) {
+          return variableEither;
+        }
       }
 
       // apply the output mappings
       return expressionProcessor
           .evaluateVariableMappingExpression(
               outputMappingExpression.get(), elementInstanceKey, tenantId)
-          .map(
-              result -> {
-                variableBehavior.mergeDocument(
-                    scopeKey,
-                    processDefinitionKey,
-                    processInstanceKey,
-                    rootProcessInstanceKey,
-                    bpmnProcessId,
-                    context.getTenantId(),
-                    result);
-                return null;
-              });
+          .flatMap(result -> mapVariables(context, element, getVariableScopeKey(context), result));
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
-      variableBehavior.mergeDocument(
-          elementInstanceKey,
-          processDefinitionKey,
-          processInstanceKey,
-          rootProcessInstanceKey,
-          bpmnProcessId,
-          context.getTenantId(),
-          variables);
+      final Either<Failure, Void> variableEither =
+          mapVariables(context, element, elementInstanceKey, variables);
+      if (variableEither.isLeft()) {
+        return variableEither;
+      }
     } else if (isConnectedToEventBasedGateway(element)
         || (element.getElementType() == BpmnElementType.BOUNDARY_EVENT && !isErrorEvent(element))
         || element.getElementType() == BpmnElementType.START_EVENT) {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
+      final Either<Failure, Void> variableEither =
+          mapVariables(context, element, getVariableScopeKey(context), localVariables);
+      if (variableEither.isLeft()) {
+        return variableEither;
+      }
+    }
+    return Either.right(null);
+  }
+
+  private @NonNull Either<Failure, Void> mapVariables(
+      final BpmnElementContext context,
+      final ExecutableFlowNode element,
+      final long scopeKey,
+      final DirectBuffer result) {
+    final ProcessInstanceRecord record = context.getRecordValue();
+    try {
       variableBehavior.mergeDocument(
           scopeKey,
-          processDefinitionKey,
-          processInstanceKey,
-          rootProcessInstanceKey,
-          bpmnProcessId,
+          record.getProcessDefinitionKey(),
+          record.getProcessInstanceKey(),
+          context.getRootProcessInstanceKey(),
+          context.getBpmnProcessId(),
           context.getTenantId(),
-          localVariables);
+          result);
+      return Either.right(null);
+    } catch (final ValidationException e) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Failed to merge variables for element '%s' with key '%d': %s",
+                  element.getId(), context.getElementInstanceKey(), e.getMessage()),
+              ErrorType.IO_MAPPING_ERROR));
     }
+  }
 
-    return Either.right(null);
+  private @NonNull Either<Failure, Void> mapLocalVariables(
+      final BpmnElementContext context,
+      final ExecutableFlowNode element,
+      final DirectBuffer result) {
+    final ProcessInstanceRecord record = context.getRecordValue();
+    try {
+      variableBehavior.mergeLocalDocument(
+          context.getElementInstanceKey(),
+          record.getProcessDefinitionKey(),
+          record.getProcessInstanceKey(),
+          context.getRootProcessInstanceKey(),
+          context.getBpmnProcessId(),
+          context.getTenantId(),
+          result);
+      return Either.right(null);
+    } catch (final ValidationException e) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Failed to merge local variables for element '%s' with key '%d': %s",
+                  element.getId(), context.getElementInstanceKey(), e.getMessage()),
+              ErrorType.IO_MAPPING_ERROR));
+    }
   }
 
   private long getVariableScopeKey(final BpmnElementContext context) {

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -82,8 +84,7 @@ public final class VariableDocumentUpdateProcessor
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
-    this.bannedInstanceCheck =
-        new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
+    bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
   @Override
@@ -173,29 +174,14 @@ public final class VariableDocumentUpdateProcessor
         return;
       }
 
-      switch (value.getUpdateSemantics()) {
-        case LOCAL ->
-            variableBehavior.mergeLocalDocument(
-                userTaskRecord.getElementInstanceKey(),
-                userTaskRecord.getProcessDefinitionKey(),
-                userTaskRecord.getProcessInstanceKey(),
-                userTaskRecord.getRootProcessInstanceKey(),
-                userTaskRecord.getBpmnProcessIdBuffer(),
-                userTaskRecord.getTenantId(),
-                value.getVariablesBuffer());
-        case PROPAGATE ->
-            variableBehavior.mergeDocument(
-                userTaskRecord.getElementInstanceKey(),
-                userTaskRecord.getProcessDefinitionKey(),
-                userTaskRecord.getProcessInstanceKey(),
-                userTaskRecord.getRootProcessInstanceKey(),
-                userTaskRecord.getBpmnProcessIdBuffer(),
-                userTaskRecord.getTenantId(),
-                value.getVariablesBuffer());
-        default ->
-            throw new IllegalStateException(
-                "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
-                    .formatted(value.getUpdateSemantics()));
+      try {
+        mergeVariables(value, userTaskRecord, variableBehavior);
+      } catch (final ValidationException e) {
+        writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
+        writers
+            .response()
+            .writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
+        return;
       }
 
       writers
@@ -245,12 +231,49 @@ public final class VariableDocumentUpdateProcessor
       writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
       writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
+    } catch (final ValidationException e) {
+      writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
+      writers
+          .response()
+          .writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, e.getMessage());
+      return;
     }
 
     final long key = keyGenerator.nextKey();
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
     writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+  }
+
+  public static void mergeVariables(
+      final VariableDocumentRecord value,
+      final UserTaskRecord userTaskRecord,
+      final VariableBehavior variableBehavior)
+      throws VariableValidationException {
+    switch (value.getUpdateSemantics()) {
+      case LOCAL ->
+          variableBehavior.mergeLocalDocument(
+              userTaskRecord.getElementInstanceKey(),
+              userTaskRecord.getProcessDefinitionKey(),
+              userTaskRecord.getProcessInstanceKey(),
+              userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getBpmnProcessIdBuffer(),
+              userTaskRecord.getTenantId(),
+              value.getVariablesBuffer());
+      case PROPAGATE ->
+          variableBehavior.mergeDocument(
+              userTaskRecord.getElementInstanceKey(),
+              userTaskRecord.getProcessDefinitionKey(),
+              userTaskRecord.getProcessInstanceKey(),
+              userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getBpmnProcessIdBuffer(),
+              userTaskRecord.getTenantId(),
+              value.getVariablesBuffer());
+      default ->
+          throw new IllegalStateException(
+              "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
+                  .formatted(value.getUpdateSemantics()));
+    }
   }
 
   private static boolean hasVariables(final VariableDocumentRecord record) {

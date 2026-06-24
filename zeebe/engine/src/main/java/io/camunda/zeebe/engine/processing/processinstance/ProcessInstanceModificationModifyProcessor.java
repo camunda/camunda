@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.Activ
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.MultipleFlowScopeInstancesFoundException;
 import io.camunda.zeebe.engine.processing.common.UnsupportedMultiInstanceBodyActivationException;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -1359,7 +1360,8 @@ public final class ProcessInstanceModificationModifyProcessor
                           instruction.getClass().getName()));
             })
         .forEach(
-            variableDocument ->
+            variableDocument -> {
+              try {
                 variableBehavior.mergeLocalDocument(
                     scopeKey,
                     process.getKey(),
@@ -1367,7 +1369,14 @@ public final class ProcessInstanceModificationModifyProcessor
                     processInstance.getValue().getRootProcessInstanceKey(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
-                    variableDocument));
+                    variableDocument);
+              } catch (final ValidationException e) {
+                throw new IllegalArgumentException(
+                    "Variable validation failed for element '%s' in process instance '%d': %s"
+                        .formatted(elementId, processInstance.getKey(), e.getMessage()),
+                    e);
+              }
+            });
   }
 
   private void terminateElement(final ElementInstance elementInstance) {

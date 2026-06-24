@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -105,6 +106,11 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(
+            job ->
+                variableBehavior
+                    .validateVariables(record.getValue().getVariablesBuffer())
+                    .map(unused -> job))
         .ifRightOrLeft(
             failedJob -> failJob(record, failedJob),
             rejection -> {
@@ -151,17 +157,24 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   }
 
   private void setFailedVariables(final JobRecord value) {
-    // set fail job variables locally
     final DirectBuffer variables = value.getVariablesBuffer();
     if (variables.capacity() > 0) {
-      variableBehavior.mergeLocalDocument(
-          value.getElementInstanceKey(),
-          value.getProcessDefinitionKey(),
-          value.getProcessInstanceKey(),
-          value.getRootProcessInstanceKey(),
-          value.getBpmnProcessIdBuffer(),
-          value.getTenantId(),
-          variables);
+      try {
+        variableBehavior.mergeLocalDocument(
+            value.getElementInstanceKey(),
+            value.getProcessDefinitionKey(),
+            value.getProcessInstanceKey(),
+            value.getRootProcessInstanceKey(),
+            value.getBpmnProcessIdBuffer(),
+            value.getTenantId(),
+            variables);
+      } catch (final ValidationException e) {
+        // as we perform validation for variables upfront, this should never happen
+        throw new IllegalArgumentException(
+            "Failed to set variables for job with key %d: %s"
+                .formatted(value.getElementInstanceKey(), e.getMessage()),
+            e);
+      }
     }
   }
 
