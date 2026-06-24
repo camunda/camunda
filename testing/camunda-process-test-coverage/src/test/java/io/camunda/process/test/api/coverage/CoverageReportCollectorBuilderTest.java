@@ -35,13 +35,19 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefini
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CoverageReportCollectorBuilderTest {
+
+  @TempDir File tempDir;
 
   @Mock private ProcessInstance processInstance;
 
@@ -214,6 +220,68 @@ class CoverageReportCollectorBuilderTest {
             });
   }
 
+  @Test
+  void shouldGenerateReportAndPrintCoverageSummaryToStream() throws Exception {
+    // given: pre-create the static resources directory so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+
+    final List<String> captured = new ArrayList<>();
+    final CoverageCollector coverageCollector =
+        CoverageCollector.newBuilder()
+            .reportDirectory(tempDir.getAbsolutePath())
+            .printStream(captured::add)
+            .build();
+
+    coverageCollector.collectTestRunCoverage(
+        GenerateReportFixture.class,
+        "shouldGenerateReport",
+        null,
+        createProcessCoverageTestData("generate-report-process", "genTask"));
+
+    // when
+    final CoverageReport report = coverageCollector.generateReport(GenerateReportFixture.class);
+
+    // then: print stream contains the suite name, process id, coverage percentage and HTML link
+    assertThat(captured).hasSize(1);
+    final String message = captured.get(0);
+    assertThat(message).contains(GenerateReportFixture.class.getName());
+    assertThat(message).contains("generate-report-process");
+    assertThat(message).contains("%");
+    assertThat(message).contains("report.html");
+
+    // and the returned aggregated report includes the fixture suite
+    assertThat(report.getSuites())
+        .anySatisfy(
+            suite -> assertThat(suite.getId()).isEqualTo(GenerateReportFixture.class.getName()));
+  }
+
+  @Test
+  void shouldGenerateReportAndWriteJsonFile() throws Exception {
+    // given: pre-create the static resources directory so installReportDependencies is a no-op
+    new File(tempDir, "coverage/static").mkdirs();
+
+    final CoverageCollector coverageCollector =
+        CoverageCollector.newBuilder().reportDirectory(tempDir.getAbsolutePath()).build();
+
+    coverageCollector.collectTestRunCoverage(
+        GenerateReportJsonFixture.class,
+        "shouldWriteJson",
+        null,
+        createProcessCoverageTestData("json-fixture-process", "jsonTask"));
+
+    // when
+    coverageCollector.generateReport(GenerateReportJsonFixture.class);
+
+    // then: a report.json file is written to the temp directory
+    final File reportJson = new File(tempDir, "report.json");
+    assertThat(reportJson).exists();
+
+    final String json = new java.lang.String(java.nio.file.Files.readAllBytes(reportJson.toPath()));
+    assertThat(json).contains("\"suites\"");
+    assertThat(json).contains(GenerateReportJsonFixture.class.getName());
+    assertThat(json).contains("shouldWriteJson");
+  }
+
   private CoverageTestData createProcessCoverageTestData(
       final String processDefinitionId, final String completedElementId) {
     final ProcessInstance processInstance = mock(ProcessInstance.class);
@@ -284,3 +352,7 @@ final class NestedCollectorFixture {
 
   static final class SecondNestedSuiteTest {}
 }
+
+final class GenerateReportFixture {}
+
+final class GenerateReportJsonFixture {}
