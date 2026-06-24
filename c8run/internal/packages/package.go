@@ -385,8 +385,8 @@ var zstdNativeOsPrefixes = []string{
 	"linux/", "darwin/", "win/", "aix/", "freebsd/",
 }
 
-// isZstdNativeEntry reports whether a ZIP entry name is a zstd-jni native lib.
-// These live under <os>/<arch>/ directories and end with a native extension.
+// isZstdNativeEntry reports whether a ZIP entry belongs to zstd-jni's
+// platform-specific native directory trees (e.g. linux/amd64/, darwin/x86_64/, win/amd64/).
 func isZstdNativeEntry(name string) bool {
 	for _, prefix := range zstdNativeOsPrefixes {
 		if strings.HasPrefix(name, prefix) {
