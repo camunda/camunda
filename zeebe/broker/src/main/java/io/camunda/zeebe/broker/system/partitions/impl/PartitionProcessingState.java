@@ -126,7 +126,8 @@ public class PartitionProcessingState {
         state.name(),
         StandardCharsets.UTF_8,
         StandardOpenOption.DSYNC,
-        StandardOpenOption.CREATE);
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING);
   }
 
   private void initExportingState() {
@@ -138,7 +139,7 @@ public class PartitionProcessingState {
         final var state =
             Files.readString(
                 getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
-        if (state == null || state.isEmpty() || state.isBlank()) {
+        if (state.isBlank()) {
           // Backwards compatibility. If the file exists, it is paused.
           exporterPhase = ExporterPhase.PAUSED;
           return;
