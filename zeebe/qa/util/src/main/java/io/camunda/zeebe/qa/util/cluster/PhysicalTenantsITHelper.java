@@ -8,8 +8,10 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import java.net.URI;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -80,6 +82,51 @@ public final class PhysicalTenantsITHelper {
           }
         });
     return broker;
+  }
+
+  /**
+   * Seeds a basic-auth per-PT admin {@code <tenantId>-admin} user (matching the {@code
+   * defaultRoles.admin} assignment {@link #configure} already sets) into the given tenant's own
+   * {@code security.initialization}, so the user can authenticate via that tenant's REST path once
+   * authorizations and basic auth are enabled. Basic-auth specific (an OIDC variant would seed a
+   * mapping rule instead). Additive to {@link #configure}; call both.
+   */
+  public TestStandaloneBroker seedBasicAuthAdminUser(
+      final TestStandaloneBroker broker, final String tenantId, final String password) {
+    final String username = adminUsername(tenantId);
+    broker.withPtConfig(
+        tenantId,
+        camunda ->
+            camunda
+                .getSecurity()
+                .getInitialization()
+                .setUsers(
+                    List.of(
+                        new ConfiguredUser(
+                            username, password, username, username + "@example.com"))));
+    return broker;
+  }
+
+  /** The conventional admin username for a physical tenant: {@code <tenantId>-admin}. */
+  public String adminUsername(final String tenantId) {
+    return tenantId + "-admin";
+  }
+
+  /**
+   * Builds an authenticated, REST-first client for the basic-auth per-PT admin user (see {@link
+   * #seedBasicAuthAdminUser}). The client is scoped to the tenant's REST path and authenticates
+   * over basic auth.
+   */
+  public CamundaClientBuilder newBasicAuthAdminClientBuilder(
+      final TestGateway<?> gateway, final String tenantId, final String password) {
+    return newClientBuilder(gateway, tenantId)
+        .preferRestOverGrpc(true)
+        .credentialsProvider(
+            new BasicAuthCredentialsProviderBuilder()
+                .applyEnvironmentOverrides(false)
+                .username(adminUsername(tenantId))
+                .password(password)
+                .build());
   }
 
   public CamundaClientBuilder newClientBuilder(
