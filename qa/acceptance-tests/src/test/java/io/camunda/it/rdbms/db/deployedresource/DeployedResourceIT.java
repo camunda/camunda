@@ -43,7 +43,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final DeployedResourceDbModel resource = DeployedResourceFixtures.createRandomized(b -> b);
     createAndSaveDeployedResource(rdbmsWriters, resource);
@@ -70,7 +70,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final DeployedResourceDbModel resource = DeployedResourceFixtures.createRandomized(b -> b);
     createAndSaveDeployedResource(rdbmsWriters, resource);
@@ -98,7 +98,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final DeployedResourceDbModel resource = DeployedResourceFixtures.createRandomized(b -> b);
     createAndSaveDeployedResource(rdbmsWriters, resource);
@@ -126,7 +126,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final String uniqueType = "FORM-" + nextKey();
     final DeployedResourceDbModel resource =
@@ -154,7 +154,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final Long deploymentKey = nextKey();
     final DeployedResourceDbModel resource =
@@ -182,7 +182,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final Long deploymentKey = nextKey();
     final DeployedResourceDbModel resource =
@@ -214,7 +214,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final String versionTag = "v-unique-" + nextKey();
     final DeployedResourceDbModel resource =
@@ -242,7 +242,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final String tenantId = "tenant-unique-" + nextKey();
     final DeployedResourceDbModel resource =
@@ -270,7 +270,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final DeployedResourceDbModel resource = DeployedResourceFixtures.createRandomized(b -> b);
     createAndSaveDeployedResource(rdbmsWriters, resource);
@@ -306,7 +306,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final Long deploymentKey = nextKey();
     createAndSaveRandomDeployedResources(rdbmsWriters, b -> b.deploymentKey(deploymentKey));
@@ -332,7 +332,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final Long deploymentKey = nextKey();
     createAndSaveRandomDeployedResources(rdbmsWriters, 120, b -> b.deploymentKey(deploymentKey));
@@ -359,7 +359,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final Long deploymentKey = nextKey();
     createAndSaveRandomDeployedResources(rdbmsWriters, b -> b.deploymentKey(deploymentKey));
@@ -402,7 +402,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final Long deploymentKey = nextKey();
     final var resource1 =
@@ -437,7 +437,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final DeployedResourceDbModel resource = createAndSaveDeployedResource(rdbmsWriters, b -> b);
     createAndSaveRandomDeployedResources(rdbmsWriters);
@@ -461,7 +461,7 @@ public class DeployedResourceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
 
     final DeployedResourceDbModel resource = createAndSaveDeployedResource(rdbmsWriters, b -> b);
     createAndSaveRandomDeployedResources(rdbmsWriters);

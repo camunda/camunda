@@ -7,12 +7,14 @@
  */
 package io.camunda.it.rdbms.db.decisioninstance;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAndSaveDecisionInstance;
 import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAndSaveRandomDecisionInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
@@ -41,7 +43,8 @@ public class DecisionInstanceSpecificFilterIT {
   public static final OffsetDateTime NOW = OffsetDateTime.now();
   public static final OffsetDateTime THEN = OffsetDateTime.parse("2020-01-01T00:00:00Z");
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
   private DecisionInstanceDbReader decisionInstanceReader;
 
@@ -49,8 +52,9 @@ public class DecisionInstanceSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
     rdbmsWriters = rdbmsService.createWriter(0L);
-    decisionInstanceReader = rdbmsService.getDecisionInstanceReader("default");
+    decisionInstanceReader = rdbmsService.getDecisionInstanceReader();
 
     final var decisionDefinitionKey = nextKey();
     final var decisionDefinition =

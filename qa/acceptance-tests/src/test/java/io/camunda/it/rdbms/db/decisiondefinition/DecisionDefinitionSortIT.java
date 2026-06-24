@@ -174,7 +174,7 @@ public class DecisionDefinitionSortIT {
       final Function<Builder, ObjectBuilder<DecisionDefinitionSort>> sortBuilder,
       final Comparator<DecisionDefinitionEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionDefinitionDbReader reader = rdbmsService.getDecisionDefinitionReader("default");
+    final DecisionDefinitionDbReader reader = rdbmsService.getDecisionDefinitionReader();
 
     final var requirementsKey = nextKey();
     createAndSaveRandomDecisionDefinitions(

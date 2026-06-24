@@ -121,7 +121,7 @@ public class JobSortIT {
       final Function<Builder, ObjectBuilder<JobSort>> sortBuilder,
       final Comparator<JobEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader reader = rdbmsService.getJobReader("default");
+    final JobDbReader reader = rdbmsService.getJobReader();
 
     final var processDefinitionId = nextStringId();
     createAndSaveRandomJobs(rdbmsWriters, b -> b.processDefinitionId(processDefinitionId));

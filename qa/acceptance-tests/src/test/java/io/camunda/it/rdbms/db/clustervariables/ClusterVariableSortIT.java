@@ -105,7 +105,7 @@ public class ClusterVariableSortIT {
 
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()

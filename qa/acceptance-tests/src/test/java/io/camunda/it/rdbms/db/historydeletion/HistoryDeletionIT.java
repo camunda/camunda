@@ -40,7 +40,7 @@ public class HistoryDeletionIT {
   void setUp() {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    historyDeletionReader = rdbmsService.getHistoryDeletionDbReader("default");
+    historyDeletionReader = rdbmsService.getHistoryDeletionDbReader();
     historyDeletionWriter = rdbmsWriters.getHistoryDeletionWriter();
   }
 

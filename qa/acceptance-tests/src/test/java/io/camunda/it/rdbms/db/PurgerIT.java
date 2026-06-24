@@ -42,15 +42,12 @@ public class PurgerIT {
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
 
     Assertions.assertThat(
-            rdbmsService
-                .getProcessInstanceReader("default")
-                .search(ProcessInstanceQuery.of(b -> b))
-                .total())
+            rdbmsService.getProcessInstanceReader().search(ProcessInstanceQuery.of(b -> b)).total())
         .isZero();
 
     Assertions.assertThat(
             rdbmsService
-                .getProcessDefinitionReader("default")
+                .getProcessDefinitionReader()
                 .search(ProcessDefinitionQuery.of(b -> b))
                 .total())
         .isZero();

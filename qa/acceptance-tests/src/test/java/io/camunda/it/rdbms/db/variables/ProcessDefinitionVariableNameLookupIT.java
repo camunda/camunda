@@ -43,7 +43,7 @@ public class ProcessDefinitionVariableNameLookupIT {
     assertThat(
             testApplication
                 .getRdbmsService()
-                .getVariableReader("default")
+                .getVariableReader()
                 .findLookupVariableNames(procDefKey))
         .containsExactly(varName);
   }
@@ -65,7 +65,7 @@ public class ProcessDefinitionVariableNameLookupIT {
     assertThat(
             testApplication
                 .getRdbmsService()
-                .getVariableReader("default")
+                .getVariableReader()
                 .findLookupVariableNames(procDefKey))
         .containsExactlyInAnyOrder(varNameA, varNameB);
   }
@@ -111,7 +111,7 @@ public class ProcessDefinitionVariableNameLookupIT {
     assertThat(
             testApplication
                 .getRdbmsService()
-                .getVariableReader("default")
+                .getVariableReader()
                 .findLookupVariableNames(procDefKey))
         .containsExactly(varName);
   }
@@ -139,7 +139,7 @@ public class ProcessDefinitionVariableNameLookupIT {
     assertThat(
             testApplication
                 .getRdbmsService()
-                .getVariableReader("default")
+                .getVariableReader()
                 .findLookupVariableNames(procDefKey))
         .isEmpty();
   }

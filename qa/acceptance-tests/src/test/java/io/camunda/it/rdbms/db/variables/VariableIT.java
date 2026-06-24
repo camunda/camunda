@@ -49,7 +49,7 @@ public class VariableIT {
     final var instance =
         testApplication
             .getRdbmsService()
-            .getVariableReader("default")
+            .getVariableReader()
             .findOne(randomizedVariable.variableKey());
 
     assertThat(instance).isNotNull();
@@ -71,8 +71,7 @@ public class VariableIT {
     rdbmsWriters.getVariableWriter().update(updatedVariable);
     rdbmsWriters.flush();
 
-    final var instance =
-        rdbmsService.getVariableReader("default").findOne(randomizedVariable.variableKey());
+    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(updatedVariable, instance);
@@ -87,8 +86,7 @@ public class VariableIT {
         VariableFixtures.createRandomized(b -> b.value(bigValue));
     createAndSaveVariable(rdbmsService, randomizedVariable);
 
-    final var instance =
-        rdbmsService.getVariableReader("default").findOne(randomizedVariable.variableKey());
+    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
 
     assertThat(instance).isNotNull();
     assertThat(instance.isPreview()).isTrue();
@@ -106,8 +104,7 @@ public class VariableIT {
         VariableFixtures.createRandomized(b -> b.value(bigValue));
     createAndSaveVariable(rdbmsService, randomizedVariable);
 
-    final var instance =
-        rdbmsService.getVariableReader("default").findOne(randomizedVariable.variableKey());
+    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
 
     assertThat(instance).as("variable is not null").isNotNull();
     assertThat(instance.isPreview()).as("variable is preview").isTrue();
@@ -127,7 +124,7 @@ public class VariableIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader("default")
+            .getVariableReader()
             .search(
                 new VariableQuery(
                     new VariableFilter.Builder()
@@ -157,7 +154,7 @@ public class VariableIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader("default")
+            .getVariableReader()
             .search(
                 VariableQuery.of(b -> b),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
@@ -185,7 +182,7 @@ public class VariableIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader("default")
+            .getVariableReader()
             .search(
                 VariableQuery.of(b -> b),
                 CommonFixtures.resourceAccessChecksFromTenantIds(randomizedVariable.tenantId()));
@@ -209,7 +206,7 @@ public class VariableIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader("default")
+            .getVariableReader()
             .search(
                 new VariableQuery(
                     new VariableFilter.Builder().names(varName).build(),
@@ -231,7 +228,7 @@ public class VariableIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader("default")
+            .getVariableReader()
             .search(
                 new VariableQuery(
                     new VariableFilter.Builder().names(varName).build(),
@@ -254,7 +251,7 @@ public class VariableIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader("default")
+            .getVariableReader()
             .search(
                 new VariableQuery(
                     new VariableFilter.Builder().names(varName).build(),
@@ -269,7 +266,7 @@ public class VariableIT {
   @TestTemplate
   public void shouldFindVariableWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final VariableDbReader variableReader = rdbmsService.getVariableReader("default");
+    final VariableDbReader variableReader = rdbmsService.getVariableReader();
 
     final String varName =
         VariableFixtures.createAndSaveRandomVariablesWithFixedName(rdbmsService).getLast().name();
@@ -298,7 +295,7 @@ public class VariableIT {
   @TestTemplate
   public void shouldFindVariableWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final VariableDbReader variableReader = rdbmsService.getVariableReader("default");
+    final VariableDbReader variableReader = rdbmsService.getVariableReader();
 
     final String varName =
         VariableFixtures.createAndSaveRandomVariablesWithFixedName(rdbmsService).getLast().name();
@@ -334,7 +331,7 @@ public class VariableIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final VariableDbReader reader = rdbmsService.getVariableReader("default");
+    final VariableDbReader reader = rdbmsService.getVariableReader();
 
     final var tenantId = nextStringId();
     final var item1 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
@@ -369,7 +366,7 @@ public class VariableIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final VariableDbReader reader = rdbmsService.getVariableReader("default");
+    final VariableDbReader reader = rdbmsService.getVariableReader();
 
     final var tenantId = nextStringId();
     final var item1 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));

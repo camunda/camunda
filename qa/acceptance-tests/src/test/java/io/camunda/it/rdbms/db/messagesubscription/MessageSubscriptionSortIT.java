@@ -56,7 +56,7 @@ public class MessageSubscriptionSortIT {
           sortBuilder,
       final Comparator<MessageSubscriptionEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader("default");
+    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader();
 
     final var messageName = nextStringId();
     MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(

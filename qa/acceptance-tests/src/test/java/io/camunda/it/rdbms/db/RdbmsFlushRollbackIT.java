@@ -58,7 +58,7 @@ public class RdbmsFlushRollbackIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID_BASIC_ROLLBACK);
     final FlowNodeInstanceDbReader flowNodeInstanceReader =
-        rdbmsService.getFlowNodeInstanceReader("default");
+        rdbmsService.getFlowNodeInstanceReader();
 
     final var duplicateAuditLogKey = "atomicity-duplicate-key";
     final var firstAuditLog = createRandomized(b -> b.auditLogKey(duplicateAuditLogKey));
@@ -198,7 +198,7 @@ public class RdbmsFlushRollbackIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID_HOOK);
     final FlowNodeInstanceDbReader flowNodeInstanceReader =
-        rdbmsService.getFlowNodeInstanceReader("default");
+        rdbmsService.getFlowNodeInstanceReader();
 
     final AtomicInteger hookCallCount = new AtomicInteger(0);
     rdbmsWriters
@@ -256,7 +256,7 @@ public class RdbmsFlushRollbackIT {
     final ExporterPositionService exporterPositionService =
         rdbmsWriters.getExporterPositionService();
     final FlowNodeInstanceDbReader flowNodeInstanceReader =
-        rdbmsService.getFlowNodeInstanceReader("default");
+        rdbmsService.getFlowNodeInstanceReader();
 
     // Seed the exporter position
     exporterPositionService.createWithoutQueue(
@@ -388,7 +388,7 @@ public class RdbmsFlushRollbackIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID_DUPLICATE_INSERT);
     final FlowNodeInstanceDbReader flowNodeInstanceReader =
-        rdbmsService.getFlowNodeInstanceReader("default");
+        rdbmsService.getFlowNodeInstanceReader();
 
     final var flowNodeInstance = FlowNodeInstanceFixtures.createRandomized(b -> b);
 

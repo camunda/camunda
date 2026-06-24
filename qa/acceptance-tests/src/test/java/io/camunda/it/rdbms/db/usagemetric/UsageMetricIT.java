@@ -104,8 +104,8 @@ public class UsageMetricIT {
   void setUp() {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    usageMetricReader = rdbmsService.getUsageMetricReader("default");
-    usageMetricTUDbReader = rdbmsService.getUsageMetricTUReader("default");
+    usageMetricReader = rdbmsService.getUsageMetricReader();
+    usageMetricTUDbReader = rdbmsService.getUsageMetricTUReader();
     usageMetricWriter = rdbmsWriters.getUsageMetricWriter();
     usageMetricTUWriter = rdbmsWriters.getUsageMetricTUWriter();
   }

@@ -50,7 +50,7 @@ public class ClusterVariableIT {
     final var instance =
         testApplication
             .getRdbmsService()
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .getTenantScopedClusterVariable(
                 randomizedVariable.name(),
                 randomizedVariable.tenantId(),
@@ -72,7 +72,7 @@ public class ClusterVariableIT {
     final var instance =
         testApplication
             .getRdbmsService()
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .getGloballyScopedClusterVariable(
                 randomizedVariable.name(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
@@ -96,7 +96,7 @@ public class ClusterVariableIT {
 
     final var instance =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .getTenantScopedClusterVariable(
                 randomizedVariable.name(),
                 randomizedVariable.tenantId(),
@@ -121,7 +121,7 @@ public class ClusterVariableIT {
 
     final var instance =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .getGloballyScopedClusterVariable(
                 randomizedVariable.name(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
@@ -144,7 +144,7 @@ public class ClusterVariableIT {
 
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
@@ -169,7 +169,7 @@ public class ClusterVariableIT {
 
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder().values("value").scopes("GLOBAL").build(),
@@ -192,7 +192,7 @@ public class ClusterVariableIT {
 
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
@@ -219,7 +219,7 @@ public class ClusterVariableIT {
 
     final var searchResult =
         rdbmsService
-            .getClusterVariableReader("default")
+            .getClusterVariableReader()
             .search(
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
@@ -238,8 +238,7 @@ public class ClusterVariableIT {
   public void shouldFindClusterVariableWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final ClusterVariableDbReader clusterVariableReader =
-        rdbmsService.getClusterVariableReader("default");
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
     final String tenantId = CommonFixtures.nextStringId();
     final String variableName = CommonFixtures.nextStringId();
@@ -275,8 +274,7 @@ public class ClusterVariableIT {
   public void shouldFindClusterVariableWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final ClusterVariableDbReader clusterVariableReader =
-        rdbmsService.getClusterVariableReader("default");
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
     final String tenantId = CommonFixtures.nextStringId();
     ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
@@ -316,8 +314,7 @@ public class ClusterVariableIT {
   public void shouldUpdateTenantClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ClusterVariableDbReader clusterVariableReader =
-        rdbmsService.getClusterVariableReader("default");
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
     final ClusterVariableDbModel clusterVariable =
         ClusterVariableFixtures.createRandomTenantClusterVariable(generateRandomString(100));
@@ -348,8 +345,7 @@ public class ClusterVariableIT {
   public void shouldUpdateGlobalClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ClusterVariableDbReader clusterVariableReader =
-        rdbmsService.getClusterVariableReader("default");
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
     final ClusterVariableDbModel clusterVariable =
         ClusterVariableFixtures.createRandomGlobalClusterVariable(generateRandomString(100));
@@ -379,8 +375,7 @@ public class ClusterVariableIT {
   public void shouldDeleteTenantClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ClusterVariableDbReader clusterVariableReader =
-        rdbmsService.getClusterVariableReader("default");
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
     final ClusterVariableDbModel clusterVariable =
         ClusterVariableFixtures.createRandomTenantClusterVariable(generateRandomString(100));
@@ -416,8 +411,7 @@ public class ClusterVariableIT {
   public void shouldDeleteGlobalClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ClusterVariableDbReader clusterVariableReader =
-        rdbmsService.getClusterVariableReader("default");
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
     final ClusterVariableDbModel clusterVariable =
         ClusterVariableFixtures.createRandomGlobalClusterVariable(generateRandomString(100));

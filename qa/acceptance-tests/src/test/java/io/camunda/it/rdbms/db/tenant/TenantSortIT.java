@@ -83,7 +83,7 @@ public class TenantSortIT {
   public void shouldSortByNameAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final TenantDbReader reader = rdbmsService.getTenantReader("default");
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
     // create 20 tenants with unique, ordered names and collect their IDs for isolated filtering
     // (aggregator approach can't be used as name is the sort field and must vary)
@@ -116,7 +116,7 @@ public class TenantSortIT {
       final Function<TenantDbModel.Builder, TenantDbModel.Builder> aggregatorBuilderFunction,
       final Function<TenantFilter.Builder, TenantFilter.Builder> aggregatorFilterFunction) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final TenantDbReader reader = rdbmsService.getTenantReader("default");
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
     aggregatorBuilderFunction.apply(new TenantDbModel.Builder().name("test"));
     createAndSaveRandomTenants(rdbmsWriters, aggregatorBuilderFunction);

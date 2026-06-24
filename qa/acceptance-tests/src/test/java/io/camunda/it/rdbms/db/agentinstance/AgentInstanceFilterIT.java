@@ -167,7 +167,7 @@ public class AgentInstanceFilterIT {
       final CamundaRdbmsTestApplication testApplication, final AgentInstanceFilter filter) {
     return testApplication
         .getRdbmsService()
-        .getAgentInstanceDbReader("default")
+        .getAgentInstanceDbReader()
         .search(
             new AgentInstanceQuery(
                 filter, AgentInstanceSort.of(b -> b), SearchQueryPage.of(b -> b)),

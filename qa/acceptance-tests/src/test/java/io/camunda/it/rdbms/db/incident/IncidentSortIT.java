@@ -139,7 +139,7 @@ public class IncidentSortIT {
       final Function<Builder, ObjectBuilder<IncidentSort>> sortBuilder,
       final Comparator<IncidentEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader reader = rdbmsService.getIncidentReader("default");
+    final IncidentDbReader reader = rdbmsService.getIncidentReader();
 
     final var key = nextKey();
     createAndSaveRandomIncidents(rdbmsWriters, b -> b.flowNodeInstanceKey(key));

@@ -71,7 +71,7 @@ public class ManualUserDatabaseIT {
     rdbmsWriter.flush();
 
     // Verify we can read the data back
-    final var reader = rdbmsService.getProcessInstanceReader("default");
+    final var reader = rdbmsService.getProcessInstanceReader();
     final var result = reader.findOne(processInstanceKey);
 
     assertThat(result).isPresent();

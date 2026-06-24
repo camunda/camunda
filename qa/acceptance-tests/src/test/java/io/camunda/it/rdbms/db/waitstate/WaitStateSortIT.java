@@ -109,7 +109,7 @@ public class WaitStateSortIT {
       final Function<Builder, ObjectBuilder<WaitStateSort>> sortBuilder,
       final Comparator<WaitStateEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final WaitStateDbReader reader = rdbmsService.getWaitStateReader("default");
+    final WaitStateDbReader reader = rdbmsService.getWaitStateReader();
 
     final var processInstanceKey = nextKey();
     createAndSaveRandomWaitStates(

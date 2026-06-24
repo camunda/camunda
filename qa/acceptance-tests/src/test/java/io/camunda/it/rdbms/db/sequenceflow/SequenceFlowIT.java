@@ -39,7 +39,7 @@ public class SequenceFlowIT {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
 
     // when
     final var sequenceFlow = createAndSaveRandomSequenceFlow(rdbmsWriter, b -> b);
@@ -69,7 +69,7 @@ public class SequenceFlowIT {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
 
     final var sequenceFlow = createAndSaveRandomSequenceFlow(rdbmsWriter, b -> b);
     createAndSaveRandomSequenceFlows(rdbmsWriter);
@@ -102,7 +102,7 @@ public class SequenceFlowIT {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
 
     final var sequenceFlow =
         createAndSaveRandomSequenceFlow(rdbmsWriter, b -> b.processInstanceKey(42L));
@@ -127,7 +127,7 @@ public class SequenceFlowIT {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
 
     final var sequenceFlow =
         createAndSaveRandomSequenceFlow(rdbmsWriter, b -> b.processInstanceKey(42L));
@@ -151,7 +151,7 @@ public class SequenceFlowIT {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
     final var sequenceFlowWriter = rdbmsWriter.getSequenceFlowWriter();
 
     final var sequenceFlow = createRandomized(b -> b);
@@ -175,7 +175,7 @@ public class SequenceFlowIT {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
     final var sequenceFlowWriter = rdbmsWriter.getSequenceFlowWriter();
     final var dbModel = createRandomized(b -> b);
     sequenceFlowWriter.create(dbModel);
@@ -200,7 +200,7 @@ public class SequenceFlowIT {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
     final var sequenceFlowWriter = rdbmsWriter.getSequenceFlowWriter();
 
     final var dbModel = createRandomized(b -> b);
@@ -235,7 +235,7 @@ public class SequenceFlowIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
     final var sequenceFlowWriter = rdbmsWriters.getSequenceFlowWriter();
 
     final var item1 = createRandomized(b -> b);
@@ -268,7 +268,7 @@ public class SequenceFlowIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader("default");
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
     final var sequenceFlowWriter = rdbmsWriters.getSequenceFlowWriter();
 
     final var item1 = createRandomized(b -> b);

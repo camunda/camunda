@@ -35,11 +35,10 @@ public class BatchOperationHistoryCleanupIT {
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     final var rdbmsWriter = rdbmsService.createWriter(config);
     final var historyCleanupService =
-        new HistoryCleanupService(
-            config, rdbmsWriter, rdbmsService.getProcessInstanceReader("default"));
-    final var batchOperationReader = rdbmsService.getBatchOperationReader("default");
-    final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader("default");
-    final var auditLogReader = rdbmsService.getAuditLogReader("default");
+        new HistoryCleanupService(config, rdbmsWriter, rdbmsService.getProcessInstanceReader());
+    final var batchOperationReader = rdbmsService.getBatchOperationReader();
+    final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
+    final var auditLogReader = rdbmsService.getAuditLogReader();
 
     final var batchOperation =
         BatchOperationFixtures.createAndSaveBatchOperation(rdbmsWriter, b -> b);
@@ -80,11 +79,10 @@ public class BatchOperationHistoryCleanupIT {
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     final var rdbmsWriter = rdbmsService.createWriter(config);
     final var historyCleanupService =
-        new HistoryCleanupService(
-            config, rdbmsWriter, rdbmsService.getProcessInstanceReader("default"));
-    final var batchOperationReader = rdbmsService.getBatchOperationReader("default");
-    final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader("default");
-    final var auditLogReader = rdbmsService.getAuditLogReader("default");
+        new HistoryCleanupService(config, rdbmsWriter, rdbmsService.getProcessInstanceReader());
+    final var batchOperationReader = rdbmsService.getBatchOperationReader();
+    final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
+    final var auditLogReader = rdbmsService.getAuditLogReader();
 
     final var batchOperation =
         BatchOperationFixtures.createAndSaveBatchOperation(rdbmsWriter, b -> b);

@@ -7,11 +7,13 @@
  */
 package io.camunda.it.rdbms.db.tenant;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveRandomTenants;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
@@ -40,7 +42,8 @@ public class TenantSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
   private TenantDbReader tenantReader;
 
@@ -48,8 +51,9 @@ public class TenantSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
     rdbmsWriters = rdbmsService.createWriter(0L);
-    tenantReader = rdbmsService.getTenantReader("default");
+    tenantReader = rdbmsService.getTenantReader();
   }
 
   @Test

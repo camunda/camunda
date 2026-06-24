@@ -113,7 +113,7 @@ public class DeployedResourceSortIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
     createAndSaveRandomDeployedResources(rdbmsWriters, 20, b -> b.deploymentKey(deploymentKey));
 
-    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader("default");
+    final DeployedResourceDbReader reader = rdbmsService.getResourceDbReader();
     final var results =
         reader
             .search(

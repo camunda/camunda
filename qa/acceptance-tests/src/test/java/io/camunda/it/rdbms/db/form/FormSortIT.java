@@ -32,7 +32,7 @@ public class FormSortIT {
   @TestTemplate
   public void shouldSortFormsByVersionAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final FormDbReader formReader = rdbmsService.getFormReader("default");
+    final FormDbReader formReader = rdbmsService.getFormReader();
 
     final String id = FormFixtures.nextStringId();
     createAndSaveRandomForms(rdbmsService, id);
@@ -51,7 +51,7 @@ public class FormSortIT {
   @TestTemplate
   public void shouldSortFormsByVersionDesc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final FormDbReader formReader = rdbmsService.getFormReader("default");
+    final FormDbReader formReader = rdbmsService.getFormReader();
 
     final String id = FormFixtures.nextStringId();
     createAndSaveRandomForms(rdbmsService, id);

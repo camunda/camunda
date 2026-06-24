@@ -120,7 +120,7 @@ public class AuditLogSortIT {
       final Function<Builder, ObjectBuilder<AuditLogSort>> sortBuilder,
       final Comparator<AuditLogEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader reader = rdbmsService.getAuditLogReader("default");
+    final AuditLogDbReader reader = rdbmsService.getAuditLogReader();
 
     final var actorId = nextStringId();
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.actorId(actorId));

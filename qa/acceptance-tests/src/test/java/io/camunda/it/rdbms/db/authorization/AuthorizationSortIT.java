@@ -122,7 +122,7 @@ public class AuthorizationSortIT {
       final Function<Builder, ObjectBuilder<AuthorizationSort>> sortBuilder,
       final Comparator<AuthorizationEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader reader = rdbmsService.getAuthorizationReader("default");
+    final AuthorizationDbReader reader = rdbmsService.getAuthorizationReader();
 
     final var requirementsKey = nextKey();
     createAndSaveRandomAuthorizations(rdbmsWriters, b -> b);

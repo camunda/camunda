@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
@@ -49,52 +48,39 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.Map;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.Test;
 
-class RdbmsWriterFactoryTenantRoutingTest {
+class RdbmsWriterFactoryTest {
 
   @Test
-  void shouldRouteToBundleForRequestedTenant() {
+  void shouldCreateWriterFromBundle() {
     // given
-    final var defaultBundle = newBundle();
-    final var tenantABundle = newBundle();
-    final var factory =
-        new RdbmsWriterFactory(
-            Map.of("default", defaultBundle, "tenantA", tenantABundle), new SimpleMeterRegistry());
+    final var factory = new RdbmsWriterFactory(newBundle(), new SimpleMeterRegistry());
 
     // when
-    final var defaultWriters =
+    final var writers =
         factory.createWriter(new RdbmsWriterConfig.Builder().partitionId(0).build());
-    final var tenantAWriters =
-        factory.createWriter(
-            new RdbmsWriterConfig.Builder().partitionId(0).physicalTenantId("tenantA").build());
 
     // then
-    assertThat(defaultWriters).isNotNull();
-    assertThat(tenantAWriters).isNotNull();
-    assertThat(defaultWriters).isNotSameAs(tenantAWriters);
-    assertThat(defaultWriters.getExecutionQueue()).isNotSameAs(tenantAWriters.getExecutionQueue());
+    assertThat(writers).isNotNull();
   }
 
   @Test
-  void shouldRejectUnknownTenant() {
+  void shouldCreateIsolatedWritersPerCall() {
     // given
-    final var factory =
-        new RdbmsWriterFactory(Map.of("default", newBundle()), new SimpleMeterRegistry());
+    final var factory = new RdbmsWriterFactory(newBundle(), new SimpleMeterRegistry());
 
-    // when / then
-    assertThatThrownBy(
-            () ->
-                factory.createWriter(
-                    new RdbmsWriterConfig.Builder()
-                        .partitionId(0)
-                        .physicalTenantId("unknown")
-                        .build()))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("unknown")
-        .hasMessageContaining("default");
+    // when
+    final var writersPartition0 =
+        factory.createWriter(new RdbmsWriterConfig.Builder().partitionId(0).build());
+    final var writersPartition1 =
+        factory.createWriter(new RdbmsWriterConfig.Builder().partitionId(1).build());
+
+    // then
+    assertThat(writersPartition0).isNotSameAs(writersPartition1);
+    assertThat(writersPartition0.getExecutionQueue())
+        .isNotSameAs(writersPartition1.getExecutionQueue());
   }
 
   private static RdbmsMapperBundle newBundle() {

@@ -8,7 +8,6 @@
 package io.camunda.application.commons.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -48,36 +47,19 @@ class MyBatisConfigurationPerTenantIT {
   }
 
   @Test
-  void shouldRouteWriterFactoryByPhysicalTenantId() throws Exception {
+  void shouldBuildIsolatedWritersPerTenant() throws Exception {
     try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
-      final var writerFactory = fixture.writerFactory();
-
       final var defaultWriters =
-          writerFactory.createWriter(new RdbmsWriterConfig.Builder().partitionId(1).build());
+          fixture
+              .writerFactory(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .createWriter(new RdbmsWriterConfig.Builder().partitionId(1).build());
       final var tenantBWriters =
-          writerFactory.createWriter(
-              new RdbmsWriterConfig.Builder().partitionId(1).physicalTenantId("tenantb").build());
+          fixture
+              .writerFactory("tenantb")
+              .createWriter(new RdbmsWriterConfig.Builder().partitionId(1).build());
 
       assertThat(defaultWriters.getExecutionQueue())
           .isNotSameAs(tenantBWriters.getExecutionQueue());
-    }
-  }
-
-  @Test
-  void shouldRejectUnknownPhysicalTenantId() throws Exception {
-    try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
-      final var writerFactory = fixture.writerFactory();
-
-      assertThatThrownBy(
-              () ->
-                  writerFactory.createWriter(
-                      new RdbmsWriterConfig.Builder()
-                          .partitionId(1)
-                          .physicalTenantId("unknown")
-                          .build()))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("unknown")
-          .hasMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     }
   }
 
@@ -114,8 +96,8 @@ class MyBatisConfigurationPerTenantIT {
       java.util.Map<String, io.camunda.db.rdbms.write.RdbmsMapperBundle> bundles)
       implements AutoCloseable {
 
-    RdbmsWriterFactory writerFactory() {
-      return new RdbmsWriterFactory(bundles, new SimpleMeterRegistry());
+    RdbmsWriterFactory writerFactory(final String physicalTenantId) {
+      return new RdbmsWriterFactory(bundles.get(physicalTenantId), new SimpleMeterRegistry());
     }
 
     @Override

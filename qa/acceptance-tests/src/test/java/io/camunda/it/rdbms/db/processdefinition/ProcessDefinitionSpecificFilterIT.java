@@ -7,11 +7,13 @@
  */
 package io.camunda.it.rdbms.db.processdefinition;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -31,7 +33,8 @@ import org.springframework.test.context.TestPropertySource;
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class ProcessDefinitionSpecificFilterIT {
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
   private ProcessDefinitionDbReader processDefinitionReader;
 
@@ -39,8 +42,9 @@ public class ProcessDefinitionSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
     rdbmsWriters = rdbmsService.createWriter(0L);
-    processDefinitionReader = rdbmsService.getProcessDefinitionReader("default");
+    processDefinitionReader = rdbmsService.getProcessDefinitionReader();
   }
 
   @ParameterizedTest

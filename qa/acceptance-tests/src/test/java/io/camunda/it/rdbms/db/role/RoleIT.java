@@ -40,7 +40,7 @@ public class RoleIT {
   public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriters, role);
@@ -54,7 +54,7 @@ public class RoleIT {
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriters, role);
@@ -73,7 +73,7 @@ public class RoleIT {
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriters, role);
@@ -91,7 +91,7 @@ public class RoleIT {
   public void shouldFindByName(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriters, role);
@@ -118,7 +118,7 @@ public class RoleIT {
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     createAndSaveRandomRolesWithMembers(rdbmsWriters, b -> b.name("John Doe"));
 
@@ -138,7 +138,7 @@ public class RoleIT {
   public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     createAndSaveRandomRolesWithMembers(rdbmsWriters, 120, b -> b.name("Jane More"));
 
@@ -159,7 +159,7 @@ public class RoleIT {
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRandomRoles(rdbmsWriters);
@@ -181,7 +181,7 @@ public class RoleIT {
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader roleReader = rdbmsService.getRoleReader("default");
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     createAndSaveRandomRoles(rdbmsWriters, b -> b.name("Alice Doe"));
     final var sort = RoleSort.of(s -> s.name().asc());

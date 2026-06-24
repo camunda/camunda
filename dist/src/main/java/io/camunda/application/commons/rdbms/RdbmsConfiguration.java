@@ -14,16 +14,13 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
-import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
-import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
-import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
@@ -74,20 +71,6 @@ public class RdbmsConfiguration {
   public PersistentWebSessionWriter persistentWebSessionWriter(
       final PersistentWebSessionMapper persistentWebSessionMapper) {
     return new PersistentWebSessionWriter(persistentWebSessionMapper);
-  }
-
-  @Bean
-  public ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory(
-      final RdbmsDataSources rdbmsDataSources,
-      final ReplicationStatusMapper replicationStatusMapper) {
-    return new ReplicationLogStatusProviderFactory(
-        rdbmsDataSources.vendorPropertiesFor(DEFAULT_PHYSICAL_TENANT_ID), replicationStatusMapper);
-  }
-
-  @Bean
-  public RdbmsWriterFactory rdbmsWriterFactory(
-      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles, final MeterRegistry meterRegistry) {
-    return new RdbmsWriterFactory(rdbmsMapperBundles, meterRegistry);
   }
 
   @Bean
@@ -154,12 +137,11 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public RdbmsService rdbmsService(
-      final RdbmsWriterFactory rdbmsWriterFactory,
+  public RdbmsServiceFactory rdbmsServiceFactory(
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
       final Map<String, RdbmsTenantReaders> rdbmsTenantReaders,
-      final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
-    return new RdbmsService(
-        rdbmsWriterFactory, rdbmsTenantReaders, replicationLogStatusProviderFactory);
+      final MeterRegistry meterRegistry) {
+    return new RdbmsServiceFactory(rdbmsMapperBundles, rdbmsTenantReaders, meterRegistry);
   }
 
   @Bean

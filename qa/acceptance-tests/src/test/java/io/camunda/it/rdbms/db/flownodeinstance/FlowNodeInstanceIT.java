@@ -47,7 +47,7 @@ public class FlowNodeInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var flowNodeInstance =
         FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(rdbmsWriters);
@@ -60,8 +60,7 @@ public class FlowNodeInstanceIT {
   public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader elementInstanceReader =
-        rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader elementInstanceReader = rdbmsService.getFlowNodeInstanceReader();
 
     final FlowNodeInstanceDbModel original =
         FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(rdbmsWriters, b -> b);
@@ -90,7 +89,7 @@ public class FlowNodeInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var flowNodeInstance =
         FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(rdbmsWriters);
@@ -116,7 +115,7 @@ public class FlowNodeInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var flowNodeInstance =
         FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(rdbmsWriters);
@@ -141,7 +140,7 @@ public class FlowNodeInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var flowNodeInstance =
         FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(rdbmsWriters);
@@ -163,7 +162,7 @@ public class FlowNodeInstanceIT {
   public void shouldFindAllElementInstancePaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionId = nextStringId();
     createAndSaveRandomFlowNodeInstances(
@@ -187,7 +186,7 @@ public class FlowNodeInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionId = nextStringId();
     createAndSaveRandomFlowNodeInstances(
@@ -213,7 +212,7 @@ public class FlowNodeInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionId = nextStringId();
     createAndSaveRandomFlowNodeInstances(
@@ -238,7 +237,7 @@ public class FlowNodeInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances(rdbmsWriters);
     final var instance = FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(rdbmsWriters);
@@ -299,7 +298,7 @@ public class FlowNodeInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceDbReader flowNodeInstanceReader =
-        rdbmsService.getFlowNodeInstanceReader("default");
+        rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -344,7 +343,7 @@ public class FlowNodeInstanceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -386,7 +385,7 @@ public class FlowNodeInstanceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader("default");
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
