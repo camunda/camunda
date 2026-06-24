@@ -130,5 +130,14 @@ public interface AssertVariableInstruction extends TestCaseInstruction {
      * @return the custom prompt or empty if using the preconfigured value
      */
     Optional<String> getCustomPrompt();
+
+    /**
+     * Whether to download and attach Camunda document references found in the variable to the judge
+     * call as structured content blocks. Overrides the preconfigured {@code JudgeConfig}
+     * attach-documents toggle. Optional; defaults to the preconfigured value when omitted.
+     *
+     * @return the attach-documents override or empty if using the preconfigured value
+     */
+    Optional<Boolean> getAttachDocuments();
   }
 }

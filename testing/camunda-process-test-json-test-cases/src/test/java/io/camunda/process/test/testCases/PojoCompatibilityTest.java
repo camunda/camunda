@@ -557,6 +557,21 @@ public class PojoCompatibilityTest {
                             .build())
                     .build())),
         Arguments.of(
+            "assert variable: satisfies judge with attachDocuments",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("ai-agent-process")
+                            .build())
+                    .variableName("invoice")
+                    .satisfiesJudge(
+                        ImmutableJudgeAssertion.builder()
+                            .expectation("The attached invoice PDF shows a total of 100 EUR")
+                            .attachDocuments(true)
+                            .build())
+                    .build())),
+        Arguments.of(
             "assert variable: satisfies expression global",
             singleTestCase(
                 ImmutableAssertVariableInstruction.builder()

@@ -103,7 +103,8 @@ public class AssertVariableInstructionHandler
   private static ProcessInstanceAssert applyJudgeConfigOverrides(
       final ProcessInstanceAssert baseAssert, final JudgeAssertion satisfiesJudge) {
     if (!satisfiesJudge.getThreshold().isPresent()
-        && !satisfiesJudge.getCustomPrompt().isPresent()) {
+        && !satisfiesJudge.getCustomPrompt().isPresent()
+        && !satisfiesJudge.getAttachDocuments().isPresent()) {
       return baseAssert;
     }
     return baseAssert.withJudgeConfig(
@@ -114,6 +115,9 @@ public class AssertVariableInstructionHandler
           }
           if (satisfiesJudge.getCustomPrompt().isPresent()) {
             modified = modified.withCustomPrompt(satisfiesJudge.getCustomPrompt().get());
+          }
+          if (satisfiesJudge.getAttachDocuments().isPresent()) {
+            modified = modified.withAttachDocuments(satisfiesJudge.getAttachDocuments().get());
           }
           return modified;
         });
