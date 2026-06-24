@@ -38,7 +38,7 @@ public final class CopiedRecords {
     final DirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
 
     final UnifiedRecordValue recordValue =
-        UnifiedRecordValue.fromValueType(metadata.getValueType());
+        UnifiedRecordValue.ofValueTypeOrGeneric(metadata.getValueType());
     recordValue.wrap(valueBuffer);
 
     return new CopiedRecord<>(

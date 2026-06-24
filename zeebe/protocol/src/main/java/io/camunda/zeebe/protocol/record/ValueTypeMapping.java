@@ -170,8 +170,18 @@ public final class ValueTypeMapping {
 
   private ValueTypeMapping() {
     types = Collections.unmodifiableMap(loadValueTypes());
+    // Excluded: the SBE synthetic values, plus the event-bridge value types — those are "external"
+    // value types whose record value classes live in the event-bridge modules (not this engine
+    // catalog), so the engine has no mapping for them.
     acceptedValueTypes =
-        EnumSet.complementOf(EnumSet.of(ValueType.SBE_UNKNOWN, ValueType.NULL_VAL));
+        EnumSet.complementOf(
+            EnumSet.of(
+                ValueType.SBE_UNKNOWN,
+                ValueType.NULL_VAL,
+                ValueType.EVENT_BRIDGE_MEMBERSHIP,
+                ValueType.EVENT_BRIDGE_OFFSET,
+                ValueType.EVENT_BRIDGE_REBALANCE,
+                ValueType.EVENT_BRIDGE_TOPIC));
   }
 
   /**

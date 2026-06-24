@@ -19,11 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A mutation of the topic registry on the coordinator partition. The {@code op} field — not the
- * record intent — discriminates register from delete: the stream tags these records with a reused
- * {@link io.camunda.zeebe.protocol.record.ValueType}, so the platform would interpret the intent
- * short under that value type, not as a {@link MetadataIntent}. Carrying the operation in the
- * record keeps replay independent of intent mapping.
+ * A mutation of the topic registry on the coordinator partition. The {@code op} field carries
+ * register-vs-delete in the record itself, so replay does not depend on the record intent.
  */
 public final class TopicRecord extends UnifiedRecordValue {
 

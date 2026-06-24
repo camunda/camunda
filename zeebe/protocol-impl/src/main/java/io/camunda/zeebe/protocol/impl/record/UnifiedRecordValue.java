@@ -150,6 +150,19 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
             .collect(Collectors.toMap(UnifiedRecordValue::valueType, Function.identity())));
   }
 
+  /**
+   * Returns a record value instance suitable for <em>copying</em> a raw value of the given type
+   * through the stream. For value types the engine has a record class for, that class; for value
+   * types it does not (e.g. the external event-bridge value types, whose record classes live in the
+   * event-bridge modules), a generic {@link UnifiedRecordValue} — which still round-trips the value
+   * verbatim because {@link io.camunda.zeebe.msgpack.value.ObjectValue} preserves undeclared
+   * properties. Use this on copy paths; use {@link #fromValueType} when you need the typed class.
+   */
+  public static UnifiedRecordValue ofValueTypeOrGeneric(final ValueType valueType) {
+    final UnifiedRecordValue record = fromValueType(valueType);
+    return record != null ? record : new UnifiedRecordValue(0);
+  }
+
   public static UnifiedRecordValue fromValueType(final ValueType valueType) {
     return switch (valueType) {
       case ValueType.DEPLOYMENT -> new DeploymentRecord();
@@ -225,6 +238,14 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.GLOBAL_LISTENER -> new GlobalListenerRecord();
       case ValueType.AGENT_HISTORY -> new AgentHistoryRecord();
       case ValueType.AGENT_INSTANCE -> new AgentInstanceRecord();
+      // Event-bridge record values live in the event-bridge modules and are supplied to its stream
+      // processor via an injected RecordValues, not this engine registry — so there is no built-in
+      // class here. allRecords() filters these nulls out.
+      case ValueType.EVENT_BRIDGE_MEMBERSHIP,
+          ValueType.EVENT_BRIDGE_OFFSET,
+          ValueType.EVENT_BRIDGE_REBALANCE,
+          ValueType.EVENT_BRIDGE_TOPIC ->
+          null;
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };

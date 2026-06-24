@@ -98,6 +98,16 @@
       <validValue name="AGENT_HISTORY">72</validValue>
       <validValue name="MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE">73</validValue>
 
+      <!-- Event Bridge records. Not process automation: these ride dedicated event-bridge Raft
+           partitions that no engine touches. Their intent enums live in this protocol catalog
+           (CoordinatorIntent / MetadataIntent); their record value classes live in the event-bridge
+           modules and are supplied to the stream processor via an injected RecordValues, so they are
+           intentionally absent from the engine's UnifiedRecordValue registry. -->
+      <validValue name="EVENT_BRIDGE_MEMBERSHIP">74</validValue>
+      <validValue name="EVENT_BRIDGE_OFFSET">75</validValue>
+      <validValue name="EVENT_BRIDGE_REBALANCE">76</validValue>
+      <validValue name="EVENT_BRIDGE_TOPIC">77</validValue>
+
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
       <validValue name="SCALE">253</validValue>

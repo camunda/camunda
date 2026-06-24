@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.clustermetadata.state.appliers;
 
-import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.mutable.MutableTopicState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
+import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
 
 /**
  * Applies {@code TOPIC_DELETED} events to the replicated registry — the only place that removes a

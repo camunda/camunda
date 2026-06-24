@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
-import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
+import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 
 /**
  * Applies {@code GROUP_REBALANCED}: advances the group's assignment epoch and sets each member's

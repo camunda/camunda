@@ -17,21 +17,16 @@ import java.util.Map;
  * Supplies the {@link RecordValues} the metadata {@code StreamProcessor} uses to deserialize its
  * log records — wired via {@code StreamProcessorBuilder.recordValues(...)}.
  *
- * <p>The metadata group runs on a dedicated Raft partition that no engine touches, so its records
- * are tagged with a placeholder {@link ValueType} ({@link #TOPIC_VALUE_TYPE}) that this custom
- * mapping resolves to {@link TopicRecord}. This avoids adding an event-bridge value to the shared
- * protocol enum. The {@code StreamProcessor} dispatches by {@code RecordType}, not by intent, so
- * the tag is purely a deserialization key.
- *
- * <p>TODO(event-bridge): borrowing an engine {@link ValueType} is a PoC shortcut to be revisited;
- * see the planned event-bridge value-type abstraction.
+ * <p>The metadata group runs on a dedicated Raft partition that no engine touches. Its records
+ * carry the first-class {@link ValueType#EVENT_BRIDGE_TOPIC}, which the platform resolves to {@link
+ * io.camunda.zeebe.protocol.record.intent.MetadataIntent}; this custom mapping supplies the
+ * matching {@link TopicRecord} (which lives here, not in the engine's {@code UnifiedRecordValue}
+ * registry).
  */
 public final class MetadataRecordValues {
 
-  // Opaque tag for the metadata stream's own record kind on its dedicated Raft partition. No engine
-  // runs there, so the log never carries a real SCALE record — reusing that ValueType as a local
-  // deserialization key cannot collide. The constant is arbitrary; it carries no engine meaning.
-  public static final ValueType TOPIC_VALUE_TYPE = ValueType.SCALE;
+  // First-class event-bridge value type for the metadata stream's record kind (see protocol.xml).
+  public static final ValueType TOPIC_VALUE_TYPE = ValueType.EVENT_BRIDGE_TOPIC;
 
   private MetadataRecordValues() {}
 

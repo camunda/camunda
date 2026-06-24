@@ -7,13 +7,13 @@
  */
 package io.camunda.eventbridge.clustermetadata.processing;
 
-import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
+import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**

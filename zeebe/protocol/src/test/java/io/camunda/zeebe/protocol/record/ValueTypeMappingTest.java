@@ -33,15 +33,25 @@ final class ValueTypeMappingTest {
     // given values automatically added by SBE, i.e. "synthetic"
     final EnumSet<ValueType> syntheticValues =
         EnumSet.of(ValueType.NULL_VAL, ValueType.SBE_UNKNOWN);
-    final Set<ValueType> nonSyntheticValueTypes = EnumSet.complementOf(syntheticValues);
+    // and the event-bridge value types, which are "external": their record value classes live in
+    // the event-bridge modules, so the engine catalog does not map them.
+    final EnumSet<ValueType> externalValues =
+        EnumSet.of(
+            ValueType.EVENT_BRIDGE_MEMBERSHIP,
+            ValueType.EVENT_BRIDGE_OFFSET,
+            ValueType.EVENT_BRIDGE_REBALANCE,
+            ValueType.EVENT_BRIDGE_TOPIC);
+    final EnumSet<ValueType> unmapped = EnumSet.copyOf(syntheticValues);
+    unmapped.addAll(externalValues);
+    final Set<ValueType> mappableValueTypes = EnumSet.complementOf(unmapped);
 
     // when
     final Set<ValueType> acceptedValueTypes = ValueTypeMapping.getAcceptedValueTypes();
 
     // then
     assertThat(acceptedValueTypes)
-        .doesNotContainAnyElementsOf(syntheticValues)
-        .containsExactlyElementsOf(nonSyntheticValueTypes);
+        .doesNotContainAnyElementsOf(unmapped)
+        .containsExactlyElementsOf(mappableValueTypes);
   }
 
   @Test

@@ -10,7 +10,6 @@ package io.camunda.eventbridge.consumergroups.processing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
-import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;

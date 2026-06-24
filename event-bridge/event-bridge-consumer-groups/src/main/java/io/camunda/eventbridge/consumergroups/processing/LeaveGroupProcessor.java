@@ -7,13 +7,13 @@
  */
 package io.camunda.eventbridge.consumergroups.processing;
 
-import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
+import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**

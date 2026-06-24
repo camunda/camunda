@@ -34,7 +34,7 @@ public record RecordBatchEntry(
     valueWriter.write(recordValueBuffer, 0);
 
     final UnifiedRecordValue unifiedRecordValue =
-        UnifiedRecordValue.fromValueType(metadata.getValueType());
+        UnifiedRecordValue.ofValueTypeOrGeneric(metadata.getValueType());
     unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
 
     return new RecordBatchEntry(metadata, key, sourceIndex, unifiedRecordValue);

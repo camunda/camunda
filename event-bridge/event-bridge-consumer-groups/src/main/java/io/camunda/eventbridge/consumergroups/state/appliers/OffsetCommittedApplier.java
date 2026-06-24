@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
-import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableOffsetState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
+import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 
 /**
  * Applies {@code OFFSET_COMMITTED}: commits the position monotonically (never moves backwards). The

@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The single {@link RecordProcessor} a {@link ReplicatedStream} runs — the event-bridge counterpart
@@ -42,6 +44,8 @@ import java.util.function.Supplier;
  * the command registrations) covers replay as well.
  */
 public final class RecordProcessingEngine implements RecordProcessor {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RecordProcessingEngine.class);
 
   private final ProcessingResultBuilderMutex resultBuilderMutex =
       new ProcessingResultBuilderMutex();
@@ -104,6 +108,14 @@ public final class RecordProcessingEngine implements RecordProcessor {
       final Throwable processingException,
       final TypedRecord record,
       final ProcessingResultBuilder processingResultBuilder) {
+    // A command processor threw. Log it (otherwise the failure is invisible and the waiting caller
+    // just times out), then yield an empty result so the stream skips the record rather than
+    // looping on it.
+    LOG.error(
+        "Error processing {} command (intent {}); skipping the record",
+        record.getValueType(),
+        record.getIntent(),
+        processingException);
     return EmptyProcessingResult.INSTANCE;
   }
 

@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
-import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
+import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 
 /**
  * Applies {@code MEMBER_LEFT}: removes the member and either deletes the group once its last member

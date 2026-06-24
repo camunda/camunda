@@ -20,7 +20,16 @@ import org.junit.jupiter.params.provider.MethodSource;
 final class UnifiedRecordValueTest {
 
   private static final Set<ValueType> EXPECTED_NULL_VALUE_TYPES =
-      Set.of(ValueType.SBE_UNKNOWN, ValueType.NULL_VAL);
+      Set.of(
+          ValueType.SBE_UNKNOWN,
+          ValueType.NULL_VAL,
+          // Event-bridge record values live in the event-bridge modules (injected via
+          // RecordValues),
+          // not the engine's UnifiedRecordValue registry.
+          ValueType.EVENT_BRIDGE_MEMBERSHIP,
+          ValueType.EVENT_BRIDGE_OFFSET,
+          ValueType.EVENT_BRIDGE_REBALANCE,
+          ValueType.EVENT_BRIDGE_TOPIC);
 
   @ParameterizedTest
   @MethodSource("provideValueTypes")
