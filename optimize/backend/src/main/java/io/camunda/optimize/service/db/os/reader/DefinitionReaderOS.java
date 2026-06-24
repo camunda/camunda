@@ -7,9 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.reader;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
@@ -198,42 +196,6 @@ public class DefinitionReaderOS implements DefinitionReader {
       return Collections.emptyList();
     }
     return getLatestFullyImportedDefinitionPerTenant(type, definitionKey);
-  }
-
-  @Override
-  public Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey) {
-    final TermsAggregation enginesAggregation =
-        AggregationDSL.termAggregation(
-            DATA_SOURCE + "." + DataSourceDto.Fields.name, LIST_FETCH_LIMIT);
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .index(
-                DefinitionType.PROCESS.equals(type)
-                    ? PROCESS_DEFINITION_INDEX_NAME
-                    : DECISION_DEFINITION_INDEX_NAME)
-            .query(
-                new BoolQuery.Builder()
-                    .must(QueryDSL.term(resolveDefinitionKeyFieldFromType(type), definitionKey))
-                    .must(QueryDSL.term(DEFINITION_DELETED, false))
-                    .build()
-                    .toQuery())
-            .size(0)
-            .aggregations(
-                Collections.singletonMap(ENGINE_AGGREGATION, enginesAggregation._toAggregation()));
-
-    final String errorMessage =
-        String.format(
-            "Was not able to fetch engines for definition key [%s] and type [%s]",
-            definitionKey, type);
-    final SearchResponse<String> searchResponse =
-        osClient.search(searchRequest, String.class, errorMessage);
-
-    return Stream.of(searchResponse.aggregations().get(ENGINE_AGGREGATION).sterms())
-        .map(MultiBucketAggregateBase::buckets)
-        .flatMap(bucket -> bucket.array().stream())
-        .map(StringTermsBucket::key)
-        .collect(Collectors.toSet());
   }
 
   @Override
