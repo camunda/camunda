@@ -1,0 +1,16 @@
+---
+# Source: camunda-platform/charts/elasticsearch/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elastic
+  namespace: "c8-golden-main-elasticsearch"
+  labels:
+    app.kubernetes.io/instance: c8-golden-main-elasticsearch
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.18.0
+
+data:
+  my_elasticsearch.yml: |-
+    logger.org.elasticsearch.deprecation: "OFF"
