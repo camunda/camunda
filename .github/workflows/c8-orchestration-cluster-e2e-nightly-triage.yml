@@ -325,6 +325,7 @@ jobs:
           open_pr_base_refs='[]'
           open_pr_nums=$(gh pr list --repo "$REPO" \
             --search "label:failing-test-fix is:open" \
+            --limit 200 \
             --json number --jq '.[].number' 2>/dev/null || echo '')
           for pr_num in $open_pr_nums; do
             [ -z "$pr_num" ] && continue
