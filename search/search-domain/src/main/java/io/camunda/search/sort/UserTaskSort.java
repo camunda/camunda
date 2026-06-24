@@ -55,6 +55,11 @@ public record UserTaskSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public Builder businessId() {
+      currentOrdering = new FieldSorting("businessId", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;

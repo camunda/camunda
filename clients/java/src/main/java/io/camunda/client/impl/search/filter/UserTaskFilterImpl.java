@@ -83,6 +83,20 @@ public class UserTaskFilterImpl
   }
 
   @Override
+  public UserTaskFilter businessId(final String businessId) {
+    businessId(b -> b.eq(businessId));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter businessId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBusinessId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public UserTaskFilter priority(final Integer priority) {
     priority(b -> b.eq(priority));
     return this;

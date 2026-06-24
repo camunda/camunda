@@ -51,6 +51,11 @@ public class UserTaskSortImpl extends SearchRequestSortBase<UserTaskSort> implem
   }
 
   @Override
+  public UserTaskSort businessId() {
+    return field("businessId");
+  }
+
+  @Override
   protected UserTaskSort self() {
     return this;
   }

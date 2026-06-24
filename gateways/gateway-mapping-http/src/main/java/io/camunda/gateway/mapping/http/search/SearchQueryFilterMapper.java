@@ -962,6 +962,9 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getAssignee())
           .map(mapToStringOperations())
           .ifPresent(builder::assigneeOperations);
+      Optional.ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       Optional.ofNullable(filter.getPriority())
           .map(mapToIntegerOperations("priority", validationErrors))
           .ifPresent(builder::priorityOperations);

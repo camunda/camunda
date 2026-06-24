@@ -95,6 +95,7 @@ public class CustomMcpModelPropertiesTest {
             UserTaskFilter.class,
             Set.of(
                 "assignee",
+                "businessId",
                 "completionDate",
                 "creationDate",
                 "dueDate",

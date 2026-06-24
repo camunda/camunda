@@ -356,6 +356,9 @@ public class SimpleSearchQueryMapper {
       ofNullable(filter.getAssignee())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::assignee);
+      ofNullable(filter.getBusinessId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::businessId);
       ofNullable(filter.getPriority())
           .map(SimpleSearchQueryMapper::getIntegerFilter)
           .ifPresent(filterModel::priority);

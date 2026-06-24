@@ -72,6 +72,25 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter assignee(final Consumer<StringProperty> fn);
 
   /**
+   * Filters user tasks by the business ID of their owning process instance. This only works for
+   * user tasks created with 8.10 and onwards. Tasks from prior versions don't contain this data.
+   *
+   * @param businessId the business ID of the owning process instance
+   * @return the updated filter
+   */
+  UserTaskFilter businessId(final String businessId);
+
+  /**
+   * Filters user tasks by the business ID of their owning process instance using {@link
+   * StringProperty} consumer. This only works for user tasks created with 8.10 and onwards. Tasks
+   * from prior versions don't contain this data.
+   *
+   * @param fn the business ID {@link StringProperty} consumer of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter businessId(final Consumer<StringProperty> fn);
+
+  /**
    * Filters user tasks by the specified priority.
    *
    * @param priority the priority of the user task

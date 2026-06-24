@@ -644,6 +644,25 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByBusinessId() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.businessIds("businessId1"));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertSearchTermQuery(t.must().get(0).queryOption(), "businessId", "businessId1");
+            });
+  }
+
+  @Test
   public void shouldQueryByProcessInstanceVariableValueFilter() {
     // given
     final VariableValueFilter.Builder variableValueFilterBuilder =

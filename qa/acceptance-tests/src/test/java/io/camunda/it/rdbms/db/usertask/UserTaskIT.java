@@ -327,6 +327,61 @@ public class UserTaskIT {
   }
 
   @TestTemplate
+  public void shouldFindUserTaskByBusinessIdEq(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String businessId = generateRandomString("businessId");
+    final UserTaskDbModel userTask =
+        UserTaskFixtures.createRandomized(b -> b.businessId(businessId));
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader("default")
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .businessIdOperations(Operation.eq(businessId))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByBusinessIdLike(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String prefix = generateRandomString("business-transaction");
+    final UserTaskDbModel userTask =
+        UserTaskFixtures.createRandomized(b -> b.businessId(prefix + "-v1"));
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader("default")
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .businessIdOperations(Operation.like(prefix + "*"))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
   public void shouldFindUserTaskByProcessDefinitionKeyNeq(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -1633,6 +1688,7 @@ public class UserTaskIT {
                     .userTaskKeys(userTask.userTaskKey())
                     .elementIds(userTask.elementId())
                     .assignees(userTask.assignee())
+                    .businessIds(userTask.businessId())
                     .states(userTask.state().name())
                     .processInstanceKeys(userTask.processInstanceKey())
                     .processDefinitionKeys(userTask.processDefinitionKey())

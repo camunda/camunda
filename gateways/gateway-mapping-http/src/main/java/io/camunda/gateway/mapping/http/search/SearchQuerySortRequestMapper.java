@@ -757,6 +757,7 @@ public class SearchQuerySortRequestMapper {
         case DUE_DATE -> builder.dueDate();
         case PRIORITY -> builder.priority();
         case NAME -> builder.name();
+        case BUSINESS_ID -> builder.businessId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

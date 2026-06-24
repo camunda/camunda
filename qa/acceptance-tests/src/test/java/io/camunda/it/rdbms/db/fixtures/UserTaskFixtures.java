@@ -36,6 +36,7 @@ public final class UserTaskFixtures extends CommonFixtures {
             .creationDate(NOW)
             .completionDate(NOW.plusDays(1))
             .assignee(generateRandomString("user"))
+            .businessId(generateRandomString("businessId"))
             .state(UserTaskState.CREATED)
             .formKey(nextKey())
             .processDefinitionKey(nextKey())
