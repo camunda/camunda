@@ -7,25 +7,24 @@
  */
 package io.camunda.eventbridge.clustermetadata;
 
-import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
-
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.NONE;
 
 import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
 import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationPlanner;
-import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
-import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
-import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
+import io.camunda.eventbridge.stream.CommandRejectionException;
+import io.camunda.zeebe.scheduler.Actor;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -99,8 +99,8 @@ public class MetadataManager extends Actor {
   /**
    * Creates a topic: the manager computes the placement (it needs live broker membership) and
    * writes a {@code CREATE_TOPIC} command; the {@link
-   * io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor} validates it (name, counts,
-   * not-already-exists) against the replicated registry and replies after commit.
+   * io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor} validates it (name,
+   * counts, not-already-exists) against the replicated registry and replies after commit.
    */
   public CompletableFuture<byte[]> handleCreateTopic(final CreateTopicRequest request) {
     return writeTopicRequest(
@@ -182,6 +182,11 @@ public class MetadataManager extends Actor {
    * Builds a topic command on the actor (so placement reads live state safely), writes it through
    * the stream, and completes with the committed reply framed for the broker client — so every
    * handler method returns ready-to-send bytes and the transport layer only routes.
+   *
+   * <p>A rejected command (surfaced as a {@link CommandRejectionException}) is framed as a
+   * <em>rejection</em> reply, not completed exceptionally: the gateway decodes it into a {@code
+   * BrokerRejection} and maps it to an HTTP status. A genuine transport/processing failure still
+   * completes exceptionally.
    */
   private CompletableFuture<byte[]> writeTopicRequest(
       final Supplier<TopicRecord> commandBuilder,
@@ -193,10 +198,20 @@ public class MetadataManager extends Actor {
                 .apply(commandBuilder.get())
                 .whenComplete(
                     (response, error) -> {
-                      if (error != null) {
-                        result.completeExceptionally(error);
-                      } else {
+                      if (error == null) {
                         result.complete(CoordinationResponseEncoder.encodeValue(response));
+                        return;
+                      }
+                      final var cause =
+                          error instanceof CompletionException && error.getCause() != null
+                              ? error.getCause()
+                              : error;
+                      if (cause instanceof final CommandRejectionException rejection) {
+                        result.complete(
+                            CoordinationResponseEncoder.encodeRejection(
+                                rejection.type(), rejection.getMessage()));
+                      } else {
+                        result.completeExceptionally(error);
                       }
                     }));
     return result;

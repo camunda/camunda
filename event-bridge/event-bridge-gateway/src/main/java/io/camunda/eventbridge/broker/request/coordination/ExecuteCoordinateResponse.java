@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.coordination;
 
+import io.camunda.eventbridge.protocol.CoordinateRejectionType;
 import io.camunda.eventbridge.protocol.ExecuteCoordinateResponseDecoder;
 import io.camunda.eventbridge.protocol.ExecuteCoordinateResponseEncoder;
 import io.camunda.eventbridge.protocol.MessageHeaderDecoder;
@@ -28,6 +29,8 @@ public class ExecuteCoordinateResponse implements BufferReader, BufferWriter {
       new ExecuteCoordinateResponseDecoder();
 
   private final DirectBuffer value = new UnsafeBuffer(0, 0);
+  private CoordinateRejectionType rejectionType = CoordinateRejectionType.NONE;
+  private String rejectionReason = "";
 
   public ExecuteCoordinateResponse() {
     reset();
@@ -35,6 +38,8 @@ public class ExecuteCoordinateResponse implements BufferReader, BufferWriter {
 
   public ExecuteCoordinateResponse reset() {
     value.wrap(0, 0);
+    rejectionType = CoordinateRejectionType.NONE;
+    rejectionReason = "";
     return this;
   }
 
@@ -42,26 +47,24 @@ public class ExecuteCoordinateResponse implements BufferReader, BufferWriter {
     return value;
   }
 
-  public ExecuteCoordinateResponse wrapValue(
-      final DirectBuffer buffer, final int offset, final int length) {
-    value.wrap(buffer, offset, length);
-    return this;
+  /** {@code NONE} for a successful reply; anything else means the command was rejected. */
+  public CoordinateRejectionType getRejectionType() {
+    return rejectionType;
+  }
+
+  public String getRejectionReason() {
+    return rejectionReason;
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     reset();
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
-
-    final var valueOffset =
-        headerDecoder.encodedLength()
-            + bodyDecoder.sbeBlockLength()
-            + ExecuteCoordinateResponseDecoder.valueHeaderLength();
-    final var valueLength = bodyDecoder.valueLength();
-
-    if (valueLength > 0) {
-      value.wrap(buffer, valueOffset, valueLength);
-    }
+    // Order matters: the fixed rejectionType first, then the var-data fields in declaration order
+    // (value, then rejectionReason) — wrapValue advances the decoder past the value field.
+    rejectionType = bodyDecoder.rejectionType();
+    bodyDecoder.wrapValue(value);
+    rejectionReason = bodyDecoder.rejectionReason();
   }
 
   @Override
@@ -69,14 +72,18 @@ public class ExecuteCoordinateResponse implements BufferReader, BufferWriter {
     return headerDecoder.encodedLength()
         + bodyDecoder.sbeBlockLength()
         + ExecuteCoordinateResponseDecoder.valueHeaderLength()
-        + value.capacity();
+        + value.capacity()
+        + ExecuteCoordinateResponseDecoder.rejectionReasonHeaderLength()
+        + rejectionReason.length();
   }
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
-        .putValue(value, 0, value.capacity());
+        .rejectionType(rejectionType)
+        .putValue(value, 0, value.capacity())
+        .rejectionReason(rejectionReason);
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

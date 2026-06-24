@@ -59,6 +59,6 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
 
   private void reject(final TypedRecord<MembershipRecord> command, final Rejection rejection) {
     writers.rejection().appendRejection(command, rejection.rejectionType(), rejection.reason());
-    writers.response().respond(command, new LeaveGroupResponse().setErrorCode(rejection.code()));
+    writers.response().writeRejection(command, rejection.rejectionType(), rejection.reason());
   }
 }

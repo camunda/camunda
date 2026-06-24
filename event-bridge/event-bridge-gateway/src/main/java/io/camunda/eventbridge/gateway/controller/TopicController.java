@@ -9,7 +9,6 @@ package io.camunda.eventbridge.gateway.controller;
 
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.CreateTopicRequest;
 import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.TopicDto;
-import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.service.CoordinatorService;
 import java.util.List;
@@ -55,9 +54,9 @@ public class TopicController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.status(createStatus(res.getErrorCode())).build();
+              return ResponseEntity.status(HttpStatus.CREATED).build();
             });
   }
 
@@ -70,9 +69,9 @@ public class TopicController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.status(deleteStatus(res.getErrorCode())).build();
+              return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             });
   }
 
@@ -89,9 +88,9 @@ public class TopicController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.status(deleteStatus(res.getErrorCode())).build();
+              return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             });
   }
 
@@ -118,23 +117,6 @@ public class TopicController {
                     topic.replicationFactor(),
                     topic.status()))
         .toList();
-  }
-
-  private static HttpStatus createStatus(final CoordinationErrorCode code) {
-    return switch (code) {
-      case NONE -> HttpStatus.CREATED;
-      case INVALID_TOPIC -> HttpStatus.BAD_REQUEST;
-      case TOPIC_ALREADY_EXISTS -> HttpStatus.CONFLICT;
-      default -> HttpStatus.INTERNAL_SERVER_ERROR;
-    };
-  }
-
-  private static HttpStatus deleteStatus(final CoordinationErrorCode code) {
-    return switch (code) {
-      case NONE -> HttpStatus.NO_CONTENT;
-      case TOPIC_NOT_FOUND -> HttpStatus.NOT_FOUND;
-      default -> HttpStatus.INTERNAL_SERVER_ERROR;
-    };
   }
 
   private static ResponseEntity<Object> coordinatorUnavailable() {

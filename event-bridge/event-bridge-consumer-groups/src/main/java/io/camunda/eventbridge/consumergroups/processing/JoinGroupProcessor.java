@@ -109,6 +109,6 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
 
   private void reject(final TypedRecord<MembershipRecord> command, final Rejection rejection) {
     writers.rejection().appendRejection(command, rejection.rejectionType(), rejection.reason());
-    writers.response().respond(command, new JoinGroupResponse().setErrorCode(rejection.code()));
+    writers.response().writeRejection(command, rejection.rejectionType(), rejection.reason());
   }
 }

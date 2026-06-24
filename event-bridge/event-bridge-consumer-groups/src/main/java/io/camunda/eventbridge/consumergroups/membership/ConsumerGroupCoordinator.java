@@ -23,11 +23,13 @@ import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
+import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.SnowflakeIdGenerator;
@@ -269,13 +271,27 @@ public class ConsumerGroupCoordinator extends Actor {
    * Completes {@code result} with the committed stream reply, framed in the {@code
    * ExecuteCoordinateResponse} envelope the gateway's broker client decodes — so every handler
    * method returns ready-to-send bytes and the transport layer only routes.
+   *
+   * <p>A rejected command (the processor wrote a {@code COMMAND_REJECTION} reply, surfaced here as
+   * a {@link CommandRejectionException}) is framed as a <em>rejection</em> response, not completed
+   * exceptionally: the gateway decodes it into a {@code BrokerRejection} and maps it to an HTTP
+   * status. A genuine transport/processing failure still completes exceptionally.
    */
   private BiConsumer<byte[], Throwable> bridge(final CompletableFuture<byte[]> result) {
     return (response, error) -> {
-      if (error != null) {
-        result.completeExceptionally(error);
-      } else {
+      if (error == null) {
         result.complete(CoordinationResponseEncoder.encodeValue(response));
+        return;
+      }
+      final var cause =
+          error instanceof CompletionException && error.getCause() != null
+              ? error.getCause()
+              : error;
+      if (cause instanceof final CommandRejectionException rejection) {
+        result.complete(
+            CoordinationResponseEncoder.encodeRejection(rejection.type(), rejection.getMessage()));
+      } else {
+        result.completeExceptionally(error);
       }
     };
   }

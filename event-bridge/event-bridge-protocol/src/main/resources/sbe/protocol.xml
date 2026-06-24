@@ -17,7 +17,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   package="io.camunda.eventbridge.protocol"
   id="200"
-  version="3"
+  version="4"
   semanticVersion="${project.version}"
   description="Event Bridge Protocol Schema"
   byteOrder="littleEndian">
@@ -68,6 +68,19 @@
       <validValue name="REASSIGN_TOPIC">7</validValue>
     </enum>
 
+    <!-- How a coordinate command was rejected. NONE means "no rejection" (a successful reply);
+         any other value turns the ExecuteCoordinateResponse into a rejection the gateway translates
+         into an HTTP status. Mirrors the subset of Zeebe's RejectionType the coordinator produces;
+         see CoordinationRejections for the two-way mapping. -->
+    <enum name="CoordinateRejectionType" encodingType="uint8">
+      <validValue name="NONE">0</validValue>
+      <validValue name="INVALID_ARGUMENT">1</validValue>
+      <validValue name="NOT_FOUND">2</validValue>
+      <validValue name="INVALID_STATE">3</validValue>
+      <validValue name="ALREADY_EXISTS">4</validValue>
+      <validValue name="PROCESSING_ERROR">5</validValue>
+    </enum>
+
     <enum name="PublishResponseStatus" encodingType="uint8"
       description="Status of a publish response">
       <validValue name="SUCCESS">0</validValue>
@@ -91,8 +104,14 @@
     <data name="value" id="2" type="varDataEncoding"/>
   </sbe:message>
 
+  <!-- A coordinate reply. On success rejectionType=NONE and the value var-data carries the response
+       payload (rejectionReason empty). On rejection rejectionType is set, rejectionReason carries the
+       human-readable reason, and value is empty — the gateway surfaces it as a BrokerRejection and
+       maps it to an HTTP status. SBE requires the fixed field before the var-data fields. -->
   <sbe:message name="ExecuteCoordinateResponse" id="2">
+    <field name="rejectionType" id="3" type="CoordinateRejectionType"/>
     <data name="value" id="1" type="varDataEncoding"/>
+    <data name="rejectionReason" id="2" type="varDataEncoding"/>
   </sbe:message>
 
   <!-- =====================================================================

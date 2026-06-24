@@ -10,7 +10,6 @@ package io.camunda.eventbridge.clustermetadata.processing;
 import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
-
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.CreateTopicResponse;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
@@ -61,6 +60,6 @@ public final class CreateTopicProcessor implements TypedRecordProcessor<TopicRec
 
   private void reject(final TypedRecord<TopicRecord> command, final Rejection rejection) {
     writers.rejection().appendRejection(command, rejection.rejectionType(), rejection.reason());
-    writers.response().respond(command, new CreateTopicResponse().setErrorCode(rejection.code()));
+    writers.response().writeRejection(command, rejection.rejectionType(), rejection.reason());
   }
 }

@@ -23,9 +23,11 @@ import java.util.function.Supplier;
  * command's {@code requestId}/{@code requestStreamId} (set when the request was written), so the
  * flushing writer can route the reply back to the waiting caller.
  *
- * <p>The response value is any {@link UnpackedObject} the caller decodes — e.g. a {@code
- * CommitOffsetResponse} carrying an error code; success and rejection are both ordinary responses
- * here (event-bridge does not use Zeebe's command-rejection records on the wire).
+ * <p>A successful reply ({@link #respond}) carries any {@link UnpackedObject} the caller decodes —
+ * e.g. a {@code CommitOffsetResponse} with the committed position. A rejection ({@link
+ * #writeRejection}) is a {@code COMMAND_REJECTION} reply instead, which the broker frames as a
+ * rejection the gateway translates into an HTTP status — so an invalid command fails the caller
+ * rather than masquerading as a success.
  */
 public final class ResponseWriter {
 

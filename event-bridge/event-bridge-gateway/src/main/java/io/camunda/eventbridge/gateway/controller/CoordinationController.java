@@ -61,10 +61,9 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.status(statusFor(res.getErrorCode()))
-                  .body(responseMapper.toJoinGroupResponse(res));
+              return ResponseEntity.ok((Object) responseMapper.toJoinGroupResponse(res));
             });
   }
 
@@ -102,10 +101,9 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.status(statusFor(res.getErrorCode()))
-                  .body(responseMapper.toLeaveGroupResponse(res));
+              return ResponseEntity.ok((Object) responseMapper.toLeaveGroupResponse(res));
             });
   }
 
@@ -120,13 +118,14 @@ public class CoordinationController {
         .commit(request)
         .handleAsync(
             (res, error) -> {
+              // A fenced/unknown member must NOT read as a successful commit: the broker rejects
+              // the
+              // command and this maps it to a status (404/409) the client treats as "rejoin then
+              // retry", instead of a silent 200.
               if (error != null) {
-                return coordinatorUnavailable();
+                return CoordinatorErrors.toResponse(error);
               }
-              // A fenced/unknown member must NOT read as a successful commit — map it to a status
-              // (409) the client treats as "rejoin then retry", instead of a silent 200.
-              return ResponseEntity.status(statusFor(res.getErrorCode()))
-                  .body(responseMapper.toCommitResponse(res));
+              return ResponseEntity.ok((Object) responseMapper.toCommitResponse(res));
             });
   }
 

@@ -65,6 +65,6 @@ public final class OffsetCommitProcessor implements TypedRecordProcessor<OffsetC
 
   private void reject(final TypedRecord<OffsetCommitRecord> command, final Rejection rejection) {
     writers.rejection().appendRejection(command, rejection.rejectionType(), rejection.reason());
-    writers.response().respond(command, new CommitOffsetResponse().setErrorCode(rejection.code()));
+    writers.response().writeRejection(command, rejection.rejectionType(), rejection.reason());
   }
 }

@@ -8,10 +8,15 @@
 package io.camunda.eventbridge.broker.request.coordination;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.eventbridge.protocol.CoordinateRejectionType;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
 import io.camunda.eventbridge.protocol.ExecuteCoordinateResponseDecoder;
+import io.camunda.eventbridge.protocol.transport.CoordinationRejections;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestType;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -85,6 +90,19 @@ public abstract class BrokerExecuteCoordinateRequest<T> extends BrokerRequest<T>
 
   @Override
   protected BrokerResponse<T> readResponse() {
+    if (response.getRejectionType() != CoordinateRejectionType.NONE) {
+      // A rejected command is not a success: surface it as a BrokerRejection so the BrokerClient
+      // completes the request future exceptionally with a BrokerRejectionException, which the
+      // gateway controller maps to an HTTP status. Intent/key are not meaningful for this
+      // transport.
+      final var rejection =
+          new BrokerRejection(
+              Intent.UNKNOWN,
+              -1,
+              CoordinationRejections.fromWire(response.getRejectionType()),
+              response.getRejectionReason());
+      return new BrokerRejectionResponse<>(rejection);
+    }
     final T responseDto = toResponseDto(response.getValue());
     return new BrokerResponse<>(responseDto, -1, -1);
   }
