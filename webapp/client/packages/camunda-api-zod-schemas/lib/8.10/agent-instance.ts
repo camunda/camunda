@@ -20,6 +20,7 @@ import {
 import {documentReferenceSchema} from './document';
 
 const agentInstanceStatusSchema = z.enum([
+	'UNKNOWN',
 	'COMPLETED',
 	'IDLE',
 	'INITIALIZING',
@@ -51,15 +52,27 @@ const agentInstanceLimitsSchema = z.object({
 });
 type AgentInstanceLimits = z.infer<typeof agentInstanceLimitsSchema>;
 
+const agentToolSchema = z.object({
+	name: z.string(),
+	description: z.string().nullable(),
+	elementId: z.string().nullable(),
+});
+type AgentTool = z.infer<typeof agentToolSchema>;
+
 const agentInstanceSchema = z.object({
 	agentInstanceKey: z.string(),
 	status: agentInstanceStatusSchema,
 	definition: agentInstanceDefinitionSchema,
 	metrics: agentInstanceMetricsSchema,
 	limits: agentInstanceLimitsSchema,
+	tools: z.array(agentToolSchema),
 	elementId: z.string(),
 	processInstanceKey: z.string(),
+	rootProcessInstanceKey: z.string(),
 	processDefinitionKey: z.string(),
+	processDefinitionId: z.string(),
+	processDefinitionVersion: z.number(),
+	processDefinitionVersionTag: z.string().nullable(),
 	tenantId: z.string(),
 	creationDate: z.string(),
 	lastUpdatedDate: z.string(),
@@ -74,7 +87,11 @@ const agentInstanceFilterSchema = z
 		status: getEnumFilterSchema(agentInstanceStatusSchema),
 		elementId: basicStringFilterSchema,
 		processInstanceKey: basicStringFilterSchema,
+		rootProcessInstanceKey: basicStringFilterSchema,
 		processDefinitionKey: basicStringFilterSchema,
+		processDefinitionId: basicStringFilterSchema,
+		processDefinitionVersion: advancedIntegerFilterSchema,
+		processDefinitionVersionTag: basicStringFilterSchema,
 		tenantId: basicStringFilterSchema,
 		creationDate: advancedDateTimeFilterSchema,
 		lastUpdatedDate: advancedDateTimeFilterSchema,
@@ -85,7 +102,18 @@ const agentInstanceFilterSchema = z
 type AgentInstanceFilter = z.infer<typeof agentInstanceFilterSchema>;
 
 const queryAgentInstancesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['creationDate', 'lastUpdatedDate', 'completionDate', 'status'] as const,
+	sortFields: [
+		'agentInstanceKey',
+		'status',
+		'elementId',
+		'processInstanceKey',
+		'rootProcessInstanceKey',
+		'processDefinitionKey',
+		'tenantId',
+		'creationDate',
+		'lastUpdatedDate',
+		'completionDate',
+	] as const,
 	filter: agentInstanceFilterSchema,
 });
 type QueryAgentInstancesRequestBody = z.infer<typeof queryAgentInstancesRequestBodySchema>;
@@ -189,21 +217,21 @@ const createAgentInstanceHistoryItemResponseBodySchema = z.object({
 });
 type CreateAgentInstanceHistoryItemResponseBody = z.infer<typeof createAgentInstanceHistoryItemResponseBodySchema>;
 
-const searchAgentInstanceHistoryRequestBodySchema = getQueryRequestBodySchema({
+const queryAgentInstanceHistoryRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['producedAt', 'historyItemKey', 'iteration'] as const,
 	filter: agentInstanceHistoryFilterSchema,
 });
-type SearchAgentInstanceHistoryRequestBody = z.infer<typeof searchAgentInstanceHistoryRequestBodySchema>;
+type QueryAgentInstanceHistoryRequestBody = z.infer<typeof queryAgentInstanceHistoryRequestBodySchema>;
 
-const searchAgentInstanceHistoryResponseBodySchema = getQueryResponseBodySchema(agentInstanceHistoryItemSchema);
-type SearchAgentInstanceHistoryResponseBody = z.infer<typeof searchAgentInstanceHistoryResponseBodySchema>;
+const queryAgentInstanceHistoryResponseBodySchema = getQueryResponseBodySchema(agentInstanceHistoryItemSchema);
+type QueryAgentInstanceHistoryResponseBody = z.infer<typeof queryAgentInstanceHistoryResponseBodySchema>;
 
 const getAgentInstance: Endpoint<{agentInstanceKey: string}> = {
 	method: 'GET',
 	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}`,
 };
 
-const searchAgentInstances: Endpoint = {
+const queryAgentInstances: Endpoint = {
 	method: 'POST',
 	getUrl: () => `/${API_VERSION}/agent-instances/search`,
 };
@@ -213,7 +241,7 @@ const createAgentInstanceHistoryItem: Endpoint<{agentInstanceKey: string}> = {
 	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history`,
 };
 
-const searchAgentInstanceHistory: Endpoint<{agentInstanceKey: string}> = {
+const queryAgentInstanceHistory: Endpoint<{agentInstanceKey: string}> = {
 	method: 'POST',
 	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history/search`,
 };
@@ -223,6 +251,7 @@ export {
 	agentInstanceDefinitionSchema,
 	agentInstanceMetricsSchema,
 	agentInstanceLimitsSchema,
+	agentToolSchema,
 	agentInstanceSchema,
 	agentInstanceFilterSchema,
 	queryAgentInstancesRequestBodySchema,
@@ -240,18 +269,19 @@ export {
 	agentInstanceHistoryFilterSchema,
 	createAgentInstanceHistoryItemRequestBodySchema,
 	createAgentInstanceHistoryItemResponseBodySchema,
-	searchAgentInstanceHistoryRequestBodySchema,
-	searchAgentInstanceHistoryResponseBodySchema,
+	queryAgentInstanceHistoryRequestBodySchema,
+	queryAgentInstanceHistoryResponseBodySchema,
 	getAgentInstance,
-	searchAgentInstances,
+	queryAgentInstances,
 	createAgentInstanceHistoryItem,
-	searchAgentInstanceHistory,
+	queryAgentInstanceHistory,
 };
 export type {
 	AgentInstanceStatus,
 	AgentInstanceDefinition,
 	AgentInstanceMetrics,
 	AgentInstanceLimits,
+	AgentTool,
 	AgentInstance,
 	AgentInstanceFilter,
 	QueryAgentInstancesRequestBody,
@@ -269,6 +299,6 @@ export type {
 	AgentInstanceHistoryFilter,
 	CreateAgentInstanceHistoryItemRequestBody,
 	CreateAgentInstanceHistoryItemResponseBody,
-	SearchAgentInstanceHistoryRequestBody,
-	SearchAgentInstanceHistoryResponseBody,
+	QueryAgentInstanceHistoryRequestBody,
+	QueryAgentInstanceHistoryResponseBody,
 };

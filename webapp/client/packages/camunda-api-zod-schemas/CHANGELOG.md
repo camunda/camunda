@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.0.76
+
+### 🩹 Fixes
+
+- Align agent instance types with their latest OpenAPI spec
+  - Add `UNKNOWN` to agent instance status enum
+  - Add available tools as `tools` to agent instances
+  - Add `rootProcessInstanceKey`, `processDefinitionId`, `processDefinitionVersion`, and `processDefinitionVersionTag` to agent instances
+- Reword `searchAgentInstances` -> `queryAgentInstances` and `searchAgentInstanceHistory` -> `queryAgentInstanceHistory` to align with the wording throughout the library
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.75
 
 ### 🚀 Enhancements
