@@ -62,12 +62,67 @@ func GetJavaHome(javaBinary string) (string, error) {
 	return javaHomeOutput, nil
 }
 
-// syncEnvFile writes the resolved camundaVersion and connectorsVersion to path so that
+// syncEnvFile updates CAMUNDA_VERSION and CONNECTORS_VERSION in place at path so that
 // the .env bundled in the distribution archive is consistent with the artifact being packaged.
 // CAMUNDA_VERSION may be overridden via the process environment (e.g. 8.10.0-SNAPSHOT on a branch)
-// while the committed .env still contains a stale released version.
+// while the committed .env still contains a stale released version. Every other line — comments and
+// any additional keys present on a branch (ELASTICSEARCH_VERSION, CAMUNDA_DOCKER_VERSION, COMPOSE_TAG,
+// COMPOSE_EXTRACTED_FOLDER, CAMUNDA_RELEASE_TAG) — is preserved verbatim. A key not already present is
+// appended. A missing file is treated as empty so the two keys are created.
 func syncEnvFile(path, camundaVersion, connectorsVersion string) error {
-	content := "# this is the version of camunda/ zeebe\nCAMUNDA_VERSION=" + camundaVersion + "\n# Look here: https://artifacts.camunda.com/ui/native/connectors/io/camunda/connector/connector-runtime-bundle/\nCONNECTORS_VERSION=" + connectorsVersion + "\n"
+	keys := []string{"CAMUNDA_VERSION", "CONNECTORS_VERSION"}
+	updates := map[string]string{
+		"CAMUNDA_VERSION":    camundaVersion,
+		"CONNECTORS_VERSION": connectorsVersion,
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read %s: %w", path, err)
+	}
+
+	hadTrailingNewline := strings.HasSuffix(string(data), "\n")
+	body := strings.TrimSuffix(string(data), "\n")
+	var lines []string
+	if body != "" {
+		lines = strings.Split(body, "\n")
+	}
+
+	// Preserve the file's line endings: on a CRLF .env each split line keeps a trailing \r, so
+	// rewritten and appended keys must carry the same ending instead of silently downgrading to LF.
+	lineEnd := ""
+	if strings.Contains(string(data), "\r\n") {
+		lineEnd = "\r"
+	}
+
+	seen := map[string]bool{}
+	for i, line := range lines {
+		raw := strings.TrimSuffix(line, "\r")
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		name, _, found := strings.Cut(raw, "=")
+		if !found {
+			continue
+		}
+		name = strings.TrimSpace(name)
+		if value, ok := updates[name]; ok {
+			lines[i] = name + "=" + value + lineEnd
+			seen[name] = true
+		}
+	}
+
+	for _, key := range keys {
+		if !seen[key] {
+			lines = append(lines, key+"="+updates[key]+lineEnd)
+		}
+	}
+
+	content := strings.Join(lines, "\n")
+	if hadTrailingNewline || len(data) == 0 {
+		content += "\n"
+	}
 	return os.WriteFile(path, []byte(content), 0644)
 }
 
