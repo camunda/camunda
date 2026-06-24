@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.retry.ActorRetryMechanism.Control;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +27,9 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   private final ActorRetryMechanism retryMechanism;
   private final int maxRetries;
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
+  private final AtomicInteger retryCount = new AtomicInteger();
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
-  private volatile int retryCount;
 
   public RecoverableRetryStrategy(final ActorControl actor) {
     this(actor, Integer.MAX_VALUE);
@@ -50,7 +51,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     terminateCondition = condition;
-    retryCount = 0;
+    retryCount.set(0);
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
 
     actor.run(this::run);
@@ -60,24 +61,26 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
 
   @Override
   public int getRetryCount() {
-    return retryCount;
+    return retryCount.get();
   }
 
   private void run() {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
+        if (!retryLimitExceeded(
+            retryCount.incrementAndGet(), maxRetries, null, LOG, currentFuture)) {
           actor.run(this::run);
           actor.yieldThread();
         }
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        if (!retryLimitExceeded(++retryCount, maxRetries, ex, LOG, currentFuture)) {
+        final int retries = retryCount.incrementAndGet();
+        if (!retryLimitExceeded(retries, maxRetries, ex, LOG, currentFuture)) {
           throttledLog.warn(
               "Caught recoverable exception (retry {}/{}), will retry: {}",
-              retryCount,
+              retries,
               maxRetries,
               ex.getMessage(),
               ex);

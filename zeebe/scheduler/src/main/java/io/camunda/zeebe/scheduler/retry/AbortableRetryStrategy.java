@@ -11,14 +11,15 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.ActorRetryMechanism.Control;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 public final class AbortableRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
+  private final AtomicInteger retryCount = new AtomicInteger();
   private CompletableActorFuture<Boolean> currentFuture;
-  private volatile int retryCount;
 
   public AbortableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
@@ -34,7 +35,7 @@ public final class AbortableRetryStrategy implements RetryStrategy {
   public ActorFuture<Boolean> runWithRetry(
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
-    retryCount = 0;
+    retryCount.set(0);
     retryMechanism.wrap(callable, condition, currentFuture);
 
     actor.run(this::run);
@@ -44,14 +45,14 @@ public final class AbortableRetryStrategy implements RetryStrategy {
 
   @Override
   public int getRetryCount() {
-    return retryCount;
+    return retryCount.get();
   }
 
   private void run() {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        retryCount++;
+        retryCount.incrementAndGet();
         actor.run(this::run);
         actor.yieldThread();
       }

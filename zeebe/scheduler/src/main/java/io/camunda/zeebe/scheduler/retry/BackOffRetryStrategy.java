@@ -11,6 +11,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 public final class BackOffRetryStrategy implements RetryStrategy {
@@ -18,12 +19,12 @@ public final class BackOffRetryStrategy implements RetryStrategy {
   private final ActorControl actor;
   private final Duration maxBackOff;
   private final Duration initialBackOff;
+  private final AtomicInteger retryCount = new AtomicInteger();
 
   private Duration backOffDuration;
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier currentTerminateCondition;
   private OperationToRetry currentCallable;
-  private volatile int retryCount;
 
   public BackOffRetryStrategy(final ActorControl actor, final Duration maxBackOff) {
     this(actor, maxBackOff, Duration.ofSeconds(1));
@@ -48,7 +49,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
     currentTerminateCondition = terminateCondition;
     currentCallable = callable;
     backOffDuration = initialBackOff;
-    retryCount = 0;
+    retryCount.set(0);
 
     actor.run(this::run);
 
@@ -57,7 +58,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
 
   @Override
   public int getRetryCount() {
-    return retryCount;
+    return retryCount.get();
   }
 
   private void run() {
@@ -79,7 +80,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
   }
 
   private void backOff() {
-    retryCount++;
+    retryCount.incrementAndGet();
     final boolean notReachedMaxBackOff = !backOffDuration.equals(maxBackOff);
     if (notReachedMaxBackOff) {
       final Duration nextBackOff = backOffDuration.multipliedBy(2);
