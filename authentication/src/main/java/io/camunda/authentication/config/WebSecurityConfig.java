@@ -22,6 +22,7 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
+import io.camunda.authentication.filters.OidcRedirectDiagnosticsFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
@@ -115,6 +116,7 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
@@ -1175,9 +1177,25 @@ public class WebSecurityConfig {
 
       applyOauth2RefreshTokenFilter(
           httpSecurity, authorizedClientRepository, authorizedClientManager);
+      applyOidcRedirectDiagnosticsFilter(httpSecurity, securityConfiguration);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    private void applyOidcRedirectDiagnosticsFilter(
+        final HttpSecurity httpSecurity, final SecurityConfiguration securityConfiguration) {
+      if (securityConfiguration.getAuthentication().getOidc().getDiagnostics().isEnabled()) {
+        // Positioned before the redirect filter so the diagnostics filter wraps the redirect
+        // generation and can inspect the resulting Location header on the way back out.
+        httpSecurity.addFilterBefore(
+            new OidcRedirectDiagnosticsFilter(REDIRECT_URI),
+            OAuth2AuthorizationRequestRedirectFilter.class);
+        LOG.info(
+            "OIDC redirect diagnostics filter enabled (camunda.security.authentication.oidc.diagnostics.enabled=true). "
+                + "Enable DEBUG logging for {} to see full redirect diagnostics.",
+            OidcRedirectDiagnosticsFilter.class.getName());
+      }
     }
 
     private Customizer<ProtectedResourceMetadataConfigurer>
