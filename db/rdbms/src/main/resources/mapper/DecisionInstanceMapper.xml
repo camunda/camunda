@@ -234,6 +234,7 @@
                                             DECISION_INSTANCE_KEY,
                                             PROCESS_INSTANCE_KEY,
                                             ROOT_PROCESS_INSTANCE_KEY,
+                                            BUSINESS_ID,
                                             PROCESS_DEFINITION_KEY,
                                             PROCESS_DEFINITION_ID,
                                             DECISION_DEFINITION_KEY,
@@ -254,6 +255,7 @@
                                             HISTORY_CLEANUP_DATE)
     VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
             #{rootProcessInstanceKey},
+            #{businessId},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
             #{decisionRequirementsKey}, #{decisionRequirementsId},
