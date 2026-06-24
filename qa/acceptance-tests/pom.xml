@@ -566,11 +566,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
@@ -747,6 +742,16 @@
             <dep>io.camunda:camunda-exporter</dep>
             <dep>org.springframework.boot:spring-boot-starter-log4j2</dep>
           </ignoredUnusedDeclaredDependencies>
+          <!--
+            The servlet API (jakarta.servlet.HttpServletRequest, used by web-session tests to
+            set up a request scope) is provided transitively by both jakarta.servlet-api and the
+            embedded Tomcat jar; the analyzer attributes it to either one depending on classpath
+            order. Ignore both so the test does not need to declare a direct dependency on either.
+          -->
+          <ignoredUsedUndeclaredDependencies>
+            <dep>org.apache.tomcat.embed:tomcat-embed-core</dep>
+            <dep>jakarta.servlet:jakarta.servlet-api</dep>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
