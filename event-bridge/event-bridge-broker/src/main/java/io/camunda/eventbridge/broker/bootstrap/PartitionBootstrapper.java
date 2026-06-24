@@ -17,8 +17,9 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
-import io.camunda.eventbridge.clustermetadata.stream.MetadataPartition;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.stream.MetadataPartition;
+import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorPartition;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -82,6 +83,7 @@ final class PartitionBootstrapper {
   private DefaultPartitionManagementService managementService;
   private MessagingService brokerMessagingService;
   private MemberId localMemberId;
+  private TopicRegistry topicRegistry;
   private Consumer<Map<String, TopicMetadata>> registryReconciler;
   private java.util.concurrent.atomic.AtomicReference<
           java.util.function.BiConsumer<String, java.util.List<Integer>>>
@@ -110,6 +112,7 @@ final class PartitionBootstrapper {
       final TopologyManagerImpl coordinatorTopologyManager,
       final TopologyManagerImpl metadataTopologyManager,
       final MessagingService brokerMessagingService,
+      final TopicRegistry topicRegistry,
       final Consumer<Map<String, TopicMetadata>> registryReconciler,
       final java.util.concurrent.atomic.AtomicReference<
               java.util.function.BiConsumer<String, java.util.List<Integer>>>
@@ -120,6 +123,7 @@ final class PartitionBootstrapper {
     final var membershipService = cluster.getMembershipService();
     localMemberId = membershipService.getLocalMember().id();
     this.brokerMessagingService = brokerMessagingService;
+    this.topicRegistry = topicRegistry;
     this.registryReconciler = registryReconciler;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
@@ -219,7 +223,7 @@ final class PartitionBootstrapper {
     final var coordinatorPartition =
         new CoordinatorPartition(
             partitionId,
-            properties.broker().partitionCount(),
+            topicRegistry,
             created.raftPartition(),
             actorScheduler,
             brokerMessagingService,

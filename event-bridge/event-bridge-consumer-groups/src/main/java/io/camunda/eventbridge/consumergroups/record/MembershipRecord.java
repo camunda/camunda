@@ -22,6 +22,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
  * replicated {@link DbConsumerGroupState}.
  *
  * <ul>
+ *   <li>{@code topic} — the topic the group subscribes to; carried on join so the applier records
+ *       it on the group (a group serves exactly one topic).
  *   <li>{@code instanceId} — set for a static member (KIP-345), empty for a dynamic member.
  *   <li>{@code memberId} — assigned by the coordinator; on a {@code JOIN_GROUP} command it is the
  *       new member's id (a join whose static instance id is already in use is rejected, so every
@@ -36,6 +38,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public final class MembershipRecord extends UnifiedRecordValue {
 
   private final StringProperty groupIdProp = new StringProperty("groupId", "");
+  private final StringProperty topicProp = new StringProperty("topic", "");
   private final StringProperty memberIdProp = new StringProperty("memberId", "");
   private final StringProperty instanceIdProp = new StringProperty("instanceId", "");
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", 0L);
@@ -43,8 +46,9 @@ public final class MembershipRecord extends UnifiedRecordValue {
   private final IntegerProperty partitionCountProp = new IntegerProperty("partitionCount", 0);
 
   public MembershipRecord() {
-    super(6);
+    super(7);
     declareProperty(groupIdProp)
+        .declareProperty(topicProp)
         .declareProperty(memberIdProp)
         .declareProperty(instanceIdProp)
         .declareProperty(memberEpochProp)
@@ -71,6 +75,18 @@ public final class MembershipRecord extends UnifiedRecordValue {
 
   public MembershipRecord setGroupId(final String groupId) {
     groupIdProp.setValue(groupId);
+    return this;
+  }
+
+  /**
+   * The topic the group subscribes to; carried on join so the applier can record it on the group.
+   */
+  public String getTopic() {
+    return BufferUtil.bufferAsString(topicProp.getValue());
+  }
+
+  public MembershipRecord setTopic(final String topic) {
+    topicProp.setValue(topic == null ? "" : topic);
     return this;
   }
 

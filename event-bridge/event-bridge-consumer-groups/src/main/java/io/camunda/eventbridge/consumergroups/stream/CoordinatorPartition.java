@@ -10,6 +10,7 @@ package io.camunda.eventbridge.consumergroups.stream;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
+import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.transport.CoordinationRequestHandler;
 import io.camunda.eventbridge.stream.RaftPartitionLifecycle;
@@ -32,13 +33,13 @@ import java.time.InstantSource;
 public final class CoordinatorPartition
     extends RaftPartitionLifecycle<EventBridgeColumnFamilies, CoordinatorStream> {
 
-  private final int partitionCount;
+  private final TopicRegistry topicRegistry;
 
   private ConsumerGroupCoordinator consumerGroupCoordinator;
 
   public CoordinatorPartition(
       final int partitionId,
-      final int partitionCount,
+      final TopicRegistry topicRegistry,
       final RaftPartition raftPartition,
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
@@ -55,7 +56,7 @@ public final class CoordinatorPartition
         runtimeDirectory,
         snapshotStore,
         coordinatorTopologyManager);
-    this.partitionCount = partitionCount;
+    this.topicRegistry = topicRegistry;
   }
 
   @Override
@@ -78,7 +79,7 @@ public final class CoordinatorPartition
   @Override
   protected void onLeaderReady() {
     consumerGroupCoordinator =
-        new ConsumerGroupCoordinator(partitionId, partitionCount, clock, stream);
+        new ConsumerGroupCoordinator(partitionId, topicRegistry, clock, stream);
     actorScheduler.submitActor(consumerGroupCoordinator);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),

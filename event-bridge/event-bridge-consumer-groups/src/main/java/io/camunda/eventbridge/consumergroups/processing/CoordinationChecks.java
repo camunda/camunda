@@ -32,13 +32,19 @@ public final class CoordinationChecks {
   }
 
   /**
-   * A join needs a valid group id, and — for a static member — an instance id that is not already
-   * held by a live member. A duplicate {@code group.instance.id} fences the <em>new</em> joiner
-   * (KIP-848): the incumbent keeps the identity until it leaves or its session expires (the
-   * eviction loop then frees the slot). A new member id is minted by the processor.
+   * A join needs a valid group id; a subscribed topic that is registered and servable (the
+   * coordinator resolves its partition count from the live registry and stamps it on the command,
+   * so a count of {@code 0} means the topic was unknown or not servable); a topic that matches the
+   * one the group is already bound to (a group serves exactly one topic); and — for a static member
+   * — an instance id that is not already held by a live member. A duplicate {@code
+   * group.instance.id} fences the <em>new</em> joiner: the incumbent keeps the identity until it
+   * leaves or its session expires (the eviction loop then frees the slot). A new member id is
+   * minted by the processor.
    */
   public Either<Rejection, Void> validateJoin(final MembershipRecord command) {
     return groupIdPresent(command.getGroupId())
+        .flatMap(ok -> topicServable(command.getTopic(), command.getPartitionCount()))
+        .flatMap(ok -> topicMatchesGroup(command.getGroupId(), command.getTopic()))
         .flatMap(ok -> instanceIdAvailable(command.getGroupId(), command.getInstanceId()));
   }
 
@@ -69,6 +75,36 @@ public final class CoordinationChecks {
               CoordinationErrorCode.UNRELEASED_INSTANCE_ID,
               "instance id '%s' is still in use by member '%s' in group '%s'; it must leave first"
                   .formatted(instanceId, holder, groupId)));
+    }
+    return VALID;
+  }
+
+  private Either<Rejection, Void> topicServable(final String topic, final int partitionCount) {
+    if (topic == null || topic.isEmpty()) {
+      return Either.left(
+          new Rejection(CoordinationErrorCode.INVALID_TOPIC, "subscribed topic is empty"));
+    }
+    if (partitionCount <= 0) {
+      return Either.left(
+          new Rejection(
+              CoordinationErrorCode.TOPIC_NOT_FOUND,
+              "topic '%s' is not registered or not servable".formatted(topic)));
+    }
+    return VALID;
+  }
+
+  private Either<Rejection, Void> topicMatchesGroup(final String groupId, final String topic) {
+    final var group = state.getGroup(groupId);
+    if (group == null) {
+      return VALID; // first join — the applier binds the group to this topic
+    }
+    final var bound = group.getTopic();
+    if (bound != null && !bound.isEmpty() && !bound.equals(topic)) {
+      return Either.left(
+          new Rejection(
+              CoordinationErrorCode.INVALID_TOPIC,
+              "group '%s' is bound to topic '%s', cannot join with topic '%s'"
+                  .formatted(groupId, bound, topic)));
     }
     return VALID;
   }

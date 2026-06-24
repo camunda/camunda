@@ -68,6 +68,7 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
     final var event =
         new MembershipRecord()
             .setGroupId(command.getValue().getGroupId())
+            .setTopic(command.getValue().getTopic())
             .setMemberId(memberId)
             .setInstanceId(instanceId)
             .setMemberEpoch(memberEpoch)

@@ -136,7 +136,7 @@ final class GroupReconciliationTest {
     for (final var member : members) {
       roster.put(member.memberId(), member);
     }
-    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, partitionCount, roster);
+    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, "t", partitionCount, roster);
   }
 
   private static MemberSnapshot member(

@@ -38,7 +38,11 @@ public final class MemberJoinedApplier
 
     var group = state.getGroup(groupId);
     if (group == null) {
-      group = new GroupState().setPartitionCount(value.getPartitionCount()).setAssignmentEpoch(0);
+      group =
+          new GroupState()
+              .setTopic(value.getTopic())
+              .setPartitionCount(value.getPartitionCount())
+              .setAssignmentEpoch(0);
     }
     group.setGroupEpoch(value.getGroupEpoch());
     state.putGroup(groupId, group);

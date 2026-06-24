@@ -51,7 +51,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>Consumer-group usage:
  *
  * <pre>{@code
- * var consumer = client.subscribe("my-group", "consumer-1").join();
+ * var consumer = client.subscribe("my-group", "consumer-1", "my-topic").join();
  * consumer.sendHeartbeat().join();        // receives an initial partition assignment
  * var events = consumer.poll(100, Duration.ofMillis(1000));
  * }</pre>
@@ -220,10 +220,12 @@ public final class EventBridgeClient implements AutoCloseable {
    *
    * @param groupId consumer group identifier
    * @param consumerId consumer identifier within the group
+   * @param topic the topic the group subscribes to
    * @return a future resolving to a {@link Consumer} handle
    */
-  public CompletableFuture<Consumer> subscribe(final String groupId, final String consumerId) {
-    final var consumer = new Consumer(groupId, consumerId, this);
+  public CompletableFuture<Consumer> subscribe(
+      final String groupId, final String consumerId, final String topic) {
+    final var consumer = new Consumer(groupId, topic, consumerId, this);
     return consumer.joinGroup().handle((ignore, error) -> consumer);
   }
 

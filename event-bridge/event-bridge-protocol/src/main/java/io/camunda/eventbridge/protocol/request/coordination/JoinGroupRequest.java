@@ -15,11 +15,12 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 public class JoinGroupRequest extends UnpackedObject {
 
   private final StringProperty groupIdProp = new StringProperty("groupId", "");
+  private final StringProperty topicProp = new StringProperty("topic", "");
   private final StringProperty instanceIdProp = new StringProperty("instanceId", "");
 
   public JoinGroupRequest() {
-    super(2);
-    declareProperty(groupIdProp).declareProperty(instanceIdProp);
+    super(3);
+    declareProperty(groupIdProp).declareProperty(topicProp).declareProperty(instanceIdProp);
   }
 
   public String getGroupId() {
@@ -28,6 +29,16 @@ public class JoinGroupRequest extends UnpackedObject {
 
   public JoinGroupRequest setGroupId(final String groupId) {
     groupIdProp.setValue(groupId);
+    return this;
+  }
+
+  /** The topic the group subscribes to; the coordinator derives the partition count from it. */
+  public String getTopic() {
+    return bufferAsString(topicProp.getValue());
+  }
+
+  public JoinGroupRequest setTopic(final String topic) {
+    topicProp.setValue(topic == null ? "" : topic);
     return this;
   }
 

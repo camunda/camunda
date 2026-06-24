@@ -23,7 +23,10 @@ public class BrokerJoinGroupRequest extends BrokerExecuteCoordinateRequest<JoinG
   }
 
   public BrokerJoinGroupRequest wrapRequest(final JoinGroupRequest req) {
-    request.setGroupId(req.getGroupId()).setInstanceId(req.getInstanceId());
+    request
+        .setGroupId(req.getGroupId())
+        .setTopic(req.getTopic())
+        .setInstanceId(req.getInstanceId());
     return this;
   }
 

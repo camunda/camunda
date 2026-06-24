@@ -57,7 +57,7 @@ public final class EventBridgeDtos {
   // -------------------------------------------------------------------------
   // Heartbeat
 
-  public record JoinGroupRequest(String instanceId) {}
+  public record JoinGroupRequest(String topic, String instanceId) {}
 
   public record JoinGroupResponse(String errorCode, String memberId, long memberEpoch) {}
 

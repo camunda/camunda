@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Consumer handle returned by {@link EventBridgeClient#subscribe(String, String)}.
+ * Consumer handle returned by {@link EventBridgeClient#subscribe(String, String, String)}.
  *
  * <p>Tracks the consumer's owned partitions, epoch, and per-partition {@code nextPosition}. Call
  * {@link #sendHeartbeat()} periodically to maintain group membership and receive partition
@@ -49,6 +49,7 @@ public final class Consumer {
   private final ScheduledExecutorService executor;
   private final OffsetResetPolicy offsetResetPolicy;
   private final String groupId;
+  private final String topic;
   private final String instanceId;
   // Written from executor threads (join/heartbeat/leave), read from caller threads (poll, commit) —
   // must be volatile for visibility, since this class is documented as thread-safe.
@@ -72,8 +73,13 @@ public final class Consumer {
   private volatile ScheduledFuture<?> scheduledHeartbeat;
 
   /** Primary constructor. Consumer starts with no owned partitions and {@code currentEpoch = 0}. */
-  Consumer(final String groupId, final String instanceId, final EventBridgeClient client) {
+  Consumer(
+      final String groupId,
+      final String topic,
+      final String instanceId,
+      final EventBridgeClient client) {
     this.groupId = groupId;
+    this.topic = topic;
     this.client = client;
     this.instanceId = instanceId;
     executor = client.getExecutor();
@@ -91,6 +97,7 @@ public final class Consumer {
       final int initialEpoch,
       final EventBridgeClient client) {
     this.groupId = groupId;
+    topic = null;
     instanceId = consumerId;
     memberEpoch = initialEpoch;
     this.client = client;
@@ -105,6 +112,7 @@ public final class Consumer {
     final String requestBody;
     try {
       final var hbBody = new LinkedHashMap<String, Object>();
+      hbBody.put("topic", topic);
       hbBody.put("instanceId", instanceId);
       requestBody = client.getObjectMapper().writeValueAsString(hbBody);
     } catch (final JsonProcessingException e) {

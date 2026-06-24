@@ -19,7 +19,10 @@ public class RequestMapper {
 
   public JoinGroupRequest toJoinGroupRequest(
       final String groupId, final EventBridgeDtos.JoinGroupRequest request) {
-    return new JoinGroupRequest().setGroupId(groupId).setInstanceId(request.instanceId());
+    return new JoinGroupRequest()
+        .setGroupId(groupId)
+        .setTopic(request.topic())
+        .setInstanceId(request.instanceId());
   }
 
   public LeaveGroupRequest toLeaveGroupRequest(

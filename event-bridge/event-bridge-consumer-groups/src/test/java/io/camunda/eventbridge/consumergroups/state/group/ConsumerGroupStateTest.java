@@ -83,6 +83,7 @@ final class ConsumerGroupStateTest {
     assertThat(state.getGroup("g").getAssignmentEpoch()).isZero();
 
     final var snapshot = state.groupSnapshot("g");
+    assertThat(snapshot.topic()).isEqualTo("t");
     assertThat(snapshot.partitionCount()).isEqualTo(4);
     assertThat(snapshot.members()).containsOnlyKeys("m1");
     assertThat(snapshot.members().get("m1").memberEpoch()).isEqualTo(1);
@@ -228,6 +229,43 @@ final class ConsumerGroupStateTest {
         .isEqualTo(CoordinationErrorCode.INVALID_GROUP_ID);
   }
 
+  @Test
+  void shouldRejectJoinWithMissingTopic() {
+    final var checks = new CoordinationChecks(state);
+
+    // when — a join carries no subscribed topic
+    final var rejection = checks.validateJoin(join("g", "", "m1", null, 0, 0, 4));
+
+    // then
+    assertThat(rejection.getLeft().code()).isEqualTo(CoordinationErrorCode.INVALID_TOPIC);
+  }
+
+  @Test
+  void shouldRejectJoinForUnservableTopic() {
+    final var checks = new CoordinationChecks(state);
+
+    // when — the coordinator could not resolve a partition count (unknown/not servable topic)
+    final var rejection = checks.validateJoin(join("g", "missing", "m1", null, 0, 0, 0));
+
+    // then
+    assertThat(rejection.getLeft().code()).isEqualTo(CoordinationErrorCode.TOPIC_NOT_FOUND);
+  }
+
+  @Test
+  void shouldRejectJoinToGroupBoundToDifferentTopic() {
+    // given — a group already bound to topic "t"
+    memberJoined.applyState(1, join("g", "t", "m1", null, 1, 1, 4));
+    final var checks = new CoordinationChecks(state);
+
+    // when — a second member joins the same group subscribing to a different topic
+    final var rejection = checks.validateJoin(join("g", "other", "m2", null, 0, 0, 4));
+
+    // then
+    assertThat(rejection.getLeft().code()).isEqualTo(CoordinationErrorCode.INVALID_TOPIC);
+    // but a join with the bound topic is accepted
+    assertThat(checks.validateJoin(join("g", "t", "m2", null, 0, 0, 4)).isRight()).isTrue();
+  }
+
   private static MembershipRecord join(
       final String group,
       final String member,
@@ -235,8 +273,20 @@ final class ConsumerGroupStateTest {
       final long memberEpoch,
       final long groupEpoch,
       final int partitionCount) {
+    return join(group, "t", member, instanceId, memberEpoch, groupEpoch, partitionCount);
+  }
+
+  private static MembershipRecord join(
+      final String group,
+      final String topic,
+      final String member,
+      final String instanceId,
+      final long memberEpoch,
+      final long groupEpoch,
+      final int partitionCount) {
     return new MembershipRecord()
         .setGroupId(group)
+        .setTopic(topic)
         .setMemberId(member)
         .setInstanceId(instanceId)
         .setMemberEpoch(memberEpoch)

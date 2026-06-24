@@ -14,7 +14,9 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
 import io.camunda.eventbridge.clustermetadata.stream.TopicProvisionedGossip;
+import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -26,6 +28,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -178,8 +181,19 @@ public final class BrokerBootstrap {
     // replicated registry to this sink (see MetadataPartition), which reconciles the broker's local
     // topic Raft groups. The reconcile runs off the metadata partition's actor thread (the snapshot
     // read already happened on it). This replaces the old 2s whole-registry broadcast.
+    //
+    // The same observed registry feeds a thread-safe topic→partitionCount cache: the coordinator
+    // leader (which observes the metadata group on this broker too) reads it at join time to derive
+    // a group's partition count from its subscribed topic, rather than from a static config. Only
+    // topics that are servable (not DELETING) are cached; a missing entry resolves to 0, which the
+    // join processor rejects as an unknown topic.
+    final ConcurrentHashMap<String, Integer> topicPartitionCounts = new ConcurrentHashMap<>();
+    final TopicRegistry topicRegistry = topic -> topicPartitionCounts.getOrDefault(topic, 0);
     final Consumer<Map<String, TopicMetadata>> registryReconciler =
-        desired -> executorService.execute(() -> topicReconciler.reconcile(desired));
+        desired -> {
+          updateTopicPartitionCounts(topicPartitionCounts, desired);
+          executorService.execute(() -> topicReconciler.reconcile(desired));
+        };
 
     // 4c. Change-coordinator command channel (CC-3). The broker that must act on a reassignment
     // step
@@ -219,11 +233,30 @@ public final class BrokerBootstrap {
         topologySetup.getCoordinatorTopologyManager(),
         topologySetup.getMetadataTopologyManager(),
         brokerMessagingService,
+        topicRegistry,
         registryReconciler,
         provisionedSinkRef,
         reconfigurationExecutor);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
+  }
+
+  /**
+   * Refreshes the topic→partitionCount cache from an observed registry snapshot: servable topics
+   * (anything but {@code DELETING}) keep their count, removed/deleting topics drop out. The
+   * coordinator reads this to resolve a group's partition count from its subscribed topic.
+   */
+  private static void updateTopicPartitionCounts(
+      final Map<String, Integer> cache, final Map<String, TopicMetadata> desired) {
+    cache.keySet().removeIf(topic -> !desired.containsKey(topic));
+    desired.forEach(
+        (name, metadata) -> {
+          if (metadata.status() == TopicStatus.DELETING) {
+            cache.remove(name);
+          } else {
+            cache.put(name, metadata.partitionCount());
+          }
+        });
   }
 
   /**

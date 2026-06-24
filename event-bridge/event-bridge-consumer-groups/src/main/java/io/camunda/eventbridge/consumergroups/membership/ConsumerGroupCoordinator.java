@@ -52,7 +52,7 @@ public class ConsumerGroupCoordinator extends Actor {
   private static final Logger LOG = LoggerFactory.getLogger(ConsumerGroupCoordinator.class);
 
   private final int partitionId;
-  private final int partitionCount;
+  private final TopicRegistry topicRegistry;
   private final InstantSource clock;
   private final CoordinatorStream coordinatorStream;
   private final MemberLivenessMirror liveness;
@@ -63,11 +63,11 @@ public class ConsumerGroupCoordinator extends Actor {
 
   public ConsumerGroupCoordinator(
       final int partitionId,
-      final int partitionCount,
+      final TopicRegistry topicRegistry,
       final InstantSource clock,
       final CoordinatorStream coordinatorStream) {
     this.partitionId = partitionId;
-    this.partitionCount = partitionCount;
+    this.topicRegistry = topicRegistry;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
     liveness = coordinatorStream.liveness();
@@ -96,17 +96,25 @@ public class ConsumerGroupCoordinator extends Actor {
     liveness.clear();
   }
 
-  /** Writes a {@code JOIN_GROUP} command and bridges the committed {@code JoinGroupResponse}. */
+  /**
+   * Writes a {@code JOIN_GROUP} command and bridges the committed {@code JoinGroupResponse}. The
+   * subscribed topic's partition count is resolved here from the live {@link TopicRegistry} (the
+   * topic registry lives in a separate Raft group, so it cannot be read in the processor) and
+   * stamped on the command; the processor validates it (a count of {@code 0} means the topic was
+   * unknown or not servable).
+   */
   public CompletableFuture<byte[]> handleJoinGroup(final JoinGroupRequest request) {
     final var result = new CompletableFuture<byte[]>();
     actor.run(
         () -> {
+          final var topic = request.getTopic();
           final var command =
               new MembershipRecord()
                   .setGroupId(request.getGroupId())
+                  .setTopic(topic)
                   .setMemberId(generateMemberId())
                   .setInstanceId(request.getInstanceId())
-                  .setPartitionCount(partitionCount);
+                  .setPartitionCount(topicRegistry.partitionCount(topic));
           coordinatorStream.joinGroup(command).whenComplete(bridge(result));
         });
     return result;
