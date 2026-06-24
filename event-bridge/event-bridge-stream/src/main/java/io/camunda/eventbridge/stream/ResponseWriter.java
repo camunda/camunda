@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.stream;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
@@ -34,10 +35,7 @@ public final class ResponseWriter {
     this.resultBuilder = resultBuilder;
   }
 
-  /**
-   * Stages {@code responseValue} as the reply to {@code command}. No-op if the command had no
-   * request.
-   */
+  /** Stages {@code responseValue} as the successful reply to {@code command}. */
   public void respond(final TypedRecord<?> command, final UnpackedObject responseValue) {
     resultBuilder
         .get()
@@ -49,6 +47,31 @@ public final class ResponseWriter {
             command.getValueType(),
             RejectionType.NULL_VAL,
             "",
+            command.getRequestId(),
+            command.getRequestStreamId());
+  }
+
+  /**
+   * Rejects {@code command} with a reason — the event-bridge counterpart of the engine's {@code
+   * writeRejectionOnCommand}. The reply is a {@code COMMAND_REJECTION}, so the waiting caller
+   * completes <em>exceptionally</em> (a rejected command is not a success). Use this for malformed
+   * or invalid commands, not for protocol signals a client is expected to act on (those are
+   * ordinary responses carrying a status, Kafka-style).
+   */
+  public void writeRejection(
+      final TypedRecord<? extends UnifiedRecordValue> command,
+      final RejectionType type,
+      final String reason) {
+    resultBuilder
+        .get()
+        .withResponse(
+            RecordType.COMMAND_REJECTION,
+            command.getKey(),
+            command.getIntent(),
+            command.getValue(),
+            command.getValueType(),
+            type,
+            reason,
             command.getRequestId(),
             command.getRequestStreamId());
   }

@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -19,13 +20,25 @@ import org.agrona.concurrent.UnsafeBuffer;
 /**
  * The {@code CommandResponseWriter} the platform flushes a staged response through after a command
  * commits. Instead of sending over a command-API transport (event-bridge requests arrive over
- * cluster messaging), it serializes the response value to bytes and completes the waiting reply via
- * {@link RequestResponseBridge#complete}, keyed by the command's request id. The serialized bytes
- * are exactly the response value's encoding — the same wire format the gateway already decodes.
+ * cluster messaging), it routes the reply to the waiting caller via {@link RequestResponseBridge},
+ * keyed by the command's request id:
+ *
+ * <ul>
+ *   <li>A success ({@code EVENT}) reply serializes the response value to bytes — the same wire
+ *       format the gateway decodes — and {@link RequestResponseBridge#complete completes} the
+ *       future.
+ *   <li>A {@code COMMAND_REJECTION} reply {@link RequestResponseBridge#fail fails} the future with
+ *       a {@link CommandRejectionException} carrying the rejection type and reason — a rejected
+ *       command is not a success.
+ * </ul>
  */
 public final class BridgingCommandResponseWriter implements CommandResponseWriter {
 
   private final RequestResponseBridge bridge;
+
+  private RecordType recordType = RecordType.EVENT;
+  private RejectionType rejectionType = RejectionType.NULL_VAL;
+  private String rejectionReason = "";
   private BufferWriter valueWriter;
 
   public BridgingCommandResponseWriter(final RequestResponseBridge bridge) {
@@ -49,6 +62,7 @@ public final class BridgingCommandResponseWriter implements CommandResponseWrite
 
   @Override
   public CommandResponseWriter recordType(final RecordType type) {
+    recordType = type;
     return this;
   }
 
@@ -58,12 +72,14 @@ public final class BridgingCommandResponseWriter implements CommandResponseWrite
   }
 
   @Override
-  public CommandResponseWriter rejectionType(final RejectionType rejectionType) {
+  public CommandResponseWriter rejectionType(final RejectionType type) {
+    rejectionType = type;
     return this;
   }
 
   @Override
-  public CommandResponseWriter rejectionReason(final DirectBuffer rejectionReason) {
+  public CommandResponseWriter rejectionReason(final DirectBuffer reason) {
+    rejectionReason = BufferUtil.bufferAsString(reason);
     return this;
   }
 
@@ -75,9 +91,20 @@ public final class BridgingCommandResponseWriter implements CommandResponseWrite
 
   @Override
   public void tryWriteResponse(final int requestStreamId, final long requestId) {
-    final var bytes = new byte[valueWriter.getLength()];
-    valueWriter.write(new UnsafeBuffer(bytes), 0);
+    if (recordType == RecordType.COMMAND_REJECTION) {
+      bridge.fail(requestId, new CommandRejectionException(rejectionType, rejectionReason));
+    } else {
+      final var bytes = new byte[valueWriter.getLength()];
+      valueWriter.write(new UnsafeBuffer(bytes), 0);
+      bridge.complete(requestId, bytes);
+    }
+    reset();
+  }
+
+  private void reset() {
+    recordType = RecordType.EVENT;
+    rejectionType = RejectionType.NULL_VAL;
+    rejectionReason = "";
     valueWriter = null;
-    bridge.complete(requestId, bytes);
   }
 }
