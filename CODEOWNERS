@@ -146,7 +146,6 @@
 # AI Assistant Instructions
 /CLAUDE.md      @camunda/orchestration-cluster
 /AGENTS.md      @camunda/orchestration-cluster
-/.claude/skills/ @camunda/orchestration-cluster
 /.claude/skills/load-test-ops/ @camunda/reliability-testing
 
 # CI skills
