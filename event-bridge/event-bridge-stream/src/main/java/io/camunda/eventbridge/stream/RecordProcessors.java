@@ -18,25 +18,25 @@ import java.util.Map;
 /**
  * The registration context handed to a {@link RecordProcessorsFactory} when a {@link
  * RecordProcessingEngine} is built — the event-bridge counterpart of the engine's {@code
- * TypedRecordProcessors} plus {@code Writers}. It exposes the writers a command processor needs at
- * construction (currently the {@link #stateWriter()}) and collects the command processors and event
- * appliers registered for the stream.
+ * TypedRecordProcessors} plus {@code Writers}. It exposes the {@link #writers()} a command
+ * processor needs at construction and collects the command processors and event appliers registered
+ * for the stream.
  */
 public final class RecordProcessors {
 
-  private final StateWriter stateWriter;
+  private final Writers writers;
   private final EventAppliers eventAppliers;
   private final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors =
       new EnumMap<>(ValueType.class);
 
-  RecordProcessors(final StateWriter stateWriter, final EventAppliers eventAppliers) {
-    this.stateWriter = stateWriter;
+  RecordProcessors(final Writers writers, final EventAppliers eventAppliers) {
+    this.writers = writers;
     this.eventAppliers = eventAppliers;
   }
 
-  /** The state writer to hand to command processors at construction. */
-  public StateWriter stateWriter() {
-    return stateWriter;
+  /** The writers (state / command / response) to hand to command processors at construction. */
+  public Writers writers() {
+    return writers;
   }
 
   /** Registers the processor that handles the given command intent. */

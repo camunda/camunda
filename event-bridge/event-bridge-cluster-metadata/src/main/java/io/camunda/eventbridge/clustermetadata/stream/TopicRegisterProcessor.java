@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
-import io.camunda.eventbridge.stream.StateWriter;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
+import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -17,10 +17,10 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 final class TopicRegisterProcessor implements TypedRecordProcessor<TopicRecord> {
 
-  private final StateWriter stateWriter;
+  private final Writers writers;
 
-  TopicRegisterProcessor(final StateWriter stateWriter) {
-    this.stateWriter = stateWriter;
+  TopicRegisterProcessor(final Writers writers) {
+    this.writers = writers;
   }
 
   @Override
@@ -35,6 +35,6 @@ final class TopicRegisterProcessor implements TypedRecordProcessor<TopicRecord> 
             .setStatus(TopicMetadata.TopicStatus.valueOf(cmd.getStatus()))
             .setAssignment(cmd.getAssignment())
             .setTarget(cmd.getTarget());
-    stateWriter.appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_REGISTERED, event);
+    writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_REGISTERED, event);
   }
 }

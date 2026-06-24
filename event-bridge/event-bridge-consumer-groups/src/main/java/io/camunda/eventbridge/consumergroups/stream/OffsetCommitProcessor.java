@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.consumergroups.stream;
 
-import io.camunda.eventbridge.stream.StateWriter;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
+import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -18,10 +18,10 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 public final class OffsetCommitProcessor implements TypedRecordProcessor<OffsetCommitRecord> {
 
-  private final StateWriter stateWriter;
+  private final Writers writers;
 
-  public OffsetCommitProcessor(final StateWriter stateWriter) {
-    this.stateWriter = stateWriter;
+  public OffsetCommitProcessor(final Writers writers) {
+    this.writers = writers;
   }
 
   @Override
@@ -32,6 +32,8 @@ public final class OffsetCommitProcessor implements TypedRecordProcessor<OffsetC
             .setGroupId(cmd.getGroupId())
             .setPartitionId(cmd.getPartitionId())
             .setOffset(cmd.getOffset());
-    stateWriter.appendFollowUpEvent(command.getKey(), CoordinatorIntent.OFFSET_COMMITTED, event);
+    writers
+        .state()
+        .appendFollowUpEvent(command.getKey(), CoordinatorIntent.OFFSET_COMMITTED, event);
   }
 }

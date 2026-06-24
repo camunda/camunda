@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.consumergroups.stream;
 
-import io.camunda.eventbridge.stream.StateWriter;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
+import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -18,10 +18,10 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 public final class GroupMetadataProcessor implements TypedRecordProcessor<GroupMetadataRecord> {
 
-  private final StateWriter stateWriter;
+  private final Writers writers;
 
-  public GroupMetadataProcessor(final StateWriter stateWriter) {
-    this.stateWriter = stateWriter;
+  public GroupMetadataProcessor(final Writers writers) {
+    this.writers = writers;
   }
 
   @Override
@@ -29,7 +29,8 @@ public final class GroupMetadataProcessor implements TypedRecordProcessor<GroupM
     final var cmd = command.getValue();
     final var event =
         new GroupMetadataRecord().setGroupId(cmd.getGroupId()).setPayload(cmd.getPayload());
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), CoordinatorIntent.GROUP_METADATA_COMMITTED, event);
+    writers
+        .state()
+        .appendFollowUpEvent(command.getKey(), CoordinatorIntent.GROUP_METADATA_COMMITTED, event);
   }
 }

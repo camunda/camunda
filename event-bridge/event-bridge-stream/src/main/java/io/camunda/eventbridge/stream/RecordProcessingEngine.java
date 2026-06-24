@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * The single {@link RecordProcessor} a {@link ReplicatedStream} runs — the event-bridge counterpart
  * of the Zeebe engine's {@code Engine}. It owns a registry of command {@link TypedRecordProcessor}s
  * (keyed by {@code (ValueType, Intent)}) and a single {@link EventAppliers} registry (keyed by
- * event intent). As in the engine, a {@link StateWriter} is built once against a {@link
+ * event intent). As in the engine, the {@link Writers} are built once against a {@link
  * ProcessingResultBuilderMutex} and handed to the command processors at <em>construction</em> (via
  * the {@link RecordProcessorsFactory}); {@link #process} only opens a {@link
  * ProcessingResultBuilderScope} so those writers target the current result builder.
@@ -49,8 +49,8 @@ public final class RecordProcessingEngine implements RecordProcessor {
   private final Set<ValueType> acceptedValueTypes;
 
   public RecordProcessingEngine(final RecordProcessorsFactory recordProcessorsFactory) {
-    final var stateWriter = new StateWriter(resultBuilderMutex, eventAppliers);
-    final var processors = new RecordProcessors(stateWriter, eventAppliers);
+    final var writers = new Writers(resultBuilderMutex, eventAppliers);
+    final var processors = new RecordProcessors(writers, eventAppliers);
     recordProcessorsFactory.createProcessors(processors);
     commandProcessors = processors.commandProcessors();
     acceptedValueTypes = Set.copyOf(commandProcessors.keySet());

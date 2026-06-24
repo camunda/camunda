@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
-import io.camunda.eventbridge.stream.StateWriter;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
+import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -17,16 +17,16 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  */
 final class TopicDeleteProcessor implements TypedRecordProcessor<TopicRecord> {
 
-  private final StateWriter stateWriter;
+  private final Writers writers;
 
-  TopicDeleteProcessor(final StateWriter stateWriter) {
-    this.stateWriter = stateWriter;
+  TopicDeleteProcessor(final Writers writers) {
+    this.writers = writers;
   }
 
   @Override
   public void processRecord(final TypedRecord<TopicRecord> command) {
     final var cmd = command.getValue();
     final var event = new TopicRecord().setName(cmd.getName()).setOp(cmd.getOp());
-    stateWriter.appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_DELETED, event);
+    writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_DELETED, event);
   }
 }

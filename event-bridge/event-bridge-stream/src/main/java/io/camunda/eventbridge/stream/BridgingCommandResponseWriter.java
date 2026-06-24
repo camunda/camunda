@@ -14,14 +14,24 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * No-op command-response writer for the event-bridge streams. Neither the coordinator nor the
- * metadata stream replies through the command API — the coordinator correlates offset commits via
- * its own processing listener, and topic writes are fire-and-forget — so all builder calls are
- * ignored.
+ * The {@code CommandResponseWriter} the platform flushes a staged response through after a command
+ * commits. Instead of sending over a command-API transport (event-bridge requests arrive over
+ * cluster messaging), it serializes the response value to bytes and completes the waiting reply via
+ * {@link RequestResponseBridge#complete}, keyed by the command's request id. The serialized bytes
+ * are exactly the response value's encoding — the same wire format the gateway already decodes.
  */
-public final class NoopCommandResponseWriter implements CommandResponseWriter {
+public final class BridgingCommandResponseWriter implements CommandResponseWriter {
+
+  private final RequestResponseBridge bridge;
+  private BufferWriter valueWriter;
+
+  public BridgingCommandResponseWriter(final RequestResponseBridge bridge) {
+    this.bridge = bridge;
+  }
+
   @Override
   public CommandResponseWriter partitionId(final int partitionId) {
     return this;
@@ -59,11 +69,15 @@ public final class NoopCommandResponseWriter implements CommandResponseWriter {
 
   @Override
   public CommandResponseWriter valueWriter(final BufferWriter value) {
+    valueWriter = value;
     return this;
   }
 
   @Override
   public void tryWriteResponse(final int requestStreamId, final long requestId) {
-    // no-op
+    final var bytes = new byte[valueWriter.getLength()];
+    valueWriter.write(new UnsafeBuffer(bytes), 0);
+    valueWriter = null;
+    bridge.complete(requestId, bytes);
   }
 }

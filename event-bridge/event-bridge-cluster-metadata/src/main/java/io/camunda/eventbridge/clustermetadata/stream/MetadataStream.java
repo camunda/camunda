@@ -44,10 +44,9 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   private static final Logger LOG = LoggerFactory.getLogger(MetadataStream.class);
 
   // Thread-safe in-memory mirror of the topic registry, maintained by the topic event appliers on
-  // the stream's actor (on every applied register/delete). Reads (topicsSnapshot) go through this so
-  // callers on other actors — the leader's MetadataManager and each broker's reconcile — never touch
-  // the stream-owned RocksDB state cross-thread. DbTopicState remains the durable source of truth;
-  // this is seeded from it on start (covering snapshot recovery).
+  // the stream's actor. Cross-actor reads (topicsSnapshot, from the leader's MetadataManager and
+  // each broker's reconcile) use this rather than touching the stream-owned RocksDB state.
+  // DbTopicState is the durable source of truth; this is seeded from it on start (snapshot recovery).
   private final Map<String, TopicMetadata> registryCache = new ConcurrentHashMap<>();
 
   private DbTopicState topicState;
@@ -93,11 +92,11 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.REGISTER_TOPIC,
-                    new TopicRegisterProcessor(processors.stateWriter()))
+                    new TopicRegisterProcessor(processors.writers()))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.DELETE_TOPIC,
-                    new TopicDeleteProcessor(processors.stateWriter()))
+                    new TopicDeleteProcessor(processors.writers()))
                 .withEventApplier(
                     MetadataIntent.TOPIC_REGISTERED,
                     new TopicRegisteredApplier(topicState, registryCache))

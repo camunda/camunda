@@ -8,10 +8,17 @@
 package io.camunda.eventbridge.stream;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -25,6 +32,7 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 /**
@@ -44,6 +52,10 @@ import java.util.function.Supplier;
  */
 public abstract class ReplicatedStream<C extends Enum<? extends EnumValue> & EnumValue> {
 
+  // requestStreamId is a per-connection id in Zeebe; event-bridge correlates purely by requestId
+  // (unique within the partition), so a single fixed value suffices.
+  private static final int REQUEST_STREAM_ID = 1;
+
   protected final int partitionId;
   protected final ZeebeDb<C> zeebeDb;
 
@@ -51,6 +63,7 @@ public abstract class ReplicatedStream<C extends Enum<? extends EnumValue> & Enu
   private final ActorSchedulingService actorScheduler;
   private final InstantSource clock;
   private final MeterRegistry meterRegistry;
+  private final RequestResponseBridge responseBridge = new RequestResponseBridge();
 
   private LogStream logStream;
   private StreamProcessor streamProcessor;
@@ -131,7 +144,7 @@ public abstract class ReplicatedStream<C extends Enum<? extends EnumValue> & Enu
             .actorSchedulingService(actorScheduler)
             .recordProcessors(List.of(createRecordProcessor()))
             .recordValues(recordValues())
-            .commandResponseWriter(new NoopCommandResponseWriter())
+            .commandResponseWriter(new BridgingCommandResponseWriter(responseBridge))
             .partitionCommandSender(new NoopInterPartitionCommandSender())
             .streamProcessorMode(mode);
 
@@ -153,6 +166,37 @@ public abstract class ReplicatedStream<C extends Enum<? extends EnumValue> & Enu
     streamProcessor = builder.build();
     writer = logStream.newLogStreamWriter();
     return streamProcessor.openAsync(false);
+  }
+
+  /**
+   * Writes a request-command to the replicated log and returns a future that completes with the
+   * encoded response once the command has been processed and committed (the processor stages the
+   * response via {@link ResponseWriter}, which the platform flushes through the bridging {@code
+   * CommandResponseWriter}). Leader only. The reply bytes are the response value's own encoding.
+   */
+  protected final CompletableFuture<byte[]> writeRequest(
+      final Intent intent, final ValueType valueType, final UnifiedRecordValue command) {
+    if (writer == null) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("Cannot write " + intent + ": stream not started"));
+    }
+    final var registration = responseBridge.register();
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .valueType(valueType)
+            .intent(intent)
+            .requestId(registration.requestId())
+            .requestStreamId(REQUEST_STREAM_ID);
+    final var result =
+        writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
+    if (result.isLeft()) {
+      final var error =
+          new IllegalStateException("Failed to write " + intent + ": " + result.getLeft());
+      responseBridge.fail(registration.requestId(), error);
+      return CompletableFuture.failedFuture(error);
+    }
+    return registration.response();
   }
 
   /** The underlying stream processor, e.g. for the snapshot director. */
