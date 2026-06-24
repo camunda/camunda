@@ -16,10 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,6 +34,10 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
 
   private final List<Integer> partitionIds;
   private final Archiver archiver;
+
+  @Autowired
+  @Qualifier("archiverThreadPoolExecutor")
+  private ThreadPoolTaskScheduler executor;
 
   @Autowired private ListViewTemplate processInstanceTemplate;
   @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
@@ -67,7 +74,7 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
     // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
     return archiveProcessDependants(archiveBatch, listViewDest, piKeyFilter)
         // Phase 2: list-view excluding processInstance join (catch-all for any other joins)
-        .thenCompose(
+        .thenComposeAsync(
             v ->
                 archive(
                     processInstanceTemplate.getFullQualifiedName(),
@@ -76,9 +83,10 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
                     Map.of(),
                     Map.of(
                         ListViewTemplate.JOIN_RELATION,
-                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)))
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
+            executor)
         // Phase 3: list-view processInstance join only (must be last to avoid dangling data)
-        .thenCompose(
+        .thenComposeAsync(
             v ->
                 archive(
                     processInstanceTemplate.getFullQualifiedName(),
@@ -87,12 +95,14 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
                     Map.of(
                         ListViewTemplate.JOIN_RELATION,
                         ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
-                    Map.of()))
-        .thenApply(
+                    Map.of()),
+            executor)
+        .thenApplyAsync(
             v -> {
               metrics.recordCounts(Metrics.COUNTER_NAME_PROCESS_INSTANCES_ARCHIVED, keys.size());
               return keys.size();
-            });
+            },
+            executor);
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
@@ -137,7 +147,12 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters) {
     return archiverRepository.moveDocumentsById(
-        sourceIndexName, destinationIndexName, keysByField, inclusionFilters, exclusionFilters);
+        sourceIndexName,
+        destinationIndexName,
+        keysByField,
+        inclusionFilters,
+        exclusionFilters,
+        executor);
   }
 
   @Override

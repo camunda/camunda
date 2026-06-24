@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
@@ -241,7 +242,8 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
       final String destinationIndexName,
       final Map<String, List<Object>> keysByField,
       final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters) {
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
     final var supplier =
         new ArchiveByIdTaskSupplier<String>(
             sourceIndexName,
@@ -253,22 +255,24 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
                     inclusionFilters,
                     exclusionFilters,
                     size,
-                    searchAfter),
-            this::reindexDocumentsById,
-            this::deleteDocumentsById,
-            archiverExecutor.getScheduledExecutor(),
+                    searchAfter,
+                    executor),
+            (src, dst, docs) -> reindexDocumentsById(src, dst, docs, executor),
+            (src, docs) -> deleteDocumentsById(src, docs, executor),
+            executor,
             operateProperties.getArchiver(),
             metrics,
             LOGGER);
     final var indexTimer = Timer.start();
     return AsyncRepeatUntil.repeatUntil(supplier::moveNextBatch, count -> supplier.isComplete())
-        .thenCompose(
+        .thenComposeAsync(
             ignored -> {
               if (supplier.getTotalArchived() > 0L) {
                 setIndexLifeCycle(destinationIndexName);
               }
               return CompletableFuture.<Void>completedFuture(null);
-            })
+            },
+            executor)
         .whenComplete(
             (ignored, error) -> {
               indexTimer.stop(
@@ -382,7 +386,8 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
           final Map<String, String> inclusionFilters,
           final Map<String, String> exclusionFilters,
           final int batchSize,
-          final List<String> searchAfter) {
+          final List<String> searchAfter,
+          final Executor executor) {
     final List<Query> filterClauses = new ArrayList<>();
     keysByField.forEach(
         (field, vals) ->
@@ -414,10 +419,11 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
     final var timer = Timer.start();
     return OpensearchUtil.searchAsync(requestBuilder.build(), Object.class, osAsyncClient)
-        .whenComplete(
+        .whenCompleteAsync(
             (ignored, error) ->
                 timer.stop(
-                    metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_ARCHIVE_BY_ID_DOC_IDS_QUERY)))
+                    metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_ARCHIVE_BY_ID_DOC_IDS_QUERY)),
+            executor)
         .thenApply(
             response -> {
               final List<Hit<Object>> hits = response.hits().hits();
@@ -433,7 +439,8 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   private CompletableFuture<Long> reindexDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final List<IdWithRouting> docs) {
+      final List<IdWithRouting> docs,
+      final Executor executor) {
     final var docIds = docs.stream().map(IdWithRouting::id).toList();
     final var reindexRequest =
         reindexRequestBuilder(sourceIndexName, ids(docIds), destinationIndexName)
@@ -444,16 +451,18 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
     final var timer = Timer.start();
     return OpensearchUtil.reindexAsync(reindexRequest, osAsyncClient)
-        .thenApply(
+        .thenApplyAsync(
             response -> {
               validateReindexResponse(sourceIndexName, response);
               return getReindexedDocumentsCount(response);
-            })
-        .whenComplete(
+            },
+            executor)
+        .whenCompleteAsync(
             (total, error) -> {
               metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_REINDEXED_DOCS, total);
               timer.stop(metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY));
-            });
+            },
+            executor);
   }
 
   private static void validateReindexResponse(
@@ -476,7 +485,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   }
 
   private CompletableFuture<Long> deleteDocumentsById(
-      final String sourceIndexName, final List<IdWithRouting> docs) {
+      final String sourceIndexName, final List<IdWithRouting> docs, final Executor executor) {
     final var bulkRequestBuilder = new BulkRequest.Builder();
     docs.forEach(
         doc ->
@@ -490,12 +499,13 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     try {
       return osAsyncClient
           .bulk(bulkRequestBuilder.build())
-          .thenApply(response -> getDeletedDocCount(sourceIndexName, response))
-          .whenComplete(
+          .thenApplyAsync(response -> getDeletedDocCount(sourceIndexName, response), executor)
+          .whenCompleteAsync(
               (deleted, error) -> {
                 metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_DELETED_DOCS, deleted);
                 timer.stop(metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY));
-              });
+              },
+              executor);
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }

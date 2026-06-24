@@ -10,6 +10,7 @@ package io.camunda.operate.archiver;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public interface ArchiverRepository {
   CompletableFuture<ArchiveBatch> getBatchOperationNextBatch();
@@ -23,7 +24,8 @@ public interface ArchiverRepository {
       String destinationIndexName,
       Map<String, List<Object>> keysByField,
       Map<String, String> inclusionFilters,
-      Map<String, String> exclusionFilters);
+      Map<String, String> exclusionFilters,
+      Executor executor);
 
   void setIndexLifeCycle(final String destinationIndexName);
 

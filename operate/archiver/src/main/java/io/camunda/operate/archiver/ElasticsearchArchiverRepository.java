@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -205,7 +206,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       final String destinationIndexName,
       final Map<String, List<Object>> keysByField,
       final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters) {
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
     final var supplier =
         new ArchiveByIdTaskSupplier<>(
             sourceIndexName,
@@ -217,22 +219,24 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                     inclusionFilters,
                     exclusionFilters,
                     size,
-                    searchAfter),
-            this::reindexDocumentsById,
-            this::deleteDocumentsById,
-            archiverExecutor.getScheduledExecutor(),
+                    searchAfter,
+                    executor),
+            (src, dst, docs) -> reindexDocumentsById(src, dst, docs, executor),
+            (src, docs) -> deleteDocumentsById(src, docs, executor),
+            executor,
             operateProperties.getArchiver(),
             metrics,
             LOGGER);
     final var indexTimer = Timer.start();
     return AsyncRepeatUntil.repeatUntil(supplier::moveNextBatch, count -> supplier.isComplete())
-        .thenCompose(
+        .thenComposeAsync(
             ignored -> {
               if (supplier.getTotalArchived() > 0L) {
                 setIndexLifeCycle(destinationIndexName);
               }
               return CompletableFuture.<Void>completedFuture(null);
-            })
+            },
+            executor)
         .whenComplete(
             (ignored, error) -> {
               indexTimer.stop(
@@ -347,7 +351,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
           final Map<String, String> inclusionFilters,
           final Map<String, String> exclusionFilters,
           final int batchSize,
-          final List<Object> searchAfter) {
+          final List<Object> searchAfter,
+          final Executor executor) {
     final var boolQ = boolQuery();
     keysByField.forEach((field, vals) -> boolQ.filter(termsQuery(field, vals)));
     inclusionFilters.forEach((field, val) -> boolQ.filter(termQuery(field, val)));
@@ -372,8 +377,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         searchSource.query());
 
     final var timer = Timer.start();
-    return ElasticsearchUtil.searchAsync(searchRequest, archiverExecutor, esClient)
-        .whenComplete((ignored, error) -> timer.stop(getArchiverDocIdsBatchQueryTimer()))
+    return ElasticsearchUtil.searchAsync(searchRequest, executor, esClient)
+        .whenCompleteAsync(
+            (ignored, error) -> timer.stop(getArchiverDocIdsBatchQueryTimer()), executor)
         .thenApply(
             response -> {
               final var hits = response.getHits().getHits();
@@ -393,7 +399,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   private CompletableFuture<Long> reindexDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final List<IdWithRouting> docs) {
+      final List<IdWithRouting> docs,
+      final Executor executor) {
     final var docIds = docs.stream().map(IdWithRouting::id).toArray(String[]::new);
     final var reindexRequest =
         createReindexRequestWithDefaults()
@@ -403,16 +410,18 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
     final var timer = Timer.start();
     return ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
-        .thenApply(
+        .thenApplyAsync(
             response -> {
               validateReindexResponse(sourceIndexName, response);
               return getReindexedDocumentsCount(response);
-            })
-        .whenComplete(
+            },
+            executor)
+        .whenCompleteAsync(
             (total, error) -> {
               metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_REINDEXED_DOCS, total);
               timer.stop(getArchiverReindexQueryTimer());
-            });
+            },
+            executor);
   }
 
   private static void validateReindexResponse(
@@ -433,7 +442,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   }
 
   private CompletableFuture<Long> deleteDocumentsById(
-      final String sourceIndexName, final List<IdWithRouting> docs) {
+      final String sourceIndexName, final List<IdWithRouting> docs, final Executor executor) {
     final var bulkRequest = new BulkRequest();
     docs.forEach(
         doc ->
@@ -446,12 +455,13 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         RequestOptions.DEFAULT,
         ActionListener.wrap(future::complete, future::completeExceptionally));
     return future
-        .thenApply(response -> getDeletedDocCount(sourceIndexName, response))
-        .whenComplete(
+        .thenApplyAsync(response -> getDeletedDocCount(sourceIndexName, response), executor)
+        .whenCompleteAsync(
             (deleted, error) -> {
               metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_DELETED_DOCS, deleted);
               timer.stop(getArchiverDeleteQueryTimer());
-            });
+            },
+            executor);
   }
 
   private long getDeletedDocCount(final String sourceIndex, final BulkResponse response) {
