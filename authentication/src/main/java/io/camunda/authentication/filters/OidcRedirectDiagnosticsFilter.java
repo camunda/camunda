@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -195,13 +196,7 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
 
     final String forwardedHost = request.getHeader("X-Forwarded-Host");
     if (forwardedHost != null && !forwardedHost.isBlank()) {
-      final String host = firstToken(forwardedHost);
-      final int colon = host.indexOf(':');
-      if (colon >= 0) {
-        builder.host(host.substring(0, colon)).port(host.substring(colon + 1));
-      } else {
-        builder.host(host).port(null);
-      }
+      applyForwardedHost(builder, firstToken(forwardedHost));
     }
 
     final String forwardedPort = request.getHeader("X-Forwarded-Port");
@@ -216,6 +211,27 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
             : stripTrailingSlash(request.getContextPath());
 
     return builder.build().toUriString() + prefix;
+  }
+
+  /**
+   * Applies the {@code X-Forwarded-Host} value (host plus optional port) to the builder. Authority
+   * parsing is delegated to {@link UriComponentsBuilder} so bracketed IPv6 literals (e.g. {@code
+   * [2001:db8::1]:443}) are handled correctly; a naive {@code indexOf(':')} split would mangle
+   * them.
+   */
+  private static void applyForwardedHost(
+      final UriComponentsBuilder builder, final String hostHeader) {
+    try {
+      final UriComponents authority =
+          UriComponentsBuilder.fromUriString("x://" + hostHeader).build();
+      if (authority.getHost() != null && !authority.getHost().isBlank()) {
+        builder.host(authority.getHost());
+        // getPort() returns -1 when no port is present, which clears any port on the builder.
+        builder.port(authority.getPort());
+      }
+    } catch (final RuntimeException e) {
+      LOG.debug("Could not parse X-Forwarded-Host '{}'", hostHeader, e);
+    }
   }
 
   private static String firstToken(final String headerValue) {
