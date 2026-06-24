@@ -26,6 +26,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -566,6 +567,25 @@ final class ReconfigurationTest {
       final var expected = List.of(new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()));
 
       assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @RegressionTest("https://github.com/camunda/camunda/issues/55856")
+    void lastMemberCanLeave(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+
+      // when - leader leaves
+      final var leader = m1.isLeader() ? m1 : m2;
+      final var follower = m1.isLeader() ? m2 : m1;
+      leader.leave().join();
+
+      // then - remaining follower can still leave
+      follower.leave().join();
     }
 
     @Test

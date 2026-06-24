@@ -89,8 +89,27 @@ public class ClusterPurgeTest {
     }
   }
 
-  private static void getSet(final boolean newValue) {
-    PurgingExporter.BLOCK_PURGE.set(newValue);
+  @RegressionTest("https://github.com/camunda/camunda/issues/55856")
+  void shouldPurgeWithMultipleReplicas() {
+    // given
+    try (final var cluster =
+        TestCluster.builder()
+            .withEmbeddedGateway(true)
+            .withBrokersCount(2)
+            .withPartitionsCount(1)
+            .withReplicationFactor(2)
+            .build()
+            .start()
+            .awaitCompleteTopology()) {
+
+      // when
+      final var purge = ClusterActuator.of(cluster.availableGateway()).purge(false);
+
+      // then
+      Awaitility.await()
+          .timeout(Duration.ofMinutes(2))
+          .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(purge));
+    }
   }
 
   private void configureExporter(final ExporterCfg exporterCfg) {
