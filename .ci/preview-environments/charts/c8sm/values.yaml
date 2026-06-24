@@ -476,5 +476,11 @@ infra-preview-environments-gateway-api:
   auth:
     # Explicit (matches the chart default); referenced by the HTTPRoute filters.
     middlewareName: vouch-cloud-auth
+  errorPages:
+    # Explicit (matches the chart default); the hand-written HTTPRoute attaches
+    # this Middleware to every backend rule so backend 5xx responses render the
+    # shared "Preview Environment not available" page.
+    enabled: true
+    middlewareName: error-pages
   route:
     enabled: false

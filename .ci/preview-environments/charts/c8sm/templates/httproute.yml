@@ -1,10 +1,13 @@
 # Gateway API HTTPRoutes for the C8 Self-Managed Camunda preview environment.
 #
-# The infra-managed Gateway, the Vouch (Okta SSO) Middleware and the
-# wildcard-cert TLS termination are rendered into this namespace by the
-# `infra-preview-environments-gateway-api` dependency; these routes attach to
-# that Gateway and reference the Vouch Middleware on every authenticated rule.
-# See https://github.com/camunda/infra-preview-environments-gateway-api.
+# The infra-managed Gateway, the Vouch (Okta SSO) Middleware, the error-pages
+# Middleware and the wildcard-cert TLS termination are rendered into this
+# namespace by the `infra-preview-environments-gateway-api` dependency; these
+# routes attach to that Gateway, reference the Vouch Middleware on every
+# authenticated rule, and reference the error-pages Middleware on every backend
+# rule so backend 5xx responses render the shared "Preview Environment not
+# available" page. See
+# https://github.com/camunda/infra-preview-environments-gateway-api.
 #
 # The routes are hand-written (the dependency's `route.enabled` is false)
 # because the backend service names, ports and context paths are derived from
@@ -21,6 +24,12 @@
 {{- $gateway := required "infra-preview-environments-gateway-api values block must be set" (index .Values "infra-preview-environments-gateway-api") -}}
 {{- $gatewayName := required "infra-preview-environments-gateway-api.gateway.name must be set so the HTTPRoutes can attach to the infra-managed Gateway" $gateway.gateway.name -}}
 {{- $vouchMiddleware := required "infra-preview-environments-gateway-api.auth.middlewareName must be set so the HTTPRoute filters can reference the Vouch Middleware" $gateway.auth.middlewareName -}}
+{{- $errorPages := $gateway.errorPages | default dict -}}
+{{- $errorsEnabled := $errorPages.enabled | default false -}}
+{{- $errorsMiddleware := "" -}}
+{{- if $errorsEnabled -}}
+{{- $errorsMiddleware = required "infra-preview-environments-gateway-api.errorPages.middlewareName must be set when errorPages.enabled is true so the HTTPRoute filters can reference the error-pages Middleware" $errorPages.middlewareName -}}
+{{- end -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -58,6 +67,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ template "console.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.console.service.port }}
@@ -72,6 +88,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ template "orchestration.fullname" $camundaPlatform }}-gateway
       port: {{ .Values.camundaPlatform.orchestration.service.httpPort }}
@@ -86,6 +109,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ include "identity.keycloak.service" $camundaPlatform }}
       port: {{ include "identity.keycloak.port" $camundaPlatform }}
@@ -110,6 +140,14 @@ spec:
     - path:
         type: Exact
         value: /auth/realms/camunda-platform/protocol/openid-connect/userinfo
+    {{- if $errorsEnabled }}
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ include "identity.keycloak.service" $camundaPlatform }}
       port: {{ include "identity.keycloak.port" $camundaPlatform }}
@@ -124,6 +162,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ template "identity.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.identity.service.port }}
@@ -138,6 +183,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ template "optimize.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.optimize.service.port }}
@@ -152,6 +204,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ template "webModeler.restapi.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.webModeler.restapi.service.port }}
@@ -166,6 +225,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ template "webModeler.websockets.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.webModeler.websockets.service.port }}
@@ -180,6 +246,13 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
     backendRefs:
     - name: {{ template "connectors.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.connectors.service.serverPort }}
