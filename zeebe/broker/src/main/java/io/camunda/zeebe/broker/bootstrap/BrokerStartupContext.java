@@ -144,7 +144,15 @@ public interface BrokerStartupContext {
 
   MeterRegistry getMeterRegistry();
 
+  /** Returns the security configuration for the {@code default} physical tenant. */
   EngineSecurityConfig getSecurityConfiguration();
+
+  /**
+   * Returns the security configuration for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  EngineSecurityConfig getSecurityConfiguration(String physicalTenantId);
 
   UserServices getUserServices();
 
@@ -158,7 +166,13 @@ public interface BrokerStartupContext {
 
   void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
 
-  BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter();
+  /**
+   * Returns the request authorization converter for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
+      String physicalTenantId);
 
   CheckpointSchedulingService getCheckpointSchedulingService();
 

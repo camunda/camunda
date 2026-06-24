@@ -365,6 +365,11 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     return securityConfiguration;
   }
 
+  @Override
+  public EngineSecurityConfig getSecurityConfiguration(final String physicalTenantId) {
+    return securityConfiguration;
+  }
+
   public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
     this.securityConfiguration = securityConfiguration;
   }
@@ -417,7 +422,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
+  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
+      final String physicalTenantId) {
     return brokerRequestAuthorizationConverter;
   }
 

@@ -68,7 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final EngineSecurityConfig securityConfiguration;
+  private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -76,7 +76,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
-  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final Map<String, BrokerRequestAuthorizationConverter>
+      brokerRequestAuthorizationConvertersByPhysicalTenant;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -106,13 +107,14 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final EngineSecurityConfig securityConfiguration,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final Map<String, BrokerRequestAuthorizationConverter>
+          brokerRequestAuthorizationConvertersByPhysicalTenant,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
 
@@ -127,7 +129,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.securityConfiguration = requireNonNull(securityConfiguration);
+    this.securityConfigurationsByPhysicalTenant =
+        Collections.unmodifiableMap(securityConfigurationsByPhysicalTenant);
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
@@ -136,7 +139,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
-    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+    this.brokerRequestAuthorizationConvertersByPhysicalTenant =
+        Collections.unmodifiableMap(brokerRequestAuthorizationConvertersByPhysicalTenant);
   }
 
   @Override
@@ -362,7 +366,21 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public EngineSecurityConfig getSecurityConfiguration() {
-    return securityConfiguration;
+    final var config =
+        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (config == null) {
+      throw new IllegalStateException(
+          "No security configuration registered for the default physical tenant");
+    }
+    return config;
+  }
+
+  @Override
+  public EngineSecurityConfig getSecurityConfiguration(final String physicalTenantId) {
+    if (!securityConfigurationsByPhysicalTenant.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return securityConfigurationsByPhysicalTenant.get(physicalTenantId);
   }
 
   @Override
@@ -397,8 +415,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
-    return brokerRequestAuthorizationConverter;
+  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
+      final String physicalTenantId) {
+    if (!brokerRequestAuthorizationConvertersByPhysicalTenant.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return brokerRequestAuthorizationConvertersByPhysicalTenant.get(physicalTenantId);
   }
 
   @Override

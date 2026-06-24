@@ -87,13 +87,13 @@ public final class Broker implements AutoCloseable {
             additionalPartitionListeners,
             systemContext.getShutdownTimeout(),
             systemContext.getMeterRegistry(),
-            systemContext.getSecurityConfiguration(),
+            systemContext.getSecurityConfigurationsByPhysicalTenant(),
             systemContext.getUserServices(),
             systemContext.getPasswordEncoder(),
             systemContext.getJwtDecoder(),
             systemContext.getOidcClaimsProvider(),
             systemContext.getSearchClientsProxy(),
-            systemContext.getBrokerRequestAuthorizationConverter(),
+            systemContext.getBrokerRequestAuthorizationConvertersByPhysicalTenant(),
             systemContext.getNodeIdProvider(),
             systemContext.getPhysicalTenantIds());
 
