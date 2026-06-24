@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
@@ -64,7 +65,7 @@ public class MetadataManager extends Actor {
   private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
 
   private final int partitionId;
-  private final int clusterSize;
+  private final Supplier<List<Integer>> registeredBrokers;
   private final MetadataStream metadataStream;
   private final PlacementStrategy placement = new RoundRobinPlacement();
 
@@ -80,12 +81,12 @@ public class MetadataManager extends Actor {
 
   public MetadataManager(
       final int partitionId,
-      final int clusterSize,
+      final Supplier<List<Integer>> registeredBrokers,
       final MetadataStream metadataStream,
       final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
-    this.clusterSize = clusterSize;
+    this.registeredBrokers = registeredBrokers;
     this.metadataStream = metadataStream;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
@@ -114,12 +115,13 @@ public class MetadataManager extends Actor {
   }
 
   /**
-   * The broker node ids the coordinator may place partitions on. Bootstrap seam: derived from the
-   * configured cluster size today; the single point that becomes a live, advertised broker set when
-   * dynamic membership lands.
+   * The broker node ids the coordinator may place partitions on — the brokers that have registered
+   * by joining the metadata Raft group (voting members + passive observers), derived from the
+   * group's live membership rather than a static configured cluster size. As brokers join/leave the
+   * group this set tracks them, so placement only targets registered brokers.
    */
   private List<Integer> availableBrokers() {
-    return IntStream.range(0, clusterSize).boxed().toList();
+    return registeredBrokers.get();
   }
 
   private CreateTopicResponse createTopic(final CreateTopicRequest request) {

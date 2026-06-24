@@ -321,7 +321,6 @@ final class PartitionBootstrapper {
     final var metadataPartition =
         new MetadataPartition(
             partitionId,
-            properties.cluster().clusterSize(),
             created.raftPartition(),
             actorScheduler,
             brokerMessagingService,

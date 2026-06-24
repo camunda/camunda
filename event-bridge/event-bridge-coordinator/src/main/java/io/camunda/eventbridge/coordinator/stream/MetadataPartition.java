@@ -78,7 +78,6 @@ public final class MetadataPartition extends Actor {
   private static final ZeebeLogAppender NOOP_APPENDER = (entry, listener) -> {};
 
   private final int partitionId;
-  private final int clusterSize;
   private final RaftPartition raftPartition;
   private final ActorSchedulingService actorScheduler;
   private final InstantSource clock;
@@ -107,7 +106,6 @@ public final class MetadataPartition extends Actor {
 
   public MetadataPartition(
       final int partitionId,
-      final int clusterSize,
       final RaftPartition raftPartition,
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
@@ -119,7 +117,6 @@ public final class MetadataPartition extends Actor {
       final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
-    this.clusterSize = clusterSize;
     this.raftPartition = raftPartition;
     this.actorScheduler = actorScheduler;
     this.clock = clock;
@@ -283,7 +280,11 @@ public final class MetadataPartition extends Actor {
   private void startMetadataManager() {
     metadataManager =
         new MetadataManager(
-            partitionId, clusterSize, metadataStream, provisionedSinkRef, reconfigurationExecutor);
+            partitionId,
+            this::registeredBrokerIds,
+            metadataStream,
+            provisionedSinkRef,
+            reconfigurationExecutor);
     actorScheduler.submitActor(metadataManager);
     requestHandlerRegistry.register(
         MetadataRequestHandler.topicName(partitionId),
@@ -324,6 +325,29 @@ public final class MetadataPartition extends Actor {
   @SuppressWarnings("unchecked")
   private static ZeebeDb<EventBridgeColumnFamilies> castDb(final ZeebeDb<?> db) {
     return (ZeebeDb<EventBridgeColumnFamilies>) db;
+  }
+
+  /**
+   * The broker node ids registered in the metadata Raft group — its live membership (voting members
+   * + passive observers). This is the placeable broker set the leader's {@link MetadataManager}
+   * uses instead of a static configured cluster size, so a broker is only a placement target once
+   * it has joined (registered with) the group.
+   */
+  private List<Integer> registeredBrokerIds() {
+    return raftPartition.members().stream()
+        .map(member -> parseNodeId(member.id()))
+        .filter(id -> id >= 0)
+        .distinct()
+        .sorted()
+        .toList();
+  }
+
+  private static int parseNodeId(final String memberId) {
+    try {
+      return Integer.parseInt(memberId.replaceAll("[^0-9]", ""));
+    } catch (final NumberFormatException e) {
+      return -1;
+    }
   }
 
   /** Tears down the per-role stream, leaving the state DB open for reuse on the next role. */
