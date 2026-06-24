@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.consumergroups.coordination;
+package io.camunda.eventbridge.consumergroups.membership;
 
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.INVALID_GROUP_ID;
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.NONE;
@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
  * assign/revoke handshake in memory ({@link GroupReconciliation}), writing no log entry. Session
  * liveness is an in-memory timer; an expired session is evicted by writing a {@code LEAVE_GROUP}.
  */
-public class CoordinationManager extends Actor {
+public class ConsumerGroupCoordinator extends Actor {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CoordinationManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ConsumerGroupCoordinator.class);
 
   private final int partitionId;
   private final int partitionCount;
@@ -60,7 +60,7 @@ public class CoordinationManager extends Actor {
   // Ephemeral reconciliation handshake per group (rebuilt from heartbeats after failover).
   private final Map<String, GroupReconciliation> reconciliations = new ConcurrentHashMap<>();
 
-  public CoordinationManager(
+  public ConsumerGroupCoordinator(
       final int partitionId,
       final int partitionCount,
       final InstantSource clock,
@@ -74,7 +74,7 @@ public class CoordinationManager extends Actor {
 
   @Override
   public String getName() {
-    return "CoordinatorManager-" + partitionId;
+    return "ConsumerGroupCoordinator-" + partitionId;
   }
 
   @Override

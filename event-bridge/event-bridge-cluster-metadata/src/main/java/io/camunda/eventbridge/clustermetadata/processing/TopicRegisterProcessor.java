@@ -5,7 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.clustermetadata.stream;
+package io.camunda.eventbridge.clustermetadata.processing;
+
+import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
 
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
@@ -15,11 +20,11 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * Handles the {@code REGISTER_TOPIC} command: turns it into a {@code TOPIC_REGISTERED} follow-up
  * event, which {@link TopicRegisteredApplier} applies to the replicated registry. Holds no state.
  */
-final class TopicRegisterProcessor implements TypedRecordProcessor<TopicRecord> {
+public final class TopicRegisterProcessor implements TypedRecordProcessor<TopicRecord> {
 
   private final Writers writers;
 
-  TopicRegisterProcessor(final Writers writers) {
+  public TopicRegisterProcessor(final Writers writers) {
     this.writers = writers;
   }
 

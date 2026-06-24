@@ -1,0 +1,34 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.eventbridge.clustermetadata.state.appliers;
+
+import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.state.mutable.MutableTopicState;
+import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
+
+import io.camunda.eventbridge.stream.TypedEventApplier;
+
+/**
+ * Applies {@code TOPIC_DELETED} events to the replicated registry — the only place that removes a
+ * topic from {@link MutableTopicState}. Runs identically on leader (after {@code TopicDeleteProcessor})
+ * and follower/observer (on replay).
+ */
+public final class TopicDeletedApplier implements TypedEventApplier<MetadataIntent, TopicRecord> {
+
+  private final MutableTopicState topicState;
+
+  public TopicDeletedApplier(final MutableTopicState topicState) {
+    this.topicState = topicState;
+  }
+
+  @Override
+  public void applyState(final long key, final TopicRecord value) {
+    topicState.delete(value.getName());
+  }
+}

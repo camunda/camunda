@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.clustermetadata.stream;
+package io.camunda.eventbridge.clustermetadata.state.topic;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -110,7 +110,7 @@ public record TopicMetadata(
         .collect(Collectors.joining("|"));
   }
 
-  static Map<Integer, List<Integer>> decodeAssignment(final String encoded) {
+  public static Map<Integer, List<Integer>> decodeAssignment(final String encoded) {
     final Map<Integer, List<Integer>> assignment = new LinkedHashMap<>();
     if (encoded == null || encoded.isBlank()) {
       return assignment;

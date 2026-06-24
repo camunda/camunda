@@ -5,7 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.clustermetadata.stream;
+package io.camunda.eventbridge.clustermetadata.record;
+
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;

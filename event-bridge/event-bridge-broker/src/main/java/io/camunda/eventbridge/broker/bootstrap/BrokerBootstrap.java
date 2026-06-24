@@ -13,7 +13,7 @@ import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
-import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.stream.TopicProvisionedGossip;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;

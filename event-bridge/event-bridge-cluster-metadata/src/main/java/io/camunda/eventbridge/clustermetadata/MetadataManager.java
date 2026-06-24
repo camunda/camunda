@@ -7,6 +7,8 @@
  */
 package io.camunda.eventbridge.clustermetadata;
 
+import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
+
 import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.NONE;
 
 import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
@@ -14,8 +16,8 @@ import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
-import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata;
-import io.camunda.eventbridge.clustermetadata.stream.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
@@ -97,7 +99,7 @@ public class MetadataManager extends Actor {
   /**
    * Creates a topic: the manager computes the placement (it needs live broker membership) and
    * writes a {@code CREATE_TOPIC} command; the {@link
-   * io.camunda.eventbridge.clustermetadata.stream.CreateTopicProcessor} validates it (name, counts,
+   * io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor} validates it (name, counts,
    * not-already-exists) against the replicated registry and replies after commit.
    */
   public CompletableFuture<byte[]> handleCreateTopic(final CreateTopicRequest request) {

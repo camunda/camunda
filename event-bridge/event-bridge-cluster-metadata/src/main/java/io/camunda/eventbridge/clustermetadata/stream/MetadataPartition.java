@@ -7,6 +7,9 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.eventbridge.clustermetadata.MetadataManager;

@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.transport;
 
-import io.camunda.eventbridge.consumergroups.coordination.CoordinationManager;
+import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
@@ -34,12 +34,12 @@ public final class CoordinationRequestHandler implements RequestHandler {
   private static final String TOPIC_FORMAT = COORDINATOR_ROUTING_GROUP + "-coordinate-api-%d";
 
   private final int partitionId;
-  private final CoordinationManager coordinationManager;
+  private final ConsumerGroupCoordinator consumerGroupCoordinator;
 
   public CoordinationRequestHandler(
-      final int partitionId, final CoordinationManager coordinationManager) {
+      final int partitionId, final ConsumerGroupCoordinator consumerGroupCoordinator) {
     this.partitionId = partitionId;
-    this.coordinationManager = coordinationManager;
+    this.consumerGroupCoordinator = consumerGroupCoordinator;
   }
 
   @Override
@@ -64,7 +64,7 @@ public final class CoordinationRequestHandler implements RequestHandler {
     // The coordinator stream replies with the serialized CommitOffsetResponse once the command has
     // been processed and committed (validation + response now happen in the processor); frame it in
     // the ExecuteCoordinateResponse envelope the gateway's broker client decodes.
-    return coordinationManager
+    return consumerGroupCoordinator
         .handleCommit(commit)
         .thenApply(CoordinationResponseEncoder::encodeValue);
   }
@@ -75,7 +75,7 @@ public final class CoordinationRequestHandler implements RequestHandler {
 
     // Join now replies through the stream after the command commits (the processor assigns the
     // member id/epoch and stages the response); frame the serialized reply for the broker client.
-    return coordinationManager
+    return consumerGroupCoordinator
         .handleJoinGroup(joinGroup)
         .thenApply(CoordinationResponseEncoder::encodeValue);
   }
@@ -84,7 +84,7 @@ public final class CoordinationRequestHandler implements RequestHandler {
     final var leaveGroup = new LeaveGroupRequest();
     leaveGroup.wrap(request.value());
 
-    return coordinationManager
+    return consumerGroupCoordinator
         .handleLeaveGroup(leaveGroup)
         .thenApply(CoordinationResponseEncoder::encodeValue);
   }
@@ -94,7 +94,7 @@ public final class CoordinationRequestHandler implements RequestHandler {
     heartbeat.wrap(request.value());
 
     return toFuture(
-        coordinationManager.handleHeartbeat(heartbeat),
+        consumerGroupCoordinator.handleHeartbeat(heartbeat),
         CoordinationResponseEncoder::encodeHeartbeat);
   }
 

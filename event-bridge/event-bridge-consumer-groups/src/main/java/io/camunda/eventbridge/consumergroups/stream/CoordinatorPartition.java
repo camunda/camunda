@@ -9,7 +9,7 @@ package io.camunda.eventbridge.consumergroups.stream;
 
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.eventbridge.consumergroups.coordination.CoordinationManager;
+import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.transport.CoordinationRequestHandler;
 import io.camunda.eventbridge.stream.RaftPartitionLifecycle;
@@ -24,7 +24,7 @@ import java.time.InstantSource;
 
 /**
  * Lifecycle actor for a coordinator Raft partition (one shard of the coordinator group). It runs a
- * {@link CoordinatorStream} and, when leader, a {@link CoordinationManager} that serves
+ * {@link CoordinatorStream} and, when leader, a {@link ConsumerGroupCoordinator} that serves
  * join/heartbeat/leave/commit and replicates offsets + group metadata. Mirrors {@code
  * MetadataPartition}; see {@link RaftPartitionLifecycle} for the role-change/recovery/snapshot
  * flow.
@@ -34,7 +34,7 @@ public final class CoordinatorPartition
 
   private final int partitionCount;
 
-  private CoordinationManager coordinationManager;
+  private ConsumerGroupCoordinator consumerGroupCoordinator;
 
   public CoordinatorPartition(
       final int partitionId,
@@ -77,19 +77,19 @@ public final class CoordinatorPartition
 
   @Override
   protected void onLeaderReady() {
-    coordinationManager = new CoordinationManager(partitionId, partitionCount, clock, stream);
-    actorScheduler.submitActor(coordinationManager);
+    consumerGroupCoordinator = new ConsumerGroupCoordinator(partitionId, partitionCount, clock, stream);
+    actorScheduler.submitActor(consumerGroupCoordinator);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),
-        new CoordinationRequestHandler(partitionId, coordinationManager));
+        new CoordinationRequestHandler(partitionId, consumerGroupCoordinator));
   }
 
   @Override
   protected void onManagerTeardown() {
-    if (coordinationManager != null) {
+    if (consumerGroupCoordinator != null) {
       requestHandlerRegistry.unregister(CoordinationRequestHandler.topicName(partitionId));
-      coordinationManager.closeAsync();
-      coordinationManager = null;
+      consumerGroupCoordinator.closeAsync();
+      consumerGroupCoordinator = null;
     }
   }
 }

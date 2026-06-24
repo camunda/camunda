@@ -18,7 +18,7 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartit
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataPartition;
-import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorPartition;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;

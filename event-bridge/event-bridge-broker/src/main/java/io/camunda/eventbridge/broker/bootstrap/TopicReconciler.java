@@ -9,7 +9,7 @@ package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
-import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.stream.TopicProvisionedGossip;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import java.util.ArrayList;

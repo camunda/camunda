@@ -5,13 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.clustermetadata.stream;
+package io.camunda.eventbridge.clustermetadata.state.topic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata.TopicStatus;
+import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
+import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -27,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Verifies the coordinator's replicated topic registry and its process/replay over RocksDB. */
+/** Verifies the metadata group's replicated topic registry and its replay over RocksDB. */
 final class TopicStateAndProcessorTest {
 
   @TempDir private Path dbDir;
@@ -53,23 +58,20 @@ final class TopicStateAndProcessorTest {
 
   @Test
   void shouldStoreAndReadTopic() {
-    // when
     state.put("orders", new TopicMetadata(8, 3, TopicStatus.CREATING));
 
-    // then
     assertThat(state.get("orders")).isEqualTo(new TopicMetadata(8, 3, TopicStatus.CREATING));
   }
 
   @Test
   void shouldStoreAndReadTopicAssignment() {
-    // given a centrally-decided placement carried as data
+    // a centrally-decided placement carried as data
     final var assignment = java.util.Map.of(1, java.util.List.of(0, 1), 2, java.util.List.of(1, 2));
     final var metadata = new TopicMetadata(2, 2, TopicStatus.CREATING, assignment);
 
-    // when
     state.put("orders", metadata);
 
-    // then the assignment round-trips through the encoded registry entry
+    // the assignment round-trips through the encoded registry entry
     assertThat(state.get("orders")).isEqualTo(metadata);
     assertThat(state.get("orders").assignment()).isEqualTo(assignment);
   }
@@ -81,36 +83,29 @@ final class TopicStateAndProcessorTest {
 
   @Test
   void shouldOverwriteOnReRegister() {
-    // given
     state.put("orders", new TopicMetadata(8, 3, TopicStatus.CREATING));
 
-    // when — same name, advanced status
+    // same name, advanced status
     state.put("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE));
 
-    // then
     assertThat(state.get("orders").status()).isEqualTo(TopicStatus.ACTIVE);
   }
 
   @Test
   void shouldDeleteTopic() {
-    // given
     state.put("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE));
 
-    // when
     state.delete("orders");
 
-    // then
     assertThat(state.get("orders")).isNull();
   }
 
   @Test
-  void shouldListAllTopics() {
-    // given
+  void shouldSnapshotAllTopics() {
     state.put("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE));
     state.put("users", new TopicMetadata(4, 1, TopicStatus.CREATING));
 
-    // then
-    assertThat(state.readAll())
+    assertThat(state.topicsSnapshot())
         .containsOnly(
             java.util.Map.entry("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE)),
             java.util.Map.entry("users", new TopicMetadata(4, 1, TopicStatus.CREATING)));
@@ -118,18 +113,16 @@ final class TopicStateAndProcessorTest {
 
   @Test
   void shouldApplyRegisterAndDeleteOnReplay() {
-    // given — a follower replaying topic events through the engine's applier registry
-    final var registryCache = new java.util.concurrent.ConcurrentHashMap<String, TopicMetadata>();
+    // a follower replaying topic events through the engine's applier registry (dispatch is by
+    // intent value, so this also guards the borrowed-ValueType intent mapping)
     final var engine =
         new RecordProcessingEngine(
             processors ->
                 processors
                     .withEventApplier(
-                        MetadataIntent.TOPIC_REGISTERED,
-                        new TopicRegisteredApplier(state, registryCache))
+                        MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(state))
                     .withEventApplier(
-                        MetadataIntent.TOPIC_DELETED,
-                        new TopicDeletedApplier(state, registryCache)));
+                        MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(state)));
 
     final var registered =
         new TopicRecord()
@@ -140,8 +133,9 @@ final class TopicStateAndProcessorTest {
             .setStatus(TopicStatus.ACTIVE);
     engine.replay(recordOf(registered));
     assertThat(state.get("orders")).isEqualTo(new TopicMetadata(8, 3, TopicStatus.ACTIVE));
-    // the thread-safe cache mirrors the durable state in lockstep
-    assertThat(registryCache).containsEntry("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE));
+    // the thread-safe mirror tracks the durable state in lockstep
+    assertThat(state.topicsSnapshot())
+        .containsEntry("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE));
 
     // when — a delete event replays
     final var deleted = new TopicRecord().setName("orders").setOp(TopicRecord.OP_DELETE);
@@ -149,7 +143,7 @@ final class TopicStateAndProcessorTest {
 
     // then — follower state matches a leader that registered then deleted
     assertThat(state.get("orders")).isNull();
-    assertThat(registryCache).doesNotContainKey("orders");
+    assertThat(state.topicsSnapshot()).doesNotContainKey("orders");
   }
 
   private static TypedRecord<TopicRecord> recordOf(final TopicRecord value) {

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.consumergroups.coordination;
+package io.camunda.eventbridge.consumergroups.membership;
 
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The coordinator's <em>ephemeral</em> per-group reconciliation handshake, held in memory on the
- * leader's {@link CoordinationManager} actor. It drives each member from the partitions it
+ * leader's {@link ConsumerGroupCoordinator} actor. It drives each member from the partitions it
  * currently reports owning toward the group's durable target assignment (read from the replicated
  * {@link GroupSnapshot} mirror), using the incremental-cooperative protocol: a partition is not
  * assigned to its new owner until the previous owner confirms revoking it.

@@ -7,6 +7,20 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
+import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.record.MetadataRecordValues;
+import io.camunda.eventbridge.clustermetadata.state.topic.DbTopicState;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
+import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
+import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.TopicRegisterProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.TopicValidator;
+
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -44,13 +58,6 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataStream.class);
 
-  // Thread-safe in-memory mirror of the topic registry, maintained by the topic event appliers on
-  // the stream's actor. Cross-actor reads (topicsSnapshot, from the leader's MetadataManager and
-  // each broker's reconcile) use this rather than touching the stream-owned RocksDB state.
-  // DbTopicState is the durable source of truth; this is seeded from it on start (snapshot
-  // recovery).
-  private final Map<String, TopicMetadata> registryCache = new ConcurrentHashMap<>();
-
   private DbTopicState topicState;
 
   /**
@@ -80,10 +87,9 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   @Override
   protected void onStarting() {
     topicState = new DbTopicState(zeebeDb, zeebeDb.createContext());
-    // Seed the cache from durable state before the processor starts (no concurrent access yet),
+    // Seed the mirror from durable state before the processor starts (no concurrent access yet),
     // so a replica that recovered topics from a snapshot exposes them even before any replay.
-    registryCache.clear();
-    registryCache.putAll(topicState.readAll());
+    topicState.seedMirror();
   }
 
   @Override
@@ -109,11 +115,9 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                     MetadataIntent.REGISTER_TOPIC,
                     new TopicRegisterProcessor(processors.writers()))
                 .withEventApplier(
-                    MetadataIntent.TOPIC_REGISTERED,
-                    new TopicRegisteredApplier(topicState, registryCache))
+                    MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState))
                 .withEventApplier(
-                    MetadataIntent.TOPIC_DELETED,
-                    new TopicDeletedApplier(topicState, registryCache)));
+                    MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState)));
   }
 
   /**
@@ -166,7 +170,7 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   /** All registered topics ({@code topicName → metadata}) for failover rebuild / listing. */
   public Map<String, TopicMetadata> topicsSnapshot() {
-    return new LinkedHashMap<>(registryCache);
+    return topicState.topicsSnapshot();
   }
 
   private void writeTopicCommand(
