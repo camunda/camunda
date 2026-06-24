@@ -10,9 +10,10 @@ package io.camunda.eventbridge.consumergroups.membership;
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,44 +73,48 @@ final class GroupReconciliation {
     return group.isRebalancePending() || isStabilizing(group);
   }
 
-  List<String> expiredMembers(final Instant deadline) {
-    final var expired = new ArrayList<String>();
+  /**
+   * The members to evict on this tick: those whose session has lapsed (no heartbeat within {@code
+   * sessionTimeout}), plus — when a rebalance has stalled past {@code rebalanceTimeout} — those
+   * that never confirmed the current target. The coordinator writes a {@code LEAVE_GROUP} for each.
+   */
+  List<String> membersToEvict(
+      final GroupSnapshot group,
+      final Instant now,
+      final Duration sessionTimeout,
+      final Duration rebalanceTimeout) {
+    final var deadline = now.minus(sessionTimeout);
+    final var evict = new LinkedHashSet<String>();
+
     sessions.forEach(
         (memberId, session) -> {
           if (session.isExpired(deadline)) {
-            expired.add(memberId);
+            evict.add(memberId);
           }
         });
-    return expired;
-  }
 
-  /** Members that have not confirmed the current target — evicted when a rebalance stalls. */
-  List<String> nonConvergedMembers(final GroupSnapshot group) {
-    final var stuck = new ArrayList<String>();
-    group
-        .members()
-        .keySet()
-        .forEach(
-            memberId -> {
-              final var session = sessions.get(memberId);
-              if (session == null || session.confirmedEpoch() != group.assignmentEpoch()) {
-                stuck.add(memberId);
-              }
-            });
-    return stuck;
-  }
-
-  boolean rebalanceTimedOut(final Instant now, final java.time.Duration timeout) {
-    return rebalanceStartedAt != null
-        && java.time.Duration.between(rebalanceStartedAt, now).compareTo(timeout) > 0;
+    if (isRebalancing(group) && rebalanceStalled(now, rebalanceTimeout)) {
+      group
+          .members()
+          .keySet()
+          .forEach(
+              memberId -> {
+                final var session = sessions.get(memberId);
+                if (session == null || session.confirmedEpoch() != group.assignmentEpoch()) {
+                  evict.add(memberId);
+                }
+              });
+    }
+    return List.copyOf(evict);
   }
 
   void removeSession(final String memberId) {
     sessions.remove(memberId);
   }
 
-  boolean hasSessions() {
-    return !sessions.isEmpty();
+  private boolean rebalanceStalled(final Instant now, final Duration timeout) {
+    return rebalanceStartedAt != null
+        && Duration.between(rebalanceStartedAt, now).compareTo(timeout) > 0;
   }
 
   /** Seeds a session as already-converged to its current target (used on leader activation). */

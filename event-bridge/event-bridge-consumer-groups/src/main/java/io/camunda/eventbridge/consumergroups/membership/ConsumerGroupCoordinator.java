@@ -49,6 +49,11 @@ public class ConsumerGroupCoordinator extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConsumerGroupCoordinator.class);
 
+  // Eviction LEAVE_GROUP write: retry a few times if the write itself fails (e.g. leadership lost
+  // mid-append) before giving up; a still-present member is re-detected on a later tick.
+  private static final int EVICTION_ATTEMPTS = 3;
+  private static final Duration EVICTION_RETRY_DELAY = Duration.ofMillis(200);
+
   private final int partitionId;
   private final int partitionCount;
   private final InstantSource clock;
@@ -202,20 +207,14 @@ public class ConsumerGroupCoordinator extends Actor {
 
   private void evictExpiredSessions() {
     final var now = clock.instant();
-    final var deadline = now.minus(heartbeatTimeout);
-
     for (final var group : coordinatorStream.groupSnapshots()) {
       final var reconciliation = reconciliations.get(group.groupId());
       if (reconciliation == null) {
         continue;
       }
-
-      reconciliation.expiredMembers(deadline).forEach(memberId -> evict(group, memberId));
-
-      if (reconciliation.isRebalancing(group)
-          && reconciliation.rebalanceTimedOut(now, rebalanceTimeout)) {
-        reconciliation.nonConvergedMembers(group).forEach(memberId -> evict(group, memberId));
-      }
+      reconciliation
+          .membersToEvict(group, now, heartbeatTimeout, rebalanceTimeout)
+          .forEach(memberId -> evict(group, memberId));
     }
     pruneReconciliations();
     scheduleConsumerEviction();
@@ -225,6 +224,8 @@ public class ConsumerGroupCoordinator extends Actor {
     final var member = group.members().get(memberId);
     final var reconciliation = reconciliations.get(group.groupId());
     if (reconciliation != null) {
+      // Stop tracking the session now so the next tick does not re-detect this member while its
+      // LEAVE_GROUP is still being written/retried.
       reconciliation.removeSession(memberId);
     }
     if (member == null) {
@@ -240,7 +241,39 @@ public class ConsumerGroupCoordinator extends Actor {
             .setGroupId(group.groupId())
             .setMemberId(memberId)
             .setMemberEpoch(member.memberEpoch());
-    coordinatorStream.leaveGroup(command); // fire-and-forget; the MEMBER_LEFT event removes it
+    leaveGroupWithRetry(command, EVICTION_ATTEMPTS);
+  }
+
+  /**
+   * Writes the eviction {@code LEAVE_GROUP}, retrying a few times if the write itself fails (e.g.
+   * leadership lost mid-append, a transient append error). A committed reply needs no retry — even
+   * a rejection ("already gone") means the member is no longer there. Best-effort: if every attempt
+   * fails the member stays put and is re-detected once its session lapses again (or after failover,
+   * when the new leader re-seeds sessions from replicated state).
+   */
+  private void leaveGroupWithRetry(final MembershipRecord command, final int attemptsLeft) {
+    coordinatorStream
+        .leaveGroup(command)
+        .whenComplete(
+            (reply, error) -> {
+              if (error == null) {
+                return; // committed (member left, or already gone) — nothing more to do
+              }
+              actor.run(
+                  () -> {
+                    if (attemptsLeft <= 1) {
+                      LOG.warn(
+                          "Coordinator partition {} — gave up evicting member {} from group {}",
+                          partitionId,
+                          command.getMemberId(),
+                          command.getGroupId(),
+                          error);
+                      return;
+                    }
+                    actor.schedule(
+                        EVICTION_RETRY_DELAY, () -> leaveGroupWithRetry(command, attemptsLeft - 1));
+                  });
+            });
   }
 
   private void seedReconciliations() {

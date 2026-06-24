@@ -107,14 +107,20 @@ final class GroupReconciliationTest {
   }
 
   @Test
-  void shouldExpireSessionsPastTheDeadline() {
-    // given
+  void shouldEvictMembersWhoseSessionLapsed() {
+    // given — m1 heartbeated at NOW and is converged (so the group is not rebalancing)
     final var group = group(1, 1, 4, member("m1", 1, List.of(1, 2, 3, 4)));
     reconciliation.reconcile(group, "m1", List.of(1, 2, 3, 4), NOW);
+    final var sessionTimeout = Duration.ofSeconds(5);
+    final var rebalanceTimeout = Duration.ofMinutes(5);
 
-    // then — a member is expired when its last heartbeat (NOW) is before the deadline cutoff
-    assertThat(reconciliation.expiredMembers(NOW.minus(Duration.ofSeconds(5)))).isEmpty();
-    assertThat(reconciliation.expiredMembers(NOW.plus(Duration.ofSeconds(5))))
+    // then — not evicted while its last heartbeat is within the session timeout
+    assertThat(reconciliation.membersToEvict(group, NOW, sessionTimeout, rebalanceTimeout))
+        .isEmpty();
+    // and evicted once its last heartbeat falls before the deadline (now - sessionTimeout)
+    assertThat(
+            reconciliation.membersToEvict(
+                group, NOW.plus(Duration.ofSeconds(10)), sessionTimeout, rebalanceTimeout))
         .containsExactly("m1");
   }
 
