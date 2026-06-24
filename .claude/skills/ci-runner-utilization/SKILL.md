@@ -1,7 +1,7 @@
 ---
 
 name: ci-runner-utilization
-description: Detect CI runner underutilization and give downsizing recommendations for cost savings. Queries BigQuery CPU/memory metrics from self-hosted runners in camunda/camunda, identifies overprovisioned jobs, and suggests smaller runner types. Use when asked about CI costs, runner sizing, resource waste, underutilization, or right-sizing runners.
+description: Detect CI runner underutilization and recommend downsizing for cost savings. Use when asked about CI costs, runner sizing, resource waste, underutilization, or right-sizing self-hosted runners.
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 
 name: ci-push-workflow-health
-description: Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches using BigQuery CI Analytics data (ci-30-162810.prod_ci_analytics.build_status_v2). Use when asked about CI health, broken jobs, flaky workflows, failure rates, or push-trigger problems on main or stable branches.
+description: Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches. Use when asked about CI health, broken jobs, flaky workflows, failure rates, or push-trigger problems.
 
 ---
 

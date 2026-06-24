@@ -150,10 +150,15 @@
 /.claude/skills/load-test-ops/ @camunda/reliability-testing
 
 # CI skills
-/.claude/skills/act-testing/**             @camunda/monorepo-devops-team
-/.claude/skills/ci-security-compliance/**  @camunda/monorepo-devops-team
-/.claude/skills/ci-validation/**           @camunda/monorepo-devops-team
-/.claude/skills/ci-workflow-authoring/**   @camunda/monorepo-devops-team
+/.claude/skills/act-testing/**                   @camunda/monorepo-devops-team
+/.claude/skills/ci-fix-failure/**                @camunda/monorepo-devops-team
+/.claude/skills/ci-incident/**                   @camunda/monorepo-devops-team
+/.claude/skills/ci-push-workflow-health/**       @camunda/monorepo-devops-team
+/.claude/skills/ci-runner-utilization/**         @camunda/monorepo-devops-team
+/.claude/skills/ci-scheduled-workflow-health/**  @camunda/monorepo-devops-team
+/.claude/skills/ci-security-compliance/**        @camunda/monorepo-devops-team
+/.claude/skills/ci-validation/**                 @camunda/monorepo-devops-team
+/.claude/skills/ci-workflow-authoring/**         @camunda/monorepo-devops-team
 
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
