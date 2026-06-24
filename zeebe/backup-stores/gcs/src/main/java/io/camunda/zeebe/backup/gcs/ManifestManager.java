@@ -28,6 +28,8 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -57,6 +59,9 @@ public final class ManifestManager {
   private static final int MAX_LIST_ATTEMPTS = 6;
   private static final Duration INITIAL_LIST_RETRY_DELAY = Duration.ofMillis(100);
   private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
+  private static final RetryDecorator MANIFEST_LIST_RETRY =
+      new RetryDecorator(manifestListRetryConfiguration())
+          .withRetryOnException(ManifestManager::shouldRetryListOperation);
   private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
 
   /**
@@ -223,42 +228,42 @@ public final class ManifestManager {
   }
 
   private List<Blob> listManifestBlobsWithRetry(final String prefix) {
-    for (int attempt = 1; ; attempt++) {
-      try {
-        final var blobs = new ArrayList<Blob>();
-        client
-            .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
-            .iterateAll()
-            .forEach(blobs::add);
-        return blobs;
-      } catch (final StorageException e) {
-        if (attempt >= MAX_LIST_ATTEMPTS || !shouldRetryListOperation(e)) {
-          throw e;
-        }
-
-        LOG.warn(
-            "Failed to list GCS backup manifests from bucket '{}' with prefix '{}' on attempt {}/{}. Retrying.",
-            bucketInfo.getName(),
-            prefix,
-            attempt,
-            MAX_LIST_ATTEMPTS,
-            e);
-        waitBeforeListRetry(attempt);
-      }
+    try {
+      return MANIFEST_LIST_RETRY.decorate(
+          "list GCS backup manifests from bucket '%s' with prefix '%s'"
+              .formatted(bucketInfo.getName(), prefix),
+          () -> listManifestBlobs(prefix),
+          ignored -> false);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to list GCS backup manifests", e);
     }
   }
 
-  private boolean shouldRetryListOperation(final StorageException e) {
-    return e.isRetryable() || isServerError(e) || isTransientComputeEngineMetadataError(e);
+  private List<Blob> listManifestBlobs(final String prefix) {
+    final var blobs = new ArrayList<Blob>();
+    client
+        .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
+        .iterateAll()
+        .forEach(blobs::add);
+    return blobs;
   }
 
-  private boolean isServerError(final StorageException e) {
+  private static boolean shouldRetryListOperation(final Throwable error) {
+    return error instanceof StorageException storageException
+        && (storageException.isRetryable()
+            || isServerError(storageException)
+            || isTransientComputeEngineMetadataError(storageException));
+  }
+
+  private static boolean isServerError(final StorageException e) {
     final var statusCode = e.getCode();
     return statusCode >= 500 && statusCode < 600;
   }
 
-  private boolean isTransientComputeEngineMetadataError(final StorageException e) {
-    for (Throwable current = e; current != null; current = current.getCause()) {
+  private static boolean isTransientComputeEngineMetadataError(final Throwable error) {
+    for (Throwable current = error; current != null; current = current.getCause()) {
       final var message = current.getMessage();
       if (message != null
           && message.contains("Unexpected Error code 500")
@@ -269,18 +274,12 @@ public final class ManifestManager {
     return false;
   }
 
-  private void waitBeforeListRetry(final int attempt) {
-    final var delay =
-        Duration.ofMillis(
-            Math.min(
-                MAX_LIST_RETRY_DELAY.toMillis(),
-                INITIAL_LIST_RETRY_DELAY.toMillis() << (attempt - 1)));
-    try {
-      Thread.sleep(delay);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new StorageException(0, "Interrupted while retrying GCS backup manifest listing", e);
-    }
+  private static RetryConfiguration manifestListRetryConfiguration() {
+    final var retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMaxRetries(MAX_LIST_ATTEMPTS);
+    retryConfiguration.setMinRetryDelay(INITIAL_LIST_RETRY_DELAY);
+    retryConfiguration.setMaxRetryDelay(MAX_LIST_RETRY_DELAY);
+    return retryConfiguration;
   }
 
   private CompletableFuture<BackupStatus> downloadManifestStatus(final Blob blob) {
