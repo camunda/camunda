@@ -142,4 +142,18 @@ class PartitionProcessingStateTest {
         .describedAs("Exporting must be paused.")
         .isEqualTo(ExporterPhase.PAUSED);
   }
+
+  @Test
+  void shouldSupportSoftThenHardPause() {
+    // given
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    partitionProcessingState.softPauseExporting();
+
+    // when
+    partitionProcessingState.pauseExporting();
+
+    // then
+    final var newState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    assertThat(newState.getExporterPhase()).isEqualTo(ExporterPhase.PAUSED);
+  }
 }
