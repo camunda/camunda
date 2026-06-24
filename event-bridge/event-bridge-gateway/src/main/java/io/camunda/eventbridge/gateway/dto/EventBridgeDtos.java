@@ -102,6 +102,13 @@ public final class EventBridgeDtos {
       Map<String, List<Integer>> assignment,
       Map<String, Map<Integer, Long>> committedOffsets) {}
 
+  /**
+   * Response body for {@code GET /v1/groups/{groupId}/offsets} — a group's committed offsets
+   * grouped {@code topic → (partition → offset)}.
+   */
+  public record OffsetFetchResponse(
+      String errorCode, Map<String, Map<Integer, Long>> committedOffsets) {}
+
   public record LatestPositionResponse(long position) {}
 
   // -------------------------------------------------------------------------

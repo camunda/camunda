@@ -13,10 +13,12 @@ import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.LeaveGroupRequest;
 import io.camunda.eventbridge.mapper.RequestMapper;
 import io.camunda.eventbridge.mapper.ResponseMapper;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
 import io.camunda.eventbridge.service.CoordinatorService;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -126,6 +128,21 @@ public class CoordinationController {
                 return CoordinatorErrors.toResponse(error);
               }
               return ResponseEntity.ok((Object) responseMapper.toCommitResponse(res));
+            });
+  }
+
+  @GetMapping("/{groupId}/offsets")
+  public CompletableFuture<ResponseEntity<Object>> offsets(@PathVariable final String groupId) {
+    final var request = new OffsetFetchRequest().setGroupId(groupId);
+    return coordinatorService
+        .offsetFetch(request)
+        .handleAsync(
+            (res, error) -> {
+              if (error != null) {
+                return coordinatorUnavailable();
+              }
+              return ResponseEntity.status(statusFor(res.getErrorCode()))
+                  .body((Object) responseMapper.toOffsetFetchResponse(res));
             });
   }
 

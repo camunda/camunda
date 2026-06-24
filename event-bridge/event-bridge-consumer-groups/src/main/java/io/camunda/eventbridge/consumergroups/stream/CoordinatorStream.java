@@ -28,6 +28,7 @@ import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedAppli
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
+import io.camunda.eventbridge.consumergroups.state.offset.OffsetQueryService;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
@@ -69,6 +70,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private final InstantSource clock;
   private final TopicRegistry topicRegistry;
   private DbOffsetState offsetState;
+  private OffsetQueryService offsetQuery;
   private DbConsumerGroupState groupState;
   private MemberLivenessMirror liveness;
 
@@ -104,10 +106,11 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   @Override
   protected void onStarting() {
     offsetState = new DbOffsetState(zeebeDb, zeebeDb.createContext());
+    // Offsets are unbounded, so they are read on demand from state (its own context), not mirrored.
+    offsetQuery = new OffsetQueryService(zeebeDb);
     groupState = new DbConsumerGroupState(zeebeDb, zeebeDb.createContext());
-    // Seed the thread-safe mirrors from durable state before the processor starts (no concurrent
-    // access yet), so a replica recovered from a snapshot exposes its state even before any replay.
-    offsetState.seedMirror();
+    // Seed the group mirror from durable state before the processor starts (no concurrent access
+    // yet), so a replica recovered from a snapshot exposes its membership even before any replay.
     groupState.seedMirror();
     liveness = new MemberLivenessMirror();
   }
@@ -206,9 +209,10 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   }
 
   /**
-   * Committed offsets for a group ({@code (topic, partition) → position}), read from the mirror.
+   * Committed offsets for a group ({@code (topic, partition) → position}), read from state via the
+   * {@link OffsetQueryService} (off the processing actor, no in-memory mirror).
    */
   public Map<TopicPartition, Long> committedOffsets(final String groupId) {
-    return offsetState.offsetsSnapshot(groupId);
+    return offsetQuery.committedOffsets(groupId);
   }
 }

@@ -203,7 +203,6 @@ final class ConsumerGroupStateTest {
     offsetCommitted.applyState(3, commit("g", 1, 8));
 
     assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(8);
-    assertThat(offsetState.offsetsSnapshot("g")).containsEntry(tp(1), 8L);
   }
 
   @Test

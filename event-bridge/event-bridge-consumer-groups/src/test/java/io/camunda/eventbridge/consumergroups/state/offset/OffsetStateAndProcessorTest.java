@@ -81,13 +81,15 @@ final class OffsetStateAndProcessorTest {
   }
 
   @Test
-  void shouldSnapshotAllOffsetsForGroup() {
+  void shouldSnapshotAllOffsetsForGroupFromState() {
     applier.applyState(1, commit("group-a", 1, 8));
     applier.applyState(2, commit("group-a", 2, 4));
     applier.applyState(3, commit("group-b", 1, 99));
 
-    // only group-a's partitions, sorted
-    assertThat(state.offsetsSnapshot("group-a"))
+    // the query service reads committed offsets from state (its own context), no mirror — only
+    // group-a's partitions, sorted
+    final var query = new OffsetQueryService(db);
+    assertThat(query.committedOffsets("group-a"))
         .containsExactly(
             java.util.Map.entry(new TopicPartition("t", 1), 8L),
             java.util.Map.entry(new TopicPartition("t", 2), 4L));

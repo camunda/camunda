@@ -13,6 +13,7 @@ import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
+import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchResponse;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,6 +50,12 @@ public class ResponseMapper {
         response.getAssignmentEpoch(),
         groupByTopic(response.getAssignment()),
         groupOffsetsByTopic(response.getCommittedOffsets()));
+  }
+
+  public EventBridgeDtos.OffsetFetchResponse toOffsetFetchResponse(
+      final OffsetFetchResponse response) {
+    return new EventBridgeDtos.OffsetFetchResponse(
+        response.getErrorCode().getId(), groupOffsetsByTopic(response.getCommittedOffsets()));
   }
 
   /** Groups a flat partition list into {@code topic → [partition,...]} (partitions sorted). */

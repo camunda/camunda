@@ -23,6 +23,8 @@ import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
+import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
+import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchResponse;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
@@ -123,6 +125,33 @@ public class ConsumerGroupCoordinator extends Actor {
                   .setMemberId(request.getMemberId())
                   .setMemberEpoch(request.getMemberEpoch());
           coordinatorStream.leaveGroup(command).whenComplete(bridge(result));
+        });
+    return result;
+  }
+
+  /**
+   * Serves an offset fetch (request/response, no log write): reads the group's committed offsets
+   * from the thread-safe mirror off the processing actor — the read-from-state path, not a command
+   * through the stream — and returns the framed reply.
+   */
+  public CompletableFuture<byte[]> handleOffsetFetch(final OffsetFetchRequest request) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () -> {
+          try {
+            final var groupId = request.getGroupId();
+            final var response = new OffsetFetchResponse();
+            if (groupId == null || groupId.isEmpty()) {
+              response.setErrorCode(INVALID_GROUP_ID);
+            } else {
+              response
+                  .setErrorCode(NONE)
+                  .setCommittedOffsets(coordinatorStream.committedOffsets(groupId));
+            }
+            result.complete(CoordinationResponseEncoder.encodeOffsetFetch(response));
+          } catch (final RuntimeException e) {
+            result.completeExceptionally(e);
+          }
         });
     return result;
   }

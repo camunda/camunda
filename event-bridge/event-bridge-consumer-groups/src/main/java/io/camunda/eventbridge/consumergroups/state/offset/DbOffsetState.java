@@ -9,7 +9,6 @@ package io.camunda.eventbridge.consumergroups.state.offset;
 
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableOffsetState;
-import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -17,15 +16,14 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
 
 /**
  * RocksDB-backed {@link MutableOffsetState} keyed by {@code (groupId, topic, partitionId) →
- * position}. Granular storage only — the monotonic (never-rewind) decision is made by the {@code
- * OffsetCommittedApplier}.
+ * position}, used on the stream-processing actor by the offset applier/processor. Granular storage
+ * only — the monotonic (never-rewind) decision is made by the {@code OffsetCommittedApplier}.
+ *
+ * <p>There is deliberately no in-memory mirror: offsets are unbounded, so off-actor reads go to
+ * state through {@link OffsetQueryService} (a separate context) instead of a heap projection.
  */
 public final class DbOffsetState implements MutableOffsetState {
 
@@ -41,11 +39,6 @@ public final class DbOffsetState implements MutableOffsetState {
 
   private final ColumnFamily<DbCompositeKey<DbString, DbCompositeKey<DbString, DbInt>>, DbLong>
       offsetsColumnFamily;
-
-  // Thread-safe mirror of the committed offsets, maintained by putOffset() (which runs on the
-  // stream-processing actor via the applier) and read off-actor by the coordinator's heartbeat
-  // handler — RocksDB itself is not safe to read from another actor.
-  private final Map<String, Map<TopicPartition, Long>> mirror = new ConcurrentHashMap<>();
 
   public DbOffsetState(
       final ZeebeDb<EventBridgeColumnFamilies> zeebeDb, final TransactionContext context) {
@@ -64,12 +57,6 @@ public final class DbOffsetState implements MutableOffsetState {
   }
 
   @Override
-  public Map<TopicPartition, Long> offsetsSnapshot(final String groupId) {
-    final var offsets = mirror.get(groupId);
-    return offsets == null ? Map.of() : new TreeMap<>(offsets);
-  }
-
-  @Override
   public void putOffset(
       final String groupId, final String topic, final int partitionId, final long position) {
     this.groupId.wrapString(groupId);
@@ -77,25 +64,5 @@ public final class DbOffsetState implements MutableOffsetState {
     this.partitionId.wrapInt(partitionId);
     offset.wrapLong(position);
     offsetsColumnFamily.upsert(offsetKey, offset);
-    mirror
-        .computeIfAbsent(groupId, ignored -> new ConcurrentHashMap<>())
-        .put(new TopicPartition(topic, partitionId), position);
-  }
-
-  @Override
-  public void seedMirror() {
-    mirror.clear();
-    final BiConsumer<DbCompositeKey<DbString, DbCompositeKey<DbString, DbInt>>, DbLong> visitor =
-        (key, value) -> {
-          final var group = key.first().toString();
-          final var topicPartition = key.second();
-          final var tp =
-              new TopicPartition(
-                  topicPartition.first().toString(), topicPartition.second().getValue());
-          mirror
-              .computeIfAbsent(group, ignored -> new ConcurrentHashMap<>())
-              .put(tp, value.getValue());
-        };
-    offsetsColumnFamily.forEach(visitor);
   }
 }

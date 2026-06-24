@@ -12,6 +12,7 @@ import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
+import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
 import io.camunda.eventbridge.transport.RequestHandler;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -50,6 +51,7 @@ public final class CoordinationRequestHandler implements RequestHandler {
       case LEAVE_GROUP -> coordinator.handleLeaveGroup(read(new LeaveGroupRequest(), request));
       case HEARTBEAT -> coordinator.handleHeartbeat(read(new HeartbeatRequest(), request));
       case COMMIT -> coordinator.handleCommit(read(new CommitOffsetRequest(), request));
+      case OFFSET_FETCH -> coordinator.handleOffsetFetch(read(new OffsetFetchRequest(), request));
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));

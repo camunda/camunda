@@ -14,6 +14,7 @@ import io.camunda.eventbridge.broker.request.coordination.BrokerHeartbeatRequest
 import io.camunda.eventbridge.broker.request.coordination.BrokerJoinGroupRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerLeaveGroupRequest;
 import io.camunda.eventbridge.broker.request.coordination.BrokerListTopicsRequest;
+import io.camunda.eventbridge.broker.request.coordination.BrokerOffsetFetchRequest;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
@@ -29,6 +30,8 @@ import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
+import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
+import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import java.util.concurrent.CompletableFuture;
@@ -68,6 +71,14 @@ public class CoordinatorService {
 
   public CompletableFuture<HeartbeatResponse> heartbeat(final HeartbeatRequest request) {
     final var brokerRequest = new BrokerHeartbeatRequest().wrapRequest(request);
+    brokerRequest.setPartitionId(shardFor(request.getGroupId()));
+    return brokerClient
+        .sendRequest(brokerRequest)
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
+  }
+
+  public CompletableFuture<OffsetFetchResponse> offsetFetch(final OffsetFetchRequest request) {
+    final var brokerRequest = new BrokerOffsetFetchRequest().wrapRequest(request);
     brokerRequest.setPartitionId(shardFor(request.getGroupId()));
     return brokerClient
         .sendRequest(brokerRequest)
