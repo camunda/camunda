@@ -13,6 +13,8 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,6 +26,8 @@ import java.util.Map;
  *   <li>{@code groupEpoch} — the desired-state version, bumped on every membership change.
  *   <li>{@code assignmentEpoch} — the group epoch the current member targets reflect; {@code
  *       assignmentEpoch < groupEpoch} means a rebalance is pending.
+ *   <li>{@code state} — the {@link GroupLifecycle} the appliers transition through as they apply
+ *       membership/rebalance events (the state machine lives in the log).
  *   <li>{@code subscriptions} — the topics the group subscribes to with their partition counts,
  *       fixed when the group is created; the assignor balances all their partitions together.
  * </ul>
@@ -32,14 +36,25 @@ public final class GroupState extends UnpackedObject implements DbValue {
 
   private final LongProperty groupEpochProp = new LongProperty("groupEpoch", 0L);
   private final LongProperty assignmentEpochProp = new LongProperty("assignmentEpoch", 0L);
+  private final StringProperty stateProp = new StringProperty("state", GroupLifecycle.EMPTY.name());
   private final ArrayProperty<TopicSubscriptionValue> subscriptionsProp =
       new ArrayProperty<>("subscriptions", TopicSubscriptionValue::new);
 
   public GroupState() {
-    super(3);
+    super(4);
     declareProperty(groupEpochProp)
         .declareProperty(assignmentEpochProp)
+        .declareProperty(stateProp)
         .declareProperty(subscriptionsProp);
+  }
+
+  public GroupLifecycle getState() {
+    return GroupLifecycle.fromName(BufferUtil.bufferAsString(stateProp.getValue()));
+  }
+
+  public GroupState setState(final GroupLifecycle state) {
+    stateProp.setValue(state.name());
+    return this;
   }
 
   /** The group's subscription as {@code topic → partitionCount} (insertion order preserved). */

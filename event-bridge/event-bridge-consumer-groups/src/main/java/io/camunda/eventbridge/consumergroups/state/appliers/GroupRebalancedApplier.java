@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
@@ -35,6 +36,9 @@ public final class GroupRebalancedApplier
       return;
     }
     group.setAssignmentEpoch(value.getAssignmentEpoch());
+    // The committed target now reflects the group epoch — the group is stable until the next
+    // membership change bumps the epoch again.
+    group.setState(GroupLifecycle.STABLE);
     state.putGroup(groupId, group);
 
     value

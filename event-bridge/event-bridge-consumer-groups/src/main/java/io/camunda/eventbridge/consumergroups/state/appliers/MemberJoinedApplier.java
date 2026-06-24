@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.group.GroupState;
 import io.camunda.eventbridge.consumergroups.state.group.MemberState;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
@@ -41,6 +42,9 @@ public final class MemberJoinedApplier
       group = new GroupState().setSubscriptions(value.getSubscriptions()).setAssignmentEpoch(0);
     }
     group.setGroupEpoch(value.getGroupEpoch());
+    // A join bumps the group epoch, so the target is now stale until the assignor reruns: the
+    // group enters PREPARING_REBALANCE (a new group's first state too).
+    group.setState(GroupLifecycle.PREPARING_REBALANCE);
     state.putGroup(groupId, group);
 
     final var member =

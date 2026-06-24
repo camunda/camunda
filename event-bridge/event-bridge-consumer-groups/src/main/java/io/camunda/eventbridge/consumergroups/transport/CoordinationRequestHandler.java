@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.transport;
 
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
+import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
@@ -52,6 +53,8 @@ public final class CoordinationRequestHandler implements RequestHandler {
       case HEARTBEAT -> coordinator.handleHeartbeat(read(new HeartbeatRequest(), request));
       case COMMIT -> coordinator.handleCommit(read(new CommitOffsetRequest(), request));
       case OFFSET_FETCH -> coordinator.handleOffsetFetch(read(new OffsetFetchRequest(), request));
+      case DESCRIBE_GROUPS ->
+          coordinator.handleDescribeGroups(read(new DescribeGroupsRequest(), request));
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));

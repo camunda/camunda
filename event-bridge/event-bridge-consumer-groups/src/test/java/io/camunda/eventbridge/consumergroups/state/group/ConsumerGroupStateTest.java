@@ -90,6 +90,9 @@ final class ConsumerGroupStateTest {
 
     final var snapshot = state.groupSnapshot("g");
     assertThat(snapshot.subscriptions()).containsExactly(Map.entry("t", 4));
+    // first join enters the state machine at PREPARING_REBALANCE (target not yet computed)
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
+    assertThat(snapshot.state()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
     assertThat(snapshot.members()).containsOnlyKeys("m1");
     assertThat(snapshot.members().get("m1").memberEpoch()).isEqualTo(1);
     assertThat(snapshot.members().get("m1").targetPartitions()).isEmpty();
@@ -151,9 +154,27 @@ final class ConsumerGroupStateTest {
 
     assertThat(state.getGroup("g").getAssignmentEpoch()).isEqualTo(2);
     assertThat(state.groupSnapshot("g").isRebalancePending()).isFalse();
+    // a committed rebalance transitions the group to STABLE
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.STABLE);
     assertThat(state.getMember("g", "m1").getTargetPartitions()).containsExactly(tp(1), tp(2));
     assertThat(state.groupSnapshot("g").members().get("m2").targetPartitions())
         .containsExactly(tp(3), tp(4));
+  }
+
+  @Test
+  void shouldReturnToPreparingRebalanceWhenAMemberLeaves() {
+    // given — a stable two-member group
+    memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
+    memberJoined.applyState(2, join("g", "m2", null, 2, 2, 4));
+    groupRebalanced.applyState(
+        3, rebalance("g", 2, Map.of("m1", List.of(1, 2), "m2", List.of(3, 4))));
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.STABLE);
+
+    // when — one member leaves (the group still has members)
+    memberLeft.applyState(4, leave("g", "m1", 4));
+
+    // then — the group goes back to PREPARING_REBALANCE for the assignor to recompute
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
   }
 
   @Test

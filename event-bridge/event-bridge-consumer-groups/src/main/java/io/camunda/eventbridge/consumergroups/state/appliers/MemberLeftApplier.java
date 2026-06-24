@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
@@ -40,6 +41,9 @@ public final class MemberLeftApplier
     final var group = state.getGroup(groupId);
     if (group != null) {
       group.setGroupEpoch(value.getGroupEpoch());
+      // A leave bumps the group epoch, so the remaining members' target is stale: back to
+      // PREPARING_REBALANCE until the assignor recomputes.
+      group.setState(GroupLifecycle.PREPARING_REBALANCE);
       state.putGroup(groupId, group);
     }
   }

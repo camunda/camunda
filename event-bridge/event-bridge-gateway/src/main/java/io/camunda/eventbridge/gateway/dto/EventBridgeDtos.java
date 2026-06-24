@@ -109,6 +109,18 @@ public final class EventBridgeDtos {
   public record OffsetFetchResponse(
       String errorCode, Map<String, Map<Integer, Long>> committedOffsets) {}
 
+  /**
+   * One consumer group's observable description for {@code GET /v1/groups} — its lifecycle state,
+   * epochs, subscription ({@code topic → partitionCount}), and member ids.
+   */
+  public record GroupDescription(
+      String groupId,
+      String state,
+      long groupEpoch,
+      long assignmentEpoch,
+      Map<String, Integer> subscriptions,
+      List<String> members) {}
+
   public record LatestPositionResponse(long position) {}
 
   // -------------------------------------------------------------------------

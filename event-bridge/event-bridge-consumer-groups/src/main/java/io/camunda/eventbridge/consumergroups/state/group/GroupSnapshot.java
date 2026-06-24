@@ -21,6 +21,7 @@ import java.util.Map;
  * @param groupEpoch the desired-state version (bumped on every membership change)
  * @param assignmentEpoch the group epoch the member targets reflect ({@code < groupEpoch} ⇒
  *     rebalance pending)
+ * @param state the group's replicated lifecycle (transitioned by the appliers)
  * @param subscriptions the topics the group subscribes to with their partition counts ({@code topic
  *     → partitionCount}); the assignor balances all their partitions together
  * @param members the current roster, {@code memberId → snapshot}
@@ -29,6 +30,7 @@ public record GroupSnapshot(
     String groupId,
     long groupEpoch,
     long assignmentEpoch,
+    GroupLifecycle state,
     Map<String, Integer> subscriptions,
     Map<String, MemberSnapshot> members) {
 

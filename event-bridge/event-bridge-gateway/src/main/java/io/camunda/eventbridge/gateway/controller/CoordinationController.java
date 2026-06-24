@@ -131,6 +131,32 @@ public class CoordinationController {
             });
   }
 
+  @GetMapping
+  public CompletableFuture<ResponseEntity<Object>> listGroups() {
+    return coordinatorService
+        .describeGroups(null)
+        .handleAsync(
+            (groups, error) ->
+                error != null ? coordinatorUnavailable() : ResponseEntity.ok((Object) groups));
+  }
+
+  @GetMapping("/{groupId}")
+  public CompletableFuture<ResponseEntity<Object>> describeGroup(
+      @PathVariable final String groupId) {
+    return coordinatorService
+        .describeGroups(groupId)
+        .handleAsync(
+            (groups, error) -> {
+              if (error != null) {
+                return coordinatorUnavailable();
+              }
+              if (groups.isEmpty()) {
+                return ResponseEntity.notFound().build();
+              }
+              return ResponseEntity.ok((Object) groups.get(0));
+            });
+  }
+
   @GetMapping("/{groupId}/offsets")
   public CompletableFuture<ResponseEntity<Object>> offsets(@PathVariable final String groupId) {
     final var request = new OffsetFetchRequest().setGroupId(groupId);

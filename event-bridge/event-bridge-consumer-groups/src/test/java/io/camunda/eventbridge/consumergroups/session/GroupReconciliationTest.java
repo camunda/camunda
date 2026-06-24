@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
@@ -134,7 +135,9 @@ final class GroupReconciliationTest {
     for (final var member : members) {
       roster.put(member.memberId(), member);
     }
-    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, Map.of("t", 4), roster);
+    final var state =
+        assignmentEpoch < groupEpoch ? GroupLifecycle.PREPARING_REBALANCE : GroupLifecycle.STABLE;
+    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, state, Map.of("t", 4), roster);
   }
 
   private static MemberSnapshot member(

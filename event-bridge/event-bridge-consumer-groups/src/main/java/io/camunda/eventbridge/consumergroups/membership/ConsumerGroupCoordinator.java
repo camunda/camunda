@@ -16,9 +16,12 @@ import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.session.GroupReconciliation;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
+import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsRequest;
+import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsResponse;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
@@ -29,6 +32,7 @@ import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -149,6 +153,45 @@ public class ConsumerGroupCoordinator extends Actor {
                   .setCommittedOffsets(coordinatorStream.committedOffsets(groupId));
             }
             result.complete(CoordinationResponseEncoder.encodeOffsetFetch(response));
+          } catch (final RuntimeException e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
+  }
+
+  /**
+   * Serves a describe-groups read (request/response, no log write): reads the replicated group
+   * lifecycle/epochs/roster from the thread-safe mirror off the processing actor. An empty {@code
+   * groupId} returns all groups on this shard; a set one narrows to that group (empty result if it
+   * lives on another shard or does not exist).
+   */
+  public CompletableFuture<byte[]> handleDescribeGroups(final DescribeGroupsRequest request) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () -> {
+          try {
+            final var groupId = request.getGroupId();
+            final var response = new DescribeGroupsResponse();
+            final List<GroupSnapshot> groups;
+            if (groupId == null || groupId.isEmpty()) {
+              groups = coordinatorStream.groupSnapshots();
+            } else {
+              final var group = coordinatorStream.groupSnapshot(groupId);
+              groups = group == null ? List.of() : List.of(group);
+            }
+            for (final var group : groups) {
+              response.addGroup(
+                  description ->
+                      description
+                          .setGroupId(group.groupId())
+                          .setState(group.state().name())
+                          .setGroupEpoch(group.groupEpoch())
+                          .setAssignmentEpoch(group.assignmentEpoch())
+                          .setSubscriptions(group.subscriptions())
+                          .setMembers(List.copyOf(group.members().keySet())));
+            }
+            result.complete(CoordinationResponseEncoder.encodeDescribeGroups(response));
           } catch (final RuntimeException e) {
             result.completeExceptionally(e);
           }

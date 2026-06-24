@@ -67,6 +67,7 @@
       <validValue name="LIST_TOPICS">6</validValue>
       <validValue name="REASSIGN_TOPIC">7</validValue>
       <validValue name="OFFSET_FETCH">8</validValue>
+      <validValue name="DESCRIBE_GROUPS">9</validValue>
     </enum>
 
     <!-- How a coordinate command was rejected. NONE means "no rejection" (a successful reply);
