@@ -8,11 +8,16 @@
 package io.camunda.search.clients.transformers.sort;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
+import java.util.List;
 
 public interface FieldSortingTransformer extends ServiceTransformer<String, String> {
 
   @Override
   String apply(final String domainField);
+
+  default List<String> applyAll(final String domainField) {
+    return List.of(apply(domainField));
+  }
 
   default String defaultSortField() {
     return "key";
