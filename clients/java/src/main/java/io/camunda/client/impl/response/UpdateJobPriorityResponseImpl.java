@@ -13,38 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command;
+package io.camunda.client.impl.response;
 
-public class JobChangeset {
+import io.camunda.client.api.response.UpdateJobPriorityResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
-  private Integer retries;
-  private Long timeout;
-  private Integer priority;
+public class UpdateJobPriorityResponseImpl implements UpdateJobPriorityResponse {
 
-  public Integer getRetries() {
-    return retries;
-  }
+  public UpdateJobPriorityResponseImpl(
+      final GatewayOuterClass.UpdateJobPriorityResponse response) {}
 
-  public JobChangeset setRetries(Integer retries) {
-    this.retries = retries;
-    return this;
-  }
-
-  public Long getTimeout() {
-    return timeout;
-  }
-
-  public JobChangeset setTimeout(Long timeout) {
-    this.timeout = timeout;
-    return this;
-  }
-
-  public Integer getPriority() {
-    return priority;
-  }
-
-  public JobChangeset setPriority(Integer priority) {
-    this.priority = priority;
-    return this;
-  }
+  public UpdateJobPriorityResponseImpl(final Void nothing) {}
 }

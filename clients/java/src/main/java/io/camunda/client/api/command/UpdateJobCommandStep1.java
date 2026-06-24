@@ -88,6 +88,15 @@ public interface UpdateJobCommandStep1 {
    */
   UpdateJobCommandStep2 updateTimeout(Duration timeout);
 
+  /**
+   * Set the priority of this job.
+   *
+   * @param priority the priority of this job
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdateJobCommandStep2 updatePriority(int priority);
+
   interface UpdateJobCommandStep2 extends FinalCommandStep<UpdateJobResponse> {
     // the place for new optional parameters
   }

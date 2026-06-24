@@ -13,38 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command;
+package io.camunda.client.api.response;
 
-public class JobChangeset {
-
-  private Integer retries;
-  private Long timeout;
-  private Integer priority;
-
-  public Integer getRetries() {
-    return retries;
-  }
-
-  public JobChangeset setRetries(Integer retries) {
-    this.retries = retries;
-    return this;
-  }
-
-  public Long getTimeout() {
-    return timeout;
-  }
-
-  public JobChangeset setTimeout(Long timeout) {
-    this.timeout = timeout;
-    return this;
-  }
-
-  public Integer getPriority() {
-    return priority;
-  }
-
-  public JobChangeset setPriority(Integer priority) {
-    this.priority = priority;
-    return this;
-  }
-}
+public interface UpdateJobPriorityResponse {}

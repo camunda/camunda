@@ -364,4 +364,96 @@ public class JobUpdateRestTest extends ClientRestTest {
     assertThat(request.getChangeset().getRetries()).isNull();
     assertThat(request.getChangeset().getTimeout()).isNull();
   }
+
+  @Test
+  public void shouldUpdatePriorityByKey() {
+    // given
+    final long jobKey = 12;
+    final int newPriority = 5;
+
+    // when
+    client.newUpdateJobPriorityCommand(jobKey).priority(newPriority).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getPriority()).isEqualTo(newPriority);
+  }
+
+  @Test
+  public void shouldUpdatePriority() {
+    // given
+    final int newPriority = 5;
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newUpdateJobPriorityCommand(job).priority(newPriority).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getPriority()).isEqualTo(newPriority);
+  }
+
+  @Test
+  public void shouldSetOperationReferenceForUpdatePriorityCommand() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client
+        .newUpdateJobPriorityCommand(123)
+        .priority(5)
+        .operationReference(operationReference)
+        .execute();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
+  public void shouldUpdatePriorityZero() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateJobPriorityCommand(jobKey).priority(0).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getPriority()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldUpdateJobCommandWithPriority() {
+    // given
+    final long jobKey = 12;
+    final int newPriority = 7;
+
+    // when
+    client.newUpdateJobCommand(jobKey).updatePriority(newPriority).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getPriority()).isEqualTo(newPriority);
+    assertThat(request.getChangeset().getRetries()).isNull();
+    assertThat(request.getChangeset().getTimeout()).isNull();
+  }
+
+  @Test
+  public void shouldUpdateJobChangesetWithPriority() {
+    // given
+    final long jobKey = 12;
+    final int newPriority = 3;
+    final JobChangeset changeset = new JobChangeset().setPriority(newPriority);
+
+    // when
+    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getPriority()).isEqualTo(newPriority);
+    assertThat(request.getChangeset().getRetries()).isNull();
+    assertThat(request.getChangeset().getTimeout()).isNull();
+  }
 }
