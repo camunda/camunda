@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -44,6 +45,7 @@ final class BulkIndexRequest {
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(JobRecordValue.class, JobMixin.class)
           .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
+          .addMixIn(DecisionEvaluationRecordValue.class, DecisionEvaluationMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -182,4 +184,7 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})
   private static final class UserTaskMixin {}
+
+  @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})
+  private static final class DecisionEvaluationMixin {}
 }

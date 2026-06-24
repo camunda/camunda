@@ -2183,7 +2183,8 @@ final class JsonSerializableToJsonTest {
                       .setElementId("element-id")
                       .setEvaluationFailureMessage("evaluation-failure-message")
                       .setFailedDecisionId("failed-decision-id")
-                      .setRootProcessInstanceKey(6L);
+                      .setRootProcessInstanceKey(6L)
+                      .setBusinessId("business-id");
 
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
@@ -2265,7 +2266,8 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"evaluation-failure-message",
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 6
+                  "rootProcessInstanceKey": 6,
+                  "businessId": "business-id"
                 }
                 """
       },
@@ -2294,7 +2296,8 @@ final class JsonSerializableToJsonTest {
                       .setEvaluationFailureMessage("evaluation-failure-message")
                       .setFailedDecisionId("failed-decision-id")
                       .setTenantId("tenant-test")
-                      .setRootProcessInstanceKey(6L);
+                      .setRootProcessInstanceKey(6L)
+                      .setBusinessId("business-id");
 
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
@@ -2377,7 +2380,8 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"evaluation-failure-message",
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "tenant-test",
-                  "rootProcessInstanceKey": 6
+                  "rootProcessInstanceKey": 6,
+                  "businessId": "business-id"
                 }
                 """
       },
@@ -2409,7 +2413,8 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"",
                   "failedDecisionId":"",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": ""
                 }
                 """
       },
