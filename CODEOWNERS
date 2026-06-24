@@ -164,6 +164,7 @@
 /.claude/skills/frontend-migrator/         @camunda/core-features
 /.claude/skills/frontend-unit-test/        @camunda/core-features
 /.claude/skills/operate-frontend/          @camunda/core-features
+/.claude/skills/tasklist-frontend/         @camunda/core-features
 
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai

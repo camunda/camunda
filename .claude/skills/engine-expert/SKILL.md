@@ -1,7 +1,7 @@
 ---
 
 name: engine-expert
-description: Use when implementing new capabilities or fixing bugs in the Zeebe workflow engine in zeebe/engine/ — BPMN process execution, DMN decision evaluation, job lifecycle, user/identity management, batch operations, process variables, deployments, signals, messages, timers, multi-tenancy, or authorization. Use when adding or modifying processors, event appliers, state classes, record value types, intents, or engine tests.
+description: Use when implementing or fixing Zeebe engine code in zeebe/engine/ — BPMN execution, DMN evaluation, job lifecycle, user/identity management, batch operations, variables, deployments, signals, messages, timers, multi-tenancy, or authorization. Also when modifying processors, event appliers, state classes, record value types, intents, or engine tests.
 
 ---
 
