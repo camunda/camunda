@@ -73,13 +73,12 @@ public final class CoordinatorPartition
       final InstantSource clock,
       final MeterRegistry meterRegistry) {
     return new CoordinatorStream(
-        partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
+        partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry, topicRegistry);
   }
 
   @Override
   protected void onLeaderReady() {
-    consumerGroupCoordinator =
-        new ConsumerGroupCoordinator(partitionId, topicRegistry, clock, stream);
+    consumerGroupCoordinator = new ConsumerGroupCoordinator(partitionId, clock, stream);
     actorScheduler.submitActor(consumerGroupCoordinator);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),

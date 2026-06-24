@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.stream;
 
 import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
+import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
 import io.camunda.eventbridge.consumergroups.processing.JoinGroupProcessor;
 import io.camunda.eventbridge.consumergroups.processing.LeaveGroupProcessor;
@@ -65,6 +66,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private static final Duration REBALANCE_TIMEOUT = Duration.ofSeconds(30);
 
   private final InstantSource clock;
+  private final TopicRegistry topicRegistry;
   private DbOffsetState offsetState;
   private DbConsumerGroupState groupState;
   private MemberLivenessMirror liveness;
@@ -72,6 +74,8 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   /**
    * @param zeebeDb the state DB, recovered/owned by the {@link
    *     io.camunda.zeebe.broker.system.partitions.StateController} (so snapshots can manage it)
+   * @param topicRegistry the live topic-registry view used by the join processor to resolve and
+   *     validate a subscribed topic's partition count at processing time
    */
   public CoordinatorStream(
       final int partitionId,
@@ -79,9 +83,11 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
       final ActorSchedulingService actorScheduler,
       final ZeebeDb<EventBridgeColumnFamilies> zeebeDb,
       final InstantSource clock,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final TopicRegistry topicRegistry) {
     super(partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
     this.clock = clock;
+    this.topicRegistry = topicRegistry;
   }
 
   @Override
@@ -107,7 +113,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
 
   @Override
   protected RecordProcessor createRecordProcessor() {
-    final var checks = new CoordinationChecks(groupState);
+    final var checks = new CoordinationChecks(groupState, topicRegistry);
     return new RecordProcessingEngine(
         processors ->
             processors

@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.processing;
 
+import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.state.group.MemberState;
@@ -18,34 +19,44 @@ import io.camunda.zeebe.util.Either;
  * Command validation for the coordinator, in the engine style: each check returns {@code
  * Either<Rejection, T>} and the per-command validations chain them with {@link Either#flatMap},
  * short-circuiting on the first rejection. Processors compose the result via {@code ifRightOrLeft}
- * (append an event on the right, a rejection on the left). All checks read the replicated {@link
- * ConsumerGroupState}; this runs on the stream-processing actor.
+ * (append an event on the right, a rejection on the left). The checks read the replicated {@link
+ * ConsumerGroupState} and the {@link TopicRegistry}; this runs on the stream-processing actor.
  */
 public final class CoordinationChecks {
 
   private static final Either<Rejection, Void> VALID = Either.right(null);
 
   private final ConsumerGroupState state;
+  private final TopicRegistry topicRegistry;
 
-  public CoordinationChecks(final ConsumerGroupState state) {
+  public CoordinationChecks(final ConsumerGroupState state, final TopicRegistry topicRegistry) {
     this.state = state;
+    this.topicRegistry = topicRegistry;
   }
 
   /**
-   * A join needs a valid group id; a subscribed topic that is registered and servable (the
-   * coordinator resolves its partition count from the live registry and stamps it on the command,
-   * so a count of {@code 0} means the topic was unknown or not servable); a topic that matches the
+   * A join needs a valid group id; a subscribed topic that this leader's registry view knows and
+   * can serve (resolved <em>here</em>, at processing time, against the leader that produces the
+   * durable event — not trusted from a value the requesting broker stamped, which a failover could
+   * leave a new leader rubber-stamping for a topic it has never observed); a topic that matches the
    * one the group is already bound to (a group serves exactly one topic); and — for a static member
    * — an instance id that is not already held by a live member. A duplicate {@code
    * group.instance.id} fences the <em>new</em> joiner: the incumbent keeps the identity until it
    * leaves or its session expires (the eviction loop then frees the slot). A new member id is
    * minted by the processor.
+   *
+   * <p>On success it yields the resolved partition count, which the processor stamps onto the
+   * {@code MEMBER_JOINED} event.
    */
-  public Either<Rejection, Void> validateJoin(final MembershipRecord command) {
+  public Either<Rejection, Integer> validateJoin(final MembershipRecord command) {
     return groupIdPresent(command.getGroupId())
-        .flatMap(ok -> topicServable(command.getTopic(), command.getPartitionCount()))
-        .flatMap(ok -> topicMatchesGroup(command.getGroupId(), command.getTopic()))
-        .flatMap(ok -> instanceIdAvailable(command.getGroupId(), command.getInstanceId()));
+        .flatMap(ok -> topicServable(command.getTopic()))
+        .flatMap(
+            count -> topicMatchesGroup(command.getGroupId(), command.getTopic()).map(ok -> count))
+        .flatMap(
+            count ->
+                instanceIdAvailable(command.getGroupId(), command.getInstanceId())
+                    .map(ok -> count));
   }
 
   /** A leave must reference an existing member presenting a current epoch. */
@@ -79,18 +90,19 @@ public final class CoordinationChecks {
     return VALID;
   }
 
-  private Either<Rejection, Void> topicServable(final String topic, final int partitionCount) {
+  private Either<Rejection, Integer> topicServable(final String topic) {
     if (topic == null || topic.isEmpty()) {
       return Either.left(
           new Rejection(CoordinationErrorCode.INVALID_TOPIC, "subscribed topic is empty"));
     }
+    final var partitionCount = topicRegistry.partitionCount(topic);
     if (partitionCount <= 0) {
       return Either.left(
           new Rejection(
               CoordinationErrorCode.TOPIC_NOT_FOUND,
               "topic '%s' is not registered or not servable".formatted(topic)));
     }
-    return VALID;
+    return Either.right(partitionCount);
   }
 
   private Either<Rejection, Void> topicMatchesGroup(final String groupId, final String topic) {

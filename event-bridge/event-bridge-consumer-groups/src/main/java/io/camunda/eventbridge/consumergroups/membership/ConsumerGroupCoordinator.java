@@ -52,7 +52,6 @@ public class ConsumerGroupCoordinator extends Actor {
   private static final Logger LOG = LoggerFactory.getLogger(ConsumerGroupCoordinator.class);
 
   private final int partitionId;
-  private final TopicRegistry topicRegistry;
   private final InstantSource clock;
   private final CoordinatorStream coordinatorStream;
   private final MemberLivenessMirror liveness;
@@ -62,12 +61,8 @@ public class ConsumerGroupCoordinator extends Actor {
   private final Map<String, GroupReconciliation> reconciliations = new ConcurrentHashMap<>();
 
   public ConsumerGroupCoordinator(
-      final int partitionId,
-      final TopicRegistry topicRegistry,
-      final InstantSource clock,
-      final CoordinatorStream coordinatorStream) {
+      final int partitionId, final InstantSource clock, final CoordinatorStream coordinatorStream) {
     this.partitionId = partitionId;
-    this.topicRegistry = topicRegistry;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
     liveness = coordinatorStream.liveness();
@@ -98,23 +93,20 @@ public class ConsumerGroupCoordinator extends Actor {
 
   /**
    * Writes a {@code JOIN_GROUP} command and bridges the committed {@code JoinGroupResponse}. The
-   * subscribed topic's partition count is resolved here from the live {@link TopicRegistry} (the
-   * topic registry lives in a separate Raft group, so it cannot be read in the processor) and
-   * stamped on the command; the processor validates it (a count of {@code 0} means the topic was
-   * unknown or not servable).
+   * command carries only the request's intent (group id, subscribed topic, instance id); the
+   * processor resolves the topic's partition count from the registry at processing time and
+   * validates it, so the decision is made by the leader that actually produces the durable event.
    */
   public CompletableFuture<byte[]> handleJoinGroup(final JoinGroupRequest request) {
     final var result = new CompletableFuture<byte[]>();
     actor.run(
         () -> {
-          final var topic = request.getTopic();
           final var command =
               new MembershipRecord()
                   .setGroupId(request.getGroupId())
-                  .setTopic(topic)
+                  .setTopic(request.getTopic())
                   .setMemberId(generateMemberId())
-                  .setInstanceId(request.getInstanceId())
-                  .setPartitionCount(topicRegistry.partitionCount(topic));
+                  .setInstanceId(request.getInstanceId());
           coordinatorStream.joinGroup(command).whenComplete(bridge(result));
         });
     return result;

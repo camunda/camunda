@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.state.group;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
@@ -40,6 +41,9 @@ import org.junit.jupiter.api.io.TempDir;
  * replicated state + mirror they write through, and the {@link CoordinationChecks} fencing.
  */
 final class ConsumerGroupStateTest {
+
+  // Stand-in topic registry: every topic has 4 partitions except "missing" (unknown/not servable).
+  private static final TopicRegistry TOPIC_REGISTRY = topic -> "missing".equals(topic) ? 0 : 4;
 
   @TempDir private Path dbDir;
   private ZeebeDb<EventBridgeColumnFamilies> db;
@@ -116,7 +120,7 @@ final class ConsumerGroupStateTest {
   void shouldFenceDuplicateStaticInstanceIdOnJoin() {
     // given — a static member already holds an instance id
     memberJoined.applyState(1, join("g", "m1", "instance-a", 1, 1, 4));
-    final var checks = new CoordinationChecks(state);
+    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
 
     // then — a second join for that instance id is fenced (KIP-848 fences the new joiner)
     assertThat(checks.validateJoin(join("g", "m2", "instance-a", 0, 0, 4)).getLeft().code())
@@ -204,7 +208,7 @@ final class ConsumerGroupStateTest {
   void shouldFenceOffsetCommitsAgainstMembership() {
     memberJoined.applyState(1, join("g", "m1", null, 5, 5, 4));
     groupRebalanced.applyState(2, rebalance("g", 5, Map.of("m1", List.of(1, 2))));
-    final var checks = new CoordinationChecks(state);
+    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
 
     assertThat(checks.validateCommit(commit("g", "m1", 5, 1)).isRight()).isTrue();
     assertThat(checks.validateCommit(commit("g", "ghost", 5, 1)).getLeft().code())
@@ -218,7 +222,7 @@ final class ConsumerGroupStateTest {
   @Test
   void shouldValidateLeaveAndJoinAgainstMembership() {
     memberJoined.applyState(1, join("g", "m1", null, 2, 2, 4));
-    final var checks = new CoordinationChecks(state);
+    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
 
     assertThat(checks.validateLeave(leave("g", "m1", 2)).isRight()).isTrue();
     assertThat(checks.validateLeave(leave("g", "m1", 1)).getLeft().code())
@@ -231,7 +235,7 @@ final class ConsumerGroupStateTest {
 
   @Test
   void shouldRejectJoinWithMissingTopic() {
-    final var checks = new CoordinationChecks(state);
+    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
 
     // when — a join carries no subscribed topic
     final var rejection = checks.validateJoin(join("g", "", "m1", null, 0, 0, 4));
@@ -242,7 +246,7 @@ final class ConsumerGroupStateTest {
 
   @Test
   void shouldRejectJoinForUnservableTopic() {
-    final var checks = new CoordinationChecks(state);
+    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
 
     // when — the coordinator could not resolve a partition count (unknown/not servable topic)
     final var rejection = checks.validateJoin(join("g", "missing", "m1", null, 0, 0, 0));
@@ -255,7 +259,7 @@ final class ConsumerGroupStateTest {
   void shouldRejectJoinToGroupBoundToDifferentTopic() {
     // given — a group already bound to topic "t"
     memberJoined.applyState(1, join("g", "t", "m1", null, 1, 1, 4));
-    final var checks = new CoordinationChecks(state);
+    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
 
     // when — a second member joins the same group subscribing to a different topic
     final var rejection = checks.validateJoin(join("g", "other", "m2", null, 0, 0, 4));

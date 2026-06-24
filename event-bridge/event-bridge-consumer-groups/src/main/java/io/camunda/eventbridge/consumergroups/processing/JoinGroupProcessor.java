@@ -47,15 +47,22 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
   public void processRecord(final TypedRecord<MembershipRecord> command) {
     checks
         .validateJoin(command.getValue())
-        .ifRightOrLeft(ok -> join(command), rejection -> reject(command, rejection));
+        .ifRightOrLeft(
+            partitionCount -> join(command, partitionCount),
+            rejection -> reject(command, rejection));
   }
 
-  private void join(final TypedRecord<MembershipRecord> command) {
+  private void join(final TypedRecord<MembershipRecord> command, final int partitionCount) {
     final var cmd = command.getValue();
     final var group = state.getGroup(cmd.getGroupId());
     final var newGroupEpoch = (group == null ? 0 : group.getGroupEpoch()) + 1;
     appendMemberJoined(
-        command, cmd.getMemberId(), cmd.getInstanceId(), newGroupEpoch, newGroupEpoch);
+        command,
+        cmd.getMemberId(),
+        cmd.getInstanceId(),
+        newGroupEpoch,
+        newGroupEpoch,
+        partitionCount);
     respondJoined(command, cmd.getMemberId(), newGroupEpoch);
   }
 
@@ -64,7 +71,8 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
       final String memberId,
       final String instanceId,
       final long memberEpoch,
-      final long groupEpoch) {
+      final long groupEpoch,
+      final int partitionCount) {
     final var event =
         new MembershipRecord()
             .setGroupId(command.getValue().getGroupId())
@@ -73,7 +81,7 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
             .setInstanceId(instanceId)
             .setMemberEpoch(memberEpoch)
             .setGroupEpoch(groupEpoch)
-            .setPartitionCount(command.getValue().getPartitionCount());
+            .setPartitionCount(partitionCount);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_JOINED, event);
   }
 
