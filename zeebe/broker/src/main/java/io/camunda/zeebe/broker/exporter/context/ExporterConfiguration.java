@@ -13,12 +13,17 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.lang.reflect.Array;
 
 public record ExporterConfiguration(String id, Map<String, Object> arguments)
     implements Configuration {
@@ -69,12 +74,131 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
 
   public static <T> T fromArgs(final Class<T> configClass, final Map<String, Object> values) {
     if (values != null) {
-      // Use MAPPER (with custom list deserializer) to properly handle Spring Boot indexed
-      // properties like myList[0]=value which are stored as Maps with numeric string keys
-      return MAPPER.convertValue(values, configClass);
+      final var normalized = normalizeKeys(values, MAPPER.constructType(configClass));
+      return MAPPER.convertValue(normalized, configClass);
     } else {
       return ReflectUtil.newInstance(configClass);
     }
+  }
+
+  private static Map<String, Object> normalizeKeys(
+      final Map<String, Object> map, final JavaType targetType) {
+    final var result = new LinkedHashMap<String, Object>(map.size());
+    final var propertyTypesByKey = propertyTypesByNormalizedKey(targetType);
+    final var indexedElementType = indexedElementType(targetType, map);
+    for (final var entry : map.entrySet()) {
+      final var normalizedKey = normalizeKey(entry.getKey());
+      var propertyType = propertyTypesByKey.get(normalizedKey);
+      if (propertyType == null) {
+        propertyType = indexedElementType;
+      }
+      result.put(normalizedKey, normalizeValue(entry.getValue(), propertyType));
+    }
+    return result;
+  }
+
+  private static JavaType indexedElementType(
+      final JavaType targetType, final Map<String, Object> map) {
+    if (targetType == null || (!targetType.isCollectionLikeType() && !targetType.isArrayType())) {
+      return null;
+    }
+    var hasNumericKeys = false;
+    var hasNonNumericKeys = false;
+    for (final var key : map.keySet()) {
+      try {
+        Integer.parseInt(key);
+        hasNumericKeys = true;
+      } catch (final NumberFormatException e) {
+        hasNonNumericKeys = true;
+      }
+    }
+    if (hasNumericKeys && hasNonNumericKeys) {
+      throw new IllegalArgumentException(
+          "Cannot mix indexed (numeric) and named keys in configuration map targeting a collection: "
+              + map.keySet());
+    }
+    return hasNumericKeys ? targetType.getContentType() : null;
+  }
+
+  private static Map<String, JavaType> propertyTypesByNormalizedKey(final JavaType targetType) {
+    if (targetType == null || targetType.isMapLikeType() || targetType.isContainerType()) {
+      return Map.of();
+    }
+    final var properties =
+        MAPPER.getDeserializationConfig().introspect(targetType).findProperties();
+    if (properties.isEmpty()) {
+      return Map.of();
+    }
+    final var propertyTypes = new LinkedHashMap<String, JavaType>(properties.size());
+    for (final var property : properties) {
+      final var propertyType = property.getPrimaryType();
+      if (propertyType != null) {
+        propertyTypes.put(normalizeKey(property.getName()), propertyType);
+      }
+    }
+    return propertyTypes;
+  }
+
+  private static Object normalizeValue(final Object value, final JavaType targetType) {
+    if (value instanceof final Map<?, ?> nestedMap) {
+      return normalizeMapValue(nestedMap, targetType);
+    }
+    if (value instanceof final Iterable<?> iterable) {
+      return normalizeIterableValue(iterable, targetType);
+    }
+    if (value != null && value.getClass().isArray()) {
+      return normalizeArrayValue(value, targetType);
+    }
+    return value;
+  }
+
+  private static Object normalizeMapValue(final Map<?, ?> nestedMap, final JavaType targetType) {
+    if (targetType == null || targetType.hasRawClass(Object.class)) {
+      return nestedMap;
+    }
+    if (targetType.isMapLikeType()) {
+      return normalizeMapValues(nestedMap, targetType.getContentType());
+    }
+    @SuppressWarnings("unchecked")
+    final var typedNested = (Map<String, Object>) nestedMap;
+    return normalizeKeys(typedNested, targetType);
+  }
+
+  private static List<Object> normalizeIterableValue(
+      final Iterable<?> iterable, final JavaType targetType) {
+    final var contentType =
+        targetType != null && targetType.isCollectionLikeType()
+            ? targetType.getContentType()
+            : null;
+    final var normalized = new ArrayList<>();
+    for (final var item : iterable) {
+      normalized.add(normalizeValue(item, contentType));
+    }
+    return normalized;
+  }
+
+  private static Object[] normalizeArrayValue(final Object value, final JavaType targetType) {
+    final var length = Array.getLength(value);
+    final var contentType =
+        targetType != null && targetType.isArrayType() ? targetType.getContentType() : null;
+    final var normalized = new Object[length];
+    for (int i = 0; i < length; i++) {
+      normalized[i] = normalizeValue(Array.get(value, i), contentType);
+    }
+    return normalized;
+  }
+
+  private static Map<Object, Object> normalizeMapValues(
+      final Map<?, ?> map, final JavaType contentType) {
+    final var result = new LinkedHashMap<Object, Object>(map.size());
+    for (final var entry : map.entrySet()) {
+      result.put(entry.getKey(), normalizeValue(entry.getValue(), contentType));
+    }
+    return result;
+  }
+
+  private static String normalizeKey(final String name) {
+    return name.replace("-", "").toLowerCase(Locale.ROOT);
   }
 
   /**
