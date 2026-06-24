@@ -33,6 +33,11 @@ on:
         description: 'Slack channel to post to (default: c8-orchestration-cluster-e2e-test-results; override for testing)'
         required: false
         default: ''
+      danger_force_redispatch:
+        description: '⚠️ DANGER: bypass the same-day cooldown and re-dispatch all eligible versions even if already dispatched today. For testing only. Default: false.'
+        type: boolean
+        default: false
+        required: false
 
 # Minimal at workflow level. Triage job only needs to read; dispatch job
 # bumps actions: write to trigger the fix workflow (zizmor: excessive-permissions).
@@ -625,7 +630,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: write  # required to commit ledger to nightly-triage-state branch
       actions: write   # required to dispatch the fix workflow
       pull-requests: read
 
@@ -657,6 +662,17 @@ jobs:
           owner: camunda
           repositories: camunda
 
+      - name: Checkout (for ledger git operations)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.github-token.outputs.token }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "qa-processes[bot]"
+          git config user.email "qa-processes[bot]@users.noreply.github.com"
+
       - name: Dispatch one fix-agent run per version
         env:
           GH_TOKEN:                  ${{ steps.github-token.outputs.token }}
@@ -667,20 +683,66 @@ jobs:
           SLACK_CHANNEL:             ${{ needs.triage.outputs.slack_channel }}
           FIX_AGENT_REF:             ${{ github.ref_name }}
           SEND_SLACK_NOTIFICATION:   ${{ github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true' }}
+          DANGER_FORCE_REDISPATCH:   ${{ inputs.danger_force_redispatch || 'false' }}
         run: |
           set -euo pipefail
 
           echo '[]' > /tmp/fix_agent_runs.json
 
+          # ---------------------------------------------------------------------------
+          # Load (or initialise) ledger from the nightly-triage-state branch.
+          # Cooldown model: skip a version already dispatched today (same UTC calendar
+          # day). DANGER_FORCE_REDISPATCH=true bypasses the cooldown for testing.
+          # ---------------------------------------------------------------------------
+          STATE_BRANCH="nightly-triage-state"
+          LEDGER_PATH="ledger.json"
+          today_utc=$(date -u +%F)
+          now_iso=$(date -u +%FT%TZ)
+
+          git fetch origin "$STATE_BRANCH" 2>/dev/null || true
+          if git rev-parse --verify "origin/${STATE_BRANCH}" >/dev/null 2>&1; then
+            wt_tmp=/tmp/ledger-read-wt
+            rm -rf "$wt_tmp"
+            if git worktree add -f "$wt_tmp" "origin/${STATE_BRANCH}" 2>/dev/null; then
+              if [ -f "${wt_tmp}/ledger.json" ]; then
+                cp "${wt_tmp}/ledger.json" "$LEDGER_PATH"
+                echo "Loaded ledger ($(jq 'length' "$LEDGER_PATH") entries)"
+              else
+                echo '{}' > "$LEDGER_PATH"
+                echo "State branch exists but no ledger.json — starting fresh"
+              fi
+              git worktree remove --force "$wt_tmp" 2>/dev/null || rm -rf "$wt_tmp"
+            else
+              echo '{}' > "$LEDGER_PATH"
+            fi
+          else
+            echo '{}' > "$LEDGER_PATH"
+            echo "State branch '${STATE_BRANCH}' does not exist — starting fresh"
+          fi
+          if ! jq -e . "$LEDGER_PATH" >/dev/null 2>&1; then
+            echo "::warning::Ledger is not valid JSON — resetting"
+            echo '{}' > "$LEDGER_PATH"
+          fi
+
           # Decode the base64-encoded dispatches payload from the triage job.
           DISPATCHES_JSON=$(echo "${DISPATCHES_B64}" | base64 -d)
 
-          echo "$DISPATCHES_JSON" | jq -c '.[]' | while read -r d; do
+          while IFS= read -r d; do
             version=$(echo "$d" | jq -r '.version')
             specs=$(echo "$d" | jq -c '.test_specs')
             e2e=$(echo "$d"   | jq -r '.e2e_run_id')
             api_es=$(echo "$d" | jq -r '.api_es_run_id')
             api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
+
+            # Cooldown check — skip if already dispatched today (unless danger mode)
+            ledger_entry=$(jq -c --arg v "$version" '.[$v] // null' "$LEDGER_PATH")
+            if [ "$ledger_entry" != "null" ]; then
+              dispatched_date=$(echo "$ledger_entry" | jq -r '.dispatched_at // ""' | cut -c1-10)
+              if [ "$dispatched_date" = "$today_utc" ] && [ "$DANGER_FORCE_REDISPATCH" != "true" ]; then
+                echo "Version $version: already dispatched today ($dispatched_date) — skipping (use danger_force_redispatch to override)"
+                continue
+              fi
+            fi
 
             echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
             dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -739,7 +801,50 @@ jobs:
               '. += [{"version": $v, "run_id": $id, "run_url": ("https://github.com/" + $repo + "/actions/runs/" + $id), "run_label": $label, "test_count": $count}]' \
               /tmp/fix_agent_runs.json > /tmp/fix_agent_runs.json.tmp
             mv /tmp/fix_agent_runs.json.tmp /tmp/fix_agent_runs.json
-          done
+
+            # Update ledger — record this version as dispatched today
+            jq --arg v "$version" --arg now "$now_iso" \
+              '.[$v] = {state: "dispatched", dispatched_at: $now}' \
+              "$LEDGER_PATH" > "${LEDGER_PATH}.tmp" && mv "${LEDGER_PATH}.tmp" "$LEDGER_PATH"
+          done < <(echo "$DISPATCHES_JSON" | jq -c '.[]')
+
+      - name: Commit ledger to state branch
+        if: always() && hashFiles('ledger.json') != ''
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          STATE_BRANCH=nightly-triage-state
+
+          # Create the branch if it doesn't exist yet (first run).
+          if ! git ls-remote --exit-code --heads origin "$STATE_BRANCH" >/dev/null 2>&1; then
+            echo "Creating state branch '$STATE_BRANCH' for the first time"
+            git checkout --orphan "$STATE_BRANCH"
+            git rm -rf . 2>/dev/null || true
+            git clean -fdx -e ledger.json
+            git add ledger.json
+            git commit -m "init triage ledger ($(date -u +%F))"
+            git push -u origin "$STATE_BRANCH"
+          else
+            # Worktree-based update so we don't disturb the current checkout
+            wt=/tmp/state-update
+            rm -rf "$wt"
+            git fetch origin "$STATE_BRANCH"
+            git worktree add "$wt" "origin/$STATE_BRANCH"
+            cp ledger.json "$wt/ledger.json"
+            (
+              cd "$wt"
+              git add ledger.json
+              if git diff --cached --quiet; then
+                echo "Ledger unchanged — nothing to commit"
+              else
+                git commit -m "ledger: $(date -u +%F)"
+                git push origin "HEAD:${STATE_BRANCH}"
+              fi
+            )
+            git worktree remove --force "$wt" || rm -rf "$wt"
+          fi
 
       - name: Write dispatch summary
         if: always()
