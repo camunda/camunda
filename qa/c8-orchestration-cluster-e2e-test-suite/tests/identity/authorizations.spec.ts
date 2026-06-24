@@ -263,7 +263,7 @@ test.describe('authorization scenarios', () => {
       await identityUsersPage.createUser(testUser);
 
       await identityAuthorizationsPage.navigateToAuthorizations();
-      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      await expect(page).toHaveURL(/admin\/authorizations/);
     });
 
     await test.step(`Create component authorization for user`, async () => {
