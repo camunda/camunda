@@ -350,6 +350,103 @@ func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
 	return nil
 }
 
+// zstdNativePrefix returns the directory prefix used by zstd-jni to store
+// native libs for the given platform. zstd-jni uses "<os>/<arch>/" paths where
+// os is "darwin", "linux", or "win" and arch may differ from c8run's convention
+// (e.g., "amd64" instead of "x86_64").
+func zstdNativePrefix(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "linux/amd64/", nil
+		case "aarch64":
+			return "linux/aarch64/", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "darwin/x86_64/", nil
+		case "aarch64":
+			return "darwin/aarch64/", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "win/amd64/", nil
+		}
+	}
+	return "", fmt.Errorf("no zstd-jni native prefix for os=%s arch=%s", osType, arch)
+}
+
+// zstdNativeOsPrefixes lists all top-level OS directory prefixes used by zstd-jni.
+// Entries starting with any of these (but not matching the target prefix) are foreign.
+var zstdNativeOsPrefixes = []string{
+	"linux/", "darwin/", "win/", "aix/", "freebsd/",
+}
+
+// isZstdNativeEntry reports whether a ZIP entry name is a zstd-jni native lib.
+// These live under <os>/<arch>/ directories and end with a native extension.
+func isZstdNativeEntry(name string) bool {
+	for _, prefix := range zstdNativeOsPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// stripZstdJniNativeLibs strips unused platform native libs from zstd-jni JAR(s).
+func stripZstdJniNativeLibs(camundaVersion, osType, arch string) error {
+	keepPrefix, err := zstdNativePrefix(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "zstd-jni-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no zstd-jni jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple zstd-jni jars found; stripping only the first")
+	}
+
+	// Pre-scan: count entries to drop and verify idempotency.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	for _, f := range r.File {
+		if isZstdNativeEntry(f.Name) && !strings.HasPrefix(f.Name, keepPrefix) {
+			toDrop++
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Msg("no unused zstd-jni native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Int("dropping", toDrop).Msg("stripping unused zstd-jni native libs")
+
+	shouldDrop := func(name string) bool {
+		return isZstdNativeEntry(name) && !strings.HasPrefix(name, keepPrefix)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
 func getJavaArtifactsToken() (string, error) {
 	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
 	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
@@ -783,6 +880,10 @@ func New(camundaVersion, connectorsVersion string) error {
 
 	if err := stripRocksDbNativeLibs(camundaVersion, osType, architecture); err != nil {
 		return fmt.Errorf("package %s: failed to strip RocksDB native libs: %w", osType, err)
+	}
+
+	if err := stripZstdJniNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip zstd-jni native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
