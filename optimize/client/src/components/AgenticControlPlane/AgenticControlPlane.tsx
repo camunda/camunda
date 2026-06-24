@@ -18,7 +18,7 @@ import {t} from 'translation';
 
 import type {DashboardTile} from 'types';
 
-import {DATE_PRESETS, FilterBar} from './FilterBar';
+import {ALL_VERSIONS, DATE_PRESETS, FilterBar} from './FilterBar';
 import {loadAgenticDashboard} from './service';
 import {TileFooter} from './TileFooter';
 import {getTileTopNLimit} from './tilePagination';
@@ -69,14 +69,20 @@ export function AgenticControlPlane() {
   const [preset, setPreset] = useState('30d');
   const [dashboard, setDashboard] = useState<{tiles: DashboardTile[]} | null>(null);
   const [processScope, setProcessScope] = useState<string | null>(null);
+  const [versions, setVersions] = useState<string[]>([ALL_VERSIONS]);
   const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     mightFail(loadAgenticDashboard(), setDashboard, showError);
   }, [mightFail]);
 
+  const handleProcessScopeChange = useCallback((key: string | null) => {
+    setProcessScope(key);
+    setVersions([ALL_VERSIONS]);
+  }, []);
+
   const selectedPreset = DATE_PRESETS.find((p) => p.id === preset)!;
-  const definitions = processScope ? [{key: processScope, versions: ['all']}] : [];
+  const definitions = processScope ? [{key: processScope, versions}] : [];
   const filter = [presetToFilter(selectedPreset)];
 
   const scopedEvaluateReport = useCallback(
@@ -86,7 +92,7 @@ export function AgenticControlPlane() {
       query: Parameters<typeof evaluateReport>[2]
     ) => evaluateReport(id, tileFilter, query, definitions),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [processScope]
+    [processScope, versions]
   );
 
   const tileLimitById = useMemo(() => {
@@ -119,7 +125,7 @@ export function AgenticControlPlane() {
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [processScope, preset, tileLimitById]
+    [processScope, versions, preset, tileLimitById]
   );
 
   if (!dashboard) {
@@ -162,7 +168,9 @@ export function AgenticControlPlane() {
         preset={preset}
         onPresetChange={setPreset}
         processScope={processScope}
-        onProcessScopeChange={setProcessScope}
+        onProcessScopeChange={handleProcessScopeChange}
+        versions={versions}
+        onVersionsChange={setVersions}
       />
       {sections.map(({key, titleKey, loadTile}) => {
         const tiles = visibleTiles?.filter(
@@ -179,7 +187,7 @@ export function AgenticControlPlane() {
             )}
             <div className={`${key}-section`}>
               <DashboardRenderer
-                key={`${processScope ?? '__all__'}-${key}`}
+                key={`${processScope ?? '__all__'}-${versions.join(',')}-${key}`}
                 loadTile={loadTile}
                 tiles={tiles}
                 filter={filter}

@@ -172,7 +172,10 @@ public abstract class ReportEvaluationHandler {
                 .orElse(List.of());
 
         if (!scopedDefinitions.isEmpty()) {
-          // L1: one or more processes selected — validate tenant access for each and combine
+          // L1: one or more processes selected — validate tenant access for each and combine.
+          // The versions requested by the caller (e.g. a specific version selected in the
+          // Agentic Control Plane version filter) are preserved; an empty version list falls
+          // back to ALL_VERSIONS to keep the previous "all versions" behavior.
           final List<ReportDataDefinitionDto> validatedDefs =
               scopedDefinitions.stream()
                   .flatMap(
@@ -183,7 +186,7 @@ public abstract class ReportEvaluationHandler {
                                   scopedDef.getKey(),
                                   reportEvaluationInfo.getUserId())
                               .stream()
-                              .map(this::toReportDataDefinitionDto))
+                              .map(def -> toReportDataDefinitionDto(def, scopedDef.getVersions())))
                   .toList();
           processReportData.setDefinitions(validatedDefs);
         } else {
@@ -218,10 +221,18 @@ public abstract class ReportEvaluationHandler {
 
   private ReportDataDefinitionDto toReportDataDefinitionDto(
       final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def) {
+    return toReportDataDefinitionDto(def, List.of(ALL_VERSIONS));
+  }
+
+  private ReportDataDefinitionDto toReportDataDefinitionDto(
+      final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def,
+      final List<String> versions) {
+    final List<String> resolvedVersions =
+        versions == null || versions.isEmpty() ? List.of(ALL_VERSIONS) : versions;
     return new ReportDataDefinitionDto(
         def.getKey(),
         def.getName(),
-        List.of(ALL_VERSIONS),
+        resolvedVersions,
         def.getTenants().stream().map(TenantDto::getId).toList(),
         def.getName());
   }
