@@ -88,21 +88,22 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   @Override
   protected RecordProcessor createRecordProcessor() {
+    final var validator = new TopicValidator(topicState);
     return new RecordProcessingEngine(
         processors ->
             processors
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.CREATE_TOPIC,
-                    new CreateTopicProcessor(processors.writers(), topicState))
+                    new CreateTopicProcessor(processors.writers(), validator))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.REASSIGN_TOPIC,
-                    new ReassignTopicProcessor(processors.writers(), topicState))
+                    new ReassignTopicProcessor(processors.writers(), validator))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.DELETE_TOPIC,
-                    new TopicDeleteProcessor(processors.writers(), topicState))
+                    new TopicDeleteProcessor(processors.writers(), validator))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.REGISTER_TOPIC,

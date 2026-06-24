@@ -79,7 +79,9 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     EventBridgeRecordValues.OFFSET_VALUE_TYPE,
                     CoordinatorIntent.COMMIT_OFFSET,
                     new OffsetCommitProcessor(
-                        processors.writers(), offsetState, groupMetadataState))
+                        processors.writers(),
+                        offsetState,
+                        new OffsetCommitValidator(groupMetadataState)))
                 .onCommand(
                     EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE,
                     CoordinatorIntent.REBALANCE_GROUP,

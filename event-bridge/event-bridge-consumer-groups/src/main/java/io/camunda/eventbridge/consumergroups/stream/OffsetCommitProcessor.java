@@ -14,34 +14,31 @@ import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Handles the {@code COMMIT_OFFSET} command. Following the engine model, validation happens here
- * (not in the manager): the commit is fenced against the replicated group metadata — the member
- * must exist, present a current epoch, and own the partition. On success it appends an {@code
- * OFFSET_COMMITTED} event (applied by {@link OffsetCommittedApplier}, monotonically) and replies
- * with the resulting committed position; on failure it replies with the error code and writes no
- * event. Either way the reply is staged via the response writer and flushed only after the command
- * commits.
+ * Handles the {@code COMMIT_OFFSET} command. Validation (delegated to {@link
+ * OffsetCommitValidator}) happens here, not in the manager: the commit is fenced against the
+ * replicated group metadata. On success it appends an {@code OFFSET_COMMITTED} event (applied by
+ * {@link OffsetCommittedApplier}, monotonically) and replies with the resulting committed position;
+ * on failure it replies with the error code and writes no event. Either way the reply is staged via
+ * the response writer and flushed only after the command commits.
  */
 public final class OffsetCommitProcessor implements TypedRecordProcessor<OffsetCommitRecord> {
 
   private final Writers writers;
   private final OffsetState offsetState;
-  private final DbGroupMetadataState groupMetadataState;
+  private final OffsetCommitValidator validator;
 
   public OffsetCommitProcessor(
-      final Writers writers,
-      final OffsetState offsetState,
-      final DbGroupMetadataState groupMetadataState) {
+      final Writers writers, final OffsetState offsetState, final OffsetCommitValidator validator) {
     this.writers = writers;
     this.offsetState = offsetState;
-    this.groupMetadataState = groupMetadataState;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<OffsetCommitRecord> command) {
     final var cmd = command.getValue();
 
-    final var error = validate(cmd);
+    final var error = validator.validate(cmd);
     if (error != CoordinationErrorCode.NONE) {
       writers.response().respond(command, new CommitOffsetResponse().setErrorCode(error));
       return;
@@ -64,44 +61,5 @@ public final class OffsetCommitProcessor implements TypedRecordProcessor<OffsetC
             new CommitOffsetResponse()
                 .setErrorCode(CoordinationErrorCode.NONE)
                 .setCommittedPosition(committed));
-  }
-
-  /**
-   * Fences the commit against the replicated group metadata: the member must exist, its epoch must
-   * match (a stale epoch is a zombie that lost its partitions), and it must own the partition.
-   */
-  private CoordinationErrorCode validate(final OffsetCommitRecord cmd) {
-    final var groupId = cmd.getGroupId();
-    if (groupId == null || groupId.isEmpty()) {
-      return CoordinationErrorCode.INVALID_GROUP_ID;
-    }
-
-    final var payload = groupMetadataState.get(groupId);
-    if (payload == null) {
-      return CoordinationErrorCode.UNKNOWN_MEMBER_ID;
-    }
-
-    final var member =
-        GroupMetadataCodec.decode(payload).members().stream()
-            .filter(m -> m.memberId().equals(cmd.getMemberId()))
-            .findFirst()
-            .orElse(null);
-    if (member == null) {
-      return CoordinationErrorCode.UNKNOWN_MEMBER_ID;
-    }
-
-    final long expectedEpoch = member.memberEpoch();
-    if (expectedEpoch > cmd.getMemberEpoch()) {
-      return CoordinationErrorCode.FENCED_MEMBER_EPOCH;
-    }
-    if (expectedEpoch != cmd.getMemberEpoch()) {
-      return CoordinationErrorCode.UNKNOWN_MEMBER_ID;
-    }
-
-    if (!member.partitions().contains(cmd.getPartitionId())) {
-      return CoordinationErrorCode.NOT_PARTITION_OWNER;
-    }
-
-    return CoordinationErrorCode.NONE;
   }
 }

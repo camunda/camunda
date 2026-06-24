@@ -14,31 +14,28 @@ import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Handles the {@code DELETE_TOPIC} command. The topic must exist (validated here against the
- * replicated registry); on success it appends {@code TOPIC_DELETED} (applied by {@link
+ * Handles the {@code DELETE_TOPIC} command. Validation (delegated to {@link TopicValidator}): the
+ * topic must exist. On success it appends {@code TOPIC_DELETED} (applied by {@link
  * TopicDeletedApplier}) and replies {@code NONE}, otherwise replies {@code TOPIC_NOT_FOUND} and
  * writes no event.
  */
 final class TopicDeleteProcessor implements TypedRecordProcessor<TopicRecord> {
 
   private final Writers writers;
-  private final DbTopicState topicState;
+  private final TopicValidator validator;
 
-  TopicDeleteProcessor(final Writers writers, final DbTopicState topicState) {
+  TopicDeleteProcessor(final Writers writers, final TopicValidator validator) {
     this.writers = writers;
-    this.topicState = topicState;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<TopicRecord> command) {
     final var cmd = command.getValue();
 
-    if (topicState.get(cmd.getName()) == null) {
-      writers
-          .response()
-          .respond(
-              command,
-              new DeleteTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND));
+    final var error = validator.validateDelete(cmd);
+    if (error != CoordinationErrorCode.NONE) {
+      writers.response().respond(command, new DeleteTopicResponse().setErrorCode(error));
       return;
     }
 

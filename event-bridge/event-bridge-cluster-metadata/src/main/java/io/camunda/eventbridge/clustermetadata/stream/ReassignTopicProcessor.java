@@ -14,8 +14,8 @@ import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Handles the {@code REASSIGN_TOPIC} command. The topic must exist (validated here against the
- * replicated registry) and the replication factor must be positive; the new target placement is
+ * Handles the {@code REASSIGN_TOPIC} command. Validation (delegated to {@link TopicValidator}): the
+ * topic must exist and the replication factor must be positive; the new target placement is
  * computed by the manager and carried in the command. On success it appends {@code
  * TOPIC_REGISTERED} with the new target (the change-coordinator drives committed → target) and
  * replies {@code NONE}; otherwise it replies with the error code.
@@ -23,18 +23,18 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 final class ReassignTopicProcessor implements TypedRecordProcessor<TopicRecord> {
 
   private final Writers writers;
-  private final DbTopicState topicState;
+  private final TopicValidator validator;
 
-  ReassignTopicProcessor(final Writers writers, final DbTopicState topicState) {
+  ReassignTopicProcessor(final Writers writers, final TopicValidator validator) {
     this.writers = writers;
-    this.topicState = topicState;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<TopicRecord> command) {
     final var cmd = command.getValue();
 
-    final var error = validate(cmd);
+    final var error = validator.validateReassign(cmd);
     if (error != CoordinationErrorCode.NONE) {
       writers.response().respond(command, new ReassignTopicResponse().setErrorCode(error));
       return;
@@ -54,15 +54,5 @@ final class ReassignTopicProcessor implements TypedRecordProcessor<TopicRecord> 
     writers
         .response()
         .respond(command, new ReassignTopicResponse().setErrorCode(CoordinationErrorCode.NONE));
-  }
-
-  private CoordinationErrorCode validate(final TopicRecord cmd) {
-    if (topicState.get(cmd.getName()) == null) {
-      return CoordinationErrorCode.TOPIC_NOT_FOUND;
-    }
-    if (cmd.getReplicationFactor() < 1) {
-      return CoordinationErrorCode.INVALID_TOPIC;
-    }
-    return CoordinationErrorCode.NONE;
   }
 }
