@@ -34,6 +34,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.TrackHits;
 import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
@@ -437,6 +438,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final Query query = buildFilterQuery(idFieldName, ids, inclusionFilters, exclusionFilters);
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
+            .trackTotalHits(TrackHits.of(t -> t.enabled(false)))
             .index(sourceIndexName)
             .requestCache(false)
             .allowNoIndices(true)

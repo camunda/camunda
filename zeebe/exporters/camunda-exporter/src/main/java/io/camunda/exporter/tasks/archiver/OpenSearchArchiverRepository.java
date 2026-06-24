@@ -443,6 +443,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final Query query = buildFilterQuery(idFieldName, ids, inclusionFilters, exclusionFilters);
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
+            .trackTotalHits(t -> t.enabled(false))
             .index(sourceIndexName)
             .requestCache(false)
             .allowNoIndices(true)
