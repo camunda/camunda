@@ -109,21 +109,6 @@ install: check-deadline install-load-test-setup install-storage install-platform
 .PHONY: install-stable
 install-stable: check-deadline install-load-test-setup install-storage install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Install the load-test-setup Helm Chart
-.PHONY: install-load-test-setup
-install-load-test-setup: create-namespace
-	helm upgrade --install --take-ownership --create-namespace \
-		$(namespace)-load-test-setup $(helm_chart_load_test_setup) \
-		--namespace $(namespace) \
-		$(load_test_setup_values) $(additional_load_test_setup_configuration)
-
-.PHONY: template-load-test-setup
-template-load-test-setup: create-namespace
-	helm template $(namespace) $(helm_chart_load_test_setup) \
-		$(load_test_setup_values) \
-		$(additional_load_test_setup_configuration) \
-		--output-dir .
-
 # Fail fast if the namespace TTL deadline (read from load-test-setup-values.yaml,
 # the single source of truth) is today or in the past — the TTL cleanup
 # workflow will delete the namespace and undo the install. To extend, edit
@@ -241,6 +226,17 @@ install-platform-stable:
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
+# Install the load-test-setup Helm Chart
+.PHONY: install-load-test-setup
+install-load-test-setup: create-namespace
+	helm upgrade load-test-setup $(helm_chart_load_test_setup) \
+		--install \
+		--namespace $(namespace) \
+		--reset-then-reuse-values \
+		--render-subchart-notes \
+		--take-ownership --create-namespace \
+		$(load_test_setup_values) $(additional_load_test_setup_configuration)
+
 # Install/upgrade load test helm chart
 .PHONY: install-load-test
 install-load-test:
@@ -269,6 +265,13 @@ template-stable:
 		$(platform_values_stable) \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
+		--output-dir .
+
+.PHONY: template-load-test-setup
+template-load-test-setup:
+	helm template load-test-setup $(helm_chart_load_test_setup) \
+		$(load_test_setup_values) \
+		$(additional_load_test_setup_configuration) \
 		--output-dir .
 
 # Generates templates from the load test helm chart
