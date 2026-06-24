@@ -1,23 +1,20 @@
 # Gateway API HTTPRoutes for the C8 Self-Managed Camunda preview environment.
 #
-# Replaces the former nginx Ingresses. The infra-managed Gateway, the Vouch
-# (Okta SSO) Middleware and the wildcard-cert TLS termination are rendered into
-# this namespace by the `infra-preview-environments-gateway-api` dependency;
-# these routes attach to that Gateway and reference the Vouch Middleware on
-# every authenticated rule. See
-# https://github.com/camunda/infra-preview-environments-gateway-api.
+# The infra-managed Gateway, the Vouch (Okta SSO) Middleware and the
+# wildcard-cert TLS termination are rendered into this namespace by the
+# `infra-preview-environments-gateway-api` dependency; these routes attach to
+# that Gateway and reference the Vouch Middleware on every authenticated rule.
+# See https://github.com/camunda/infra-preview-environments-gateway-api.
 #
 # The routes are hand-written (the dependency's `route.enabled` is false)
 # because the backend service names, ports and context paths are derived from
-# the camunda-platform subchart templates, mirroring the previous Ingresses
-# exactly.
+# the camunda-platform subchart templates.
 #
-# Known gap: the nginx `satisfy: any` + `whitelist-source-range` Vouch bypass
-# for internal IPs (active only when
-# `global.preview.ingress.internalAuthBypass.enabled` is true, which is the
-# non-default) has no faithful Traefik Gateway API equivalent — Traefik's
-# ipAllowList rejects non-listed IPs rather than letting them skip auth. It is
-# therefore intentionally not translated here; revisit if a consumer enables it.
+# Known gap: the `global.preview.ingress.internalAuthBypass.enabled` source-IP
+# Vouch bypass (non-default) has no faithful Traefik Gateway API equivalent —
+# Traefik's ipAllowList rejects non-listed IPs rather than letting them skip
+# auth — and is therefore intentionally not translated here; revisit if a
+# consumer enables it.
 ---
 {{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
 {{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
@@ -38,8 +35,7 @@ spec:
   hostnames:
   - {{ include "ingress.domain" $ | quote }}
   rules:
-  # app-root: redirect "/" to Console (replaces the nginx
-  # `nginx.ingress.kubernetes.io/app-root` annotation).
+  # app-root: redirect "/" to Console.
   - matches:
     - path:
         type: Exact
@@ -90,6 +86,30 @@ spec:
         group: traefik.io
         kind: Middleware
         name: {{ $vouchMiddleware }}
+    backendRefs:
+    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
+      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+  # OIDC discovery / token endpoints, served WITHOUT Vouch authentication (no
+  # ExtensionRef filter). These are Exact matches, which take precedence over
+  # the `/auth` PathPrefix rule above, so they correctly bypass Vouch while the
+  # rest of `/auth/**` stays authenticated.
+  - matches:
+    # OIDC discovery document
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/.well-known/openid-configuration
+    # JWK set (JWT validation keys)
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/protocol/openid-connect/certs
+    # Token endpoint (OAuth2 flows)
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/protocol/openid-connect/token
+    # UserInfo endpoint
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/protocol/openid-connect/userinfo
     backendRefs:
     - name: {{ include "identity.keycloak.service" $camundaPlatform }}
       port: {{ include "identity.keycloak.port" $camundaPlatform }}
@@ -163,42 +183,4 @@ spec:
     backendRefs:
     - name: {{ template "connectors.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.connectors.service.serverPort }}
----
-# Separate route for the OIDC discovery / token endpoints, served WITHOUT Vouch
-# authentication (no ExtensionRef filter). These are Exact matches, which take
-# precedence over the `/auth` PathPrefix rule above, so they correctly bypass
-# Vouch while the rest of `/auth/**` stays authenticated.
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: {{ include "camundaPlatform.fullname" $camundaPlatform }}-oidc-discovery
-  labels:
-    {{- include "commonLabels" $ | nindent 4 }}
-  annotations:
-    {{- include "commonAnnotations" $ | nindent 4 }}
-spec:
-  parentRefs:
-  - name: {{ $gatewayName }}
-  hostnames:
-  - {{ include "ingress.domain" $ | quote }}
-  rules:
-  - matches:
-    # OIDC discovery document
-    - path:
-        type: Exact
-        value: /auth/realms/camunda-platform/.well-known/openid-configuration
-    # JWK set (JWT validation keys)
-    - path:
-        type: Exact
-        value: /auth/realms/camunda-platform/protocol/openid-connect/certs
-    # Token endpoint (OAuth2 flows)
-    - path:
-        type: Exact
-        value: /auth/realms/camunda-platform/protocol/openid-connect/token
-    # UserInfo endpoint
-    - path:
-        type: Exact
-        value: /auth/realms/camunda-platform/protocol/openid-connect/userinfo
-    backendRefs:
-    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
-      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+
