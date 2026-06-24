@@ -7,15 +7,15 @@
 # identity, tasklist, operate — but activates application-pt-smoke-test-basic.yaml (method=basic, users
 # seeded per tenant via camunda.security.initialization). No external IdP is needed for basic auth.
 #
-# Prerequisite: Elasticsearch on localhost:9200 (users are stored in secondary storage). No
-# ./pt-smoke-test-idp.sh needed.
+# No prerequisites: secondary storage is in-memory H2 (RDBMS), provisioned per physical tenant on
+# startup — no Elasticsearch and no ./pt-smoke-test-idp.sh needed for basic auth.
 #
 # Usage:
 #   ./pt-smoke-test-oc-basic.sh
 #
 # Once Tomcat reports "Tomcat started on port 8080", wait a few seconds for the broker exporter to
-# seed the initialization users into ES, then run ./pt-smoke-test-basic.sh. Logs stream to the
-# terminal and tee to /tmp/oc-basic.log. Press Ctrl-C to stop.
+# seed the initialization users into each tenant's store, then run ./pt-smoke-test-basic.sh. Logs
+# stream to the terminal and tee to /tmp/oc-basic.log. Press Ctrl-C to stop.
 #
 set -euo pipefail
 

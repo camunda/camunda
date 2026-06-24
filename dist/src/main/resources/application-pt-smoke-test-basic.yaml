@@ -9,22 +9,20 @@
 # resolves on /v2/... and /physical-tenants/default/...; the tenanta chain resolves against a
 # SEPARATE store, so alice is rejected there (per-tenant routing isolation).
 #
-# SCOPE NOTE: this single-engine harness provisions only the default store (index-prefix
-# ptbasicdefault). It does NOT provision a separate engine/store per physical tenant, so the
-# tenanta block below (index-prefix + bob) is NOT actually seeded — no ptbasictenanta-* indices are
-# created. Per-PT engine/store provisioning is separate from this PR's API-security-chain scope; the
-# tenanta config is kept to document intent and will seed bob once provisioning lands.
+# Each physical tenant now gets its own auto-provisioned in-memory H2 store: the per-PT RDBMS path
+# (#52027) runs per-tenant Liquibase on startup, so both the default (ptbasicdefault) and tenanta
+# (ptbasictenanta) stores exist and bob is seeded into tenanta's. Confirm on the live run whether
+# bob authenticates on /physical-tenants/tenanta/... (the per-tenant seeding/exporter path).
 camunda:
   data:
     secondary-storage:
-      type: elasticsearch
-      elasticsearch:
-        url: http://localhost:9200
-        number-of-replicas: 0
-        create-schema: true
-        # Default/root tenant store. Distinct from the OIDC harness prefixes so the two harnesses
-        # can share one ES node without their indices colliding.
-        index-prefix: ptbasicdefault
+      # In-memory H2 (RDBMS), per physical tenant — no external datastore needed. The per-PT RDBMS
+      # path (#52027) auto-creates each tenant's schema via per-tenant Liquibase on startup.
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:ptbasicdefault;DB_CLOSE_DELAY=-1
+        username: sa
+        password:
   security:
     authorizations:
       enabled: true
@@ -48,9 +46,11 @@ camunda:
     tenanta:
       data:
         secondary-storage:
-          elasticsearch:
-            # tenanta's own store — bob lives here, not in the default store.
-            index-prefix: ptbasictenanta
+          rdbms:
+            # tenanta's own in-memory H2 store — bob lives here, not in the default store.
+            url: jdbc:h2:mem:ptbasictenanta;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
       security:
         initialization:
           users:

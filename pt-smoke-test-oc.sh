@@ -3,12 +3,15 @@
 # INTERIM — drop before review. Part of the local PT API smoke harness.
 #
 # Boots the OC under the pt-smoke-test profile, which expands (via spring.profiles.group.pt-smoke-test
-# in application.properties) into: consolidated-auth, elasticsearch, broker.
+# in application.properties) into: consolidated-auth, broker, identity, tasklist, operate.
 #
-#   - consolidated-auth: activates the host security graph and AuthenticationConfiguration
-#   - elasticsearch:     ES secondary storage on localhost:9200 (required for multi-PT
-#                        PhysicalTenantSearchClientReadersConfiguration to activate)
-#   - broker:            embedded Zeebe broker (needed for /v2/authentication/me to respond)
+#   - consolidated-auth:       activates the host security graph and AuthenticationConfiguration
+#   - broker:                  embedded Zeebe broker (needed for /v2/authentication/me to respond)
+#   - identity/tasklist/operate: serve the web UIs (PT-prefixed routes via #55682)
+#
+# Secondary storage is in-memory H2 (RDBMS), configured per physical tenant in
+# application-pt-smoke-test.yaml — the per-PT RDBMS path (#52027) auto-creates each tenant's schema
+# on startup, so no external datastore (Elasticsearch) is needed.
 #
 # The per-tenant SecurityFilterChain wiring activates automatically once
 # camunda.physical-tenants.* entries are present in application-pt-smoke-test.yaml.
@@ -22,7 +25,7 @@
 #
 # The optional argument is the Spring profiles list. A variant adds an extra profile whose
 # application-<profile>.yaml layers a small override onto application-pt-smoke-test.yaml — pt-smoke-test must
-# stay first so its profile group (consolidated-auth, elasticsearch, broker) still expands.
+# stay first so its profile group (consolidated-auth, broker, identity, tasklist, operate) still expands.
 #
 # Once Tomcat reports "Tomcat started on port 8080", run the matching ./pt-smoke-test-api*.sh.
 # Press Ctrl-C to stop. Logs stream to the terminal and tee to /tmp/oc.log.

@@ -25,9 +25,11 @@ camunda:
     tenantb:
       data:
         secondary-storage:
-          elasticsearch:
-            # tenantb uses a distinct index prefix to isolate its indices.
-            index-prefix: pttenantb
+          rdbms:
+            # tenantb gets its own in-memory H2 database, isolated from default's and tenanta's.
+            url: jdbc:h2:mem:pttenantb;DB_CLOSE_DELAY=-1
+            username: sa
+            password:
       security:
         # Required: every non-default PT must declare its own initialization block.
         # carol is the tenantb realm user.
