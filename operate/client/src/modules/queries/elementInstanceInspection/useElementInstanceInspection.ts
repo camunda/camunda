@@ -11,6 +11,7 @@ import type {
   QueryElementInstanceInspectionRequestBody,
   QueryElementInstanceInspectionResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
+import type {RequestError} from 'modules/request';
 import {searchElementInstanceInspection} from 'modules/api/v2/elementInstanceInspection/searchElementInstanceInspection';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {queryKeys} from '../queryKeys';
@@ -51,7 +52,7 @@ const useElementInstanceInspection = (
 
   return useQuery<
     QueryElementInstanceInspectionResponseBody,
-    Error,
+    RequestError,
     QueryElementInstanceInspectionResponseBody
   >({
     queryKey: queryKeys.elementInstanceInspection.search(payload),

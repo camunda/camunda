@@ -623,17 +623,21 @@ describe('Modification Summary Modal', () => {
     const queryClient = getMockQueryClient();
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
-      <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={queryClient}>
-          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
-    );
+    const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+      useEffect(() => () => modificationsStore.reset(), []);
+
+      return (
+        <ProcessDefinitionKeyContext.Provider value="123">
+          <QueryClientProvider client={queryClient}>
+            <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+              <Routes>
+                <Route path={Paths.processInstance()} element={children} />
+              </Routes>
+            </MemoryRouter>
+          </QueryClientProvider>
+        </ProcessDefinitionKeyContext.Provider>
+      );
+    };
 
     const {user} = render(
       <ModificationSummaryModal open setOpen={() => {}} />,
