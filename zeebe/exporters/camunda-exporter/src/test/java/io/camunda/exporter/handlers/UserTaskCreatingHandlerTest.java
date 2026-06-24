@@ -227,6 +227,7 @@ public class UserTaskCreatingHandlerTest {
             .withFormKey(formKey)
             .withElementId(elementId)
             .withRootProcessInstanceKey(rootProcessInstanceKey)
+            .withBusinessId("order-4711")
             .build();
 
     final Record<UserTaskRecordValue> taskCreatingRecord =
@@ -289,6 +290,7 @@ public class UserTaskCreatingHandlerTest {
                 Instant.ofEpochMilli(taskCreatingRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
     assertThat(taskEntity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(taskEntity.getBusinessId()).isEqualTo("order-4711");
   }
 
   @Test
@@ -308,5 +310,24 @@ public class UserTaskCreatingHandlerTest {
 
     // then
     assertThat(taskEntity.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  public void shouldNotSetBusinessIdWhenEmpty() {
+    // given
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder().withBusinessId("").build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withIntent(UserTaskIntent.CREATING).withValue(taskRecordValue));
+
+    // when
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity.getBusinessId()).isNull();
   }
 }

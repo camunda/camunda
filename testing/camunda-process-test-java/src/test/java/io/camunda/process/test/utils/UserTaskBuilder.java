@@ -39,6 +39,7 @@ public class UserTaskBuilder implements UserTask {
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
+  private String businessId;
   private Long formKey;
   private OffsetDateTime creationDate;
   private OffsetDateTime completionDate;
@@ -114,6 +115,11 @@ public class UserTaskBuilder implements UserTask {
   @Override
   public Long getRootProcessInstanceKey() {
     return rootProcessInstanceKey;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 
   @Override
@@ -223,6 +229,11 @@ public class UserTaskBuilder implements UserTask {
 
   public UserTaskBuilder setFormKey(final Long formKey) {
     this.formKey = formKey;
+    return this;
+  }
+
+  public UserTaskBuilder setBusinessId(final String businessId) {
+    this.businessId = businessId;
     return this;
   }
 

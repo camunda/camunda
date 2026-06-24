@@ -88,6 +88,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           23L,
           42L,
           null,
+          null,
           17L,
           "tenantId",
           null,
