@@ -836,7 +836,7 @@
         "/testing/camunda-process-test-java/pom\\.xml$/"
       ],
       "matchStrings": [
-        "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>[^<]+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>"
+        "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>\\d+\\.\\d+\\.\\d+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>"
       ],
       "depNameTemplate": "camunda/connectors-bundle",
       "datasourceTemplate": "docker"
