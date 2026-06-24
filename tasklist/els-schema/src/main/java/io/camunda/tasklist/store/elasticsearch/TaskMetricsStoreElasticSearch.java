@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTempla
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.TENANT_ID;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ExpandWildcard;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
@@ -114,11 +115,10 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
       final List<LongTermsBucket> buckets = termsResult.buckets().array();
 
       return buckets.stream().map(LongTermsBucket::key).collect(Collectors.toSet());
-    } catch (final IOException e) {
-      LOGGER.error(
-          "Error while retrieving assigned users between dates from index: " + template, e);
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.warn("Error while retrieving assigned users between dates from index: " + template, e);
       final String message = "Error while retrieving assigned users between dates";
-      throw new TasklistRuntimeException(message);
+      throw new TasklistRuntimeException(message, e);
     }
   }
 
@@ -132,9 +132,9 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
       final var result = response.result();
 
       return Result.Created.equals(result) || Result.Updated.equals(result);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       LOGGER.error(e.getMessage(), e);
-      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
+      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity, e);
     }
   }
 

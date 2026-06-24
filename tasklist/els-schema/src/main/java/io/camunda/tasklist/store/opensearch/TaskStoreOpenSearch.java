@@ -55,6 +55,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.ScriptSortType;
@@ -112,7 +113,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     try {
       final var rawTask = getTaskRawResponse(id);
       return rawTask.source();
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -134,7 +135,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     try {
       return OpenSearchUtil.scrollUserTaskKeysToList(searchRequest, osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -155,7 +156,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             .fields(f -> f.field(TaskTemplate.KEY));
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -186,7 +187,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     final Hit taskBeforeSearchHit;
     try {
       taskBeforeSearchHit = getTaskRawResponse(String.valueOf(taskBefore.getKey()));
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
 
@@ -226,7 +227,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     final Hit taskBeforeSearchHit;
     try {
       taskBeforeSearchHit = getTaskRawResponse(String.valueOf(taskBefore.getKey()));
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
 
@@ -277,8 +278,8 @@ public class TaskStoreOpenSearch implements TaskStore {
     try {
       final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
       return response.stream().map(Hit::source).collect(Collectors.toList());
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
+    } catch (final IOException | OpenSearchException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
@@ -300,7 +301,7 @@ public class TaskStoreOpenSearch implements TaskStore {
           this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
           TaskEntity.class,
           osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -434,7 +435,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         }
       }
       return tasks;
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -988,7 +989,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
         listOfTaskIdsSets.add(taskIdsForCurrentVar);
 
-      } catch (final IOException e) {
+      } catch (final IOException | OpenSearchException e) {
         final String message =
             String.format("Exception occurred while obtaining taskIds: %s", e.getMessage());
         throw new TasklistRuntimeException(message, e);

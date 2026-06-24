@@ -10,6 +10,7 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -60,7 +61,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
     try {
       final var bulkOperations = draftVariables.stream().map(this::createUpsertOperation).toList();
       ElasticsearchUtil.executeBulkRequest(esClient, bulkOperations, Refresh.WaitFor);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException("Error persisting draft variables", e);
     }
   }
@@ -75,7 +76,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
     try {
       final var response = esClient.deleteByQuery(request);
       return response.deleted(); // Return the count of deleted documents
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error preparing the query to delete draft task variable instances for task [%s]",
@@ -140,8 +141,8 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       }
 
       return Optional.ofNullable(response.hits().hits().get(0).source());
-    } catch (final IOException e) {
-      LOGGER.error(
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.warn(
           String.format("Error retrieving draft task variable instance with ID [%s]", variableId),
           e);
       return Optional.empty();

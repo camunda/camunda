@@ -50,6 +50,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
@@ -99,7 +100,7 @@ public class VariableStoreOpenSearch implements VariableStore {
           chunk -> buildSearchVariablesByScopeFNIsAndVarNamesRequest(chunk, varNames, fieldNames),
           VariableEntity.class,
           osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -156,7 +157,7 @@ public class VariableStoreOpenSearch implements VariableStore {
           .collect(
               groupingBy(
                   SnapshotTaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -183,7 +184,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -213,7 +214,7 @@ public class VariableStoreOpenSearch implements VariableStore {
           this::buildSearchFNIByProcessInstanceKeysRequest,
           FlowNodeInstanceEntity.class,
           osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -240,7 +241,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       } else {
         throw new NotFoundException(String.format("Variable with id %s was not found", variableId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -266,7 +267,7 @@ public class VariableStoreOpenSearch implements VariableStore {
         throw new NotFoundException(
             String.format("Task variable with id %s was not found", variableId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -310,7 +311,7 @@ public class VariableStoreOpenSearch implements VariableStore {
             new HashSet<>(
                 OpenSearchUtil.scrollFieldToList(
                     searchRequestBuilder, PROCESS_INSTANCE_KEY, osClient));
-      } catch (final IOException e) {
+      } catch (final IOException | OpenSearchException e) {
         final String message =
             String.format(
                 "Exception occurred while obtaining flowNodeInstanceIds for variable %s: %s",
