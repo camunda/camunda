@@ -298,7 +298,12 @@ public final class BusinessRuleTaskTest {
     final Map<String, Object> variables =
         Map.ofEntries(entry("lightsaberColor", "blue"), entry("height", 182));
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("order-123")
+            .withVariables(variables)
+            .create();
 
     final var businessRuleTaskActivated =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -340,7 +345,8 @@ public final class BusinessRuleTaskTest {
         .hasProcessInstanceKey(businessRuleTaskActivated.getValue().getProcessInstanceKey())
         .hasElementInstanceKey(businessRuleTaskActivated.getKey())
         .hasElementId(businessRuleTaskActivated.getValue().getElementId())
-        .hasRootProcessInstanceKey(processInstanceKey);
+        .hasRootProcessInstanceKey(processInstanceKey)
+        .hasBusinessId("order-123");
 
     final var evaluatedDecisions = decisionEvaluationValue.getEvaluatedDecisions();
     assertThat(evaluatedDecisions).hasSize(2);
