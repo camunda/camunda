@@ -303,7 +303,7 @@ public class OidcAuthenticationConfiguration {
   }
 
   public void setDiagnostics(final OidcDiagnosticsConfiguration diagnostics) {
-    this.diagnostics = diagnostics;
+    this.diagnostics = diagnostics != null ? diagnostics : new OidcDiagnosticsConfiguration();
   }
 
   public boolean isSet() {
