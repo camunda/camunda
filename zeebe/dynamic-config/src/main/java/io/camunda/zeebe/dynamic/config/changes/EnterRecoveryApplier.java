@@ -52,8 +52,7 @@ public class EnterRecoveryApplier implements MemberOperationApplier {
       return Either.left(
           new IllegalStateException(String.format(TRANSITION_ERROR_MESSAGE, memberId)));
     }
-
-    return Either.right(MemberState::toRecovering);
+    return Either.right(UnaryOperator.identity());
   }
 
   @Override

@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
-final class EnterRecoveryApplierTest {
+final class ExitRecoveryApplierTest {
 
   private static final MemberId MEMBER_ID = MemberId.from("1");
 
@@ -44,7 +44,7 @@ final class EnterRecoveryApplierTest {
   @Test
   void shouldFailInitWhenMemberNotInCluster() {
     // given
-    final var applier = new EnterRecoveryApplier(MEMBER_ID, noopExecutor);
+    final var applier = new ExitRecoveryApplier(MEMBER_ID, noopExecutor);
     final var config = ClusterConfiguration.init();
 
     // when
@@ -58,9 +58,9 @@ final class EnterRecoveryApplierTest {
   }
 
   @Test
-  void shouldFailInitWhenMemberIsNotActive() {
+  void shouldFailInitWhenMemberIsNotRecovering() {
     // given
-    final var applier = new EnterRecoveryApplier(MEMBER_ID, noopExecutor);
+    final var applier = new ExitRecoveryApplier(MEMBER_ID, noopExecutor);
     final var config =
         ClusterConfiguration.init().addMember(MEMBER_ID, MemberState.uninitialized().toJoining());
 
@@ -75,42 +75,42 @@ final class EnterRecoveryApplierTest {
   }
 
   @Test
-  void shouldSucceedAsNoOpWhenMemberIsAlreadyRecovering() {
-    // given — member is already in recovery mode
-    final var applier = new EnterRecoveryApplier(MEMBER_ID, noopExecutor);
-    final var recoveringMember = MemberState.initializeAsActive(Map.of()).toRecovering();
-    final var config = ClusterConfiguration.init().addMember(MEMBER_ID, recoveringMember);
-
-    // when
-    final var result = applier.initMemberState(config);
-
-    // then — transition is a no-op: it succeeds but leaves the member untouched
-    EitherAssert.assertThat(result).isRight();
-    final var updatedMember = result.get().apply(recoveringMember);
-    assertThat(updatedMember).isEqualTo(recoveringMember);
-    assertThat(updatedMember.state()).isEqualTo(State.RECOVERING);
-  }
-
-  @Test
-  void shouldLeaveMemberStateUnchangedOnInitWhenMemberIsActive() {
-    // given
-    final var applier = new EnterRecoveryApplier(MEMBER_ID, noopExecutor);
+  void shouldSucceedAsNoOpWhenMemberIsAlreadyActive() {
+    // given — member is already in processing mode
+    final var applier = new ExitRecoveryApplier(MEMBER_ID, noopExecutor);
     final var activeMember = MemberState.initializeAsActive(Map.of());
     final var config = ClusterConfiguration.init().addMember(MEMBER_ID, activeMember);
 
     // when
     final var result = applier.initMemberState(config);
 
-    // then — init does not transition the state; the flip to RECOVERING happens on apply
+    // then — transition is a no-op: it succeeds but leaves the member untouched
     EitherAssert.assertThat(result).isRight();
     final var updatedMember = result.get().apply(activeMember);
+    assertThat(updatedMember).isEqualTo(activeMember);
     assertThat(updatedMember.state()).isEqualTo(State.ACTIVE);
+  }
+
+  @Test
+  void shouldLeaveMemberStateUnchangedOnInitWhenMemberIsRecovering() {
+    // given
+    final var applier = new ExitRecoveryApplier(MEMBER_ID, noopExecutor);
+    final var recoveringMember = MemberState.initializeAsActive(Map.of()).toRecovering();
+    final var config = ClusterConfiguration.init().addMember(MEMBER_ID, recoveringMember);
+
+    // when
+    final var result = applier.initMemberState(config);
+
+    // then — init does not transition the state; the flip to ACTIVE happens on apply
+    EitherAssert.assertThat(result).isRight();
+    final var updatedMember = result.get().apply(recoveringMember);
+    assertThat(updatedMember.state()).isEqualTo(State.RECOVERING);
   }
 
   @Test
   void shouldCompleteApplySuccessfully() {
     // given
-    final var applier = new EnterRecoveryApplier(MEMBER_ID, noopExecutor);
+    final var applier = new ExitRecoveryApplier(MEMBER_ID, noopExecutor);
 
     // when
     final var result = applier.applyOperation();
@@ -120,23 +120,23 @@ final class EnterRecoveryApplierTest {
   }
 
   @Test
-  void shouldSetStateToRecoveringOnApply() {
+  void shouldSetStateToActiveOnApply() {
     // given
-    final var applier = new EnterRecoveryApplier(MEMBER_ID, noopExecutor);
-    final var activeMember = MemberState.initializeAsActive(Map.of());
+    final var applier = new ExitRecoveryApplier(MEMBER_ID, noopExecutor);
+    final var recoveringMember = MemberState.initializeAsActive(Map.of()).toRecovering();
 
     // when
     final var transformer = applier.applyOperation().join();
-    final var updatedMember = transformer.apply(activeMember);
+    final var updatedMember = transformer.apply(recoveringMember);
 
     // then
-    assertThat(updatedMember.state()).isEqualTo(State.RECOVERING);
+    assertThat(updatedMember.state()).isEqualTo(State.ACTIVE);
   }
 
   @Test
   void shouldFailApplyWhenExecutorFails() {
     // given
-    final var applier = new EnterRecoveryApplier(MEMBER_ID, failingExecutor);
+    final var applier = new ExitRecoveryApplier(MEMBER_ID, failingExecutor);
 
     // when
     final var result = applier.applyOperation();

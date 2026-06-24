@@ -70,10 +70,7 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
     concurrencyControl.run(
         () -> {
           if (isRecovering()) {
-            result.completeExceptionally(
-                new IllegalStateException(
-                    "Cannot enter recovery for partition group %s — already in recovery mode"
-                        .formatted(partitionGroup)));
+            result.complete(null);
             return;
           }
           transitionTo(Mode.RECOVERING, result);
@@ -88,10 +85,7 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
     concurrencyControl.run(
         () -> {
           if (!isRecovering()) {
-            result.completeExceptionally(
-                new IllegalStateException(
-                    "Cannot exit recovery for partition group %s — already in processing mode"
-                        .formatted(partitionGroup)));
+            result.complete(null);
             return;
           }
           transitionTo(Mode.PROCESSING, result);

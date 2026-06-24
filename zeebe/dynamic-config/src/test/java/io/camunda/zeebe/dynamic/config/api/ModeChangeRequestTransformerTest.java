@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.config.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -99,8 +98,8 @@ final class ModeChangeRequestTransformerTest {
   }
 
   @Test
-  void shouldRejectEnteringRecoveryWhenNoActiveMembers() {
-    // given — all members already recovering
+  void shouldSucceedWithNoOperationsWhenEnteringRecoveryAndNoActiveMembers() {
+    // given — all members already recovering, so the request is a no-op
     final var transformer = new ModeChangeRequestTransformer(Mode.RECOVERING);
     final var clusterConfiguration =
         ClusterConfiguration.init()
@@ -109,16 +108,14 @@ final class ModeChangeRequestTransformerTest {
     // when
     final var result = transformer.operations(clusterConfiguration);
 
-    // then
-    EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft())
-        .isInstanceOf(InvalidRequest.class)
-        .hasMessageContaining("No active members found to enter recovery mode");
+    // then — idempotent: re-sending the request succeeds without generating operations
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get()).isEmpty();
   }
 
   @Test
-  void shouldRejectExitingRecoveryWhenNoRecoveringMembers() {
-    // given — all members active
+  void shouldSucceedWithNoOperationsWhenExitingRecoveryAndNoRecoveringMembers() {
+    // given — all members active, so the request is a no-op
     final var transformer = new ModeChangeRequestTransformer(Mode.PROCESSING);
     final var clusterConfiguration =
         ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
@@ -126,10 +123,8 @@ final class ModeChangeRequestTransformerTest {
     // when
     final var result = transformer.operations(clusterConfiguration);
 
-    // then
-    EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft())
-        .isInstanceOf(InvalidRequest.class)
-        .hasMessageContaining("No recovering members found to transition to processing mode");
+    // then — idempotent: re-sending the request succeeds without generating operations
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get()).isEmpty();
   }
 }
