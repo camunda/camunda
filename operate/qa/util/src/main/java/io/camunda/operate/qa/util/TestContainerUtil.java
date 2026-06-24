@@ -383,7 +383,7 @@ public class TestContainerUtil {
     operateContainer
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", getElasticURL(testContext))
-        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
+        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth, operate")
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
