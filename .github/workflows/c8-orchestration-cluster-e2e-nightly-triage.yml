@@ -298,11 +298,34 @@ jobs:
 
           echo "After normalization + filtering: $(jq 'length' /tmp/failures_normalized.json)"
 
-          # Determine which versions have open failing-test-fix PRs (dedup)
-          open_pr_versions=$(gh pr list --repo "$REPO" \
+          # Determine which test files are already covered by open failing-test-fix PRs.
+          # Build a map: base_ref -> [spec file paths already being fixed on that branch].
+          # This allows partial dispatch: if a branch has an open PR but the new failures
+          # are in different files, a fix agent is still dispatched for those files.
+          covered_files_map='{}'
+          open_pr_base_refs='[]'
+          open_pr_nums=$(gh pr list --repo "$REPO" \
             --search "label:failing-test-fix is:open" \
-            --json baseRefName --jq '[.[].baseRefName] | unique' 2>/dev/null || echo '[]')
-          echo "Open failing-test-fix PR base refs: $open_pr_versions"
+            --json number --jq '.[].number' 2>/dev/null || echo '')
+          for pr_num in $open_pr_nums; do
+            [ -z "$pr_num" ] && continue
+            base_ref=$(gh pr view "$pr_num" --repo "$REPO" --json baseRefName \
+              --jq '.baseRefName' 2>/dev/null || echo '')
+            [ -z "$base_ref" ] && continue
+            pr_files=$(gh pr view "$pr_num" --repo "$REPO" --json files \
+              --jq '[.files[].path
+                     | select(test("qa/c8-orchestration-cluster-e2e-test-suite/.*\\.spec\\.[jt]s$"))
+                     | sub("^.*/qa/c8-orchestration-cluster-e2e-test-suite/"; "")
+                     | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")]' \
+              2>/dev/null || echo '[]')
+            covered_files_map=$(echo "$covered_files_map" | jq \
+              --arg ref "$base_ref" --argjson files "$pr_files" \
+              '. + {($ref): ((.[$ref] // []) + $files | unique)}')
+            open_pr_base_refs=$(echo "$open_pr_base_refs" | jq \
+              --arg ref "$base_ref" '. + [$ref] | unique')
+          done
+          echo "Open failing-test-fix PR base refs: $open_pr_base_refs"
+          echo "Covered spec files per branch: $(echo "$covered_files_map" | jq -c '.')"
 
           # Build dispatch payloads, one per version.
           # Sources:
@@ -352,7 +375,7 @@ jobs:
           # Build dispatch payloads from test failures
           if [ -s /tmp/failures_normalized.json ]; then
             jq --slurpfile run_ids /tmp/run_ids.json \
-               --argjson openrefs "$open_pr_versions" \
+               --argjson covered "$covered_files_map" \
                --argjson cap "${DAILY_CAP}" '
               # group failures by version
               sort_by(.version) | group_by(.version)
@@ -362,8 +385,17 @@ jobs:
                   ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
                 })
               | map(select(.test_specs | length > 0))
-              # dedup against open PRs
-              | map(select((.ref as $ref | $openrefs | index($ref)) == null))
+              # per-file dedup: remove specs whose file is already covered by an open PR on this branch.
+              # A version is only skipped entirely when every failing spec is already being fixed.
+              # If some specs are in files not yet covered, dispatch proceeds for those specs only.
+              | map(
+                  .ref as $ref |
+                  .test_specs |= map(
+                    . as $spec |
+                    select(($covered[$ref] // []) | index($spec.file) == null)
+                  )
+                )
+              | map(select(.test_specs | length > 0))
               # attach run IDs
               | map(. + {
                   e2e_run_id:       ($run_ids[0][(.version + "/e2e")]       // ""),
@@ -387,7 +419,7 @@ jobs:
           # (e.g. api_es has test failures while api_rdbms crashes before producing results).
           jq --slurpfile run_ids /tmp/run_ids.json \
              --argjson wf_failures "$workflow_failures" \
-             --argjson openrefs "$open_pr_versions" \
+             --argjson openrefs "$open_pr_base_refs" \
              --argjson cap "${DAILY_CAP}" '
             . as $test_dispatches |
             $wf_failures
