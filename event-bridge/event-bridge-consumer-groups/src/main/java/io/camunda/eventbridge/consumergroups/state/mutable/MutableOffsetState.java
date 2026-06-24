@@ -16,8 +16,11 @@ import io.camunda.eventbridge.consumergroups.state.immutable.OffsetState;
  */
 public interface MutableOffsetState extends OffsetState {
 
-  /** Stores the committed position for {@code (groupId, partitionId)} (and updates the mirror). */
-  void putOffset(String groupId, int partitionId, long position);
+  /**
+   * Stores the committed position for {@code (groupId, topic, partitionId)} (and updates the
+   * mirror).
+   */
+  void putOffset(String groupId, String topic, int partitionId, long position);
 
   /** Rebuilds the mirror from durable state before processing starts (no concurrent access yet). */
   void seedMirror();

@@ -104,7 +104,7 @@ public class ConsumerGroupCoordinator extends Actor {
           final var command =
               new MembershipRecord()
                   .setGroupId(request.getGroupId())
-                  .setTopic(request.getTopic())
+                  .setTopics(request.getTopics())
                   .setMemberId(generateMemberId())
                   .setInstanceId(request.getInstanceId());
           coordinatorStream.joinGroup(command).whenComplete(bridge(result));
@@ -150,6 +150,7 @@ public class ConsumerGroupCoordinator extends Actor {
     final var command =
         new OffsetCommitRecord()
             .setGroupId(request.getGroupId())
+            .setTopic(request.getTopic())
             .setMemberId(request.getMemberId())
             .setMemberEpoch(request.getMemberEpoch())
             .setPartitionId(request.getPartitionId())

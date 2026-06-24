@@ -28,6 +28,7 @@ import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedAppli
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -204,8 +205,10 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
     return groupState.groupSnapshots();
   }
 
-  /** Committed offsets for a group ({@code partitionId → position}), read from the mirror. */
-  public Map<Integer, Long> committedOffsets(final String groupId) {
+  /**
+   * Committed offsets for a group ({@code (topic, partition) → position}), read from the mirror.
+   */
+  public Map<TopicPartition, Long> committedOffsets(final String groupId) {
     return offsetState.offsetsSnapshot(groupId);
   }
 }

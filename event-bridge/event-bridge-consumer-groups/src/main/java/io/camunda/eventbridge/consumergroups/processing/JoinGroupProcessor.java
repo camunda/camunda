@@ -15,6 +15,7 @@ import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 
 /**
  * Handles the {@code JOIN_GROUP} command. Like every command processor here it always results in a
@@ -48,11 +49,11 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
     checks
         .validateJoin(command.getValue())
         .ifRightOrLeft(
-            partitionCount -> join(command, partitionCount),
-            rejection -> reject(command, rejection));
+            subscriptions -> join(command, subscriptions), rejection -> reject(command, rejection));
   }
 
-  private void join(final TypedRecord<MembershipRecord> command, final int partitionCount) {
+  private void join(
+      final TypedRecord<MembershipRecord> command, final Map<String, Integer> subscriptions) {
     final var cmd = command.getValue();
     final var group = state.getGroup(cmd.getGroupId());
     final var newGroupEpoch = (group == null ? 0 : group.getGroupEpoch()) + 1;
@@ -62,7 +63,7 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
         cmd.getInstanceId(),
         newGroupEpoch,
         newGroupEpoch,
-        partitionCount);
+        subscriptions);
     respondJoined(command, cmd.getMemberId(), newGroupEpoch);
   }
 
@@ -72,16 +73,15 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
       final String instanceId,
       final long memberEpoch,
       final long groupEpoch,
-      final int partitionCount) {
+      final Map<String, Integer> subscriptions) {
     final var event =
         new MembershipRecord()
             .setGroupId(command.getValue().getGroupId())
-            .setTopic(command.getValue().getTopic())
+            .setSubscriptions(subscriptions)
             .setMemberId(memberId)
             .setInstanceId(instanceId)
             .setMemberEpoch(memberEpoch)
-            .setGroupEpoch(groupEpoch)
-            .setPartitionCount(partitionCount);
+            .setGroupEpoch(groupEpoch);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_JOINED, event);
   }
 

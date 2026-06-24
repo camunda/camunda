@@ -9,11 +9,12 @@ package io.camunda.eventbridge.protocol.request.coordination;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
+import io.camunda.eventbridge.protocol.topic.TopicPartitionValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,8 +23,8 @@ public class HeartbeatRequest extends UnpackedObject {
   private final StringProperty groupIdProp = new StringProperty("groupId", "");
   private final StringProperty memberIdProp = new StringProperty("memberId", "");
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", -1L);
-  private final ArrayProperty<IntegerValue> ownedPartitionsProp =
-      new ArrayProperty<>("ownedPartitions", IntegerValue::new);
+  private final ArrayProperty<TopicPartitionValue> ownedPartitionsProp =
+      new ArrayProperty<>("ownedPartitions", TopicPartitionValue::new);
 
   public HeartbeatRequest() {
     super(4);
@@ -63,16 +64,16 @@ public class HeartbeatRequest extends UnpackedObject {
     return this;
   }
 
-  public List<Integer> getOwnedPartitions() {
-    final var ownedPartitions = new ArrayList<Integer>();
-    ownedPartitionsProp.forEach(e -> ownedPartitions.add(e.getValue()));
+  public List<TopicPartition> getOwnedPartitions() {
+    final var ownedPartitions = new ArrayList<TopicPartition>();
+    ownedPartitionsProp.forEach(e -> ownedPartitions.add(e.toTopicPartition()));
     return ownedPartitions;
   }
 
-  public HeartbeatRequest setOwnedPartitions(final List<Integer> ownedPartitions) {
+  public HeartbeatRequest setOwnedPartitions(final List<TopicPartition> ownedPartitions) {
     ownedPartitionsProp.reset();
     if (ownedPartitions != null && !ownedPartitions.isEmpty()) {
-      ownedPartitions.forEach(p -> ownedPartitionsProp.add().setValue(p));
+      ownedPartitions.forEach(p -> ownedPartitionsProp.add().copyFrom(p));
     }
     return this;
   }

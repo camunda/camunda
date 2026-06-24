@@ -8,4 +8,4 @@
 package io.camunda.eventbridge.client;
 
 /** Represents a single event fetched from the Event Bridge log. */
-public record Event(long position, int partitionId, byte[] payload) {}
+public record Event(long position, String topic, int partitionId, byte[] payload) {}

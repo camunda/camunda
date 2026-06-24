@@ -171,8 +171,7 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
     }
     final long groupEpoch = groupState.getGroupEpoch();
     final long assignmentEpoch = groupState.getAssignmentEpoch();
-    final String topic = groupState.getTopic();
-    final int partitionCount = groupState.getPartitionCount();
+    final var subscriptions = groupState.getSubscriptions();
 
     final Map<String, MemberSnapshot> members = new LinkedHashMap<>();
     groupId.wrapString(group);
@@ -192,7 +191,6 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
 
     mirror.put(
         group,
-        new GroupSnapshot(
-            group, groupEpoch, assignmentEpoch, topic, partitionCount, Map.copyOf(members)));
+        new GroupSnapshot(group, groupEpoch, assignmentEpoch, subscriptions, Map.copyOf(members)));
   }
 }

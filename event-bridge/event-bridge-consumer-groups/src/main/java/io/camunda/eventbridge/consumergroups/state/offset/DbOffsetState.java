@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.state.offset;
 
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableOffsetState;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -22,65 +23,79 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 /**
- * RocksDB-backed {@link MutableOffsetState} keyed by {@code (groupId, partitionId) → position}.
- * Granular storage only — the monotonic (never-rewind) decision is made by the {@code
+ * RocksDB-backed {@link MutableOffsetState} keyed by {@code (groupId, topic, partitionId) →
+ * position}. Granular storage only — the monotonic (never-rewind) decision is made by the {@code
  * OffsetCommittedApplier}.
  */
 public final class DbOffsetState implements MutableOffsetState {
 
   private final DbString groupId = new DbString();
+  private final DbString topic = new DbString();
   private final DbInt partitionId = new DbInt();
-  private final DbCompositeKey<DbString, DbInt> groupPartitionKey =
-      new DbCompositeKey<>(groupId, partitionId);
+  // (groupId, (topic, partitionId)) — a group's offsets share the groupId prefix.
+  private final DbCompositeKey<DbString, DbInt> topicPartitionKey =
+      new DbCompositeKey<>(topic, partitionId);
+  private final DbCompositeKey<DbString, DbCompositeKey<DbString, DbInt>> offsetKey =
+      new DbCompositeKey<>(groupId, topicPartitionKey);
   private final DbLong offset = new DbLong();
 
-  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbLong> offsetsColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbString, DbCompositeKey<DbString, DbInt>>, DbLong>
+      offsetsColumnFamily;
 
   // Thread-safe mirror of the committed offsets, maintained by putOffset() (which runs on the
   // stream-processing actor via the applier) and read off-actor by the coordinator's heartbeat
   // handler — RocksDB itself is not safe to read from another actor.
-  private final Map<String, Map<Integer, Long>> mirror = new ConcurrentHashMap<>();
+  private final Map<String, Map<TopicPartition, Long>> mirror = new ConcurrentHashMap<>();
 
   public DbOffsetState(
       final ZeebeDb<EventBridgeColumnFamilies> zeebeDb, final TransactionContext context) {
     offsetsColumnFamily =
         zeebeDb.createColumnFamily(
-            EventBridgeColumnFamilies.CONSUMER_OFFSETS, context, groupPartitionKey, offset);
+            EventBridgeColumnFamilies.CONSUMER_OFFSETS, context, offsetKey, offset);
   }
 
   @Override
-  public long getOffset(final String groupId, final int partitionId) {
+  public long getOffset(final String groupId, final String topic, final int partitionId) {
     this.groupId.wrapString(groupId);
+    this.topic.wrapString(topic);
     this.partitionId.wrapInt(partitionId);
-    final var value = offsetsColumnFamily.get(groupPartitionKey);
+    final var value = offsetsColumnFamily.get(offsetKey);
     return value == null ? -1L : value.getValue();
   }
 
   @Override
-  public Map<Integer, Long> offsetsSnapshot(final String groupId) {
+  public Map<TopicPartition, Long> offsetsSnapshot(final String groupId) {
     final var offsets = mirror.get(groupId);
     return offsets == null ? Map.of() : new TreeMap<>(offsets);
   }
 
   @Override
-  public void putOffset(final String groupId, final int partitionId, final long position) {
+  public void putOffset(
+      final String groupId, final String topic, final int partitionId, final long position) {
     this.groupId.wrapString(groupId);
+    this.topic.wrapString(topic);
     this.partitionId.wrapInt(partitionId);
     offset.wrapLong(position);
-    offsetsColumnFamily.upsert(groupPartitionKey, offset);
+    offsetsColumnFamily.upsert(offsetKey, offset);
     mirror
         .computeIfAbsent(groupId, ignored -> new ConcurrentHashMap<>())
-        .put(partitionId, position);
+        .put(new TopicPartition(topic, partitionId), position);
   }
 
   @Override
   public void seedMirror() {
     mirror.clear();
-    final BiConsumer<DbCompositeKey<DbString, DbInt>, DbLong> visitor =
-        (key, value) ->
-            mirror
-                .computeIfAbsent(key.first().toString(), ignored -> new ConcurrentHashMap<>())
-                .put(key.second().getValue(), value.getValue());
+    final BiConsumer<DbCompositeKey<DbString, DbCompositeKey<DbString, DbInt>>, DbLong> visitor =
+        (key, value) -> {
+          final var group = key.first().toString();
+          final var topicPartition = key.second();
+          final var tp =
+              new TopicPartition(
+                  topicPartition.first().toString(), topicPartition.second().getValue());
+          mirror
+              .computeIfAbsent(group, ignored -> new ConcurrentHashMap<>())
+              .put(tp, value.getValue());
+        };
     offsetsColumnFamily.forEach(visitor);
   }
 }

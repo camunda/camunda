@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.state.immutable;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.util.Map;
 
 /**
@@ -16,12 +17,15 @@ import java.util.Map;
  */
 public interface OffsetState {
 
-  /** Returns the committed position for {@code (groupId, partitionId)}, or {@code -1} if none. */
-  long getOffset(String groupId, int partitionId);
+  /**
+   * Returns the committed position for {@code (groupId, topic, partitionId)}, or {@code -1} if
+   * none.
+   */
+  long getOffset(String groupId, String topic, int partitionId);
 
   /**
-   * Thread-safe committed offsets for a group ({@code partitionId → position}), read off the
+   * Thread-safe committed offsets for a group ({@code (topic, partition) → position}), read off the
    * processing actor (e.g. by the coordinator's heartbeat handler).
    */
-  Map<Integer, Long> offsetsSnapshot(String groupId);
+  Map<TopicPartition, Long> offsetsSnapshot(String groupId);
 }

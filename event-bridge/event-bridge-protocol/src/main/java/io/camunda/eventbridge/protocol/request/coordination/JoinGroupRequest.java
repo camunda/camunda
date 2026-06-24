@@ -10,17 +10,22 @@ package io.camunda.eventbridge.protocol.request.coordination;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 
 public class JoinGroupRequest extends UnpackedObject {
 
   private final StringProperty groupIdProp = new StringProperty("groupId", "");
-  private final StringProperty topicProp = new StringProperty("topic", "");
+  private final ArrayProperty<StringValue> topicsProp =
+      new ArrayProperty<>("topics", StringValue::new);
   private final StringProperty instanceIdProp = new StringProperty("instanceId", "");
 
   public JoinGroupRequest() {
     super(3);
-    declareProperty(groupIdProp).declareProperty(topicProp).declareProperty(instanceIdProp);
+    declareProperty(groupIdProp).declareProperty(topicsProp).declareProperty(instanceIdProp);
   }
 
   public String getGroupId() {
@@ -32,13 +37,16 @@ public class JoinGroupRequest extends UnpackedObject {
     return this;
   }
 
-  /** The topic the group subscribes to; the coordinator derives the partition count from it. */
-  public String getTopic() {
-    return bufferAsString(topicProp.getValue());
+  /** The topics the group subscribes to; the coordinator derives each partition count from them. */
+  public List<String> getTopics() {
+    return topicsProp.stream().map(t -> bufferAsString(t.getValue())).toList();
   }
 
-  public JoinGroupRequest setTopic(final String topic) {
-    topicProp.setValue(topic == null ? "" : topic);
+  public JoinGroupRequest setTopics(final List<String> topics) {
+    topicsProp.reset();
+    if (topics != null) {
+      topics.forEach(topic -> topicsProp.add().wrap(BufferUtil.wrapString(topic)));
+    }
     return this;
   }
 

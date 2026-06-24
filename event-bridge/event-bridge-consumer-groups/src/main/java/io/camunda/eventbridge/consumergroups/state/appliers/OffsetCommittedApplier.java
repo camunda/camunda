@@ -29,8 +29,9 @@ public final class OffsetCommittedApplier
 
   @Override
   public void applyState(final long key, final OffsetCommitRecord value) {
-    final var existing = offsetState.getOffset(value.getGroupId(), value.getPartitionId());
+    final var existing =
+        offsetState.getOffset(value.getGroupId(), value.getTopic(), value.getPartitionId());
     final var committed = existing < 0 ? value.getOffset() : Math.max(existing, value.getOffset());
-    offsetState.putOffset(value.getGroupId(), value.getPartitionId(), committed);
+    offsetState.putOffset(value.getGroupId(), value.getTopic(), value.getPartitionId(), committed);
   }
 }

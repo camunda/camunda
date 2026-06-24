@@ -47,13 +47,15 @@ public final class OffsetCommitProcessor implements TypedRecordProcessor<OffsetC
     final var event =
         new OffsetCommitRecord()
             .setGroupId(cmd.getGroupId())
+            .setTopic(cmd.getTopic())
             .setPartitionId(cmd.getPartitionId())
             .setOffset(cmd.getOffset());
     writers
         .state()
         .appendFollowUpEvent(command.getKey(), CoordinatorIntent.OFFSET_COMMITTED, event);
 
-    final var committed = offsetState.getOffset(cmd.getGroupId(), cmd.getPartitionId());
+    final var committed =
+        offsetState.getOffset(cmd.getGroupId(), cmd.getTopic(), cmd.getPartitionId());
     writers
         .response()
         .respond(

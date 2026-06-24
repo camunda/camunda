@@ -10,6 +10,7 @@ package io.camunda.eventbridge.consumergroups.session;
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,7 +36,7 @@ public final class GroupReconciliation {
 
   // Partitions that must move between members on the current target — withheld from their new owner
   // until the previous owner confirms revoking them.
-  private final Set<Integer> pendingRevocations = new HashSet<>();
+  private final Set<TopicPartition> pendingRevocations = new HashSet<>();
 
   // The assignment epoch this handshake has been set up for (0 = none observed yet).
   private long targetEpoch;
@@ -48,7 +49,7 @@ public final class GroupReconciliation {
   public ReconciliationResult reconcile(
       final GroupSnapshot group,
       final String memberId,
-      final List<Integer> owned,
+      final List<TopicPartition> owned,
       final Instant now) {
     observeTarget(group, now);
     // Drop sessions for members no longer in the roster (left/evicted) so liveness stays bounded to
@@ -150,7 +151,9 @@ public final class GroupReconciliation {
   }
 
   private ReconciliationResult reconcileToTarget(
-      final MemberSession session, final List<Integer> target, final List<Integer> owned) {
+      final MemberSession session,
+      final List<TopicPartition> target,
+      final List<TopicPartition> owned) {
     final var targetSet = new HashSet<>(target);
     final var ownedSet = new HashSet<>(owned);
     final var revoke = owned.stream().filter(p -> !targetSet.contains(p)).sorted().toList();
@@ -172,7 +175,7 @@ public final class GroupReconciliation {
   }
 
   private ReconciliationResult restoreToConfirmed(
-      final MemberSession session, final List<Integer> owned) {
+      final MemberSession session, final List<TopicPartition> owned) {
     final var confirmed = session.confirmedAssignment();
     final var ownedSet = new HashSet<>(owned);
     final var assign = confirmed.stream().filter(p -> !ownedSet.contains(p)).sorted().toList();

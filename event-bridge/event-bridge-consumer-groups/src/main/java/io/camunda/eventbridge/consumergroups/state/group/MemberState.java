@@ -8,12 +8,13 @@
 package io.camunda.eventbridge.consumergroups.state.group;
 
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
+import io.camunda.eventbridge.protocol.topic.TopicPartitionValue;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
@@ -34,8 +35,8 @@ public final class MemberState extends UnpackedObject implements DbValue {
 
   private final StringProperty instanceIdProp = new StringProperty("instanceId", "");
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", 0L);
-  private final ArrayProperty<IntegerValue> targetPartitionsProp =
-      new ArrayProperty<>("targetPartitions", IntegerValue::new);
+  private final ArrayProperty<TopicPartitionValue> targetPartitionsProp =
+      new ArrayProperty<>("targetPartitions", TopicPartitionValue::new);
 
   public MemberState() {
     super(3);
@@ -68,13 +69,13 @@ public final class MemberState extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public List<Integer> getTargetPartitions() {
-    return targetPartitionsProp.stream().map(IntegerValue::getValue).toList();
+  public List<TopicPartition> getTargetPartitions() {
+    return targetPartitionsProp.stream().map(TopicPartitionValue::toTopicPartition).toList();
   }
 
-  public MemberState setTargetPartitions(final List<Integer> partitions) {
+  public MemberState setTargetPartitions(final List<TopicPartition> partitions) {
     targetPartitionsProp.reset();
-    partitions.forEach(p -> targetPartitionsProp.add().setValue(p));
+    partitions.forEach(p -> targetPartitionsProp.add().copyFrom(p));
     return this;
   }
 }

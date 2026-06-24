@@ -18,18 +18,29 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 public class CommitOffsetRequest extends UnpackedObject {
 
   private final StringProperty groupIdProp = new StringProperty("groupId", "");
+  private final StringProperty topicProp = new StringProperty("topic", "");
   private final StringProperty memberIdProp = new StringProperty("memberId", "");
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", -1L);
   private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId", -1);
   private final LongProperty positionProp = new LongProperty("position", -1L);
 
   public CommitOffsetRequest() {
-    super(5);
+    super(6);
     declareProperty(groupIdProp)
+        .declareProperty(topicProp)
         .declareProperty(memberIdProp)
         .declareProperty(memberEpochProp)
         .declareProperty(partitionIdProp)
         .declareProperty(positionProp);
+  }
+
+  public String getTopic() {
+    return bufferAsString(topicProp.getValue());
+  }
+
+  public CommitOffsetRequest setTopic(final String topic) {
+    topicProp.setValue(topic == null ? "" : topic);
+    return this;
   }
 
   public long getMemberEpoch() {

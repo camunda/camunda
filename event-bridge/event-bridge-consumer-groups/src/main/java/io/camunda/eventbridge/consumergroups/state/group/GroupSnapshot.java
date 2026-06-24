@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.state.group;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.util.List;
 import java.util.Map;
 
@@ -20,16 +21,15 @@ import java.util.Map;
  * @param groupEpoch the desired-state version (bumped on every membership change)
  * @param assignmentEpoch the group epoch the member targets reflect ({@code < groupEpoch} ⇒
  *     rebalance pending)
- * @param topic the topic the group subscribes to
- * @param partitionCount the topic's partition count
+ * @param subscriptions the topics the group subscribes to with their partition counts ({@code topic
+ *     → partitionCount}); the assignor balances all their partitions together
  * @param members the current roster, {@code memberId → snapshot}
  */
 public record GroupSnapshot(
     String groupId,
     long groupEpoch,
     long assignmentEpoch,
-    String topic,
-    int partitionCount,
+    Map<String, Integer> subscriptions,
     Map<String, MemberSnapshot> members) {
 
   public boolean isRebalancePending() {
@@ -38,5 +38,8 @@ public record GroupSnapshot(
 
   /** One member's replicated identity, epoch, and target partitions. */
   public record MemberSnapshot(
-      String memberId, String instanceId, long memberEpoch, List<Integer> targetPartitions) {}
+      String memberId,
+      String instanceId,
+      long memberEpoch,
+      List<TopicPartition> targetPartitions) {}
 }

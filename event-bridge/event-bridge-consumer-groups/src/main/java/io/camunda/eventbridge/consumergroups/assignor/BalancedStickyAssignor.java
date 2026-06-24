@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.assignor;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,11 +40,11 @@ public class BalancedStickyAssignor implements PartitionAssignor {
     final var maxLoad = minLoad + (totalPartitions % numConsumers > 0 ? 1 : 0);
     final var numConsumersWithMax = totalPartitions % numConsumers;
 
-    final Map<String, Set<Integer>> assignment = new HashMap<>();
+    final Map<String, Set<TopicPartition>> assignment = new HashMap<>();
     consumers.forEach(c -> assignment.put(c, new LinkedHashSet<>()));
 
     // Build partition-to-previous-owner mapping
-    final var previousOwner = new HashMap<Integer, String>();
+    final var previousOwner = new HashMap<TopicPartition, String>();
     previous.forEach(
         (consumer, owned) -> {
           if (assignment.containsKey(consumer)) {
@@ -54,7 +55,7 @@ public class BalancedStickyAssignor implements PartitionAssignor {
         });
 
     // Step 1: Preserve sticky assignments
-    final var unassigned = new TreeSet<Integer>();
+    final var unassigned = new TreeSet<TopicPartition>();
     for (final var partition : partitions) {
       final var owner = previousOwner.get(partition);
       if (owner != null) {
@@ -80,16 +81,16 @@ public class BalancedStickyAssignor implements PartitionAssignor {
     // Step 3: Balance overloaded → underloaded, moving non-sticky first
     rebalance(assignment, previous, consumers, minLoad, maxLoad, numConsumersWithMax);
 
-    // Convert to List<Integer> for the PartitionAssignment contract
-    final var result = new HashMap<String, List<Integer>>();
+    // Convert to List<TopicPartition> for the PartitionAssignment contract
+    final var result = new HashMap<String, List<TopicPartition>>();
     assignment.forEach((c, parts) -> result.put(c, new ArrayList<>(parts)));
 
     return new PartitionAssignment(result);
   }
 
   private void rebalance(
-      final Map<String, Set<Integer>> assignment,
-      final Map<String, List<Integer>> previous,
+      final Map<String, Set<TopicPartition>> assignment,
+      final Map<String, List<TopicPartition>> previous,
       final List<String> consumers,
       final int minLoad,
       final int maxLoad,
@@ -125,8 +126,8 @@ public class BalancedStickyAssignor implements PartitionAssignor {
     for (final var from : overloaded) {
       final var fromSet = assignment.get(from);
       final var stickySet = new HashSet<>(previous.getOrDefault(from, List.of()));
-      final var nonSticky = new ArrayList<Integer>();
-      final var sticky = new ArrayList<Integer>();
+      final var nonSticky = new ArrayList<TopicPartition>();
+      final var sticky = new ArrayList<TopicPartition>();
 
       for (final var partition : fromSet) {
         (stickySet.contains(partition) ? sticky : nonSticky).add(partition);
@@ -138,9 +139,9 @@ public class BalancedStickyAssignor implements PartitionAssignor {
   }
 
   private void movePartitions(
-      final List<Integer> candidates,
-      final Set<Integer> fromSet,
-      final Map<String, Set<Integer>> assignment,
+      final List<TopicPartition> candidates,
+      final Set<TopicPartition> fromSet,
+      final Map<String, Set<TopicPartition>> assignment,
       final LinkedList<String> underloaded,
       final Map<String, Integer> targetLoad,
       final int fromTarget) {

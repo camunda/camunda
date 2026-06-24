@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.session;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -22,13 +23,13 @@ import java.util.Set;
 final class MemberSession {
 
   private final String memberId;
-  private Set<Integer> confirmedAssignment;
+  private Set<TopicPartition> confirmedAssignment;
   private long confirmedEpoch;
   private Instant lastHeartbeat;
 
   MemberSession(
       final String memberId,
-      final List<Integer> confirmedAssignment,
+      final List<TopicPartition> confirmedAssignment,
       final long confirmedEpoch,
       final Instant lastHeartbeat) {
     this.memberId = memberId;
@@ -41,7 +42,7 @@ final class MemberSession {
     return memberId;
   }
 
-  Set<Integer> confirmedAssignment() {
+  Set<TopicPartition> confirmedAssignment() {
     return confirmedAssignment;
   }
 
@@ -49,7 +50,7 @@ final class MemberSession {
     return confirmedEpoch;
   }
 
-  void confirm(final long epoch, final List<Integer> assignment) {
+  void confirm(final long epoch, final List<TopicPartition> assignment) {
     confirmedEpoch = epoch;
     confirmedAssignment = new HashSet<>(assignment);
   }

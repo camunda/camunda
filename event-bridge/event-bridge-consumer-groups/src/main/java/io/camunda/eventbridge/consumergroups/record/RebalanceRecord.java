@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.record;
 
 import io.camunda.eventbridge.consumergroups.processing.RebalanceProcessor;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -69,14 +70,14 @@ public final class RebalanceRecord extends UnifiedRecordValue {
     return this;
   }
 
-  /** The proposed target as {@code memberId → partitions} (insertion order preserved). */
-  public Map<String, List<Integer>> getMembers() {
-    final var members = new LinkedHashMap<String, List<Integer>>();
+  /** The proposed target as {@code memberId → (topic, partition)s} (insertion order preserved). */
+  public Map<String, List<TopicPartition>> getMembers() {
+    final var members = new LinkedHashMap<String, List<TopicPartition>>();
     membersProp.forEach(m -> members.put(m.getMemberId(), m.getPartitions()));
     return members;
   }
 
-  public RebalanceRecord setMembers(final Map<String, List<Integer>> assignment) {
+  public RebalanceRecord setMembers(final Map<String, List<TopicPartition>> assignment) {
     membersProp.reset();
     assignment.forEach(
         (memberId, partitions) ->

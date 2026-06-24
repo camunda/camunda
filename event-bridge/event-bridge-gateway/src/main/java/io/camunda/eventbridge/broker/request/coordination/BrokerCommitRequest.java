@@ -25,6 +25,7 @@ public class BrokerCommitRequest extends BrokerExecuteCoordinateRequest<CommitOf
   public BrokerCommitRequest wrapRequest(final CommitOffsetRequest req) {
     request
         .setGroupId(req.getGroupId())
+        .setTopic(req.getTopic())
         .setMemberId(req.getMemberId())
         .setMemberEpoch(req.getMemberEpoch())
         .setPartitionId(req.getPartitionId())

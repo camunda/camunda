@@ -21,6 +21,7 @@ import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -87,8 +89,7 @@ final class ConsumerGroupStateTest {
     assertThat(state.getGroup("g").getAssignmentEpoch()).isZero();
 
     final var snapshot = state.groupSnapshot("g");
-    assertThat(snapshot.topic()).isEqualTo("t");
-    assertThat(snapshot.partitionCount()).isEqualTo(4);
+    assertThat(snapshot.subscriptions()).containsExactly(Map.entry("t", 4));
     assertThat(snapshot.members()).containsOnlyKeys("m1");
     assertThat(snapshot.members().get("m1").memberEpoch()).isEqualTo(1);
     assertThat(snapshot.members().get("m1").targetPartitions()).isEmpty();
@@ -103,7 +104,7 @@ final class ConsumerGroupStateTest {
 
     // then
     assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(2);
-    assertThat(state.groupSnapshot("g").partitionCount()).isEqualTo(4);
+    assertThat(state.groupSnapshot("g").subscriptions()).containsEntry("t", 4);
     assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m1", "m2");
   }
 
@@ -150,9 +151,9 @@ final class ConsumerGroupStateTest {
 
     assertThat(state.getGroup("g").getAssignmentEpoch()).isEqualTo(2);
     assertThat(state.groupSnapshot("g").isRebalancePending()).isFalse();
-    assertThat(state.getMember("g", "m1").getTargetPartitions()).containsExactly(1, 2);
+    assertThat(state.getMember("g", "m1").getTargetPartitions()).containsExactly(tp(1), tp(2));
     assertThat(state.groupSnapshot("g").members().get("m2").targetPartitions())
-        .containsExactly(3, 4);
+        .containsExactly(tp(3), tp(4));
   }
 
   @Test
@@ -191,7 +192,8 @@ final class ConsumerGroupStateTest {
     assertThat(snapshot.groupEpoch()).isEqualTo(1);
     assertThat(snapshot.assignmentEpoch()).isEqualTo(1);
     assertThat(snapshot.members().get("m1").instanceId()).isEqualTo("instance-a");
-    assertThat(snapshot.members().get("m1").targetPartitions()).containsExactly(1, 2, 3, 4);
+    assertThat(snapshot.members().get("m1").targetPartitions())
+        .containsExactly(tp(1), tp(2), tp(3), tp(4));
   }
 
   @Test
@@ -200,8 +202,8 @@ final class ConsumerGroupStateTest {
     offsetCommitted.applyState(2, commit("g", 1, 3)); // older — ignored
     offsetCommitted.applyState(3, commit("g", 1, 8));
 
-    assertThat(offsetState.getOffset("g", 1)).isEqualTo(8);
-    assertThat(offsetState.offsetsSnapshot("g")).containsEntry(1, 8L);
+    assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(8);
+    assertThat(offsetState.offsetsSnapshot("g")).containsEntry(tp(1), 8L);
   }
 
   @Test
@@ -290,12 +292,11 @@ final class ConsumerGroupStateTest {
       final int partitionCount) {
     return new MembershipRecord()
         .setGroupId(group)
-        .setTopic(topic)
+        .setSubscriptions(Map.of(topic, partitionCount))
         .setMemberId(member)
         .setInstanceId(instanceId)
         .setMemberEpoch(memberEpoch)
-        .setGroupEpoch(groupEpoch)
-        .setPartitionCount(partitionCount);
+        .setGroupEpoch(groupEpoch);
   }
 
   private static MembershipRecord leave(final String group, final String member, final long epoch) {
@@ -310,16 +311,22 @@ final class ConsumerGroupStateTest {
 
   private static RebalanceRecord rebalance(
       final String group, final long assignmentEpoch, final Map<String, List<Integer>> targets) {
+    // Targets are given as partition ints of the single topic "t" for brevity.
+    final Map<String, List<TopicPartition>> tpTargets = new LinkedHashMap<>();
+    targets.forEach(
+        (member, partitions) ->
+            tpTargets.put(member, partitions.stream().map(p -> tp(p)).toList()));
     return new RebalanceRecord()
         .setGroupId(group)
         .setAssignmentEpoch(assignmentEpoch)
-        .setMembers(targets);
+        .setMembers(tpTargets);
   }
 
   private static OffsetCommitRecord commit(
       final String group, final String member, final long epoch, final int partition) {
     return new OffsetCommitRecord()
         .setGroupId(group)
+        .setTopic("t")
         .setMemberId(member)
         .setMemberEpoch(epoch)
         .setPartitionId(partition)
@@ -328,6 +335,14 @@ final class ConsumerGroupStateTest {
 
   private static OffsetCommitRecord commit(
       final String group, final int partition, final long offset) {
-    return new OffsetCommitRecord().setGroupId(group).setPartitionId(partition).setOffset(offset);
+    return new OffsetCommitRecord()
+        .setGroupId(group)
+        .setTopic("t")
+        .setPartitionId(partition)
+        .setOffset(offset);
+  }
+
+  private static TopicPartition tp(final int partition) {
+    return new TopicPartition("t", partition);
   }
 }

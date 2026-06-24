@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,18 +29,18 @@ final class GroupReconciliationTest {
   @Test
   void shouldAssignFullTargetToSingleMemberThenConfirm() {
     // given — a one-member group with a freshly computed target
-    final var group = group(1, 1, 4, member("m1", 1, List.of(1, 2, 3, 4)));
+    final var group = group(1, 1, member("m1", 1, 1, 2, 3, 4));
 
     // when — the member owns nothing yet
     final var first = reconciliation.reconcile(group, "m1", List.of(), NOW);
 
     // then — it is told to take its whole target and the group is still rebalancing
-    assertThat(first.assign()).containsExactly(1, 2, 3, 4);
+    assertThat(first.assign()).containsExactly(tp(1), tp(2), tp(3), tp(4));
     assertThat(first.revoke()).isEmpty();
     assertThat(reconciliation.isRebalancing(group)).isTrue();
 
     // when — it reports owning the target
-    final var second = reconciliation.reconcile(group, "m1", List.of(1, 2, 3, 4), NOW);
+    final var second = reconciliation.reconcile(group, "m1", tps(1, 2, 3, 4), NOW);
 
     // then — nothing left to move and the group is stable
     assertThat(second.assign()).isEmpty();
@@ -49,46 +51,45 @@ final class GroupReconciliationTest {
   @Test
   void shouldWithholdPartitionsUntilPreviousOwnerRevokes() {
     // given — m1 has converged on the whole topic
-    final var solo = group(1, 1, 4, member("m1", 1, List.of(1, 2, 3, 4)));
+    final var solo = group(1, 1, member("m1", 1, 1, 2, 3, 4));
     reconciliation.reconcile(solo, "m1", List.of(), NOW);
-    reconciliation.reconcile(solo, "m1", List.of(1, 2, 3, 4), NOW);
+    reconciliation.reconcile(solo, "m1", tps(1, 2, 3, 4), NOW);
 
     // when — m2 joins and the target splits the topic
-    final var split =
-        group(2, 2, 4, member("m1", 1, List.of(1, 2)), member("m2", 2, List.of(3, 4)));
+    final var split = group(2, 2, member("m1", 1, 1, 2), member("m2", 2, 3, 4));
 
     // m2 must not receive 3,4 yet — m1 still owns them
     final var m2First = reconciliation.reconcile(split, "m2", List.of(), NOW);
     assertThat(m2First.assign()).isEmpty();
 
     // m1 is told to revoke 3,4
-    final var m1Revoke = reconciliation.reconcile(split, "m1", List.of(1, 2, 3, 4), NOW);
-    assertThat(m1Revoke.revoke()).containsExactly(3, 4);
+    final var m1Revoke = reconciliation.reconcile(split, "m1", tps(1, 2, 3, 4), NOW);
+    assertThat(m1Revoke.revoke()).containsExactly(tp(3), tp(4));
     assertThat(m1Revoke.assign()).isEmpty();
 
     // m1 confirms it dropped them
-    reconciliation.reconcile(split, "m1", List.of(1, 2), NOW);
+    reconciliation.reconcile(split, "m1", tps(1, 2), NOW);
 
     // then — m2 may now take 3,4
     final var m2Second = reconciliation.reconcile(split, "m2", List.of(), NOW);
-    assertThat(m2Second.assign()).containsExactly(3, 4);
+    assertThat(m2Second.assign()).containsExactly(tp(3), tp(4));
 
     // and once m2 owns them the group is stable
-    reconciliation.reconcile(split, "m2", List.of(3, 4), NOW);
+    reconciliation.reconcile(split, "m2", tps(3, 4), NOW);
     assertThat(reconciliation.isRebalancing(split)).isFalse();
   }
 
   @Test
   void shouldRestoreSeededMemberToItsTargetAfterFailover() {
     // given — a member seeded as already-converged (as on leader activation)
-    final var group = group(1, 1, 4, member("m1", 1, List.of(1, 2, 3, 4)));
+    final var group = group(1, 1, member("m1", 1, 1, 2, 3, 4));
     reconciliation.seedSession(group.members().get("m1"), 1, NOW);
 
     // when — the re-attaching consumer reports owning nothing (its client restarted too)
     final var delta = reconciliation.reconcile(group, "m1", List.of(), NOW);
 
     // then — it is driven back to its confirmed target without a rebalance
-    assertThat(delta.assign()).containsExactly(1, 2, 3, 4);
+    assertThat(delta.assign()).containsExactly(tp(1), tp(2), tp(3), tp(4));
     assertThat(delta.revoke()).isEmpty();
     assertThat(reconciliation.isRebalancing(group)).isFalse();
   }
@@ -96,7 +97,7 @@ final class GroupReconciliationTest {
   @Test
   void shouldReportRebalancingWhileTargetIsPending() {
     // given — a member joined but the assignor has not computed a target yet
-    final var group = group(1, 0, 4, member("m1", 1, List.of()));
+    final var group = group(1, 0, member("m1", 1));
 
     // when
     final var delta = reconciliation.reconcile(group, "m1", List.of(), NOW);
@@ -109,8 +110,8 @@ final class GroupReconciliationTest {
   @Test
   void shouldEvictMembersWhoseSessionLapsed() {
     // given — m1 heartbeated at NOW and is converged (so the group is not rebalancing)
-    final var group = group(1, 1, 4, member("m1", 1, List.of(1, 2, 3, 4)));
-    reconciliation.reconcile(group, "m1", List.of(1, 2, 3, 4), NOW);
+    final var group = group(1, 1, member("m1", 1, 1, 2, 3, 4));
+    reconciliation.reconcile(group, "m1", tps(1, 2, 3, 4), NOW);
     final var sessionTimeout = Duration.ofSeconds(5);
     final var rebalanceTimeout = Duration.ofMinutes(5);
 
@@ -128,19 +129,24 @@ final class GroupReconciliationTest {
   }
 
   private static GroupSnapshot group(
-      final long groupEpoch,
-      final long assignmentEpoch,
-      final int partitionCount,
-      final MemberSnapshot... members) {
+      final long groupEpoch, final long assignmentEpoch, final MemberSnapshot... members) {
     final Map<String, MemberSnapshot> roster = new LinkedHashMap<>();
     for (final var member : members) {
       roster.put(member.memberId(), member);
     }
-    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, "t", partitionCount, roster);
+    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, Map.of("t", 4), roster);
   }
 
   private static MemberSnapshot member(
-      final String memberId, final long memberEpoch, final List<Integer> target) {
-    return new MemberSnapshot(memberId, null, memberEpoch, target);
+      final String memberId, final long memberEpoch, final int... target) {
+    return new MemberSnapshot(memberId, null, memberEpoch, tps(target));
+  }
+
+  private static TopicPartition tp(final int partition) {
+    return new TopicPartition("t", partition);
+  }
+
+  private static List<TopicPartition> tps(final int... partitions) {
+    return Arrays.stream(partitions).mapToObj(GroupReconciliationTest::tp).toList();
   }
 }

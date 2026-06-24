@@ -16,6 +16,7 @@ import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -85,7 +86,8 @@ final class RebalanceAssignorTaskTest {
     assertThat(proposal.getGroupId()).isEqualTo("g");
     assertThat(proposal.getAssignmentEpoch()).isEqualTo(1);
     assertThat(proposal.getMembers()).containsOnlyKeys("m1");
-    assertThat(proposal.getMembers().get("m1")).containsExactlyInAnyOrder(1, 2, 3, 4);
+    assertThat(proposal.getMembers().get("m1"))
+        .containsExactlyInAnyOrder(tp(1), tp(2), tp(3), tp(4));
 
     // and a third tick does not re-propose while the same epoch is still pending
     assertThat(run()).isEmpty();
@@ -100,7 +102,7 @@ final class RebalanceAssignorTaskTest {
         new RebalanceRecord()
             .setGroupId("g")
             .setAssignmentEpoch(1)
-            .setMembers(java.util.Map.of("m1", List.of(1, 2, 3, 4))));
+            .setMembers(java.util.Map.of("m1", List.of(tp(1), tp(2), tp(3), tp(4)))));
 
     // then — no rebalance is proposed on any tick
     assertThat(run()).isEmpty();
@@ -130,10 +132,14 @@ final class RebalanceAssignorTaskTest {
         memberEpoch,
         new MembershipRecord()
             .setGroupId("g")
+            .setSubscriptions(java.util.Map.of("t", 4))
             .setMemberId(memberId)
             .setMemberEpoch(memberEpoch)
-            .setGroupEpoch(groupEpoch)
-            .setPartitionCount(4));
+            .setGroupEpoch(groupEpoch));
+  }
+
+  private static TopicPartition tp(final int partition) {
+    return new TopicPartition("t", partition);
   }
 
   private List<RebalanceRecord> run() {

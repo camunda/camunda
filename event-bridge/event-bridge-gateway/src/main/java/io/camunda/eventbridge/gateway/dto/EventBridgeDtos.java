@@ -9,6 +9,7 @@ package io.camunda.eventbridge.gateway.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
+import java.util.Map;
 
 /** HTTP request/response DTOs for the Event Bridge gateway API. */
 public final class EventBridgeDtos {
@@ -45,11 +46,12 @@ public final class EventBridgeDtos {
    * Request body for {@code POST /v1/groups/{groupId}/consumers/{memberId}/commit}. The group and
    * member come from the path.
    *
+   * @param topic topic the partition belongs to
    * @param partitionId partition the offset belongs to
    * @param position next position to read (idempotent; only advances)
    * @param memberEpoch the committing member's epoch (for fencing stale commits)
    */
-  public record CommitRequest(int partitionId, long position, long memberEpoch) {}
+  public record CommitRequest(String topic, int partitionId, long position, long memberEpoch) {}
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record CommitResponse(String errorCode, long committedPosition) {}
@@ -57,7 +59,7 @@ public final class EventBridgeDtos {
   // -------------------------------------------------------------------------
   // Heartbeat
 
-  public record JoinGroupRequest(String topic, String instanceId) {}
+  public record JoinGroupRequest(List<String> topics, String instanceId) {}
 
   public record JoinGroupResponse(String errorCode, String memberId, long memberEpoch) {}
 
@@ -70,9 +72,11 @@ public final class EventBridgeDtos {
    *
    * @param epoch the epoch value last seen by the consumer; {@code null} or {@code 0} for a new
    *     consumer that has never received an epoch
-   * @param ownedPartitions partition IDs the consumer currently holds
+   * @param ownedPartitions the partitions the consumer currently holds, grouped {@code topic →
+   *     [partition,...]}
    */
-  public record HeartbeatRequest(String memberId, Long epoch, List<Integer> ownedPartitions) {}
+  public record HeartbeatRequest(
+      String memberId, Long epoch, Map<String, List<Integer>> ownedPartitions) {}
 
   /**
    * Response body for {@code POST /v1/consumers/{groupId}/{consumerId}/heartbeat}.
@@ -92,11 +96,11 @@ public final class EventBridgeDtos {
       String errorCode,
       String memberId,
       long memberEpoch,
-      List<Integer> revoke,
-      List<Integer> assign,
+      Map<String, List<Integer>> revoke,
+      Map<String, List<Integer>> assign,
       long assignmentEpoch,
-      List<Integer> assignment,
-      java.util.Map<Integer, Long> committedOffsets) {}
+      Map<String, List<Integer>> assignment,
+      Map<String, Map<Integer, Long>> committedOffsets) {}
 
   public record LatestPositionResponse(long position) {}
 

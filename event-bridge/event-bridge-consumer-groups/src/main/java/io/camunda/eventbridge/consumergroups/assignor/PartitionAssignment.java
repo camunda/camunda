@@ -7,53 +7,31 @@
  */
 package io.camunda.eventbridge.consumergroups.assignor;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class PartitionAssignment {
 
-  private final Map<String, List<Integer>> assignments;
-  private final Map<String, Set<Integer>> assignmentSets;
+  private final Map<String, List<TopicPartition>> assignments;
 
-  public PartitionAssignment(final Map<String, List<Integer>> raw) {
-    final var lists = new HashMap<String, List<Integer>>();
-    final var sets = new HashMap<String, Set<Integer>>();
-
-    raw.forEach(
-        (consumer, partitions) -> {
-          lists.put(consumer, List.copyOf(partitions));
-          sets.put(consumer, Set.copyOf(partitions));
-        });
-
+  public PartitionAssignment(final Map<String, List<TopicPartition>> raw) {
+    final var lists = new HashMap<String, List<TopicPartition>>();
+    raw.forEach((consumer, partitions) -> lists.put(consumer, List.copyOf(partitions)));
     assignments = Collections.unmodifiableMap(lists);
-    assignmentSets = Collections.unmodifiableMap(sets);
   }
 
-  public List<Integer> forConsumer(final String memberId) {
+  public List<TopicPartition> forConsumer(final String memberId) {
     return assignments.getOrDefault(memberId, List.of());
   }
 
-  public Map<String, List<Integer>> assignments() {
+  public Map<String, List<TopicPartition>> assignments() {
     return assignments;
   }
 
-  public ReconciliationResult computeDelta(
-      final String memberId, final List<Integer> ownedPartitions, final Set<Integer> ownedSet) {
-    final var assignment = forConsumer(memberId);
-    final var assignmentSet = assignmentSets.getOrDefault(memberId, Set.of());
-    final var revoke = ownedPartitions.stream().filter(p -> !assignmentSet.contains(p)).toList();
-    final var assign = assignment.stream().filter(p -> !ownedSet.contains(p)).toList();
-    return new ReconciliationResult(revoke, assign, assignment);
-  }
-
+  /** The assign/revoke delta and the full target for one member during reconciliation. */
   public record ReconciliationResult(
-      List<Integer> revoke, List<Integer> assign, List<Integer> assignment) {
-
-    public static ReconciliationResult noop(final List<Integer> currentAssignment) {
-      return new ReconciliationResult(List.of(), List.of(), currentAssignment);
-    }
-  }
+      List<TopicPartition> revoke, List<TopicPartition> assign, List<TopicPartition> assignment) {}
 }

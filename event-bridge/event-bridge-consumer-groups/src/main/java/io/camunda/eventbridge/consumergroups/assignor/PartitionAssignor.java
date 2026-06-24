@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.assignor;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.util.List;
 
 public interface PartitionAssignor {
@@ -14,5 +15,5 @@ public interface PartitionAssignor {
   PartitionAssignment assign(final PartitionAssignmentContext context);
 
   record PartitionAssignmentContext(
-      List<String> consumers, PartitionAssignment assignment, List<Integer> partitions) {}
+      List<String> consumers, PartitionAssignment assignment, List<TopicPartition> partitions) {}
 }

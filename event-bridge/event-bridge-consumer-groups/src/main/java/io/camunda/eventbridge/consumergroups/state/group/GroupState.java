@@ -8,12 +8,13 @@
 package io.camunda.eventbridge.consumergroups.state.group;
 
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
+import io.camunda.eventbridge.consumergroups.topic.TopicSubscriptionValue;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Per-group replicated state stored in the {@link EventBridgeColumnFamilies#CONSUMER_GROUPS} column
@@ -23,31 +24,35 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
  *   <li>{@code groupEpoch} — the desired-state version, bumped on every membership change.
  *   <li>{@code assignmentEpoch} — the group epoch the current member targets reflect; {@code
  *       assignmentEpoch < groupEpoch} means a rebalance is pending.
- *   <li>{@code topic} — the topic the group subscribes to, fixed when the group is created.
- *   <li>{@code partitionCount} — the topic's partition count, fixed when the group is created.
+ *   <li>{@code subscriptions} — the topics the group subscribes to with their partition counts,
+ *       fixed when the group is created; the assignor balances all their partitions together.
  * </ul>
  */
 public final class GroupState extends UnpackedObject implements DbValue {
 
   private final LongProperty groupEpochProp = new LongProperty("groupEpoch", 0L);
   private final LongProperty assignmentEpochProp = new LongProperty("assignmentEpoch", 0L);
-  private final StringProperty topicProp = new StringProperty("topic", "");
-  private final IntegerProperty partitionCountProp = new IntegerProperty("partitionCount", 0);
+  private final ArrayProperty<TopicSubscriptionValue> subscriptionsProp =
+      new ArrayProperty<>("subscriptions", TopicSubscriptionValue::new);
 
   public GroupState() {
-    super(4);
+    super(3);
     declareProperty(groupEpochProp)
         .declareProperty(assignmentEpochProp)
-        .declareProperty(topicProp)
-        .declareProperty(partitionCountProp);
+        .declareProperty(subscriptionsProp);
   }
 
-  public String getTopic() {
-    return BufferUtil.bufferAsString(topicProp.getValue());
+  /** The group's subscription as {@code topic → partitionCount} (insertion order preserved). */
+  public Map<String, Integer> getSubscriptions() {
+    final var subscriptions = new LinkedHashMap<String, Integer>();
+    subscriptionsProp.forEach(s -> subscriptions.put(s.getTopic(), s.getPartitionCount()));
+    return subscriptions;
   }
 
-  public GroupState setTopic(final String topic) {
-    topicProp.setValue(topic == null ? "" : topic);
+  public GroupState setSubscriptions(final Map<String, Integer> subscriptions) {
+    subscriptionsProp.reset();
+    subscriptions.forEach(
+        (topic, count) -> subscriptionsProp.add().setTopic(topic).setPartitionCount(count));
     return this;
   }
 
@@ -66,15 +71,6 @@ public final class GroupState extends UnpackedObject implements DbValue {
 
   public GroupState setAssignmentEpoch(final long assignmentEpoch) {
     assignmentEpochProp.setValue(assignmentEpoch);
-    return this;
-  }
-
-  public int getPartitionCount() {
-    return partitionCountProp.getValue();
-  }
-
-  public GroupState setPartitionCount(final int partitionCount) {
-    partitionCountProp.setValue(partitionCount);
     return this;
   }
 }

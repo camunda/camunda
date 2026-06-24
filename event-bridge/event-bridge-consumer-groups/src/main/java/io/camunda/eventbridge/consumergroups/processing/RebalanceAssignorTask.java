@@ -14,6 +14,7 @@ import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -107,11 +108,19 @@ public final class RebalanceAssignorTask implements Task, StreamProcessorLifecyc
 
   private RebalanceRecord propose(final GroupSnapshot snapshot) {
     final var consumers = new ArrayList<>(snapshot.members().keySet());
-    final Map<String, List<Integer>> previous = new HashMap<>();
+    final Map<String, List<TopicPartition>> previous = new HashMap<>();
     snapshot
         .members()
         .forEach((memberId, member) -> previous.put(memberId, member.targetPartitions()));
-    final var partitions = IntStream.rangeClosed(1, snapshot.partitionCount()).boxed().toList();
+
+    // The partition space is every (topic, partition) across all the group's subscribed topics.
+    final List<TopicPartition> partitions = new ArrayList<>();
+    snapshot
+        .subscriptions()
+        .forEach(
+            (topic, count) ->
+                IntStream.rangeClosed(1, count)
+                    .forEach(partition -> partitions.add(new TopicPartition(topic, partition))));
 
     final var assignment =
         assignor.assign(

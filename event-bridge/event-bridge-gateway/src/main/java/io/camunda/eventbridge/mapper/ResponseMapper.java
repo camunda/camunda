@@ -13,7 +13,12 @@ import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,11 +44,32 @@ public class ResponseMapper {
         response.getErrorCode().getId(),
         response.getMemberId(),
         response.getMemberEpoch(),
-        response.getRevoke(),
-        response.getAssign(),
+        groupByTopic(response.getRevoke()),
+        groupByTopic(response.getAssign()),
         response.getAssignmentEpoch(),
-        response.getAssignment(),
-        response.getCommittedOffsets());
+        groupByTopic(response.getAssignment()),
+        groupOffsetsByTopic(response.getCommittedOffsets()));
+  }
+
+  /** Groups a flat partition list into {@code topic → [partition,...]} (partitions sorted). */
+  private static Map<String, List<Integer>> groupByTopic(final List<TopicPartition> partitions) {
+    final Map<String, List<Integer>> byTopic = new LinkedHashMap<>();
+    partitions.forEach(
+        p -> byTopic.computeIfAbsent(p.topic(), ignored -> new ArrayList<>()).add(p.partition()));
+    byTopic.values().forEach(java.util.Collections::sort);
+    return byTopic;
+  }
+
+  /** Groups committed offsets into {@code topic → (partition → offset)} (partitions sorted). */
+  private static Map<String, Map<Integer, Long>> groupOffsetsByTopic(
+      final Map<TopicPartition, Long> offsets) {
+    final Map<String, Map<Integer, Long>> byTopic = new LinkedHashMap<>();
+    offsets.forEach(
+        (tp, offset) ->
+            byTopic
+                .computeIfAbsent(tp.topic(), ignored -> new TreeMap<>())
+                .put(tp.partition(), offset));
+    return byTopic;
   }
 
   public EventBridgeDtos.PublishBatchResponse toPublishBatchResponse(

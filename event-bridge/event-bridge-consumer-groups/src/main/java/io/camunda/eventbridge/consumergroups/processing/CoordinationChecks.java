@@ -13,7 +13,12 @@ import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.state.group.MemberState;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.util.Either;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Command validation for the coordinator, in the engine style: each check returns {@code
@@ -45,18 +50,20 @@ public final class CoordinationChecks {
    * leaves or its session expires (the eviction loop then frees the slot). A new member id is
    * minted by the processor.
    *
-   * <p>On success it yields the resolved partition count, which the processor stamps onto the
-   * {@code MEMBER_JOINED} event.
+   * <p>On success it yields the resolved subscription ({@code topic → partitionCount}), which the
+   * processor stamps onto the {@code MEMBER_JOINED} event.
    */
-  public Either<Rejection, Integer> validateJoin(final MembershipRecord command) {
+  public Either<Rejection, Map<String, Integer>> validateJoin(final MembershipRecord command) {
     return groupIdPresent(command.getGroupId())
-        .flatMap(ok -> topicServable(command.getTopic()))
+        .flatMap(ok -> topicsServable(command.getTopics()))
         .flatMap(
-            count -> topicMatchesGroup(command.getGroupId(), command.getTopic()).map(ok -> count))
+            subscriptions ->
+                subscriptionMatchesGroup(command.getGroupId(), subscriptions.keySet())
+                    .map(ok -> subscriptions))
         .flatMap(
-            count ->
+            subscriptions ->
                 instanceIdAvailable(command.getGroupId(), command.getInstanceId())
-                    .map(ok -> count));
+                    .map(ok -> subscriptions));
   }
 
   /** A leave must reference an existing member presenting a current epoch. */
@@ -71,7 +78,10 @@ public final class CoordinationChecks {
     return groupIdPresent(command.getGroupId())
         .flatMap(ok -> memberExists(command.getGroupId(), command.getMemberId()))
         .flatMap(member -> epochUpToDate(member, command.getMemberEpoch()).map(ok -> member))
-        .flatMap(member -> ownsPartition(member, command.getPartitionId()).map(ok -> member));
+        .flatMap(
+            member ->
+                ownsPartition(member, command.getTopic(), command.getPartitionId())
+                    .map(ok -> member));
   }
 
   private Either<Rejection, Void> instanceIdAvailable(
@@ -90,33 +100,42 @@ public final class CoordinationChecks {
     return VALID;
   }
 
-  private Either<Rejection, Integer> topicServable(final String topic) {
-    if (topic == null || topic.isEmpty()) {
+  private Either<Rejection, Map<String, Integer>> topicsServable(final List<String> topics) {
+    if (topics == null || topics.isEmpty()) {
       return Either.left(
-          new Rejection(CoordinationErrorCode.INVALID_TOPIC, "subscribed topic is empty"));
+          new Rejection(CoordinationErrorCode.INVALID_TOPIC, "no subscribed topics"));
     }
-    final var partitionCount = topicRegistry.partitionCount(topic);
-    if (partitionCount <= 0) {
-      return Either.left(
-          new Rejection(
-              CoordinationErrorCode.TOPIC_NOT_FOUND,
-              "topic '%s' is not registered or not servable".formatted(topic)));
+    final var subscriptions = new LinkedHashMap<String, Integer>();
+    for (final var topic : topics) {
+      if (topic == null || topic.isEmpty()) {
+        return Either.left(
+            new Rejection(CoordinationErrorCode.INVALID_TOPIC, "a subscribed topic is empty"));
+      }
+      final var partitionCount = topicRegistry.partitionCount(topic);
+      if (partitionCount <= 0) {
+        return Either.left(
+            new Rejection(
+                CoordinationErrorCode.TOPIC_NOT_FOUND,
+                "topic '%s' is not registered or not servable".formatted(topic)));
+      }
+      subscriptions.put(topic, partitionCount);
     }
-    return Either.right(partitionCount);
+    return Either.right(subscriptions);
   }
 
-  private Either<Rejection, Void> topicMatchesGroup(final String groupId, final String topic) {
+  private Either<Rejection, Void> subscriptionMatchesGroup(
+      final String groupId, final Set<String> topics) {
     final var group = state.getGroup(groupId);
     if (group == null) {
-      return VALID; // first join — the applier binds the group to this topic
+      return VALID; // first join — the applier binds the group to this subscription
     }
-    final var bound = group.getTopic();
-    if (bound != null && !bound.isEmpty() && !bound.equals(topic)) {
+    final var bound = group.getSubscriptions().keySet();
+    if (!bound.isEmpty() && !bound.equals(topics)) {
       return Either.left(
           new Rejection(
               CoordinationErrorCode.INVALID_TOPIC,
-              "group '%s' is bound to topic '%s', cannot join with topic '%s'"
-                  .formatted(groupId, bound, topic)));
+              "group '%s' is bound to topics %s, cannot join with topics %s"
+                  .formatted(groupId, bound, topics)));
     }
     return VALID;
   }
@@ -157,12 +176,13 @@ public final class CoordinationChecks {
     return VALID;
   }
 
-  private Either<Rejection, Void> ownsPartition(final MemberState member, final int partitionId) {
-    if (!member.getTargetPartitions().contains(partitionId)) {
+  private Either<Rejection, Void> ownsPartition(
+      final MemberState member, final String topic, final int partitionId) {
+    if (!member.getTargetPartitions().contains(new TopicPartition(topic, partitionId))) {
       return Either.left(
           new Rejection(
               CoordinationErrorCode.NOT_PARTITION_OWNER,
-              "member does not own partition %d".formatted(partitionId)));
+              "member does not own partition %d of topic '%s'".formatted(partitionId, topic)));
     }
     return VALID;
   }

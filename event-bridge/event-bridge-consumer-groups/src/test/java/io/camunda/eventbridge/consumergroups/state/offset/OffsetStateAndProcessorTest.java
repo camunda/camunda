@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -62,12 +63,12 @@ final class OffsetStateAndProcessorTest {
     applier.applyState(1, commit("group-a", 1, 5));
     applier.applyState(2, commit("group-a", 1, 3));
     applier.applyState(3, commit("group-a", 1, 8));
-    assertThat(state.getOffset("group-a", 1)).isEqualTo(8);
+    assertThat(state.getOffset("group-a", "t", 1)).isEqualTo(8);
   }
 
   @Test
   void shouldReturnMinusOneForUnknownOffset() {
-    assertThat(state.getOffset("group-a", 99)).isEqualTo(-1);
+    assertThat(state.getOffset("group-a", "t", 99)).isEqualTo(-1);
   }
 
   @Test
@@ -75,8 +76,8 @@ final class OffsetStateAndProcessorTest {
     applier.applyState(1, commit("group-a", 1, 5));
     applier.applyState(2, commit("group-b", 1, 7));
 
-    assertThat(state.getOffset("group-a", 1)).isEqualTo(5);
-    assertThat(state.getOffset("group-b", 1)).isEqualTo(7);
+    assertThat(state.getOffset("group-a", "t", 1)).isEqualTo(5);
+    assertThat(state.getOffset("group-b", "t", 1)).isEqualTo(7);
   }
 
   @Test
@@ -87,7 +88,9 @@ final class OffsetStateAndProcessorTest {
 
     // only group-a's partitions, sorted
     assertThat(state.offsetsSnapshot("group-a"))
-        .containsExactly(java.util.Map.entry(1, 8L), java.util.Map.entry(2, 4L));
+        .containsExactly(
+            java.util.Map.entry(new TopicPartition("t", 1), 8L),
+            java.util.Map.entry(new TopicPartition("t", 2), 4L));
   }
 
   @Test
@@ -100,7 +103,11 @@ final class OffsetStateAndProcessorTest {
                 processors.withEventApplier(
                     CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(state)));
     final var event =
-        new OffsetCommitRecord().setGroupId("group-a").setPartitionId(3).setOffset(42);
+        new OffsetCommitRecord()
+            .setGroupId("group-a")
+            .setTopic("t")
+            .setPartitionId(3)
+            .setOffset(42);
     final TypedRecord record = mock(TypedRecord.class);
     when(record.getValue()).thenReturn(event);
     when(record.getIntent()).thenReturn(CoordinatorIntent.OFFSET_COMMITTED);
@@ -109,11 +116,15 @@ final class OffsetStateAndProcessorTest {
     engine.replay(record);
 
     // then — follower state matches what a leader would have committed
-    assertThat(state.getOffset("group-a", 3)).isEqualTo(42);
+    assertThat(state.getOffset("group-a", "t", 3)).isEqualTo(42);
   }
 
   private static OffsetCommitRecord commit(
       final String group, final int partition, final long offset) {
-    return new OffsetCommitRecord().setGroupId(group).setPartitionId(partition).setOffset(offset);
+    return new OffsetCommitRecord()
+        .setGroupId(group)
+        .setTopic("t")
+        .setPartitionId(partition)
+        .setOffset(offset);
   }
 }

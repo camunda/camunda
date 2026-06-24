@@ -7,9 +7,10 @@
  */
 package io.camunda.eventbridge.consumergroups.record;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
+import io.camunda.eventbridge.protocol.topic.TopicPartitionValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -22,8 +23,8 @@ import java.util.List;
 public final class MemberAssignment extends ObjectValue {
 
   private final StringProperty memberIdProp = new StringProperty("memberId", "");
-  private final ArrayProperty<IntegerValue> partitionsProp =
-      new ArrayProperty<>("partitions", IntegerValue::new);
+  private final ArrayProperty<TopicPartitionValue> partitionsProp =
+      new ArrayProperty<>("partitions", TopicPartitionValue::new);
 
   public MemberAssignment() {
     super(2);
@@ -39,13 +40,13 @@ public final class MemberAssignment extends ObjectValue {
     return this;
   }
 
-  public List<Integer> getPartitions() {
-    return partitionsProp.stream().map(IntegerValue::getValue).toList();
+  public List<TopicPartition> getPartitions() {
+    return partitionsProp.stream().map(TopicPartitionValue::toTopicPartition).toList();
   }
 
-  public MemberAssignment setPartitions(final List<Integer> partitions) {
+  public MemberAssignment setPartitions(final List<TopicPartition> partitions) {
     partitionsProp.reset();
-    partitions.forEach(p -> partitionsProp.add().setValue(p));
+    partitions.forEach(p -> partitionsProp.add().copyFrom(p));
     return this;
   }
 }
