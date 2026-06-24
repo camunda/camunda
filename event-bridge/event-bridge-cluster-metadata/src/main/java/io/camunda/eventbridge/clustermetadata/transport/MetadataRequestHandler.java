@@ -61,19 +61,27 @@ public final class MetadataRequestHandler implements RequestHandler {
   private CompletableFuture<byte[]> handleCreateTopic(final CoordinationRequest request) {
     final var create = new CreateTopicRequest();
     create.wrap(request.value());
-    return metadataManager.handleCreateTopic(create);
+    // The stream replies with the serialized response after the command commits; frame it in the
+    // ExecuteCoordinateResponse envelope the gateway's broker client decodes.
+    return metadataManager
+        .handleCreateTopic(create)
+        .thenApply(CoordinationResponseEncoder::encodeValue);
   }
 
   private CompletableFuture<byte[]> handleDeleteTopic(final CoordinationRequest request) {
     final var delete = new DeleteTopicRequest();
     delete.wrap(request.value());
-    return metadataManager.handleDeleteTopic(delete);
+    return metadataManager
+        .handleDeleteTopic(delete)
+        .thenApply(CoordinationResponseEncoder::encodeValue);
   }
 
   private CompletableFuture<byte[]> handleReassignTopic(final CoordinationRequest request) {
     final var reassign = new ReassignTopicRequest();
     reassign.wrap(request.value());
-    return metadataManager.handleReassignTopic(reassign);
+    return metadataManager
+        .handleReassignTopic(reassign)
+        .thenApply(CoordinationResponseEncoder::encodeValue);
   }
 
   private CompletableFuture<byte[]> handleListTopics(final CoordinationRequest request) {

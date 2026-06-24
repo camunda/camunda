@@ -32,6 +32,33 @@ public final class CoordinationResponseEncoder {
     return encode(response);
   }
 
+  /**
+   * Frames an already-serialized response value (e.g. the bytes a stream's response writer produced
+   * after a command committed) into the {@code ExecuteCoordinateResponse} envelope the gateway's
+   * broker client decodes. Stream-backed handlers (join/leave/commit, topic admin) return raw value
+   * bytes, so they must be wrapped here just like the {@link #encode(BufferWriter)} path does for
+   * in-memory responses.
+   */
+  public static byte[] encodeValue(final byte[] value) {
+    final var valueBuffer = new UnsafeBuffer(value);
+
+    final var totalLength =
+        MessageHeaderEncoder.ENCODED_LENGTH
+            + ExecuteCoordinateResponseEncoder.BLOCK_LENGTH
+            + ExecuteCoordinateResponseEncoder.valueHeaderLength()
+            + value.length;
+
+    final var bytes = new byte[totalLength];
+    final var buffer = new UnsafeBuffer(bytes);
+
+    final var headerEncoder = new MessageHeaderEncoder();
+    final var bodyEncoder = new ExecuteCoordinateResponseEncoder();
+
+    bodyEncoder.wrapAndApplyHeader(buffer, 0, headerEncoder).putValue(valueBuffer, 0, value.length);
+
+    return bytes;
+  }
+
   public static byte[] encode(final BufferWriter response) {
     final var valueLength = response.getLength();
     final var byteArray = new byte[valueLength];

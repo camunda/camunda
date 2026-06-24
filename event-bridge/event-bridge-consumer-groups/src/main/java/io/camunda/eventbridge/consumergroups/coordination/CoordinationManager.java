@@ -1,0 +1,271 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.eventbridge.consumergroups.coordination;
+
+import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.INVALID_GROUP_ID;
+import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.NONE;
+import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.REBALANCE_IN_PROGRESS;
+import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.UNKNOWN_MEMBER_ID;
+
+import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
+import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
+import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
+import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
+import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
+import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
+import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.time.Duration;
+import java.time.InstantSource;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * The leader-side coordinator for consumer-group requests. Membership and target assignment are
+ * first-class replicated state on the coordinator stream (KIP-848 model): {@code JOIN_GROUP} and
+ * {@code LEAVE_GROUP} are written as commands and validated in their processors, so this manager
+ * only turns a request into a command and bridges the committed reply. Heartbeats stay
+ * request/response — they read the durable target from the thread-safe mirror and run the
+ * assign/revoke handshake in memory ({@link GroupReconciliation}), writing no log entry. Session
+ * liveness is an in-memory timer; an expired session is evicted by writing a {@code LEAVE_GROUP}.
+ */
+public class CoordinationManager extends Actor {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CoordinationManager.class);
+
+  private final int partitionId;
+  private final int partitionCount;
+  private final InstantSource clock;
+  private final CoordinatorStream coordinatorStream;
+  private final SnowflakeIdGenerator idGenerator;
+
+  private final Duration heartbeatTimeout = Duration.ofSeconds(10);
+  private final Duration heartbeatCheckInterval = Duration.ofSeconds(1);
+  private final Duration rebalanceTimeout = Duration.ofSeconds(30);
+
+  // Ephemeral reconciliation handshake per group (rebuilt from heartbeats after failover).
+  private final Map<String, GroupReconciliation> reconciliations = new ConcurrentHashMap<>();
+
+  public CoordinationManager(
+      final int partitionId,
+      final int partitionCount,
+      final InstantSource clock,
+      final CoordinatorStream coordinatorStream) {
+    this.partitionId = partitionId;
+    this.partitionCount = partitionCount;
+    this.clock = clock;
+    this.coordinatorStream = coordinatorStream;
+    idGenerator = new SnowflakeIdGenerator(1L);
+  }
+
+  @Override
+  public String getName() {
+    return "CoordinatorManager-" + partitionId;
+  }
+
+  @Override
+  protected void onActorStarted() {
+    // The durable membership/target was replayed into the stream's state (and mirror) before this
+    // manager started, so seed reconciliation sessions from it: re-attaching consumers get fresh
+    // deadlines and are treated as already at their target (no rejoin storm after a failover).
+    seedReconciliations();
+    scheduleConsumerEviction();
+  }
+
+  /** Writes a {@code JOIN_GROUP} command and bridges the committed {@code JoinGroupResponse}. */
+  public CompletableFuture<byte[]> handleJoinGroup(final JoinGroupRequest request) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () -> {
+          final var command =
+              new MembershipRecord()
+                  .setGroupId(request.getGroupId())
+                  .setMemberId(generateMemberId())
+                  .setInstanceId(request.getInstanceId())
+                  .setPartitionCount(partitionCount);
+          coordinatorStream.joinGroup(command).whenComplete(bridge(result));
+        });
+    return result;
+  }
+
+  /** Writes a {@code LEAVE_GROUP} command and bridges the committed {@code LeaveGroupResponse}. */
+  public CompletableFuture<byte[]> handleLeaveGroup(final LeaveGroupRequest request) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () -> {
+          final var command =
+              new MembershipRecord()
+                  .setGroupId(request.getGroupId())
+                  .setMemberId(request.getMemberId())
+                  .setMemberEpoch(request.getMemberEpoch());
+          coordinatorStream.leaveGroup(command).whenComplete(bridge(result));
+        });
+    return result;
+  }
+
+  public ActorFuture<HeartbeatResponse> handleHeartbeat(final HeartbeatRequest request) {
+    return actor.call(() -> heartbeat(request));
+  }
+
+  /**
+   * Replicates an offset commit through the coordinator stream and returns the encoded {@code
+   * CommitOffsetResponse}. Validation (member epoch + partition ownership) happens in the {@code
+   * OffsetCommitProcessor} against replicated membership, not here.
+   */
+  public CompletableFuture<byte[]> handleCommit(final CommitOffsetRequest request) {
+    final var command =
+        new OffsetCommitRecord()
+            .setGroupId(request.getGroupId())
+            .setMemberId(request.getMemberId())
+            .setMemberEpoch(request.getMemberEpoch())
+            .setPartitionId(request.getPartitionId())
+            .setOffset(request.getPosition());
+
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(() -> coordinatorStream.commit(command).whenComplete(bridge(result)));
+    return result;
+  }
+
+  private HeartbeatResponse heartbeat(final HeartbeatRequest request) {
+    final var groupId = request.getGroupId();
+    if (groupId == null || groupId.isEmpty()) {
+      return new HeartbeatResponse().setErrorCode(INVALID_GROUP_ID);
+    }
+
+    final var group = coordinatorStream.groupSnapshot(groupId);
+    final var memberId = request.getMemberId();
+    final var member = group == null ? null : group.members().get(memberId);
+    if (member == null) {
+      return new HeartbeatResponse().setErrorCode(UNKNOWN_MEMBER_ID);
+    }
+
+    final var epochError = validateEpoch(member.memberEpoch(), request.getMemberEpoch());
+    if (epochError != NONE) {
+      return new HeartbeatResponse().setErrorCode(epochError);
+    }
+
+    final var reconciliation =
+        reconciliations.computeIfAbsent(groupId, ignored -> new GroupReconciliation());
+    final var delta =
+        reconciliation.reconcile(group, memberId, request.getOwnedPartitions(), clock.instant());
+
+    return new HeartbeatResponse()
+        .setErrorCode(reconciliation.isRebalancing(group) ? REBALANCE_IN_PROGRESS : NONE)
+        .setMemberId(memberId)
+        .setMemberEpoch(member.memberEpoch())
+        .setAssign(delta.assign())
+        .setRevoke(delta.revoke())
+        .setAssignment(delta.assignment())
+        .setAssignmentEpoch(group.assignmentEpoch())
+        .setCommittedOffsets(coordinatorStream.committedOffsets(groupId));
+  }
+
+  private CoordinationErrorCode validateEpoch(final long expected, final long presented) {
+    if (expected > presented) {
+      return CoordinationErrorCode.FENCED_MEMBER_EPOCH;
+    }
+    if (expected != presented) {
+      return UNKNOWN_MEMBER_ID;
+    }
+    return NONE;
+  }
+
+  private void scheduleConsumerEviction() {
+    actor.schedule(heartbeatCheckInterval, this::evictExpiredSessions);
+  }
+
+  private void evictExpiredSessions() {
+    final var now = clock.instant();
+    final var deadline = now.minus(heartbeatTimeout);
+
+    for (final var group : coordinatorStream.groupSnapshots()) {
+      final var reconciliation = reconciliations.get(group.groupId());
+      if (reconciliation == null) {
+        continue;
+      }
+
+      reconciliation.expiredMembers(deadline).forEach(memberId -> evict(group, memberId));
+
+      if (reconciliation.isRebalancing(group)
+          && reconciliation.rebalanceTimedOut(now, rebalanceTimeout)) {
+        reconciliation.nonConvergedMembers(group).forEach(memberId -> evict(group, memberId));
+      }
+    }
+    pruneReconciliations();
+    scheduleConsumerEviction();
+  }
+
+  private void evict(final GroupSnapshot group, final String memberId) {
+    final var member = group.members().get(memberId);
+    final var reconciliation = reconciliations.get(group.groupId());
+    if (reconciliation != null) {
+      reconciliation.removeSession(memberId);
+    }
+    if (member == null) {
+      return;
+    }
+    LOG.debug(
+        "Coordinator partition {} — evicting timed-out member {} from group {}",
+        partitionId,
+        memberId,
+        group.groupId());
+    final var command =
+        new MembershipRecord()
+            .setGroupId(group.groupId())
+            .setMemberId(memberId)
+            .setMemberEpoch(member.memberEpoch());
+    coordinatorStream.leaveGroup(command); // fire-and-forget; the MEMBER_LEFT event removes it
+  }
+
+  private void seedReconciliations() {
+    final var now = clock.instant();
+    final var groups = coordinatorStream.groupSnapshots();
+    for (final var group : groups) {
+      final var reconciliation =
+          reconciliations.computeIfAbsent(group.groupId(), ignored -> new GroupReconciliation());
+      group
+          .members()
+          .values()
+          .forEach(member -> reconciliation.seedSession(member, group.assignmentEpoch(), now));
+    }
+    if (!groups.isEmpty()) {
+      LOG.info(
+          "Coordinator partition {} — restored {} consumer group(s) from replicated state",
+          partitionId,
+          groups.size());
+    }
+  }
+
+  /** Drops reconciliation state for groups that no longer exist (their last member left). */
+  private void pruneReconciliations() {
+    reconciliations.keySet().removeIf(groupId -> coordinatorStream.groupSnapshot(groupId) == null);
+  }
+
+  private BiConsumer<byte[], Throwable> bridge(final CompletableFuture<byte[]> result) {
+    return (response, error) -> {
+      if (error != null) {
+        result.completeExceptionally(error);
+      } else {
+        result.complete(response);
+      }
+    };
+  }
+
+  private String generateMemberId() {
+    return String.valueOf(idGenerator.nextId());
+  }
+}

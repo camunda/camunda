@@ -14,15 +14,21 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Registry of {@link TypedEventApplier}s keyed by event intent — the event-bridge counterpart of
- * the Zeebe engine's {@code EventAppliers}. A {@link RecordProcessingEngine} registers one applier
- * per event intent; adding a new event type is then a single {@link #register} call. {@link
- * #applyState} dispatches a committed event to the matching applier.
+ * Registry of {@link TypedEventApplier}s keyed by event-intent <em>value</em> — the event-bridge
+ * counterpart of the Zeebe engine's {@code EventAppliers}. A {@link RecordProcessingEngine}
+ * registers one applier per event intent; adding a new event type is then a single {@link
+ * #register} call. {@link #applyState} dispatches a committed event to the matching applier.
+ *
+ * <p>Keying by {@code intent.value()} rather than the enum instance is deliberate: a coordinator
+ * record rides a borrowed {@link io.camunda.zeebe.protocol.record.ValueType}, so on replay the
+ * platform resolves its intent against that value type's own enum (e.g. {@code CLOCK} → {@code
+ * ClockIntent}), not the {@code CoordinatorIntent} the leader wrote. The numeric value is preserved
+ * across that round trip, so it — not the enum identity — is the stable dispatch key.
  */
 public final class EventAppliers implements EventApplier {
 
   @SuppressWarnings("rawtypes")
-  private final Map<Intent, TypedEventApplier> appliers = new HashMap<>();
+  private final Map<Short, TypedEventApplier> appliers = new HashMap<>();
 
   /**
    * Registers the applier for an event intent.
@@ -33,7 +39,7 @@ public final class EventAppliers implements EventApplier {
       final I intent, final TypedEventApplier<I, V> applier) {
     Objects.requireNonNull(intent, "intent must not be null");
     Objects.requireNonNull(applier, "applier must not be null");
-    if (appliers.putIfAbsent(intent, applier) != null) {
+    if (appliers.putIfAbsent(intent.value(), applier) != null) {
       throw new IllegalArgumentException(
           "Applier for intent '%s' is already registered".formatted(intent));
     }
@@ -43,7 +49,7 @@ public final class EventAppliers implements EventApplier {
   @Override
   @SuppressWarnings("unchecked")
   public void applyState(final long key, final Intent intent, final RecordValue value) {
-    final var applier = appliers.get(intent);
+    final var applier = appliers.get(intent.value());
     if (applier == null) {
       throw new NoSuchEventApplier(intent);
     }

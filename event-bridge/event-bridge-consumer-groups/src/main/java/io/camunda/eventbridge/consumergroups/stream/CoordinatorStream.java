@@ -7,38 +7,57 @@
  */
 package io.camunda.eventbridge.consumergroups.stream;
 
+import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
+import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
+import io.camunda.eventbridge.consumergroups.processing.JoinGroupProcessor;
+import io.camunda.eventbridge.consumergroups.processing.LeaveGroupProcessor;
+import io.camunda.eventbridge.consumergroups.processing.OffsetCommitProcessor;
+import io.camunda.eventbridge.consumergroups.processing.RebalanceAssignorTask;
+import io.camunda.eventbridge.consumergroups.processing.RebalanceProcessor;
+import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
+import io.camunda.eventbridge.consumergroups.record.EventBridgeRecordValues;
+import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
+import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
+import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
+import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
+import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The coordinator's replicated state engine: a {@link ReplicatedStream} over the coordinator Raft
- * partition's log. Offset commits and group-metadata updates are written as commands; the {@link
- * OffsetCommitProcessor} and {@link GroupMetadataProcessor} validate and apply them to {@link
- * DbOffsetState} / {@link DbGroupMetadataState} and emit committed events, which followers replay
- * into their own state.
+ * partition's log. Consumer-group membership, target assignment, and committed offsets are first-
+ * class replicated state — written as commands, validated + applied by the registered processors
+ * and appliers, and re-emitted as events that followers replay into the same {@link
+ * DbConsumerGroupState} / {@link DbOffsetState}. The async {@link RebalanceAssignorTask} runs off
+ * the processing path (leader only) and proposes target assignments.
  */
 public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnFamilies> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CoordinatorStream.class);
+  /**
+   * How often the async assignor scans for groups needing a rebalance (also the debounce window).
+   */
+  private static final Duration ASSIGNOR_INTERVAL = Duration.ofSeconds(1);
 
   private DbOffsetState offsetState;
-  private DbGroupMetadataState groupMetadataState;
+  private DbConsumerGroupState groupState;
 
   /**
    * @param zeebeDb the state DB, recovered/owned by the {@link
@@ -67,30 +86,45 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   @Override
   protected void onStarting() {
     offsetState = new DbOffsetState(zeebeDb, zeebeDb.createContext());
-    groupMetadataState = new DbGroupMetadataState(zeebeDb, zeebeDb.createContext());
+    groupState = new DbConsumerGroupState(zeebeDb, zeebeDb.createContext());
+    // Seed the thread-safe mirrors from durable state before the processor starts (no concurrent
+    // access yet), so a replica recovered from a snapshot exposes its state even before any replay.
+    offsetState.seedMirror();
+    groupState.seedMirror();
   }
 
   @Override
   protected RecordProcessor createRecordProcessor() {
+    final var checks = new CoordinationChecks(groupState);
     return new RecordProcessingEngine(
         processors ->
             processors
                 .onCommand(
                     EventBridgeRecordValues.OFFSET_VALUE_TYPE,
                     CoordinatorIntent.COMMIT_OFFSET,
-                    new OffsetCommitProcessor(
-                        processors.writers(),
-                        offsetState,
-                        new OffsetCommitValidator(groupMetadataState)))
+                    new OffsetCommitProcessor(processors.writers(), offsetState, checks))
                 .onCommand(
-                    EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE,
+                    EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
+                    CoordinatorIntent.JOIN_GROUP,
+                    new JoinGroupProcessor(processors.writers(), groupState, checks))
+                .onCommand(
+                    EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
+                    CoordinatorIntent.LEAVE_GROUP,
+                    new LeaveGroupProcessor(processors.writers(), groupState, checks))
+                .onCommand(
+                    EventBridgeRecordValues.REBALANCE_VALUE_TYPE,
                     CoordinatorIntent.REBALANCE_GROUP,
-                    new GroupMetadataProcessor(processors.writers()))
+                    new RebalanceProcessor(processors.writers(), groupState))
                 .withEventApplier(
                     CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(offsetState))
                 .withEventApplier(
-                    CoordinatorIntent.GROUP_METADATA_COMMITTED,
-                    new GroupMetadataCommittedApplier(groupMetadataState)));
+                    CoordinatorIntent.MEMBER_JOINED, new MemberJoinedApplier(groupState))
+                .withEventApplier(CoordinatorIntent.MEMBER_LEFT, new MemberLeftApplier(groupState))
+                .withEventApplier(
+                    CoordinatorIntent.GROUP_REBALANCED, new GroupRebalancedApplier(groupState))
+                .withListener(
+                    new RebalanceAssignorTask(
+                        ASSIGNOR_INTERVAL, groupState, new BalancedStickyAssignor())));
   }
 
   /**
@@ -104,36 +138,37 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   }
 
   /**
-   * Returns the committed offsets for a group (partition → position), read from replicated state.
+   * Writes a {@code JOIN_GROUP} command; the returned future completes with the encoded {@code
+   * JoinGroupResponse} after the command commits (the {@link JoinGroupProcessor} assigns/echoes the
+   * member id + epoch and stages the reply). Leader only.
    */
-  public Map<Integer, Long> committedOffsets(final String groupId) {
-    return offsetState.getOffsets(groupId);
+  public CompletableFuture<byte[]> joinGroup(final MembershipRecord command) {
+    return writeRequest(
+        CoordinatorIntent.JOIN_GROUP, EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE, command);
   }
 
   /**
-   * Replicates a group's membership/assignment (encoded via {@link GroupMetadataCodec}) through the
-   * stream so it survives coordinator failover. Best-effort: written on each rebalance. Leader
-   * only.
+   * Writes a {@code LEAVE_GROUP} command; the returned future completes with the encoded {@code
+   * LeaveGroupResponse} after the command commits. Also used (future ignored) when the coordinator
+   * evicts a timed-out member. Leader only.
    */
-  public void replicateGroupMetadata(final String groupId, final String payload) {
-    if (writer == null) {
-      return;
-    }
-    final var command = new GroupMetadataRecord().setGroupId(groupId).setPayload(payload);
-    final var metadata =
-        new RecordMetadata()
-            .recordType(RecordType.COMMAND)
-            .valueType(EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE)
-            .intent(CoordinatorIntent.REBALANCE_GROUP);
-    final var result =
-        writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
-    if (result.isLeft()) {
-      LOG.warn("Failed to replicate group metadata for {}: {}", groupId, result.getLeft());
-    }
+  public CompletableFuture<byte[]> leaveGroup(final MembershipRecord command) {
+    return writeRequest(
+        CoordinatorIntent.LEAVE_GROUP, EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE, command);
   }
 
-  /** All groups' replicated metadata ({@code groupId → encoded payload}) for failover rebuild. */
-  public Map<String, String> groupMetadataSnapshot() {
-    return groupMetadataState.readAll();
+  /** A thread-safe snapshot of a group's replicated membership/assignment, or {@code null}. */
+  public GroupSnapshot groupSnapshot(final String groupId) {
+    return groupState.groupSnapshot(groupId);
+  }
+
+  /** Thread-safe snapshots of all groups (e.g. for the eviction scan). */
+  public List<GroupSnapshot> groupSnapshots() {
+    return groupState.groupSnapshots();
+  }
+
+  /** Committed offsets for a group ({@code partitionId → position}), read from the mirror. */
+  public Map<Integer, Long> committedOffsets(final String groupId) {
+    return offsetState.offsetsSnapshot(groupId);
   }
 }

@@ -1,0 +1,119 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.eventbridge.consumergroups.state.offset;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import io.camunda.eventbridge.consumergroups.record.CoordinatorIntent;
+import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
+import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
+import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
+import io.camunda.eventbridge.stream.RecordProcessingEngine;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.file.Path;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+/** Verifies the coordinator's replicated offset state and that replay dispatches to its applier. */
+final class OffsetStateAndProcessorTest {
+
+  @TempDir private Path dbDir;
+  private ZeebeDb<EventBridgeColumnFamilies> db;
+  private DbOffsetState state;
+  private OffsetCommittedApplier applier;
+
+  @BeforeEach
+  void setUp() {
+    final var factory =
+        new ZeebeRocksDbFactory<EventBridgeColumnFamilies>(
+            new RocksDbConfiguration(),
+            new ConsistencyChecksSettings(true, true),
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            SimpleMeterRegistry::new);
+    db = factory.createDb(dbDir.toFile());
+    state = new DbOffsetState(db, db.createContext());
+    applier = new OffsetCommittedApplier(state);
+  }
+
+  @AfterEach
+  void tearDown() throws Exception {
+    db.close();
+  }
+
+  @Test
+  void shouldCommitMonotonically() {
+    // given / when / then — the applier never moves an offset backwards
+    applier.applyState(1, commit("group-a", 1, 5));
+    applier.applyState(2, commit("group-a", 1, 3));
+    applier.applyState(3, commit("group-a", 1, 8));
+    assertThat(state.getOffset("group-a", 1)).isEqualTo(8);
+  }
+
+  @Test
+  void shouldReturnMinusOneForUnknownOffset() {
+    assertThat(state.getOffset("group-a", 99)).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldIsolateOffsetsAcrossGroups() {
+    applier.applyState(1, commit("group-a", 1, 5));
+    applier.applyState(2, commit("group-b", 1, 7));
+
+    assertThat(state.getOffset("group-a", 1)).isEqualTo(5);
+    assertThat(state.getOffset("group-b", 1)).isEqualTo(7);
+  }
+
+  @Test
+  void shouldSnapshotAllOffsetsForGroup() {
+    applier.applyState(1, commit("group-a", 1, 8));
+    applier.applyState(2, commit("group-a", 2, 4));
+    applier.applyState(3, commit("group-b", 1, 99));
+
+    // only group-a's partitions, sorted
+    assertThat(state.offsetsSnapshot("group-a"))
+        .containsExactly(java.util.Map.entry(1, 8L), java.util.Map.entry(2, 4L));
+  }
+
+  @Test
+  void shouldApplyCommittedEventOnReplay() {
+    // given — a follower replaying an OFFSET_COMMITTED event through the engine's applier registry
+    // (dispatch is by intent value, so this also guards the borrowed-ValueType intent mapping)
+    final var engine =
+        new RecordProcessingEngine(
+            processors ->
+                processors.withEventApplier(
+                    CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(state)));
+    final var event =
+        new OffsetCommitRecord().setGroupId("group-a").setPartitionId(3).setOffset(42);
+    final TypedRecord record = mock(TypedRecord.class);
+    when(record.getValue()).thenReturn(event);
+    when(record.getIntent()).thenReturn(CoordinatorIntent.OFFSET_COMMITTED);
+
+    // when
+    engine.replay(record);
+
+    // then — follower state matches what a leader would have committed
+    assertThat(state.getOffset("group-a", 3)).isEqualTo(42);
+  }
+
+  private static OffsetCommitRecord commit(
+      final String group, final int partition, final long offset) {
+    return new OffsetCommitRecord().setGroupId(group).setPartitionId(partition).setOffset(offset);
+  }
+}

@@ -11,8 +11,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.scheduling.Task;
-import java.time.Duration;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -30,9 +29,12 @@ public final class RecordProcessors {
 
   private final Writers writers;
   private final EventAppliers eventAppliers;
-  private final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors =
+  // Keyed by (valueType, intent value). The value — not the enum instance — is the stable key: a
+  // command rides a borrowed ValueType, so the platform resolves its intent against that value
+  // type's own enum, preserving only the numeric value (see EventAppliers).
+  private final Map<ValueType, Map<Short, TypedRecordProcessor<?>>> commandProcessors =
       new EnumMap<>(ValueType.class);
-  private final List<FixedRateTask> scheduledTasks = new ArrayList<>();
+  private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
   RecordProcessors(final Writers writers, final EventAppliers eventAppliers) {
     this.writers = writers;
@@ -50,7 +52,7 @@ public final class RecordProcessors {
     final var previous =
         commandProcessors
             .computeIfAbsent(valueType, unused -> new HashMap<>())
-            .putIfAbsent(intent, processor);
+            .putIfAbsent(intent.value(), processor);
     if (previous != null) {
       throw new IllegalArgumentException(
           "Command processor for %s/%s is already registered".formatted(valueType, intent));
@@ -66,24 +68,24 @@ public final class RecordProcessors {
   }
 
   /**
-   * Registers a background {@link Task} the engine runs at a fixed rate on the async task group
-   * (leader only, off the command-processing path) — for work like computing a rebalance. The task
-   * may read thread-safe state mirrors and append follow-up commands via its {@code
-   * TaskResultBuilder}; it cannot touch the stream's RocksDB directly.
+   * Registers a {@link StreamProcessorLifecycleAware} listener — the event-bridge counterpart of
+   * the engine's {@code TypedRecordProcessors.withListener}. The engine forwards these to the
+   * platform (via {@code RecordProcessorContext#addLifecycleListeners}), so each listener is
+   * notified of the processor lifecycle. A background task (e.g. the rebalance assignor) implements
+   * both {@link io.camunda.zeebe.stream.api.scheduling.Task} and this interface, and self-schedules
+   * on its {@code onRecovered} — leader only, off the command-processing path, after the async task
+   * group is up.
    */
-  public RecordProcessors scheduleAtFixedRate(final Duration interval, final Task task) {
-    scheduledTasks.add(new FixedRateTask(interval, task));
+  public RecordProcessors withListener(final StreamProcessorLifecycleAware listener) {
+    lifecycleListeners.add(listener);
     return this;
   }
 
-  Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors() {
+  Map<ValueType, Map<Short, TypedRecordProcessor<?>>> commandProcessors() {
     return commandProcessors;
   }
 
-  List<FixedRateTask> scheduledTasks() {
-    return scheduledTasks;
+  List<StreamProcessorLifecycleAware> lifecycleListeners() {
+    return lifecycleListeners;
   }
-
-  /** A background task and the fixed interval at which the engine schedules it. */
-  record FixedRateTask(Duration interval, Task task) {}
 }

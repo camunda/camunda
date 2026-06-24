@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.consumergroups.transport;
 
-import io.camunda.eventbridge.consumergroups.CoordinationManager;
+import io.camunda.eventbridge.consumergroups.coordination.CoordinationManager;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
@@ -61,27 +61,32 @@ public final class CoordinationRequestHandler implements RequestHandler {
     final var commit = new CommitOffsetRequest();
     commit.wrap(request.value());
 
-    // The coordinator stream replies with the already-encoded CommitOffsetResponse once the command
-    // has been processed and committed (validation + response now happen in the processor).
-    return coordinationManager.handleCommit(commit);
+    // The coordinator stream replies with the serialized CommitOffsetResponse once the command has
+    // been processed and committed (validation + response now happen in the processor); frame it in
+    // the ExecuteCoordinateResponse envelope the gateway's broker client decodes.
+    return coordinationManager
+        .handleCommit(commit)
+        .thenApply(CoordinationResponseEncoder::encodeValue);
   }
 
   private CompletableFuture<byte[]> handleJoinGroup(final CoordinationRequest request) {
     final var joinGroup = new JoinGroupRequest();
     joinGroup.wrap(request.value());
 
-    return toFuture(
-        coordinationManager.handleJoinGroup(joinGroup),
-        CoordinationResponseEncoder::encodeJoinGroup);
+    // Join now replies through the stream after the command commits (the processor assigns the
+    // member id/epoch and stages the response); frame the serialized reply for the broker client.
+    return coordinationManager
+        .handleJoinGroup(joinGroup)
+        .thenApply(CoordinationResponseEncoder::encodeValue);
   }
 
   private CompletableFuture<byte[]> handleLeaveGroup(final CoordinationRequest request) {
     final var leaveGroup = new LeaveGroupRequest();
     leaveGroup.wrap(request.value());
 
-    return toFuture(
-        coordinationManager.handleLeaveGroup(leaveGroup),
-        CoordinationResponseEncoder::encodeLeaveGroup);
+    return coordinationManager
+        .handleLeaveGroup(leaveGroup)
+        .thenApply(CoordinationResponseEncoder::encodeValue);
   }
 
   private CompletableFuture<byte[]> handleHeartbeat(final CoordinationRequest request) {

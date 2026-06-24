@@ -9,7 +9,8 @@ package io.camunda.eventbridge.consumergroups.stream;
 
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.eventbridge.consumergroups.CoordinationManager;
+import io.camunda.eventbridge.consumergroups.coordination.CoordinationManager;
+import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.transport.CoordinationRequestHandler;
 import io.camunda.eventbridge.stream.RaftPartitionLifecycle;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;

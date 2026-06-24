@@ -1,5 +1,24 @@
 # Phase 2 — consumer-group membership state machine (implementation brief)
 
+> **STATUS: IMPLEMENTED (task #14)** on branch `roman/optimize`. Membership + target
+> assignment are now first-class replicated state on the coordinator stream (column
+> families `CONSUMER_GROUPS` / `CONSUMER_GROUP_MEMBERS` + a thread-safe mirror); JOIN/LEAVE
+> are log commands validated in processors; the async `RebalanceAssignorTask` proposes
+> targets (debounced); the heartbeat runs the reconciliation handshake in memory; eviction
+> writes LEAVE. Validated on a running cluster: join → debounced rebalance → assignment via
+> heartbeat → ownership-fenced commit → leave → re-rebalance, **and** a coordinator-leader
+> failover (new leader replays membership + target, consumer re-attaches with the same
+> member id/epoch/assignment — no rejoin storm). Unit tests cover state/appliers/validators,
+> the reconciliation handshake (incl. pendingRevocations), and the assignor debounce.
+>
+> **Cluster validation also surfaced three latent `RecordProcessingEngine` bugs** (which
+> broke commit, join/leave, AND topic admin — all returned 503 — but passed unit tests that
+> mock the intent): intent dispatch had to key by intent *value* and intent values had to
+> fall within the borrowed ValueType's enum range; stream responses had to be framed via
+> `CoordinationResponseEncoder.encodeValue`; and async tasks had to be scheduled in
+> `onRecovered` (not `init`). See the `event-bridge-stream-dispatch-gotchas` note. The clean
+> fix is the deferred #8 (stop borrowing engine ValueTypes).
+
 > Focused brief for picking this up in a fresh session. It is the **one remaining**
 > piece of the event-bridge "full engine model" refactor (tracked as task #14). It is
 > deliberately scoped, behavior-sensitive, and **must be validated on a running cluster**,

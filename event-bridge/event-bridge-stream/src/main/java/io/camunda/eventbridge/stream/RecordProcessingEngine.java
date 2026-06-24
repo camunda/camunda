@@ -8,12 +8,12 @@
 package io.camunda.eventbridge.stream;
 
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 import java.util.Map;
@@ -46,9 +46,9 @@ public final class RecordProcessingEngine implements RecordProcessor {
   private final ProcessingResultBuilderMutex resultBuilderMutex =
       new ProcessingResultBuilderMutex();
   private final EventAppliers eventAppliers = new EventAppliers();
-  private final Map<ValueType, Map<Intent, TypedRecordProcessor<?>>> commandProcessors;
+  private final Map<ValueType, Map<Short, TypedRecordProcessor<?>>> commandProcessors;
   private final Set<ValueType> acceptedValueTypes;
-  private final List<RecordProcessors.FixedRateTask> scheduledTasks;
+  private final List<StreamProcessorLifecycleAware> lifecycleListeners;
 
   public RecordProcessingEngine(final RecordProcessorsFactory recordProcessorsFactory) {
     final var writers = new Writers(resultBuilderMutex, eventAppliers);
@@ -56,15 +56,19 @@ public final class RecordProcessingEngine implements RecordProcessor {
     recordProcessorsFactory.createProcessors(processors);
     commandProcessors = processors.commandProcessors();
     acceptedValueTypes = Set.copyOf(commandProcessors.keySet());
-    scheduledTasks = processors.scheduledTasks();
+    lifecycleListeners = processors.lifecycleListeners();
   }
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    // Register background tasks (e.g. the rebalance assignor) on the async task group; the platform
-    // runs them only while processing (leader), off the command-processing path.
-    final var scheduleService = recordProcessorContext.getScheduleService();
-    scheduledTasks.forEach(t -> scheduleService.runAtFixedRateAsync(t.interval(), t.task()));
+    // Forward the registered lifecycle listeners to the platform — mirroring how the engine hands
+    // its TypedRecordProcessors' listeners to the StreamProcessor. A background task (e.g. the
+    // rebalance assignor) is such a listener and self-schedules in its onRecovered, which fires
+    // only
+    // after recovery and only on the leader (followers stay in replay).
+    if (!lifecycleListeners.isEmpty()) {
+      recordProcessorContext.addLifecycleListeners(lifecycleListeners);
+    }
   }
 
   @Override
@@ -82,7 +86,7 @@ public final class RecordProcessingEngine implements RecordProcessor {
       final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
     try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
       final var byIntent = commandProcessors.get(record.getValueType());
-      final var processor = byIntent == null ? null : byIntent.get(record.getIntent());
+      final var processor = byIntent == null ? null : byIntent.get(record.getIntent().value());
       if (processor != null) {
         invoke(processor, record);
       }
