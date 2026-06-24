@@ -57,9 +57,10 @@ re-run-spam-without-fix can't game it.
 │        │  ├─ Else:                                                   │
 │        │  │    1. Reconcile force-push (drop unreachable+absent)     │
 │        │  │    2. Re-evaluate method modification via git log -L     │
-│        │  │    3. Merge new flakes / reset re-flaked entries         │
-│        │  │    4. Increment counters where job ran AND test clean    │
-│        │  │    5. Promote counter>=3 entries to cleared_via_fix      │
+│        │  │    3. Filter BQ-new flakes via touch-check + blank-class │
+│        │  │    4. Merge surviving new flakes / reset re-flaked       │
+│        │  │    5. Increment counters where job ran AND test clean    │
+│        │  │    6. Promote counter>=3 entries to cleared_via_fix      │
 │        │  └─ Render comment, write state.json                        │
 │        ├─ Upload state artifact (flaky-gate-state-pr-<N>, 30d)       │
 │        └─ Exit non-zero if any entries remain active (blocking)      │
@@ -133,6 +134,68 @@ WHERE  ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
   AND  ts.test_status IN ("flaky","failure","error")
   AND  bs.ci_url IS NOT NULL
 ```
+
+## False-positive suppression
+
+A post-merge pilot audit (618 PRs, 2026-06-04 → 2026-06-15) found a 56%
+false-positive rate. All false positives shared the same pattern:
+a pre-existing infra-flaky test (GCS testcontainer, disk-space cluster,
+raft failover, OpenSearch indexing) flaked during a CI run on a PR that
+had no relation to the test's code. The BigQuery baseline correctly contained
+those tests, but the method-keyed matching failed for two reasons explained
+below. Two filters address this before any new flake enters the sticky state.
+
+### Filter 1 — Package touch-check
+
+`get_pr_changed_paths()` runs:
+
+```bash
+git diff --name-only origin/<base_ref>...<head_sha>
+```
+
+and extracts the Java package path from every changed `.java` file
+(e.g. `zeebe/backup-gcs/src/main/java/io/camunda/zeebe/backup/gcs/Foo.java`
+→ `io/camunda/zeebe/backup/gcs`).
+
+`filter_by_touch_check()` then silences any new-flaky alert whose Java
+package was not touched by the PR (exact match, or the PR touched a parent
+or child package). A test in `io.camunda.zeebe.backup.gcs` cannot have been
+broken by a PR that only changes `io.camunda.zeebe.agent`.
+
+A PR that changes only YAML/config files (no `.java` at all) produces an
+empty `changed_pkg_paths` set with `available=True` — that is still a valid
+no-touch signal and suppresses all alerts. If the git diff command fails
+entirely, `available=False` is returned and the filter is skipped to avoid
+accidental suppression.
+
+### Filter 2 — Blank-class fallback
+
+Class/container-level failures (`@BeforeAll`, testcontainer startup) are
+recorded in `test_status_v1` with an empty `test_name`. The method-keyed
+baseline key becomes `"…ClassName."` (trailing dot) and never matches a
+real method, so the gate treats those methods as "new" on any PR that
+happens to be running when the container crashes.
+
+`load_baseline_keys()` now also returns `blank_class_fqns`: the set of
+class FQNs with at least one blank-`test_name` entry in the 20-day
+baseline. When the PR's package _does_ match (Filter 1 passes), but the
+class is in `blank_class_fqns` AND the test file itself was not modified by
+the PR, the alert is suppressed. The test file check is the key
+safety guard: if the PR directly edits the test, the alert fires regardless
+of infra-failure history.
+
+### Filter interaction and safety
+
+Both filters apply only to tests that are not yet tracked in the sticky
+state — they gate new entries into `merge_new_flakes`, not existing ones.
+
+True positives are unaffected by design:
+
+|               True positive                |                Why filter does not suppress                |
+|--------------------------------------------|------------------------------------------------------------|
+| PR adds a new test class                   | Class file is in the diff → package matches + file matches |
+| PR modifies the test file                  | Test file is in the diff → blank-class check bypassed      |
+| PR modifies the production code under test | Same package → Filter 1 passes, alert fires                |
 
 ## Method modification detection
 
