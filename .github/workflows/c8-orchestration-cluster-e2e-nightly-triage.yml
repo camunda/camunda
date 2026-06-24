@@ -78,20 +78,6 @@ jobs:
           secrets: |
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
 
-      - name: Generate GitHub App Token
-        id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
-        with:
-          github-app-id-vault-key: GITHUB_APP_ID
-          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          github-app-private-key-vault-key: GITHUB_APP_SECRET
-          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          vault-url: ${{ secrets.VAULT_ADDR }}
-          owner: camunda
-          repositories: camunda
 
       - name: Show tool versions
         run: |
@@ -101,7 +87,7 @@ jobs:
       - name: Scan nightly workflows and extract failures
         id: scan
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -259,7 +245,7 @@ jobs:
       - name: Normalize, filter and group by version
         id: group
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO:     ${{ github.repository }}
           DAILY_CAP: ${{ github.event.inputs.daily_cap || '4' }}
         run: |
@@ -461,7 +447,7 @@ jobs:
       - name: Write job summary
         if: always()
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -642,24 +628,10 @@ jobs:
           secrets: |
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
 
-      - name: Generate GitHub App Token
-        id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
-        with:
-          github-app-id-vault-key: GITHUB_APP_ID
-          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          github-app-private-key-vault-key: GITHUB_APP_SECRET
-          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          vault-url: ${{ secrets.VAULT_ADDR }}
-          owner: camunda
-          repositories: camunda
 
       - name: Dispatch one fix-agent run per version
         env:
-          GH_TOKEN:                  ${{ steps.github-token.outputs.token }}
+          GH_TOKEN:                  ${{ secrets.GITHUB_TOKEN }}
           REPO:                      ${{ github.repository }}
           DISPATCHES_B64:            ${{ needs.triage.outputs.dispatches }}
           TRIAGE_RUN_URL:            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
