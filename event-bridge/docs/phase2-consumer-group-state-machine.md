@@ -135,8 +135,10 @@ Run the local cluster and exercise the full lifecycle:
   re-attach **without** a rejoin storm.
 
 ## Related follow-ups (separate tasks)
-- #15 proper rejections (Zeebe `RejectionType`/reason) — **wire/public-API change**, needs a
-  gateway/client decision; not done.
+- Command **rejection capability is now available**: `Writers.response().writeRejection(command,
+  RejectionType, reason)` fails the request future with a `CommandRejectionException`. Use it for the
+  genuine join/leave rejections (e.g. fenced epoch, unknown group) instead of a success-shaped
+  response. Still deferred: mapping a rejection to an HTTP status + reason in the gateway/client.
 - #8 remove the reused-engine-`ValueType` hack.
 - KIP-848 parity: persist each member's reconciled epoch (durable reconciliation progress); we keep
   it ephemeral initially.
