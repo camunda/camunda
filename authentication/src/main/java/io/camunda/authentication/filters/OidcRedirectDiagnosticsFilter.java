@@ -132,7 +132,7 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
   }
 
   private boolean isCallback(final String requestUri) {
-    return requestUri != null && callbackPath != null && requestUri.startsWith(callbackPath);
+    return requestUri != null && callbackPath != null && requestUri.contains(callbackPath);
   }
 
   private static String extractRedirectUri(final String location) {
