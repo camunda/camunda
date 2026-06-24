@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.clustermetadata.state.mutable;
 
-import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.immutable.TopicState;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 
 /**
  * Write view of the replicated topic registry — the event-bridge counterpart of the engine's {@code

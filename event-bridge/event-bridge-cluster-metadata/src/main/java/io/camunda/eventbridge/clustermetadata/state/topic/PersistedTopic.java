@@ -17,15 +17,14 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 /**
  * Per-topic replicated state stored in the {@link
  * io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies#TOPIC_REGISTRY} column family
- * — the msgpack {@link DbValue} backing the registry (the event-bridge counterpart of consumer-groups'
- * {@code GroupState}/{@code MemberState}). Replaces the previous hand-rolled string encoding: the
- * placement is held as structured {@link PartitionReplicas} arrays.
+ * — the msgpack {@link DbValue} backing the registry (the event-bridge counterpart of
+ * consumer-groups' {@code GroupState}/{@code MemberState}). Replaces the previous hand-rolled
+ * string encoding: the placement is held as structured {@link PartitionReplicas} arrays.
  */
 public final class PersistedTopic extends UnpackedObject implements DbValue {
 
   private final IntegerProperty partitionCountProp = new IntegerProperty("partitionCount", 0);
-  private final IntegerProperty replicationFactorProp =
-      new IntegerProperty("replicationFactor", 0);
+  private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor", 0);
   private final EnumProperty<TopicStatus> statusProp =
       new EnumProperty<>("status", TopicStatus.class, TopicStatus.CREATING);
   private final ArrayProperty<PartitionReplicas> assignmentProp =

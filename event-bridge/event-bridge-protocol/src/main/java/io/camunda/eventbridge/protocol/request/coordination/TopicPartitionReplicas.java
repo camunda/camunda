@@ -16,8 +16,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * One partition's ordered replica node ids — the nested element of a {@link TopicEntry}'s assignment
- * in the {@link ListTopicsResponse}. Carried as structured msgpack rather than an encoded string.
+ * One partition's ordered replica node ids — the nested element of a {@link TopicEntry}'s
+ * assignment in the {@link ListTopicsResponse}. Carried as structured msgpack rather than an
+ * encoded string.
  */
 public final class TopicPartitionReplicas extends ObjectValue {
 

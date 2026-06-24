@@ -44,8 +44,10 @@ public final class MetadataRequestHandler implements RequestHandler {
   public CompletableFuture<byte[]> handle(final byte[] requestBytes) {
     final var request = CoordinationRequest.from(requestBytes);
     return switch (request.type()) {
-      case CREATE_TOPIC -> metadataManager.handleCreateTopic(read(new CreateTopicRequest(), request));
-      case DELETE_TOPIC -> metadataManager.handleDeleteTopic(read(new DeleteTopicRequest(), request));
+      case CREATE_TOPIC ->
+          metadataManager.handleCreateTopic(read(new CreateTopicRequest(), request));
+      case DELETE_TOPIC ->
+          metadataManager.handleDeleteTopic(read(new DeleteTopicRequest(), request));
       case REASSIGN_TOPIC ->
           metadataManager.handleReassignTopic(read(new ReassignTopicRequest(), request));
       case LIST_TOPICS -> metadataManager.handleListTopics(read(new ListTopicsRequest(), request));

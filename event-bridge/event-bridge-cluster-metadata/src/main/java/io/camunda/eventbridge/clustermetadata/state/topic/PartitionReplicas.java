@@ -53,12 +53,15 @@ public final class PartitionReplicas extends ObjectValue {
     return this;
   }
 
-  /** Replaces {@code property} with the {@code partition → replicas} entries of {@code assignment}. */
+  /**
+   * Replaces {@code property} with the {@code partition → replicas} entries of {@code assignment}.
+   */
   public static void write(
       final ArrayProperty<PartitionReplicas> property,
       final Map<Integer, List<Integer>> assignment) {
     property.reset();
-    assignment.forEach((partition, replicas) -> property.add().setPartition(partition).setReplicas(replicas));
+    assignment.forEach(
+        (partition, replicas) -> property.add().setPartition(partition).setReplicas(replicas));
   }
 
   /** Reads an {@code ArrayProperty<PartitionReplicas>} into a {@code partition → replicas} map. */

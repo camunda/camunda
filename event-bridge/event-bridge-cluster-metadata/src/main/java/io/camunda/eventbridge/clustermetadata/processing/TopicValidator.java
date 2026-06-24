@@ -9,17 +9,16 @@ package io.camunda.eventbridge.clustermetadata.processing;
 
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.immutable.TopicState;
-
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.zeebe.util.Either;
 import java.util.regex.Pattern;
 
 /**
- * Topic-command validation, in the engine style: each check returns {@code Either<Rejection, T>} and
- * the per-command validations chain them with {@link Either#flatMap}, short-circuiting on the first
- * rejection. Processors compose the result via {@code ifRightOrLeft} (append an event on the right,
- * a rejection on the left). All checks read the replicated {@link TopicState}; this runs on the
- * stream-processing actor.
+ * Topic-command validation, in the engine style: each check returns {@code Either<Rejection, T>}
+ * and the per-command validations chain them with {@link Either#flatMap}, short-circuiting on the
+ * first rejection. Processors compose the result via {@code ifRightOrLeft} (append an event on the
+ * right, a rejection on the left). All checks read the replicated {@link TopicState}; this runs on
+ * the stream-processing actor.
  */
 public final class TopicValidator {
 
@@ -67,8 +66,7 @@ public final class TopicValidator {
   private Either<Rejection, Void> replicationFactorPositive(final TopicRecord command) {
     if (command.getReplicationFactor() < 1) {
       return Either.left(
-          new Rejection(
-              CoordinationErrorCode.INVALID_TOPIC, "replication factor must be >= 1"));
+          new Rejection(CoordinationErrorCode.INVALID_TOPIC, "replication factor must be >= 1"));
     }
     return VALID;
   }

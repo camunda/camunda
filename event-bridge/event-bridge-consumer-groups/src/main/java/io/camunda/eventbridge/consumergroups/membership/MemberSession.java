@@ -14,10 +14,10 @@ import java.util.Set;
 
 /**
  * The coordinator's <em>ephemeral</em> per-member reconciliation state, held in memory on the
- * leader's {@link ConsumerGroupCoordinator} actor (never replicated). It tracks the member's liveness
- * (last heartbeat) and the assignment it has confirmed owning, so the heartbeat handler can drive
- * the assign/revoke handshake toward the durable target. A new leader rebuilds this from heartbeats
- * after failover; the durable membership + target come from replicated state.
+ * leader's {@link ConsumerGroupCoordinator} actor (never replicated). It tracks the member's
+ * liveness (last heartbeat) and the assignment it has confirmed owning, so the heartbeat handler
+ * can drive the assign/revoke handshake toward the durable target. A new leader rebuilds this from
+ * heartbeats after failover; the durable membership + target come from replicated state.
  */
 final class MemberSession {
 

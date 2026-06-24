@@ -11,10 +11,10 @@ import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCod
 import io.camunda.zeebe.protocol.record.RejectionType;
 
 /**
- * Why a topic command was rejected — the event-bridge counterpart of the engine's {@code Rejection}.
- * Carries the domain {@link CoordinationErrorCode} (echoed to the client in the protocol response)
- * and a reason; {@link #rejectionType()} maps the code to the platform {@link RejectionType} stamped
- * on the replicated {@code COMMAND_REJECTION} record.
+ * Why a topic command was rejected — the event-bridge counterpart of the engine's {@code
+ * Rejection}. Carries the domain {@link CoordinationErrorCode} (echoed to the client in the
+ * protocol response) and a reason; {@link #rejectionType()} maps the code to the platform {@link
+ * RejectionType} stamped on the replicated {@code COMMAND_REJECTION} record.
  */
 public record Rejection(CoordinationErrorCode code, String reason) {
 
@@ -23,10 +23,10 @@ public record Rejection(CoordinationErrorCode code, String reason) {
       case INVALID_TOPIC, INVALID_GROUP_ID -> RejectionType.INVALID_ARGUMENT;
       case TOPIC_NOT_FOUND, UNKNOWN_MEMBER_ID -> RejectionType.NOT_FOUND;
       case TOPIC_ALREADY_EXISTS,
-              FENCED_MEMBER_EPOCH,
-              FENCED_MEMBER_ACTIVE,
-              NOT_PARTITION_OWNER,
-              REBALANCE_IN_PROGRESS ->
+          FENCED_MEMBER_EPOCH,
+          FENCED_MEMBER_ACTIVE,
+          NOT_PARTITION_OWNER,
+          REBALANCE_IN_PROGRESS ->
           RejectionType.INVALID_STATE;
       default -> RejectionType.PROCESSING_ERROR;
     };

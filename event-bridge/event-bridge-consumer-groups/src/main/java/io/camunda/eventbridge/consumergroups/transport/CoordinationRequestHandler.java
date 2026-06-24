@@ -21,8 +21,8 @@ import java.util.concurrent.CompletableFuture;
  * Routes consumer-group coordination requests (join/heartbeat/leave/commit) on the coordinator Raft
  * group to the {@link ConsumerGroupCoordinator}. Topic admin is served by {@code
  * MetadataRequestHandler} on the metadata Raft group; the two handlers are deliberately symmetric:
- * each parses the {@link CoordinationRequest} and dispatches to its manager, which returns the reply
- * already framed for the broker client.
+ * each parses the {@link CoordinationRequest} and dispatches to its manager, which returns the
+ * reply already framed for the broker client.
  */
 public final class CoordinationRequestHandler implements RequestHandler {
 

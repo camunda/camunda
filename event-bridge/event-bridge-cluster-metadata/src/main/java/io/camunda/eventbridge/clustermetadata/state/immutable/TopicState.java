@@ -8,14 +8,13 @@
 package io.camunda.eventbridge.clustermetadata.state.immutable;
 
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
-
 import java.util.Map;
 
 /**
  * Read view of the replicated topic registry — the event-bridge counterpart of the engine's
- * immutable {@code XxxState} interfaces. Processors/validators depend on this (never on the concrete
- * {@code Db…} class); the metadata leader and each broker's reconcile read the thread-safe mirror
- * ({@link #topicsSnapshot}) off the stream-processing actor.
+ * immutable {@code XxxState} interfaces. Processors/validators depend on this (never on the
+ * concrete {@code Db…} class); the metadata leader and each broker's reconcile read the thread-safe
+ * mirror ({@link #topicsSnapshot}) off the stream-processing actor.
  */
 public interface TopicState {
 

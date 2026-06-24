@@ -10,7 +10,6 @@ package io.camunda.eventbridge.clustermetadata.state.appliers;
 import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.mutable.MutableTopicState;
-
 import io.camunda.eventbridge.stream.TypedEventApplier;
 
 /**
@@ -18,7 +17,8 @@ import io.camunda.eventbridge.stream.TypedEventApplier;
  * updates) a topic in {@link MutableTopicState}. Runs identically on leader (after the topic
  * processors) and follower/observer (on replay), so every replica converges.
  */
-public final class TopicRegisteredApplier implements TypedEventApplier<MetadataIntent, TopicRecord> {
+public final class TopicRegisteredApplier
+    implements TypedEventApplier<MetadataIntent, TopicRecord> {
 
   private final MutableTopicState topicState;
 

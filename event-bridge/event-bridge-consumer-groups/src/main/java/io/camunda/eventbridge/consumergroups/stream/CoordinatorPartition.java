@@ -77,7 +77,8 @@ public final class CoordinatorPartition
 
   @Override
   protected void onLeaderReady() {
-    consumerGroupCoordinator = new ConsumerGroupCoordinator(partitionId, partitionCount, clock, stream);
+    consumerGroupCoordinator =
+        new ConsumerGroupCoordinator(partitionId, partitionCount, clock, stream);
     actorScheduler.submitActor(consumerGroupCoordinator);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),

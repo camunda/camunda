@@ -129,7 +129,9 @@ public final class TopicRecord extends UnifiedRecordValue {
     return this;
   }
 
-  /** The in-flight reassignment target as {@code partition → replica node ids} (empty when none). */
+  /**
+   * The in-flight reassignment target as {@code partition → replica node ids} (empty when none).
+   */
   public Map<Integer, List<Integer>> getTarget() {
     return PartitionReplicas.read(targetProp);
   }

@@ -7,20 +7,19 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
-import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
-import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
-import io.camunda.eventbridge.clustermetadata.record.MetadataRecordValues;
-import io.camunda.eventbridge.clustermetadata.state.topic.DbTopicState;
-import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
-import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
-import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
-import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
 import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicRegisterProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicValidator;
-
+import io.camunda.eventbridge.clustermetadata.record.MetadataIntent;
+import io.camunda.eventbridge.clustermetadata.record.MetadataRecordValues;
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
+import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
+import io.camunda.eventbridge.clustermetadata.state.topic.DbTopicState;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -34,11 +33,9 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

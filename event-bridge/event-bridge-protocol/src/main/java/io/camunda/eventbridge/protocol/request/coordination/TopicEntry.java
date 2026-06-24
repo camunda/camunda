@@ -21,8 +21,7 @@ public final class TopicEntry extends ObjectValue {
 
   private final StringProperty nameProp = new StringProperty("name", "");
   private final IntegerProperty partitionCountProp = new IntegerProperty("partitionCount", 0);
-  private final IntegerProperty replicationFactorProp =
-      new IntegerProperty("replicationFactor", 0);
+  private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor", 0);
   private final StringProperty statusProp = new StringProperty("status", "");
   private final ArrayProperty<TopicPartitionReplicas> assignmentProp =
       new ArrayProperty<>("assignment", TopicPartitionReplicas::new);
