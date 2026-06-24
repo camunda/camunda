@@ -161,15 +161,16 @@ final class PartitionModeHandlerTest {
     }
 
     @Test
-    void shouldFailWhenAlreadyInRecoveryMode() {
+    void shouldNoOpWhenAlreadyInRecovery() {
       // given
       givenCurrentManager(GROUP, recoveryManager);
 
       // when
-      final ActorFuture<Void> result = handler.enterRecovery();
+      handler.enterRecovery();
 
       // then
-      assertThat(result.isCompletedExceptionally()).isTrue();
+      verify(recoveryManager, never()).stop();
+      verify(recoveryManager, never()).start();
     }
 
     @Test
@@ -222,15 +223,16 @@ final class PartitionModeHandlerTest {
     }
 
     @Test
-    void shouldFailWhenAlreadyInProcessingMode() {
+    void shouldNoOpWhenAlreadyInNormalMode() {
       // given
       givenCurrentManager(GROUP, normalManager);
 
       // when
-      final ActorFuture<Void> result = handler.exitRecovery();
+      handler.exitRecovery();
 
       // then
-      assertThat(result.isCompletedExceptionally()).isTrue();
+      verify(normalManager, never()).stop();
+      verify(normalManager, never()).start();
     }
   }
 
