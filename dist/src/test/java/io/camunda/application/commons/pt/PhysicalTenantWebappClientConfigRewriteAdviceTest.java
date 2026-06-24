@@ -9,6 +9,7 @@ package io.camunda.application.commons.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.operate.webapp.rest.ClientConfigRestService;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
@@ -32,12 +33,35 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
       new PhysicalTenantWebappClientConfigRewriteAdvice();
 
   @Test
-  void shouldSupportClientConfigRestServiceGetClientConfig() throws NoSuchMethodException {
+  void shouldSupportOperateClientConfigRestServiceGetClientConfig() throws NoSuchMethodException {
     // given
-    final MethodParameter returnType = clientConfigReturnType();
+    final Method method = ClientConfigRestService.class.getDeclaredMethod("getClientConfig");
+    final MethodParameter returnType = new MethodParameter(method, -1);
 
     // when / then
     assertThat(advice.supports(returnType, stringConverter())).isTrue();
+  }
+
+  @Test
+  void shouldSupportTasklistClientConfigRestServiceGetClientConfig() throws NoSuchMethodException {
+    // given
+    final Method method =
+        io.camunda.tasklist.webapp.rest.ClientConfigRestService.class.getDeclaredMethod(
+            "getClientConfig");
+    final MethodParameter returnType = new MethodParameter(method, -1);
+
+    // when / then
+    assertThat(advice.supports(returnType, stringConverter())).isTrue();
+  }
+
+  @Test
+  void shouldNotSupportUnknownClassWithGetClientConfig() throws NoSuchMethodException {
+    // given — a class with a getClientConfig method that is NOT in the registered set
+    final Method method = UnknownClientConfigService.class.getDeclaredMethod("getClientConfig");
+    final MethodParameter returnType = new MethodParameter(method, -1);
+
+    // when / then
+    assertThat(advice.supports(returnType, stringConverter())).isFalse();
   }
 
   @Test
@@ -114,8 +138,8 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
     return (Class<? extends HttpMessageConverter<?>>) (Class<?>) StringHttpMessageConverter.class;
   }
 
-  /** Stand-in matching the operate/tasklist {@code ClientConfigRestService#getClientConfig}. */
-  private static final class ClientConfigRestService {
+  /** A class with {@code getClientConfig} that is NOT registered in the advice's set. */
+  private static final class UnknownClientConfigService {
     @SuppressWarnings("unused")
     String getClientConfig() {
       return "";

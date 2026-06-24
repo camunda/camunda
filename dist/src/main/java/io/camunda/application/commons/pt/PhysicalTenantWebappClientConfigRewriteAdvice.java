@@ -8,6 +8,7 @@
 package io.camunda.application.commons.pt;
 
 import io.camunda.spring.utils.PhysicalTenantContext;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.NullMarked;
@@ -26,12 +27,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
  * client-config.js} for physical-tenant-prefixed webapp requests so the runtime SPA config reports
  * PT-prefixed paths.
  *
- * <p>Operate and Tasklist publish their bootstrap config from {@code
- * ClientConfigRestService#getClientConfig}, a {@code String} returning {@code window.clientConfig =
- * {...};} document with {@code "contextPath":""} and {@code "baseName":"/<app>"}. The SPA feeds
- * {@code baseName} to react-router as its basename; without this rewrite the router rejects any URL
- * outside the unprefixed {@code /operate} (or {@code /tasklist}) space — including the PT-prefixed
- * entry path.
+ * <p>Operate and Tasklist publish their bootstrap config from {@code getClientConfig} on {@link
+ * io.camunda.operate.webapp.rest.ClientConfigRestService} and {@link
+ * io.camunda.tasklist.webapp.rest.ClientConfigRestService} respectively, returning a {@code
+ * window.clientConfig = {...};} document with {@code "contextPath":""} and {@code
+ * "baseName":"/<app>"}. The SPA feeds {@code baseName} to react-router as its basename; without
+ * this rewrite the router rejects any URL outside the unprefixed {@code /operate} (or {@code
+ * /tasklist}) space — including the PT-prefixed entry path.
  *
  * <p>Approach: a string-level rewrite of the two known JSON fields on the body Spring just
  * serialised. The field names and value types are fixed by {@code ClientConfig}, so capturing the
@@ -50,7 +52,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 @ControllerAdvice
 public class PhysicalTenantWebappClientConfigRewriteAdvice implements ResponseBodyAdvice<String> {
 
-  private static final String CLIENT_CONFIG_SERVICE = "ClientConfigRestService";
+  private static final Set<Class<?>> CLIENT_CONFIG_SERVICES =
+      Set.of(
+          io.camunda.operate.webapp.rest.ClientConfigRestService.class,
+          io.camunda.tasklist.webapp.rest.ClientConfigRestService.class);
   private static final String GET_CLIENT_CONFIG = "getClientConfig";
 
   private static final Pattern CONTEXT_PATH = Pattern.compile("(\"contextPath\":\")([^\"]*)(\")");
@@ -62,7 +67,7 @@ public class PhysicalTenantWebappClientConfigRewriteAdvice implements ResponseBo
       final Class<? extends HttpMessageConverter<?>> converterType) {
     final var method = returnType.getMethod();
     return method != null
-        && CLIENT_CONFIG_SERVICE.equals(returnType.getDeclaringClass().getSimpleName())
+        && CLIENT_CONFIG_SERVICES.contains(returnType.getDeclaringClass())
         && GET_CLIENT_CONFIG.equals(method.getName());
   }
 
