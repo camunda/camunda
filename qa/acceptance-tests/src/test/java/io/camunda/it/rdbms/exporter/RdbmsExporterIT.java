@@ -327,14 +327,7 @@ class RdbmsExporterIT {
   public void shouldExportAll() {
     // given
     final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
-
-    final Record<RecordValue> variableCreated =
-        ImmutableRecord.builder()
-            .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
-            .withIntent(VariableIntent.CREATED)
-            .withPosition(2L)
-            .withTimestamp(System.currentTimeMillis())
-            .build();
+    final var variableCreated = FIXTURES.getVariableCreatedRecord();
     final List<Record<RecordValue>> recordList = List.of(processInstanceRecord, variableCreated);
 
     // when
