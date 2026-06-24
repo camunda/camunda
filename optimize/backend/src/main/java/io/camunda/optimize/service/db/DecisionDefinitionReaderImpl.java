@@ -37,11 +37,6 @@ public class DecisionDefinitionReaderImpl implements DecisionDefinitionReader {
   }
 
   @Override
-  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {
-    return definitionReader.getDefinitions(DefinitionType.DECISION, false, false, true);
-  }
-
-  @Override
   public String getLatestVersionToKey(final String key) {
     return definitionReader.getLatestVersionToKey(DefinitionType.DECISION, key);
   }
