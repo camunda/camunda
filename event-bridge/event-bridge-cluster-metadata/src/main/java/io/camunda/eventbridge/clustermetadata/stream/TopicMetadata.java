@@ -100,7 +100,7 @@ public record TopicMetadata(
   /**
    * Encodes the assignment as {@code pid=n1,n2|pid=n1,n2|...} (empty string when no assignment).
    */
-  static String encodeAssignment(final Map<Integer, List<Integer>> assignment) {
+  public static String encodeAssignment(final Map<Integer, List<Integer>> assignment) {
     return assignment.entrySet().stream()
         .map(
             e ->

@@ -23,6 +23,7 @@ import java.time.InstantSource;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -46,7 +47,8 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   // Thread-safe in-memory mirror of the topic registry, maintained by the topic event appliers on
   // the stream's actor. Cross-actor reads (topicsSnapshot, from the leader's MetadataManager and
   // each broker's reconcile) use this rather than touching the stream-owned RocksDB state.
-  // DbTopicState is the durable source of truth; this is seeded from it on start (snapshot recovery).
+  // DbTopicState is the durable source of truth; this is seeded from it on start (snapshot
+  // recovery).
   private final Map<String, TopicMetadata> registryCache = new ConcurrentHashMap<>();
 
   private DbTopicState topicState;
@@ -91,12 +93,20 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
             processors
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
-                    MetadataIntent.REGISTER_TOPIC,
-                    new TopicRegisterProcessor(processors.writers()))
+                    MetadataIntent.CREATE_TOPIC,
+                    new CreateTopicProcessor(processors.writers(), topicState))
+                .onCommand(
+                    MetadataRecordValues.TOPIC_VALUE_TYPE,
+                    MetadataIntent.REASSIGN_TOPIC,
+                    new ReassignTopicProcessor(processors.writers(), topicState))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.DELETE_TOPIC,
-                    new TopicDeleteProcessor(processors.writers()))
+                    new TopicDeleteProcessor(processors.writers(), topicState))
+                .onCommand(
+                    MetadataRecordValues.TOPIC_VALUE_TYPE,
+                    MetadataIntent.REGISTER_TOPIC,
+                    new TopicRegisterProcessor(processors.writers()))
                 .withEventApplier(
                     MetadataIntent.TOPIC_REGISTERED,
                     new TopicRegisteredApplier(topicState, registryCache))
@@ -132,10 +142,25 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
     writeTopicCommand(name, command, MetadataIntent.REGISTER_TOPIC);
   }
 
-  /** Removes a topic from the replicated registry. Leader only. */
-  public void deleteTopic(final String name) {
-    final var command = new TopicRecord().setName(name).setOp(TopicRecord.OP_DELETE);
-    writeTopicCommand(name, command, MetadataIntent.DELETE_TOPIC);
+  /**
+   * Client topic requests: written as commands that the processor validates against the replicated
+   * registry and replies to after commit (the future completes with the encoded response). Leader
+   * only. The manager builds the command (it computes placement, which needs live broker
+   * membership).
+   */
+  public CompletableFuture<byte[]> createTopic(final TopicRecord command) {
+    return writeRequest(
+        MetadataIntent.CREATE_TOPIC, MetadataRecordValues.TOPIC_VALUE_TYPE, command);
+  }
+
+  public CompletableFuture<byte[]> reassignTopic(final TopicRecord command) {
+    return writeRequest(
+        MetadataIntent.REASSIGN_TOPIC, MetadataRecordValues.TOPIC_VALUE_TYPE, command);
+  }
+
+  public CompletableFuture<byte[]> deleteTopic(final TopicRecord command) {
+    return writeRequest(
+        MetadataIntent.DELETE_TOPIC, MetadataRecordValues.TOPIC_VALUE_TYPE, command);
   }
 
   /** All registered topics ({@code topicName → metadata}) for failover rebuild / listing. */

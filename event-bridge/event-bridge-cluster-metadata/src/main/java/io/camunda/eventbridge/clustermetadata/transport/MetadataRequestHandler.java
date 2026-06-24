@@ -56,23 +56,24 @@ public final class MetadataRequestHandler implements RequestHandler {
     };
   }
 
+  // create/delete/reassign reply through the stream after the command commits (the processor
+  // validates and stages the response); the manager returns the already-encoded reply future.
   private CompletableFuture<byte[]> handleCreateTopic(final CoordinationRequest request) {
     final var create = new CreateTopicRequest();
     create.wrap(request.value());
-    return toFuture(metadataManager.handleCreateTopic(create), CoordinationResponseEncoder::encode);
+    return metadataManager.handleCreateTopic(create);
   }
 
   private CompletableFuture<byte[]> handleDeleteTopic(final CoordinationRequest request) {
     final var delete = new DeleteTopicRequest();
     delete.wrap(request.value());
-    return toFuture(metadataManager.handleDeleteTopic(delete), CoordinationResponseEncoder::encode);
+    return metadataManager.handleDeleteTopic(delete);
   }
 
   private CompletableFuture<byte[]> handleReassignTopic(final CoordinationRequest request) {
     final var reassign = new ReassignTopicRequest();
     reassign.wrap(request.value());
-    return toFuture(
-        metadataManager.handleReassignTopic(reassign), CoordinationResponseEncoder::encode);
+    return metadataManager.handleReassignTopic(reassign);
   }
 
   private CompletableFuture<byte[]> handleListTopics(final CoordinationRequest request) {

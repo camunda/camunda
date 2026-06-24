@@ -15,16 +15,13 @@ import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
 import io.camunda.eventbridge.clustermetadata.stream.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.stream.TopicRecord;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
-import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.CreateTopicResponse;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
@@ -33,10 +30,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +57,6 @@ import org.slf4j.LoggerFactory;
 public class MetadataManager extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataManager.class);
-  private static final Pattern TOPIC_NAME = Pattern.compile("[a-zA-Z0-9._-]{1,249}");
 
   // Change-coordinator kickoff/retry/anti-entropy tick.
   private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
@@ -97,21 +94,99 @@ public class MetadataManager extends Actor {
     return "MetadataManager-" + partitionId;
   }
 
-  public ActorFuture<CreateTopicResponse> handleCreateTopic(final CreateTopicRequest request) {
-    return actor.call(() -> createTopic(request));
+  /**
+   * Creates a topic: the manager computes the placement (it needs live broker membership) and
+   * writes a {@code CREATE_TOPIC} command; the {@link
+   * io.camunda.eventbridge.clustermetadata.stream.CreateTopicProcessor} validates it (name, counts,
+   * not-already-exists) against the replicated registry and replies after commit.
+   */
+  public CompletableFuture<byte[]> handleCreateTopic(final CreateTopicRequest request) {
+    return writeTopicRequest(
+        () -> {
+          final var valid = request.getPartitionCount() >= 1 && request.getReplicationFactor() >= 1;
+          final var assignment =
+              valid
+                  ? placement.assign(
+                      request.getPartitionCount(),
+                      request.getReplicationFactor(),
+                      availableBrokers())
+                  : Map.<Integer, List<Integer>>of();
+          return new TopicRecord()
+              .setName(request.getName() == null ? "" : request.getName())
+              .setOp(TopicRecord.OP_REGISTER)
+              .setPartitionCount(request.getPartitionCount())
+              .setReplicationFactor(request.getReplicationFactor())
+              .setStatus(TopicMetadata.TopicStatus.CREATING)
+              .setAssignment(TopicMetadata.encodeAssignment(assignment));
+        },
+        metadataStream::createTopic);
   }
 
-  public ActorFuture<DeleteTopicResponse> handleDeleteTopic(final DeleteTopicRequest request) {
-    return actor.call(() -> deleteTopic(request));
+  public CompletableFuture<byte[]> handleDeleteTopic(final DeleteTopicRequest request) {
+    return writeTopicRequest(
+        () ->
+            new TopicRecord()
+                .setName(request.getName() == null ? "" : request.getName())
+                .setOp(TopicRecord.OP_DELETE),
+        metadataStream::deleteTopic);
   }
 
-  public ActorFuture<ReassignTopicResponse> handleReassignTopic(
-      final ReassignTopicRequest request) {
-    return actor.call(() -> reassignTopic(request));
+  /**
+   * Reassigns a topic: the manager computes the new target placement (from the topic's current
+   * partition count + the requested replication factor) and writes a {@code REASSIGN_TOPIC}
+   * command; the processor validates the topic exists and replies after commit. The
+   * change-coordinator then drives committed → target.
+   */
+  public CompletableFuture<byte[]> handleReassignTopic(final ReassignTopicRequest request) {
+    return writeTopicRequest(
+        () -> {
+          final var name = request.getName() == null ? "" : request.getName();
+          final var command =
+              new TopicRecord()
+                  .setName(name)
+                  .setOp(TopicRecord.OP_REGISTER)
+                  .setReplicationFactor(request.getReplicationFactor());
+          final var meta = metadataStream.topicsSnapshot().get(name);
+          if (meta != null && request.getReplicationFactor() >= 1) {
+            final var target =
+                placement.assign(
+                    meta.partitionCount(), request.getReplicationFactor(), availableBrokers());
+            command
+                .setPartitionCount(meta.partitionCount())
+                .setStatus(meta.status())
+                .setAssignment(TopicMetadata.encodeAssignment(meta.assignment()))
+                .setTarget(TopicMetadata.encodeAssignment(target));
+          }
+          return command;
+        },
+        metadataStream::reassignTopic);
   }
 
   public ActorFuture<ListTopicsResponse> handleListTopics(final ListTopicsRequest request) {
     return actor.call(this::listTopics);
+  }
+
+  /**
+   * Builds a topic command on the actor (so placement reads live state safely) and writes it
+   * through the stream, bridging the encoded-response future back to the caller.
+   */
+  private CompletableFuture<byte[]> writeTopicRequest(
+      final Supplier<TopicRecord> commandBuilder,
+      final Function<TopicRecord, CompletableFuture<byte[]>> write) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () ->
+            write
+                .apply(commandBuilder.get())
+                .whenComplete(
+                    (response, error) -> {
+                      if (error != null) {
+                        result.completeExceptionally(error);
+                      } else {
+                        result.complete(response);
+                      }
+                    }));
+    return result;
   }
 
   /**
@@ -122,65 +197,6 @@ public class MetadataManager extends Actor {
    */
   private List<Integer> availableBrokers() {
     return registeredBrokers.get();
-  }
-
-  private CreateTopicResponse createTopic(final CreateTopicRequest request) {
-    final var name = request.getName();
-    if (name == null || !TOPIC_NAME.matcher(name).matches()) {
-      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
-    }
-    if (request.getPartitionCount() < 1 || request.getReplicationFactor() < 1) {
-      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
-    }
-    if (metadataStream.topicsSnapshot().containsKey(name)) {
-      return new CreateTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_ALREADY_EXISTS);
-    }
-    final var assignment =
-        placement.assign(
-            request.getPartitionCount(), request.getReplicationFactor(), availableBrokers());
-    metadataStream.registerTopic(
-        name,
-        request.getPartitionCount(),
-        request.getReplicationFactor(),
-        TopicMetadata.TopicStatus.CREATING,
-        assignment);
-    return new CreateTopicResponse().setErrorCode(NONE);
-  }
-
-  private DeleteTopicResponse deleteTopic(final DeleteTopicRequest request) {
-    final var name = request.getName();
-    if (!metadataStream.topicsSnapshot().containsKey(name)) {
-      return new DeleteTopicResponse().setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
-    }
-    metadataStream.deleteTopic(name);
-    return new DeleteTopicResponse().setErrorCode(NONE);
-  }
-
-  private ReassignTopicResponse reassignTopic(final ReassignTopicRequest request) {
-    final var response = new ReassignTopicResponse();
-    final var name = request.getName();
-    final var meta = metadataStream.topicsSnapshot().get(name);
-    if (meta == null) {
-      return response.setErrorCode(CoordinationErrorCode.TOPIC_NOT_FOUND);
-    }
-    if (request.getReplicationFactor() < 1) {
-      return response.setErrorCode(CoordinationErrorCode.INVALID_TOPIC);
-    }
-    // Compute the new target placement centrally; the change-coordinator drives committed -> target
-    // one safe Raft step at a time. A no-op (already at target) just clears to NONE.
-    final var target =
-        placement.assign(meta.partitionCount(), request.getReplicationFactor(), availableBrokers());
-    if (!target.equals(meta.assignment())) {
-      metadataStream.registerTopic(
-          name,
-          new TopicMetadata(
-              meta.partitionCount(),
-              request.getReplicationFactor(),
-              meta.status(),
-              meta.assignment(),
-              target));
-    }
-    return response.setErrorCode(NONE);
   }
 
   private ListTopicsResponse listTopics() {
