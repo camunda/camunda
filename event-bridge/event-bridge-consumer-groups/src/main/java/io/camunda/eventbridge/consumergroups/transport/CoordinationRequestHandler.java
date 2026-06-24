@@ -61,8 +61,9 @@ public final class CoordinationRequestHandler implements RequestHandler {
     final var commit = new CommitOffsetRequest();
     commit.wrap(request.value());
 
-    return toFuture(
-        coordinationManager.handleCommit(commit), CoordinationResponseEncoder::encodeCommit);
+    // The coordinator stream replies with the already-encoded CommitOffsetResponse once the command
+    // has been processed and committed (validation + response now happen in the processor).
+    return coordinationManager.handleCommit(commit);
   }
 
   private CompletableFuture<byte[]> handleJoinGroup(final CoordinationRequest request) {

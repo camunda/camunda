@@ -13,8 +13,8 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignment.ReconciliationResult;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
 import io.camunda.eventbridge.consumergroups.stream.GroupMetadataCodec;
+import io.camunda.eventbridge.consumergroups.stream.OffsetCommitRecord;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
-import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
@@ -24,12 +24,12 @@ import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.slf4j.Logger;
@@ -117,61 +117,35 @@ public class CoordinationManager extends Actor {
     return actor.call(() -> heartbeat(request));
   }
 
-  public ActorFuture<CommitOffsetResponse> handleCommit(final CommitOffsetRequest request) {
-    final CompletableActorFuture<CommitOffsetResponse> result = new CompletableActorFuture<>();
-    actor.run(() -> commit(request, result));
-    return result;
-  }
+  /**
+   * Replicates an offset commit through the coordinator stream and returns the encoded {@code
+   * CommitOffsetResponse}. Validation (member epoch + partition ownership) now happens in the
+   * {@link OffsetCommitProcessor} against replicated group metadata, not here — the manager only
+   * turns the request into a command and writes it.
+   */
+  public CompletableFuture<byte[]> handleCommit(final CommitOffsetRequest request) {
+    final var command =
+        new OffsetCommitRecord()
+            .setGroupId(request.getGroupId())
+            .setMemberId(request.getMemberId())
+            .setMemberEpoch(request.getMemberEpoch())
+            .setPartitionId(request.getPartitionId())
+            .setOffset(request.getPosition());
 
-  private void commit(
-      final CommitOffsetRequest request,
-      final CompletableActorFuture<CommitOffsetResponse> result) {
-    final var groupId = request.getGroupId();
-    final var memberId = request.getMemberId();
-
-    final var validation =
-        validator
-            .isGroupIdValid(groupId)
-            .flatMap(ok -> validator.isActiveMember(groupId, memberId))
-            // Fence zombie commits: reject if the committing member's epoch is stale (a newer
-            // generation has taken over), so a consumer that lost the partition cannot rewind it.
-            .flatMap(
-                ok ->
-                    validator.isValidMemberEpoch(
-                        request.getMemberEpoch(),
-                        registry
-                            .getGroup(groupId)
-                            .getSession(memberId)
-                            .getMetadata()
-                            .getMemberEpoch()))
-            // Fence by ownership: a member may only commit partitions the coordinator assigned it.
-            .flatMap(
-                ok ->
-                    validator.ownsPartition(
-                        registry.getGroup(groupId), memberId, request.getPartitionId()));
-
-    if (validation.isLeft()) {
-      result.complete(new CommitOffsetResponse().setErrorCode(validation.getLeft()));
-      return;
-    }
-
-    // Replicate the commit through the coordinator stream; complete once it has been processed.
-    coordinatorStream
-        .commit(groupId, request.getPartitionId(), request.getPosition())
-        .whenComplete(
-            (committed, error) ->
-                actor.run(
-                    () -> {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () ->
+            coordinatorStream
+                .commit(command)
+                .whenComplete(
+                    (response, error) -> {
                       if (error != null) {
-                        result.complete(
-                            new CommitOffsetResponse().setErrorCode(CoordinationErrorCode.UNKNOWN));
+                        result.completeExceptionally(error);
                       } else {
-                        result.complete(
-                            new CommitOffsetResponse()
-                                .setErrorCode(NONE)
-                                .setCommittedPosition(committed));
+                        result.complete(response);
                       }
                     }));
+    return result;
   }
 
   private JoinGroupResponse joinGroup(final JoinGroupRequest request) {

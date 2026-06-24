@@ -39,6 +39,13 @@ public final class DbGroupMetadataState {
     metadataColumnFamily.upsert(this.groupId, this.payload);
   }
 
+  /** Returns a group's encoded metadata, or {@code null} if the group is unknown. */
+  public String get(final String groupId) {
+    this.groupId.wrapString(groupId);
+    final var stored = metadataColumnFamily.get(this.groupId);
+    return stored == null ? null : stored.toString();
+  }
+
   /** Returns all groups' encoded metadata ({@code groupId → payload}) for failover rebuild. */
   public Map<String, String> readAll() {
     final var result = new LinkedHashMap<String, String>();

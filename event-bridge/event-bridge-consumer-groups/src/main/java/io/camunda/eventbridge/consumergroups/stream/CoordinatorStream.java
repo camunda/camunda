@@ -17,14 +17,11 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,18 +29,13 @@ import org.slf4j.LoggerFactory;
 /**
  * The coordinator's replicated state engine: a {@link ReplicatedStream} over the coordinator Raft
  * partition's log. Offset commits and group-metadata updates are written as commands; the {@link
- * OffsetCommitProcessor} and {@link GroupMetadataProcessor} apply them to {@link DbOffsetState} /
- * {@link DbGroupMetadataState} and emit committed events, which followers replay into their own
- * state.
+ * OffsetCommitProcessor} and {@link GroupMetadataProcessor} validate and apply them to {@link
+ * DbOffsetState} / {@link DbGroupMetadataState} and emit committed events, which followers replay
+ * into their own state.
  */
 public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnFamilies> {
 
   private static final Logger LOG = LoggerFactory.getLogger(CoordinatorStream.class);
-
-  // Correlates a written commit command (by log position) to the future returned to the caller,
-  // completed by the processing listener with the resulting committed offset.
-  private final ConcurrentHashMap<Long, CompletableFuture<Long>> pendingCommits =
-      new ConcurrentHashMap<>();
 
   private DbOffsetState offsetState;
   private DbGroupMetadataState groupMetadataState;
@@ -86,7 +78,8 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                 .onCommand(
                     EventBridgeRecordValues.OFFSET_VALUE_TYPE,
                     CoordinatorIntent.COMMIT_OFFSET,
-                    new OffsetCommitProcessor(processors.writers()))
+                    new OffsetCommitProcessor(
+                        processors.writers(), offsetState, groupMetadataState))
                 .onCommand(
                     EventBridgeRecordValues.GROUP_METADATA_VALUE_TYPE,
                     CoordinatorIntent.REBALANCE_GROUP,
@@ -98,42 +91,14 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     new GroupMetadataCommittedApplier(groupMetadataState)));
   }
 
-  @Override
-  protected StreamProcessorListener listener() {
-    return new CommitCompletionListener();
-  }
-
   /**
    * Writes an offset-commit command to the replicated log; the returned future completes with the
-   * resulting (monotonic) committed position once the command has been processed. Leader only.
+   * encoded {@code CommitOffsetResponse} once the command has been processed and committed (the
+   * processor validates the commit, applies it, and stages the reply). Leader only.
    */
-  public CompletableFuture<Long> commit(
-      final String groupId, final int partitionId, final long position) {
-    final var command =
-        new OffsetCommitRecord()
-            .setGroupId(groupId)
-            .setPartitionId(partitionId)
-            .setOffset(position);
-    final var metadata =
-        new RecordMetadata()
-            .recordType(RecordType.COMMAND)
-            .valueType(EventBridgeRecordValues.OFFSET_VALUE_TYPE)
-            .intent(CoordinatorIntent.COMMIT_OFFSET);
-
-    final var result =
-        writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
-    if (result.isLeft()) {
-      return CompletableFuture.failedFuture(
-          new IllegalStateException("Failed to write offset commit: " + result.getLeft()));
-    }
-
-    final long commandPosition = result.get();
-    final var future =
-        pendingCommits.compute(
-            commandPosition,
-            (pos, existing) -> existing != null ? existing : new CompletableFuture<>());
-    future.whenComplete((r, e) -> pendingCommits.remove(commandPosition));
-    return future;
+  public CompletableFuture<byte[]> commit(final OffsetCommitRecord command) {
+    return writeRequest(
+        CoordinatorIntent.COMMIT_OFFSET, EventBridgeRecordValues.OFFSET_VALUE_TYPE, command);
   }
 
   /**
@@ -168,21 +133,5 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   /** All groups' replicated metadata ({@code groupId → encoded payload}) for failover rebuild. */
   public Map<String, String> groupMetadataSnapshot() {
     return groupMetadataState.readAll();
-  }
-
-  /** Completes the pending commit future once its command has been processed. */
-  private final class CommitCompletionListener implements StreamProcessorListener {
-    @Override
-    public void onProcessed(final TypedRecord<?> processedCommand) {
-      if (!(processedCommand.getValue() instanceof final OffsetCommitRecord command)) {
-        return;
-      }
-      final long committed = offsetState.getOffset(command.getGroupId(), command.getPartitionId());
-      pendingCommits
-          .compute(
-              processedCommand.getPosition(),
-              (pos, existing) -> existing != null ? existing : new CompletableFuture<>())
-          .complete(committed);
-    }
   }
 }

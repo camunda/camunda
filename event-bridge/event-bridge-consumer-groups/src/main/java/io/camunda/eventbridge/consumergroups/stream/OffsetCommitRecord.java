@@ -23,12 +23,16 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public final class OffsetCommitRecord extends UnifiedRecordValue {
 
   private final StringProperty groupIdProp = new StringProperty("groupId", "");
+  private final StringProperty memberIdProp = new StringProperty("memberId", "");
+  private final LongProperty memberEpochProp = new LongProperty("memberEpoch", -1L);
   private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId", -1);
   private final LongProperty offsetProp = new LongProperty("offset", -1L);
 
   public OffsetCommitRecord() {
-    super(3);
+    super(5);
     declareProperty(groupIdProp);
+    declareProperty(memberIdProp);
+    declareProperty(memberEpochProp);
     declareProperty(partitionIdProp);
     declareProperty(offsetProp);
   }
@@ -51,6 +55,24 @@ public final class OffsetCommitRecord extends UnifiedRecordValue {
 
   public OffsetCommitRecord setGroupId(final String groupId) {
     groupIdProp.setValue(groupId);
+    return this;
+  }
+
+  public String getMemberId() {
+    return BufferUtil.bufferAsString(memberIdProp.getValue());
+  }
+
+  public OffsetCommitRecord setMemberId(final String memberId) {
+    memberIdProp.setValue(memberId);
+    return this;
+  }
+
+  public long getMemberEpoch() {
+    return memberEpochProp.getValue();
+  }
+
+  public OffsetCommitRecord setMemberEpoch(final long memberEpoch) {
+    memberEpochProp.setValue(memberEpoch);
     return this;
   }
 
