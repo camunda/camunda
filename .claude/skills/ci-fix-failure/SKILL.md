@@ -1,6 +1,6 @@
 ---
 name: ci-fix-failure
-description: Diagnose a failing GitHub Actions run in camunda/camunda from a run or job URL - fetch jobs and logs via gh CLI, classify the failure (code/test, flake, workflow config, infra), find the root cause, and propose a concrete fix. Use whenever the user shares a GitHub Actions run URL, job URL, or asks you to look at "why CI failed", "why this job failed", "what broke in this run", or to fix a red check on a PR. Diagnose-and-propose only - get user confirmation before applying or pushing fixes.
+description: Diagnose failing GitHub Actions runs and propose fixes. Use when given a GHA run/job URL, or asked why CI failed, why a job failed, what broke in a run, or to fix a red check on a PR.
 ---
 
 # CI Job Failure Diagnosis
