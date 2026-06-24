@@ -109,7 +109,7 @@ jobs:
             printf '## Close Stale Fix PRs\n\n'
             printf 'Threshold: **%s days**, dry-run: **%s**\n\n' "$STALE_DAYS" "$DRY_RUN"
             printf -- '- Closed: **%s**\n' "$closed"
-            printf -- '- Kept (within window or `do-not-close` label): **%s**\n' "$kept"
+            printf -- "- Kept (within window or \`do-not-close\` label): **%s**\n" "$kept"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Checkout
         if: always()
