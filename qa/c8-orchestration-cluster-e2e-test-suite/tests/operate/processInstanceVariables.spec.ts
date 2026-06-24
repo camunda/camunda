@@ -211,21 +211,15 @@ test.describe('Process Instance Variables', () => {
       await expect(page.getByText('bx', {exact: true})).toBeVisible();
 
       await page.getByText('bx', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(101);
+      await operateProcessInstancePage.scrollVariablesUntilRowCount(101);
 
       await expect(page.getByText('dv', {exact: true})).toBeVisible();
       await page.getByText('dv', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(151);
+      await operateProcessInstancePage.scrollVariablesUntilRowCount(151);
 
       await expect(page.getByText('ft', {exact: true})).toBeVisible();
       await page.getByText('ft', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(201);
+      await operateProcessInstancePage.scrollVariablesUntilRowCount(201);
 
       await expect(page.getByText('hr', {exact: true})).toBeVisible();
       await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
@@ -235,9 +229,7 @@ test.describe('Process Instance Variables', () => {
       await expect(page.getByText('jp', {exact: true})).toBeVisible();
 
       await page.getByText('by', {exact: true}).scrollIntoViewIfNeeded();
-      await expect(
-        operateProcessInstancePage.variablesList.getByRole('row'),
-      ).toHaveCount(251);
+      await operateProcessInstancePage.scrollVariablesUntilRowCount(251);
 
       await expectInViewport(page.getByTestId('variable-jp'), false);
       await expect(page.getByText('aa', {exact: true})).toBeVisible();
