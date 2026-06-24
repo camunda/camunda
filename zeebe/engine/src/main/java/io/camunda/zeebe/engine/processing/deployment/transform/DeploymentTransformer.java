@@ -10,8 +10,13 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.Map.entry;
 
+<<<<<<< HEAD
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
+=======
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -31,10 +36,10 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
-import org.slf4j.Logger;
 
 public final class DeploymentTransformer {
 
+<<<<<<< HEAD
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
       new UnknownResourceTransformer();
@@ -44,6 +49,11 @@ public final class DeploymentTransformer {
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
+=======
+  private final DeploymentValidator validator;
+  private final List<DeploymentResourceTransformer> resourceTransformers;
+  private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
 
   public DeploymentTransformer(
       final StateWriter stateWriter,
@@ -124,6 +134,7 @@ public final class DeploymentTransformer {
               transformer -> transformer::createMetadata);
     }
 
+<<<<<<< HEAD
     // step 2: update metadata (optionally) and write actual event records
     if (success) {
       for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
@@ -133,6 +144,21 @@ public final class DeploymentTransformer {
                 errors,
                 deploymentResource,
                 transformer -> transformer::writeRecords);
+=======
+    for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
+      final var deploymentResource = resourceWithTransformer.resource;
+      final var transformer = resourceWithTransformer.transformer;
+      try {
+        final var result = transformer.createMetadata(deploymentResource, deploymentEvent);
+
+        if (result.isRight()) {
+          contexts.add(result.get());
+        } else {
+          errors.add(result.getLeft().getMessage());
+        }
+      } catch (final RuntimeException e) {
+        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
       }
     }
 
@@ -163,12 +189,22 @@ public final class DeploymentTransformer {
       final var result =
           transformation.apply(transformer).apply(deploymentResource, deploymentEvent);
 
+<<<<<<< HEAD
       if (result.isRight()) {
         return true;
       } else {
         final var failureMessage = result.getLeft().getMessage();
         errors.append("\n").append(failureMessage);
         return false;
+=======
+    for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
+      final var deploymentResource = resourceWithTransformer.resource;
+      final var transformer = resourceWithTransformer.transformer;
+      try {
+        transformer.writeRecords(deploymentResource, deploymentEvent);
+      } catch (final RuntimeException e) {
+        errors.add("'%s': %s", deploymentResource.getResourceName(), e.getMessage());
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
       }
 
     } catch (final RuntimeException e) {
@@ -194,6 +230,7 @@ public final class DeploymentTransformer {
         .orElse(UNKNOWN_RESOURCE);
   }
 
+<<<<<<< HEAD
   private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
 
     @Override
@@ -215,4 +252,8 @@ public final class DeploymentTransformer {
       return Either.left(new Failure(failureMessage));
     }
   }
+=======
+  private record ResourceWithTransformer(
+      DeploymentResource resource, DeploymentResourceTransformer transformer) {}
+>>>>>>> b61b3988 (fix: remove error log for failed deployments)
 }
