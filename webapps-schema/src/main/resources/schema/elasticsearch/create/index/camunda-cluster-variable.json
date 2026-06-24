@@ -24,6 +24,14 @@
       },
       "isPreview": {
         "type": "boolean"
+      },
+      "metadata": {
+        "type": "nested",
+        "properties": {
+          "key":         { "type": "keyword" },
+          "value":       { "type": "keyword" },
+          "valueNumber": { "type": "long" }
+        }
       }
     }
   }

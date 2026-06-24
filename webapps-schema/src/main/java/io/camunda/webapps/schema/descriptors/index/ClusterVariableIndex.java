@@ -25,6 +25,7 @@ public class ClusterVariableIndex extends AbstractIndexDescriptor implements Pri
   public static final String SCOPE = "scope";
   public static final String TENANT_ID = "tenantId";
   public static final String IS_PREVIEW = "isPreview";
+  public static final String METADATA = "metadata";
 
   public ClusterVariableIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
