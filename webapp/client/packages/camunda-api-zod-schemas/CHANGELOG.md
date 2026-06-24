@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.77
+
+### 🚀 Enhancements
+
+- Add MCP inbound channel fields to the 8.10 audit log schema ([#53594](https://github.com/camunda/camunda/issues/53594))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.76
 
 ### 🩹 Fixes
