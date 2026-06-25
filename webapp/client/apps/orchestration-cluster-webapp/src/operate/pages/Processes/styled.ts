@@ -7,23 +7,10 @@
  */
 
 import styled from 'styled-components';
-import {styles} from '@carbon/type';
 import {Error as BaseError} from '@carbon/react/icons';
 
-const SectionLabel = styled.p`
-	${styles.label01};
-	color: var(--cds-text-secondary);
-	padding: var(--cds-spacing-05) 0 var(--cds-spacing-03);
-`;
-
 const IndentedGroup = styled.div`
-	padding-left: var(--cds-spacing-07);
-`;
-
-const IconLabel = styled.span`
-	display: flex;
-	align-items: center;
-	gap: var(--cds-spacing-02);
+	padding-left: var(--cds-spacing-06);
 `;
 
 const CanceledIcon = styled(BaseError)`
@@ -31,4 +18,4 @@ const CanceledIcon = styled(BaseError)`
 	fill: var(--cds-icon-secondary);
 `;
 
-export {SectionLabel, IndentedGroup, IconLabel, CanceledIcon};
+export {IndentedGroup, CanceledIcon};
