@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperatio
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
@@ -295,6 +296,10 @@ final class ClusterApiUtils {
                     .operation(OperationEnum.EXIT_RECOVERY)
                     .brokerId(brokerIdValue(modeChange.memberId()));
           };
+      case final AwaitModeChangeOperation modeChange ->
+          new Operation()
+              .operation(OperationEnum.AWAIT_MODE_CHANGE)
+              .brokerId(brokerIdValue(modeChange.memberId()));
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -546,7 +551,7 @@ final class ClusterApiUtils {
                   .partitionId(partitionForceReconfigureOperation.partitionId())
                   .brokers(
                       partitionForceReconfigureOperation.members().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final MemberRemoveOperation memberRemoveOperation ->
               new TopologyChangeCompletedInner()
@@ -606,7 +611,7 @@ final class ClusterApiUtils {
                   .brokerId(brokerIdValue(preScalingOperation.memberId()))
                   .brokers(
                       preScalingOperation.clusterMembers().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final PostScalingOperation postScalingOperation ->
               new TopologyChangeCompletedInner()
@@ -614,7 +619,7 @@ final class ClusterApiUtils {
                   .brokerId(brokerIdValue(postScalingOperation.memberId()))
                   .brokers(
                       postScalingOperation.clusterMembers().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final UpdatePartitionDistributorConfigOperation
                   updatePartitionDistributorConfigOperation ->
@@ -636,6 +641,10 @@ final class ClusterApiUtils {
                         .operation(TopologyChangeCompletedInner.OperationEnum.EXIT_RECOVERY)
                         .brokerId(brokerIdValue(modeChange.memberId()));
               };
+          case final AwaitModeChangeOperation modeChange ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_MODE_CHANGE)
+                  .brokerId(brokerIdValue(modeChange.memberId()));
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
