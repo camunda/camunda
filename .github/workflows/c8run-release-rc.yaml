@@ -85,11 +85,13 @@ jobs:
           unzip -o -q docker-compose.zip -d dc
           dc_camunda="$(grep -E '^CAMUNDA_VERSION=' dc/.env | head -1 | cut -d= -f2-)"
           echo "docker-compose-${compose_tag} pins CAMUNDA_VERSION=${dc_camunda}; target is ${CAMUNDA_VERSION}"
-          if [ "${dc_camunda}" != "${CAMUNDA_VERSION}" ]; then
-            echo "::error::Rolling docker-compose-${compose_tag} pins ${dc_camunda} but the target is ${CAMUNDA_VERSION}. Compose is not ready — refresh it upstream (Renovate / release train) before building C8Run."
+          # sort -V picks the lower version; if that is the compose pin (and the two differ), compose is behind target.
+          lower="$(printf '%s\n%s\n' "${dc_camunda}" "${CAMUNDA_VERSION}" | sort -V | head -1)"
+          if [ "${dc_camunda}" != "${CAMUNDA_VERSION}" ] && [ "${lower}" = "${dc_camunda}" ]; then
+            echo "::error::Rolling docker-compose-${compose_tag} pins ${dc_camunda}, which is behind the target ${CAMUNDA_VERSION}. Compose is stale — refresh it upstream (Renovate / release train) before building C8Run."
             exit 1
           fi
-          echo "Docker Compose is at target. Proceeding."
+          echo "Docker Compose is at or ahead of the target (pins ${dc_camunda}, target ${CAMUNDA_VERSION}). Proceeding."
 
       - name: Observe build status
         if: always()
