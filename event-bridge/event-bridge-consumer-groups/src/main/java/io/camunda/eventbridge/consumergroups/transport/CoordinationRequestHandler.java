@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.transport;
 
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupQueryHandler;
+import io.camunda.eventbridge.consumergroups.membership.HeartbeatHandler;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
@@ -45,13 +46,16 @@ public final class CoordinationRequestHandler implements RequestHandler {
   private static final String TOPIC_FORMAT = COORDINATOR_ROUTING_GROUP + "-coordinate-api-%d";
 
   private final ConsumerGroupCoordinator coordinator;
+  private final HeartbeatHandler heartbeatHandler;
   private final ConsumerGroupQueryHandler queryHandler;
 
   public CoordinationRequestHandler(
       final int partitionId,
       final ConsumerGroupCoordinator coordinator,
+      final HeartbeatHandler heartbeatHandler,
       final ConsumerGroupQueryHandler queryHandler) {
     this.coordinator = coordinator;
+    this.heartbeatHandler = heartbeatHandler;
     this.queryHandler = queryHandler;
   }
 
@@ -66,7 +70,7 @@ public final class CoordinationRequestHandler implements RequestHandler {
     return switch (request.type()) {
       case JOIN_GROUP -> coordinator.handleJoinGroup(read(new JoinGroupRequest(), request));
       case LEAVE_GROUP -> coordinator.handleLeaveGroup(read(new LeaveGroupRequest(), request));
-      case HEARTBEAT -> coordinator.handleHeartbeat(read(new HeartbeatRequest(), request));
+      case HEARTBEAT -> heartbeatHandler.handleHeartbeat(read(new HeartbeatRequest(), request));
       case COMMIT -> coordinator.handleCommit(read(new CommitOffsetRequest(), request));
       case OFFSET_FETCH -> queryHandler.handleOffsetFetch(read(new OffsetFetchRequest(), request));
       case DESCRIBE_GROUPS ->

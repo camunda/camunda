@@ -16,61 +16,98 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.session.GroupReconciliation;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
+import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
+import io.camunda.eventbridge.consumergroups.state.offset.OffsetQueryService;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatResponse;
+import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
+import io.camunda.zeebe.scheduler.Actor;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Serves consumer-group heartbeats — the one coordination request that stays request/response (no
- * log write on the hot path). It owns the ephemeral assign/revoke handshake per group ({@link
- * GroupReconciliation}), reads the durable target from the coordinator stream, and publishes each
- * member's liveness to the {@link MemberLivenessMirror} for the off-actor {@code
- * SessionEvictionTask} to expire dead sessions. The only log write it makes is a fire-and-forget
- * {@code RECONCILE_MEMBER} once a member owns exactly the current target, so the group can move
- * {@code RECONCILING -> STABLE}.
+ * Serves consumer-group heartbeats on its own actor — the liveness path, kept separate from the
+ * coordinator's streaming (write) path. It owns the ephemeral assign/revoke handshake per group
+ * ({@link GroupReconciliation}), reads the durable target through its <em>own</em> {@link
+ * ConsumerGroupQueryService} / {@link OffsetQueryService} (private contexts, so no flyweights are
+ * shared with the coordinator or the query handler), and publishes each member's liveness to the
+ * {@link MemberLivenessMirror} for the off-actor {@code SessionEvictionTask} to expire dead
+ * sessions. Its one log write is a fire-and-forget {@code RECONCILE_MEMBER} once a member owns
+ * exactly the current target, so the group can move {@code RECONCILING -> STABLE} (the log writer
+ * is thread-safe, so this is safe alongside the coordinator's writes).
  *
- * <p>Single-actor-confined: the {@link ConsumerGroupCoordinator} invokes every method on its own
- * actor, so the reconciliation map needs no synchronization. After failover, {@link #seed} rebuilds
- * the handshake from replicated state so re-attaching consumers keep their target without a rejoin
- * storm.
+ * <p>On leader activation {@link #onActorStarted} rebuilds the handshake from replicated state so
+ * re-attaching consumers keep their target without a rejoin storm.
  */
-final class HeartbeatHandler {
+public final class HeartbeatHandler extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(HeartbeatHandler.class);
 
   private final int partitionId;
   private final InstantSource clock;
   private final CoordinatorStream coordinatorStream;
+  private final ConsumerGroupQueryService groupQuery;
+  private final OffsetQueryService offsetQuery;
   private final MemberLivenessMirror liveness;
 
   // Ephemeral reconciliation handshake per group (rebuilt from heartbeats / seed after failover).
   private final Map<String, GroupReconciliation> reconciliations = new HashMap<>();
 
-  HeartbeatHandler(
-      final int partitionId,
-      final InstantSource clock,
-      final CoordinatorStream coordinatorStream,
-      final MemberLivenessMirror liveness) {
+  public HeartbeatHandler(
+      final int partitionId, final InstantSource clock, final CoordinatorStream coordinatorStream) {
     this.partitionId = partitionId;
     this.clock = clock;
     this.coordinatorStream = coordinatorStream;
-    this.liveness = liveness;
+    groupQuery = coordinatorStream.newGroupQueryService();
+    offsetQuery = coordinatorStream.newOffsetQueryService();
+    liveness = coordinatorStream.liveness();
+  }
+
+  @Override
+  public String getName() {
+    return "HeartbeatHandler-" + partitionId;
+  }
+
+  @Override
+  protected void onActorStarted() {
+    seed();
+  }
+
+  @Override
+  protected void onActorClosing() {
+    // Leadership is being given up — abandon the ephemeral liveness so the eviction task (also
+    // stopping) cannot act on stale sessions; a new leader reseeds it from replicated state.
+    liveness.clear();
+  }
+
+  /** Serves one heartbeat and returns the serialized reply (the request handler frames it). */
+  public CompletableFuture<byte[]> handleHeartbeat(final HeartbeatRequest request) {
+    final var result = new CompletableFuture<byte[]>();
+    actor.run(
+        () -> {
+          try {
+            result.complete(CoordinationResponseEncoder.serialize(heartbeat(request)));
+          } catch (final RuntimeException e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
   }
 
   /**
    * Rebuilds the reconciliation sessions (and the liveness they feed) from the replicated
-   * membership replayed before the coordinator started, so re-attaching consumers get fresh
-   * deadlines and are treated as already at their target — no rejoin storm after a failover.
+   * membership replayed before this actor started, so re-attaching consumers get fresh deadlines
+   * and are treated as already at their target — no rejoin storm after a failover.
    */
-  void seed() {
+  private void seed() {
     final var now = clock.instant();
-    final var groups = coordinatorStream.groupSnapshots();
+    final var groups = groupQuery.allGroups();
     for (final var group : groups) {
       final var reconciliation =
           reconciliations.computeIfAbsent(group.groupId(), ignored -> new GroupReconciliation());
@@ -88,14 +125,13 @@ final class HeartbeatHandler {
     }
   }
 
-  /** Serves one heartbeat: validates the member, runs the handshake, and returns the reply. */
-  HeartbeatResponse handle(final HeartbeatRequest request) {
+  private HeartbeatResponse heartbeat(final HeartbeatRequest request) {
     final var groupId = request.getGroupId();
     if (groupId == null || groupId.isEmpty()) {
       return new HeartbeatResponse().setErrorCode(INVALID_GROUP_ID);
     }
 
-    final var group = coordinatorStream.groupSnapshot(groupId);
+    final var group = groupQuery.groupSnapshot(groupId);
     final var memberId = request.getMemberId();
     final var member = group == null ? null : group.members().get(memberId);
     if (member == null) {
@@ -138,7 +174,7 @@ final class HeartbeatHandler {
         .setRevoke(delta.revoke())
         .setAssignment(delta.assignment())
         .setAssignmentEpoch(group.assignmentEpoch())
-        .setCommittedOffsets(coordinatorStream.committedOffsets(groupId));
+        .setCommittedOffsets(offsetQuery.committedOffsets(groupId));
   }
 
   private static CoordinationErrorCode validateEpoch(final long expected, final long presented) {
@@ -153,6 +189,6 @@ final class HeartbeatHandler {
 
   /** Drops reconciliation state for groups that no longer exist (their last member left). */
   private void pruneReconciliations() {
-    reconciliations.keySet().removeIf(groupId -> coordinatorStream.groupSnapshot(groupId) == null);
+    reconciliations.keySet().removeIf(groupId -> groupQuery.groupSnapshot(groupId) == null);
   }
 }

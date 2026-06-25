@@ -33,11 +33,9 @@ import io.camunda.eventbridge.consumergroups.state.appliers.MemberReconciledAppl
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
-import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
 import io.camunda.eventbridge.consumergroups.state.offset.OffsetQueryService;
-import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -49,8 +47,6 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -90,10 +86,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private final InstantSource clock;
   private final TopicRegistry topicRegistry;
   private DbOffsetState offsetState;
-  private OffsetQueryService offsetQuery;
   private DbConsumerGroupState groupState;
-  // Off-actor group reads for the coordinator actor (heartbeat/seed) — its own context.
-  private ConsumerGroupQueryService coordinatorGroupQuery;
   private MemberLivenessMirror liveness;
 
   /**
@@ -127,13 +120,11 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
 
   @Override
   protected void onStarting() {
+    // The processing-actor state views (read+written by the processors/appliers). Off-actor reads
+    // are served by the reader actors' own query services (see newGroupQueryService /
+    // newOffsetQueryService), not from here, since group membership and offsets are unbounded.
     offsetState = new DbOffsetState(zeebeDb, zeebeDb.createContext());
-    // Offsets are unbounded, so they are read on demand from state (its own context), not mirrored.
-    offsetQuery = new OffsetQueryService(zeebeDb);
     groupState = new DbConsumerGroupState(zeebeDb, zeebeDb.createContext());
-    // Group membership is unbounded, so off-actor reads (heartbeat/seed) go to state via a
-    // query service (its own context), not an in-memory mirror.
-    coordinatorGroupQuery = new ConsumerGroupQueryService(zeebeDb);
     liveness = new MemberLivenessMirror();
   }
 
@@ -262,31 +253,9 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   }
 
   /**
-   * A snapshot of a group's membership/assignment read from state via the coordinator actor's own
-   * query context (used by the {@code HeartbeatHandler}), or {@code null} if the group does not
-   * exist.
-   */
-  public GroupSnapshot groupSnapshot(final String groupId) {
-    return coordinatorGroupQuery.groupSnapshot(groupId);
-  }
-
-  /** Snapshots of all groups read from state via the coordinator actor's query context. */
-  public List<GroupSnapshot> groupSnapshots() {
-    return coordinatorGroupQuery.allGroups();
-  }
-
-  /**
-   * Committed offsets for a group ({@code (topic, partition) → position}), read from state via the
-   * coordinator actor's query context (no in-memory mirror).
-   */
-  public Map<TopicPartition, Long> committedOffsets(final String groupId) {
-    return offsetQuery.committedOffsets(groupId);
-  }
-
-  /**
    * A group-query view on its <em>own</em> {@link io.camunda.zeebe.db.ZeebeDb} context, for a
-   * reader actor other than the coordinator (e.g. the {@code ConsumerGroupQueryHandler}) so it
-   * never shares the coordinator's flyweights. One instance per reader actor.
+   * reader actor (the {@code HeartbeatHandler}, the {@code ConsumerGroupQueryHandler}) so each
+   * reads off-actor without sharing flyweights. One instance per reader actor.
    */
   public ConsumerGroupQueryService newGroupQueryService() {
     return new ConsumerGroupQueryService(zeebeDb);
