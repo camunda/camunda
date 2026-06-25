@@ -438,7 +438,16 @@
 				"fetchErrorDescription": "Actualisez la page pour réessayer"
 			},
 			"processes": {
-				"title": "Processus"
+				"title": "Processus",
+				"filters": {
+					"name": "Nom",
+					"version": "Version",
+					"allVersions": "Toutes les versions",
+					"active": "Actif",
+					"incidents": "Incidents",
+					"completed": "Terminé",
+					"canceled": "Annulé"
+				}
 			},
 			"decisions": {
 				"title": "Décisions"

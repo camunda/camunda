@@ -435,7 +435,16 @@
 				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo"
 			},
 			"processes": {
-				"title": "Procesos"
+				"title": "Procesos",
+				"filters": {
+					"name": "Nombre",
+					"version": "Versión",
+					"allVersions": "Todas las versiones",
+					"active": "Activo",
+					"incidents": "Incidentes",
+					"completed": "Completado",
+					"canceled": "Cancelado"
+				}
 			},
 			"decisions": {
 				"title": "Decisiones"

@@ -14,7 +14,7 @@ import {Button} from '@carbon/react';
 import {Footer} from './styled';
 
 type Props = {
-	localStorageKey: 'isFiltersCollapsed' | 'isDecisionsFiltersCollapsed' | 'isAuditLogsFiltersCollapsed';
+	localStorageKey: 'isFiltersCollapsed' | 'isDecisionsFiltersCollapsed' | 'isAuditLogsFiltersCollapsed' | 'isProcessesFiltersCollapsed';
 	children: React.ReactNode;
 	onResetClick?: () => void;
 	isResetButtonDisabled: boolean;

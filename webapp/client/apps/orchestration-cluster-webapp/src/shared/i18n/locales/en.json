@@ -449,7 +449,16 @@
 				"incidentDetailsFetchError": "Failed to load incident details"
 			},
 			"processes": {
-				"title": "Processes"
+				"title": "Processes",
+				"filters": {
+					"name": "Name",
+					"version": "Version",
+					"allVersions": "All versions",
+					"active": "Active",
+					"incidents": "Incidents",
+					"completed": "Completed",
+					"canceled": "Canceled"
+				}
 			},
 			"decisions": {
 				"title": "Decisions"
