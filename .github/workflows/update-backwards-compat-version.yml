@@ -1,0 +1,203 @@
+# type: CI Helper - Post-release
+# owner: @camunda/monorepo-devops-team
+name: Update Backwards Compat Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        description: 'The minor version that was just released (e.g. 8.10.0). main''s backwards.compat.version will be updated to this value.'
+        type: string
+        required: true
+      userSlackId:
+        description: 'The Slack ID of the user to notify on failure, no mention if omitted.'
+        type: string
+        required: false
+      dryRun:
+        description: 'Whether to perform a dry run where no changes are pushed and no PR is opened, defaults to true.'
+        type: boolean
+        default: true
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  update-backwards-compat-version:
+    name: "Update backwards.compat.version to ${{ inputs.releaseVersion }} on main"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+      - name: Validate Release Version
+        env:
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+        run: |
+          if [[ ! "${RELEASE_VERSION}" =~ ^[0-9]+\.[0-9]+\.0$ ]]; then
+            echo "ERROR: releaseVersion '${RELEASE_VERSION}' is not a minor release (expected format: X.Y.0)"
+            exit 1
+          fi
+      - name: Git User Setup
+        run: |
+          git config --global user.email "github-actions[update-backwards-compat-version]"
+          git config --global user.name "github-actions[update-backwards-compat-version]@users.noreply.github.com"
+      - name: Get current backwards.compat.version from ./parent/pom.xml
+        id: get-current-compat-version
+        uses: mavrosxristoforos/get-xml-info@cc0a00b30a53c3adf0ea2cbfd8314cea394fbbad # 2.1.0
+        with:
+          xml-file: './parent/pom.xml'
+          xpath: '//*[local-name()="backwards.compat.version"]'
+      - uses: ./.github/actions/setup-build
+        if: ${{ steps.get-current-compat-version.outputs.info != inputs.releaseVersion }}
+        with:
+          maven-cache-key-modifier: backwards-compat-update
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Create branch and update backwards.compat.version
+        id: update
+        if: ${{ steps.get-current-compat-version.outputs.info != inputs.releaseVersion }}
+        env:
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+          BRANCH: ci/update-backwards-compat-version-${{ inputs.releaseVersion }}
+        run: |
+          git checkout -b "${BRANCH}"
+          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}" -pl parent
+          git commit -am "build(project): update backwards.compat.version to ${RELEASE_VERSION} after minor release"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+      - name: Debug backwards.compat.version after update
+        if: ${{ steps.update.outcome == 'success' && inputs.dryRun }}
+        run: |
+          echo "=== backwards.compat.version after update ==="
+          ./mvnw -B help:evaluate -Dexpression=backwards.compat.version -q -DforceStdout -pl parent
+          echo "=== git diff ==="
+          git show --stat HEAD
+      - name: Push branch
+        if: ${{ steps.update.outcome == 'success' && !inputs.dryRun }}
+        env:
+          BRANCH: ${{ steps.update.outputs.branch }}
+        run: git push origin "${BRANCH}"
+      - name: Open PR to main
+        id: pr
+        if: ${{ steps.update.outcome == 'success' && !inputs.dryRun }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+          BRANCH: ${{ steps.update.outputs.branch }}
+        run: |
+          url=$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "${BRANCH}" \
+            --title "build(project): update backwards.compat.version to ${RELEASE_VERSION} after minor release" \
+            --body "After the \`${RELEASE_VERSION}\` minor release, \`backwards.compat.version\` on \`main\` should point to \`${RELEASE_VERSION}\` so that CI validates future development against the newly shipped minor.")
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+      - name: Resolve PR outputs
+        id: resolve-pr
+        if: always()
+        env:
+          UPDATE_OUTCOME: ${{ steps.update.outcome }}
+          DRY_RUN: ${{ inputs.dryRun }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          if [[ "$UPDATE_OUTCOME" == "skipped" ]]; then
+            echo "pr_url=already-up-to-date" >> "$GITHUB_OUTPUT"
+            echo "pr_number=already-up-to-date" >> "$GITHUB_OUTPUT"
+          elif [[ "$DRY_RUN" == "true" ]]; then
+            echo "pr_url=https://example.com" >> "$GITHUB_OUTPUT"
+            echo "pr_number=dry-run-pr-not-created" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Import Camunda Secrets
+        id: camunda-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG;
+      - name: Notify Camunda of completion
+        if: success()
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
+        with:
+          clientConfig: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
+          operation: publishMessage
+          messageName: 'backwards-compat-version-pr-created'
+          correlationKey: 'backwards-compat-update-${{ inputs.releaseVersion }}'
+          timeToLive: '240000'
+          variables: |
+            {
+              "workflow_run": {
+                "name": "Update Backwards Compat Version",
+                "conclusion": "success",
+                "head_branch": "${{ steps.update.outputs.branch }}"
+              },
+              "backwards_compat_pr_url": "${{ steps.resolve-pr.outputs.pr_url }}",
+              "backwards_compat_pr_number": "${{ steps.resolve-pr.outputs.pr_number }}",
+              "compat_version": "${{ inputs.releaseVersion }}"
+            }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify:
+    name: Send Slack notification on failure
+    runs-on: ubuntu-latest
+    needs: [update-backwards-compat-version]
+    if: ${{ failure() && !inputs.dryRun }}
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Updating backwards.compat.version* to `${{ inputs.releaseVersion }}` on `main` failed!\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ inputs.userSlackId != '' && format('<@{0}>', inputs.userSlackId) || '' }} Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
+                  }
+                }
+              ]
+            }
