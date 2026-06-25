@@ -71,7 +71,11 @@ public final class QueryApiImpl implements QueryApi {
               if (error != null) {
                 result.completeExceptionally(error);
               } else {
-                result.complete(response.getResponse());
+                try {
+                  result.complete(response.getResponseOrThrow());
+                } catch (final RuntimeException e) {
+                  result.completeExceptionally(e);
+                }
               }
             });
   }

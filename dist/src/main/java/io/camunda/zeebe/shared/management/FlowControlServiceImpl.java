@@ -96,7 +96,9 @@ public class FlowControlServiceImpl implements FlowControlService {
                   request.setBrokerId(brokerId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
-                  return client.sendRequest(request);
+                  return client
+                      .sendRequest(request)
+                      .thenApply(response -> response.getResponseOrThrow());
                 })
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(requests);
@@ -117,9 +119,10 @@ public class FlowControlServiceImpl implements FlowControlService {
     return client
         .sendRequest(request)
         .thenApply(
-            response ->
-                new FlowControlStatus(
-                    partitionId, LimitSerializer.deserialize(response.getResponse().getPayload())));
+            response -> {
+              final var payload = response.getResponseOrThrow().getPayload();
+              return new FlowControlStatus(partitionId, LimitSerializer.deserialize(payload));
+            });
   }
 
   private HashSet<BrokerMemberId> getMembers(

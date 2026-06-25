@@ -176,10 +176,12 @@ public class SnapshotApiRequestHandler
         .sendRequestWithRetry(new GetScaleUpProgress())
         .thenApplyAsync(
             r -> {
+              final var response = r.getResponseOrThrow();
+
               LOG.atLevel(Level.DEBUG)
                   .addKeyValue("transferId", transferId)
-                  .log("Received response from broker {}", r.getResponse());
-              return r.getResponse().getScalingPosition();
+                  .log("Received response from broker {}", response);
+              return response.getScalingPosition();
             },
             actor)
         .whenCompleteAsync(lastProcessedPosition, actor);

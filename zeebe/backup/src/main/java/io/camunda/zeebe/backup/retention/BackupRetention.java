@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -308,7 +309,10 @@ public class BackupRetention extends Actor {
       final var request = new BackupDeleteRequest();
       request.setPartitionId(context.partitionId);
       request.setBackupId(checkpointId);
-      futures.add(brokerClient.sendRequestWithRetry(request));
+      futures.add(
+          brokerClient
+              .sendRequestWithRetry(request)
+              .thenAcceptAsync(this::throwOnBrokerError, actor));
     }
 
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
@@ -336,6 +340,12 @@ public class BackupRetention extends Actor {
             actor)
         .whenCompleteAsync(future, actor);
     return future;
+  }
+
+  private void throwOnBrokerError(final BrokerResponse<?> response) {
+    if (!response.isResponse()) {
+      throw response.toException();
+    }
   }
 
   private Instant backupTimestamp(final BackupStatus backup) {

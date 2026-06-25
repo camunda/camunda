@@ -148,8 +148,10 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate) {
     return (brokerResponse, error) -> {
-      if (error == null) {
+      if (error == null && brokerResponse.isResponse()) {
         handleResponseSuccess(request, requestState, delegate, brokerResponse);
+      } else if (error == null) {
+        handleBrokerErrorResponse(request, requestState, delegate, brokerResponse);
       } else {
         handleResponseError(request, requestState, delegate, error);
       }
@@ -233,6 +235,9 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
               if (error != null) {
                 Loggers.GATEWAY_LOGGER.info(
                     "Failed to reactivate job {} due to {}", job.key(), error.getMessage());
+              } else if (!response.isResponse()) {
+                Loggers.GATEWAY_LOGGER.info(
+                    "Failed to reactivate job {} due to broker response {}", job.key(), response);
               }
             },
             actor);
@@ -269,6 +274,14 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
           state.setPollPrevPartition(false);
           activateJobs(request, state, delegate);
         });
+  }
+
+  private void handleBrokerErrorResponse(
+      final InflightActivateJobsRequest<T> request,
+      final InflightActivateJobsRequestState state,
+      final ResponseObserverDelegate delegate,
+      final BrokerResponse<JobBatchRecord> response) {
+    handleResponseError(request, state, delegate, response.toException());
   }
 
   private boolean isRejection(final Throwable error) {

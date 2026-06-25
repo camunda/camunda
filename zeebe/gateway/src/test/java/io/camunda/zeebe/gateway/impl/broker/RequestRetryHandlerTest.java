@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
+import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -106,9 +107,10 @@ final class RequestRetryHandlerTest {
   void shouldRetryOnNextRoundRobinPartitionOnResourceExhausted() {
     // given - a broker client that fails with RESOURCE_EXHAUSTED on the first attempt
     final var request = new TestBrokerRequest(Optional.empty());
-    final var exhaustedError =
-        new BrokerErrorException(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
-    brokerClient.failOnPartitionThenSucceed(exhaustedError);
+    final var exhaustedResponse =
+        new BrokerErrorResponse<String>(
+            new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
+    brokerClient.respondOnPartitionThenSucceed(exhaustedResponse);
 
     // when
     final var result = new AtomicReference<String>();
@@ -119,6 +121,31 @@ final class RequestRetryHandlerTest {
     assertThat(error.get()).isNull();
     assertThat(result.get()).isEqualTo("result");
     assertThat(brokerClient.partitionsHit).containsExactly(1, 2);
+  }
+
+  @Test
+  void shouldKeepBrokerErrorDetailsWhenRetriesAreExhausted() {
+    // given
+    final var request = new TestBrokerRequest(Optional.empty());
+    brokerClient.setResponse(
+        new BrokerErrorResponse<>(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")));
+
+    // when
+    final var error = new AtomicReference<Throwable>();
+    retryHandler.sendRequest(request, (key, response) -> {}, error::set);
+
+    // then
+    assertThat(error.get()).isInstanceOf(RequestRetriesExhaustedException.class);
+    assertThat(error.get().getSuppressed())
+        .hasSize(PARTITION_COUNT)
+        .allSatisfy(
+            suppressed ->
+                assertThat(suppressed)
+                    .isInstanceOfSatisfying(
+                        BrokerErrorException.class,
+                        brokerError ->
+                            assertThat(brokerError.getError().getCode())
+                                .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED)));
   }
 
   @Test
@@ -205,7 +232,7 @@ final class RequestRetryHandlerTest {
     final List<Integer> partitionsHit = new ArrayList<>();
     private BrokerResponse<String> response;
     private Throwable error;
-    private Throwable failFirstError;
+    private BrokerResponse<String> failFirstResponse;
 
     void setResponse(final BrokerResponse<String> response) {
       this.response = response;
@@ -217,8 +244,8 @@ final class RequestRetryHandlerTest {
       response = null;
     }
 
-    void failOnPartitionThenSucceed(final Throwable firstError) {
-      failFirstError = firstError;
+    void respondOnPartitionThenSucceed(final BrokerResponse<String> firstResponse) {
+      failFirstResponse = firstResponse;
       response = new BrokerResponse<>("result", 1, 1);
       error = null;
     }
@@ -239,8 +266,8 @@ final class RequestRetryHandlerTest {
       if (error != null) {
         return CompletableFuture.failedFuture(error);
       }
-      if (failFirstError != null && count == 1) {
-        return CompletableFuture.failedFuture(failFirstError);
+      if (failFirstResponse != null && count == 1) {
+        return CompletableFuture.completedFuture((BrokerResponse<T>) failFirstResponse);
       }
       return CompletableFuture.completedFuture((BrokerResponse<T>) response);
     }

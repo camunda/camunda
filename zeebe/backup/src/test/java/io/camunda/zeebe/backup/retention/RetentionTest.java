@@ -37,6 +37,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
@@ -87,7 +88,8 @@ public class RetentionTest {
     doReturn(List.of(1)).when(clusterState).getPartitions();
 
     lenient()
-        .doReturn(CompletableFuture.completedFuture(null))
+        .doReturn(
+            CompletableFuture.completedFuture(new BrokerResponse<>(new BackupStatusResponse())))
         .when(brokerClient)
         .sendRequestWithRetry(any());
 
