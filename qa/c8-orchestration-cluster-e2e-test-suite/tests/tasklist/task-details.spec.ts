@@ -396,7 +396,13 @@ test.describe('task details page', () => {
     await taskDetailsPage.incrementUntilValue('1');
     await taskDetailsPage.incrementUntilValue('2');
     await taskDetailsPage.decrementUntilValue('1');
-    await sleep(500);
+    // form-js commits a number field's value to the form model slightly
+    // after it updates the readonly display. On a slow runner the previous
+    // 500ms settle let `Complete` fire before the final decrement committed,
+    // so the task was submitted with the stale "2". Re-confirm the displayed
+    // value and give the debounced commit time to flush before completing.
+    await expect(taskDetailsPage.numberInput).toHaveValue('1');
+    await sleep(2000);
     await taskDetailsPage.clickCompleteTaskButton();
     // 30s was hit by the May 21 nightly — bump to the 60s budget the
     // other completion tests use.
