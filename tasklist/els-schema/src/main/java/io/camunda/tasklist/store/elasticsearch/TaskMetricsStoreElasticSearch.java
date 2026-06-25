@@ -27,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -115,11 +116,10 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
           (List<ParsedLongTerms.ParsedBucket>) terms.getBuckets();
 
       return buckets.stream().map(it -> (long) it.getKey()).collect(Collectors.toSet());
-    } catch (final IOException e) {
-      LOGGER.error(
-          "Error while retrieving assigned users between dates from index: " + template, e);
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.warn("Error while retrieving assigned users between dates from index: " + template, e);
       final String message = "Error while retrieving assigned users between dates";
-      throw new TasklistRuntimeException(message);
+      throw new TasklistRuntimeException(message, e);
     }
   }
 
@@ -134,9 +134,9 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
       final Result result = response.getResult();
 
       return Result.CREATED.equals(result) || Result.UPDATED.equals(result);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       LOGGER.error(e.getMessage(), e);
-      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
+      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity, e);
     }
   }
 

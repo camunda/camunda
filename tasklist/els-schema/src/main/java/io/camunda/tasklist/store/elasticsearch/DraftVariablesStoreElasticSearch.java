@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -90,7 +91,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
     try {
       final BulkByScrollResponse response = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
       return response.getDeleted(); // Return the count of deleted documents
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error preparing the query to delete draft task variable instances for task [%s]",
@@ -150,8 +151,8 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       final DraftTaskVariableEntity entity =
           objectMapper.readValue(sourceAsString, DraftTaskVariableEntity.class);
       return Optional.of(entity);
-    } catch (final IOException e) {
-      LOGGER.error(
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.warn(
           String.format("Error retrieving draft task variable instance with ID [%s]", variableId),
           e);
       return Optional.empty();

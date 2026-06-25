@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.store.elasticsearch;
+package io.camunda.tasklist.store.opensearch;
 
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,23 +18,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.TaskQuery;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,19 +40,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
 @ExtendWith(MockitoExtension.class)
-class TaskStoreElasticSearchTest {
+public class TaskStoreOpenSearchTest {
 
-  @Captor private ArgumentCaptor<SearchRequest> searchRequestCaptor;
+  @Captor private ArgumentCaptor<SearchRequest.Builder> searchRequestCaptor;
 
-  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
+  @Mock private TenantAwareOpenSearchClient tenantAwareClient;
 
-  @Spy private TaskTemplate taskTemplate = new TaskTemplate("test", true);
+  @Spy private final TaskTemplate taskTemplate = new TaskTemplate("test", true);
 
-  @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
-
-  @InjectMocks private TaskStoreElasticSearch instance;
+  @InjectMocks private TaskStoreOpenSearch instance;
 
   @ParameterizedTest
   @CsvSource({
@@ -72,21 +70,22 @@ class TaskStoreElasticSearchTest {
     final TaskQuery taskQuery = new TaskQuery().setPageSize(50).setState(taskState);
 
     final SearchResponse mockedResponse = mock();
-    when(tenantAwareClient.search(searchRequestCaptor.capture())).thenReturn(mockedResponse);
+    when(tenantAwareClient.search(searchRequestCaptor.capture(), any(Class.class)))
+        .thenReturn(mockedResponse);
 
-    final SearchHits mockedHints = mock();
-    when(mockedResponse.getHits()).thenReturn(mockedHints);
+    final Hit mockedHit = mock();
+    when(mockedHit.source()).thenReturn(getTaskEntity(taskState));
 
-    final SearchHit mockedHit = mock();
-    when(mockedHints.getHits()).thenReturn(new SearchHit[] {mockedHit});
-
-    when(mockedHit.getSourceAsString()).thenReturn(getTaskExampleAsString(taskState));
+    final HitsMetadata mockedHits = mock();
+    when(mockedResponse.hits()).thenReturn(mockedHits);
+    when(mockedHits.hits()).thenReturn(List.of(mockedHit));
 
     // When
     final List<TaskSearchView> result = instance.getTasks(taskQuery);
 
     // Then
-    assertThat(searchRequestCaptor.getValue().indices())
+    final SearchRequest searchRequest = searchRequestCaptor.getValue().build();
+    assertThat(searchRequest.index())
         .singleElement(as(STRING))
         .satisfies(
             index -> {
@@ -95,7 +94,7 @@ class TaskStoreElasticSearchTest {
             });
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getImplementation()).isEqualTo(TaskImplementation.JOB_WORKER);
-    verify(tenantAwareClient).search(any());
+    verify(tenantAwareClient).search(searchRequestCaptor.capture(), eq(TaskEntity.class));
   }
 
   @Test
@@ -107,57 +106,55 @@ class TaskStoreElasticSearchTest {
             .setState(TaskState.CREATED);
 
     final SearchResponse mockedResponse = mock();
-    when(tenantAwareClient.searchByTenantIds(any(), eq(Set.of("tenant_a", "tenant_b"))))
+    when(tenantAwareClient.searchByTenantIds(
+            any(), eq(TaskEntity.class), eq(Set.of("tenant_a", "tenant_b"))))
         .thenReturn(mockedResponse);
 
-    final SearchHits mockedHints = mock();
-    when(mockedResponse.getHits()).thenReturn(mockedHints);
+    final Hit mockedHit = mock();
+    when(mockedHit.source()).thenReturn(getTaskEntity(TaskState.CREATED));
 
-    final SearchHit mockedHit = mock();
-    when(mockedHints.getHits()).thenReturn(new SearchHit[] {mockedHit});
-
-    when(mockedHit.getSourceAsString()).thenReturn(getTaskExampleAsString(TaskState.CREATED));
+    final HitsMetadata mockedHits = mock();
+    when(mockedHits.hits()).thenReturn(List.of(mockedHit));
+    when(mockedResponse.hits()).thenReturn(mockedHits);
 
     // When
     final List<TaskSearchView> result = instance.getTasks(taskQuery);
 
     // Then
-    verify(tenantAwareClient, never()).search(any());
+    verify(tenantAwareClient, never()).search(any(), any(Class.class));
     assertThat(result).hasSize(1);
   }
 
-  private static String getTaskExampleAsString(final TaskState taskState) {
-    return "{\n"
-        + "  \"id\": \"123456789\",\n"
-        + "  \"key\": 123456789,\n"
-        + "  \"partitionId\": 2,\n"
-        + "  \"bpmnProcessId\": \"bigFormProcess\",\n"
-        + "  \"processDefinitionId\": \"00000000000\",\n"
-        + "  \"flowNodeBpmnId\": \"Activity_0aaaaa\",\n"
-        + "  \"flowNodeInstanceId\": \"11111111111\",\n"
-        + "  \"processInstanceId\": \"2222222222\",\n"
-        + "  \"creationTime\": \"2023-01-01T00:00:02.523+0200\",\n"
-        + "  \"completionTime\": null,\n"
-        + "  \"state\": \""
-        + taskState.toString()
-        + "\",\n"
-        + "  \"assignee\": null,\n"
-        + "  \"candidateGroups\": null,\n"
-        + "  \"formKey\": \"camunda-forms:bpmn:userTaskForm_1111111\",\n"
-        + "  \"implementation\": \"JOB_WORKER\"\n"
-        + "}";
-  }
-
   @Test
-  void getTaskShouldWrapElasticsearchExceptionInTasklistRuntimeException() throws IOException {
-    // Given a server-side ES failure (e.g. "all shards failed") surfaces as an
-    // ElasticsearchException, which is a RuntimeException rather than an IOException.
-    when(tenantAwareClient.search(any(SearchRequest.class)))
-        .thenThrow(mock(ElasticsearchException.class));
+  void getTaskShouldWrapOpenSearchExceptionInTasklistRuntimeException() throws IOException {
+    // Given a server-side OS failure (e.g. "all shards failed") surfaces as an
+    // OpenSearchException, which is a RuntimeException rather than an IOException.
+    when(tenantAwareClient.search(any(), eq(TaskEntity.class)))
+        .thenThrow(mock(OpenSearchException.class));
 
     // When / Then it must be mapped to a TasklistRuntimeException (handled at WARN) instead of
     // leaking to the generic exception handler (logged at ERROR). See issue #35823.
     assertThatThrownBy(() -> instance.getTask("123456789"))
         .isInstanceOf(TasklistRuntimeException.class);
+  }
+
+  private static TaskEntity getTaskEntity(final TaskState taskState) {
+    final TaskEntity taskEntity = new TaskEntity();
+    taskEntity.setId("123456789");
+    taskEntity.setKey(123456789L);
+    taskEntity.setPartitionId(2);
+    taskEntity.setBpmnProcessId("bigFormProcess");
+    taskEntity.setProcessDefinitionId("00000000000");
+    taskEntity.setFlowNodeBpmnId("Activity_0aaaaa");
+    taskEntity.setFlowNodeInstanceId("11111111111");
+    taskEntity.setProcessInstanceId("2222222222");
+    taskEntity.setCreationTime(OffsetDateTime.parse("2023-01-01T00:00:02.523+02:00"));
+    taskEntity.setCompletionTime(null);
+    taskEntity.setState(taskState);
+    taskEntity.setAssignee(null);
+    taskEntity.setCandidateGroups(null);
+    taskEntity.setFormKey("camunda-forms:bpmn:userTaskForm_1111111");
+    taskEntity.setImplementation(TaskImplementation.JOB_WORKER);
+    return taskEntity;
   }
 }

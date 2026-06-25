@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -86,7 +87,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
     try {
       final DeleteByQueryResponse response = osClient.deleteByQuery(request.build());
       return response.deleted(); // Return the count of deleted documents
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error preparing the query to delete draft task variable instances for task [%s]",
@@ -131,7 +132,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
               .query(q -> q.bool(queryBuilder.build()));
 
       return OpenSearchUtil.scroll(searchRequestBuilder, DraftTaskVariableEntity.class, osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error executing the query to get draft task variable instances for task [%s] with variable names %s",
@@ -161,8 +162,8 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
 
       final Hit<DraftTaskVariableEntity> hit = hits.get(0);
       return Optional.of(hit.source());
-    } catch (final IOException e) {
-      LOGGER.error(
+    } catch (final IOException | OpenSearchException e) {
+      LOGGER.warn(
           String.format("Error retrieving draft task variable instance with ID [%s]", variableId),
           e);
       return Optional.empty();
@@ -190,7 +191,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }

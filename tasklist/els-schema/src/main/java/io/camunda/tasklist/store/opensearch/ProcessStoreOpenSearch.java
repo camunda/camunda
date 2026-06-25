@@ -161,7 +161,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -189,7 +189,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", processId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -432,7 +432,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
       return OpenSearchUtil.mapSearchHits(hits, objectMapper, ProcessEntity.class);
 
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
