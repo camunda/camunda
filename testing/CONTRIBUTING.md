@@ -100,11 +100,6 @@ A process test can use
 the [TestCaseRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/api/testCases/TestCaseRunner.java)
 to execute a JSON test case.
 
-We publish the JSON schema on the Camunda website under its minor
-version: https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json. Contact the Camunda Web
-Marketing team to publish a new schema version when we release a new minor version (via Slack:
-`#ask-web-marketing`).
-
 ### Tests
 
 We prefer using unit tests over integration tests where possible. We don't need to test the runtime
@@ -154,6 +149,47 @@ Parameters:
 - `connectors_image_version` (for example: `8.9-SNAPSHOT`)
 
 We trigger the workflow daily for the stable branches and report test failures to a Slack channel.
+
+## Release steps
+
+After we release a new minor version of CPT, we need to apply the following steps:
+
+- Update the default Camunda and Connectors Docker image versions
+- Add a new entry for the CI compatibility tests
+- Publish the JSON schema on the Camunda website
+
+### Update the default Camunda and Connectors Docker image versions
+
+On the new stable branch of the released minor version, update the image versions in
+`io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults`:
+`DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION` and `DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION`. The versions
+should match the released minor version, for example, `8.9-SNAPSHOT` for the release of
+`8.9.0`.
+
+### Add a new entry for the CI compatibility tests
+
+Go to the workflow `.github/workflows/camunda-process-test-compatibility-trigger.yml` and add a new
+entry for the released minor version in the `matrix` section. For example, add the following entry
+for the release of `8.9.0`:
+
+```yaml
+- branch: stable/8.9
+  camunda_image_version: 8.10-SNAPSHOT
+  connectors_image_version: 8.10-SNAPSHOT
+```
+
+### Publish the JSON schema on the Camunda website
+
+We publish the JSON schema on the Camunda website under its minor
+version `https://camunda.com/json-schema/cpt-test-cases/MAJOR_MINOR_VERSION/schema.json`. Contact
+the Camunda Web Marketing team via Slack `#ask-web-marketing` to request the publication of a new
+schema version. Provide the GitHub link to the schema file and the expected URL for the published
+schema.
+
+On the main branch, update the JSON schema `$id` in
+`testing/camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json`
+to the new minor version. For example, for the release of `8.9.0`, update the `$id` to:
+`https://camunda.com/json-schema/cpt-test-cases/8.10/schema.json`.
 
 ## Guide for common contributions
 
