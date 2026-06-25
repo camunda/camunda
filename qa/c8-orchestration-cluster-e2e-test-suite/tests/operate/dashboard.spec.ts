@@ -295,17 +295,27 @@ test.describe('Dashboard', () => {
           const firstInstanceByError =
             operateDashboardPage.incidentsByErrorItem(0);
 
+          const incidentCount = Number(
+            await operateDashboardPage
+              .incidentBadgeFromItem(firstInstanceByError)
+              .innerText(),
+          );
+
           await operateDashboardPage.expandItem(firstInstanceByError);
           await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
 
-          // Badge count and destination page count are computed from
-          // independent queries and can disagree under concurrent load on
-          // shared CI. Verify navigation succeeded without pinning the count.
-          await expect(
-            page.getByRole('heading', {
-              name: /^Process Instances - \d+ results?$/,
-            }),
-          ).toBeVisible();
+          // Badge and heading counts come from independent queries and can
+          // diverge under concurrent load on shared CI. Assert both are
+          // positive — confirming the link was meaningful and navigation
+          // succeeded — without requiring the two counts to agree exactly.
+          const heading = page.getByRole('heading', {
+            name: /^Process Instances - \d+ results?$/,
+          });
+          await expect(heading).toBeVisible();
+          const headingText = await heading.innerText();
+          const pageCount = Number(headingText.match(/\d+/)?.[0] ?? '0');
+          expect(incidentCount).toBeGreaterThan(0);
+          expect(pageCount).toBeGreaterThan(0);
         },
         onFailure: async () => {
           await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
