@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.coordination;
 
+import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
@@ -15,7 +16,8 @@ import org.agrona.DirectBuffer;
 
 public class BrokerLeaveGroupRequest extends BrokerExecuteCoordinateRequest<LeaveGroupResponse> {
 
-  private final LeaveGroupRequest request = new LeaveGroupRequest();
+  // The wire payload is the log command record itself (written straight through, no mapping).
+  private final MembershipRecord request = new MembershipRecord();
   private final LeaveGroupResponse response = new LeaveGroupResponse();
 
   public BrokerLeaveGroupRequest() {

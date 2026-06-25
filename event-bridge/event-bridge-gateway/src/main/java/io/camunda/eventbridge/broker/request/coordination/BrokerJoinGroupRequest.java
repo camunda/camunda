@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.coordination;
 
+import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
@@ -15,7 +16,9 @@ import org.agrona.DirectBuffer;
 
 public class BrokerJoinGroupRequest extends BrokerExecuteCoordinateRequest<JoinGroupResponse> {
 
-  private final JoinGroupRequest request = new JoinGroupRequest();
+  // The wire payload is the log command record itself, so the coordinator writes it straight to the
+  // stream without a request->record mapping; the member id is assigned server-side.
+  private final MembershipRecord request = new MembershipRecord();
   private final JoinGroupResponse response = new JoinGroupResponse();
 
   public BrokerJoinGroupRequest() {

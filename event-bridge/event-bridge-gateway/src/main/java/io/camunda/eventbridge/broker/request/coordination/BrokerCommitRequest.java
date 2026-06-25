@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.coordination;
 
+import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
@@ -15,7 +16,8 @@ import org.agrona.DirectBuffer;
 
 public class BrokerCommitRequest extends BrokerExecuteCoordinateRequest<CommitOffsetResponse> {
 
-  private final CommitOffsetRequest request = new CommitOffsetRequest();
+  // The wire payload is the log command record itself (written straight through, no mapping).
+  private final OffsetCommitRecord request = new OffsetCommitRecord();
   private final CommitOffsetResponse response = new CommitOffsetResponse();
 
   public BrokerCommitRequest() {
@@ -29,7 +31,7 @@ public class BrokerCommitRequest extends BrokerExecuteCoordinateRequest<CommitOf
         .setMemberId(req.getMemberId())
         .setMemberEpoch(req.getMemberEpoch())
         .setPartitionId(req.getPartitionId())
-        .setPosition(req.getPosition());
+        .setOffset(req.getPosition());
     return this;
   }
 

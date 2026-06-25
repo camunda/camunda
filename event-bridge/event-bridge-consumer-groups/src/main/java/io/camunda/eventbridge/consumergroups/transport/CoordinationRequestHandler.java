@@ -10,11 +10,10 @@ package io.camunda.eventbridge.consumergroups.transport;
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupQueryHandler;
 import io.camunda.eventbridge.consumergroups.membership.HeartbeatHandler;
-import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
+import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
-import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
-import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
@@ -68,10 +67,10 @@ public final class CoordinationRequestHandler implements RequestHandler {
   /** Decodes the typed request and routes it to the coordinator, which returns the raw response. */
   private CompletableFuture<byte[]> dispatch(final CoordinationRequest request) {
     return switch (request.type()) {
-      case JOIN_GROUP -> coordinator.handleJoinGroup(read(new JoinGroupRequest(), request));
-      case LEAVE_GROUP -> coordinator.handleLeaveGroup(read(new LeaveGroupRequest(), request));
+      case JOIN_GROUP -> coordinator.handleJoinGroup(read(new MembershipRecord(), request));
+      case LEAVE_GROUP -> coordinator.handleLeaveGroup(read(new MembershipRecord(), request));
       case HEARTBEAT -> heartbeatHandler.handleHeartbeat(read(new HeartbeatRequest(), request));
-      case COMMIT -> coordinator.handleCommit(read(new CommitOffsetRequest(), request));
+      case COMMIT -> coordinator.handleCommit(read(new OffsetCommitRecord(), request));
       case OFFSET_FETCH -> queryHandler.handleOffsetFetch(read(new OffsetFetchRequest(), request));
       case DESCRIBE_GROUPS ->
           queryHandler.handleDescribeGroups(read(new DescribeGroupsRequest(), request));
