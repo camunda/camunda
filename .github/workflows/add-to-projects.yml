@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
         with:
           github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -163,7 +163,7 @@ jobs:
         # extracts the labels for component and severity and sets them in the project accordingly.
         # The action must be triggered for any label change to keep the project data up to date.
         name: Add issue to Quality Board
-        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@28e9ac0ffb3c71c7a1aaa989d5abdad0738c0436 # add-bug-to-quality-board: v1.0.3
         with:
           github-token: ${{ steps.github-token.outputs.token }}
           project-number: "187"
