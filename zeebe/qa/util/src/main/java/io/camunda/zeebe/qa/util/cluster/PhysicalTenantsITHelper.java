@@ -86,12 +86,12 @@ public final class PhysicalTenantsITHelper {
   }
 
   /**
-   * Seeds a basic-auth per-PT admin {@code <tenantId>-admin} user (matching the {@code
-   * defaultRoles.admin} assignment {@link #configure} already sets) into the given tenant's own
-   * {@code security.initialization}, so the user can authenticate via that tenant's REST path once
-   * authorizations and basic auth are enabled. Basic-auth specific (an OIDC variant would seed a
-   * mapping rule instead). Appends the per-PT admin user to the tenant's existing initialization
-   * users list; call in addition to {@link #configure}.
+   * Seeds a basic-auth per-PT admin {@code <tenantId>-admin} user for a non-{@code default}
+   * physical tenant (matching the {@code defaultRoles.admin} assignment {@link #configure} sets)
+   * into that tenant's {@code security.initialization}, so the user can authenticate via the
+   * tenant-prefixed REST path once authorizations and basic auth are enabled. Basic-auth specific
+   * (an OIDC variant would seed a mapping rule instead). Appends the per-PT admin user to the
+   * tenant's existing initialization users list; call in addition to {@link #configure}.
    */
   public TestStandaloneBroker seedBasicAuthAdminUser(
       final TestStandaloneBroker broker, final String tenantId, final String password) {
