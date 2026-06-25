@@ -82,7 +82,7 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
               if (meta.status() != TopicStatus.ACTIVE || meta.hasTarget()) {
                 return;
               }
-              final var target = heal(meta.assignment(), meta.replicationFactor(), active, live);
+              final var target = heal(meta.assignment(), active, live);
               if (target.equals(meta.assignment())) {
                 return;
               }
@@ -107,40 +107,43 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
   }
 
   /**
-   * The minimal-diff healed assignment: per partition, keep the still-active committed replicas
-   * (preserving order) and, if that leaves it below the replication factor, top up from active
-   * brokers not already on the partition — deterministically, rotated by partition id so
-   * replacements spread instead of piling onto the lowest id. Equal to {@code committed} when every
-   * replica is already active (the task then does nothing).
+   * The minimal-diff healed assignment: per partition, <b>replace each non-active replica with an
+   * available spare</b> — an active broker not already on the partition — preserving the replica
+   * count and order. Crucially, if no spare is available the non-active replica is <b>kept</b>, not
+   * dropped: with no broker to take over there is nothing to gain by removing it, and leaving it in
+   * the assignment lets it resume when it re-registers, or be taken over once a new broker appears.
+   * Spares are picked deterministically, rotated by partition id so replacements spread across
+   * brokers. Equal to {@code committed} when every replica is active, or when the only non-active
+   * replicas have no spare to replace them (the task then does nothing).
    */
   private static Map<Integer, List<Integer>> heal(
       final Map<Integer, List<Integer>> committed,
-      final int replicationFactor,
       final List<Integer> active,
       final Set<Integer> live) {
     final var healed = new LinkedHashMap<Integer, List<Integer>>();
     committed.forEach(
         (partition, replicas) -> {
-          final var survivors = new ArrayList<Integer>();
+          final var spares = new ArrayList<Integer>();
+          for (final var broker : active) {
+            if (!replicas.contains(broker)) {
+              spares.add(broker);
+            }
+          }
+          if (!spares.isEmpty()) {
+            Collections.rotate(spares, -(partition % spares.size()));
+          }
+          final var result = new ArrayList<Integer>(replicas.size());
+          var nextSpare = 0;
           for (final var replica : replicas) {
             if (live.contains(replica)) {
-              survivors.add(replica);
+              result.add(replica); // still active — keep it
+            } else if (nextSpare < spares.size()) {
+              result.add(spares.get(nextSpare++)); // fenced/draining — a spare takes over
+            } else {
+              result.add(replica); // no spare available — keep it in the topology
             }
           }
-          if (survivors.size() < replicas.size() && survivors.size() < replicationFactor) {
-            final var pool = new ArrayList<Integer>();
-            for (final var broker : active) {
-              if (!survivors.contains(broker)) {
-                pool.add(broker);
-              }
-            }
-            if (!pool.isEmpty()) {
-              Collections.rotate(pool, -(partition % pool.size()));
-              final var topUp = Math.min(replicationFactor - survivors.size(), pool.size());
-              survivors.addAll(pool.subList(0, topUp));
-            }
-          }
-          healed.put(partition, survivors);
+          healed.put(partition, result);
         });
     return healed;
   }

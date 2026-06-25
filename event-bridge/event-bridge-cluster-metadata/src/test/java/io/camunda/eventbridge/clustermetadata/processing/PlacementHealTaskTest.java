@@ -94,6 +94,23 @@ final class PlacementHealTaskTest {
   }
 
   @Test
+  void shouldKeepFencedBrokerWhenNoSpareAvailable() {
+    register(0);
+    register(1); // broker 2 is fenced/absent, and 0+1 already hold every partition (RF=3, 3 nodes)
+    topicState.put(
+        "orders",
+        new TopicMetadata(1, 3, TopicStatus.ACTIVE, Map.of(1, List.of(0, 1, 2)), Map.of()));
+
+    // when
+    final var builder = mock(TaskResultBuilder.class);
+    task.execute(builder);
+
+    // then — no spare can take over broker 2, so it is left in the assignment (not dropped); the
+    // task does nothing rather than try to remove it
+    verify(builder, never()).appendCommandRecord(any(), any());
+  }
+
+  @Test
   void shouldNotHealWhenAllReplicasActive() {
     register(0);
     register(1);
