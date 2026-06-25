@@ -103,7 +103,7 @@ class DecisionInstanceSearchIT {
     final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
@@ -113,7 +113,7 @@ class DecisionInstanceSearchIT {
 
     final var resultWithLimit =
         camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
-    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+    assertThat(resultWithLimit.items()).hasSize(2);
 
     final var thirdKey = resultAll.items().get(2).getDecisionInstanceKey();
 
@@ -136,7 +136,7 @@ class DecisionInstanceSearchIT {
 
     final var resultWithLimit =
         camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
-    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+    assertThat(resultWithLimit.items()).hasSize(2);
 
     final var firstTwoKeys =
         resultAll.items().subList(0, 2).stream()
@@ -175,7 +175,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     final var decisionInstance = result.singleItem();
 
     assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
@@ -220,7 +220,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     final var decisionInstance = result.singleItem();
 
     assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
@@ -265,7 +265,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     final var decisionInstance = result.singleItem();
 
     assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
@@ -310,7 +310,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items()).hasSize(4);
   }
 
   @Test
@@ -327,7 +327,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getDecisionDefinitionKey())
         .isEqualTo(decisionDefinitionKey);
     assertThat(result.items().getFirst().getDecisionInstanceKey())
@@ -349,7 +349,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items()).hasSize(4);
     assertThat(result.items())
         .extracting(DecisionInstance::getDecisionDefinitionId)
         .containsExactlyInAnyOrder(
@@ -381,7 +381,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     final var decisionInstance = result.singleItem();
 
     assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
@@ -424,7 +424,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getRootDecisionDefinitionKey())
         .isEqualTo(rootDecisionDefinitionKey);
     assertThat(result.items().getFirst().getDecisionInstanceKey())
@@ -448,7 +448,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items()).hasSize(4);
     assertThat(result.items())
         .extracting(DecisionInstance::getDecisionDefinitionId)
         .containsExactlyInAnyOrder(
@@ -472,7 +472,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
     assertThat(result.items().getFirst().getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
     assertThat(result.items().getLast().getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
   }
@@ -498,7 +498,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
     assertThat(result.items())
         .extracting("elementInstanceKey", "decisionDefinitionId")
         .containsExactlyInAnyOrder(
@@ -518,7 +518,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
     assertThat(result.items())
         .extracting("processInstanceKey", "rootProcessInstanceKey", "decisionDefinitionId")
         .containsExactlyInAnyOrder(
@@ -538,7 +538,7 @@ class DecisionInstanceSearchIT {
 
     // then - only the two in-process decision instances carry the owning instance's businessId;
     // the standalone evaluations stay null
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
     assertThat(result.items())
         .extracting("businessId", "processInstanceKey", "decisionDefinitionId")
         .containsExactlyInAnyOrder(
@@ -558,7 +558,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
     assertThat(result.items())
         .extracting("businessId")
         .containsExactlyInAnyOrder(BUSINESS_ID, BUSINESS_ID);
@@ -604,7 +604,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
@@ -619,7 +619,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
@@ -634,7 +634,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).hasSize(5);
   }
 
   @Test
@@ -740,7 +740,7 @@ class DecisionInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(result.singleItem().getDecisionInstanceKey())
         .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey());
   }
@@ -893,7 +893,7 @@ class DecisionInstanceSearchIT {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
-              assertThat(result.items().size()).isEqualTo(expectedCount);
+              assertThat(result.items()).hasSize(expectedCount);
             });
   }
 }
