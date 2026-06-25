@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.eventbridge.clustermetadata.MetadataManager;
 import io.camunda.eventbridge.clustermetadata.MetadataQueryHandler;
+import io.camunda.eventbridge.clustermetadata.membership.BrokerHeartbeatHandler;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
@@ -62,6 +63,7 @@ public final class MetadataPartition
 
   private MetadataManager metadataManager;
   private MetadataQueryHandler metadataQueryHandler;
+  private BrokerHeartbeatHandler brokerHeartbeatHandler;
   // This partition actor's own off-actor read view, used by the reconcile loop on every role; built
   // lazily once the stream exists so its context/flyweights belong to this actor.
   private TopicQueryService reconcileTopics;
@@ -132,9 +134,12 @@ public final class MetadataPartition
     actorScheduler.submitActor(metadataManager);
     metadataQueryHandler = new MetadataQueryHandler(partitionId, stream.newTopicQueryService());
     actorScheduler.submitActor(metadataQueryHandler);
+    brokerHeartbeatHandler = new BrokerHeartbeatHandler(partitionId, clock, stream);
+    actorScheduler.submitActor(brokerHeartbeatHandler);
     requestHandlerRegistry.register(
         MetadataRequestHandler.topicName(partitionId),
-        new MetadataRequestHandler(partitionId, metadataManager, metadataQueryHandler));
+        new MetadataRequestHandler(
+            partitionId, metadataManager, metadataQueryHandler, brokerHeartbeatHandler));
   }
 
   @Override
@@ -147,6 +152,10 @@ public final class MetadataPartition
     if (metadataQueryHandler != null) {
       metadataQueryHandler.closeAsync();
       metadataQueryHandler = null;
+    }
+    if (brokerHeartbeatHandler != null) {
+      brokerHeartbeatHandler.closeAsync();
+      brokerHeartbeatHandler = null;
     }
   }
 

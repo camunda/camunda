@@ -9,16 +9,25 @@ package io.camunda.eventbridge.clustermetadata.stream;
 
 import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
 import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
+import io.camunda.eventbridge.clustermetadata.processing.BrokerEvictionTask;
 import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.FenceBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.RegisterBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicRegisterProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicValidator;
+import io.camunda.eventbridge.clustermetadata.record.BrokerRecord;
 import io.camunda.eventbridge.clustermetadata.record.MetadataRecordValues;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.session.BrokerLivenessMirror;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerFencedApplier;
+import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerRegisteredApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
+import io.camunda.eventbridge.clustermetadata.state.broker.BrokerQueryService;
+import io.camunda.eventbridge.clustermetadata.state.broker.DbBrokerState;
 import io.camunda.eventbridge.clustermetadata.state.topic.DbTopicState;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
@@ -35,6 +44,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
@@ -58,17 +68,23 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataStream.class);
 
-  private final Supplier<List<Integer>> registeredBrokers;
+  // Liveness sweep cadence + how long without a broker heartbeat before it is fenced.
+  private static final Duration BROKER_EVICTION_INTERVAL = Duration.ofSeconds(1);
+  private static final Duration BROKER_SESSION_TIMEOUT = Duration.ofSeconds(10);
+
+  private final InstantSource clock;
+  private final Supplier<List<Integer>> raftMembers;
   private final PlacementStrategy placement = new RoundRobinPlacement();
 
   private DbTopicState topicState;
+  private DbBrokerState brokerState;
+  private BrokerLivenessMirror brokerLiveness;
 
   /**
    * @param zeebeDb the state DB, recovered/owned by the {@link
    *     io.camunda.zeebe.broker.system.partitions.StateController} (so snapshots can manage it)
-   * @param registeredBrokers the live metadata-group membership the create/reassign processors
-   *     place partitions on — supplied by the partition so placement targets only registered
-   *     brokers
+   * @param raftMembers the metadata-group Raft membership, used as the placement broker set only
+   *     until brokers have registered through the liveness FSM (the bootstrap fallback)
    */
   public MetadataStream(
       final int partitionId,
@@ -77,9 +93,10 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
       final ZeebeDb<MetadataColumnFamilies> zeebeDb,
       final InstantSource clock,
       final MeterRegistry meterRegistry,
-      final Supplier<List<Integer>> registeredBrokers) {
+      final Supplier<List<Integer>> raftMembers) {
     super(partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
-    this.registeredBrokers = registeredBrokers;
+    this.clock = clock;
+    this.raftMembers = raftMembers;
   }
 
   @Override
@@ -95,11 +112,21 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   @Override
   protected void onStarting() {
     topicState = new DbTopicState(zeebeDb, zeebeDb.createContext());
+    brokerState = new DbBrokerState(zeebeDb, zeebeDb.createContext());
+    brokerLiveness = new BrokerLivenessMirror();
   }
 
   @Override
   protected RecordProcessor createRecordProcessor() {
     final var validator = new TopicValidator(topicState);
+    // Placement targets registered, unfenced brokers, read from the replicated broker registry on
+    // the processing actor — the broker liveness FSM is the source of placeable brokers. Until any
+    // broker has registered (bootstrap), fall back to the Raft membership so placement still works.
+    final Supplier<List<Integer>> activeBrokers =
+        () -> {
+          final var active = brokerState.activeBrokers();
+          return active.isEmpty() ? raftMembers.get() : active;
+        };
     return new RecordProcessingEngine(
         processors ->
             processors
@@ -107,12 +134,12 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.CREATE_TOPIC,
                     new CreateTopicProcessor(
-                        processors.writers(), validator, placement, registeredBrokers))
+                        processors.writers(), validator, placement, activeBrokers))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.REASSIGN_TOPIC,
                     new ReassignTopicProcessor(
-                        processors.writers(), validator, topicState, placement, registeredBrokers))
+                        processors.writers(), validator, topicState, placement, activeBrokers))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.DELETE_TOPIC,
@@ -121,10 +148,28 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.REGISTER_TOPIC,
                     new TopicRegisterProcessor(processors.writers()))
+                .onCommand(
+                    MetadataRecordValues.BROKER_VALUE_TYPE,
+                    MetadataIntent.REGISTER_BROKER,
+                    new RegisterBrokerProcessor(processors.writers(), brokerState))
+                .onCommand(
+                    MetadataRecordValues.BROKER_VALUE_TYPE,
+                    MetadataIntent.FENCE_BROKER,
+                    new FenceBrokerProcessor(processors.writers(), brokerState))
                 .withEventApplier(
                     MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState))
+                .withEventApplier(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState))
                 .withEventApplier(
-                    MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState)));
+                    MetadataIntent.BROKER_REGISTERED, new BrokerRegisteredApplier(brokerState))
+                .withEventApplier(
+                    MetadataIntent.BROKER_FENCED, new BrokerFencedApplier(brokerState))
+                .withListener(
+                    new BrokerEvictionTask(
+                        BROKER_EVICTION_INTERVAL,
+                        BROKER_SESSION_TIMEOUT,
+                        brokerState,
+                        brokerLiveness,
+                        clock)));
   }
 
   /**
@@ -175,12 +220,35 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   }
 
   /**
+   * Broker registration: written as a command that the {@code RegisterBrokerProcessor} validates
+   * and stamps with a fresh epoch, replying after commit (the future completes with the encoded
+   * {@code RegisterBrokerResponse}). Leader only.
+   */
+  public CompletableFuture<byte[]> registerBroker(final BrokerRecord command) {
+    return writeRequest(
+        MetadataIntent.REGISTER_BROKER, MetadataRecordValues.BROKER_VALUE_TYPE, command);
+  }
+
+  /**
    * A fresh off-actor read view of the topic registry on this stream's {@link ZeebeDb}. Each reader
    * actor (the leader's manager, each broker's reconcile loop) takes its own so it reads committed
    * state without sharing the processor's flyweights.
    */
   public TopicQueryService newTopicQueryService() {
     return new TopicQueryService(zeebeDb);
+  }
+
+  /** A fresh off-actor read view of the broker registry — one per reader actor. */
+  public BrokerQueryService newBrokerQueryService() {
+    return new BrokerQueryService(zeebeDb);
+  }
+
+  /**
+   * The shared, leader-local broker liveness mirror — published by the heartbeat handler and swept
+   * by the {@code BrokerEvictionTask}. Created at stream startup so both share one instance.
+   */
+  public BrokerLivenessMirror brokerLiveness() {
+    return brokerLiveness;
   }
 
   private void writeTopicCommand(

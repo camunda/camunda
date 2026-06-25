@@ -68,6 +68,8 @@
       <validValue name="REASSIGN_TOPIC">7</validValue>
       <validValue name="OFFSET_FETCH">8</validValue>
       <validValue name="DESCRIBE_GROUPS">9</validValue>
+      <validValue name="REGISTER_BROKER">10</validValue>
+      <validValue name="BROKER_HEARTBEAT">11</validValue>
     </enum>
 
     <!-- How a coordinate command was rejected. NONE means "no rejection" (a successful reply);

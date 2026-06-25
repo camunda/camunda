@@ -9,8 +9,11 @@ package io.camunda.eventbridge.clustermetadata.transport;
 
 import io.camunda.eventbridge.clustermetadata.MetadataManager;
 import io.camunda.eventbridge.clustermetadata.MetadataQueryHandler;
+import io.camunda.eventbridge.clustermetadata.membership.BrokerHeartbeatHandler;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.protocol.request.coordination.BrokerHeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
+import io.camunda.eventbridge.protocol.request.coordination.RegisterBrokerRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.stream.CommandRejectionException;
@@ -41,13 +44,16 @@ public final class MetadataRequestHandler implements RequestHandler {
 
   private final MetadataManager metadataManager;
   private final MetadataQueryHandler metadataQueryHandler;
+  private final BrokerHeartbeatHandler brokerHeartbeatHandler;
 
   public MetadataRequestHandler(
       final int partitionId,
       final MetadataManager metadataManager,
-      final MetadataQueryHandler metadataQueryHandler) {
+      final MetadataQueryHandler metadataQueryHandler,
+      final BrokerHeartbeatHandler brokerHeartbeatHandler) {
     this.metadataManager = metadataManager;
     this.metadataQueryHandler = metadataQueryHandler;
+    this.brokerHeartbeatHandler = brokerHeartbeatHandler;
   }
 
   @Override
@@ -67,6 +73,10 @@ public final class MetadataRequestHandler implements RequestHandler {
       case REASSIGN_TOPIC -> metadataManager.handleReassignTopic(read(new TopicRecord(), request));
       case LIST_TOPICS ->
           metadataQueryHandler.handleListTopics(read(new ListTopicsRequest(), request));
+      case REGISTER_BROKER ->
+          brokerHeartbeatHandler.handleRegister(read(new RegisterBrokerRequest(), request));
+      case BROKER_HEARTBEAT ->
+          brokerHeartbeatHandler.handleHeartbeat(read(new BrokerHeartbeatRequest(), request));
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));

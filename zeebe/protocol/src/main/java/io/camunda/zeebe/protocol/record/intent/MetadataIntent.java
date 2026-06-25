@@ -16,9 +16,10 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 /**
- * Intents for the event-bridge topic-registry (metadata) stream, riding {@link
- * io.camunda.zeebe.protocol.record.ValueType#EVENT_BRIDGE_TOPIC}. Each command/event maps to its
- * own processor/applier in the event-bridge cluster-metadata module.
+ * Intents for the event-bridge metadata stream: the topic registry (riding {@link
+ * io.camunda.zeebe.protocol.record.ValueType#EVENT_BRIDGE_TOPIC}) and the broker registry (riding
+ * {@link io.camunda.zeebe.protocol.record.ValueType#EVENT_BRIDGE_BROKER}). Each command/event maps
+ * to its own processor/applier in the event-bridge cluster-metadata module.
  */
 public enum MetadataIntent implements Intent {
   /**
@@ -36,7 +37,23 @@ public enum MetadataIntent implements Intent {
   /**
    * Command: reassign a topic's replicas (client request; the processor rejects an unknown name).
    */
-  REASSIGN_TOPIC((short) 5, false);
+  REASSIGN_TOPIC((short) 5, false),
+  /** Command: register (or re-register) a broker, assigning it a fresh broker epoch. */
+  REGISTER_BROKER((short) 6, false),
+  /** Event: the broker has been registered (or re-registered) in replicated state. */
+  BROKER_REGISTERED((short) 7, true),
+  /** Command: fence a broker whose liveness session lapsed (internal, from the eviction task). */
+  FENCE_BROKER((short) 8, false),
+  /** Event: the broker has been fenced — excluded from placement until it re-registers. */
+  BROKER_FENCED((short) 9, true),
+  /** Command: mark a broker as draining for controlled shutdown (internal, from a heartbeat). */
+  DRAIN_BROKER((short) 10, false),
+  /** Event: the broker is draining — excluded from placement while its replicas move off. */
+  BROKER_DRAINING((short) 11, true),
+  /** Command: deregister a broker (internal, once it has drained / shut down). */
+  DEREGISTER_BROKER((short) 12, false),
+  /** Event: the broker has been removed from replicated state. */
+  BROKER_DEREGISTERED((short) 13, true);
 
   private final short value;
   private final boolean isEvent;
@@ -60,6 +77,22 @@ public enum MetadataIntent implements Intent {
         return CREATE_TOPIC;
       case 5:
         return REASSIGN_TOPIC;
+      case 6:
+        return REGISTER_BROKER;
+      case 7:
+        return BROKER_REGISTERED;
+      case 8:
+        return FENCE_BROKER;
+      case 9:
+        return BROKER_FENCED;
+      case 10:
+        return DRAIN_BROKER;
+      case 11:
+        return BROKER_DRAINING;
+      case 12:
+        return DEREGISTER_BROKER;
+      case 13:
+        return BROKER_DEREGISTERED;
       default:
         return Intent.UNKNOWN;
     }

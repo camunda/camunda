@@ -24,7 +24,10 @@ public enum MetadataColumnFamilies implements EnumValue, ScopedColumnFamily {
   /**
    * Topic registry (desired state) keyed by {@code topicName} → encoded partition/replica config.
    */
-  TOPIC_REGISTRY(1, ColumnFamilyScope.PARTITION_LOCAL);
+  TOPIC_REGISTRY(1, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /** Broker registry keyed by {@code brokerId} → encoded broker epoch + liveness state. */
+  BROKER_REGISTRY(2, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

@@ -181,7 +181,8 @@ public final class ValueTypeMapping {
                 ValueType.EVENT_BRIDGE_MEMBERSHIP,
                 ValueType.EVENT_BRIDGE_OFFSET,
                 ValueType.EVENT_BRIDGE_REBALANCE,
-                ValueType.EVENT_BRIDGE_TOPIC));
+                ValueType.EVENT_BRIDGE_TOPIC,
+                ValueType.EVENT_BRIDGE_BROKER));
   }
 
   /**

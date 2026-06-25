@@ -40,7 +40,8 @@ final class ValueTypeMappingTest {
             ValueType.EVENT_BRIDGE_MEMBERSHIP,
             ValueType.EVENT_BRIDGE_OFFSET,
             ValueType.EVENT_BRIDGE_REBALANCE,
-            ValueType.EVENT_BRIDGE_TOPIC);
+            ValueType.EVENT_BRIDGE_TOPIC,
+            ValueType.EVENT_BRIDGE_BROKER);
     final EnumSet<ValueType> unmapped = EnumSet.copyOf(syntheticValues);
     unmapped.addAll(externalValues);
     final Set<ValueType> mappableValueTypes = EnumSet.complementOf(unmapped);

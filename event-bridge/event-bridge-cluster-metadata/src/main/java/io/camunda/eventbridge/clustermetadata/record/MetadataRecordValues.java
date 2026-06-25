@@ -25,8 +25,9 @@ import java.util.Map;
  */
 public final class MetadataRecordValues {
 
-  // First-class event-bridge value type for the metadata stream's record kind (see protocol.xml).
+  // First-class event-bridge value types for the metadata stream's record kinds (see protocol.xml).
   public static final ValueType TOPIC_VALUE_TYPE = ValueType.EVENT_BRIDGE_TOPIC;
+  public static final ValueType BROKER_VALUE_TYPE = ValueType.EVENT_BRIDGE_BROKER;
 
   private MetadataRecordValues() {}
 
@@ -34,6 +35,7 @@ public final class MetadataRecordValues {
     final Map<ValueType, UnifiedRecordValue> values =
         new HashMap<>(UnifiedRecordValue.allRecordsMap());
     values.put(TOPIC_VALUE_TYPE, new TopicRecord());
+    values.put(BROKER_VALUE_TYPE, new BrokerRecord());
     return new RecordValues(values);
   }
 }

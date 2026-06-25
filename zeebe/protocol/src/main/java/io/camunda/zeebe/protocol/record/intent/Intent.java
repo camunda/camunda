@@ -65,6 +65,7 @@ public interface Intent {
     map.put(ValueType.EVENT_BRIDGE_OFFSET, CoordinatorIntent.class);
     map.put(ValueType.EVENT_BRIDGE_REBALANCE, CoordinatorIntent.class);
     map.put(ValueType.EVENT_BRIDGE_TOPIC, MetadataIntent.class);
+    map.put(ValueType.EVENT_BRIDGE_BROKER, MetadataIntent.class);
     map.put(ValueType.EXPRESSION, ExpressionIntent.class);
     map.put(ValueType.FORM, FormIntent.class);
     map.put(ValueType.GLOBAL_LISTENER, GlobalListenerIntent.class);
