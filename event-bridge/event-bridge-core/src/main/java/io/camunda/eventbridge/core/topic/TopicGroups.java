@@ -24,4 +24,11 @@ public final class TopicGroups {
   public static String name(final String topic) {
     return TOPIC_GROUP_PREFIX + topic;
   }
+
+  /** The topic name for a per-topic group name, or {@code null} if it is not a topic group. */
+  public static String topicFrom(final String groupName) {
+    return groupName != null && groupName.startsWith(TOPIC_GROUP_PREFIX)
+        ? groupName.substring(TOPIC_GROUP_PREFIX.length())
+        : null;
+  }
 }

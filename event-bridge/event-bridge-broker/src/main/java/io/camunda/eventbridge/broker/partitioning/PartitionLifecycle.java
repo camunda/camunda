@@ -40,15 +40,25 @@ public final class PartitionLifecycle extends Actor {
   private final List<PartitionStartupStep> leaderSteps;
   private final PartitionContext context;
 
+  // Set for topic-registry partitions (null for the default data group): on becoming leader this
+  // node reports its leadership to the metadata group, so topic readiness can be derived.
+  private final String topic;
+  private final int localNodeId;
+  private final PartitionLeaderReporter leaderReporter;
+
   private PartitionStartupSequence leaderSequence;
   private boolean isLeader;
   private boolean transitioning;
   private Role deferredRole;
+  private long currentTerm;
 
   public PartitionLifecycle(
       final int partitionId,
       final int partitionCount,
       final String routingGroup,
+      final String topic,
+      final int localNodeId,
+      final PartitionLeaderReporter leaderReporter,
       final RaftPartition raftPartition,
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
@@ -56,6 +66,9 @@ public final class PartitionLifecycle extends Actor {
       final IdGenerator idGenerator,
       final TopologyManagerImpl topologyManager,
       final ExecutorService executorService) {
+    this.topic = topic;
+    this.localNodeId = localNodeId;
+    this.leaderReporter = leaderReporter == null ? PartitionLeaderReporter.NOOP : leaderReporter;
     context =
         new PartitionContext(
             partitionId,
@@ -102,8 +115,12 @@ public final class PartitionLifecycle extends Actor {
     }
   }
 
-  public void onRoleChange(final Role role) {
-    actor.submit(() -> handleRoleChange(role));
+  public void onRoleChange(final Role role, final long term) {
+    actor.submit(
+        () -> {
+          currentTerm = term;
+          handleRoleChange(role);
+        });
   }
 
   private void handleRoleChange(final Role role) {
@@ -143,6 +160,12 @@ public final class PartitionLifecycle extends Actor {
     LOG.info("Partition {} — becoming leader", context.getPartitionId());
     isLeader = true;
     transitioning = true;
+
+    // Report leadership to the metadata group so topic readiness can be derived (no-op for the
+    // default data group). Retried until acked by the reporter; the term is the leader-epoch guard.
+    if (topic != null) {
+      leaderReporter.reportLeadership(topic, context.getPartitionId(), localNodeId, currentTerm);
+    }
 
     leaderSequence =
         new PartitionStartupSequence(

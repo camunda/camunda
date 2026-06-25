@@ -10,7 +10,6 @@ package io.camunda.eventbridge.broker.bootstrap;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
-import io.camunda.eventbridge.clustermetadata.stream.TopicProvisionedGossip;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +45,6 @@ final class TopicReconciler {
   private final TopologySetup topologySetup;
   private final MemberId localMemberId;
   private final int localNodeId;
-  private final TopicProvisionedGossip.Publisher provisionedPublisher;
 
   // Per-topic routing topology manager, shared by reconcile and join (created on first need).
   private final Map<String, TopologyManagerImpl> topologyManagers = new ConcurrentHashMap<>();
@@ -54,12 +52,10 @@ final class TopicReconciler {
   TopicReconciler(
       final PartitionBootstrapper partitionBootstrapper,
       final TopologySetup topologySetup,
-      final MemberId localMemberId,
-      final TopicProvisionedGossip.Publisher provisionedPublisher) {
+      final MemberId localMemberId) {
     this.partitionBootstrapper = partitionBootstrapper;
     this.topologySetup = topologySetup;
     this.localMemberId = localMemberId;
-    this.provisionedPublisher = provisionedPublisher;
     localNodeId = parseNodeId(localMemberId.id());
   }
 
@@ -101,9 +97,6 @@ final class TopicReconciler {
 
     if (!started.isEmpty()) {
       LOG.info("Provisioned topic {} (group {}) local partitions {}", name, groupName, started);
-      if (provisionedPublisher != null) {
-        provisionedPublisher.publish(name, started);
-      }
     }
   }
 

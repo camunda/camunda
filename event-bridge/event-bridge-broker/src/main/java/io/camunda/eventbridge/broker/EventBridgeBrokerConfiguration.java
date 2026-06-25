@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.eventbridge.broker.bootstrap.BrokerBootstrap;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
+import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.agrona.concurrent.IdGenerator;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -51,7 +53,8 @@ public class EventBridgeBrokerConfiguration {
       final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
       final MeterRegistry meterRegistry,
-      final BrokerTopologyManager gatewayTopologyManager) {
+      final BrokerTopologyManager gatewayTopologyManager,
+      final ObjectProvider<PartitionLeaderReporter> leaderReporter) {
     return new BrokerBootstrap(
         cluster,
         actorScheduler,
@@ -60,7 +63,8 @@ public class EventBridgeBrokerConfiguration {
         executorServiceFactory,
         idGenerator,
         meterRegistry,
-        gatewayTopologyManager);
+        gatewayTopologyManager,
+        leaderReporter.getIfAvailable(() -> PartitionLeaderReporter.NOOP));
   }
 
   @Bean

@@ -70,6 +70,7 @@
       <validValue name="DESCRIBE_GROUPS">9</validValue>
       <validValue name="REGISTER_BROKER">10</validValue>
       <validValue name="BROKER_HEARTBEAT">11</validValue>
+      <validValue name="REPORT_PARTITION_LEADER">12</validValue>
     </enum>
 
     <!-- How a coordinate command was rejected. NONE means "no rejection" (a successful reply);

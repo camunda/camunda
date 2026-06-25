@@ -10,6 +10,8 @@ package io.camunda.eventbridge.clustermetadata.processing;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.immutable.TopicState;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
+import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.request.coordination.ReportPartitionLeaderResponse;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
@@ -81,9 +83,15 @@ public final class ReportPartitionLeaderProcessor implements TypedRecordProcesso
                   .setAssignment(topic.assignment())
                   .setTarget(topic.target()));
     }
+
+    writers
+        .response()
+        .respond(
+            command, new ReportPartitionLeaderResponse().setErrorCode(CoordinationErrorCode.NONE));
   }
 
   private void reject(final TypedRecord<TopicRecord> command, final Rejection rejection) {
     writers.rejection().appendRejection(command, rejection.rejectionType(), rejection.reason());
+    writers.response().writeRejection(command, rejection.rejectionType(), rejection.reason());
   }
 }

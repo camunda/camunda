@@ -263,6 +263,16 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   }
 
   /**
+   * Partition-leadership report from a topic partition's elected Raft leader: written as a command
+   * that the {@code ReportPartitionLeaderProcessor} validates and records, replying after commit so
+   * the reporter knows it is durable. Leader only.
+   */
+  public CompletableFuture<byte[]> reportPartitionLeader(final TopicRecord command) {
+    return writeRequest(
+        MetadataIntent.REPORT_PARTITION_LEADER, MetadataRecordValues.TOPIC_VALUE_TYPE, command);
+  }
+
+  /**
    * Broker registration: written as a command that the {@code RegisterBrokerProcessor} validates
    * and stamps with a fresh epoch, replying after commit (the future completes with the encoded
    * {@code RegisterBrokerResponse}). Leader only.

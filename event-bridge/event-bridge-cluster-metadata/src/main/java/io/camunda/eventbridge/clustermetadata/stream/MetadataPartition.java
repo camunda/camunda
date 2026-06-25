@@ -29,8 +29,6 @@ import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +56,6 @@ public final class MetadataPartition
   private static final Duration RECONCILE_INTERVAL = Duration.ofSeconds(1);
 
   private final Consumer<Map<String, TopicMetadata>> registryReconciler;
-  private final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef;
   private final ReconfigurationExecutor reconfigurationExecutor;
 
   private MetadataManager metadataManager;
@@ -78,7 +75,6 @@ public final class MetadataPartition
       final ConstructableSnapshotStore snapshotStore,
       final TopologyManagerImpl metadataTopologyManager,
       final Consumer<Map<String, TopicMetadata>> registryReconciler,
-      final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     super(
         partitionId,
@@ -90,7 +86,6 @@ public final class MetadataPartition
         snapshotStore,
         metadataTopologyManager);
     this.registryReconciler = registryReconciler;
-    this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
   }
 
@@ -126,11 +121,7 @@ public final class MetadataPartition
   protected void onLeaderReady() {
     metadataManager =
         new MetadataManager(
-            partitionId,
-            stream,
-            stream.newTopicQueryService(),
-            provisionedSinkRef,
-            reconfigurationExecutor);
+            partitionId, stream, stream.newTopicQueryService(), reconfigurationExecutor);
     actorScheduler.submitActor(metadataManager);
     metadataQueryHandler = new MetadataQueryHandler(partitionId, stream.newTopicQueryService());
     actorScheduler.submitActor(metadataQueryHandler);

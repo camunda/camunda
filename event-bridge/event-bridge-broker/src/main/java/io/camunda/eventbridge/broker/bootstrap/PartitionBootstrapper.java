@@ -15,6 +15,7 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
+import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
@@ -59,6 +60,7 @@ final class PartitionBootstrapper {
   private final InstantSource clock;
   private final IdGenerator idGenerator;
   private final ExecutorService executorService;
+  private final PartitionLeaderReporter leaderReporter;
 
   // Set by stop() so in-flight metadata passive-join retries bail instead of scheduling more work.
   private volatile boolean closing;
@@ -83,6 +85,17 @@ final class PartitionBootstrapper {
     return groupName + "#" + partitionId;
   }
 
+  /**
+   * Numeric node id from a {@code broker-<n>} member id (the leader node id in leadership reports).
+   */
+  private static int parseNodeId(final String memberId) {
+    try {
+      return Integer.parseInt(memberId.replaceAll("[^0-9]", ""));
+    } catch (final NumberFormatException e) {
+      return -1;
+    }
+  }
+
   // Initialized in start(); reused by runtime topic-group provisioning after boot.
   private PartitionFactory factory;
   private DefaultPartitionManagementService managementService;
@@ -90,9 +103,6 @@ final class PartitionBootstrapper {
   private MemberId localMemberId;
   private TopicRegistry topicRegistry;
   private Consumer<Map<String, TopicMetadata>> registryReconciler;
-  private java.util.concurrent.atomic.AtomicReference<
-          java.util.function.BiConsumer<String, java.util.List<Integer>>>
-      provisionedSinkRef;
   private io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor
       reconfigurationExecutor;
 
@@ -102,13 +112,15 @@ final class PartitionBootstrapper {
       final EventBridgeProperties properties,
       final InstantSource clock,
       final IdGenerator idGenerator,
-      final ExecutorService executorService) {
+      final ExecutorService executorService,
+      final PartitionLeaderReporter leaderReporter) {
     this.cluster = cluster;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
     this.clock = clock;
     this.idGenerator = idGenerator;
     this.executorService = executorService;
+    this.leaderReporter = leaderReporter;
   }
 
   void start(
@@ -119,9 +131,6 @@ final class PartitionBootstrapper {
       final MessagingService brokerMessagingService,
       final TopicRegistry topicRegistry,
       final Consumer<Map<String, TopicMetadata>> registryReconciler,
-      final java.util.concurrent.atomic.AtomicReference<
-              java.util.function.BiConsumer<String, java.util.List<Integer>>>
-          provisionedSinkRef,
       final io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor
           reconfigurationExecutor) {
 
@@ -130,7 +139,6 @@ final class PartitionBootstrapper {
     this.brokerMessagingService = brokerMessagingService;
     this.topicRegistry = topicRegistry;
     this.registryReconciler = registryReconciler;
-    this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
 
     // Start the partitions assigned to this node (members include the local member), exactly like
@@ -338,7 +346,6 @@ final class PartitionBootstrapper {
             (ConstructableSnapshotStore) created.snapshotStore(),
             metadataTopologyManager,
             registryReconciler,
-            provisionedSinkRef,
             reconfigurationExecutor);
     metadataPartitions.add(metadataPartition);
     actorScheduler.submitActor(metadataPartition);
@@ -627,12 +634,18 @@ final class PartitionBootstrapper {
             ? io.camunda.zeebe.protocol.Protocol.DEFAULT_PARTITION_GROUP_NAME
             : groupName;
 
-    // 2. Create lifecycle actor
+    // 2. Create lifecycle actor. For a topic-registry group, on becoming leader it reports its
+    // leadership to the metadata group (so topic readiness is derived); the default data group does
+    // not (topic == null → no-op reporter).
+    final var topic = io.camunda.eventbridge.core.topic.TopicGroups.topicFrom(groupName);
     final var lifecycle =
         new PartitionLifecycle(
             partitionId,
             properties.broker().partitionCount(),
             routingGroup,
+            topic,
+            parseNodeId(localMemberId.id()),
+            leaderReporter,
             created.raftPartition(),
             actorScheduler,
             brokerMessagingService,
@@ -663,8 +676,9 @@ final class PartitionBootstrapper {
     dataPartitions.put(
         key(groupName, partitionId), new Provisioned(created, lifecycle, retentionCompactor));
 
-    // 3. Wire raft role changes to lifecycle — before start so no events are lost
-    created.raftPartition().addRoleChangeListener((role, term) -> lifecycle.onRoleChange(role));
+    // 3. Wire raft role changes to lifecycle — before start so no events are lost. The term is the
+    // leader-epoch the lifecycle reports to the metadata group on becoming leader.
+    created.raftPartition().addRoleChangeListener(lifecycle::onRoleChange);
 
     // 4. Start raft — bootstrap a new group, or join an existing one for a reassignment add.
     final var started =

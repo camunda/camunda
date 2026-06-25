@@ -14,6 +14,7 @@ import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.protocol.request.coordination.BrokerHeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.RegisterBrokerRequest;
+import io.camunda.eventbridge.protocol.request.coordination.ReportPartitionLeaderRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.eventbridge.stream.CommandRejectionException;
@@ -71,6 +72,9 @@ public final class MetadataRequestHandler implements RequestHandler {
       case CREATE_TOPIC -> metadataManager.handleCreateTopic(read(new TopicRecord(), request));
       case DELETE_TOPIC -> metadataManager.handleDeleteTopic(read(new TopicRecord(), request));
       case REASSIGN_TOPIC -> metadataManager.handleReassignTopic(read(new TopicRecord(), request));
+      case REPORT_PARTITION_LEADER ->
+          metadataManager.handleReportPartitionLeader(
+              read(new ReportPartitionLeaderRequest(), request));
       case LIST_TOPICS ->
           metadataQueryHandler.handleListTopics(read(new ListTopicsRequest(), request));
       case REGISTER_BROKER ->

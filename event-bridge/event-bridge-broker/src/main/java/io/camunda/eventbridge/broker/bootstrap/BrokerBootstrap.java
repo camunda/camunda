@@ -11,11 +11,11 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
+import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
-import io.camunda.eventbridge.clustermetadata.stream.TopicProvisionedGossip;
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
@@ -26,11 +26,8 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -63,6 +60,7 @@ public final class BrokerBootstrap {
   private final IdGenerator idGenerator;
   private final MeterRegistry meterRegistry;
   private final BrokerTopologyManager gatewayTopologyManager;
+  private final PartitionLeaderReporter leaderReporter;
 
   private MessagingServiceSetup messagingServiceSetup;
   private TopologySetup topologySetup;
@@ -79,7 +77,8 @@ public final class BrokerBootstrap {
       final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
       final MeterRegistry meterRegistry,
-      final BrokerTopologyManager gatewayTopologyManager) {
+      final BrokerTopologyManager gatewayTopologyManager,
+      final PartitionLeaderReporter leaderReporter) {
     this.cluster = cluster;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
@@ -88,6 +87,7 @@ public final class BrokerBootstrap {
     this.idGenerator = idGenerator;
     this.meterRegistry = meterRegistry;
     this.gatewayTopologyManager = gatewayTopologyManager;
+    this.leaderReporter = leaderReporter;
   }
 
   public void start() {
@@ -138,43 +138,13 @@ public final class BrokerBootstrap {
             properties,
             InstantSource.system(),
             idGenerator,
-            executorService);
+            executorService,
+            leaderReporter);
     final var localMemberId = cluster.getMembershipService().getLocalMember().id();
     final var comm = cluster.getCommunicationService();
 
-    // Reverse channel: brokers report provisioned partitions; the registry-shard coordinator leader
-    // registers itself as the sink (via this ref) and advances the topic CREATING -> ACTIVE once
-    // all
-    // partitions are covered. Broadcast excludes the sender, so the publisher also self-delivers.
-    final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef =
-        new AtomicReference<>();
-    final TopicProvisionedGossip.Publisher provisionedPublisher =
-        (topic, partitions) -> {
-          comm.broadcast(
-              TopicProvisionedGossip.SUBJECT,
-              TopicProvisionedGossip.encode(topic, partitions),
-              Function.identity(),
-              true);
-          final var sink = provisionedSinkRef.get();
-          if (sink != null) {
-            sink.accept(topic, partitions);
-          }
-        };
-    comm.consume(
-        TopicProvisionedGossip.SUBJECT,
-        Function.identity(),
-        payload -> {
-          final var report = TopicProvisionedGossip.decode(payload);
-          final var sink = provisionedSinkRef.get();
-          if (sink != null) {
-            sink.accept(report.topic(), report.partitions());
-          }
-        },
-        executorService);
-
     final var topicReconciler =
-        new TopicReconciler(
-            partitionBootstrapper, topologySetup, localMemberId, provisionedPublisher);
+        new TopicReconciler(partitionBootstrapper, topologySetup, localMemberId);
 
     // 4b. Topic-registry propagation is pull-from-observed-state, not push: every broker is a
     // member or passive observer of the metadata Raft group and periodically hands its local
@@ -235,7 +205,6 @@ public final class BrokerBootstrap {
         brokerMessagingService,
         topicRegistry,
         registryReconciler,
-        provisionedSinkRef,
         reconfigurationExecutor);
 
     LOG.info("EventBridge broker started — waiting for raft elections");

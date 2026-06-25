@@ -14,18 +14,15 @@ import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
+import io.camunda.eventbridge.protocol.request.coordination.ReportPartitionLeaderRequest;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +54,6 @@ public class MetadataManager extends Actor {
   private final MetadataStream metadataStream;
   private final TopicQueryService topics;
 
-  // Brokers report provisioned partitions here; the registry-shard leader registers itself as the
-  // sink. Per-topic covered partition ids drive the CREATING -> ACTIVE transition.
-  private final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef;
-  private final Map<String, Set<Integer>> provisionedPartitions = new HashMap<>();
-  private final Set<String> activated = new HashSet<>();
-
   // Change-coordinator: drives committed -> target one safe Raft step at a time.
   private final ReconfigurationExecutor reconfigurationExecutor;
   private final Set<String> reconfiguring = new HashSet<>();
@@ -71,12 +62,10 @@ public class MetadataManager extends Actor {
       final int partitionId,
       final MetadataStream metadataStream,
       final TopicQueryService topics,
-      final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
     this.metadataStream = metadataStream;
     this.topics = topics;
-    this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
   }
 
@@ -112,6 +101,23 @@ public class MetadataManager extends Actor {
   }
 
   /**
+   * Writes the {@code REPORT_PARTITION_LEADER} command (a topic partition's elected leader
+   * reporting itself) and forwards the committed ack. The {@code ReportPartitionLeaderProcessor}
+   * records the leadership and derives the {@code CREATING -> ACTIVE} transition once every
+   * partition is covered.
+   */
+  public CompletableFuture<byte[]> handleReportPartitionLeader(
+      final ReportPartitionLeaderRequest request) {
+    final var command =
+        new TopicRecord()
+            .setName(request.getTopic())
+            .setPartitionId(request.getPartitionId())
+            .setLeaderNode(request.getLeaderNode())
+            .setLeaderTerm(request.getTerm());
+    return writeTopicRequest(command, metadataStream::reportPartitionLeader);
+  }
+
+  /**
    * Writes the wire-supplied command straight to the stream (no request→record mapping) and
    * completes with the raw committed reply (or fails with a {@code CommandRejectionException} for a
    * rejected command / the transport error for a genuine failure). The {@code
@@ -138,46 +144,8 @@ public class MetadataManager extends Actor {
 
   @Override
   protected void onActorStarted() {
-    if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD && provisionedSinkRef != null) {
-      provisionedSinkRef.set(
-          (topic, partitions) -> actor.run(() -> onTopicProvisioned(topic, partitions)));
-    }
     if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD) {
       scheduleReconfiguration();
-    }
-  }
-
-  @Override
-  protected void onActorClosing() {
-    if (provisionedSinkRef != null) {
-      provisionedSinkRef.set(null);
-    }
-  }
-
-  /**
-   * Records partitions a broker reported as provisioned and advances the topic to {@code ACTIVE}
-   * once every partition is covered. Idempotent.
-   */
-  private void onTopicProvisioned(final String topic, final List<Integer> partitions) {
-    final var meta = topics.topic(topic);
-    if (meta == null || meta.status() != TopicMetadata.TopicStatus.CREATING) {
-      return;
-    }
-    final var covered = provisionedPartitions.computeIfAbsent(topic, t -> new HashSet<>());
-    covered.addAll(partitions);
-    final var allCovered =
-        IntStream.rangeClosed(1, meta.partitionCount()).allMatch(covered::contains);
-    if (allCovered && activated.add(topic)) {
-      LOG.info(
-          "Topic {} fully provisioned ({} partitions) — marking ACTIVE",
-          topic,
-          meta.partitionCount());
-      metadataStream.registerTopic(
-          topic,
-          meta.partitionCount(),
-          meta.replicationFactor(),
-          TopicMetadata.TopicStatus.ACTIVE,
-          meta.assignment());
     }
   }
 
