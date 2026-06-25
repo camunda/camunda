@@ -92,7 +92,7 @@ message ExporterEnableRequest {
 }
 
 enum Mode {
-  MODE_UNSPECIFIED = 0;
+  UNKNOWN = 0;
   RECOVERING = 1;
   PROCESSING = 2;
 }

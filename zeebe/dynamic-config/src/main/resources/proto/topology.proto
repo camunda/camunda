@@ -118,15 +118,6 @@ message UpdatePartitionDistributorConfigOperation {
   PartitionDistributorConfig config = 1;
 }
 
-enum Mode {
-  MODE_PROCESSING = 0;
-  MODE_RECOVERING = 1;
-}
-
-message ModeChangeOperation {
-  Mode mode = 1;
-}
-
 message CompletedTopologyChangeOperation {
   TopologyChangeOperation operation = 1;
   google.protobuf.Timestamp completedAt = 2;
@@ -227,6 +218,10 @@ message MemberLeaveOperation {}
 
 message MemberRemoveOperation { string memberToRemove = 1; }
 
+message ModeChangeOperation {
+  Mode mode = 1;
+}
+
 enum State {
   UNKNOWN = 0;
   JOINING = 1;
@@ -257,4 +252,10 @@ enum ExportingStateEnum {
   EXPORTING = 1;
   SOFT_PAUSED = 2;
   PAUSED = 3;
+}
+
+enum Mode {
+  MODE_UNKNOWN = 0;
+  MODE_PROCESSING = 1;
+  MODE_RECOVERING = 2;
 }

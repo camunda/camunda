@@ -429,7 +429,7 @@ public class ProtoBufSerializer
 
   private CompletedChange encodeCompletedChange(
       final io.camunda.zeebe.dynamic.config.state.CompletedChange completedChange) {
-    final var builder = Topology.CompletedChange.newBuilder();
+    final var builder = CompletedChange.newBuilder();
     builder
         .setId(completedChange.id())
         .setStatus(fromTopologyChangeStatus(completedChange.status()))
@@ -719,7 +719,7 @@ public class ProtoBufSerializer
                       zoneAware.zones().stream()
                           .map(
                               z ->
-                                  Topology.PartitionDistributorConfig.ZoneSpec.newBuilder()
+                                  ZoneSpec.newBuilder()
                                       .setName(z.name())
                                       .setNumberOfReplicas(z.numberOfReplicas())
                                       .setPriority(z.priority())
@@ -733,11 +733,11 @@ public class ProtoBufSerializer
   private static Optional<PartitionDistributorConfig> decodePartitionDistributorConfig(
       final Topology.PartitionDistributorConfig proto) {
     return switch (proto.getKindCase()) {
-      case ROUNDROBIN -> Optional.of(new PartitionDistributorConfig.RoundRobinConfig());
-      case FIXED -> Optional.of(new PartitionDistributorConfig.FixedConfig());
+      case ROUNDROBIN -> Optional.of(new RoundRobinConfig());
+      case FIXED -> Optional.of(new FixedConfig());
       case ZONEAWARE ->
           Optional.of(
-              new PartitionDistributorConfig.ZoneAwareConfig(
+              new ZoneAwareConfig(
                   proto.getZoneAware().getZonesList().stream()
                       .map(
                           z ->
@@ -1398,10 +1398,11 @@ public class ProtoBufSerializer
   }
 
   private static Mode toMode(final Requests.Mode mode) {
-    if (mode == Requests.Mode.RECOVERING) {
-      return Mode.RECOVERING;
-    }
-    return Mode.PROCESSING;
+    return switch (mode) {
+      case RECOVERING -> Mode.RECOVERING;
+      case PROCESSING -> Mode.PROCESSING;
+      case UNKNOWN, UNRECOGNIZED -> throw new IllegalStateException("Unknown partition mode");
+    };
   }
 
   private static Requests.Mode toProtoRequestMode(final Mode mode) {

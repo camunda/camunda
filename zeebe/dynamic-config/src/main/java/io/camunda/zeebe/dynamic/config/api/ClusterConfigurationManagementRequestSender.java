@@ -245,7 +245,7 @@ public final class ClusterConfigurationManagementRequestSender {
         TIMEOUT);
   }
 
-  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> recovery(
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> modeChange(
       final ModeChangeRequest recoveryModeRequest) {
     return communicationService.send(
         ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
