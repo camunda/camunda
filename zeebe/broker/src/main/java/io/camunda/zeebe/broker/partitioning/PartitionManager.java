@@ -67,6 +67,7 @@ public interface PartitionManager {
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
       final TopologyManagerImpl topologyManager) {
+    final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
     return new PartitionManagerImpl(
         physicalTenantId,
         brokerStartupContext.getConcurrencyControl(),
@@ -86,10 +87,10 @@ public interface PartitionManager {
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getBrokerClient(),
         brokerStartupContext.getRocksDbResources(),
-        brokerStartupContext.getSecurityConfiguration(),
+        engineContext.securityConfig(),
         brokerStartupContext.getSearchClientsProxy(),
-        brokerStartupContext.getBrokerRequestAuthorizationConverter(physicalTenantId),
-        brokerStartupContext.getFeatureFlags(physicalTenantId),
+        engineContext.authorizationConverter(),
+        engineContext.featureFlags(),
         topologyManager);
   }
 

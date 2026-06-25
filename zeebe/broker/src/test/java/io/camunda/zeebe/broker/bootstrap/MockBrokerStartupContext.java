@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -370,8 +371,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public EngineSecurityConfig getSecurityConfiguration(final String physicalTenantId) {
-    return securityConfiguration;
+  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+    return new PhysicalTenantEngineContext(
+        securityConfiguration, brokerRequestAuthorizationConverter, featureFlags);
   }
 
   public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
@@ -425,20 +427,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
   }
 
-  @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
-      final String physicalTenantId) {
-    return brokerRequestAuthorizationConverter;
-  }
-
   public void setBrokerRequestAuthorizationConverter(
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
-  }
-
-  @Override
-  public FeatureFlags getFeatureFlags(final String physicalTenantId) {
-    return featureFlags;
   }
 
   public void setFeatureFlags(final FeatureFlags featureFlags) {

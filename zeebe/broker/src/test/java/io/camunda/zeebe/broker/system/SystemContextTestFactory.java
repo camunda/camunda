@@ -14,6 +14,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -74,7 +75,7 @@ public final class SystemContextTestFactory {
         oidcClaimsProvider,
         searchClientsProxy,
         brokerRequestAuthorizationConverter,
-        FeatureFlags.createDefaultForTests(),
+        featureFlagsFrom(brokerCfg),
         nodeIdProvider,
         physicalTenantIds);
   }
@@ -105,14 +106,15 @@ public final class SystemContextTestFactory {
         cluster,
         brokerClient,
         meterRegistry,
-        singleValueMap(physicalTenantIds, securityConfiguration),
+        singleValueMap(
+            physicalTenantIds,
+            new PhysicalTenantEngineContext(
+                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags)),
         tenantId -> userServices,
         passwordEncoder,
         authConfig -> jwtDecoder,
         authConfig -> oidcClaimsProvider,
         searchClientsProxy,
-        singleValueMap(physicalTenantIds, brokerRequestAuthorizationConverter),
-        singleValueMap(physicalTenantIds, featureFlags),
         nodeIdProvider,
         physicalTenantIds);
   }
@@ -123,5 +125,9 @@ public final class SystemContextTestFactory {
     physicalTenantIds.known().forEach(id -> map.put(id, value));
     map.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, value);
     return map;
+  }
+
+  private static FeatureFlags featureFlagsFrom(final BrokerCfg brokerCfg) {
+    return brokerCfg.getExperimental().getFeatures().toFeatureFlags();
   }
 }

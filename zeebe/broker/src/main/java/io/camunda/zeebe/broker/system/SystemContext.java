@@ -133,15 +133,12 @@ public final class SystemContext {
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
-  private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
+  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
   private final Function<String, UserServices> userServicesForTenant;
-  private final Map<String, FeatureFlags> featureFlagsByPhysicalTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
-  private final Map<String, BrokerRequestAuthorizationConverter>
-      brokerRequestAuthorizationConvertersByPhysicalTenant;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
@@ -158,15 +155,12 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
+      final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
-      final Map<String, BrokerRequestAuthorizationConverter>
-          brokerRequestAuthorizationConvertersByPhysicalTenant,
-      final Map<String, FeatureFlags> featureFlagsByPhysicalTenant,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
@@ -176,8 +170,7 @@ public final class SystemContext {
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
-    this.securityConfigurationsByPhysicalTenant =
-        Collections.unmodifiableMap(securityConfigurationsByPhysicalTenant);
+    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
@@ -185,9 +178,6 @@ public final class SystemContext {
         Objects.requireNonNull(
             oidcClaimsProviderFactory, "oidcClaimsProviderFactory must not be null");
     this.searchClientsProxy = searchClientsProxy;
-    this.brokerRequestAuthorizationConvertersByPhysicalTenant =
-        Collections.unmodifiableMap(brokerRequestAuthorizationConvertersByPhysicalTenant);
-    this.featureFlagsByPhysicalTenant = Map.copyOf(featureFlagsByPhysicalTenant);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
@@ -505,9 +495,9 @@ public final class SystemContext {
   // actually initializing the entities will be done in IdentitySetupInitializer.
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
-    securityConfigurationsByPhysicalTenant.forEach(
-        (physicalTenantId, securityConfig) ->
-            validateInitializationConfigForTenant(physicalTenantId, securityConfig));
+    physicalTenantEngineContexts.forEach(
+        (physicalTenantId, ctx) ->
+            validateInitializationConfigForTenant(physicalTenantId, ctx.securityConfig()));
   }
 
   private void validateInitializationConfigForTenant(
@@ -730,9 +720,21 @@ public final class SystemContext {
     return meterRegistry;
   }
 
-  /** Returns the per-physical-tenant security configuration map (unmodifiable). */
-  public Map<String, EngineSecurityConfig> getSecurityConfigurationsByPhysicalTenant() {
-    return securityConfigurationsByPhysicalTenant;
+  /** Returns the per-physical-tenant engine context map (unmodifiable). */
+  public Map<String, PhysicalTenantEngineContext> getPhysicalTenantEngineContexts() {
+    return physicalTenantEngineContexts;
+  }
+
+  /**
+   * Returns the engine context for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return physicalTenantEngineContexts.get(physicalTenantId);
   }
 
   /**
@@ -744,25 +746,12 @@ public final class SystemContext {
    *     physical tenant
    */
   public EngineSecurityConfig getSecurityConfiguration() {
-    final var config =
-        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    if (config == null) {
+    final var ctx = physicalTenantEngineContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (ctx == null) {
       throw new IllegalStateException(
           "No security configuration registered for the default physical tenant");
     }
-    return config;
-  }
-
-  /**
-   * Returns the security configuration for the given physical tenant.
-   *
-   * @throws IllegalArgumentException if the physical tenant id is unknown
-   */
-  public EngineSecurityConfig getSecurityConfiguration(final String physicalTenantId) {
-    if (!securityConfigurationsByPhysicalTenant.containsKey(physicalTenantId)) {
-      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
-    }
-    return securityConfigurationsByPhysicalTenant.get(physicalTenantId);
+    return ctx.securityConfig();
   }
 
   public Function<String, UserServices> getUserServicesForTenant() {
@@ -783,42 +772,6 @@ public final class SystemContext {
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
-  }
-
-  /**
-   * Returns the request authorization converter for the given physical tenant.
-   *
-   * @throws IllegalArgumentException if the physical tenant id is unknown
-   */
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
-      final String physicalTenantId) {
-    if (!brokerRequestAuthorizationConvertersByPhysicalTenant.containsKey(physicalTenantId)) {
-      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
-    }
-    return brokerRequestAuthorizationConvertersByPhysicalTenant.get(physicalTenantId);
-  }
-
-  /** Returns the per-physical-tenant request authorization converter map (unmodifiable). */
-  public Map<String, BrokerRequestAuthorizationConverter>
-      getBrokerRequestAuthorizationConvertersByPhysicalTenant() {
-    return brokerRequestAuthorizationConvertersByPhysicalTenant;
-  }
-
-  /**
-   * Returns the feature flags for the given physical tenant.
-   *
-   * @throws IllegalArgumentException if the physical tenant id is unknown
-   */
-  public FeatureFlags getFeatureFlags(final String physicalTenantId) {
-    if (!featureFlagsByPhysicalTenant.containsKey(physicalTenantId)) {
-      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
-    }
-    return featureFlagsByPhysicalTenant.get(physicalTenantId);
-  }
-
-  /** Returns the per-physical-tenant feature flags map (unmodifiable). */
-  public Map<String, FeatureFlags> getFeatureFlagsByPhysicalTenant() {
-    return featureFlagsByPhysicalTenant;
   }
 
   public NodeIdProvider getNodeIdProvider() {

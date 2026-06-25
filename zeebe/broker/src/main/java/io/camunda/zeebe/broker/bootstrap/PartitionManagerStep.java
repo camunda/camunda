@@ -11,7 +11,9 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
+import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
@@ -144,7 +146,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   PartitionManager partitionManager(
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-
+    final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
     return new PartitionManagerImpl(
         physicalTenantId,
         brokerStartupContext.getConcurrencyControl(),
@@ -164,10 +166,10 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getBrokerClient(),
         brokerStartupContext.getRocksDbResources(),
-        brokerStartupContext.getSecurityConfiguration(physicalTenantId),
+        engineContext.securityConfig(),
         brokerStartupContext.getSearchClientsProxy(),
-        brokerStartupContext.getBrokerRequestAuthorizationConverter(physicalTenantId),
-        brokerStartupContext.getFeatureFlags(physicalTenantId),
+        engineContext.authorizationConverter(),
+        engineContext.featureFlags(),
         topologyManager);
   }
 
@@ -179,7 +181,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getClusterConfigurationService(),
-        brokerStartupContext.getClusterServices(),
+        brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getActorSchedulingService(),
         brokerStartupContext.getMeterRegistry(),
         topologyManager);
