@@ -549,22 +549,71 @@ describe('<VariableFilterModal />', () => {
       });
   });
 
+  const TRUNCATION_WARNING =
+    'Variable filters search only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.';
+
+  it('should show truncation warning on initial render with default equals operator', () => {
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
+  });
+
+  it('should show truncation warning when equals operator is selected', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('equals'));
+
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
+  });
+
+  it('should show truncation warning when notEqual operator is selected', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('not equal'));
+
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
+  });
+
   it('should show truncation warning when contains operator is selected', async () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
     await user.click(screen.getByText('contains'));
 
-    expect(
-      screen.getByText(
-        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
   });
 
-  it('should show truncation warning when one of multiple conditions uses contains', async () => {
+  it('should show truncation warning when oneOf operator is selected', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('is one of'));
+
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
+  });
+
+  it('should not show truncation warning when exists operator is selected', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('exists'));
+
+    expect(screen.queryByText(TRUNCATION_WARNING)).not.toBeInTheDocument();
+  });
+
+  it('should not show truncation warning when doesNotExist operator is selected', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('does not exist'));
+
+    expect(screen.queryByText(TRUNCATION_WARNING)).not.toBeInTheDocument();
+  });
+
+  it('should show truncation warning when one of multiple conditions uses a value-comparing operator', async () => {
     variableFilterStore.setConditions([
-      {name: 'status', operator: 'equals', value: '"active"'},
+      {name: 'status', operator: 'exists', value: ''},
     ]);
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
@@ -575,42 +624,32 @@ describe('<VariableFilterModal />', () => {
     await user.click(operatorDropdowns[1]!);
     await user.click(screen.getByText('contains'));
 
-    expect(
-      screen.getByText(
-        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
 
     const deleteButtons = screen.getAllByRole('button', {
       name: 'Remove condition',
     });
     await user.click(deleteButtons[1]!);
 
-    expect(
-      screen.queryByText(
-        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(TRUNCATION_WARNING)).not.toBeInTheDocument();
   });
 
-  it('should hide truncation warning when operator is changed away from contains', async () => {
+  it('should hide truncation warning when operator is changed to exists', async () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
-    await user.click(screen.getByText('contains'));
-    expect(
-      screen.getByText(
-        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
 
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
-    await user.click(screen.getByText('equals'));
+    await user.click(screen.getByText('exists'));
 
-    expect(
-      screen.queryByText(
-        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(TRUNCATION_WARNING)).not.toBeInTheDocument();
+  });
+
+  it('should show truncation warning on initial render when equals condition is preloaded', () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
+    expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
   });
 });

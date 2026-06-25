@@ -340,14 +340,19 @@ const VariableFilterModal: React.FC = observer(() => {
                             </ConditionRowsScroll>
                             {form
                               .getState()
-                              .values?.conditions?.some(
-                                (c) => c.operator === 'contains',
+                              .values?.conditions?.some((c) =>
+                                [
+                                  'equals',
+                                  'notEqual',
+                                  'contains',
+                                  'oneOf',
+                                ].includes(c.operator),
                               ) && (
                               <InlineNotification
                                 kind="warning"
                                 lowContrast
                                 hideCloseButton
-                                subtitle='"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.'
+                                subtitle="Variable filters search only the first ~8 000 characters of a variable value. Matches in longer values may not be returned."
                                 role="status"
                               />
                             )}
