@@ -179,17 +179,6 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 							isCurrentPage: hasRouteMatch('/operate/operations-log') || hasRouteMatch('/operate/batch-operations'),
 							subElements: [
 								{
-									key: 'operations-log',
-									label: t('operate.operationsLog.title'),
-									isCurrentPage: hasRouteMatch('/operate/operations-log'),
-									routeProps: {
-										to: tabRoutes['operateOperationsLog'],
-										onClick: () => {
-											tracking.track({eventName: 'operate:navigation', link: 'header-operations-log'});
-										},
-									},
-								},
-								{
 									key: 'batch-operations',
 									label: t('operate.batchOperations.title'),
 									isCurrentPage: hasRouteMatch('/operate/batch-operations'),
@@ -197,6 +186,17 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 										to: tabRoutes['operateBatchOperations'],
 										onClick: () => {
 											tracking.track({eventName: 'operate:navigation', link: 'header-batch-operations'});
+										},
+									},
+								},
+								{
+									key: 'operations-log',
+									label: t('operate.operationsLog.title'),
+									isCurrentPage: hasRouteMatch('/operate/operations-log'),
+									routeProps: {
+										to: tabRoutes['operateOperationsLog'],
+										onClick: () => {
+											tracking.track({eventName: 'operate:navigation', link: 'header-operations-log'});
 										},
 									},
 								},

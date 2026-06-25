@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useRef} from 'react';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@carbon/react';
-import {TableContainer, LoadingOverlay, EmptyStateContainer} from './styled';
+import {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer} from './styled';
 import {ColumnHeader} from './ColumnHeader';
+import {InfiniteScroller} from '../InfiniteScroller/InfiniteScroller';
 
 type TableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -29,6 +31,8 @@ type Props<TRow> = {
 	isFetching?: boolean;
 	emptyState?: React.ReactNode;
 	onSort?: (sortKey: string, order: 'asc' | 'desc') => void;
+	onVerticalScrollStartReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollStartReach'];
+	onVerticalScrollEndReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollEndReach'];
 	'data-testid'?: string;
 };
 
@@ -40,10 +44,35 @@ function SortableTable<TRow>({
 	isFetching = false,
 	emptyState,
 	onSort,
+	onVerticalScrollStartReach,
+	onVerticalScrollEndReach,
 	'data-testid': dataTestId,
 }: Props<TRow>) {
-	return (
-		<TableContainer data-testid={dataTestId}>
+	const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
+	const hasScrollHandlers = onVerticalScrollStartReach !== undefined || onVerticalScrollEndReach !== undefined;
+
+	const tableBody = (
+		<TableBody>
+			{rows.length === 0 && emptyState !== undefined ? (
+				<TableRow>
+					<TableCell colSpan={columns.length}>
+						<EmptyStateContainer>{emptyState}</EmptyStateContainer>
+					</TableCell>
+				</TableRow>
+			) : (
+				rows.map((row) => (
+					<TableRow key={rowKey(row)}>
+						{columns.map((col) => (
+							<TableCell key={col.key}>{col.render(row)}</TableCell>
+						))}
+					</TableRow>
+				))
+			)}
+		</TableBody>
+	);
+
+	const innerTable = (
+		<>
 			{isFetching && <LoadingOverlay aria-hidden />}
 			<Table size={size} isSortable>
 				<TableHead>
@@ -66,26 +95,30 @@ function SortableTable<TRow>({
 						)}
 					</TableRow>
 				</TableHead>
-				<TableBody>
-					{rows.length === 0 && emptyState !== undefined ? (
-						<TableRow>
-							<TableCell colSpan={columns.length}>
-								<EmptyStateContainer>{emptyState}</EmptyStateContainer>
-							</TableCell>
-						</TableRow>
-					) : (
-						rows.map((row) => (
-							<TableRow key={rowKey(row)}>
-								{columns.map((col) => (
-									<TableCell key={col.key}>{col.render(row)}</TableCell>
-								))}
-							</TableRow>
-						))
-					)}
-				</TableBody>
+				{hasScrollHandlers ? (
+					<InfiniteScroller
+						onVerticalScrollStartReach={onVerticalScrollStartReach}
+						onVerticalScrollEndReach={onVerticalScrollEndReach}
+						scrollableContainerRef={scrollableContainerRef}
+					>
+						{tableBody}
+					</InfiniteScroller>
+				) : (
+					tableBody
+				)}
 			</Table>
-		</TableContainer>
+		</>
 	);
+
+	if (hasScrollHandlers) {
+		return (
+			<ScrollContainer ref={scrollableContainerRef} data-testid={dataTestId}>
+				{innerTable}
+			</ScrollContainer>
+		);
+	}
+
+	return <TableContainer data-testid={dataTestId}>{innerTable}</TableContainer>;
 }
 
 export {SortableTable};

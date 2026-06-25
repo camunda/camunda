@@ -12,6 +12,16 @@ import {TableContainer as CarbonTableContainer} from '@carbon/react';
 const TableContainer = styled(CarbonTableContainer)`
 	position: relative;
 	background-color: var(--cds-layer);
+	.cds--data-table-content {
+		overflow-x: inherit;
+	}
+`;
+
+const ScrollContainer = styled.div`
+	height: 100%;
+	background-color: var(--cds-layer);
+	overflow-y: auto;
+	flex: 1 0 0;
 `;
 
 const LoadingOverlay = styled.div`
@@ -30,4 +40,4 @@ const EmptyStateContainer = styled.div`
 	padding: var(--cds-spacing-09) 0;
 `;
 
-export {TableContainer, LoadingOverlay, EmptyStateContainer};
+export {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer};
