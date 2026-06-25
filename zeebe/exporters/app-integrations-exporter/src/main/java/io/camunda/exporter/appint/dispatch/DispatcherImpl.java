@@ -40,11 +40,20 @@ public class DispatcherImpl implements Dispatcher {
   public void dispatch(final Runnable job) {
     try {
       semaphore.acquire();
-      metrics.incrementBatchesInFlight();
-      log.trace("Dispatching job {}", job);
-      executorService.execute(() -> executeJob(job));
     } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
+    }
+    metrics.incrementBatchesInFlight();
+    log.trace("Dispatching job {}", job);
+    try {
+      executorService.execute(() -> executeJob(job));
+    } catch (final RuntimeException e) {
+      // Submission failed (e.g. RejectedExecutionException once the executor is shutting down);
+      // release the permit and gauge reserved for this job so they are not leaked.
+      metrics.decrementBatchesInFlight();
+      semaphore.release();
+      throw e;
     }
   }
 
@@ -79,6 +88,7 @@ public class DispatcherImpl implements Dispatcher {
       executorService.shutdown();
       executorService.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
     } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
   }

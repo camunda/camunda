@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import dev.failsafe.TimeoutExceededException;
 import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.subscription.SubscriptionFactory;
 import io.camunda.exporter.appint.transport.Authentication.ApiKey;
@@ -161,7 +162,7 @@ public class HttpTransportTest {
 
     // when
     Assertions.assertThatCode(() -> transport.send(new ArrayList<>()))
-        .isInstanceOf(Throwable.class);
+        .isInstanceOf(TimeoutExceededException.class);
 
     // then
     assertThat(timeoutCounter("export")).isEqualTo(1.0);
