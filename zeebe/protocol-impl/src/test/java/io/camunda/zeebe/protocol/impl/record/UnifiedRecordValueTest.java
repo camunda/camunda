@@ -29,7 +29,8 @@ final class UnifiedRecordValueTest {
           ValueType.EVENT_BRIDGE_MEMBERSHIP,
           ValueType.EVENT_BRIDGE_OFFSET,
           ValueType.EVENT_BRIDGE_REBALANCE,
-          ValueType.EVENT_BRIDGE_TOPIC);
+          ValueType.EVENT_BRIDGE_TOPIC,
+          ValueType.EVENT_BRIDGE_BROKER);
 
   @ParameterizedTest
   @MethodSource("provideValueTypes")

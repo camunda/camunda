@@ -244,7 +244,8 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.EVENT_BRIDGE_MEMBERSHIP,
           ValueType.EVENT_BRIDGE_OFFSET,
           ValueType.EVENT_BRIDGE_REBALANCE,
-          ValueType.EVENT_BRIDGE_TOPIC ->
+          ValueType.EVENT_BRIDGE_TOPIC,
+          ValueType.EVENT_BRIDGE_BROKER ->
           null;
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
