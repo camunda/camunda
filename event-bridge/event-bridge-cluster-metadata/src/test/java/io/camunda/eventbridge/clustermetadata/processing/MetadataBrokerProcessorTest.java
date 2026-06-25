@@ -13,6 +13,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.eventbridge.clustermetadata.record.BrokerRecord;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerDeregisteredApplier;
+import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerDrainingApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerFencedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerRegisteredApplier;
 import io.camunda.eventbridge.clustermetadata.state.broker.BrokerMetadata.BrokerStatus;
@@ -40,8 +42,8 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Drives the broker registration/liveness command path through the {@link RecordProcessingEngine}
  * (validate → resolve → append → apply) and asserts on the resulting replicated broker registry: a
- * fresh monotonic epoch on (re-)registration, the active set placement reads, and the self-guarded
- * fence (a stale fence command is a no-op).
+ * fresh monotonic epoch on a new incarnation, idempotent re-registration of the same incarnation,
+ * the active set placement reads, the self-guarded fence, and the drain/deregister transitions.
  */
 final class MetadataBrokerProcessorTest {
 
@@ -73,10 +75,21 @@ final class MetadataBrokerProcessorTest {
                         ValueType.EVENT_BRIDGE_BROKER,
                         MetadataIntent.FENCE_BROKER,
                         new FenceBrokerProcessor(processors.writers(), state))
+                    .onCommand(
+                        ValueType.EVENT_BRIDGE_BROKER,
+                        MetadataIntent.DRAIN_BROKER,
+                        new DrainBrokerProcessor(processors.writers(), state))
+                    .onCommand(
+                        ValueType.EVENT_BRIDGE_BROKER,
+                        MetadataIntent.DEREGISTER_BROKER,
+                        new DeregisterBrokerProcessor(processors.writers(), state))
                     .withEventApplier(
                         MetadataIntent.BROKER_REGISTERED, new BrokerRegisteredApplier(state))
+                    .withEventApplier(MetadataIntent.BROKER_FENCED, new BrokerFencedApplier(state))
                     .withEventApplier(
-                        MetadataIntent.BROKER_FENCED, new BrokerFencedApplier(state)));
+                        MetadataIntent.BROKER_DRAINING, new BrokerDrainingApplier(state))
+                    .withEventApplier(
+                        MetadataIntent.BROKER_DEREGISTERED, new BrokerDeregisteredApplier(state)));
   }
 
   @AfterEach
@@ -87,7 +100,7 @@ final class MetadataBrokerProcessorTest {
   @Test
   void shouldRegisterBrokerWithAssignedEpoch() {
     // when
-    register(0);
+    register(0, 100);
 
     // then — the leader stamped a fresh epoch and ACTIVE status
     final var broker = state.get(0);
@@ -97,11 +110,22 @@ final class MetadataBrokerProcessorTest {
   }
 
   @Test
-  void shouldBumpEpochOnReRegister() {
-    register(0);
+  void shouldBeIdempotentForSameIncarnation() {
+    register(0, 100);
 
-    // when — the broker restarts and re-registers
-    register(0);
+    // when — the registration RPC is retried with the same incarnation
+    register(0, 100);
+
+    // then — the epoch is unchanged, so the broker's in-flight heartbeats are not fenced
+    assertThat(state.get(0).brokerEpoch()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldBumpEpochOnNewIncarnation() {
+    register(0, 100);
+
+    // when — the broker restarts and re-registers with a new incarnation
+    register(0, 200);
 
     // then — the epoch is bumped so stale heartbeats from the prior incarnation are fenced
     assertThat(state.get(0).brokerEpoch()).isEqualTo(2);
@@ -110,7 +134,7 @@ final class MetadataBrokerProcessorTest {
 
   @Test
   void shouldFenceActiveBroker() {
-    register(0);
+    register(0, 100);
 
     // when — the eviction task fences the broker at its current epoch
     fence(0, 1);
@@ -122,8 +146,8 @@ final class MetadataBrokerProcessorTest {
 
   @Test
   void shouldNotFenceOnStaleEpoch() {
-    register(0); // epoch 1
-    register(0); // epoch 2 (re-registered)
+    register(0, 100); // epoch 1
+    register(0, 200); // epoch 2 (restarted)
 
     // when — a fence command from the earlier epoch arrives late
     fence(0, 1);
@@ -134,10 +158,23 @@ final class MetadataBrokerProcessorTest {
   }
 
   @Test
+  void shouldReactivateFencedBrokerOnReRegister() {
+    register(0, 100);
+    fence(0, 1);
+
+    // when — the fenced broker re-registers
+    register(0, 100);
+
+    // then — it is ACTIVE again with a bumped epoch
+    assertThat(state.get(0).status()).isEqualTo(BrokerStatus.ACTIVE);
+    assertThat(state.get(0).brokerEpoch()).isEqualTo(2);
+  }
+
+  @Test
   void shouldTrackActiveBrokersForPlacement() {
-    register(0);
-    register(1);
-    register(2);
+    register(0, 100);
+    register(1, 100);
+    register(2, 100);
     assertThat(state.activeBrokers()).containsExactly(0, 1, 2);
 
     // when — one broker is fenced
@@ -147,14 +184,44 @@ final class MetadataBrokerProcessorTest {
     assertThat(state.activeBrokers()).containsExactly(0, 2);
   }
 
-  private void register(final int brokerId) {
-    process(MetadataIntent.REGISTER_BROKER, new BrokerRecord().setBrokerId(brokerId));
+  @Test
+  void shouldDrainAndDeregisterBroker() {
+    register(0, 100);
+
+    // when — a draining heartbeat marks it for controlled shutdown
+    drain(0, 1);
+
+    // then — it is DRAINING and excluded from placement
+    assertThat(state.get(0).status()).isEqualTo(BrokerStatus.DRAINING);
+    assertThat(state.activeBrokers()).isEmpty();
+
+    // when — it is deregistered once drained
+    deregister(0);
+
+    // then — it is gone from the registry
+    assertThat(state.get(0)).isNull();
+  }
+
+  private void register(final int brokerId, final long incarnation) {
+    process(
+        MetadataIntent.REGISTER_BROKER,
+        new BrokerRecord().setBrokerId(brokerId).setIncarnation(incarnation));
   }
 
   private void fence(final int brokerId, final long epoch) {
     process(
         MetadataIntent.FENCE_BROKER,
         new BrokerRecord().setBrokerId(brokerId).setBrokerEpoch(epoch));
+  }
+
+  private void drain(final int brokerId, final long epoch) {
+    process(
+        MetadataIntent.DRAIN_BROKER,
+        new BrokerRecord().setBrokerId(brokerId).setBrokerEpoch(epoch));
+  }
+
+  private void deregister(final int brokerId) {
+    process(MetadataIntent.DEREGISTER_BROKER, new BrokerRecord().setBrokerId(brokerId));
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

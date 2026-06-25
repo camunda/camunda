@@ -11,6 +11,8 @@ import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
 import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.processing.BrokerEvictionTask;
 import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.DeregisterBrokerProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.DrainBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.FenceBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.RegisterBrokerProcessor;
@@ -22,6 +24,8 @@ import io.camunda.eventbridge.clustermetadata.record.MetadataRecordValues;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.session.BrokerLivenessMirror;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerDeregisteredApplier;
+import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerDrainingApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerFencedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerRegisteredApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
@@ -156,6 +160,14 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                     MetadataRecordValues.BROKER_VALUE_TYPE,
                     MetadataIntent.FENCE_BROKER,
                     new FenceBrokerProcessor(processors.writers(), brokerState))
+                .onCommand(
+                    MetadataRecordValues.BROKER_VALUE_TYPE,
+                    MetadataIntent.DRAIN_BROKER,
+                    new DrainBrokerProcessor(processors.writers(), brokerState))
+                .onCommand(
+                    MetadataRecordValues.BROKER_VALUE_TYPE,
+                    MetadataIntent.DEREGISTER_BROKER,
+                    new DeregisterBrokerProcessor(processors.writers(), brokerState))
                 .withEventApplier(
                     MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState))
                 .withEventApplier(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState))
@@ -163,6 +175,10 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                     MetadataIntent.BROKER_REGISTERED, new BrokerRegisteredApplier(brokerState))
                 .withEventApplier(
                     MetadataIntent.BROKER_FENCED, new BrokerFencedApplier(brokerState))
+                .withEventApplier(
+                    MetadataIntent.BROKER_DRAINING, new BrokerDrainingApplier(brokerState))
+                .withEventApplier(
+                    MetadataIntent.BROKER_DEREGISTERED, new BrokerDeregisteredApplier(brokerState))
                 .withListener(
                     new BrokerEvictionTask(
                         BROKER_EVICTION_INTERVAL,
@@ -265,6 +281,38 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
         writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
     if (result.isLeft()) {
       LOG.warn("Failed to write topic command {} for {}: {}", intent, name, result.getLeft());
+    }
+  }
+
+  /**
+   * Marks a broker as draining for controlled shutdown (internal, fire-and-forget). Leader only.
+   */
+  public void drainBroker(final BrokerRecord command) {
+    writeBrokerCommand(command, MetadataIntent.DRAIN_BROKER);
+  }
+
+  /** Removes a drained broker from the registry (internal, fire-and-forget). Leader only. */
+  public void deregisterBroker(final BrokerRecord command) {
+    writeBrokerCommand(command, MetadataIntent.DEREGISTER_BROKER);
+  }
+
+  private void writeBrokerCommand(final BrokerRecord command, final MetadataIntent intent) {
+    if (writer == null) {
+      return;
+    }
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .valueType(MetadataRecordValues.BROKER_VALUE_TYPE)
+            .intent(intent);
+    final var result =
+        writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
+    if (result.isLeft()) {
+      LOG.warn(
+          "Failed to write broker command {} for {}: {}",
+          intent,
+          command.getBrokerId(),
+          result.getLeft());
     }
   }
 }

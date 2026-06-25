@@ -14,6 +14,7 @@ import io.camunda.eventbridge.clustermetadata.record.BrokerRecord;
 import io.camunda.eventbridge.clustermetadata.session.BrokerLivenessMirror;
 import io.camunda.eventbridge.clustermetadata.state.broker.BrokerMetadata.BrokerStatus;
 import io.camunda.eventbridge.clustermetadata.state.broker.BrokerQueryService;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
 import io.camunda.eventbridge.protocol.request.coordination.BrokerHeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.BrokerHeartbeatResponse;
@@ -47,6 +48,7 @@ public final class BrokerHeartbeatHandler extends Actor {
   private final InstantSource clock;
   private final MetadataStream metadataStream;
   private final BrokerQueryService brokerQuery;
+  private final TopicQueryService topicQuery;
   private final BrokerLivenessMirror liveness;
 
   public BrokerHeartbeatHandler(
@@ -55,6 +57,7 @@ public final class BrokerHeartbeatHandler extends Actor {
     this.clock = clock;
     this.metadataStream = metadataStream;
     brokerQuery = metadataStream.newBrokerQueryService();
+    topicQuery = metadataStream.newTopicQueryService();
     liveness = metadataStream.brokerLiveness();
   }
 
@@ -108,15 +111,37 @@ public final class BrokerHeartbeatHandler extends Actor {
   }
 
   private BrokerHeartbeatResponse heartbeat(final BrokerHeartbeatRequest request) {
-    final var broker = brokerQuery.broker(request.getBrokerId());
+    final var brokerId = request.getBrokerId();
+    final var broker = brokerQuery.broker(brokerId);
     if (broker == null
-        || broker.status() != BrokerStatus.ACTIVE
-        || broker.brokerEpoch() != request.getBrokerEpoch()) {
+        || broker.brokerEpoch() != request.getBrokerEpoch()
+        || (broker.status() != BrokerStatus.ACTIVE && broker.status() != BrokerStatus.DRAINING)) {
       // Unknown, fenced, or stale epoch — the broker must (re-)register.
       return new BrokerHeartbeatResponse().setErrorCode(FENCED_MEMBER_EPOCH);
     }
-    liveness.touch(request.getBrokerId(), clock.instant());
+    liveness.touch(brokerId, clock.instant());
+
+    if (request.isDraining()) {
+      // Controlled shutdown: mark it draining (once) so placement stops targeting it and the
+      // change-coordinator moves its replicas off; acknowledge shutdown only once none remain.
+      if (broker.status() == BrokerStatus.ACTIVE) {
+        metadataStream.drainBroker(
+            new BrokerRecord().setBrokerId(brokerId).setBrokerEpoch(broker.brokerEpoch()));
+      }
+      if (!hasCommittedReplicas(brokerId)) {
+        metadataStream.deregisterBroker(new BrokerRecord().setBrokerId(brokerId));
+        liveness.remove(brokerId);
+        return new BrokerHeartbeatResponse().setErrorCode(NONE).setShouldShutdown(true);
+      }
+    }
     return new BrokerHeartbeatResponse().setErrorCode(NONE);
+  }
+
+  /** Whether any topic still has the broker in a committed partition replica set. */
+  private boolean hasCommittedReplicas(final int brokerId) {
+    return topicQuery.topicsSnapshot().values().stream()
+        .flatMap(topic -> topic.assignment().values().stream())
+        .anyMatch(replicas -> replicas.contains(brokerId));
   }
 
   /**

@@ -10,6 +10,7 @@ package io.camunda.eventbridge.clustermetadata.state.broker;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
 import io.camunda.eventbridge.clustermetadata.state.immutable.BrokerState;
 import io.camunda.zeebe.db.ZeebeDb;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,6 +37,11 @@ public final class BrokerQueryService {
 
   public Map<Integer, BrokerMetadata> brokersSnapshot() {
     return state().brokersSnapshot();
+  }
+
+  /** The ids of registered, unfenced brokers — the placement target set. */
+  public List<Integer> activeBrokers() {
+    return state().activeBrokers();
   }
 
   private BrokerState state() {

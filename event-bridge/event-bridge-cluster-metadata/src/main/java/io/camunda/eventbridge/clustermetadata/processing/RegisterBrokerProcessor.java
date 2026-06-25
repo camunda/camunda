@@ -18,10 +18,20 @@ import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Handles the {@code REGISTER_BROKER} command: assigns the broker a fresh, monotonic epoch (one
- * higher than any prior registration of the same id, so a restarted broker fences its earlier
- * incarnation), appends {@code BROKER_REGISTERED} with status {@code ACTIVE}, and replies with the
- * assigned epoch. The leader that produces the durable event decides the epoch.
+ * Handles the {@code REGISTER_BROKER} command. The {@code incarnation} the broker proposes (unique
+ * per process start) makes registration idempotent and detects restarts:
+ *
+ * <ul>
+ *   <li>a re-register from the <em>same</em> incarnation of an already-{@code ACTIVE} broker is a
+ *       retry — it keeps the current epoch (replying with it) so the broker's in-flight heartbeats
+ *       are not fenced by a needless epoch bump;
+ *   <li>otherwise (a new broker, a new incarnation = restart, or a fenced/draining broker coming
+ *       back) it assigns a fresh, monotonic epoch — one higher than any prior registration of the
+ *       same id — so any stale heartbeats from an earlier incarnation are fenced.
+ * </ul>
+ *
+ * It appends {@code BROKER_REGISTERED} with status {@code ACTIVE} and replies with the epoch. The
+ * leader that produces the durable event decides the epoch.
  */
 public final class RegisterBrokerProcessor implements TypedRecordProcessor<BrokerRecord> {
 
@@ -37,6 +47,16 @@ public final class RegisterBrokerProcessor implements TypedRecordProcessor<Broke
   public void processRecord(final TypedRecord<BrokerRecord> command) {
     final var cmd = command.getValue();
     final var existing = brokerState.get(cmd.getBrokerId());
+
+    if (existing != null
+        && existing.status() == BrokerStatus.ACTIVE
+        && existing.incarnation() == cmd.getIncarnation()) {
+      // Idempotent re-register (an RPC retry from the same incarnation): keep the epoch so the
+      // broker's in-flight heartbeats are not fenced; no state change, just echo the epoch.
+      respond(command, existing.brokerEpoch());
+      return;
+    }
+
     final var epoch = (existing == null ? 0L : existing.brokerEpoch()) + 1;
     final var event =
         new BrokerRecord()
@@ -45,6 +65,10 @@ public final class RegisterBrokerProcessor implements TypedRecordProcessor<Broke
             .setStatus(BrokerStatus.ACTIVE)
             .setIncarnation(cmd.getIncarnation());
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.BROKER_REGISTERED, event);
+    respond(command, epoch);
+  }
+
+  private void respond(final TypedRecord<BrokerRecord> command, final long epoch) {
     writers
         .response()
         .respond(
