@@ -43,6 +43,8 @@
 /.github/workflows/preview-env*                          @camunda/monorepo-devops-team
 /.github/workflows/reject-updates-using-merge-commit.yml @camunda/monorepo-devops-team
 /.github/workflows/renovatelint.yml                      @camunda/monorepo-devops-team
+/.github/workflows/update-backwards-compat-version.yml   @camunda/monorepo-devops-team
+/.github/workflows/update-identity.yml                   @camunda/monorepo-devops-team
 /.github/workflows/retry-workflow.yml                    @camunda/monorepo-devops-team
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
