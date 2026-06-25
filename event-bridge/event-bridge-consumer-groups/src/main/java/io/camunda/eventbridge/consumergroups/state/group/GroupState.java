@@ -30,6 +30,10 @@ import java.util.Map;
  *       membership/rebalance events (the state machine lives in the log).
  *   <li>{@code subscriptions} — the topics the group subscribes to with their partition counts,
  *       fixed when the group is created; the assignor balances all their partitions together.
+ *   <li>{@code emptySince} — the wall-clock (epoch millis) at which the group last became {@code
+ *       EMPTY}, stamped from the emptying {@code MEMBER_LEFT} event so the retention task's
+ *       deadline survives failover; only meaningful while the group is {@code EMPTY}, {@code 0}
+ *       otherwise.
  * </ul>
  */
 public final class GroupState extends UnpackedObject implements DbValue {
@@ -39,13 +43,15 @@ public final class GroupState extends UnpackedObject implements DbValue {
   private final StringProperty stateProp = new StringProperty("state", GroupLifecycle.EMPTY.name());
   private final ArrayProperty<TopicSubscriptionValue> subscriptionsProp =
       new ArrayProperty<>("subscriptions", TopicSubscriptionValue::new);
+  private final LongProperty emptySinceProp = new LongProperty("emptySince", 0L);
 
   public GroupState() {
-    super(4);
+    super(5);
     declareProperty(groupEpochProp)
         .declareProperty(assignmentEpochProp)
         .declareProperty(stateProp)
-        .declareProperty(subscriptionsProp);
+        .declareProperty(subscriptionsProp)
+        .declareProperty(emptySinceProp);
   }
 
   public GroupLifecycle getState() {
@@ -86,6 +92,16 @@ public final class GroupState extends UnpackedObject implements DbValue {
 
   public GroupState setAssignmentEpoch(final long assignmentEpoch) {
     assignmentEpochProp.setValue(assignmentEpoch);
+    return this;
+  }
+
+  /** Epoch millis the group last became {@code EMPTY}; {@code 0} when it has members. */
+  public long getEmptySince() {
+    return emptySinceProp.getValue();
+  }
+
+  public GroupState setEmptySince(final long emptySince) {
+    emptySinceProp.setValue(emptySince);
     return this;
   }
 }

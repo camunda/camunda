@@ -36,6 +36,9 @@ import java.util.Map;
  *   <li>{@code memberEpoch} — the member's generation, set to the group epoch at join.
  *   <li>{@code groupEpoch} — the group epoch after this change (the desired-state version the
  *       assignor reconciles toward).
+ *   <li>{@code timestamp} — the processing wall-clock (epoch millis) of this change, stamped by the
+ *       processor onto the {@code MEMBER_LEFT} event so the applier can record when a group became
+ *       {@code EMPTY} without reading a (non-deterministic) clock; unset ({@code 0}) otherwise.
  * </ul>
  */
 public final class MembershipRecord extends UnifiedRecordValue {
@@ -47,15 +50,17 @@ public final class MembershipRecord extends UnifiedRecordValue {
   private final StringProperty instanceIdProp = new StringProperty("instanceId", "");
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", 0L);
   private final LongProperty groupEpochProp = new LongProperty("groupEpoch", 0L);
+  private final LongProperty timestampProp = new LongProperty("timestamp", 0L);
 
   public MembershipRecord() {
-    super(6);
+    super(7);
     declareProperty(groupIdProp)
         .declareProperty(subscriptionsProp)
         .declareProperty(memberIdProp)
         .declareProperty(instanceIdProp)
         .declareProperty(memberEpochProp)
-        .declareProperty(groupEpochProp);
+        .declareProperty(groupEpochProp)
+        .declareProperty(timestampProp);
   }
 
   /**
@@ -148,6 +153,16 @@ public final class MembershipRecord extends UnifiedRecordValue {
 
   public MembershipRecord setGroupEpoch(final long groupEpoch) {
     groupEpochProp.setValue(groupEpoch);
+    return this;
+  }
+
+  /** The processing wall-clock (epoch millis) of this change; {@code 0} when unset. */
+  public long getTimestamp() {
+    return timestampProp.getValue();
+  }
+
+  public MembershipRecord setTimestamp(final long timestamp) {
+    timestampProp.setValue(timestamp);
     return this;
   }
 }

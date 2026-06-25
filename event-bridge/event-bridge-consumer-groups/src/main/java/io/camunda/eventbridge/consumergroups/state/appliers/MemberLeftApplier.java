@@ -41,8 +41,10 @@ public final class MemberLeftApplier
     group.setGroupEpoch(value.getGroupEpoch());
     if (state.isGroupEmpty(groupId)) {
       // Last member left: retain the group (and its committed offsets) as EMPTY; the retention
-      // task reclaims it after it has been empty long enough.
+      // task reclaims it once it has been empty for the retention window. Stamp when it became
+      // empty (from the event, so it is identical on every replica) as the retention deadline.
       group.setState(GroupLifecycle.EMPTY);
+      group.setEmptySince(value.getTimestamp());
     } else {
       // A leave bumps the group epoch, so the remaining members' target is stale: back to
       // PREPARING_REBALANCE until the assignor recomputes.

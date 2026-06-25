@@ -18,9 +18,6 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 
 /**
  * Reclaims empty consumer groups (and their committed offsets) after a retention window — the
@@ -28,12 +25,13 @@ import java.util.Map;
  * StreamProcessorLifecycleAware} listener that self-schedules at a fixed rate on the async task
  * group (leader only, off the processing path), mirroring {@link RebalanceAssignorTask}. On each
  * tick it reads the {@code EMPTY} groups from the {@link ConsumerGroupState} lifecycle index (no
- * full scan) and, once one has been empty for at least the retention duration, appends a {@code
- * DELETE_GROUP} command (the {@link DeleteGroupProcessor} validates and commits it; {@code
- * GroupDeletedApplier} removes the group + offsets).
+ * full scan) and, for any whose replicated {@code emptySince} is older than the retention window,
+ * appends a {@code DELETE_GROUP} command (the {@link DeleteGroupProcessor} validates and commits
+ * it; {@code GroupDeletedApplier} removes the group + offsets).
  *
- * <p>The "first seen empty" timestamps are kept in memory (leader-only); a failover resets them, so
- * retention is approximate (a failover can extend it) — acceptable, as in Kafka.
+ * <p>The retention deadline lives in replicated state ({@code GroupState.emptySince}, stamped when
+ * the group became empty), so it survives failover and the task itself is stateless — the scan
+ * cadence only affects how promptly an expired group is reclaimed, never the deadline.
  */
 public final class GroupRetentionTask implements Task, StreamProcessorLifecycleAware {
 
@@ -41,9 +39,6 @@ public final class GroupRetentionTask implements Task, StreamProcessorLifecycleA
   private final Duration retention;
   private final ConsumerGroupState state;
   private final InstantSource clock;
-
-  // groupId -> when it was first observed EMPTY (leader-only, ephemeral).
-  private final Map<String, Instant> emptySince = new HashMap<>();
 
   public GroupRetentionTask(
       final Duration interval,
@@ -64,19 +59,14 @@ public final class GroupRetentionTask implements Task, StreamProcessorLifecycleA
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     final var now = clock.instant();
-    final var live = new HashSet<String>();
     // The index returns only EMPTY groups — no full scan.
     for (final var snapshot : state.emptyGroups()) {
-      final var groupId = snapshot.groupId();
-      live.add(groupId);
-      final var since = emptySince.computeIfAbsent(groupId, ignored -> now);
-      if (!Duration.between(since, now).minus(retention).isNegative()) {
+      final var emptySince = Instant.ofEpochMilli(snapshot.emptySince());
+      if (!Duration.between(emptySince, now).minus(retention).isNegative()) {
         taskResultBuilder.appendCommandRecord(
-            CoordinatorIntent.DELETE_GROUP, new MembershipRecord().setGroupId(groupId));
+            CoordinatorIntent.DELETE_GROUP, new MembershipRecord().setGroupId(snapshot.groupId()));
       }
     }
-    // Forget groups that are no longer empty (a member rejoined) so their timer restarts next time.
-    emptySince.keySet().retainAll(live);
     return taskResultBuilder.build();
   }
 }

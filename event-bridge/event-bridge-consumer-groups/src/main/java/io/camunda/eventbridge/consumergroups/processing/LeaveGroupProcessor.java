@@ -50,7 +50,10 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
         new MembershipRecord()
             .setGroupId(cmd.getGroupId())
             .setMemberId(cmd.getMemberId())
-            .setGroupEpoch(newGroupEpoch);
+            .setGroupEpoch(newGroupEpoch)
+            // Carry the processing time so the applier can stamp emptySince deterministically if
+            // this leave empties the group (the retention deadline must survive failover).
+            .setTimestamp(command.getTimestamp());
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_LEFT, event);
     writers
         .response()

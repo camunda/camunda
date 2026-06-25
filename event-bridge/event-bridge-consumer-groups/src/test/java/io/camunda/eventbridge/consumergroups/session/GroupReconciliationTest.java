@@ -137,7 +137,7 @@ final class GroupReconciliationTest {
     }
     final var state =
         assignmentEpoch < groupEpoch ? GroupLifecycle.PREPARING_REBALANCE : GroupLifecycle.STABLE;
-    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, state, Map.of("t", 4), roster);
+    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, state, 0L, Map.of("t", 4), roster);
   }
 
   private static MemberSnapshot member(

@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,14 +75,14 @@ final class GroupRetentionTaskTest {
 
   @Test
   void shouldDeleteEmptyGroupOnlyAfterRetentionElapses() {
-    // given — a group that has just become EMPTY
+    // given — a group that has just become EMPTY, stamping emptySince from the leave event
     memberJoined.applyState(1, join("g", "m1", 1));
-    memberLeft.applyState(2, leave("g", "m1", 2));
+    memberLeft.applyState(2, leave("g", "m1", 2).setTimestamp(clock.instant().toEpochMilli()));
 
-    // when — first tick records when it became empty; not yet past retention
+    // when — still within the retention window
     assertThat(run()).isEmpty();
 
-    // and — still within the retention window
+    // and — just before the deadline
     clock.advance(RETENTION.minusSeconds(1));
     assertThat(run()).isEmpty();
 
@@ -109,7 +110,7 @@ final class GroupRetentionTaskTest {
   private static MembershipRecord join(final String group, final String member, final long epoch) {
     return new MembershipRecord()
         .setGroupId(group)
-        .setSubscriptions(java.util.Map.of("t", 4))
+        .setSubscriptions(Map.of("t", 4))
         .setMemberId(member)
         .setMemberEpoch(epoch)
         .setGroupEpoch(epoch);

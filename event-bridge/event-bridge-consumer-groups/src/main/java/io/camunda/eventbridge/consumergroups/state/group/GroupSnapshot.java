@@ -22,6 +22,8 @@ import java.util.Map;
  * @param assignmentEpoch the group epoch the member targets reflect ({@code < groupEpoch} ⇒
  *     rebalance pending)
  * @param state the group's replicated lifecycle (transitioned by the appliers)
+ * @param emptySince the epoch millis the group became {@code EMPTY} (the retention deadline base);
+ *     only meaningful while {@code state == EMPTY}, {@code 0} otherwise
  * @param subscriptions the topics the group subscribes to with their partition counts ({@code topic
  *     → partitionCount}); the assignor balances all their partitions together
  * @param members the current roster, {@code memberId → snapshot}
@@ -31,6 +33,7 @@ public record GroupSnapshot(
     long groupEpoch,
     long assignmentEpoch,
     GroupLifecycle state,
+    long emptySince,
     Map<String, Integer> subscriptions,
     Map<String, MemberSnapshot> members) {
 

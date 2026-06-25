@@ -224,13 +224,16 @@ final class ConsumerGroupStateTest {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
     offsetCommitted.applyState(2, commit("g", 1, 9));
 
-    memberLeft.applyState(3, leave("g", "m1", 2));
+    memberLeft.applyState(3, leave("g", "m1", 2).setTimestamp(1_700_000_000_000L));
 
     // the group is retained as EMPTY (not deleted) and its committed offsets survive
     assertThat(state.getGroup("g")).isNotNull();
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
     assertThat(state.groupSnapshot("g").members()).isEmpty();
     assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(9);
+    // emptySince is stamped from the emptying event (the retention deadline base)
+    assertThat(state.getGroup("g").getEmptySince()).isEqualTo(1_700_000_000_000L);
+    assertThat(state.groupSnapshot("g").emptySince()).isEqualTo(1_700_000_000_000L);
   }
 
   @Test
