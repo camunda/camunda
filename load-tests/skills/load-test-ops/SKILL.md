@@ -379,23 +379,11 @@ mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="op
 mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="zeebe.*process.*", limit=20)
 ```
 
-**Confirmed metric names on benchmark cluster (verified 2026-06-25):**
-- `optimize_import_overallImportTime_seconds_max` — Optimize overall import time
-- `optimize_import_indexingDuration_seconds_max` — Optimize indexing duration
-- `elasticsearch_indices_store_size_bytes_primary` — ES primary index size
-- `elasticsearch_filesystem_data_size_bytes` / `elasticsearch_filesystem_data_available_bytes`
-- `node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m` — CPU by namespace
-- `container_memory_working_set_bytes` — memory (use `container!=""` to exclude pause containers)
-- `zeebe_process_instance_creations_total` — PI creation rate
-- `zeebe_exporter_exporting_duration_seconds_bucket` — exporter flush latency histogram
-- `zeebe_dropped_request_count_total` — dropped/backpressure requests
-
-For the full list of metrics and PromQL queries, see [load-tests/docs/metrics.md](../../docs/metrics.md).
+For metric names and PromQL queries, see [load-tests/docs/metrics.md](../../docs/metrics.md).
 
 **Known benchmark cluster dashboards:**
 - `camunda-performance` — general throughput/latency/resource overview (namespace variable)
-- `optmetrics` — Optimize performance investigation (26 panels); key: id=15 CPU, id=6 import time MAX
-- `prhrb87` — Optimize Dashboard; key: id=37 ES disk, id=34 data availability latency heatmap
+- `zeebe-dashboard` — deep dive into Zeebe internals (backpressure, partitions, exporters)
 
 See `load-tests/README.md` → **Accessing metrics via Claude Code (Grafana MCP)** for setup instructions.
 
