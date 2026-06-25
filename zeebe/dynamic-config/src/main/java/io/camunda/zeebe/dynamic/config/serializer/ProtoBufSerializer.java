@@ -429,7 +429,7 @@ public class ProtoBufSerializer
 
   private CompletedChange encodeCompletedChange(
       final io.camunda.zeebe.dynamic.config.state.CompletedChange completedChange) {
-    final var builder = CompletedChange.newBuilder();
+    final var builder = Topology.CompletedChange.newBuilder();
     builder
         .setId(completedChange.id())
         .setStatus(fromTopologyChangeStatus(completedChange.status()))
@@ -719,7 +719,7 @@ public class ProtoBufSerializer
                       zoneAware.zones().stream()
                           .map(
                               z ->
-                                  ZoneSpec.newBuilder()
+                                  Topology.PartitionDistributorConfig.ZoneSpec.newBuilder()
                                       .setName(z.name())
                                       .setNumberOfReplicas(z.numberOfReplicas())
                                       .setPriority(z.priority())
@@ -733,11 +733,11 @@ public class ProtoBufSerializer
   private static Optional<PartitionDistributorConfig> decodePartitionDistributorConfig(
       final Topology.PartitionDistributorConfig proto) {
     return switch (proto.getKindCase()) {
-      case ROUNDROBIN -> Optional.of(new RoundRobinConfig());
-      case FIXED -> Optional.of(new FixedConfig());
+      case ROUNDROBIN -> Optional.of(new PartitionDistributorConfig.RoundRobinConfig());
+      case FIXED -> Optional.of(new PartitionDistributorConfig.FixedConfig());
       case ZONEAWARE ->
           Optional.of(
-              new ZoneAwareConfig(
+              new PartitionDistributorConfig.ZoneAwareConfig(
                   proto.getZoneAware().getZonesList().stream()
                       .map(
                           z ->
