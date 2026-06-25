@@ -14,6 +14,7 @@ import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.security.AuthCookieService;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
@@ -46,6 +48,20 @@ public class GenericExceptionMapper {
 
   @Autowired private LocalizationService localizationService;
   @Autowired private AuthCookieService cookieService;
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValidException(
+      final MethodArgumentNotValidException exception) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(
+            new ErrorResponseDto(
+                BAD_REQUEST_ERROR_CODE,
+                localizationService.getDefaultLocaleMessageForApiErrorCode(BAD_REQUEST_ERROR_CODE),
+                Optional.ofNullable(exception.getFieldError())
+                    .map(f -> f.getField() + ": " + f.getDefaultMessage())
+                    .orElse(exception.getMessage())));
+  }
 
   @ExceptionHandler(Throwable.class)
   public ResponseEntity<ErrorResponseDto> handleThrowable(

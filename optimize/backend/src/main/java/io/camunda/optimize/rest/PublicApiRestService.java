@@ -174,7 +174,7 @@ public class PublicApiRestService {
 
   @PostMapping(LABELS_SUB_PATH)
   public void modifyVariableLabels(
-      @Valid final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+      @RequestBody @Valid final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 
