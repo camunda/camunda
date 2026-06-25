@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.coordination;
 
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicResponse;
@@ -15,7 +16,9 @@ import org.agrona.DirectBuffer;
 
 public class BrokerDeleteTopicRequest extends BrokerExecuteCoordinateRequest<DeleteTopicResponse> {
 
-  private final DeleteTopicRequest request = new DeleteTopicRequest();
+  // The wire payload is the log command record itself, so the manager writes it straight to the
+  // stream without a request->record mapping.
+  private final TopicRecord request = new TopicRecord();
   private final DeleteTopicResponse response = new DeleteTopicResponse();
 
   public BrokerDeleteTopicRequest() {
@@ -23,7 +26,7 @@ public class BrokerDeleteTopicRequest extends BrokerExecuteCoordinateRequest<Del
   }
 
   public BrokerDeleteTopicRequest wrapRequest(final DeleteTopicRequest req) {
-    request.setName(req.getName());
+    request.setName(req.getName()).setOp(TopicRecord.OP_DELETE);
     return this;
   }
 

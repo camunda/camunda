@@ -133,7 +133,7 @@ final class TopicStateAndProcessorTest {
             .setStatus(TopicStatus.ACTIVE);
     engine.replay(recordOf(registered));
     assertThat(state.get("orders")).isEqualTo(new TopicMetadata(8, 3, TopicStatus.ACTIVE));
-    // the thread-safe mirror tracks the durable state in lockstep
+    // the snapshot reads straight from the durable column family
     assertThat(state.topicsSnapshot())
         .containsEntry("orders", new TopicMetadata(8, 3, TopicStatus.ACTIVE));
 

@@ -12,17 +12,14 @@ import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 
 /**
  * Write view of the replicated topic registry — the event-bridge counterpart of the engine's {@code
- * MutableXxxState}. Only the appliers use it; it exposes granular put/delete primitives (each keeps
- * the mirror in lockstep with the durable state).
+ * MutableXxxState}. Only the appliers use it; it exposes granular put/delete primitives that write
+ * straight to the durable state.
  */
 public interface MutableTopicState extends TopicState {
 
-  /** Inserts or replaces a topic's desired configuration (and updates the mirror). */
+  /** Inserts or replaces a topic's desired configuration. */
   void put(String name, TopicMetadata metadata);
 
-  /** Removes a topic (and evicts it from the mirror). */
+  /** Removes a topic. */
   void delete(String name);
-
-  /** Rebuilds the mirror from durable state before processing starts (no concurrent access yet). */
-  void seedMirror();
 }

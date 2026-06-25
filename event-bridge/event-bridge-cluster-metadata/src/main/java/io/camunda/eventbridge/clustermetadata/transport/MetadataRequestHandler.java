@@ -8,20 +8,25 @@
 package io.camunda.eventbridge.clustermetadata.transport;
 
 import io.camunda.eventbridge.clustermetadata.MetadataManager;
-import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
+import io.camunda.eventbridge.clustermetadata.MetadataQueryHandler;
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
-import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
+import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
+import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.eventbridge.transport.RequestHandler;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * Routes topic admin requests (create/delete/reassign/list) on the dedicated metadata Raft group to
- * the {@link MetadataManager}. Symmetric with {@code CoordinationRequestHandler} on the coordinator
- * group: each parses the {@link CoordinationRequest} and dispatches to its manager, which returns
- * the reply already framed for the broker client.
+ * the {@link MetadataManager}, then frames the reply for the broker client. Symmetric with {@code
+ * CoordinationRequestHandler} on the coordinator group: each parses the {@link
+ * CoordinationRequest}, dispatches to its manager which returns the raw response payload (or fails
+ * with a {@link CommandRejectionException}), and wraps a success in the {@code
+ * ExecuteCoordinateResponse} envelope and a rejection into a {@code BrokerRejection} the gateway
+ * maps to an HTTP status.
  */
 public final class MetadataRequestHandler implements RequestHandler {
 
@@ -35,26 +40,56 @@ public final class MetadataRequestHandler implements RequestHandler {
   private static final String TOPIC_FORMAT = METADATA_ROUTING_GROUP + "-coordinate-api-%d";
 
   private final MetadataManager metadataManager;
+  private final MetadataQueryHandler metadataQueryHandler;
 
-  public MetadataRequestHandler(final int partitionId, final MetadataManager metadataManager) {
+  public MetadataRequestHandler(
+      final int partitionId,
+      final MetadataManager metadataManager,
+      final MetadataQueryHandler metadataQueryHandler) {
     this.metadataManager = metadataManager;
+    this.metadataQueryHandler = metadataQueryHandler;
   }
 
   @Override
   public CompletableFuture<byte[]> handle(final byte[] requestBytes) {
     final var request = CoordinationRequest.from(requestBytes);
+    return dispatch(request).handle(MetadataRequestHandler::frame);
+  }
+
+  /**
+   * Decodes the typed request and routes it to the write path ({@link MetadataManager}) or the read
+   * path ({@link MetadataQueryHandler}), which return the raw response.
+   */
+  private CompletableFuture<byte[]> dispatch(final CoordinationRequest request) {
     return switch (request.type()) {
-      case CREATE_TOPIC ->
-          metadataManager.handleCreateTopic(read(new CreateTopicRequest(), request));
-      case DELETE_TOPIC ->
-          metadataManager.handleDeleteTopic(read(new DeleteTopicRequest(), request));
-      case REASSIGN_TOPIC ->
-          metadataManager.handleReassignTopic(read(new ReassignTopicRequest(), request));
-      case LIST_TOPICS -> metadataManager.handleListTopics(read(new ListTopicsRequest(), request));
+      case CREATE_TOPIC -> metadataManager.handleCreateTopic(read(new TopicRecord(), request));
+      case DELETE_TOPIC -> metadataManager.handleDeleteTopic(read(new TopicRecord(), request));
+      case REASSIGN_TOPIC -> metadataManager.handleReassignTopic(read(new TopicRecord(), request));
+      case LIST_TOPICS ->
+          metadataQueryHandler.handleListTopics(read(new ListTopicsRequest(), request));
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));
     };
+  }
+
+  /**
+   * Frames the manager's raw reply: a success wraps the payload in the response envelope, a {@link
+   * CommandRejectionException} becomes a rejection response, and any other failure propagates (the
+   * messaging layer fails the request).
+   */
+  private static byte[] frame(final byte[] response, final Throwable error) {
+    if (error == null) {
+      return CoordinationResponseEncoder.encodeValue(response);
+    }
+    final var cause =
+        error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
+    if (cause instanceof final CommandRejectionException rejection) {
+      return CoordinationResponseEncoder.encodeRejection(rejection.type(), rejection.getMessage());
+    }
+    throw error instanceof final CompletionException completion
+        ? completion
+        : new CompletionException(error);
   }
 
   /** Decodes the request's value payload into the given DTO. */

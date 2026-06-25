@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * RocksDB-backed {@link MutableTopicState}: the topic registry (desired state), keyed by {@code
@@ -23,19 +22,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * Rebuilt identically on every replica via stream replay, so a new metadata leader restores the
  * topic set after failover.
  *
- * <p>The appliers are the only writers; granular {@link #put}/{@link #delete} keep a thread-safe
- * {@link TopicMetadata} mirror in lockstep with the durable state. RocksDB reads ({@link #get}) run
- * on the stream-processing actor only; the mirror read ({@link #topicsSnapshot}) is safe off-actor.
+ * <p>The appliers are the only writers; reads come straight from the column family — the durable
+ * source of truth — so there is no in-memory mirror to keep in lockstep. The flyweight keys/values
+ * belong to one {@link io.camunda.zeebe.db.TransactionContext}, so an instance is single-actor: the
+ * stream processor holds one, and each off-actor reader gets its own through a {@link
+ * TopicQueryService}. {@link #topicsSnapshot} pins its result (copies out of the flyweights) so a
+ * caller may keep it after the next read mutates them.
  */
 public final class DbTopicState implements MutableTopicState {
 
   private final DbString topicName = new DbString();
   private final PersistedTopic persistedTopic = new PersistedTopic();
   private final ColumnFamily<DbString, PersistedTopic> topicColumnFamily;
-
-  // Thread-safe mirror of the registry, maintained by the appliers (on the stream actor) and read
-  // off-actor; the column family is the durable source of truth, this is seeded from it on start.
-  private final Map<String, TopicMetadata> mirror = new ConcurrentHashMap<>();
 
   public DbTopicState(
       final ZeebeDb<MetadataColumnFamilies> zeebeDb, final TransactionContext context) {
@@ -53,26 +51,22 @@ public final class DbTopicState implements MutableTopicState {
 
   @Override
   public Map<String, TopicMetadata> topicsSnapshot() {
-    return new LinkedHashMap<>(mirror);
+    // Pin the result: copy the name out of the key flyweight and decode each entry into a fresh
+    // immutable TopicMetadata, so the snapshot survives the next read that rewraps the flyweights.
+    final var snapshot = new LinkedHashMap<String, TopicMetadata>();
+    topicColumnFamily.forEach((key, value) -> snapshot.put(key.toString(), value.toMetadata()));
+    return snapshot;
   }
 
   @Override
   public void put(final String name, final TopicMetadata metadata) {
     topicName.wrapString(name);
     topicColumnFamily.upsert(topicName, persistedTopic.wrap(metadata));
-    mirror.put(name, metadata);
   }
 
   @Override
   public void delete(final String name) {
     topicName.wrapString(name);
     topicColumnFamily.deleteIfExists(topicName);
-    mirror.remove(name);
-  }
-
-  @Override
-  public void seedMirror() {
-    mirror.clear();
-    topicColumnFamily.forEach((key, value) -> mirror.put(key.toString(), value.toMetadata()));
   }
 }

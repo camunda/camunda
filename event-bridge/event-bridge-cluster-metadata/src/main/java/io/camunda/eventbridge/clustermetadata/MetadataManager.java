@@ -7,23 +7,13 @@
  */
 package io.camunda.eventbridge.clustermetadata;
 
-import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.NONE;
-
-import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
-import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
-import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.ListTopicsRequest;
-import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
-import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
-import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
-import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.Duration;
 import java.util.HashMap;
@@ -32,25 +22,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Owns the topic registry on the metadata group: topic admin (create/delete/reassign/list), central
- * placement, the {@code CREATING -> ACTIVE} transition, and the change-coordinator that drives
- * committed assignment toward a target one safe Raft step at a time. Leader-only; the
- * sink/change-coordinator act only on the registry shard ({@link
- * CoordinatorRouting#TOPIC_REGISTRY_SHARD}).
+ * The write path for topic admin on the metadata group: it writes the create/delete/reassign
+ * commands (built by the service layer) straight to the stream, and runs the leader-only control
+ * plane — the {@code CREATING -> ACTIVE} transition and the change-coordinator that drives
+ * committed assignment toward a target one safe Raft step at a time. The sink/change-coordinator
+ * act only on the registry shard ({@link CoordinatorRouting#TOPIC_REGISTRY_SHARD}). List-topics
+ * reads are served by {@link MetadataQueryHandler} on its own actor; placement is resolved by the
+ * processors.
  *
- * <p>This is the metadata control plane: it runs on the dedicated single-partition {@code
- * event-bridge-metadata} Raft group (its leader), over a {@link MetadataStream}. Consumer-group
- * coordination + offsets stay in the coordinator group ({@code CoordinationManager}).
+ * <p>It runs on the dedicated single-partition {@code event-bridge-metadata} Raft group (its
+ * leader), over a {@link MetadataStream}. Consumer-group coordination + offsets stay in the
+ * coordinator group ({@code CoordinationManager}).
  *
  * <p>Propagation to brokers is no longer a push from here: every broker observes the metadata Raft
  * group (follower or passive observer) and reconciles its local topic groups from its own
@@ -64,9 +54,8 @@ public class MetadataManager extends Actor {
   private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
 
   private final int partitionId;
-  private final Supplier<List<Integer>> registeredBrokers;
   private final MetadataStream metadataStream;
-  private final PlacementStrategy placement = new RoundRobinPlacement();
+  private final TopicQueryService topics;
 
   // Brokers report provisioned partitions here; the registry-shard leader registers itself as the
   // sink. Per-topic covered partition ids drive the CREATING -> ACTIVE transition.
@@ -80,13 +69,13 @@ public class MetadataManager extends Actor {
 
   public MetadataManager(
       final int partitionId,
-      final Supplier<List<Integer>> registeredBrokers,
       final MetadataStream metadataStream,
+      final TopicQueryService topics,
       final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
-    this.registeredBrokers = registeredBrokers;
     this.metadataStream = metadataStream;
+    this.topics = topics;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
   }
@@ -97,149 +86,54 @@ public class MetadataManager extends Actor {
   }
 
   /**
-   * Creates a topic: the manager computes the placement (it needs live broker membership) and
-   * writes a {@code CREATE_TOPIC} command; the {@link
+   * Writes the {@code CREATE_TOPIC} command (the {@link TopicRecord} built by the service layer)
+   * straight to the stream and forwards the committed reply. The {@link
    * io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor} validates it (name,
-   * counts, not-already-exists) against the replicated registry and replies after commit.
+   * counts, not-already-exists) against the replicated registry and resolves the placement — the
+   * leader that produces the durable event makes that decision.
    */
-  public CompletableFuture<byte[]> handleCreateTopic(final CreateTopicRequest request) {
-    return writeTopicRequest(
-        () -> {
-          final var valid = request.getPartitionCount() >= 1 && request.getReplicationFactor() >= 1;
-          final var assignment =
-              valid
-                  ? placement.assign(
-                      request.getPartitionCount(),
-                      request.getReplicationFactor(),
-                      availableBrokers())
-                  : Map.<Integer, List<Integer>>of();
-          return new TopicRecord()
-              .setName(request.getName() == null ? "" : request.getName())
-              .setOp(TopicRecord.OP_REGISTER)
-              .setPartitionCount(request.getPartitionCount())
-              .setReplicationFactor(request.getReplicationFactor())
-              .setStatus(TopicMetadata.TopicStatus.CREATING)
-              .setAssignment(assignment);
-        },
-        metadataStream::createTopic);
+  public CompletableFuture<byte[]> handleCreateTopic(final TopicRecord command) {
+    return writeTopicRequest(command, metadataStream::createTopic);
   }
 
-  public CompletableFuture<byte[]> handleDeleteTopic(final DeleteTopicRequest request) {
-    return writeTopicRequest(
-        () ->
-            new TopicRecord()
-                .setName(request.getName() == null ? "" : request.getName())
-                .setOp(TopicRecord.OP_DELETE),
-        metadataStream::deleteTopic);
+  /** Writes the {@code DELETE_TOPIC} command as received and forwards the committed reply. */
+  public CompletableFuture<byte[]> handleDeleteTopic(final TopicRecord command) {
+    return writeTopicRequest(command, metadataStream::deleteTopic);
   }
 
   /**
-   * Reassigns a topic: the manager computes the new target placement (from the topic's current
-   * partition count + the requested replication factor) and writes a {@code REASSIGN_TOPIC}
-   * command; the processor validates the topic exists and replies after commit. The
-   * change-coordinator then drives committed → target.
+   * Writes the {@code REASSIGN_TOPIC} command as received and forwards the committed reply. The
+   * {@code ReassignTopicProcessor} validates the topic exists and resolves the new target placement
+   * from the current partition count + requested replication factor; the change-coordinator then
+   * drives committed → target.
    */
-  public CompletableFuture<byte[]> handleReassignTopic(final ReassignTopicRequest request) {
-    return writeTopicRequest(
-        () -> {
-          final var name = request.getName() == null ? "" : request.getName();
-          final var command =
-              new TopicRecord()
-                  .setName(name)
-                  .setOp(TopicRecord.OP_REGISTER)
-                  .setReplicationFactor(request.getReplicationFactor());
-          final var meta = metadataStream.topicsSnapshot().get(name);
-          if (meta != null && request.getReplicationFactor() >= 1) {
-            final var target =
-                placement.assign(
-                    meta.partitionCount(), request.getReplicationFactor(), availableBrokers());
-            command
-                .setPartitionCount(meta.partitionCount())
-                .setStatus(meta.status())
-                .setAssignment(meta.assignment())
-                .setTarget(target);
-          }
-          return command;
-        },
-        metadataStream::reassignTopic);
-  }
-
-  /** Lists topics (request/response, no log write) and returns the framed reply. */
-  public CompletableFuture<byte[]> handleListTopics(final ListTopicsRequest request) {
-    final var result = new CompletableFuture<byte[]>();
-    actor.run(
-        () -> {
-          try {
-            result.complete(CoordinationResponseEncoder.encode(listTopics()));
-          } catch (final RuntimeException e) {
-            result.completeExceptionally(e);
-          }
-        });
-    return result;
+  public CompletableFuture<byte[]> handleReassignTopic(final TopicRecord command) {
+    return writeTopicRequest(command, metadataStream::reassignTopic);
   }
 
   /**
-   * Builds a topic command on the actor (so placement reads live state safely), writes it through
-   * the stream, and completes with the committed reply framed for the broker client — so every
-   * handler method returns ready-to-send bytes and the transport layer only routes.
-   *
-   * <p>A rejected command (surfaced as a {@link CommandRejectionException}) is framed as a
-   * <em>rejection</em> reply, not completed exceptionally: the gateway decodes it into a {@code
-   * BrokerRejection} and maps it to an HTTP status. A genuine transport/processing failure still
-   * completes exceptionally.
+   * Writes the wire-supplied command straight to the stream (no request→record mapping) and
+   * completes with the raw committed reply (or fails with a {@code CommandRejectionException} for a
+   * rejected command / the transport error for a genuine failure). The {@code
+   * MetadataRequestHandler} frames the result for the broker client, so the handler — not this
+   * manager — owns the framing.
    */
   private CompletableFuture<byte[]> writeTopicRequest(
-      final Supplier<TopicRecord> commandBuilder,
-      final Function<TopicRecord, CompletableFuture<byte[]>> write) {
+      final TopicRecord command, final Function<TopicRecord, CompletableFuture<byte[]>> write) {
     final var result = new CompletableFuture<byte[]>();
     actor.run(
         () ->
             write
-                .apply(commandBuilder.get())
+                .apply(command)
                 .whenComplete(
                     (response, error) -> {
                       if (error == null) {
-                        result.complete(CoordinationResponseEncoder.encodeValue(response));
-                        return;
-                      }
-                      final var cause =
-                          error instanceof CompletionException && error.getCause() != null
-                              ? error.getCause()
-                              : error;
-                      if (cause instanceof final CommandRejectionException rejection) {
-                        result.complete(
-                            CoordinationResponseEncoder.encodeRejection(
-                                rejection.type(), rejection.getMessage()));
+                        result.complete(response);
                       } else {
                         result.completeExceptionally(error);
                       }
                     }));
     return result;
-  }
-
-  /**
-   * The broker node ids the coordinator may place partitions on — the brokers that have registered
-   * by joining the metadata Raft group (voting members + passive observers), derived from the
-   * group's live membership rather than a static configured cluster size. As brokers join/leave the
-   * group this set tracks them, so placement only targets registered brokers.
-   */
-  private List<Integer> availableBrokers() {
-    return registeredBrokers.get();
-  }
-
-  private ListTopicsResponse listTopics() {
-    final var response = new ListTopicsResponse().setErrorCode(NONE);
-    metadataStream
-        .topicsSnapshot()
-        .forEach(
-            (name, meta) ->
-                response.addTopic(
-                    name,
-                    meta.partitionCount(),
-                    meta.replicationFactor(),
-                    meta.status().name(),
-                    meta.assignment()));
-    return response;
   }
 
   @Override
@@ -265,7 +159,7 @@ public class MetadataManager extends Actor {
    * once every partition is covered. Idempotent.
    */
   private void onTopicProvisioned(final String topic, final List<Integer> partitions) {
-    final var meta = metadataStream.topicsSnapshot().get(topic);
+    final var meta = topics.topic(topic);
     if (meta == null || meta.status() != TopicMetadata.TopicStatus.CREATING) {
       return;
     }
@@ -293,7 +187,7 @@ public class MetadataManager extends Actor {
    */
   protected void scheduleReconfiguration() {
     if (reconfigurationExecutor != null) {
-      metadataStream
+      topics
           .topicsSnapshot()
           .forEach(
               (name, meta) -> {
@@ -307,7 +201,7 @@ public class MetadataManager extends Actor {
 
   /** Executes the next single step toward a topic's target, chaining until committed == target. */
   private void driveReconfiguration(final String name) {
-    final var meta = metadataStream.topicsSnapshot().get(name);
+    final var meta = topics.topic(name);
     if (meta == null || !meta.hasTarget()) {
       reconfiguring.remove(name);
       return;

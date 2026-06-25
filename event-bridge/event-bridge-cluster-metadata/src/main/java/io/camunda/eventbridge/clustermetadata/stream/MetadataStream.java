@@ -7,6 +7,8 @@
  */
 package io.camunda.eventbridge.clustermetadata.stream;
 
+import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
+import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
@@ -19,6 +21,7 @@ import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
 import io.camunda.eventbridge.clustermetadata.state.topic.DbTopicState;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.eventbridge.stream.ReplicatedStream;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -55,11 +58,17 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataStream.class);
 
+  private final Supplier<List<Integer>> registeredBrokers;
+  private final PlacementStrategy placement = new RoundRobinPlacement();
+
   private DbTopicState topicState;
 
   /**
    * @param zeebeDb the state DB, recovered/owned by the {@link
    *     io.camunda.zeebe.broker.system.partitions.StateController} (so snapshots can manage it)
+   * @param registeredBrokers the live metadata-group membership the create/reassign processors
+   *     place partitions on — supplied by the partition so placement targets only registered
+   *     brokers
    */
   public MetadataStream(
       final int partitionId,
@@ -67,8 +76,10 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
       final ActorSchedulingService actorScheduler,
       final ZeebeDb<MetadataColumnFamilies> zeebeDb,
       final InstantSource clock,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final Supplier<List<Integer>> registeredBrokers) {
     super(partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
+    this.registeredBrokers = registeredBrokers;
   }
 
   @Override
@@ -84,9 +95,6 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   @Override
   protected void onStarting() {
     topicState = new DbTopicState(zeebeDb, zeebeDb.createContext());
-    // Seed the mirror from durable state before the processor starts (no concurrent access yet),
-    // so a replica that recovered topics from a snapshot exposes them even before any replay.
-    topicState.seedMirror();
   }
 
   @Override
@@ -98,11 +106,13 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.CREATE_TOPIC,
-                    new CreateTopicProcessor(processors.writers(), validator))
+                    new CreateTopicProcessor(
+                        processors.writers(), validator, placement, registeredBrokers))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.REASSIGN_TOPIC,
-                    new ReassignTopicProcessor(processors.writers(), validator))
+                    new ReassignTopicProcessor(
+                        processors.writers(), validator, topicState, placement, registeredBrokers))
                 .onCommand(
                     MetadataRecordValues.TOPIC_VALUE_TYPE,
                     MetadataIntent.DELETE_TOPIC,
@@ -145,10 +155,9 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   }
 
   /**
-   * Client topic requests: written as commands that the processor validates against the replicated
-   * registry and replies to after commit (the future completes with the encoded response). Leader
-   * only. The manager builds the command (it computes placement, which needs live broker
-   * membership).
+   * Client topic requests: the service-layer command is written as-is, and the processor validates
+   * it against the replicated registry, resolves the placement, and replies after commit (the
+   * future completes with the encoded response). Leader only.
    */
   public CompletableFuture<byte[]> createTopic(final TopicRecord command) {
     return writeRequest(
@@ -165,9 +174,13 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
         MetadataIntent.DELETE_TOPIC, MetadataRecordValues.TOPIC_VALUE_TYPE, command);
   }
 
-  /** All registered topics ({@code topicName → metadata}) for failover rebuild / listing. */
-  public Map<String, TopicMetadata> topicsSnapshot() {
-    return topicState.topicsSnapshot();
+  /**
+   * A fresh off-actor read view of the topic registry on this stream's {@link ZeebeDb}. Each reader
+   * actor (the leader's manager, each broker's reconcile loop) takes its own so it reads committed
+   * state without sharing the processor's flyweights.
+   */
+  public TopicQueryService newTopicQueryService() {
+    return new TopicQueryService(zeebeDb);
   }
 
   private void writeTopicCommand(

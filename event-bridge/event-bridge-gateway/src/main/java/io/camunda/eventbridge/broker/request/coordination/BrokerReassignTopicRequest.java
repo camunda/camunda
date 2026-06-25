@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.request.coordination;
 
+import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.protocol.CoordinateRequestType;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicResponse;
@@ -16,7 +17,9 @@ import org.agrona.DirectBuffer;
 public class BrokerReassignTopicRequest
     extends BrokerExecuteCoordinateRequest<ReassignTopicResponse> {
 
-  private final ReassignTopicRequest request = new ReassignTopicRequest();
+  // The wire payload is the log command record itself, so the manager writes it straight to the
+  // stream without a request->record mapping; the processor resolves the target placement.
+  private final TopicRecord request = new TopicRecord();
   private final ReassignTopicResponse response = new ReassignTopicResponse();
 
   public BrokerReassignTopicRequest() {
@@ -24,7 +27,10 @@ public class BrokerReassignTopicRequest
   }
 
   public BrokerReassignTopicRequest wrapRequest(final ReassignTopicRequest req) {
-    request.setName(req.getName()).setReplicationFactor(req.getReplicationFactor());
+    request
+        .setName(req.getName())
+        .setOp(TopicRecord.OP_REGISTER)
+        .setReplicationFactor(req.getReplicationFactor());
     return this;
   }
 

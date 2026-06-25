@@ -13,14 +13,15 @@ import java.util.Map;
 /**
  * Read view of the replicated topic registry — the event-bridge counterpart of the engine's
  * immutable {@code XxxState} interfaces. Processors/validators depend on this (never on the
- * concrete {@code Db…} class); the metadata leader and each broker's reconcile read the thread-safe
- * mirror ({@link #topicsSnapshot}) off the stream-processing actor.
+ * concrete {@code Db…} class); the metadata leader and each broker's reconcile read it off the
+ * stream-processing actor through their own {@code TopicQueryService} (a private context, no shared
+ * flyweights).
  */
 public interface TopicState {
 
   /** The topic's desired configuration, or {@code null} if the topic does not exist. */
   TopicMetadata get(String name);
 
-  /** A thread-safe snapshot of all registered topics ({@code topicName → metadata}). */
+  /** A pinned snapshot of all registered topics ({@code topicName → metadata}). */
   Map<String, TopicMetadata> topicsSnapshot();
 }

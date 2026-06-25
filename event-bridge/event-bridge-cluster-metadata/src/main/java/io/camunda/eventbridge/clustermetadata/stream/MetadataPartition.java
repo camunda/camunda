@@ -10,9 +10,11 @@ package io.camunda.eventbridge.clustermetadata.stream;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.eventbridge.clustermetadata.MetadataManager;
+import io.camunda.eventbridge.clustermetadata.MetadataQueryHandler;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.transport.MetadataRequestHandler;
 import io.camunda.eventbridge.stream.RaftPartitionLifecycle;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
@@ -59,6 +61,10 @@ public final class MetadataPartition
   private final ReconfigurationExecutor reconfigurationExecutor;
 
   private MetadataManager metadataManager;
+  private MetadataQueryHandler metadataQueryHandler;
+  // This partition actor's own off-actor read view, used by the reconcile loop on every role; built
+  // lazily once the stream exists so its context/flyweights belong to this actor.
+  private TopicQueryService reconcileTopics;
 
   public MetadataPartition(
       final int partitionId,
@@ -100,7 +106,13 @@ public final class MetadataPartition
       final InstantSource clock,
       final MeterRegistry meterRegistry) {
     return new MetadataStream(
-        partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
+        partitionId,
+        logStorage,
+        actorScheduler,
+        zeebeDb,
+        clock,
+        meterRegistry,
+        this::registeredBrokerIds);
   }
 
   @Override
@@ -113,14 +125,16 @@ public final class MetadataPartition
     metadataManager =
         new MetadataManager(
             partitionId,
-            this::registeredBrokerIds,
             stream,
+            stream.newTopicQueryService(),
             provisionedSinkRef,
             reconfigurationExecutor);
     actorScheduler.submitActor(metadataManager);
+    metadataQueryHandler = new MetadataQueryHandler(partitionId, stream.newTopicQueryService());
+    actorScheduler.submitActor(metadataQueryHandler);
     requestHandlerRegistry.register(
         MetadataRequestHandler.topicName(partitionId),
-        new MetadataRequestHandler(partitionId, metadataManager));
+        new MetadataRequestHandler(partitionId, metadataManager, metadataQueryHandler));
   }
 
   @Override
@@ -130,18 +144,26 @@ public final class MetadataPartition
       metadataManager.closeAsync();
       metadataManager = null;
     }
+    if (metadataQueryHandler != null) {
+      metadataQueryHandler.closeAsync();
+      metadataQueryHandler = null;
+    }
   }
 
   /**
    * Periodically hands this broker's local replicated registry to the reconcile sink, on every role
-   * (leader, follower, passive observer). {@code topicsSnapshot()} reads the stream's thread-safe
-   * in-memory cache, so this is safe to call from the partition actor; the sink dispatches the
-   * actual provisioning off-actor. No-op until the stream has started.
+   * (leader, follower, passive observer). Reads through this actor's own {@link TopicQueryService}
+   * (a private context, no shared flyweights), so it is safe to call from the partition actor while
+   * the stream processor writes; the sink dispatches the actual provisioning off-actor. No-op until
+   * the stream has started.
    */
   private void scheduleReconcile() {
     if (registryReconciler != null && stream != null) {
       try {
-        registryReconciler.accept(stream.topicsSnapshot());
+        if (reconcileTopics == null) {
+          reconcileTopics = stream.newTopicQueryService();
+        }
+        registryReconciler.accept(reconcileTopics.topicsSnapshot());
       } catch (final Exception e) {
         LOG.warn("Metadata partition {} — registry reconcile failed", partitionId, e);
       }

@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.clustermetadata.processing;
 
+import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -15,23 +16,33 @@ import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Handles the {@code CREATE_TOPIC} command. Validation is fenced against the replicated registry: a
  * valid name, positive counts, and a not-already-existing topic. As with every command processor it
- * always results in an event or a rejection, then replies: on success it appends {@code
- * TOPIC_REGISTERED} (status {@code CREATING}) and replies {@code NONE}; on failure it appends a
- * rejection record and replies with the error code. The placement is computed by the manager and
- * carried in the command.
+ * always results in an event or a rejection, then replies: on success it resolves the placement
+ * from the live broker membership, appends {@code TOPIC_REGISTERED} (status {@code CREATING}) with
+ * that assignment and replies {@code NONE}; on failure it appends a rejection record and replies
+ * with the error code. The leader that produces the durable event decides the placement.
  */
 public final class CreateTopicProcessor implements TypedRecordProcessor<TopicRecord> {
 
   private final Writers writers;
   private final TopicValidator validator;
+  private final PlacementStrategy placement;
+  private final Supplier<List<Integer>> registeredBrokers;
 
-  public CreateTopicProcessor(final Writers writers, final TopicValidator validator) {
+  public CreateTopicProcessor(
+      final Writers writers,
+      final TopicValidator validator,
+      final PlacementStrategy placement,
+      final Supplier<List<Integer>> registeredBrokers) {
     this.writers = writers;
     this.validator = validator;
+    this.placement = placement;
+    this.registeredBrokers = registeredBrokers;
   }
 
   @Override
@@ -43,15 +54,17 @@ public final class CreateTopicProcessor implements TypedRecordProcessor<TopicRec
 
   private void create(final TypedRecord<TopicRecord> command) {
     final var cmd = command.getValue();
+    final var assignment =
+        placement.assign(
+            cmd.getPartitionCount(), cmd.getReplicationFactor(), registeredBrokers.get());
     final var event =
         new TopicRecord()
             .setName(cmd.getName())
             .setOp(cmd.getOp())
             .setPartitionCount(cmd.getPartitionCount())
             .setReplicationFactor(cmd.getReplicationFactor())
-            .setStatus(TopicMetadata.TopicStatus.valueOf(cmd.getStatus()))
-            .setAssignment(cmd.getAssignment())
-            .setTarget(cmd.getTarget());
+            .setStatus(TopicMetadata.TopicStatus.CREATING)
+            .setAssignment(assignment);
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_REGISTERED, event);
     writers
         .response()
