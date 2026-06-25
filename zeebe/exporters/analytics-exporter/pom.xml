@@ -51,6 +51,12 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+    <!-- Micrometer (provided by Zeebe broker at runtime) -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <scope>provided</scope>
+    </dependency>
     <!-- OTel SDK -->
     <dependency>
       <groupId>io.opentelemetry</groupId>
@@ -196,6 +202,7 @@
                       <exclude>io.camunda:zeebe-protocol</exclude>
                       <exclude>io.camunda:zeebe-util</exclude>
                       <exclude>org.slf4j:slf4j-api</exclude>
+                      <exclude>io.micrometer:micrometer-core</exclude>
                     </excludes>
                   </artifactSet>
                   <relocations>

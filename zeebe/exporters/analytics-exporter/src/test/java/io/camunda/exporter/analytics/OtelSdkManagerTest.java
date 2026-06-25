@@ -434,6 +434,34 @@ class OtelSdkManagerTest {
     }
   }
 
+  @Test
+  void shouldExposeOtelSdkLogCreatedMetricInMicrometer() {
+    // given
+    final var micrometerRegistry = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    final var logExporter =
+        io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter.create();
+    final var manager = TestOtelSdkManager.inMemoryWithRegistry(logExporter, micrometerRegistry);
+
+    // when
+    manager.logEvent(
+        io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED,
+        1L,
+        b -> {});
+    manager.flushMetrics();
+
+    // then — SdkLoggerProvider emits otel.sdk.log.created on every emit()
+    assertThat(
+            micrometerRegistry
+                .find("otel.sdk.log.created")
+                .tag(
+                    MicrometerMeterProvider.COMPONENT_TAG_KEY,
+                    MicrometerMeterProvider.COMPONENT_TAG_VALUE)
+                .counter())
+        .isNotNull()
+        .extracting(io.micrometer.core.instrument.Counter::count)
+        .isEqualTo(1.0);
+  }
+
   @Nested
   class MetricRecording {
 

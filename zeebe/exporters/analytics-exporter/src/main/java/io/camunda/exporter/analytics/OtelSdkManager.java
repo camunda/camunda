@@ -21,6 +21,8 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Logger;
@@ -30,6 +32,7 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.common.InternalTelemetryVersion;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
@@ -60,6 +63,7 @@ public class OtelSdkManager implements AutoCloseable {
   private Logger otelLogger;
   private Meter otelMeter;
   private ManualMetricReader metricReader;
+  private MicrometerMeterProvider micrometerBridge;
   private AnalyticsExporterMetadata metadata;
   private final Map<String, LongCounter> counters = new HashMap<>();
   private final MetricWindow metricWindow = new MetricWindow();
@@ -68,14 +72,28 @@ public class OtelSdkManager implements AutoCloseable {
       final AnalyticsExporterConfig config,
       final AnalyticsExporterContext context,
       final AnalyticsExporterMetadata metadata) {
+    return initialize(config, context, metadata, new SimpleMeterRegistry());
+  }
+
+  OtelSdkManager initialize(
+      final AnalyticsExporterConfig config,
+      final AnalyticsExporterContext context,
+      final AnalyticsExporterMetadata metadata,
+      final MeterRegistry meterRegistry) {
     this.metadata = metadata;
     this.defaultSamplingRate = config.getSamplingRate();
     counters.clear();
     metricWindow.reset();
-    final var loggerProvider = createLoggerProvider(config, context);
+
+    // Bridge OTel SDK self-metrics directly to Micrometer — no collection cycle needed.
+    micrometerBridge = new MicrometerMeterProvider(meterRegistry);
+
+    // Product metrics pipeline: pre-aggregated metrics → ManualMetricReader → OTLP.
     metricReader = createMetricReader(config, context);
     final var meterProvider = createMeterProvider(context, metricReader);
 
+    // Logger pipeline: uses micrometerBridge so SDK self-metrics appear in Prometheus.
+    final var loggerProvider = createLoggerProvider(config, context);
     sdk =
         OpenTelemetrySdk.builder()
             .setLoggerProvider(loggerProvider)
@@ -182,11 +200,14 @@ public class OtelSdkManager implements AutoCloseable {
       final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
     return SdkLoggerProvider.builder()
         .setResource(buildResource(context))
+        .setMeterProvider(() -> micrometerBridge)
         .addLogRecordProcessor(
             BatchLogRecordProcessor.builder(createLogExporter(config, context))
                 .setMaxQueueSize(config.getMaxQueueSize())
                 .setMaxExportBatchSize(config.getMaxBatchSize())
                 .setScheduleDelay(config.getPushInterval())
+                .setMeterProvider(micrometerBridge)
+                .setInternalTelemetryVersion(InternalTelemetryVersion.LATEST)
                 .build())
         .build();
   }
@@ -198,7 +219,9 @@ public class OtelSdkManager implements AutoCloseable {
         OtlpHttpLogRecordExporter.builder()
             .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
-            .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId());
+            .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId())
+            .setMeterProvider(micrometerBridge)
+            .setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
 
     if (config.isSigning()) {
       builder.setHeaders(context::computeSignatureHeaders);
@@ -221,7 +244,9 @@ public class OtelSdkManager implements AutoCloseable {
             .setEndpoint(config.getEndpoint() + OTLP_METRICS_PATH)
             .setAggregationTemporalitySelector(AggregationTemporalitySelector.deltaPreferred())
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
-            .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId());
+            .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId())
+            .setMeterProvider(micrometerBridge)
+            .setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
 
     if (config.isSigning()) {
       builder.setHeaders(context::computeSignatureHeaders);
