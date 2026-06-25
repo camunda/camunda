@@ -40,10 +40,10 @@ public class Metrics {
       OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
       OPERATE_NAMESPACE + "archiver.delete.query";
-  public static final String TIMER_NAME_ARCHIVER_ARCHIVE_BY_ID_DOC_IDS_QUERY =
-      OPERATE_NAMESPACE + "archiver.archive.by.id.doc.ids.query";
-  public static final String TIMER_NAME_ARCHIVER_ARCHIVE_BY_ID_INDEX =
-      OPERATE_NAMESPACE + "archiver.archive.by.id.index";
+  public static final String TIMER_NAME_ARCHIVER_REQUEST_DURATION =
+      OPERATE_NAMESPACE + "archiver.request.duration";
+  public static final String TIMER_NAME_ARCHIVER_INDEX_DURATION =
+      OPERATE_NAMESPACE + "archiver.index.duration";
   public static final String TIMER_NAME_IMPORT_FNI_TREE_PATH_CACHE_ACCESS =
       OPERATE_NAMESPACE + "import.fni.tree.path.cache.access";
   // Counters:
