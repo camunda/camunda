@@ -193,7 +193,7 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                         clock))
                 .withListener(
                     new PlacementHealTask(
-                        PLACEMENT_HEAL_INTERVAL, taskTopicState(), taskBrokerState(), placement)));
+                        PLACEMENT_HEAL_INTERVAL, taskTopicState(), taskBrokerState())));
   }
 
   // Async tasks read state off the processing actor, so each gets its own private ZeebeDb context

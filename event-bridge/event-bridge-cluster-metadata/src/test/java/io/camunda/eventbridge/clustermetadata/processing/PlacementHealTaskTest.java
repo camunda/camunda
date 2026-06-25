@@ -14,7 +14,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
 import io.camunda.eventbridge.clustermetadata.state.broker.BrokerMetadata;
@@ -63,9 +62,7 @@ final class PlacementHealTaskTest {
     db = factory.createDb(dbDir.toFile());
     topicState = new DbTopicState(db, db.createContext());
     brokerState = new DbBrokerState(db, db.createContext());
-    task =
-        new PlacementHealTask(
-            Duration.ofSeconds(1), topicState, brokerState, new RoundRobinPlacement());
+    task = new PlacementHealTask(Duration.ofSeconds(1), topicState, brokerState);
   }
 
   @AfterEach
@@ -74,7 +71,7 @@ final class PlacementHealTaskTest {
   }
 
   @Test
-  void shouldHealTopicWithReplicaOnNonActiveBroker() {
+  void shouldHealTopicByReplacingOnlyTheNonActiveReplica() {
     register(0);
     register(1); // broker 2 is absent (fenced / never registered)
     topicState.put(
@@ -86,13 +83,14 @@ final class PlacementHealTaskTest {
     final var builder = mock(TaskResultBuilder.class);
     task.execute(builder);
 
-    // then — a REGISTER_TOPIC is appended whose target only uses the active brokers {0, 1}
+    // then — a REGISTER_TOPIC is appended whose target keeps the surviving replica (0) and replaces
+    // only the dead one (2 -> 1); the already-healthy partition 2 is unchanged
     final var captor = ArgumentCaptor.forClass(UnifiedRecordValue.class);
     verify(builder).appendCommandRecord(eq(MetadataIntent.REGISTER_TOPIC), captor.capture());
     final var event = (TopicRecord) captor.getValue();
     assertThat(event.getName()).isEqualTo("orders");
-    assertThat(event.getTarget().values().stream().flatMap(List::stream))
-        .allMatch(broker -> broker == 0 || broker == 1);
+    assertThat(event.getTarget().get(1)).containsExactlyInAnyOrder(0, 1).contains(0);
+    assertThat(event.getTarget().get(2)).containsExactlyInAnyOrder(0, 1);
   }
 
   @Test

@@ -5,9 +5,9 @@
 > `BROKER_REGISTRY`); REGISTER/FENCE/DRAIN/DEREGISTER are log commands processed the engine
 > way; the heartbeat runs leader-locally over an in-memory `BrokerLivenessMirror`; a
 > clock-driven `BrokerEvictionTask` fences lapsed sessions; placement reads only registered,
-> unfenced brokers; the change-coordinator heals placement off fenced/draining brokers.
-> Unit-tested (`MetadataBrokerProcessorTest`, 8 cases). **NOT yet validated on a running
-> cluster.**
+> unfenced brokers; a clock-driven `PlacementHealTask` re-places topics off fenced/draining
+> brokers (minimal-diff), fed to the change-coordinator. Unit-tested (`MetadataBrokerProcessorTest`,
+> `PlacementHealTaskTest`). **NOT yet validated on a running cluster.**
 >
 > **The one remaining piece is the broker-side register/heartbeat client loop** (see
 > "Remaining"), which is the only part that makes the FSM live in production and **must be
@@ -74,9 +74,29 @@ All in `event-bridge-cluster-metadata`, mirroring the consumer-groups module:
   leader-local epoch check + liveness touch; draining → DRAIN_BROKER, and once replicas have
   moved off → DEREGISTER + ack shutdown) + clock-driven `BrokerEvictionTask`.
 - **Placement**: `CreateTopic`/`ReassignTopicProcessor` read `BrokerState.activeBrokers()`
-  (with a Raft-membership fallback until any broker has registered). `MetadataManager` heals
-  placement off non-active brokers each reconfiguration tick, feeding the existing
-  change-coordinator.
+  (with a Raft-membership fallback until any broker has registered). A clock-driven
+  `PlacementHealTask` (a stream task on its own private contexts, like `BrokerEvictionTask`)
+  re-places off non-active brokers: per partition it keeps the surviving committed replicas and
+  replaces only the fenced/draining ones (minimal-diff, never moving data off a healthy replica),
+  appending a `REGISTER_TOPIC` target that the `MetadataManager` change-coordinator drives
+  committed → target. It is stateless/idempotent — it keys off the committed assignment, so a topic
+  whose replicas are all active is skipped and the loop self-terminates.
+
+### Safety + termination notes
+
+- **No committed-data loss by construction.** The change-coordinator is grow-before-shrink
+  (`ReconfigurationPlanner.nextOp` adds a replica before removing one) and advances `committed`
+  only after the per-topic Raft group confirms the step (which requires that group's quorum). A
+  new replica joins as a PASSIVE follower and is promoted once caught up (Atomix `join`) before the
+  fenced one is removed. If a majority of a partition's replicas are fenced the group loses quorum,
+  so the move safely stalls/retries rather than dropping survivors — degraded availability, not
+  loss. Never add a force-reconfiguration path.
+- **No debounce (deliberate).** The heal scan is over the bounded topic registry (cheap), and the
+  10s session timeout is already an implicit debounce against blips, so a due-index debounce was
+  considered and not pursued.
+- **Fenced tombstones linger.** A permanently-dead broker stays as a harmless `FENCED` entry
+  (excluded from placement, bounded by cluster size) until it re-registers or is deregistered.
+  GC'ing long-fenced brokers with no remaining replicas is a possible future cleanup.
 
 ## Remaining: the broker-side register/heartbeat client loop
 
