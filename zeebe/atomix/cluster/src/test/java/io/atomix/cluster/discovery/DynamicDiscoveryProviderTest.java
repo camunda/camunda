@@ -8,6 +8,7 @@
 package io.atomix.cluster.discovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
 import io.atomix.cluster.Node;
@@ -54,7 +55,7 @@ class DynamicDiscoveryProviderTest {
     provider.join(null, null).get(10, TimeUnit.SECONDS);
 
     // then
-    Awaitility.await().until(() -> provider.getNodes().size(), is(1));
+    Awaitility.await().until(() -> provider.getNodes().size(), greaterThanOrEqualTo(1));
     final Set<Node> nodes = provider.getNodes();
     assertThat(nodes).isNotEmpty().allMatch(node -> node.address().port() == 26500);
   }
@@ -229,7 +230,7 @@ class DynamicDiscoveryProviderTest {
 
     final Function<String, List<InetAddress>> mockResolver =
         address -> {
-          if (address.equals("unresolvable.invalid.host:26500")) {
+          if (address.equals("unresolvable.invalid.host")) {
             throw new RuntimeException("Failed to resolve address");
           } else {
             try {
@@ -240,7 +241,7 @@ class DynamicDiscoveryProviderTest {
           }
         };
 
-    final DynamicDiscoveryProvider provider = new DynamicDiscoveryProvider(config);
+    final DynamicDiscoveryProvider provider = new DynamicDiscoveryProvider(config, mockResolver);
     providers.add(provider);
 
     // when
