@@ -390,6 +390,8 @@ mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="ze
 - `zeebe_exporter_exporting_duration_seconds_bucket` — exporter flush latency histogram
 - `zeebe_dropped_request_count_total` — dropped/backpressure requests
 
+For the full list of metrics and PromQL queries, see [load-tests/docs/metrics.md](../../docs/metrics.md).
+
 **Known benchmark cluster dashboards:**
 - `camunda-performance` — general throughput/latency/resource overview (namespace variable)
 - `optmetrics` — Optimize performance investigation (26 panels); key: id=15 CPU, id=6 import time MAX
