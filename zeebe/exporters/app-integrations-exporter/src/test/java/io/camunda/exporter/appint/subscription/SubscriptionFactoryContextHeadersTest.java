@@ -24,17 +24,16 @@ class SubscriptionFactoryContextHeadersTest {
 
   @Test
   void shouldResolveHeadersIndependentlyOfAuth() throws Exception {
-    // given — OAuth auth plus org from the deployment context and cluster id from config
+    // given — OAuth auth plus org and cluster id from the deployment context (SaaS environment)
     final Config config =
         new Config()
             .setUrl("http://example.com")
-            .setClusterId("cluster-config")
             .setOauth(
                 new OAuthConfig()
                     .setClientId("id")
                     .setClientSecret("secret")
                     .setAuthorizationServerUrl("https://auth.example.com/oauth/token"));
-    final var deploymentContext = new DeploymentContext("org-123");
+    final var deploymentContext = new DeploymentContext("org-123", "cluster-env");
 
     // when
     final var subscription =
@@ -46,16 +45,16 @@ class SubscriptionFactoryContextHeadersTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
                 ContextHeaders.X_ORG_ID, "org-123",
-                ContextHeaders.X_CLUSTER_ID, "cluster-config"));
+                ContextHeaders.X_CLUSTER_ID, "cluster-env"));
     subscription.close();
   }
 
   @Test
-  void shouldUseConfiguredClusterId() throws Exception {
-    // given — Self-Managed style: operator clusterId, api key auth, no org id
+  void shouldPreferConfiguredClusterIdOverEnvironment() throws Exception {
+    // given — Self-Managed style: operator clusterId overrides the environment-provided one
     final Config config =
         new Config().setUrl("http://example.com").setApiKey("key").setClusterId("sm-cluster");
-    final var deploymentContext = new DeploymentContext(null);
+    final var deploymentContext = new DeploymentContext(null, "cluster-env");
 
     // when
     final var subscription =

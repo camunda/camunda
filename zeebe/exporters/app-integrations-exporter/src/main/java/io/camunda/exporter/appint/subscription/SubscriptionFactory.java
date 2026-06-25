@@ -72,7 +72,8 @@ public class SubscriptionFactory {
       auth = None.INSTANCE;
     }
     final var contextHeaders =
-        ContextHeaders.resolve(config.getClusterId(), deploymentContext.orgId());
+        ContextHeaders.resolve(
+            config.getClusterId(), deploymentContext.clusterId(), deploymentContext.orgId());
     final var httpTransportConfig =
         new HttpTransportConfig(
             config.getUrl(),

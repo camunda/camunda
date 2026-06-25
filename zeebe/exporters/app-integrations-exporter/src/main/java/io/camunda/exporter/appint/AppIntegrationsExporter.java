@@ -46,7 +46,9 @@ public class AppIntegrationsExporter implements Exporter {
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(Config.class);
     deploymentContext =
-        new DeploymentContext(environment.apply(DeploymentContext.ORGANIZATION_ID_ENV_VAR));
+        new DeploymentContext(
+            environment.apply(DeploymentContext.ORGANIZATION_ID_ENV_VAR),
+            environment.apply(DeploymentContext.CLUSTER_ID_ENV_VAR));
     metrics = new AppIntegrationsExporterMetrics(context.getMeterRegistry());
   }
 

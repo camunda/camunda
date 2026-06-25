@@ -16,10 +16,19 @@ package io.camunda.exporter.appint;
  *
  * @param orgId the organization id (SaaS), read from the {@value #ORGANIZATION_ID_ENV_VAR}
  *     environment variable; {@code null} when not set.
+ * @param clusterId the cluster id (SaaS), read from the {@value #CLUSTER_ID_ENV_VAR} environment
+ *     variable; {@code null}/empty when not set.
  */
-public record DeploymentContext(String orgId) {
+public record DeploymentContext(String orgId, String clusterId) {
 
   public static final String ORGANIZATION_ID_ENV_VAR = "CAMUNDA_CLOUD_ORGANIZATION_ID";
 
-  public static final DeploymentContext EMPTY = new DeploymentContext(null);
+  /**
+   * Environment variable carrying the broker cluster id. Mirrors the fallback used by the exporter
+   * {@code Context#getClusterId()} on newer brokers, so SaaS deployments emit the cluster id even
+   * though the 8.9 exporter {@code Context} does not expose it natively.
+   */
+  public static final String CLUSTER_ID_ENV_VAR = "ZEEBE_BROKER_CLUSTER_CLUSTERID";
+
+  public static final DeploymentContext EMPTY = new DeploymentContext(null, null);
 }

@@ -58,18 +58,18 @@ final class AppIntegrationsExporterContextHeadersIT {
   }
 
   @Test
-  void shouldSendContextHeadersCapturedFromConfigAndEnvironment() {
-    // given — org id from the environment and cluster id from the exporter config
+  void shouldSendContextHeadersCapturedFromEnvironment() {
+    // given — org id and cluster id both come from the environment (SaaS deployment)
     wireMock.stubFor(post("/").willReturn(ok()));
     final UnaryOperator<String> env =
-        name -> DeploymentContext.ORGANIZATION_ID_ENV_VAR.equals(name) ? "org-from-env" : null;
+        name ->
+            switch (name) {
+              case DeploymentContext.ORGANIZATION_ID_ENV_VAR -> "org-from-env";
+              case DeploymentContext.CLUSTER_ID_ENV_VAR -> "cluster-from-env";
+              default -> null;
+            };
     final ExporterTestContext context = new ExporterTestContext();
-    final Config config =
-        new Config()
-            .setUrl(url)
-            .setApiKey("test-key")
-            .setClusterId("cluster-from-config")
-            .setBatchSize(1);
+    final Config config = new Config().setUrl(url).setApiKey("test-key").setBatchSize(1);
     context.setConfiguration(new ExporterTestConfiguration<>("test", config));
 
     exporter = new AppIntegrationsExporter(env);
@@ -85,7 +85,7 @@ final class AppIntegrationsExporterContextHeadersIT {
         exactly(1),
         postRequestedFor(urlEqualTo("/"))
             .withHeader(ContextHeaders.X_ORG_ID, equalTo("org-from-env"))
-            .withHeader(ContextHeaders.X_CLUSTER_ID, equalTo("cluster-from-config")));
+            .withHeader(ContextHeaders.X_CLUSTER_ID, equalTo("cluster-from-env")));
   }
 
   private Record<UserTaskRecordValue> generateUserTaskRecord() {

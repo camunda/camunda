@@ -29,11 +29,13 @@ public record ContextHeaders(String orgId, String clusterId) {
   /**
    * Resolves the headers from their possible sources.
    *
-   * @param clusterId the operator-supplied cluster id (exporter config).
+   * @param configClusterId the operator-supplied cluster id (exporter config); takes precedence.
+   * @param envClusterId the cluster id read from the environment (SaaS).
    * @param orgId the organization id read from the environment.
    */
-  public static ContextHeaders resolve(final String clusterId, final String orgId) {
-    return new ContextHeaders(normalizeOrgId(orgId), blankToNull(clusterId));
+  public static ContextHeaders resolve(
+      final String configClusterId, final String envClusterId, final String orgId) {
+    return new ContextHeaders(normalizeOrgId(orgId), firstNonBlank(configClusterId, envClusterId));
   }
 
   /** Emits each resolved header via the given consumer, skipping any blank value. */
@@ -53,8 +55,11 @@ public record ContextHeaders(String orgId, String clusterId) {
     return orgId;
   }
 
-  private static String blankToNull(final String value) {
-    return isPresent(value) ? value : null;
+  private static String firstNonBlank(final String preferred, final String fallback) {
+    if (isPresent(preferred)) {
+      return preferred;
+    }
+    return isPresent(fallback) ? fallback : null;
   }
 
   private static boolean isPresent(final String value) {

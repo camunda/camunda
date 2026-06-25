@@ -18,38 +18,38 @@ class ContextHeadersTest {
   @Test
   void shouldResolveAllHeadersWhenEverythingAvailable() {
     // given / when
-    final var headers = ContextHeaders.resolve("cluster-config", "org-123");
+    final var headers = ContextHeaders.resolve(null, "cluster-env", "org-123");
 
     // then
     assertThat(collect(headers))
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
                 ContextHeaders.X_ORG_ID, "org-123",
-                ContextHeaders.X_CLUSTER_ID, "cluster-config"));
+                ContextHeaders.X_CLUSTER_ID, "cluster-env"));
   }
 
   @Test
-  void shouldResolveClusterIdFromConfig() {
+  void shouldPreferConfiguredClusterIdOverEnvClusterId() {
     // given / when
-    final var headers = ContextHeaders.resolve("cluster-config", null);
+    final var headers = ContextHeaders.resolve("cluster-config", "cluster-env", null);
 
     // then
     assertThat(collect(headers)).containsEntry(ContextHeaders.X_CLUSTER_ID, "cluster-config");
   }
 
   @Test
-  void shouldOmitClusterIdWhenBlank() {
+  void shouldFallBackToEnvClusterIdWhenConfiguredIsBlank() {
     // given / when
-    final var headers = ContextHeaders.resolve("  ", "org-123");
+    final var headers = ContextHeaders.resolve("  ", "cluster-env", null);
 
     // then
-    assertThat(collect(headers)).doesNotContainKey(ContextHeaders.X_CLUSTER_ID);
+    assertThat(collect(headers)).containsEntry(ContextHeaders.X_CLUSTER_ID, "cluster-env");
   }
 
   @Test
   void shouldOmitOrgIdWhenBlank() {
     // given / when
-    final var headers = ContextHeaders.resolve("cluster", "   ");
+    final var headers = ContextHeaders.resolve("cluster", null, "   ");
 
     // then
     assertThat(collect(headers)).doesNotContainKey(ContextHeaders.X_ORG_ID);
@@ -58,7 +58,7 @@ class ContextHeadersTest {
   @Test
   void shouldOmitOrgIdWhenNullSentinel() {
     // given / when
-    final var headers = ContextHeaders.resolve("cluster", "null");
+    final var headers = ContextHeaders.resolve("cluster", null, "null");
 
     // then
     assertThat(collect(headers)).doesNotContainKey(ContextHeaders.X_ORG_ID);
@@ -67,7 +67,7 @@ class ContextHeadersTest {
   @Test
   void shouldEmitNoHeadersWhenNothingAvailable() {
     // given / when
-    final var headers = ContextHeaders.resolve("  ", null);
+    final var headers = ContextHeaders.resolve("  ", "", null);
 
     // then
     assertThat(collect(headers)).isEmpty();
