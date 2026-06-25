@@ -395,9 +395,7 @@ mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="ze
 - `optmetrics` — Optimize performance investigation (26 panels); key: id=15 CPU, id=6 import time MAX
 - `prhrb87` — Optimize Dashboard; key: id=37 ES disk, id=34 data availability latency heatmap
 
-For multi-namespace Optimize investigations, use `optimize-extract-metrics.py` from
-`~/config/dotfiles/scripts/camunda/` — queries all 6 `c8-ck-optimize-*` namespaces via
-`$GRAFANA_URL` and writes `/tmp/optimize-metrics-raw.md`.
+See `load-tests/README.md` → **Accessing metrics via Claude Code (Grafana MCP)** for setup instructions.
 
 ### Via local script (kubectl + port-forward)
 

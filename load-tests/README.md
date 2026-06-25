@@ -154,6 +154,69 @@ More details about observability can be read [here](../docs/observability.md).
 
 For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [docs/metrics.md](docs/metrics.md).
 
+### Accessing metrics via Claude Code (Grafana MCP)
+
+If you are using Claude Code and have kubectl access to the benchmark cluster, you can query
+Prometheus directly inside a Claude session using the `mcp__grafana__*` tools — no browser or
+manual port-forward required.
+
+**Prerequisites:**
+
+1. Active Teleport session with kubectl access to the benchmark cluster.
+2. A Grafana service account token. Generate one in the Grafana UI under
+   *Administration → Service Accounts*, with the `Viewer` role. Store it locally:
+   ```bash
+   echo "<YOUR_TOKEN>" > ~/.grafana-sa-token
+   ```
+3. Install the `mcp-grafana` binary:
+   ```bash
+   pip install mcp-grafana
+   ```
+4. Create a wrapper script at `~/.local/bin/grafana-mcp-wrapper.sh`:
+   ```bash
+   #!/bin/bash
+   set -e
+   export GRAFANA_SERVICE_ACCOUNT_TOKEN=$(cat "$HOME/.grafana-sa-token")
+   export GRAFANA_URL="http://localhost:3000"
+
+   # Port-forward bypasses the Vouch SSO proxy in front of dashboard.benchmark.camunda.cloud
+   kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80 \
+     >>/tmp/grafana-pf.log 2>&1 &
+   PF_PID=$!
+   trap "kill $PF_PID 2>/dev/null" EXIT TERM INT
+
+   sleep 2
+   mcp-grafana "$@"
+   ```
+   ```bash
+   chmod +x ~/.local/bin/grafana-mcp-wrapper.sh
+   ```
+5. Register it as an MCP server in Claude Code:
+   ```bash
+   claude mcp add -s user grafana -- ~/.local/bin/grafana-mcp-wrapper.sh
+   ```
+   Restart Claude Code for the change to take effect.
+
+**Usage in Claude Code sessions:**
+
+```
+# Verify connection
+mcp__grafana__check_datasources_health()
+  → datasourceUid: "prometheus" should show status: OK
+
+# Always discover metric names before writing queries — guessed names return empty silently
+mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="zeebe.*", limit=50)
+
+# Discover active namespaces
+mcp__grafana__list_prometheus_label_values(
+  datasourceUid="prometheus", labelName="namespace",
+  matches=[{filters: [{name: "__name__", value: "zeebe_.*", type: "=~"}]}],
+  startRfc3339="now-24h")
+```
+
+The `load-test-ops` skill (see [skills/load-test-ops/SKILL.md](skills/load-test-ops/SKILL.md))
+documents confirmed metric names and known dashboard UIDs for the benchmark cluster.
+
 ## Test Scenarios
 
 We have different scenarios targeting different use cases and versions. All use the same [setup](#setup) and [endurance test variants](../docs/testing/reliability-testing.md#endurance-test-variants) defined in the reliability testing documentation.
