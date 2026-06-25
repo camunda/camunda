@@ -248,9 +248,11 @@ export class OperateFiltersPanelPage {
   async fillProcessInstanceKeyFilter(processInstanceKey: string) {
     await expect(this.processInstanceKeysFilter).toBeVisible();
     await expect(this.processInstanceKeysFilter).toBeEnabled();
-    await this.processInstanceKeysFilter.fill(processInstanceKey);
+    await this.processInstanceKeysFilter.click();
+    await this.processInstanceKeysFilter.pressSequentially(processInstanceKey);
     await expect(this.processInstanceKeysFilter).toHaveValue(
       processInstanceKey,
+      {timeout: 30000},
     );
   }
 
