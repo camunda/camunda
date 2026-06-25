@@ -8,8 +8,7 @@
 package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
-import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
-import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -27,10 +26,10 @@ import java.util.Map;
  * event-bridge analog of Kafka's {@code offsets.retention}. Registered as a {@link
  * StreamProcessorLifecycleAware} listener that self-schedules at a fixed rate on the async task
  * group (leader only, off the processing path), mirroring {@link RebalanceAssignorTask}. On each
- * tick it scans the thread-safe {@link ConsumerGroupState} mirror for {@code EMPTY} groups and,
- * once one has been empty for at least the retention duration, appends a {@code DELETE_GROUP}
- * command (the {@link DeleteGroupProcessor} validates and commits it; {@code GroupDeletedApplier}
- * removes the group + offsets).
+ * tick it reads the {@code EMPTY} groups from the {@link ConsumerGroupQueryService} lifecycle index
+ * (no full scan) and, once one has been empty for at least the retention duration, appends a {@code
+ * DELETE_GROUP} command (the {@link DeleteGroupProcessor} validates and commits it; {@code
+ * GroupDeletedApplier} removes the group + offsets).
  *
  * <p>The "first seen empty" timestamps are kept in memory (leader-only); a failover resets them, so
  * retention is approximate (a failover can extend it) — acceptable, as in Kafka.
@@ -39,7 +38,7 @@ public final class GroupRetentionTask implements Task, StreamProcessorLifecycleA
 
   private final Duration interval;
   private final Duration retention;
-  private final ConsumerGroupState state;
+  private final ConsumerGroupQueryService query;
   private final InstantSource clock;
 
   // groupId -> when it was first observed EMPTY (leader-only, ephemeral).
@@ -48,11 +47,11 @@ public final class GroupRetentionTask implements Task, StreamProcessorLifecycleA
   public GroupRetentionTask(
       final Duration interval,
       final Duration retention,
-      final ConsumerGroupState state,
+      final ConsumerGroupQueryService query,
       final InstantSource clock) {
     this.interval = interval;
     this.retention = retention;
-    this.state = state;
+    this.query = query;
     this.clock = clock;
   }
 
@@ -65,10 +64,8 @@ public final class GroupRetentionTask implements Task, StreamProcessorLifecycleA
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     final var now = clock.instant();
     final var live = new java.util.HashSet<String>();
-    for (final var snapshot : state.groupSnapshots()) {
-      if (snapshot.state() != GroupLifecycle.EMPTY) {
-        continue;
-      }
+    // The index returns only EMPTY groups — no full scan.
+    for (final var snapshot : query.emptyGroups()) {
       final var groupId = snapshot.groupId();
       live.add(groupId);
       final var since = emptySince.computeIfAbsent(groupId, ignored -> now);

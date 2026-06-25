@@ -30,6 +30,7 @@ import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberReconciledApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
+import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
@@ -82,6 +83,8 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private DbOffsetState offsetState;
   private OffsetQueryService offsetQuery;
   private DbConsumerGroupState groupState;
+  // Off-actor group reads for the coordinator actor (heartbeat/describe/seed) — its own context.
+  private ConsumerGroupQueryService coordinatorGroupQuery;
   private MemberLivenessMirror liveness;
 
   /**
@@ -119,9 +122,9 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
     // Offsets are unbounded, so they are read on demand from state (its own context), not mirrored.
     offsetQuery = new OffsetQueryService(zeebeDb);
     groupState = new DbConsumerGroupState(zeebeDb, zeebeDb.createContext());
-    // Seed the group mirror from durable state before the processor starts (no concurrent access
-    // yet), so a replica recovered from a snapshot exposes its membership even before any replay.
-    groupState.seedMirror();
+    // Group membership is unbounded, so off-actor reads (heartbeat/describe/seed) go to state via a
+    // query service (its own context), not an in-memory mirror.
+    coordinatorGroupQuery = new ConsumerGroupQueryService(zeebeDb);
     liveness = new MemberLivenessMirror();
   }
 
@@ -169,16 +172,21 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     new GroupDeletedApplier(groupState, offsetState))
                 .withListener(
                     new RebalanceAssignorTask(
-                        ASSIGNOR_INTERVAL, groupState, new BalancedStickyAssignor()))
+                        ASSIGNOR_INTERVAL,
+                        new ConsumerGroupQueryService(zeebeDb),
+                        new BalancedStickyAssignor()))
                 .withListener(
                     new GroupRetentionTask(
-                        RETENTION_INTERVAL, EMPTY_GROUP_RETENTION, groupState, clock))
+                        RETENTION_INTERVAL,
+                        EMPTY_GROUP_RETENTION,
+                        new ConsumerGroupQueryService(zeebeDb),
+                        clock))
                 .withListener(
                     new SessionEvictionTask(
                         EVICTION_INTERVAL,
                         SESSION_TIMEOUT,
                         REBALANCE_TIMEOUT,
-                        groupState,
+                        new ConsumerGroupQueryService(zeebeDb),
                         liveness,
                         clock)));
   }
@@ -234,14 +242,17 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
     return liveness;
   }
 
-  /** A thread-safe snapshot of a group's replicated membership/assignment, or {@code null}. */
+  /**
+   * A snapshot of a group's membership/assignment read from state (off the processing actor via the
+   * coordinator's query context), or {@code null} if the group does not exist.
+   */
   public GroupSnapshot groupSnapshot(final String groupId) {
-    return groupState.groupSnapshot(groupId);
+    return coordinatorGroupQuery.groupSnapshot(groupId);
   }
 
-  /** Thread-safe snapshots of all groups (e.g. for the eviction scan). */
+  /** Snapshots of all groups read from state — for the coordinator's describe/seed reads. */
   public List<GroupSnapshot> groupSnapshots() {
-    return groupState.groupSnapshots();
+    return coordinatorGroupQuery.allGroups();
   }
 
   /**

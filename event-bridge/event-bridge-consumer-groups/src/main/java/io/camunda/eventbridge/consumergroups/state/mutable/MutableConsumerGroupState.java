@@ -18,18 +18,15 @@ import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
  */
 public interface MutableConsumerGroupState extends ConsumerGroupState {
 
-  /** Inserts or replaces the group's state (and refreshes its mirror snapshot). */
+  /** Inserts or replaces the group's state (and updates its lifecycle index). */
   void putGroup(String groupId, GroupState group);
 
-  /** Removes the group and its mirror snapshot. */
+  /** Removes the group (and its lifecycle index entries). */
   void deleteGroup(String groupId);
 
-  /** Inserts or replaces a member's state (and refreshes the group's mirror snapshot). */
+  /** Inserts or replaces a member's state. */
   void putMember(String groupId, String memberId, MemberState member);
 
-  /** Removes a member (and refreshes the group's mirror snapshot). */
+  /** Removes a member. */
   void deleteMember(String groupId, String memberId);
-
-  /** Rebuilds the mirror from durable state before processing starts (no concurrent access yet). */
-  void seedMirror();
 }

@@ -8,34 +8,29 @@
 package io.camunda.eventbridge.consumergroups.state.group;
 
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
-import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 /**
- * RocksDB-backed {@link MutableConsumerGroupState}: per-group epochs/partition-count keyed by
+ * RocksDB-backed {@link MutableConsumerGroupState}: per-group epochs/state/subscription keyed by
  * {@code groupId} and per-member identity/epoch/target keyed by {@code (groupId, memberId)}.
  * Rebuilt identically on every replica via stream replay, so a new coordinator leader restores
  * membership after failover.
  *
- * <p>This class only does granular storage — get/put/delete plus thread-safe mirror upkeep. The
- * decision logic (create-the-group-if-absent, bump epochs, delete-when-empty) lives in the
- * appliers, mirroring how the engine keeps such logic out of its {@code Db…State} classes.
+ * <p>This class only does granular storage on the stream-processing actor — get/put/delete plus
+ * upkeep of two lifecycle index families ({@code PREPARING_REBALANCE} and {@code EMPTY} groups) so
+ * the async tasks fetch their work without scanning all groups. The decision logic (create the
+ * group, bump epochs, transition state, retain/delete) lives in the appliers.
  *
- * <p>RocksDB reads ({@link #getGroup}, {@link #getMember}, {@link #findMemberByInstanceId}, {@link
- * #isGroupEmpty}) run on the stream-processing actor only; the mirror reads ({@link
- * #groupSnapshot}, {@link #groupSnapshots}) are safe off-actor (the heartbeat handler and the async
- * assignor).
+ * <p>There is no in-memory mirror: off-actor reads (heartbeat handler, async tasks, describe) go
+ * through {@code ConsumerGroupQueryService} (a separate {@link ZeebeDb} context) instead of a heap
+ * projection, since group membership is unbounded.
  */
 public final class DbConsumerGroupState implements MutableConsumerGroupState {
 
@@ -46,9 +41,8 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
 
   private final ColumnFamily<DbString, GroupState> groupColumnFamily;
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, MemberState> memberColumnFamily;
-
-  // Thread-safe mirror of the durable state, read off-actor by the heartbeat handler and assignor.
-  private final Map<String, GroupSnapshot> mirror = new ConcurrentHashMap<>();
+  private final ColumnFamily<DbString, DbNil> pendingRebalanceColumnFamily;
+  private final ColumnFamily<DbString, DbNil> emptyColumnFamily;
 
   public DbConsumerGroupState(
       final ZeebeDb<EventBridgeColumnFamilies> zeebeDb, final TransactionContext context) {
@@ -61,6 +55,15 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
             context,
             groupMemberKey,
             new MemberState());
+    pendingRebalanceColumnFamily =
+        zeebeDb.createColumnFamily(
+            EventBridgeColumnFamilies.CONSUMER_GROUPS_PENDING_REBALANCE,
+            context,
+            groupId,
+            DbNil.INSTANCE);
+    emptyColumnFamily =
+        zeebeDb.createColumnFamily(
+            EventBridgeColumnFamilies.CONSUMER_GROUPS_EMPTY, context, groupId, DbNil.INSTANCE);
   }
 
   // --- reads (stream-processing actor) ----------------------------------------------------------
@@ -124,32 +127,21 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
     return found[0];
   }
 
-  // --- mirror reads (off-actor) -----------------------------------------------------------------
-
-  @Override
-  public GroupSnapshot groupSnapshot(final String group) {
-    return mirror.get(group);
-  }
-
-  @Override
-  public List<GroupSnapshot> groupSnapshots() {
-    return new ArrayList<>(mirror.values());
-  }
-
   // --- writes (appliers, stream-processing actor) -----------------------------------------------
 
   @Override
   public void putGroup(final String group, final GroupState value) {
     groupId.wrapString(group);
     groupColumnFamily.upsert(groupId, value);
-    refreshMirror(group);
+    updateLifecycleIndex(group, value.getState());
   }
 
   @Override
   public void deleteGroup(final String group) {
     groupId.wrapString(group);
     groupColumnFamily.deleteIfExists(groupId);
-    mirror.remove(group);
+    pendingRebalanceColumnFamily.deleteIfExists(groupId);
+    emptyColumnFamily.deleteIfExists(groupId);
   }
 
   @Override
@@ -157,7 +149,6 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
     groupId.wrapString(group);
     memberId.wrapString(member);
     memberColumnFamily.upsert(groupMemberKey, value);
-    refreshMirror(group);
   }
 
   @Override
@@ -165,51 +156,25 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
     groupId.wrapString(group);
     memberId.wrapString(member);
     memberColumnFamily.deleteIfExists(groupMemberKey);
-    refreshMirror(group);
-  }
-
-  @Override
-  public void seedMirror() {
-    mirror.clear();
-    final List<String> groups = new ArrayList<>();
-    groupColumnFamily.forEach((key, value) -> groups.add(key.toString()));
-    groups.forEach(this::refreshMirror);
   }
 
   // --- internals --------------------------------------------------------------------------------
 
-  private void refreshMirror(final String group) {
+  /**
+   * Keeps the lifecycle index families in sync with a group's state, so the assignor/retention
+   * tasks can list just the {@code PREPARING_REBALANCE} / {@code EMPTY} groups.
+   */
+  private void updateLifecycleIndex(final String group, final GroupLifecycle state) {
     groupId.wrapString(group);
-    final var groupState = groupColumnFamily.get(groupId);
-    if (groupState == null) {
-      mirror.remove(group);
-      return;
+    if (state == GroupLifecycle.PREPARING_REBALANCE) {
+      pendingRebalanceColumnFamily.upsert(groupId, DbNil.INSTANCE);
+      emptyColumnFamily.deleteIfExists(groupId);
+    } else if (state == GroupLifecycle.EMPTY) {
+      emptyColumnFamily.upsert(groupId, DbNil.INSTANCE);
+      pendingRebalanceColumnFamily.deleteIfExists(groupId);
+    } else {
+      pendingRebalanceColumnFamily.deleteIfExists(groupId);
+      emptyColumnFamily.deleteIfExists(groupId);
     }
-    final long groupEpoch = groupState.getGroupEpoch();
-    final long assignmentEpoch = groupState.getAssignmentEpoch();
-    final var lifecycle = groupState.getState();
-    final var subscriptions = groupState.getSubscriptions();
-
-    final Map<String, MemberSnapshot> members = new LinkedHashMap<>();
-    groupId.wrapString(group);
-    // Explicit BiConsumer type to disambiguate from the KeyValuePairVisitor overload.
-    final BiConsumer<DbCompositeKey<DbString, DbString>, MemberState> visitor =
-        (key, value) -> {
-          final var member = key.second().toString();
-          members.put(
-              member,
-              new MemberSnapshot(
-                  member,
-                  value.getInstanceId(),
-                  value.getMemberEpoch(),
-                  value.getAssignedEpoch(),
-                  value.getTargetPartitions()));
-        };
-    memberColumnFamily.whileEqualPrefix(groupId, visitor);
-
-    mirror.put(
-        group,
-        new GroupSnapshot(
-            group, groupEpoch, assignmentEpoch, lifecycle, subscriptions, Map.copyOf(members)));
   }
 }

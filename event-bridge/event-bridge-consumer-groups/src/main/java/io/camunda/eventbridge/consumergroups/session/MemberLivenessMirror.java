@@ -33,6 +33,14 @@ public final class MemberLivenessMirror {
     return mirror.get(groupId);
   }
 
+  /**
+   * The groups that currently have liveness (i.e. members heartbeating) — the eviction task's work
+   * set, so it sweeps only active groups instead of scanning all of state.
+   */
+  public Set<String> groupIds() {
+    return Set.copyOf(mirror.keySet());
+  }
+
   /** Drops liveness for groups no longer present (their last member left). */
   public void retain(final Set<String> liveGroupIds) {
     mirror.keySet().retainAll(liveGroupIds);

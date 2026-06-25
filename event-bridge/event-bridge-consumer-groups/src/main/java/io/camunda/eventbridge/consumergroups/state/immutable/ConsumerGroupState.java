@@ -7,17 +7,15 @@
  */
 package io.camunda.eventbridge.consumergroups.state.immutable;
 
-import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.group.GroupState;
 import io.camunda.eventbridge.consumergroups.state.group.MemberState;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
-import java.util.List;
 
 /**
  * Read view of the replicated consumer-group state — the event-bridge counterpart of the engine's
  * immutable {@code XxxState} interfaces. Processors and validators depend on this (never on the
- * concrete {@code Db…} class); the heartbeat handler and async assignor read the thread-safe mirror
- * ({@link #groupSnapshot}/{@link #groupSnapshots}) off the processing actor.
+ * concrete {@code Db…} class), reading on the stream-processing actor. Off-actor snapshot reads go
+ * through {@code ConsumerGroupQueryService} instead, so there is no in-memory mirror here.
  *
  * <p>The returned {@link GroupState}/{@link MemberState} are the durable values; treat them as
  * read-only outside an applier (an applier may mutate one and write it back via {@link
@@ -42,10 +40,4 @@ public interface ConsumerGroupState {
 
   /** The member id of the static member with the given instance id, or {@code null} if none. */
   String findMemberByInstanceId(String groupId, String instanceId);
-
-  /** A thread-safe snapshot of the group's membership/assignment, or {@code null} if unknown. */
-  GroupSnapshot groupSnapshot(String groupId);
-
-  /** Thread-safe snapshots of all groups. */
-  List<GroupSnapshot> groupSnapshots();
 }

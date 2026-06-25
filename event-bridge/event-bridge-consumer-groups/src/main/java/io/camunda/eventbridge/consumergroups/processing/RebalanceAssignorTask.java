@@ -11,9 +11,8 @@ import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignment;
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignor;
 import io.camunda.eventbridge.consumergroups.assignor.PartitionAssignor.PartitionAssignmentContext;
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
-import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
-import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -33,13 +32,13 @@ import java.util.stream.IntStream;
  * computation. It is registered as a {@link StreamProcessorLifecycleAware} listener and
  * self-schedules at a fixed rate on the async task group in {@link #onRecovered} — leader only, off
  * the command-processing path, and only after recovery (when the async task group is up), mirroring
- * the engine's {@code MessageTimeToLiveCheckScheduler}. On each tick it scans the thread-safe
- * {@link DbConsumerGroupState} mirror for groups whose target is stale ({@code assignmentEpoch <
- * groupEpoch}), runs the {@link PartitionAssignor} over the current roster, and appends a {@code
- * REBALANCE_GROUP} command carrying the proposed target. The {@link RebalanceProcessor} then
- * validates and commits it.
+ * the engine's {@code MessageTimeToLiveCheckScheduler}. On each tick it reads the {@code
+ * PREPARING_REBALANCE} groups from the {@link ConsumerGroupQueryService} lifecycle index (no full
+ * scan), runs the {@link PartitionAssignor} over each roster, and appends a {@code REBALANCE_GROUP}
+ * command carrying the proposed target. The {@link RebalanceProcessor} then validates and commits
+ * it.
  *
- * <p>It cannot touch RocksDB: it reads the off-actor mirror and emits commands only.
+ * <p>It reads state off-actor through its own query context and emits commands only.
  *
  * <p>Bursts of joins/leaves are debounced: a group's target is proposed only once its group epoch
  * has been stable for at least one tick, and only once per epoch (re-proposing is suppressed until
@@ -49,7 +48,7 @@ import java.util.stream.IntStream;
 public final class RebalanceAssignorTask implements Task, StreamProcessorLifecycleAware {
 
   private final Duration interval;
-  private final ConsumerGroupState state;
+  private final ConsumerGroupQueryService query;
   private final PartitionAssignor assignor;
 
   // Per-group debounce: the group epoch last observed and the last epoch a proposal was emitted
@@ -57,9 +56,11 @@ public final class RebalanceAssignorTask implements Task, StreamProcessorLifecyc
   private final Map<String, Debounce> debounce = new HashMap<>();
 
   public RebalanceAssignorTask(
-      final Duration interval, final ConsumerGroupState state, final PartitionAssignor assignor) {
+      final Duration interval,
+      final ConsumerGroupQueryService query,
+      final PartitionAssignor assignor) {
     this.interval = interval;
-    this.state = state;
+    this.query = query;
     this.assignor = assignor;
   }
 
@@ -71,22 +72,21 @@ public final class RebalanceAssignorTask implements Task, StreamProcessorLifecyc
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    for (final var snapshot : state.groupSnapshots()) {
+    // The index returns only PREPARING_REBALANCE groups (have members + a stale target), so there
+    // is no full scan; drop debounce state for groups that are no longer pending.
+    final var pending = query.pendingRebalanceGroups();
+    final var pendingIds = new java.util.HashSet<String>();
+    for (final var snapshot : pending) {
+      pendingIds.add(snapshot.groupId());
       maybeProposeRebalance(snapshot, taskResultBuilder);
     }
+    debounce.keySet().retainAll(pendingIds);
     return taskResultBuilder.build();
   }
 
   private void maybeProposeRebalance(
       final GroupSnapshot snapshot, final TaskResultBuilder taskResultBuilder) {
     final var groupId = snapshot.groupId();
-    if (!snapshot.isRebalancePending() || snapshot.members().isEmpty()) {
-      // Nothing to assign: either the target is current, or the group is EMPTY (retained with no
-      // members until the retention task reclaims it).
-      debounce.remove(groupId);
-      return;
-    }
-
     final var groupEpoch = snapshot.groupEpoch();
     final var d = debounce.get(groupId);
     if (d == null) {

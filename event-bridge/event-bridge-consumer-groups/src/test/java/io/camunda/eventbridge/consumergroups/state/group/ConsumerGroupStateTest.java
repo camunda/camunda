@@ -42,7 +42,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Verifies the consumer-group appliers (which own the create/update/delete decision logic), the
- * replicated state + mirror they write through, and the {@link CoordinationChecks} fencing.
+ * replicated state they write through (read back both on the processing actor via {@link
+ * DbConsumerGroupState} and off-actor via {@link ConsumerGroupQueryService}), and the {@link
+ * CoordinationChecks} fencing.
  */
 final class ConsumerGroupStateTest {
 
@@ -52,6 +54,7 @@ final class ConsumerGroupStateTest {
   @TempDir private Path dbDir;
   private ZeebeDb<EventBridgeColumnFamilies> db;
   private DbConsumerGroupState state;
+  private ConsumerGroupQueryService query;
   private DbOffsetState offsetState;
 
   private MemberJoinedApplier memberJoined;
@@ -70,6 +73,7 @@ final class ConsumerGroupStateTest {
             SimpleMeterRegistry::new);
     db = factory.createDb(dbDir.toFile());
     state = new DbConsumerGroupState(db, db.createContext());
+    query = new ConsumerGroupQueryService(db);
     offsetState = new DbOffsetState(db, db.createContext());
     memberJoined = new MemberJoinedApplier(state);
     memberLeft = new MemberLeftApplier(state);
@@ -88,11 +92,11 @@ final class ConsumerGroupStateTest {
     // when
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
 
-    // then — durable state + mirror agree, group created with the carried partition count
+    // then — durable state + query snapshot agree, group created with the carried partition count
     assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(1);
     assertThat(state.getGroup("g").getAssignmentEpoch()).isZero();
 
-    final var snapshot = state.groupSnapshot("g");
+    final var snapshot = query.groupSnapshot("g");
     assertThat(snapshot.subscriptions()).containsExactly(Map.entry("t", 4));
     // first join enters the state machine at PREPARING_REBALANCE (target not yet computed)
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
@@ -111,8 +115,8 @@ final class ConsumerGroupStateTest {
 
     // then
     assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(2);
-    assertThat(state.groupSnapshot("g").subscriptions()).containsEntry("t", 4);
-    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m1", "m2");
+    assertThat(query.groupSnapshot("g").subscriptions()).containsEntry("t", 4);
+    assertThat(query.groupSnapshot("g").members()).containsOnlyKeys("m1", "m2");
   }
 
   @Test
@@ -157,11 +161,11 @@ final class ConsumerGroupStateTest {
         3, rebalance("g", 2, Map.of("m1", List.of(1, 2), "m2", List.of(3, 4))));
 
     assertThat(state.getGroup("g").getAssignmentEpoch()).isEqualTo(2);
-    assertThat(state.groupSnapshot("g").isRebalancePending()).isFalse();
+    assertThat(query.groupSnapshot("g").isRebalancePending()).isFalse();
     // a committed rebalance transitions the group to RECONCILING (members not yet converged)
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
     assertThat(state.getMember("g", "m1").getTargetPartitions()).containsExactly(tp(1), tp(2));
-    assertThat(state.groupSnapshot("g").members().get("m2").targetPartitions())
+    assertThat(query.groupSnapshot("g").members().get("m2").targetPartitions())
         .containsExactly(tp(3), tp(4));
   }
 
@@ -215,7 +219,7 @@ final class ConsumerGroupStateTest {
 
     assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(3);
     assertThat(state.getMember("g", "m1")).isNull();
-    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
+    assertThat(query.groupSnapshot("g").members()).containsOnlyKeys("m2");
   }
 
   @Test
@@ -228,7 +232,7 @@ final class ConsumerGroupStateTest {
     // the group is retained as EMPTY (not deleted) and its committed offsets survive
     assertThat(state.getGroup("g")).isNotNull();
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
-    assertThat(state.groupSnapshot("g").members()).isEmpty();
+    assertThat(query.groupSnapshot("g").members()).isEmpty();
     assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(9);
   }
 
@@ -259,18 +263,17 @@ final class ConsumerGroupStateTest {
     memberJoined.applyState(3, join("g", "m2", null, 3, 3, 4));
 
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
-    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
+    assertThat(query.groupSnapshot("g").members()).containsOnlyKeys("m2");
   }
 
   @Test
-  void shouldRebuildMirrorFromDurableStateOnSeed() {
+  void shouldReconstructSnapshotFromDurableStateOnAFreshContext() {
     memberJoined.applyState(1, join("g", "m1", "instance-a", 1, 1, 4));
     groupRebalanced.applyState(2, rebalance("g", 1, Map.of("m1", List.of(1, 2, 3, 4))));
 
-    final var recovered = new DbConsumerGroupState(db, db.createContext());
-    assertThat(recovered.groupSnapshot("g")).isNull(); // mirror empty until seeded
-
-    recovered.seedMirror();
+    // a query service built on its own context (as a new leader would) reads the durable state
+    // directly — there is no mirror to seed.
+    final var recovered = new ConsumerGroupQueryService(db);
 
     final var snapshot = recovered.groupSnapshot("g");
     assertThat(snapshot.groupEpoch()).isEqualTo(1);

@@ -15,6 +15,7 @@ import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
+import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -62,7 +63,9 @@ final class RebalanceAssignorTaskTest {
     groupRebalanced = new GroupRebalancedApplier(state);
     task =
         new RebalanceAssignorTask(
-            java.time.Duration.ofSeconds(1), state, new BalancedStickyAssignor());
+            java.time.Duration.ofSeconds(1),
+            new ConsumerGroupQueryService(db),
+            new BalancedStickyAssignor());
   }
 
   @AfterEach

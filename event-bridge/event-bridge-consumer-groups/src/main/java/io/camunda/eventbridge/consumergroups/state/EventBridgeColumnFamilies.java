@@ -27,7 +27,19 @@ public enum EventBridgeColumnFamilies implements EnumValue, ScopedColumnFamily {
   CONSUMER_GROUPS(2, ColumnFamilyScope.PARTITION_LOCAL),
 
   /** Per-member state keyed by {@code (groupId, memberId)} → instance id, epoch, target. */
-  CONSUMER_GROUP_MEMBERS(3, ColumnFamilyScope.PARTITION_LOCAL);
+  CONSUMER_GROUP_MEMBERS(3, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Secondary index of groups in {@code PREPARING_REBALANCE} ({@code groupId} → ∅) so the async
+   * assignor fetches only the groups that need a target computed, without scanning all groups.
+   */
+  CONSUMER_GROUPS_PENDING_REBALANCE(4, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Secondary index of {@code EMPTY} groups ({@code groupId} → ∅) so the retention task fetches
+   * only empty groups, without scanning all groups.
+   */
+  CONSUMER_GROUPS_EMPTY(5, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;
