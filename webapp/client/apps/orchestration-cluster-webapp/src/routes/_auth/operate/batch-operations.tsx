@@ -22,9 +22,7 @@ export const Route = createFileRoute('/_auth/operate/batch-operations')({
 	validateSearch: batchOperationsSearchSchema,
 	loaderDeps: ({search}) => ({...search}),
 	loader: ({context: {queryClient}, deps}) => queryClient.ensureQueryData(batchOperationsOptions(deps)),
-	pendingComponent: () => (
-		<DataTableSkeleton columnCount={5} rowCount={5} showHeader={false} showToolbar={false} />
-	),
+	pendingComponent: () => <DataTableSkeleton columnCount={5} rowCount={5} showHeader={false} showToolbar={false} />,
 	component: function BatchOperationsRoute() {
 		const {page, pageSize, sort} = Route.useSearch();
 		return <BatchOperations page={page} pageSize={pageSize} sort={sort} />;
