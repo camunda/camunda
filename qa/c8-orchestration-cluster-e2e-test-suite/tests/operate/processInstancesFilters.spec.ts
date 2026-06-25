@@ -232,7 +232,11 @@ test.describe('Process Instances Filters', () => {
     await test.step('Add Variable Filter via modal', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variables');
       await operateFiltersPanelPage.openVariableFilterModal();
-      await operateFiltersPanelPage.fillConditionRow(0, 'filtersTest', orderProcessFiltersValue);
+      await operateFiltersPanelPage.fillConditionRow(
+        0,
+        'filtersTest',
+        orderProcessFiltersValue,
+      );
       await operateFiltersPanelPage.applyVariableFilter();
     });
 
@@ -270,7 +274,9 @@ test.describe('Process Instances Filters', () => {
         ),
       ).toBeVisible();
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByText(orderProcessFiltersValue),
+        operateFiltersPanelPage.variableFilterDialog.getByText(
+          orderProcessFiltersValue,
+        ),
       ).toBeVisible();
       await operateFiltersPanelPage.cancelVariableFilterModal();
       await operateFiltersPanelPage.cancelVariableFilterModal();
@@ -875,5 +881,3 @@ test.describe('Process Instances Filters', () => {
     });
   });
 });
-
-
