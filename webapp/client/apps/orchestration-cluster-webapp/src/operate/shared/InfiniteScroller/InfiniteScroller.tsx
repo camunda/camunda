@@ -6,20 +6,29 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useCallback, useRef} from 'react';
+import {
+	cloneElement,
+	isValidElement,
+	useCallback,
+	useRef,
+	type FC,
+	type ReactElement,
+	type Ref,
+	type RefObject,
+} from 'react';
 
 type ChildProps = {
-	ref: React.Ref<Element>;
+	ref: Ref<Element>;
 };
 
 type Props = {
-	children: React.ReactElement<ChildProps>;
+	children: ReactElement<ChildProps>;
 	onVerticalScrollStartReach?: (scrollUp: (distance: number) => void) => void;
 	onVerticalScrollEndReach?: (scrollDown: (distance: number) => void) => void;
-	scrollableContainerRef: React.RefObject<HTMLElement | null>;
+	scrollableContainerRef: RefObject<HTMLElement | null>;
 };
 
-const InfiniteScroller: React.FC<Props> = ({
+const InfiniteScroller: FC<Props> = ({
 	children,
 	onVerticalScrollStartReach,
 	onVerticalScrollEndReach,
@@ -105,8 +114,8 @@ const InfiniteScroller: React.FC<Props> = ({
 		[createIntersectionObserver, createMutationObserver],
 	);
 
-	if (React.isValidElement(children)) {
-		return React.cloneElement(children, {
+	if (isValidElement(children)) {
+		return cloneElement(children, {
 			ref: observedContainerRef,
 		});
 	}
