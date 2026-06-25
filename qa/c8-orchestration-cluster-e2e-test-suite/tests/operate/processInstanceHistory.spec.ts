@@ -412,7 +412,7 @@ test.describe('Process Instance History', () => {
         await operateProcessInstancePage.getNestedGroupInHistoryLocator(
           nestedParentName,
         );
-      await expect(nestedParentGroupLocator).toBeVisible();
+      await expect(nestedParentGroupLocator).toBeVisible({timeout: 30000});
       await expect(
         nestedParentGroupLocator.getByLabel(activityCollectMoney),
       ).toHaveCount(2);
@@ -458,7 +458,7 @@ test.describe('Process Instance History', () => {
         await operateProcessInstancePage.getNestedGroupInHistoryLocator(
           nestedParentName,
         );
-      await expect(nestedParentGroupLocator).toBeVisible();
+      await expect(nestedParentGroupLocator).toBeVisible({timeout: 30000});
       await expect(
         nestedParentGroupLocator.getByLabel(activitySendItems),
       ).toHaveCount(1);

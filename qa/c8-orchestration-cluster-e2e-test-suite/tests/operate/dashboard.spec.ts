@@ -135,7 +135,9 @@ test.describe('Dashboard', () => {
 
       await operateDashboardPage.clickActiveInstancesLink();
       await expect(
-        page.getByRole('heading', {name: /process instances/i}),
+        page
+          .getByTestId('frame-container')
+          .getByRole('heading', {name: /process instances/i}),
       ).toBeVisible();
     });
 
@@ -144,7 +146,9 @@ test.describe('Dashboard', () => {
 
       await operateDashboardPage.clickIncidentInstancesLink();
       await expect(
-        page.getByRole('heading', {name: /process instances/i}),
+        page
+          .getByTestId('frame-container')
+          .getByRole('heading', {name: /process instances/i}),
       ).toBeVisible();
     });
   });

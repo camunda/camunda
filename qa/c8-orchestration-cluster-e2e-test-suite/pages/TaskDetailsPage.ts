@@ -154,12 +154,14 @@ class TaskDetailsPage {
     if (!(await this.assignedToMeText.isVisible())) {
       await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
       await this.assignToMeButton.click({timeout: 60000});
+      await expect(this.unassignButton).toBeVisible({timeout: 30000});
     }
   }
 
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
     await this.unassignButton.click();
+    await expect(this.assignToMeButton).toBeVisible({timeout: 30000});
   }
 
   async clickCompleteTaskButton() {

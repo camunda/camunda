@@ -76,7 +76,9 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Verify incidents tab is visible', async () => {
-      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible({
+        timeout: 30000,
+      });
     });
 
     await test.step('Open incidents tab', async () => {

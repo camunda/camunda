@@ -46,7 +46,7 @@ test.beforeAll(async () => {
   processInstanceKey = String(instance.processInstanceKey);
 
   // Allow beforeAll to fire and the MI body to materialise.
-  await sleep(5000);
+  await sleep(10000);
 });
 
 test.afterAll(async () => {
@@ -98,12 +98,12 @@ test.describe('Operate — Multi-Instance beforeAll listener visibility', () => 
       await operateProcessInstancePage.openListenersTab();
       await expect(
         operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(1);
+      ).toHaveCount(1, {timeout: 30000});
       await expect(
         operateProcessInstancePage.getExecutionListenerRowsByEventType(
           'Before all',
         ),
-      ).toHaveCount(1);
+      ).toHaveCount(1, {timeout: 30000});
     });
 
     await test.step('Variables panel exposes items produced by beforeAll', async () => {

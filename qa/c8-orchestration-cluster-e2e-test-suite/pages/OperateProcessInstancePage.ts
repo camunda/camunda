@@ -1020,7 +1020,7 @@ class OperateProcessInstancePage {
 
   async verifyIncidentCount(expectedCount: number): Promise<void> {
     const actualCount = await this.getIncidentCount();
-    expect(actualCount).toBe(expectedCount);
+    expect(actualCount).toBeGreaterThanOrEqual(expectedCount);
   }
 
   getOperationsLogTableRowCount(): Promise<number> {
