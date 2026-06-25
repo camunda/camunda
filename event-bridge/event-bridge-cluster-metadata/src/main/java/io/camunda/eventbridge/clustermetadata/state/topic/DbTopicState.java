@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * RocksDB-backed {@link MutableTopicState}: the topic registry (desired state), keyed by {@code
@@ -35,11 +36,17 @@ public final class DbTopicState implements MutableTopicState {
   private final PersistedTopic persistedTopic = new PersistedTopic();
   private final ColumnFamily<DbString, PersistedTopic> topicColumnFamily;
 
+  private final PersistedTopicLeaders persistedLeaders = new PersistedTopicLeaders();
+  private final ColumnFamily<DbString, PersistedTopicLeaders> leaderColumnFamily;
+
   public DbTopicState(
       final ZeebeDb<MetadataColumnFamilies> zeebeDb, final TransactionContext context) {
     topicColumnFamily =
         zeebeDb.createColumnFamily(
             MetadataColumnFamilies.TOPIC_REGISTRY, context, topicName, persistedTopic);
+    leaderColumnFamily =
+        zeebeDb.createColumnFamily(
+            MetadataColumnFamilies.TOPIC_PARTITION_LEADER, context, topicName, persistedLeaders);
   }
 
   @Override
@@ -68,5 +75,36 @@ public final class DbTopicState implements MutableTopicState {
   public void delete(final String name) {
     topicName.wrapString(name);
     topicColumnFamily.deleteIfExists(topicName);
+    leaderColumnFamily.deleteIfExists(topicName);
+  }
+
+  @Override
+  public Set<Integer> partitionsWithLeader(final String name) {
+    topicName.wrapString(name);
+    final var stored = leaderColumnFamily.get(topicName);
+    return stored == null ? Set.of() : Set.copyOf(stored.toMap().keySet());
+  }
+
+  @Override
+  public long leaderTerm(final String name, final int partition) {
+    topicName.wrapString(name);
+    final var stored = leaderColumnFamily.get(topicName);
+    if (stored == null) {
+      return -1L;
+    }
+    final var leader = stored.toMap().get(partition);
+    return leader == null ? -1L : leader[1];
+  }
+
+  @Override
+  public void recordPartitionLeader(
+      final String name, final int partition, final int node, final long term) {
+    topicName.wrapString(name);
+    final var stored = leaderColumnFamily.get(topicName);
+    final var leaders =
+        stored == null ? new LinkedHashMap<Integer, long[]>() : new LinkedHashMap<>(stored.toMap());
+    leaders.put(partition, new long[] {node, term});
+    topicName.wrapString(name);
+    leaderColumnFamily.upsert(topicName, persistedLeaders.set(leaders));
   }
 }

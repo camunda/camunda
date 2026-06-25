@@ -11,10 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
+import io.camunda.eventbridge.clustermetadata.placement.SpreadPlacement;
 import io.camunda.eventbridge.clustermetadata.record.MetadataRecordValues;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
+import io.camunda.eventbridge.clustermetadata.state.appliers.PartitionLeaderReportedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
 import io.camunda.eventbridge.clustermetadata.state.topic.DbTopicState;
@@ -51,7 +52,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class MetadataProcessorTest {
 
   private static final List<Integer> BROKERS = List.of(0, 1, 2);
-  private static final RoundRobinPlacement PLACEMENT = new RoundRobinPlacement();
+  private static final SpreadPlacement PLACEMENT = new SpreadPlacement();
 
   @TempDir private Path dbDir;
   private ZeebeDb<MetadataColumnFamilies> db;
@@ -88,10 +89,16 @@ final class MetadataProcessorTest {
                         MetadataRecordValues.TOPIC_VALUE_TYPE,
                         MetadataIntent.DELETE_TOPIC,
                         new TopicDeleteProcessor(processors.writers(), validator))
+                    .onCommand(
+                        MetadataRecordValues.TOPIC_VALUE_TYPE,
+                        MetadataIntent.REPORT_PARTITION_LEADER,
+                        new ReportPartitionLeaderProcessor(processors.writers(), validator, state))
                     .withEventApplier(
                         MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(state))
+                    .withEventApplier(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(state))
                     .withEventApplier(
-                        MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(state)));
+                        MetadataIntent.PARTITION_LEADER_REPORTED,
+                        new PartitionLeaderReportedApplier(state)));
   }
 
   @AfterEach
@@ -109,7 +116,7 @@ final class MetadataProcessorTest {
     assertThat(meta.status()).isEqualTo(TopicStatus.CREATING);
     assertThat(meta.partitionCount()).isEqualTo(3);
     assertThat(meta.replicationFactor()).isEqualTo(2);
-    assertThat(meta.assignment()).isEqualTo(PLACEMENT.assign(3, 2, BROKERS));
+    assertThat(meta.assignment()).isEqualTo(PLACEMENT.assign("orders", 3, 2, BROKERS));
   }
 
   @Test
@@ -144,8 +151,8 @@ final class MetadataProcessorTest {
     final var meta = state.get("orders");
     assertThat(meta.status()).isEqualTo(TopicStatus.CREATING);
     assertThat(meta.partitionCount()).isEqualTo(3);
-    assertThat(meta.assignment()).isEqualTo(PLACEMENT.assign(3, 2, BROKERS));
-    assertThat(meta.target()).isEqualTo(PLACEMENT.assign(3, 3, BROKERS));
+    assertThat(meta.assignment()).isEqualTo(PLACEMENT.assign("orders", 3, 2, BROKERS));
+    assertThat(meta.target()).isEqualTo(PLACEMENT.assign("orders", 3, 3, BROKERS));
   }
 
   @Test
@@ -178,6 +185,48 @@ final class MetadataProcessorTest {
             .setOp(TopicRecord.OP_REGISTER)
             .setPartitionCount(partitionCount)
             .setReplicationFactor(replicationFactor));
+  }
+
+  @Test
+  void shouldFlipToActiveOnceEveryPartitionHasAReportedLeader() {
+    create("orders", 2, 1);
+
+    // when — only partition 1 has reported a leader
+    reportLeader("orders", 1, 0, 1);
+
+    // then — still CREATING (partition 2 has no leader yet)
+    assertThat(state.get("orders").status()).isEqualTo(TopicStatus.CREATING);
+    assertThat(state.partitionsWithLeader("orders")).containsExactly(1);
+
+    // when — partition 2 reports its leader, completing coverage
+    reportLeader("orders", 2, 1, 1);
+
+    // then — derived ACTIVE from replicated leadership
+    assertThat(state.get("orders").status()).isEqualTo(TopicStatus.ACTIVE);
+    assertThat(state.partitionsWithLeader("orders")).containsExactlyInAnyOrder(1, 2);
+  }
+
+  @Test
+  void shouldRejectAStaleLeaderTerm() {
+    create("orders", 1, 1);
+    reportLeader("orders", 1, 0, 5);
+
+    // when — a delayed report from a deposed leader (lower term) arrives
+    reportLeader("orders", 1, 2, 3);
+
+    // then — the stale report is rejected; the term-5 leader stands
+    assertThat(state.leaderTerm("orders", 1)).isEqualTo(5);
+  }
+
+  private void reportLeader(
+      final String name, final int partition, final int node, final long term) {
+    process(
+        MetadataIntent.REPORT_PARTITION_LEADER,
+        new TopicRecord()
+            .setName(name)
+            .setPartitionId(partition)
+            .setLeaderNode(node)
+            .setLeaderTerm(term));
   }
 
   private void reassign(final String name, final int replicationFactor) {

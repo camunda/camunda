@@ -9,6 +9,7 @@ package io.camunda.eventbridge.clustermetadata.processing;
 
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.immutable.TopicState;
+import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.zeebe.util.Either;
 import java.util.regex.Pattern;
@@ -43,6 +44,47 @@ public final class TopicValidator {
 
   Either<Rejection, Void> validateDelete(final TopicRecord command) {
     return topicExists(command);
+  }
+
+  Either<Rejection, Void> validateReportLeader(final TopicRecord command) {
+    return topicServeable(command)
+        .flatMap(ok -> partitionInRange(command))
+        .flatMap(ok -> leaderTermNotStale(command));
+  }
+
+  private Either<Rejection, Void> topicServeable(final TopicRecord command) {
+    final var topic = topicState.get(command.getName());
+    if (topic == null || topic.status() == TopicStatus.DELETING) {
+      return Either.left(
+          new Rejection(
+              CoordinationErrorCode.TOPIC_NOT_FOUND,
+              "topic '%s' is not registered or is being deleted".formatted(command.getName())));
+    }
+    return VALID;
+  }
+
+  private Either<Rejection, Void> partitionInRange(final TopicRecord command) {
+    final var topic = topicState.get(command.getName());
+    final var partition = command.getPartitionId();
+    if (topic == null || partition < 1 || partition > topic.partitionCount()) {
+      return Either.left(
+          new Rejection(
+              CoordinationErrorCode.INVALID_TOPIC,
+              "partition %d out of range for topic '%s'".formatted(partition, command.getName())));
+    }
+    return VALID;
+  }
+
+  private Either<Rejection, Void> leaderTermNotStale(final TopicRecord command) {
+    final var recorded = topicState.leaderTerm(command.getName(), command.getPartitionId());
+    if (command.getLeaderTerm() < recorded) {
+      return Either.left(
+          new Rejection(
+              CoordinationErrorCode.FENCED_MEMBER_EPOCH,
+              "stale leader term %d for partition %d (recorded %d)"
+                  .formatted(command.getLeaderTerm(), command.getPartitionId(), recorded)));
+    }
+    return VALID;
   }
 
   private Either<Rejection, Void> nameValid(final TopicRecord command) {

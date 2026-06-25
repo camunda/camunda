@@ -11,6 +11,7 @@ import io.camunda.eventbridge.clustermetadata.state.topic.PartitionReplicas;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -44,15 +45,24 @@ public final class TopicRecord extends UnifiedRecordValue {
   private final ArrayProperty<PartitionReplicas> targetProp =
       new ArrayProperty<>("target", PartitionReplicas::new);
 
+  // Leadership report payload (only meaningful for REPORT_PARTITION_LEADER / PARTITION_LEADER_
+  // REPORTED): one partition's elected Raft leader node id and term.
+  private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId", 0);
+  private final IntegerProperty leaderNodeProp = new IntegerProperty("leaderNode", -1);
+  private final LongProperty leaderTermProp = new LongProperty("leaderTerm", -1L);
+
   public TopicRecord() {
-    super(7);
+    super(10);
     declareProperty(nameProp)
         .declareProperty(opProp)
         .declareProperty(partitionCountProp)
         .declareProperty(replicationFactorProp)
         .declareProperty(statusProp)
         .declareProperty(assignmentProp)
-        .declareProperty(targetProp);
+        .declareProperty(targetProp)
+        .declareProperty(partitionIdProp)
+        .declareProperty(leaderNodeProp)
+        .declareProperty(leaderTermProp);
   }
 
   /**
@@ -135,6 +145,33 @@ public final class TopicRecord extends UnifiedRecordValue {
 
   public TopicRecord setTarget(final Map<Integer, List<Integer>> target) {
     PartitionReplicas.write(targetProp, target);
+    return this;
+  }
+
+  public int getPartitionId() {
+    return partitionIdProp.getValue();
+  }
+
+  public TopicRecord setPartitionId(final int partitionId) {
+    partitionIdProp.setValue(partitionId);
+    return this;
+  }
+
+  public int getLeaderNode() {
+    return leaderNodeProp.getValue();
+  }
+
+  public TopicRecord setLeaderNode(final int leaderNode) {
+    leaderNodeProp.setValue(leaderNode);
+    return this;
+  }
+
+  public long getLeaderTerm() {
+    return leaderTermProp.getValue();
+  }
+
+  public TopicRecord setLeaderTerm(final long leaderTerm) {
+    leaderTermProp.setValue(leaderTerm);
     return this;
   }
 

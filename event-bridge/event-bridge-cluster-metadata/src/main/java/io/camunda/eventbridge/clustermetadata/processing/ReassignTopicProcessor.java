@@ -61,7 +61,10 @@ public final class ReassignTopicProcessor implements TypedRecordProcessor<TopicR
     final var meta = topicState.get(cmd.getName());
     final var target =
         placement.assign(
-            meta.partitionCount(), cmd.getReplicationFactor(), registeredBrokers.get());
+            cmd.getName(),
+            meta.partitionCount(),
+            cmd.getReplicationFactor(),
+            registeredBrokers.get());
     final var event =
         new TopicRecord()
             .setName(cmd.getName())

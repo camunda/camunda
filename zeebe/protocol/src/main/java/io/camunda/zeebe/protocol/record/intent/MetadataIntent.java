@@ -53,7 +53,15 @@ public enum MetadataIntent implements Intent {
   /** Command: deregister a broker (internal, once it has drained / shut down). */
   DEREGISTER_BROKER((short) 12, false),
   /** Event: the broker has been removed from replicated state. */
-  BROKER_DEREGISTERED((short) 13, true);
+  BROKER_DEREGISTERED((short) 13, true),
+  /**
+   * Command: a topic partition's Raft leader reports itself (and its term) so leadership is
+   * recorded in replicated state — driven by the partition's elected leader, the authoritative
+   * reporter.
+   */
+  REPORT_PARTITION_LEADER((short) 14, false),
+  /** Event: a topic partition's leader (and term) has been recorded in replicated state. */
+  PARTITION_LEADER_REPORTED((short) 15, true);
 
   private final short value;
   private final boolean isEvent;
@@ -93,6 +101,10 @@ public enum MetadataIntent implements Intent {
         return DEREGISTER_BROKER;
       case 13:
         return BROKER_DEREGISTERED;
+      case 14:
+        return REPORT_PARTITION_LEADER;
+      case 15:
+        return PARTITION_LEADER_REPORTED;
       default:
         return Intent.UNKNOWN;
     }

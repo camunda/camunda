@@ -56,7 +56,10 @@ public final class CreateTopicProcessor implements TypedRecordProcessor<TopicRec
     final var cmd = command.getValue();
     final var assignment =
         placement.assign(
-            cmd.getPartitionCount(), cmd.getReplicationFactor(), registeredBrokers.get());
+            cmd.getName(),
+            cmd.getPartitionCount(),
+            cmd.getReplicationFactor(),
+            registeredBrokers.get());
     final var event =
         new TopicRecord()
             .setName(cmd.getName())

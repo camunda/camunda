@@ -9,6 +9,7 @@ package io.camunda.eventbridge.clustermetadata.state.immutable;
 
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Read view of the replicated topic registry — the event-bridge counterpart of the engine's
@@ -24,4 +25,10 @@ public interface TopicState {
 
   /** A pinned snapshot of all registered topics ({@code topicName → metadata}). */
   Map<String, TopicMetadata> topicsSnapshot();
+
+  /** The partitions of {@code topic} that currently have a reported Raft leader. */
+  Set<Integer> partitionsWithLeader(String topic);
+
+  /** The Raft term of {@code partition}'s recorded leader, or {@code -1} if none is recorded. */
+  long leaderTerm(String topic, int partition);
 }

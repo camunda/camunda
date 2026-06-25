@@ -27,9 +27,13 @@ public interface PlacementStrategy {
    * Assigns {@code partitionCount} partitions, each replicated {@code replicationFactor} times
    * (capped at the number of brokers), across {@code brokers}.
    *
+   * @param topic the topic name, used as a deterministic seed so different topics are laid out
+   *     differently (the layout stays reproducible and re-derivable after failover — no randomness)
+   * @param partitionCount the number of partitions to place
+   * @param replicationFactor the desired replica count per partition (capped at {@code brokers})
    * @param brokers the available placement targets (broker node ids), in priority order
    * @return partition id (1-based) → ordered replica node ids; the first is the preferred leader
    */
   Map<Integer, List<Integer>> assign(
-      int partitionCount, int replicationFactor, List<Integer> brokers);
+      String topic, int partitionCount, int replicationFactor, List<Integer> brokers);
 }

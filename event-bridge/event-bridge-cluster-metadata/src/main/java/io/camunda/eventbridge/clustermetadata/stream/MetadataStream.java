@@ -8,7 +8,7 @@
 package io.camunda.eventbridge.clustermetadata.stream;
 
 import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
-import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
+import io.camunda.eventbridge.clustermetadata.placement.SpreadPlacement;
 import io.camunda.eventbridge.clustermetadata.processing.BrokerEvictionTask;
 import io.camunda.eventbridge.clustermetadata.processing.BrokerTransitionValidator;
 import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
@@ -18,6 +18,7 @@ import io.camunda.eventbridge.clustermetadata.processing.FenceBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.PlacementHealTask;
 import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.RegisterBrokerProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.ReportPartitionLeaderProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicRegisterProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicValidator;
@@ -30,6 +31,7 @@ import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerDeregisteredA
 import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerDrainingApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerFencedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.BrokerRegisteredApplier;
+import io.camunda.eventbridge.clustermetadata.state.appliers.PartitionLeaderReportedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
 import io.camunda.eventbridge.clustermetadata.state.broker.BrokerQueryService;
@@ -82,7 +84,7 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
 
   private final InstantSource clock;
   private final Supplier<List<Integer>> raftMembers;
-  private final PlacementStrategy placement = new RoundRobinPlacement();
+  private final PlacementStrategy placement = new SpreadPlacement();
 
   private DbTopicState topicState;
   private DbBrokerState brokerState;
@@ -158,6 +160,10 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                     MetadataIntent.REGISTER_TOPIC,
                     new TopicRegisterProcessor(processors.writers()))
                 .onCommand(
+                    MetadataRecordValues.TOPIC_VALUE_TYPE,
+                    MetadataIntent.REPORT_PARTITION_LEADER,
+                    new ReportPartitionLeaderProcessor(processors.writers(), validator, topicState))
+                .onCommand(
                     MetadataRecordValues.BROKER_VALUE_TYPE,
                     MetadataIntent.REGISTER_BROKER,
                     new RegisterBrokerProcessor(processors.writers(), brokerState))
@@ -176,6 +182,9 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                 .withEventApplier(
                     MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState))
                 .withEventApplier(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState))
+                .withEventApplier(
+                    MetadataIntent.PARTITION_LEADER_REPORTED,
+                    new PartitionLeaderReportedApplier(topicState))
                 .withEventApplier(
                     MetadataIntent.BROKER_REGISTERED, new BrokerRegisteredApplier(brokerState))
                 .withEventApplier(

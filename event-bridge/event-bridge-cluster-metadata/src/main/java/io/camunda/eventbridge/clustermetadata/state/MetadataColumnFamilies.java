@@ -27,7 +27,14 @@ public enum MetadataColumnFamilies implements EnumValue, ScopedColumnFamily {
   TOPIC_REGISTRY(1, ColumnFamilyScope.PARTITION_LOCAL),
 
   /** Broker registry keyed by {@code brokerId} → encoded broker epoch + liveness state. */
-  BROKER_REGISTRY(2, ColumnFamilyScope.PARTITION_LOCAL);
+  BROKER_REGISTRY(2, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Per-topic partition leadership keyed by {@code topicName} → each partition's reported leader
+   * node id and Raft term. The authoritative record of which partitions have an elected leader,
+   * from which topic readiness is derived; replicated, so it survives a metadata-leader failover.
+   */
+  TOPIC_PARTITION_LEADER(3, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

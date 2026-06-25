@@ -22,4 +22,9 @@ public interface MutableTopicState extends TopicState {
 
   /** Removes a topic. */
   void delete(String name);
+
+  /**
+   * Records (or updates) the elected Raft leader and term for one of {@code topic}'s partitions.
+   */
+  void recordPartitionLeader(String topic, int partition, int node, long term);
 }
