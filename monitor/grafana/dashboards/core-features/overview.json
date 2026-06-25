@@ -37,7 +37,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${datasource}"
       },
       "description": "Breakdown of active namespaces by sales plan type, including “unknown” for unlabeled namespaces.",
       "fieldConfig": {
@@ -89,7 +89,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -107,7 +107,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${datasource}"
       },
       "description": "Shows namespace distribution by product generation (e.g., Camunda_8_8_0_alpha8 vs Camunda_8_6_gen21).",
       "fieldConfig": {
@@ -159,7 +159,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -177,7 +177,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${datasource}"
       },
       "description": "Shows which cloud providers host customer workloads (GCP, AWS, etc.).",
       "fieldConfig": {
@@ -229,7 +229,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -247,7 +247,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${datasource}"
       },
       "description": "Geographic distribution of namespaces — useful for understanding latency or region impact.",
       "fieldConfig": {
@@ -299,7 +299,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -327,7 +327,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -410,7 +410,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "builder",
@@ -443,7 +443,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Highest-requested API endpoints based on request rate, excluding internal /actuator and Prometheus paths. Search is defined as GET requests and POST request with /search or /statistics in the path",
           "fieldConfig": {
@@ -533,7 +533,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -549,7 +549,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -570,7 +570,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Highest-requested API endpoints based on request rate, excluding internal /actuator and Prometheus paths.",
           "fieldConfig": {
@@ -639,7 +639,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -678,7 +678,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Highest-requested API endpoints based on request rate, excluding internal /actuator and Prometheus paths. Commands are request that modify resources",
           "fieldConfig": {
@@ -768,7 +768,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -788,7 +788,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Highest-requested API endpoints based on request rate, excluding internal /actuator and Prometheus paths.",
           "fieldConfig": {
@@ -857,7 +857,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -896,7 +896,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest average request duration, excluding known internal and noisy paths.",
           "fieldConfig": {
@@ -981,7 +981,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -995,7 +995,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -1013,7 +1013,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest average request duration, excluding known internal and noisy paths.",
           "fieldConfig": {
@@ -1083,7 +1083,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -1117,7 +1117,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest average request duration, excluding known internal and noisy paths.",
           "fieldConfig": {
@@ -1202,7 +1202,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -1220,7 +1220,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest average request duration, excluding known internal and noisy paths.",
           "fieldConfig": {
@@ -1290,7 +1290,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -1324,7 +1324,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of server-side errors (5xx), useful for spotting failing API routes.",
           "fieldConfig": {
@@ -1409,7 +1409,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -1430,7 +1430,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of server-side errors (5xx), useful for spotting failing API routes.",
           "fieldConfig": {
@@ -1501,7 +1501,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -1539,7 +1539,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of server-side errors (5xx), useful for spotting failing API routes.",
           "fieldConfig": {
@@ -1624,7 +1624,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -1645,7 +1645,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of server-side errors (4xx).",
           "fieldConfig": {
@@ -1716,7 +1716,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -1754,7 +1754,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Total number of gRPC calls handled per second, grouped by method. Useful for monitoring overall traffic volume and per-method activity.",
           "fieldConfig": {
@@ -1854,7 +1854,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -1872,7 +1872,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Total number of gRPC calls handled per second, grouped by method. Useful for monitoring overall traffic volume and per-method activity.",
           "fieldConfig": {
@@ -1939,7 +1939,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -1984,7 +1984,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows high-percentile latency per gRPC method over the selected range, excluding the ActivateJobs method.",
           "fieldConfig": {
@@ -2069,7 +2069,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.95,\n  sum by (le, method) (\n    increase(grpc_server_processing_duration_seconds_bucket{\n      camunda_region=~\"$region\",\n      method=~\"$method\",\n      method!~\"ActivateJobs\"\n    }[$__rate_interval])\n  )\n) > 0\n",
@@ -2084,7 +2084,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows high-percentile latency per gRPC method over the selected range, excluding the ActivateJobs method.",
           "fieldConfig": {
@@ -2155,7 +2155,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -2198,7 +2198,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Fraction of gRPC requests resulting in INTERNAL errors per method. High values may indicate server-side issues or crashes.",
           "fieldConfig": {
@@ -2283,7 +2283,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -2303,7 +2303,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Fraction of gRPC requests resulting in errors per method. High values may indicate server-side issues or crashes.",
           "fieldConfig": {
@@ -2374,7 +2374,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -2424,7 +2424,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Raw increase of latency bucket counts over time for all methods excluding ActivateJobs. Useful for histogram exploration and debugging tail latencies.",
           "fieldConfig": {
@@ -2491,7 +2491,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(increase(grpc_server_processing_duration_seconds_bucket{camunda_region=~\"$region\", namespace=~\"$namespace\", method=~\"$method\", method!~\"ActivateJobs\"}[$__rate_interval])) by (le)",
@@ -2521,7 +2521,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Highest-requested MCP endpoints based on request rate",
           "fieldConfig": {
@@ -2611,7 +2611,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -2631,7 +2631,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Highest-requested MCP endpoints based on request rate",
           "fieldConfig": {
@@ -2700,7 +2700,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -2739,7 +2739,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest average request duration.",
           "fieldConfig": {
@@ -2824,7 +2824,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -2842,7 +2842,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest average request duration.",
           "fieldConfig": {
@@ -2912,7 +2912,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -2946,7 +2946,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of server-side errors (5xx), useful for spotting failing API routes.",
           "fieldConfig": {
@@ -3031,7 +3031,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -3052,7 +3052,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of server-side errors (5xx), useful for spotting failing API routes.",
           "fieldConfig": {
@@ -3123,7 +3123,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -3161,7 +3161,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of client-side errors (4xx), useful for spotting failing API routes.",
           "fieldConfig": {
@@ -3246,7 +3246,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -3267,7 +3267,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Endpoints with the highest proportion of client-side errors (4xx).",
           "fieldConfig": {
@@ -3338,7 +3338,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -3390,7 +3390,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Visual breakdown of Zeebe namespace health status.\nEach slice represents the count of namespaces that are:\n\nHealthy: All associated pods report health status = 1\n\nUnhealthy: At least one associated pod reports health status < 1\n\nThis chart helps quickly assess the overall health distribution across all monitored namespaces.",
           "fieldConfig": {
@@ -3442,7 +3442,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -3456,7 +3456,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -3475,7 +3475,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Displays a list of Zeebe namespaces with an average health score below 1, indicating partial or complete service degradation.\n\nEach row shows:\n\nThe namespace\n\nIts corresponding average health value\n\nUse this table to quickly identify which namespaces require attention due to unhealthy task workers or degraded pods.",
           "fieldConfig": {
@@ -3521,7 +3521,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-DS_PROMETHEUS=$DS_PROMETHEUS&var-cluster=$__all&var-namespace=${__value.raw}&var-pod=$__all&var-partition=$__all&var-memory_state=committed\n"
+                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-datasource=$datasource&var-cluster=$__all&var-namespace=${__value.raw}&var-pod=$__all&var-partition=$__all&var-memory_state=committed\n"
                       }
                     ]
                   },
@@ -3579,7 +3579,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -3593,7 +3593,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -3672,7 +3672,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the standard deviation of Zeebe processing rates across partitions for each namespace.\nHigher values indicate uneven workload distribution across pods or partitions, which may signal routing issues, backpressure, or hot partitions.\n\nUse this table to identify imbalanced namespaces where load is not spread evenly, potentially impacting performance or reliability.",
           "fieldConfig": {
@@ -3714,7 +3714,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-DS_PROMETHEUS=$DS_PROMETHEUS&var-cluster=$__all&var-namespace=${__value.raw}&var-pod=$__all&var-partition=$__all&var-memory_state=committed\n"
+                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-datasource=$datasource&var-cluster=$__all&var-namespace=${__value.raw}&var-pod=$__all&var-partition=$__all&var-memory_state=committed\n"
                       }
                     ]
                   }
@@ -3738,7 +3738,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -3826,7 +3826,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\r\n<strong><a href=\"/d/zeebe-overview/zeebe-overview?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe Overview<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/zeebe-dashboard/zeebe?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe<br/>Dashboard</a></strong>\r\n</center>",
+            "content": "<center>\r\n<strong><a href=\"/d/zeebe-overview/zeebe-overview?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe Overview<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/zeebe-dashboard/zeebe?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe<br/>Dashboard</a></strong>\r\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -3836,7 +3836,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the top 10 processing queue size per partition over time. Processing queue defines, what is already appended but not yet processed by the stream processor.\nFilters by namespace, cluster, generation and sales plan type.",
           "fieldConfig": {
@@ -3925,7 +3925,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(10,\r\n    (\r\n        max by (partition) (\r\n            zeebe_log_appender_last_appended_position{cluster=~\"$cluster\", namespace=~\"$namespace\"}\r\n            * on(namespace) group_left()\r\n            max(\r\n                kube_namespace_labels{\r\n                label_cloud_camunda_io_generation=~\"$generation\",\r\n                label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n                }\r\n            ) by (namespace)\r\n        )\r\n    )\r\n    -\r\n    (\r\n        max by (partition) (\r\n            zeebe_stream_processor_last_processed_position{cluster=~\"$cluster\", namespace=~\"$namespace\"}\r\n            * on(namespace) group_left()\r\n            max(\r\n                kube_namespace_labels{\r\n                label_cloud_camunda_io_generation=~\"$generation\",\r\n                label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n                }\r\n            ) by (namespace)\r\n        )\r\n    )\r\n)",
@@ -3940,7 +3940,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Displays the top namespaces with the highest percentage of dropped Zeebe requests over total received requests. Calculated using the rate of dropped requests divided by the rate of received requests, multiplied by 100. Filtered by selected cluster(s) and namespace(s), over the chosen time interval.",
           "fieldConfig": {
@@ -4040,7 +4040,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(\n  10,\n  (\n    (\n      sum by ( $group_by ) (\n        (\n          sum by (namespace, $group_by) (\n            rate(\n              zeebe_dropped_request_count_total{\n                camunda_region=~\"$region\",\n                namespace=~\"$namespace\"\n              }[$__rate_interval]\n            )\n          )\n          * on(namespace) group_left()\n          max(\n            kube_namespace_labels{\n              label_cloud_camunda_io_generation=~\"$generation\",\n              label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n            }\n          ) by (namespace)\n        )\n      )\n      /\n      sum by ( $group_by ) (\n        (\n          sum by (namespace, $group_by) (\n            rate(\n              zeebe_received_request_count_total{\n                camunda_region=~\"$region\",\n                namespace=~\"$namespace\"\n              }[$__rate_interval]\n            )\n          )\n          * on(namespace) group_left()\n          max(\n            kube_namespace_labels{\n              label_cloud_camunda_io_generation=~\"$generation\",\n              label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n            }\n          ) by (namespace)\n        )\n      )\n    )\n    * 100\n  )\n)\n",
@@ -4052,7 +4052,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "expr": "",
               "interval": "",
@@ -4066,7 +4066,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Displays average partition processing rate (records/sec) per namespace. Helps identify the most active namespaces by throughput.",
           "fieldConfig": {
@@ -4150,7 +4150,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(10,\n  avg by ($group_by) (\n    (\n      sum(\n        rate(\n          zeebe_stream_processor_records_total{\n            camunda_region=~\"$region\",\n            namespace=~\"$namespace\",\n            action=~\"skipped|processed\"\n          }[$__rate_interval]\n        )\n      ) by ($group_by, pod, partition, processor, namespace)\n      * on(namespace)\n      group_left()\n      max(\n        kube_namespace_labels{\n          label_cloud_camunda_io_generation=~\"$generation\",\n          label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n      ) by (namespace)\n    )\n  )\n)\n",
@@ -4165,7 +4165,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Shows the time (latency) between writing the command to the dispatcher and processing the record.",
           "fieldConfig": {
@@ -4233,7 +4233,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum by (le) (\n  (\n    increase(\n      zeebe_stream_processor_latency_bucket{\n        namespace=~\"$namespace\"\n      }[$__rate_interval]\n    )\n    * on(namespace)\n    group_left(\n      label_cloud_camunda_io_generation,\n      label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n      kube_namespace_labels{\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n        namespace=~\"$namespace\"\n      }\n    ) by (\n      namespace\n    )\n  )\n  or\n  (\n    increase(\n      zeebe_stream_processor_latency_seconds_bucket{\n        namespace=~\"$namespace\"\n      }[$__rate_interval]\n    )\n    * on(namespace)\n    group_left(\n      label_cloud_camunda_io_generation,\n      label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n      kube_namespace_labels{\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n        namespace=~\"$namespace\"\n      }\n    ) by (\n      namespace\n    )\n  )\n)\n",
@@ -4251,7 +4251,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "This time series panel shows the 5-minute averaged flow control partition load for all namespaces over time. The values represent the average load across all active partitions in each namespace, smoothed using a 5-minute window to highlight trends and sustained pressure.",
           "fieldConfig": {
@@ -4336,7 +4336,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -4353,7 +4353,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Shows the time (latency) between creating the job and activating it.",
           "fieldConfig": {
@@ -4421,7 +4421,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum by (le) (\n  increase(\n    zeebe_job_activation_time_bucket{\n      namespace=~\"$namespace\"\n    }[$__rate_interval]\n  )\n  * on(namespace) group_left(\n    label_cloud_camunda_io_generation,\n    label_cloud_camunda_io_sales_plan_type\n  )\n  max(\n    kube_namespace_labels{\n      label_cloud_camunda_io_generation=~\"$generation\",\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n      namespace=~\"$namespace\"\n    }\n  ) by (\n    namespace\n  )\n)\n",
@@ -4435,7 +4435,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum by (le) (\n  increase(\n    zeebe_job_activation_time_seconds_bucket{\n      namespace=~\"$namespace\"\n    }[$__rate_interval]\n  )\n  * on(namespace) group_left(\n    label_cloud_camunda_io_generation,\n    label_cloud_camunda_io_sales_plan_type\n  )\n  max(\n    kube_namespace_labels{\n      label_cloud_camunda_io_generation=~\"$generation\",\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n      namespace=~\"$namespace\"\n    }\n  ) by (\n    namespace\n  )\n)\n",
@@ -4453,7 +4453,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the current processed records",
           "fieldConfig": {
@@ -4539,7 +4539,7 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum by (type, action, eventType) (\n  (\n    rate(\n      zeebe_element_instance_events_total{\n        camunda_region=~\"$region\",\n        namespace=~\"$namespace\"\n      }[$__rate_interval]\n    )\n    * on(namespace)\n    group_left(\n      label_cloud_camunda_io_generation,\n      label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n      kube_namespace_labels{\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n      }\n    ) by (\n      namespace\n    )\n  )\n)\n",
@@ -4556,7 +4556,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
           "fieldConfig": {
@@ -4641,7 +4641,7 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50,\n  sum by (le) (\n    rate(\n      zeebe_process_instance_execution_time_bucket{\n        namespace=~\"$namespace\"\n      }[$__rate_interval]\n    )\n    * on(namespace) group_left(\n      label_cloud_camunda_io_generation,\n      label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n      kube_namespace_labels{\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n        namespace=~\"$namespace\"\n      }\n    ) by (\n      namespace\n    )\n  )\n)\n",
@@ -4655,7 +4655,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99,\n  sum by (le) (\n    rate(\n      zeebe_process_instance_execution_time_bucket{\n        namespace=~\"$namespace\"\n      }[$__rate_interval]\n    )\n    * on(namespace) group_left(\n      label_cloud_camunda_io_generation,\n      label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n      kube_namespace_labels{\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n        namespace=~\"$namespace\"\n      }\n    ) by (\n      namespace\n    )\n  )\n)\n",
@@ -4667,7 +4667,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50,\n  sum by (le) (\n    rate(\n      zeebe_process_instance_execution_time_seconds_bucket{\n        namespace=~\"$namespace\"\n      }[$__rate_interval]\n    )\n    * on(namespace) group_left(\n      label_cloud_camunda_io_generation,\n      label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n      kube_namespace_labels{\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n        namespace=~\"$namespace\"\n      }\n    ) by (\n      namespace\n    )\n  )\n)\n",
@@ -4680,7 +4680,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99,\n  sum by (le) (\n    rate(\n      zeebe_process_instance_execution_time_seconds_bucket{\n        namespace=~\"$namespace\"\n      }[$__rate_interval]\n    )\n    * on(namespace) group_left(\n      label_cloud_camunda_io_generation,\n      label_cloud_camunda_io_sales_plan_type\n    )\n    max(\n      kube_namespace_labels{\n        label_cloud_camunda_io_generation=~\"$generation\",\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\",\n        namespace=~\"$namespace\"\n      }\n    ) by (\n      namespace\n    )\n  )\n)\n",
@@ -4711,7 +4711,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Displays the roles of each node per partition.",
           "fieldConfig": {
@@ -4805,7 +4805,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -4841,7 +4841,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows when a role change has happened. \n1 = Follower\n2 = Candidate\n3 = Leader",
           "fieldConfig": {
@@ -4929,7 +4929,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -4946,7 +4946,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Amount of unhealthy (and dead) pods per namespace.\nCan be filtered by namespace and cluster.",
           "fieldConfig": {
@@ -5031,7 +5031,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -5050,7 +5050,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Rate of commands written per second by the log storage appender on the leader.\n\nFilters by namespace.",
           "fieldConfig": {
@@ -5134,7 +5134,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{namespace=~\"$namespace\", recordType=\"COMMAND\"}[$__rate_interval])) by (valueType, intent)",
@@ -5149,7 +5149,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Rate of events written per second by the log storage appender on the leader.\n\nFilters by namespace.",
           "fieldConfig": {
@@ -5233,7 +5233,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{namespace=~\"$namespace\", recordType=\"EVENT\"}[$__rate_interval])) by (valueType, intent)",
@@ -5248,7 +5248,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Rate of written rejections per second by the log storage appender on the leader.\n\nFilters by namespace.",
           "fieldConfig": {
@@ -5332,7 +5332,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{namespace=~\"$namespace\", recordType=\"COMMAND_REJECTION\"}[$__rate_interval])) by (valueType, intent)",
@@ -5347,7 +5347,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Number of pending command distributions by partition, target partition and namespace.\np = partition\ntp = target partition\n\nFilters by namespace and cluster.",
           "fieldConfig": {
@@ -5431,7 +5431,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum (zeebe_command_distributions_pending{namespace=~\"$namespace\", cluster=~\"$cluster\"}) by (partition, targetPartition, namespace)",
@@ -5446,7 +5446,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the increase of total command distribution retries by namespace, pod, partition and target partition.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -5536,7 +5536,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -5569,7 +5569,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Average persistent volume claim in relation to volume stats capacity per namespace.\n\nShows the top 10.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -5654,7 +5654,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk (10,\r\n    (avg by (persistentvolumeclaim, namespace)(\r\n        (kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n        /\r\n        kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"})\r\n        )\r\n        * on(namespace)\r\n        group_left(\r\n            label_cloud_camunda_io_generation,\r\n            label_cloud_camunda_io_sales_plan_type\r\n        )\r\n        max(\r\n            kube_namespace_labels{\r\n            namespace=~\"$namespace\",\r\n            label_cloud_camunda_io_generation=~\"$generation\",\r\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n            }\r\n        ) by (\r\n            namespace\r\n        )\r\n    )\r\n)",
@@ -5669,7 +5669,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the biggest 20 indices in the namespaces (excluding non-Camunda related indices).\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -5747,7 +5747,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -5778,7 +5778,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Average number of shards per node per namespace.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan.",
           "fieldConfig": {
@@ -5857,7 +5857,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -5889,7 +5889,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Discrepancy between last committed log appender position and last exported position.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -5975,7 +5975,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(10,\r\n    max (\r\n        zeebe_log_appender_last_committed_position{\r\n            cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\r\n            }\r\n    ) by (partition, namespace)\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n    -\r\n    max (\r\n        zeebe_exporter_last_exported_position{\r\n            cluster=~\"$cluster\", namespace=~\"$namespace\", exporter=\"camundaexporter\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\r\n            }\r\n    ) by (partition, namespace)\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n)",
@@ -5990,7 +5990,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "How much time it took to export a record from the moment it was written (not committed).\n\nFiltered by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -6075,7 +6075,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "max by (partition, pod, namespace, camund) (\r\n    zeebe_camunda_exporter_record_export_duration_seconds_max{namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n    )\r\n* on(namespace) group_left() \r\nmax by (namespace)\r\n(\r\n    kube_namespace_labels{\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n        }\r\n)",
@@ -6090,7 +6090,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "How long an export request is open and collecting new records before flushing.\n\nFilters by cluster and namespace.",
           "fieldConfig": {
@@ -6167,7 +6167,7 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -6184,7 +6184,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "How long an export request is open on average and collecting new records before flushing.\n\nShows the top 10 pods with the highest latency.\n\nFilters by namespace, cluster, generation, sales plan type.",
           "fieldConfig": {
@@ -6269,7 +6269,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(10,\r\n    avg by (namespace, pod, partition) ( \r\n        rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])\r\n        * on(namespace)\r\n        group_left(\r\n            label_cloud_camunda_io_generation,\r\n            label_cloud_camunda_io_sales_plan_type\r\n        )\r\n        max(\r\n            kube_namespace_labels{\r\n            namespace=~\"$namespace\",\r\n            label_cloud_camunda_io_generation=~\"$generation\",\r\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n            }\r\n        ) by (\r\n            namespace\r\n        )\r\n        /\r\n        rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])\r\n        * on(namespace)\r\n        group_left(\r\n            label_cloud_camunda_io_generation,\r\n            label_cloud_camunda_io_sales_plan_type\r\n        )\r\n        max(\r\n            kube_namespace_labels{\r\n            namespace=~\"$namespace\",\r\n            label_cloud_camunda_io_generation=~\"$generation\",\r\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n            }\r\n        ) by (\r\n            namespace\r\n        )\r\n    )\r\n)",
@@ -6284,7 +6284,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the top 20 rate of archiving (in-progress) and archived process instance and batch operations. Batch operations or process instances need to be completed before being able to be archived.\n\nThe rate is aggregated by partition, namespace and state.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -6372,7 +6372,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(20,\r\n    sum(\r\n        rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}[$__rate_interval])\r\n        * on(namespace)\r\n        group_left(\r\n            label_cloud_camunda_io_generation,\r\n            label_cloud_camunda_io_sales_plan_type\r\n        )\r\n        max(\r\n            kube_namespace_labels{\r\n            namespace=~\"$namespace\",\r\n            label_cloud_camunda_io_generation=~\"$generation\",\r\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n            }\r\n        ) by (\r\n            namespace\r\n        )\r\n    )\r\n    by (namespace, partition, state)\r\n )",
@@ -6383,7 +6383,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(20,\r\n    sum(\r\n        rate(zeebe_camunda_exporter_archiver_batch_operations_total{namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}[$__rate_interval])\r\n    * on(namespace)\r\n    group_left(\r\n        label_cloud_camunda_io_generation,\r\n        label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n        kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n        }\r\n    ) by (\r\n        namespace\r\n    )\r\n    ) by (namespace, partition, state)\r\n)",
@@ -6400,7 +6400,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Histogram to show the distribution of the overall archiving duration, which includes searching, reindexing, and deletion.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -6465,7 +6465,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(\r\n    rate(zeebe_camunda_exporter_archiver_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}[$__rate_interval])\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n    )\r\n     by (le)",
@@ -6482,7 +6482,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Increase in flush duration.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -6551,7 +6551,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -6584,7 +6584,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -6667,7 +6667,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "avg by (RECORD_TYPE, PARTITION_ID) (\n  (\n    rate(optimize_import_overallImportTime_seconds_sum{\n      namespace=~\"$namespace\",\n      camunda_geo_area=~\"$geo_area\", \n      camunda_provider=~\"$cloud_provider\"\n      }[$__rate_interval])\n    /\n    rate(optimize_import_overallImportTime_seconds_count{\n      namespace=~\"$namespace\",\n      camunda_geo_area=~\"$geo_area\", \n      camunda_provider=~\"$cloud_provider\"\n      }[$__rate_interval])\n  )\n  * on(namespace)\n  group_left(\n    label_cloud_camunda_io_generation,\n    label_cloud_camunda_io_sales_plan_type\n  )\n  max(\n    kube_namespace_labels{\n      namespace=~\"$namespace\",\n      label_cloud_camunda_io_generation=~\"$generation\",\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n    }\n  ) by (\n    namespace\n  )\n)",
@@ -6696,7 +6696,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Average import times across all record types by namespace and partition.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -6787,7 +6787,7 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -6807,7 +6807,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Top 20 import queue size by record type and namespace.\n\nThe difference between the last exported position of Zeebe and the last imported position of Operate.\n\nFilters by namespace, geo area, cloud provider, generation and sales plan type.",
           "fieldConfig": {
@@ -6892,7 +6892,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(20, sum(operate_import_queue_size{namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n    group_left(\r\n        label_cloud_camunda_io_generation,\r\n        label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n        kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n        }\r\n    ) by (\r\n        namespace\r\n    )\r\n) by (type, namespace)\r\n)",
@@ -6923,7 +6923,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\r\n<strong><a href=\"/d/6MTxqUDWk/operate?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nOperate<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/benchmark-1/camunda-cloud??orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nBenchmark<br/>Dashboard</a></strong>\r\n</center>",
+            "content": "<center>\r\n<strong><a href=\"/d/6MTxqUDWk/operate?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nOperate<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/benchmark-1/camunda-cloud??orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nBenchmark<br/>Dashboard</a></strong>\r\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -6933,7 +6933,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Average archiver query latencies over the course of 10 minutes by namespace.",
           "fieldConfig": {
@@ -7045,7 +7045,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -7060,7 +7060,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -7075,7 +7075,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -7094,7 +7094,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Post importer queue size by namespace and partition.\n\nFilters by namespace, geo area, cloud provider, generation and sales plan type.",
           "fieldConfig": {
@@ -7178,7 +7178,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(operate_post_importer_queue_size{namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n* on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  ) ) by (partition, namespace)",
@@ -7220,7 +7220,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Import times by namespace and partition across all record types.\n\nFilters by namespace, geo area, cloud provider, generation and sales plan type.",
           "fieldConfig": {
@@ -7305,7 +7305,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "avg by (namespace, partition) (\r\n    (\r\n      rate(tasklist_import_time_seconds_sum{\r\n        namespace=~\"$namespace\",\r\n        camunda_geo_area=~\"$geo_area\", \r\n        camunda_provider=~\"$cloud_provider\"\r\n        }[$__rate_interval])\r\n      /\r\n      rate(tasklist_import_time_seconds_count{\r\n        namespace=~\"$namespace\",\r\n        camunda_geo_area=~\"$geo_area\", \r\n        camunda_provider=~\"$cloud_provider\"\r\n        }[$__rate_interval])\r\n    )\r\n    * on(namespace)\r\n    group_left(\r\n      label_cloud_camunda_io_generation,\r\n      label_cloud_camunda_io_sales_plan_type\r\n    )\r\n    max(\r\n      kube_namespace_labels{\r\n        namespace=~\"$namespace\",\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n      }\r\n    ) by (\r\n      namespace\r\n    )\r\n  )",
@@ -7336,7 +7336,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "CPU usage of core features containers relative to the resource limit. Shows the top 20.\n\nCan be filtered by namespace, cluster, geo area, cloud provider, generation and sales plan type.",
           "fieldConfig": {
@@ -7425,7 +7425,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -7444,7 +7444,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Memory usage relative to the resource limit. Shows the top 20 containers.\n\nCan be filtered by namespace, cluster, geo area, cloud provider, generation and sales plan type.",
           "fieldConfig": {
@@ -7533,7 +7533,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(20,\r\navg (node_namespace_pod_container:container_memory_working_set_bytes{container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*\",\r\n    cluster=~\"$cluster\",\r\n    namespace=~\"$namespace\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n    /\r\navg (kube_pod_container_resource_limits{resource=\"memory\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n* on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n)",
@@ -7564,7 +7564,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\n<strong><a href=\"/d/kubernetes-workload/kubernetes-workload?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all)\" target=\"_blank\">\nSRE<br/>Dashboard</a></strong>\n</center>",
+            "content": "<center>\n<strong><a href=\"/d/kubernetes-workload/kubernetes-workload?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all)\" target=\"_blank\">\nSRE<br/>Dashboard</a></strong>\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -7574,7 +7574,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Displays the top 10 namespaces with the highest average disk usage across PVCs.\nDisk usage is calculated as:\n\nused_bytes / capacity_bytes\n\nThis helps you quickly identify namespaces approaching PVC storage limits, indicating potential need for cleanup or volume resizing.",
           "fieldConfig": {
@@ -7685,7 +7685,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "topk(10,\n  avg by ($group_by) (\n    (\n      avg by ($group_by, namespace) (\n        kubelet_volume_stats_used_bytes{\n          camunda_region=~\"$region\",\n          namespace=~\"$namespace\"\n        }\n        /\n        kubelet_volume_stats_capacity_bytes{\n          camunda_region=~\"$region\",\n          namespace=~\"$namespace\"\n        }\n      )\n      * on(namespace) group_left()\n      max(\n        kube_namespace_labels{\n          label_cloud_camunda_io_generation=~\"$generation\",\n          label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n        }\n      ) by (namespace)\n    )\n  )\n)\n",
@@ -7700,7 +7700,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Shows the proportion of pods that are fully available vs partially available over the past 15 minutes.\n\nAvailable: Pods with 100% readiness\n\nUnavailable: Pods that were not fully ready during this window\n\nUse this chart to quickly assess cluster-level pod health and spot degraded workloads.",
           "fieldConfig": {
@@ -7730,7 +7730,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-DS_PROMETHEUS=$DS_PROMETHEUS&var-cluster=$__all&var-namespace=$__all&var-pod=${__value.raw}&var-partition=$__all&var-memory_state=committed\n"
+                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-datasource=$datasource&var-cluster=$__all&var-namespace=$__all&var-pod=${__value.raw}&var-partition=$__all&var-memory_state=committed\n"
                       }
                     ]
                   }
@@ -7771,7 +7771,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -7785,7 +7785,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum by (status) (\n  (\n    count by (status, namespace) (\n      (\n        label_replace(\n          avg by (pod, namespace) (\n            avg_over_time(kube_pod_container_status_ready{\n              camunda_region=~\"$region\",\n              container!~\"curator|curl\",\n              namespace=~\"$namespace\"\n            }[15m])\n          ) < 1,\n          \"status\", \"NotAvailable\", \"__name__\", \".*\"\n        )\n      )\n    )\n  )\n  * on(namespace) group_left()\n  max(\n    kube_namespace_labels{\n      label_cloud_camunda_io_generation=~\"$generation\",\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\n    }\n  ) by (namespace)\n)\n",
@@ -7802,7 +7802,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Lists pods with less than 100% readiness over the past 15 minutes, indicating possible instability or restarts.\n\nEach row shows:\n\nThe pod name\n\nIts average readiness (from kube_pod_container_status_ready)\n\nOnly pods with availability < 1 are shown. Use this to monitor degraded pod availability across your region or cluster.",
           "fieldConfig": {
@@ -7844,7 +7844,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-DS_PROMETHEUS=$DS_PROMETHEUS&var-cluster=$__all&var-namespace=$__all&var-pod=${__value.raw}&var-partition=$__all&var-memory_state=committed\n"
+                        "url": "/d/zeebe-dashboard/zeebe?orgId=1&from=now-15m&to=now&timezone=browser&var-datasource=$datasource&var-cluster=$__all&var-namespace=$__all&var-pod=${__value.raw}&var-partition=$__all&var-memory_state=committed\n"
                       }
                     ]
                   }
@@ -7874,7 +7874,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -7951,10 +7951,10 @@
         "current": {
           "selected": false,
           "text": "Prometheus",
-          "value": "${DS_PROMETHEUS}"
+          "value": "${datasource}"
         },
         "label": "datasource",
-        "name": "DS_PROMETHEUS",
+        "name": "datasource",
         "options": [],
         "query": "prometheus",
         "refresh": 1,
@@ -8017,7 +8017,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(kube_namespace_labels{camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\", label_cloud_camunda_io_generation=~\"$generation\", label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"},namespace)",
         "includeAll": true,
@@ -8041,7 +8041,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(atomix_role,cluster)",
         "description": "Kubernetes cluster",
@@ -8068,7 +8068,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(camunda_region)",
         "includeAll": true,
@@ -8095,7 +8095,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(container_cpu_usage_seconds_total,container)",
         "includeAll": true,
@@ -8122,7 +8122,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(kube_namespace_labels,camunda_geo_area)",
         "includeAll": true,
@@ -8149,7 +8149,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(kube_namespace_labels,camunda_provider)",
         "description": "",
@@ -8177,7 +8177,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(kube_namespace_labels,label_cloud_camunda_io_generation)",
         "description": "",
@@ -8206,7 +8206,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(kube_namespace_labels,label_cloud_camunda_io_sales_plan_type)",
         "description": "",
@@ -8234,7 +8234,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(http_server_requests_seconds_count{container=~\"$container\", uri!~\"^/($|actuator($|/.*)|\\\\*\\\\*($|/.*)|\\\\*\\\\*/\\\\{regex:\\\\[\\\\\\\\w-]+\\\\})$\"},uri)",
         "includeAll": true,
@@ -8260,7 +8260,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(grpc_server_processing_duration_seconds_count,method)",
         "includeAll": true,

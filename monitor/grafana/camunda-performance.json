@@ -1,7 +1,7 @@
 {
   "__inputs": [
     {
-      "name": "DS_PROMETHEUS",
+      "name": "datasource",
       "label": "Prometheus",
       "description": "",
       "type": "datasource",
@@ -66,7 +66,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "enable": true,
         "hide": false,
@@ -84,7 +84,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "enable": false,
         "hide": false,
@@ -121,7 +121,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -172,7 +172,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "max(atomix_role{namespace=~\"$namespace\"}) by (namespace)",
@@ -187,7 +187,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -243,7 +243,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_executed_instances_total{action=\"completed\", namespace=~\"$namespace\", type=\"ROOT_PROCESS_INSTANCE\"}[$__rate_interval])) by (namespace)\n/\n(sum(rate(grpc_server_processing_duration_seconds_count{namespace=~\"$namespace\", method=\"CreateProcessInstance\"}[$__rate_interval])) by (namespace)\nor\nsum(rate(http_server_requests_seconds_count{\n    method=\"POST\",\n    namespace=~\"$namespace\",\n    uri=\"/v2/process-instances\",\n  }[$__rate_interval]) != 0) by(namespace)\n)",
@@ -258,7 +258,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": " Measures the time from writing a user command to the append-only log until the processing engine reads and starts processing.\n\nCombines all latency measurements in one panel to get a better overview.",
           "fieldConfig": {
@@ -352,7 +352,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50,sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -366,7 +366,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_stream_processor_latency_seconds_bucket{ namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le))",
@@ -378,7 +378,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_exporting_latency_seconds_bucket{ namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -390,7 +390,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_camunda_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -402,7 +402,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5,sum by (le) (rate(starter_response_latency_seconds_bucket{ namespace=~\"$namespace\"}[$__rate_interval])))",
@@ -414,7 +414,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le))",
@@ -426,7 +426,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_job_life_time_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le))",
@@ -442,7 +442,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Requests which hit the gateway and a response have been sent to the client per second.",
           "fieldConfig": {
@@ -535,7 +535,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(label_replace(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\") or on(method) rate(grpc_server_processing_duration_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])) by (method)",
@@ -549,7 +549,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum by(uri, method) (\n  rate(http_server_requests_seconds_count{\n    method!~\"GET|OPTIONS|HEAD\",\n    namespace=~\"$namespace\",\n    uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*\",\n    uri!~\".*/search.*|.*/statistics.*\",\n  }[$__rate_interval]) != 0\n)",
@@ -565,7 +565,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Measures the percentage of dropped requests",
           "fieldConfig": {
@@ -617,7 +617,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "(sum(rate(zeebe_dropped_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_received_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) ) * 100",
@@ -633,7 +633,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Shows general throughput of processing, writing, exporting and importing together",
           "fieldConfig": {
@@ -724,7 +724,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (action)",
@@ -740,7 +740,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "The current cluster load is defined by the current write rate divided by the write rate limit. The cluster load will display no data unless the flow control rate write limits are enabled.",
           "fieldConfig": {
@@ -808,7 +808,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -825,7 +825,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Element instance events that are processed per second by the processing engine",
           "fieldConfig": {
@@ -915,7 +915,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (action, eventType, type)",
@@ -933,7 +933,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Measures the number of records that are not yet processed by the process engine (includes events, which will be skipped)",
           "fieldConfig": {
@@ -983,7 +983,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -1001,7 +1001,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Data (records/documents) written to the secondary storage, like elasticsearch.",
           "fieldConfig": {
@@ -1090,7 +1090,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "avg(rate(elasticsearch_indices_indexing_index_total{namespace=~\"$namespace\"}[$__rate_interval])) by (name)",
@@ -1104,7 +1104,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (action)",
@@ -1120,7 +1120,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Measures the number of records that are not yet exported by the exporter (includes commands, which will be skipped)",
           "fieldConfig": {
@@ -1172,7 +1172,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "max(max (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by(partition) - max (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by(partition))",
@@ -1203,7 +1203,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "The average percentage of CPU periods where the container ran but was throttled (stopped from running the whole CPU period).\n\n\ncontainer_cpu_cfs_periods_total -\nNumber of elapsed enforcement period intervals\ncontainer_cpu_cfs_throttled_periods_total -\nNumber of throttled period intervals\t\n\nhttps://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md\nhttps://stackoverflow.com/a/67316429/2165134\nhttps://www.youtube.com/watch?v=UE7QX98-kO0",
           "fieldConfig": {
@@ -1292,7 +1292,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(container_cpu_cfs_throttled_periods_total{namespace=~\"$namespace\",container!=\"\"}[$__rate_interval])) by (pod) / sum(rate(container_cpu_cfs_periods_total{namespace=~\"$namespace\",container!=\"\"}[$__rate_interval])) by (pod)",
@@ -1308,7 +1308,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "AVG CPU usage in a second per pod and container.\n\ncontainer_cpu_usage_seconds_total reports the container CPU usage time per second. How much of a second was used by the container on a certain CPU.\n\nIt can be over 1 second (as we might use several CPUs). Indicating how much of a CPU second (or in this sense how many CPUs) was/is used.",
           "fieldConfig": {
@@ -1396,7 +1396,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum by (pod, container, service) (rate(container_cpu_usage_seconds_total{container!~\"\", namespace=~\"$namespace\", pod=~\"camunda.*\"}[$__rate_interval]))",
@@ -1408,7 +1408,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "",
@@ -1424,7 +1424,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "AVG CPU usage in a second per pod and container.\n\ncontainer_cpu_usage_seconds_total reports the container CPU usage time per second. How much of a second was used by the container on a certain CPU.\n\nIt can be over 1 second (as we might use several CPUs). Indicating how much of a CPU second (or in this sense how many CPUs) was/is used.",
           "fieldConfig": {
@@ -1512,7 +1512,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "max by (pod, container, service) (rate(container_cpu_usage_seconds_total{container!~\"\", namespace=~\"$namespace\", pod=~\"elastic.*\"}[$__rate_interval]))",
@@ -1528,7 +1528,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "AVG CPU usage in a second per pod and container.\n\ncontainer_cpu_usage_seconds_total reports the container CPU usage time per second. How much of a second was used by the container on a certain CPU.\n\nIt can be over 1 second (as we might use several CPUs). Indicating how much of a CPU second (or in this sense how many CPUs) was/is used.",
           "fieldConfig": {
@@ -1616,7 +1616,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "max by (pod, container, service) (rate(container_cpu_usage_seconds_total{container!~\"\", namespace=~\"$namespace\", pod!~\"(elastic.*|camunda.*)\"}[$__rate_interval]))",
@@ -1632,7 +1632,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Memory limits and requests are taken from the k8 pod metrics.",
           "fieldConfig": {
@@ -1792,7 +1792,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "container_memory_rss{namespace=~\"$namespace\", container!=\"\"} / container_memory_max_usage_bytes{container!~\"\", namespace=~\"$namespace\"}",
@@ -1806,7 +1806,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "max(container_memory_max_usage_bytes{namespace=~\"$namespace\", container!=\"\"}) by (pod)",
@@ -1819,7 +1819,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "min(kube_pod_container_resource_requests_memory_bytes{namespace=~\"$namespace\", container!=\"\"})",
@@ -1832,7 +1832,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "",
@@ -1848,7 +1848,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Total amount of memory reserved for the JVM, where:\n\n- Used means currently in use by live objects\n- Committed means allocated to the JVM by the OS, and guaranteed to be available for usage\n- Max means maximum possible committed memory, but not guaranteed",
           "fieldConfig": {
@@ -1938,7 +1938,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(jvm_memory_used_bytes{namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\",container!=\"\"}) by (pod)",
@@ -1951,7 +1951,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(jvm_memory_committed_bytes{namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\",container!=\"\"}) by (pod)",
@@ -1965,7 +1965,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(jvm_memory_max_bytes{namespace=~\"$namespace\",pod=~\"$pod\", area=\"heap\",container!=\"\"}) by (pod)",
@@ -1981,7 +1981,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Measures the number of write operations that are executed per second ",
           "fieldConfig": {
@@ -2069,7 +2069,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum by(pod, container, service) (rate(container_fs_writes_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"\"}[$__rate_interval]))",
@@ -2084,7 +2084,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "fieldConfig": {
             "defaults": {
@@ -2198,7 +2198,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\"})",
@@ -2227,7 +2227,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time from creating an instance until completion. The full process instance execution time.\n\nNote: This is measured in the Metric exporter\nNote: This is one of the strongest measures, including the complete round-trip, especially processing and exporting the backlog and the ES index fresh interval, etc.",
           "fieldConfig": {
@@ -2328,7 +2328,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -2341,7 +2341,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99,sum by (le) (rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2353,7 +2353,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90,sum by (le) (rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2365,7 +2365,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25,sum by (le) (rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2381,7 +2381,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time from writing a user command to the append-only log until the processing engine reads and starts processing.\n\nNote: When the processing backlog is high, this measurement will be high as well.",
           "fieldConfig": {
@@ -2446,7 +2446,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_stream_processor_latency_seconds_bucket{ namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le))",
@@ -2464,7 +2464,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time from writing an event to the append-only log until the exporter reads and starts exporting it.\n\nNote: When the processing and/or exporting backlog is high, this measurement will be high as well.",
           "fieldConfig": {
@@ -2529,7 +2529,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -2546,7 +2546,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time a record is staged in the Camunda Exporter buffer/bulk before flushing\nNote: When the processing and/or exporting backlog is high, this measurement will be high as well.",
           "fieldConfig": {
@@ -2611,7 +2611,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_camunda_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -2628,7 +2628,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time from creating an instance in the client until the process instance is available via the REST API. Determining how long it takes until data is available for the user. \n\nNote: This is one of the strongest measures, including the complete round-trip, especially processing and exporting the backlog and the ES index fresh interval, etc",
           "fieldConfig": {
@@ -2693,7 +2693,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50,sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2710,7 +2710,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -2796,7 +2796,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99,sum by (le) (rate(starter_response_latency_seconds_bucket{ namespace=~\"$namespace\"}[$__rate_interval])))",
@@ -2809,7 +2809,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.9,sum by (le) (rate(starter_response_latency_seconds_bucket{ namespace=~\"$namespace\"}[$__rate_interval])))",
@@ -2822,7 +2822,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5,sum by (le) (rate(starter_response_latency_seconds_bucket{ namespace=~\"$namespace\"}[$__rate_interval])))",
@@ -2839,7 +2839,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time from creating an instance in the client until the process instance is available via the REST API. Determining how long it takes until data is available for the user. \n\nNote: This is one of the strongest measures, including the complete round-trip, especially processing and exporting the backlog and the ES index fresh interval, etc.",
           "fieldConfig": {
@@ -2940,7 +2940,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50,sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2953,7 +2953,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99,sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2965,7 +2965,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90,sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2977,7 +2977,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25,sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])))",
@@ -2993,7 +2993,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time from writing a user command to the append-only log until the processing engine reads and starts processing.\n\nNote: When the processing backlog is high, this measurement will be high as well.",
           "fieldConfig": {
@@ -3095,7 +3095,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3109,7 +3109,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3121,7 +3121,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3133,7 +3133,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3149,7 +3149,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Time taken to process a record",
           "fieldConfig": {
@@ -3238,7 +3238,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le, valueType, intent))",
@@ -3252,7 +3252,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le, valueType, intent))",
@@ -3266,7 +3266,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le, valueType, intent))",
@@ -3284,7 +3284,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the time from writing an event to the append-only log until the exporter reads and starts exporting it.\n\nNote: When the processing and/or exporting backlog is high, this measurement will be high as well.",
           "fieldConfig": {
@@ -3385,7 +3385,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3398,7 +3398,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3410,7 +3410,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3422,7 +3422,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporting_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3438,7 +3438,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "The AVG duration of exporting a record (in seconds)",
           "fieldConfig": {
@@ -3537,7 +3537,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporter_exporting_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3550,7 +3550,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporter_exporting_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3562,7 +3562,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporter_exporting_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3574,7 +3574,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "",
@@ -3586,7 +3586,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_exporter_exporting_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3602,7 +3602,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Measures the time a record is staged in the Elasticsearch exporter buffer/bulk before flushing",
           "fieldConfig": {
@@ -3685,7 +3685,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3697,7 +3697,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.9, sum(rate(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3709,7 +3709,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3721,7 +3721,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25, sum(rate(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3737,7 +3737,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "The time it takes to flush the bulk request in the Elasticsearch exporter",
           "fieldConfig": {
@@ -3825,7 +3825,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3837,7 +3837,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3849,7 +3849,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3861,7 +3861,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25, sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3877,7 +3877,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Measures the time a record is staged in the Camunda Exporter buffer/bulk before flushing",
           "fieldConfig": {
@@ -3961,7 +3961,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_camunda_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3973,7 +3973,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.9, sum(rate(zeebe_camunda_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3985,7 +3985,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_camunda_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -3997,7 +3997,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25, sum(rate(zeebe_camunda_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -4013,7 +4013,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "The time it takes to flush the bulk request in the Camunda exporter",
           "fieldConfig": {
@@ -4101,7 +4101,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(rate(zeebe_camunda_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -4113,7 +4113,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_camunda_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -4125,7 +4125,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(zeebe_camunda_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -4137,7 +4137,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.25, sum(rate(zeebe_camunda_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -4167,7 +4167,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Requests which hit the gateway and a response have been sent to the client per second.",
           "fieldConfig": {
@@ -4216,7 +4216,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(label_replace(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\") or on(method) rate(grpc_server_processing_duration_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])) by (method)",
@@ -4230,7 +4230,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum by(uri, method) (\n  rate(http_server_requests_seconds_count{\n    method!~\"GET|OPTIONS|HEAD\",\n    namespace=~\"$namespace\",\n    uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*\",\n    uri!~\".*/search.*|.*/statistics.*\",\n  }[$__rate_interval]) != 0\n)",
@@ -4246,7 +4246,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Shows general throughput of processing, writing, exporting and importing together",
           "fieldConfig": {
@@ -4296,7 +4296,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (action)",
@@ -4308,7 +4308,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (action)",
@@ -4324,7 +4324,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the average process instances that can be completed per second (root and sub-process instances).",
           "fieldConfig": {
@@ -4375,7 +4375,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval]))",
@@ -4392,7 +4392,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the average number of archived PIs per second.",
           "fieldConfig": {
@@ -4455,7 +4455,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
@@ -4472,7 +4472,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the average flow node instances that can be completed per second. ",
           "fieldConfig": {
@@ -4534,7 +4534,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action=\"completed\"}[$__rate_interval]))",
@@ -4551,7 +4551,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the average number of service task instances that can be completed",
           "fieldConfig": {
@@ -4613,7 +4613,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval]))",
@@ -4630,7 +4630,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the average number of jobs that can be completed per second.",
           "fieldConfig": {
@@ -4692,7 +4692,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_job_events_total{namespace=~\"$namespace\", pod=~\"$pod\", action=\"completed\"}[$__rate_interval])) by (namespace)",
@@ -4709,7 +4709,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the average number of records that can be processed per second. This is the most atomic metric we have for processing.",
           "fieldConfig": {
@@ -4771,7 +4771,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\", action=~\"processed\"}[$__rate_interval]))",
@@ -4788,7 +4788,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Measures the average number of records that can be exported per second. This is the most atomic metric we have for exporting.",
           "fieldConfig": {
@@ -4850,7 +4850,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"exported\"}[$__rate_interval]))",
@@ -4867,7 +4867,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Measures the average number of indexed documents per second in Elasticsearch\nNote: The records in Camunda != the Documents to be indexed in Elasticsearch, as data gets duplicated and some records get merged.",
           "fieldConfig": {
@@ -4918,7 +4918,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -4935,7 +4935,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -4991,7 +4991,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -5022,12 +5022,12 @@
         "allowCustomValue": true,
         "current": {
           "text": "",
-          "value": "${DS_PROMETHEUS}",
+          "value": "${datasource}",
           "selected": true
         },
         "includeAll": false,
         "label": "datasource",
-        "name": "DS_PROMETHEUS",
+        "name": "datasource",
         "options": [],
         "query": "prometheus",
         "refresh": 1,
@@ -5040,7 +5040,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(atomix_role,namespace)",
         "includeAll": false,
@@ -5062,7 +5062,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(kube_pod_container_status_ready{namespace=~\"$namespace\"},pod)",
         "includeAll": true,
@@ -5085,7 +5085,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"},partition)",
         "includeAll": true,

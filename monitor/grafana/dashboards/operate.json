@@ -1,7 +1,7 @@
 {
   "__inputs": [
     {
-      "name": "DS_PROMETHEUS",
+      "name": "datasource",
       "label": "Prometheus",
       "description": "",
       "type": "datasource",
@@ -77,7 +77,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -124,7 +124,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(operate_archiver_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])/rate(operate_archiver_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[10m]))",
@@ -137,7 +137,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(operate_archiver_reindex_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])/rate(operate_archiver_reindex_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[10m]))",
@@ -150,7 +150,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(operate_archiver_delete_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])/rate(operate_archiver_delete_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[10m]))",
@@ -198,7 +198,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -245,7 +245,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "sum(rate(operate_archived_process_instances_total{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])) by (pod)",
@@ -259,7 +259,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "sum(rate(operate_events_processed_finished_process_instances_total{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])) by (pod)",
@@ -317,7 +317,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -399,7 +399,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -414,7 +414,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -433,7 +433,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "Shows the time (latency) between writing the command to the dispatcher, processing, exporting, and then importing the record.",
           "fieldConfig": {
@@ -513,7 +513,7 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(operate_import_time_seconds_sum{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) / sum(rate(operate_import_time_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]))",
@@ -527,7 +527,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_stream_processor_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_sum{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_stream_processor_latency_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_stream_processor_latency_seconds_count{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval]))",
@@ -540,7 +540,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_exporting_latency_sum{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(zeebe_exporting_latency_count{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
@@ -557,7 +557,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "The time it takes for the importer to read an record on average from ES",
           "fieldConfig": {
@@ -644,7 +644,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(operate_import_query_seconds_sum{namespace=\"$namespace\"}[$__rate_interval])) by (type) / sum(rate(operate_import_query_seconds_count{namespace=\"$namespace\"}[$__rate_interval])) by (type)",
@@ -661,7 +661,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Time the import writer thread needs on average to process an ImportBatch (containing several Zeebe records).",
           "fieldConfig": {
@@ -748,7 +748,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(operate_import_processing_duration_seconds_sum{namespace=\"$namespace\"}[$__rate_interval])) by (type) / sum(rate(operate_import_processing_duration_seconds_count{namespace=\"$namespace\"}[$__rate_interval])) by (type)",
@@ -765,7 +765,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "The time it takes to write the bulk requests (during importing) to ES on average.",
           "fieldConfig": {
@@ -850,7 +850,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(operate_import_index_query_seconds_sum{namespace=\"$namespace\"}[$__rate_interval])) by (type) / sum(rate(operate_import_index_query_seconds_count{namespace=\"$namespace\"}[$__rate_interval])) by (type)",
@@ -866,7 +866,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -944,7 +944,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(operate_import_queue_size{namespace=~\"$namespace\", pod=~\"$pod\"} ) by (type)",
@@ -960,7 +960,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "description": "Current tree path cache misses are caculcated based on count of requests against flownode instance index / count of FNI have been processed",
           "fieldConfig": {
@@ -1056,7 +1056,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(elasticsearch_index_stats_search_query_total{namespace=~\"$namespace\", index=~\"operate-flownode-instance-8.3.1_\"}[$__rate_interval])) / sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", type!=\"PROCESS\"}[$__rate_interval])) ",
@@ -1087,7 +1087,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "$datasource"
           },
           "description": "",
           "fieldConfig": {
@@ -1183,7 +1183,7 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.5, sum(increase(operate_import_fni_tree_path_cache_access_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -1197,7 +1197,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(increase(operate_import_fni_tree_path_cache_access_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -1210,7 +1210,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "$datasource"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(increase(operate_import_fni_tree_path_cache_access_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -1227,7 +1227,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -1309,7 +1309,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "operate_import_fni_tree_path_cache_size{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
@@ -1325,7 +1325,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -1408,7 +1408,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum(rate(operate_import_fni_tree_path_cache_result_total{cache_result=\"MISS\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))\n/ sum(rate(operate_import_fni_tree_path_cache_result_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) ",
@@ -1442,7 +1442,7 @@
         "includeAll": false,
         "label": "datasource",
         "multi": false,
-        "name": "DS_PROMETHEUS",
+        "name": "datasource",
         "options": [],
         "query": "prometheus",
         "queryValue": "",
@@ -1455,7 +1455,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(operate_events_processed_total, namespace)",
         "hide": 0,
@@ -1480,7 +1480,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(operate_events_processed_total{namespace=~\"$namespace\"}, pod)",
         "hide": 0,
@@ -1505,7 +1505,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(operate_events_processed_total{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
         "hide": 0,
