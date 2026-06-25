@@ -189,18 +189,13 @@ test.describe('Process Instance Variables', () => {
   });
 
   // Skipped due to bug #55864: https://github.com/camunda/camunda/issues/55864
-  test('Infinite scrolling', async ({
+  test.skip('Infinite scrolling', async ({
     page,
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
     operateFiltersPanelPage,
   }) => {
-    // Skipped due to bug #55864: https://github.com/camunda/camunda/issues/55864
-    test.skip(
-      true,
-      'Variable list is no longer scrollable with many process variables',
-    );
     await test.step('Navigate to Processes tab and open the process instance', async () => {
       await operateHomePage.clickProcessesTab();
       await operateFiltersPanelPage.selectProcess('variable scrolling process');
