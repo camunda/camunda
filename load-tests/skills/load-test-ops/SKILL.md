@@ -353,6 +353,52 @@ gh run view "$RUN_ID" --repo camunda/camunda
 for a ~20-min window. Results render in the job summary; the workflow is also reusable via
 `workflow_call` and exposes `results-json` for downstream jobs (e.g. analyze → delete).
 
+### Via Grafana MCP (in Claude Code sessions — no port-forward needed)
+
+Use `mcp__grafana__*` tools directly when running inside Claude Code. Confirm tools are active
+with `mcp__grafana__check_datasources_health` at session start.
+
+**Rule: always run `list_prometheus_metric_names` before writing any PromQL query.** Guessed
+metric names return empty results silently — one discovery call eliminates all name-guess failures.
+
+**Session startup:**
+```
+mcp__grafana__check_datasources_health()
+  → datasourceUid: "prometheus" should show status: OK
+
+mcp__grafana__list_prometheus_label_values(
+  datasourceUid="prometheus", labelName="namespace",
+  matches=[{filters: [{name: "__name__", value: "zeebe_.*", type: "=~"}]}],
+  startRfc3339="now-24h")
+  → lists all namespaces with recent Zeebe data
+```
+
+**Metric name discovery:**
+```
+mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="optimize.*", limit=50)
+mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="zeebe.*process.*", limit=20)
+```
+
+**Confirmed metric names on benchmark cluster (verified 2026-06-25):**
+- `optimize_import_overallImportTime_seconds_max` — Optimize overall import time
+- `optimize_import_indexingDuration_seconds_max` — Optimize indexing duration
+- `elasticsearch_indices_store_size_bytes_primary` — ES primary index size
+- `elasticsearch_filesystem_data_size_bytes` / `elasticsearch_filesystem_data_available_bytes`
+- `node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m` — CPU by namespace
+- `container_memory_working_set_bytes` — memory (use `container!=""` to exclude pause containers)
+- `zeebe_process_instance_creations_total` — PI creation rate
+- `zeebe_exporter_exporting_duration_seconds_bucket` — exporter flush latency histogram
+- `zeebe_dropped_request_count_total` — dropped/backpressure requests
+
+**Known benchmark cluster dashboards:**
+- `camunda-performance` — general throughput/latency/resource overview (namespace variable)
+- `optmetrics` — Optimize performance investigation (26 panels); key: id=15 CPU, id=6 import time MAX
+- `prhrb87` — Optimize Dashboard; key: id=37 ES disk, id=34 data availability latency heatmap
+
+For multi-namespace Optimize investigations, use `optimize-extract-metrics.py` from
+`~/config/dotfiles/scripts/camunda/` — queries all 6 `c8-ck-optimize-*` namespaces via
+`$GRAFANA_URL` and writes `/tmp/optimize-metrics-raw.md`.
+
 ### Via local script (kubectl + port-forward)
 
 Faster when you have cluster access. First port-forward the monitoring Prometheus pod, then run
