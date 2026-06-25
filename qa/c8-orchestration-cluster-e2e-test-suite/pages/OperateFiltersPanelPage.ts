@@ -249,6 +249,11 @@ export class OperateFiltersPanelPage {
     await expect(this.processInstanceKeysFilter).toBeVisible();
     await expect(this.processInstanceKeysFilter).toBeEnabled();
     await this.processInstanceKeysFilter.click();
+    // Clear any existing content first: pressSequentially appends, so typing
+    // on a retry or a reused filter without clearing produces a doubled value
+    // (e.g. "45034503"). fill('') clears and fires the controlled input's
+    // onChange; pressSequentially then types char-by-char so the value sticks.
+    await this.processInstanceKeysFilter.fill('');
     await this.processInstanceKeysFilter.pressSequentially(processInstanceKey);
     await expect(this.processInstanceKeysFilter).toHaveValue(
       processInstanceKey,
