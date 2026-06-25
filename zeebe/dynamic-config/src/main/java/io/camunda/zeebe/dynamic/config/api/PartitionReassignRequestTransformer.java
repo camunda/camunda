@@ -119,7 +119,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
             .map(
                 n ->
                     IntStream.rangeClosed(currentConfiguration.partitionCount() + 1, n)
-                        .mapToObj(i -> PartitionId.from("temp", i))
+                        .mapToObj(i -> new PartitionId("temp", i))
                         .sorted()
                         .toList())
             .orElse(List.of());
@@ -152,11 +152,11 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
               new AwaitRedistributionCompletion(
                   coordinatorNodeId,
                   newPartitionCount.get(),
-                  new TreeSet<>(newPartitions.stream().map(PartitionId::id).toList())),
+                  new TreeSet<>(newPartitions.stream().map(PartitionId::number).toList())),
               new AwaitRelocationCompletion(
                   coordinatorNodeId,
                   newPartitionCount.get(),
-                  new TreeSet<>(newPartitions.stream().map(PartitionId::id).toList()))));
+                  new TreeSet<>(newPartitions.stream().map(PartitionId::number).toList()))));
     }
 
     return Either.right(operations);
@@ -164,7 +164,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
 
   private List<ClusterConfigurationChangeOperation> addPartition(
       final PartitionMetadata newMetadata) {
-    final Integer partitionId = newMetadata.id().id();
+    final Integer partitionId = newMetadata.id().number();
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
 
     // Bootstrap the partition in the primary
@@ -187,7 +187,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
 
   private List<ClusterConfigurationChangeOperation> movePartition(
       final PartitionMetadata oldMetadata, final PartitionMetadata newMetadata) {
-    final Integer partitionId = newMetadata.id().id();
+    final Integer partitionId = newMetadata.id().number();
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
 
     final var membersToJoin =

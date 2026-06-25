@@ -16,74 +16,26 @@
  */
 package io.atomix.primitive.partition;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.google.common.base.Preconditions;
-import io.atomix.utils.AbstractIdentifier;
-import java.util.Objects;
+import java.util.Comparator;
+import org.jspecify.annotations.NonNull;
 
 /** {@link PartitionMetadata} identifier. */
-public class PartitionId extends AbstractIdentifier<Integer> implements Comparable<PartitionId> {
-  private final String group;
+public record PartitionId(String group, int number) implements Comparable<PartitionId> {
 
-  /**
-   * Creates a partition identifier from an integer.
-   *
-   * @param group the group identifier
-   * @param id input integer
-   */
-  public PartitionId(final String group, final int id) {
-    super(id);
-    this.group = checkNotNull(group, "group cannot be null");
-    Preconditions.checkArgument(id >= 0, "partition id must be non-negative");
-  }
+  private static final Comparator<PartitionId> COMPARATOR =
+      Comparator.comparing(PartitionId::group).thenComparingInt(PartitionId::number);
 
-  /**
-   * Creates a partition identifier from an integer.
-   *
-   * @param group the group identifier
-   * @param id input integer
-   * @return partition identification
-   */
-  public static PartitionId from(final String group, final int id) {
-    return new PartitionId(group, id);
-  }
-
-  @Override
-  public int compareTo(final PartitionId that) {
-    return Integer.compare(identifier, that.identifier);
-  }
-
-  /**
-   * Returns the partition group name.
-   *
-   * @return the partition group name
-   */
-  public String group() {
-    return group;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id(), group());
-  }
-
-  @Override
-  public boolean equals(final Object object) {
-    if (object instanceof PartitionId) {
-      final PartitionId partitionId = (PartitionId) object;
-      return partitionId.id().equals(id()) && partitionId.group().equals(group());
+  public PartitionId {
+    if (group == null) {
+      throw new IllegalArgumentException("group cannot be null");
     }
-
-    if (object instanceof AbstractIdentifier) {
-      return object.equals(this);
+    if (number < 0) {
+      throw new IllegalArgumentException("partition number must be non-negative");
     }
-    return false;
   }
 
   @Override
-  public String toString() {
-    return toStringHelper(this).add("id", id()).add("group", group).toString();
+  public int compareTo(@NonNull final PartitionId o) {
+    return COMPARATOR.compare(this, o);
   }
 }

@@ -91,7 +91,7 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
     // priority (=3) for partition 1,4,7 and 10. For partition 1 and 7, node 1 gets priority 2. For
     // partition 4 and 10, node 2 gets priority 2. This is done so that if node 0 dies, the
     // leadership is evenly distributed on the rest of the followers.
-    if ((partitionId.id() - 1) / clusterSize % 2 == 0) {
+    if ((partitionId.number() - 1) / clusterSize % 2 == 0) {
       int nextPriority = replicationFactor - 1;
       for (final MemberId member : membersForPartition) {
         if (!member.equals(primary)) {

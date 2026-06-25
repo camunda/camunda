@@ -66,7 +66,7 @@ final class ZoneAwarePartitionDistributorTest {
 
   private static List<PartitionId> partitions(final int count) {
     return IntStream.rangeClosed(1, count)
-        .mapToObj(i -> PartitionId.from(GROUP, i))
+        .mapToObj(i -> new PartitionId(GROUP, i))
         .sorted()
         .toList();
   }
@@ -74,7 +74,7 @@ final class ZoneAwarePartitionDistributorTest {
   private static PartitionMetadata partitionById(
       final Set<PartitionMetadata> result, final int id) {
     return result.stream()
-        .filter(p -> p.id().id() == id)
+        .filter(p -> p.id().number() == id)
         .findFirst()
         .orElseThrow(() -> new AssertionError("Partition " + id + " not found"));
   }
@@ -103,7 +103,7 @@ final class ZoneAwarePartitionDistributorTest {
             config.clusterMembers(), partitions(5), config.replicationFactor());
 
     // then
-    assertThat(result.stream().map(PartitionMetadata::id).map(PartitionId::id))
+    assertThat(result.stream().map(PartitionMetadata::id).map(PartitionId::number))
         .containsExactlyInAnyOrder(1, 2, 3, 4, 5);
     assertThat(result)
         .hasSize(5)
@@ -397,13 +397,15 @@ Partition | us-east1_0 | us-east1_1 | us-west1_0
 
     // Sort partitions by numeric id for stable row order
     final List<PartitionMetadata> rows =
-        result.stream().sorted((a, b) -> Integer.compare(a.id().id(), b.id().id())).toList();
+        result.stream()
+            .sorted((a, b) -> Integer.compare(a.id().number(), b.id().number()))
+            .toList();
 
     // Compute column widths
     final int partitionColWidth =
         Math.max(
             "Partition".length(),
-            rows.stream().mapToInt(p -> String.valueOf(p.id().id()).length()).max().orElse(1));
+            rows.stream().mapToInt(p -> String.valueOf(p.id().number()).length()).max().orElse(1));
     final int[] brokerColWidths =
         columns.stream().mapToInt(m -> Math.max(m.id().length(), 3)).toArray();
 
@@ -425,7 +427,7 @@ Partition | us-east1_0 | us-east1_1 | us-west1_0
     final var dataRows = new StringBuilder();
     for (final PartitionMetadata pm : rows) {
       final var row = new StringBuilder();
-      row.append(padLeft(String.valueOf(pm.id().id()), partitionColWidth));
+      row.append(padLeft(String.valueOf(pm.id().number()), partitionColWidth));
       for (int c = 0; c < columns.size(); c++) {
         final int priority = pm.getPriority(columns.get(c));
         row.append(" | ").append(center(String.valueOf(priority), brokerColWidths[c]));

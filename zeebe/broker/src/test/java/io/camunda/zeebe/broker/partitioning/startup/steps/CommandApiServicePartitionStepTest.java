@@ -52,7 +52,7 @@ class CommandApiServicePartitionStepTest {
 
     final var partitionMetadata = mock(PartitionMetadata.class);
     when(partitionMetadata.id())
-        .thenReturn(PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID));
+        .thenReturn(new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID));
 
     when(mockContext.concurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
     when(mockContext.schedulingService()).thenReturn(mockSchedulingService);

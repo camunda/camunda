@@ -109,7 +109,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public PartitionId partitionId() {
-    return PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, getPartitionId());
+    return new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, getPartitionId());
   }
 
   @Override

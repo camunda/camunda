@@ -93,7 +93,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
+            new PartitionId("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
     final var raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectory.toFile(), meterRegistry);
 

@@ -147,12 +147,12 @@ public final class RaftPartition implements Partition, HealthMonitorable {
    * @return the partition name
    */
   public String name() {
-    return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.id());
+    return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.number());
   }
 
   @Override
   public String componentName() {
-    return String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId.id());
+    return String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId.number());
   }
 
   @Override

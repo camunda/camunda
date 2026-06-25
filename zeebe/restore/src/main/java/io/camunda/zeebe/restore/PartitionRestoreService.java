@@ -56,7 +56,7 @@ public class PartitionRestoreService {
       final CRC32CChecksumProvider checksumProvider,
       final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
-    partitionId = partition.id().id();
+    partitionId = partition.id().number();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
     this.brokerId = brokerId;
@@ -245,7 +245,7 @@ public class PartitionRestoreService {
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
             brokerId,
-            partition.id().id(),
+            partition.id().number(),
             partition.dataDirectory().toPath(),
             checksumProvider,
             meterRegistry);

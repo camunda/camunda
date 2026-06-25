@@ -129,7 +129,7 @@ public final class StaticConfigurationGenerator {
   private static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     // partition ids start from 1
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(p -> PartitionId.from(PartitionManagerImpl.DEFAULT_GROUP_NAME, p))
+        .mapToObj(p -> new PartitionId(PartitionManagerImpl.DEFAULT_GROUP_NAME, p))
         .sorted()
         .toList();
   }

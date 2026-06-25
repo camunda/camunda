@@ -41,7 +41,7 @@ public record PartitionDistribution(Set<PartitionMetadata> partitions) {
     final Map<MemberId, Integer> priority =
         pm.members().stream().collect(Collectors.toMap(m -> m, pm::getPriority));
     return new PartitionMetadata(
-        PartitionId.from(newGroupName, pm.id().id()),
+        new PartitionId(newGroupName, pm.id().number()),
         new HashSet<>(pm.members()),
         priority,
         pm.getTargetPriority(),

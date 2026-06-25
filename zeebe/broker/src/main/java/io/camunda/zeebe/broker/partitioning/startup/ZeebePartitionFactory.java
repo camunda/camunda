@@ -161,7 +161,7 @@ public final class ZeebePartitionFactory {
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
-    final var partitionId = raftPartition.id().id();
+    final var partitionId = raftPartition.id().number();
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
 
     final var zeebeFactory =
@@ -237,7 +237,7 @@ public final class ZeebePartitionFactory {
       final ConstructableSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
     final Path runtimeDirectory;
-    final var partitionId = raftPartition.id().id();
+    final var partitionId = raftPartition.id().number();
     if (brokerCfg.getData().useSeparateRuntimeDirectory()) {
       final Path rootRuntimeDirectory = Paths.get(brokerCfg.getData().getRuntimeDirectory());
       try {

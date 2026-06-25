@@ -104,7 +104,7 @@ class BackupApiRequestHandlerTest {
             checkpointState,
             checkpointMetadataState,
             backupRangeState,
-            PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1),
+            new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1),
             true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();

@@ -41,14 +41,14 @@ class ConfigurationUtilTest {
     // given
     final PartitionMetadata partitionOne =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 1),
+            new PartitionId(GROUP_NAME, 1),
             Set.of(member(1), member(2), member(0)),
             Map.of(member(0), 1, member(1), 2, member(2), 3),
             3,
             member(2));
     final PartitionMetadata partitionTwo =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 2),
+            new PartitionId(GROUP_NAME, 2),
             Set.of(member(1), member(2), member(0)),
             Map.of(member(2), 1, member(1), 2, member(0), 3),
             3,
@@ -123,14 +123,14 @@ class ConfigurationUtilTest {
     // given
     final PartitionMetadata partitionOne =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 1),
+            new PartitionId(GROUP_NAME, 1),
             Set.of(member(1), member(2), member(0)),
             Map.of(member(0), 1, member(1), 2, member(2), 3),
             3,
             member(2));
     final PartitionMetadata partitionTwo =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 2),
+            new PartitionId(GROUP_NAME, 2),
             Set.of(member(1), member(2), member(0)),
             Map.of(member(2), 1, member(1), 2, member(0), 3),
             3,
@@ -182,7 +182,7 @@ class ConfigurationUtilTest {
     // given
     final PartitionMetadata partitionOne =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 1),
+            new PartitionId(GROUP_NAME, 1),
             Set.of(member(1), member(0)),
             Map.of(member(0), 1, member(1), 2),
             2,
@@ -190,7 +190,7 @@ class ConfigurationUtilTest {
 
     final PartitionMetadata partitionTwo =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 2),
+            new PartitionId(GROUP_NAME, 2),
             Set.of(member(1), member(0)),
             Map.of(member(1), 2, member(0), 3),
             3,
@@ -231,14 +231,14 @@ class ConfigurationUtilTest {
     // given
     final PartitionMetadata partitionOne =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 1),
+            new PartitionId(GROUP_NAME, 1),
             Set.of(member(1), member(2), member(0)),
             Map.of(member(0), 1, member(1), 2, member(2), 3),
             3,
             member(2));
     final PartitionMetadata partitionTwo =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, 2),
+            new PartitionId(GROUP_NAME, 2),
             Set.of(member(1), member(2), member(0)),
             Map.of(member(2), 1, member(1), 2, member(0), 3),
             3,

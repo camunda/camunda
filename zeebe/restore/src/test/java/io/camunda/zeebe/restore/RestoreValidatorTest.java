@@ -163,7 +163,7 @@ class RestoreValidatorTest {
 
   private Path getPartitionDir(final int partitionId) {
     return RaftPartitionFactory.getPartitionDirectory(
-        PartitionId.from(PartitionManagerImpl.DEFAULT_GROUP_NAME, partitionId),
+        new PartitionId(PartitionManagerImpl.DEFAULT_GROUP_NAME, partitionId),
         dataDirectory.toString());
   }
 }

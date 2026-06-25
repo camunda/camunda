@@ -110,10 +110,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
     partitionInstallStatus =
-        partitions.stream().collect(Collectors.toMap(metadata -> metadata.id().id(), p -> false));
+        partitions.stream()
+            .collect(Collectors.toMap(metadata -> metadata.id().number(), p -> false));
     partitions.forEach(
         metadata ->
-            healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().id())));
+            healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().number())));
   }
 
   public boolean isBrokerReady() {

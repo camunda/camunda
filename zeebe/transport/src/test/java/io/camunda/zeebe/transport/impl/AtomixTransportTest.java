@@ -194,7 +194,7 @@ public class AtomixTransportTest {
   public void beforeTest() {
     clientTransport = clientTransportFunction.apply(cluster);
     serverTransport = serverTransportFunction.apply(cluster);
-    partitionId = PartitionId.from(topicPrefix, 0);
+    partitionId = new PartitionId(topicPrefix, 0);
     request = new Request(MESSAGE_CONTENT).withPartitionGroup(topicPrefix);
   }
 
@@ -344,7 +344,7 @@ public class AtomixTransportTest {
         transportFactory.createServerTransport(
             cluster.getMessagingService(), new SnowflakeIdGenerator(1), false);
     try {
-      final var partition = PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, 5);
+      final var partition = new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, 5);
       transport.subscribe(partition, RequestType.COMMAND, new DirectlyResponder()).join();
       final var serverAddress = cluster.getMessagingService().address();
 

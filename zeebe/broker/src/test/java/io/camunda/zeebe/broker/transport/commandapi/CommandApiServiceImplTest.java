@@ -45,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CommandApiServiceImplTest {
 
   private static final PartitionId PARTITION_ID =
-      PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1);
+      new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1);
 
   @Mock private ServerTransport serverTransport;
   @Mock private QueryApiCfg queryApi;

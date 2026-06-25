@@ -49,7 +49,7 @@ final class PartitionDistributionTest {
 
       final var originalPartition =
           original.partitions().stream()
-              .filter(p -> p.id().id().equals(renamedPartition.id().id()))
+              .filter(p -> p.id().number() == renamedPartition.id().number())
               .findFirst()
               .orElseThrow();
 
@@ -81,14 +81,14 @@ final class PartitionDistributionTest {
   private static PartitionDistribution distributionInGroup(final String group) {
     final var partition1 =
         new PartitionMetadata(
-            PartitionId.from(group, 1),
+            new PartitionId(group, 1),
             Set.of(MEMBER_0, MEMBER_1, MEMBER_2),
             Map.of(MEMBER_0, 3, MEMBER_1, 2, MEMBER_2, 1),
             3,
             MEMBER_0);
     final var partition2 =
         new PartitionMetadata(
-            PartitionId.from(group, 2),
+            new PartitionId(group, 2),
             Set.of(MEMBER_0, MEMBER_1),
             Map.of(MEMBER_0, 1, MEMBER_1, 2),
             2,
