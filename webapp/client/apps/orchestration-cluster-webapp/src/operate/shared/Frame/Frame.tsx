@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {type FC, type ReactNode} from 'react';
 import {FrameContainer, FrameHeader} from './styled';
 
 type FrameProps = {
@@ -14,7 +14,7 @@ type FrameProps = {
 	isVisible?: boolean;
 };
 
-const Frame: React.FC<{frame?: FrameProps; children: React.ReactNode}> = ({frame, children}) => {
+const Frame: FC<{frame?: FrameProps; children: ReactNode}> = ({frame, children}) => {
 	if (frame === undefined) {
 		return <>{children}</>;
 	}

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {forwardRef} from 'react';
+import {forwardRef, type ReactNode, type RefObject} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Panel, Header, Collapsable, ExpandIcon, CollapseIcon, IconButton, Content} from './styled';
 import {Title as PanelTitle} from '../PanelTitle/styled';
@@ -18,11 +18,11 @@ type Props = {
 	isOverlay?: boolean;
 	onToggle: () => void;
 	isCollapsed: boolean;
-	children?: React.ReactNode;
-	footer?: React.ReactNode;
+	children?: ReactNode;
+	footer?: ReactNode;
 	maxWidth: number;
 	scrollable?: boolean;
-	collapsablePanelRef?: React.RefObject<HTMLElement | null>;
+	collapsablePanelRef?: RefObject<HTMLElement | null>;
 };
 
 const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
