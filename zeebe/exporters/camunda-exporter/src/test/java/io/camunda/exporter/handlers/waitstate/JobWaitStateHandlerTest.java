@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers.waitstate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer;
@@ -34,12 +36,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * End-to-end integration test for the job wait-state handler pair produced by {@link
+ * End-to-end integration test for the job wait-state handler triple produced by {@link
  * WaitStateHandlerBuilder} with {@link JobBasedWaitStateTransformer}.
  *
- * <p>Validates the full lifecycle: a {@code JOB.CREATED} event writes the wait-state entry, and a
- * subsequent {@code JOB.COMPLETED} or {@code JOB.CANCELED} event removes it using the same stable
- * document id (the jobKey).
+ * <p>Validates the full lifecycle: a {@code JOB.CREATED} event writes the wait-state entry, {@code
+ * MIGRATED}/{@code FAILED}/{@code RETRIES_UPDATED} upsert it, and {@code COMPLETED}/{@code
+ * CANCELED} remove it using the same stable document id (the jobKey).
  */
 class JobWaitStateHandlerTest {
 
@@ -50,6 +52,7 @@ class JobWaitStateHandlerTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   private WaitStateAddHandler<JobRecordValue> addHandler;
+  private WaitStateUpdateHandler<JobRecordValue> updateHandler;
   private WaitStateRemoveHandler<JobRecordValue> removeHandler;
 
   @BeforeEach
@@ -66,6 +69,12 @@ class JobWaitStateHandlerTest {
                 .filter(h -> h instanceof WaitStateAddHandler)
                 .findFirst()
                 .orElseThrow();
+    updateHandler =
+        (WaitStateUpdateHandler<JobRecordValue>)
+            handlers.stream()
+                .filter(h -> h instanceof WaitStateUpdateHandler)
+                .findFirst()
+                .orElseThrow();
     removeHandler =
         (WaitStateRemoveHandler<JobRecordValue>)
             handlers.stream()
@@ -75,7 +84,7 @@ class JobWaitStateHandlerTest {
   }
 
   @Test
-  void shouldAddHandlerHandleCreatedAndRemoveHandlerNotHandle() {
+  void shouldAddHandlerAcceptCreatedRecordOnly() {
     // given
     final var created = jobRecord(JobIntent.CREATED);
     final var completed = jobRecord(JobIntent.COMPLETED);
@@ -190,13 +199,14 @@ class JobWaitStateHandlerTest {
   }
 
   @Test
-  void shouldAddHandlerHandleMigratedEvent() {
+  void shouldUpdateHandlerAcceptMigratedEventNotAddHandler() {
     // given
     final var migrated = jobRecord(JobIntent.MIGRATED);
 
-    // when / then — MIGRATED is an upsert, handled by the add handler, not the remove handler
-    assertThat(addHandler.handlesRecord(migrated)).isTrue();
+    // when / then — MIGRATED is an update intent, handled by updateHandler, not addHandler
+    assertThat(addHandler.handlesRecord(migrated)).isFalse();
     assertThat(removeHandler.handlesRecord(migrated)).isFalse();
+    assertThat(updateHandler.handlesRecord(migrated)).isTrue();
   }
 
   @Test
@@ -205,7 +215,7 @@ class JobWaitStateHandlerTest {
     final var migrated = jobRecord(JobIntent.MIGRATED);
 
     // when
-    final var ids = addHandler.generateIds(migrated);
+    final var ids = updateHandler.generateIds(migrated);
 
     // then — same stable document id as CREATED so the upsert updates the existing entry
     assertThat(ids).containsExactly(String.valueOf(JOB_KEY));
@@ -237,12 +247,13 @@ class JobWaitStateHandlerTest {
                         .withRecordType(RecordType.EVENT)
                         .withIntent(JobIntent.MIGRATED)
                         .withValue(jobValue)));
-    final var entity = addHandler.createNewEntity(String.valueOf(JOB_KEY));
+    final var entity = updateHandler.createNewEntity(String.valueOf(JOB_KEY));
 
     // when
-    addHandler.updateEntity(record, entity);
+    updateHandler.updateEntity(record, entity);
 
-    // then — entity reflects the post-migration element id; all other fields are also updated
+    // then — entity reflects the post-migration element id (update handler sends ELEMENT_ID +
+    // DETAILS only)
     assertThat(entity.getElementId()).isEqualTo("task-after-migration");
     assertThat(entity.getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK.name());
     assertThat(entity.getProcessInstanceKey()).isEqualTo(200L);
@@ -253,14 +264,80 @@ class JobWaitStateHandlerTest {
   }
 
   @Test
-  void shouldBuilderProduceExactlyTwoHandlers() {
+  void shouldUpdateHandlerAcceptFailedAndRetriesUpdated() {
+    // given
+    final var failed = jobRecord(JobIntent.FAILED);
+    final var retriesUpdated = jobRecord(JobIntent.RETRIES_UPDATED);
+    final var created = jobRecord(JobIntent.CREATED);
+
+    // when / then — FAILED and RETRIES_UPDATED are update intents; CREATED is not
+    assertThat(updateHandler.handlesRecord(failed)).isTrue();
+    assertThat(updateHandler.handlesRecord(retriesUpdated)).isTrue();
+    assertThat(updateHandler.handlesRecord(created)).isFalse();
+  }
+
+  @Test
+  void shouldUpdateHandlerSkipsElementIdWhenNullDueToSentinelRisk() throws PersistenceException {
+    // given — FAILED/RETRIES_UPDATED: transformer nulls elementId to avoid overwriting stored value
+    final var id = String.valueOf(JOB_KEY);
+    final var entity = new WaitStateEntity().setId(id).setDetails("{\"retries\":0}");
+    final var batchRequest = mock(BatchRequest.class);
+
+    // when
+    updateHandler.flush(entity, batchRequest);
+
+    // then — only DETAILS in the update map; ELEMENT_ID is skipped
+    verify(batchRequest)
+        .upsert(
+            eq(INDEX_NAME),
+            eq(id),
+            eq(entity),
+            argThat(map -> map.containsKey(WaitStateTemplate.DETAILS) && map.size() == 1));
+  }
+
+  @Test
+  void shouldUpdateHandlerIncludesElementIdWhenPresentForMigration() throws PersistenceException {
+    // given — MIGRATED: elementId and bpmnProcessId are populated with values from the target
+    // process definition (bpmnProcessId changes on cross-process migration)
+    final var id = String.valueOf(JOB_KEY);
+    final var entity =
+        new WaitStateEntity()
+            .setId(id)
+            .setElementId("task-after-migration")
+            .setBpmnProcessId("target-process")
+            .setDetails("{\"retries\":3}");
+    final var batchRequest = mock(BatchRequest.class);
+
+    // when
+    updateHandler.flush(entity, batchRequest);
+
+    // then — ELEMENT_ID, BPMN_PROCESS_ID and DETAILS are all sent
+    verify(batchRequest)
+        .upsert(
+            eq(INDEX_NAME),
+            eq(id),
+            eq(entity),
+            argThat(
+                map ->
+                    map.containsKey(WaitStateTemplate.ELEMENT_ID)
+                        && map.containsKey(WaitStateTemplate.BPMN_PROCESS_ID)
+                        && map.containsKey(WaitStateTemplate.DETAILS)
+                        && map.size() == 3));
+  }
+
+  @Test
+  void shouldBuilderProduceExactlyThreeHandlers() {
+    // when
     final var handlers =
         WaitStateHandlerBuilder.of(INDEX_NAME, objectMapper)
             .addTransformer(new JobBasedWaitStateTransformer())
             .build();
 
-    assertThat(handlers).hasSize(2);
+    // then — one add + one update + one remove
+    assertThat(handlers).hasSize(3);
     assertThat(handlers.stream().filter(h -> h instanceof WaitStateAddHandler).count())
+        .isEqualTo(1);
+    assertThat(handlers.stream().filter(h -> h instanceof WaitStateUpdateHandler).count())
         .isEqualTo(1);
     assertThat(handlers.stream().filter(h -> h instanceof WaitStateRemoveHandler).count())
         .isEqualTo(1);
