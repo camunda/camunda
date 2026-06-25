@@ -19,6 +19,8 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Fences dead brokers — the leader-only liveness sweep, registered as a {@link
@@ -33,6 +35,8 @@ import java.time.InstantSource;
  * not replicated, so it is cleared when the node stops leading.
  */
 public final class BrokerEvictionTask implements Task, StreamProcessorLifecycleAware {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BrokerEvictionTask.class);
 
   private final Duration interval;
   private final Duration sessionTimeout;
@@ -85,6 +89,12 @@ public final class BrokerEvictionTask implements Task, StreamProcessorLifecycleA
       if (broker == null || broker.status() != BrokerStatus.ACTIVE) {
         continue;
       }
+      LOG.info(
+          "Broker {} session lapsed (last heartbeat {}, timeout {}); fencing at epoch {}",
+          brokerId,
+          lastSeen,
+          sessionTimeout,
+          broker.brokerEpoch());
       taskResultBuilder.appendCommandRecord(
           MetadataIntent.FENCE_BROKER,
           new BrokerRecord().setBrokerId(brokerId).setBrokerEpoch(broker.brokerEpoch()));

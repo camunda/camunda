@@ -24,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Heals topic placement off brokers that are no longer placement-eligible (fenced or draining) —
@@ -35,9 +37,9 @@ import java.util.Set;
  * REGISTER_TOPIC} command carrying a healed target. The change-coordinator (on the {@code
  * MetadataManager}) then drives committed → target one safe Raft step at a time.
  *
- * <p>The heal is <b>minimal-diff</b>: per partition it keeps the still-active committed replicas and
- * only replaces the non-active ones, topping up toward the replication factor from the active set
- * (deterministically, rotated by partition id for spread). It never moves data off a healthy
+ * <p>The heal is <b>minimal-diff</b>: per partition it keeps the still-active committed replicas
+ * and only replaces the non-active ones, topping up toward the replication factor from the active
+ * set (deterministically, rotated by partition id for spread). It never moves data off a healthy
  * replica, and degrades gracefully when many brokers are down — it keeps whatever survives rather
  * than recomputing a fresh layout.
  *
@@ -47,6 +49,8 @@ import java.util.Set;
  * due-index-driven schedule is a possible later optimization — see the broker-state-machine brief.)
  */
 public final class PlacementHealTask implements Task, StreamProcessorLifecycleAware {
+
+  private static final Logger LOG = LoggerFactory.getLogger(PlacementHealTask.class);
 
   private final Duration interval;
   private final TopicState topicState;
@@ -82,6 +86,12 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
               if (target.equals(meta.assignment())) {
                 return;
               }
+              LOG.info(
+                  "Healing topic {} off non-active brokers (active={}); committed={} target={}",
+                  name,
+                  active,
+                  meta.assignment(),
+                  target);
               taskResultBuilder.appendCommandRecord(
                   MetadataIntent.REGISTER_TOPIC,
                   new TopicRecord()
