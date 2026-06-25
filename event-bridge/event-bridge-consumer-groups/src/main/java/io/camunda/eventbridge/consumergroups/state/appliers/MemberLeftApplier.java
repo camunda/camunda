@@ -40,18 +40,20 @@ public final class MemberLeftApplier
     state.deleteMember(groupId, value.getMemberId());
 
     final var group = state.getGroup(groupId);
+    final var oldDueAt = group.getRebalanceDueAt();
     group.setGroupEpoch(value.getGroupEpoch());
     group.setState(value.getState());
     group.setEmptySince(value.getEmptySince());
+    group.setRebalanceDueAt(value.getRebalanceDueAt());
     state.putGroup(groupId, group);
 
-    // Reflect the resolved lifecycle into the indexes: an emptied group joins the retention index,
-    // otherwise it goes back into the assignor's index.
+    // Reflect the resolved lifecycle into the indexes: an emptied group leaves the rebalance index
+    // (the event carries rebalanceDueAt == 0) and joins the retention index; otherwise it stays in
+    // the rebalance index at its (kept or refreshed) due deadline.
+    Appliers.reindexRebalanceDue(state, groupId, oldDueAt, value.getRebalanceDueAt());
     if (value.getState() == GroupLifecycle.EMPTY) {
       state.trackEmpty(groupId);
-      state.untrackPendingRebalance(groupId);
     } else {
-      state.trackPendingRebalance(groupId);
       state.untrackEmpty(groupId);
     }
   }

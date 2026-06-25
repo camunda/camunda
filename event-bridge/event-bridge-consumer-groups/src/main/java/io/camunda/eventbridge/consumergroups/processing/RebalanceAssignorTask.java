@@ -21,9 +21,9 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -33,35 +33,36 @@ import java.util.stream.IntStream;
  * computation. It is registered as a {@link StreamProcessorLifecycleAware} listener and
  * self-schedules at a fixed rate on the async task group in {@link #onRecovered} — leader only, off
  * the command-processing path, and only after recovery (when the async task group is up), mirroring
- * the engine's {@code MessageTimeToLiveCheckScheduler}. On each tick it reads the {@code
- * PREPARING_REBALANCE} groups from the {@link ConsumerGroupState} lifecycle index (no full scan),
- * runs the {@link PartitionAssignor} over each roster, and appends a {@code REBALANCE_GROUP}
- * command carrying the proposed target. The {@link RebalanceProcessor} then validates and commits
- * it.
+ * the engine's {@code MessageTimeToLiveCheckScheduler}.
+ *
+ * <p>The task is <b>stateless</b>: the debounce lives in replicated state as each group's {@code
+ * rebalanceDueAt} (set by the membership processors), keyed into the due-ordered {@code
+ * CONSUMER_GROUPS_REBALANCE_DUE} index. On each tick it reads the groups whose deadline has passed
+ * (ascending, via {@link ConsumerGroupState#rebalancesDueBy}), runs the {@link PartitionAssignor}
+ * over each roster, and appends a {@code REBALANCE_GROUP} command carrying the proposed target. The
+ * {@link RebalanceProcessor} then validates and commits it; a group leaves the index when {@code
+ * GROUP_REBALANCED} applies. A re-proposal in the window before that lands is harmless — {@link
+ * TransitionValidator#validateRebalance} drops a target whose epoch is already applied.
  *
  * <p>It reads state off-actor through its own {@link ConsumerGroupState} instance (a private
  * context) and emits commands only.
- *
- * <p>Bursts of joins/leaves are debounced: a group's target is proposed only once its group epoch
- * has been stable for at least one tick, and only once per epoch (re-proposing is suppressed until
- * the previous proposal is applied). Stale proposals are harmless — {@link RebalanceProcessor}
- * drops any whose epoch no longer matches.
  */
 public final class RebalanceAssignorTask implements Task, StreamProcessorLifecycleAware {
 
   private final Duration interval;
   private final ConsumerGroupState state;
   private final PartitionAssignor assignor;
-
-  // Per-group debounce: the group epoch last observed and the last epoch a proposal was emitted
-  // for.
-  private final Map<String, Debounce> debounce = new HashMap<>();
+  private final InstantSource clock;
 
   public RebalanceAssignorTask(
-      final Duration interval, final ConsumerGroupState state, final PartitionAssignor assignor) {
+      final Duration interval,
+      final ConsumerGroupState state,
+      final PartitionAssignor assignor,
+      final InstantSource clock) {
     this.interval = interval;
     this.state = state;
     this.assignor = assignor;
+    this.clock = clock;
   }
 
   @Override
@@ -72,40 +73,14 @@ public final class RebalanceAssignorTask implements Task, StreamProcessorLifecyc
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    // The index returns only PREPARING_REBALANCE groups (have members + a stale target), so there
-    // is no full scan; drop debounce state for groups that are no longer pending.
-    final var pending = state.pendingRebalanceGroups();
-    final var pendingIds = new HashSet<String>();
-    for (final var snapshot : pending) {
-      pendingIds.add(snapshot.groupId());
-      maybeProposeRebalance(snapshot, taskResultBuilder);
+    final var now = clock.instant().toEpochMilli();
+    // The index returns only groups whose debounce deadline has passed, in due order — no full
+    // scan,
+    // no in-memory debounce.
+    for (final var snapshot : state.rebalancesDueBy(now)) {
+      taskResultBuilder.appendCommandRecord(CoordinatorIntent.REBALANCE_GROUP, propose(snapshot));
     }
-    debounce.keySet().retainAll(pendingIds);
     return taskResultBuilder.build();
-  }
-
-  private void maybeProposeRebalance(
-      final GroupSnapshot snapshot, final TaskResultBuilder taskResultBuilder) {
-    final var groupId = snapshot.groupId();
-    final var groupEpoch = snapshot.groupEpoch();
-    final var d = debounce.get(groupId);
-    if (d == null) {
-      // First time we see this group pending — observe the epoch and wait one tick before acting.
-      debounce.put(groupId, new Debounce(groupEpoch, -1L));
-      return;
-    }
-    if (d.seenEpoch != groupEpoch) {
-      // The roster changed since the last tick — restart the debounce window.
-      d.seenEpoch = groupEpoch;
-      d.emittedEpoch = -1L;
-      return;
-    }
-    if (d.emittedEpoch == groupEpoch) {
-      return; // already proposed for this epoch; awaiting the processor
-    }
-
-    taskResultBuilder.appendCommandRecord(CoordinatorIntent.REBALANCE_GROUP, propose(snapshot));
-    d.emittedEpoch = groupEpoch;
   }
 
   private RebalanceRecord propose(final GroupSnapshot snapshot) {
@@ -133,15 +108,5 @@ public final class RebalanceAssignorTask implements Task, StreamProcessorLifecyc
         .setGroupId(snapshot.groupId())
         .setAssignmentEpoch(snapshot.groupEpoch())
         .setMembers(assignment.assignments());
-  }
-
-  private static final class Debounce {
-    private long seenEpoch;
-    private long emittedEpoch;
-
-    private Debounce(final long seenEpoch, final long emittedEpoch) {
-      this.seenEpoch = seenEpoch;
-      this.emittedEpoch = emittedEpoch;
-    }
   }
 }

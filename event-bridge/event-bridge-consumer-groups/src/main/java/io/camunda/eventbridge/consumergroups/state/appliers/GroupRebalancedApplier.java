@@ -35,14 +35,18 @@ public final class GroupRebalancedApplier
   public void applyState(final long key, final RebalanceRecord value) {
     final var groupId = value.getGroupId();
     final var group = state.getGroup(groupId);
+    final var oldDueAt = group.getRebalanceDueAt();
     group.setAssignmentEpoch(value.getAssignmentEpoch());
     // The target is committed but members have not yet confirmed reconciling to it — the processor
     // resolved this to RECONCILING (until every member's assignedEpoch catches up via
     // MEMBER_RECONCILED → STABLE); the applier just writes it.
     group.setState(value.getState());
+    // The rebalance is no longer pending: clear the due deadline and drop it from the index.
+    group.setRebalanceDueAt(0L);
     state.putGroup(groupId, group);
-    // RECONCILING is in neither index, so the group leaves the assignor's pending index.
-    state.untrackPendingRebalance(groupId);
+    if (oldDueAt != 0) {
+      state.untrackRebalanceDue(groupId, oldDueAt);
+    }
 
     value
         .getMembers()

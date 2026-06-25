@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import java.util.ArrayList;
@@ -46,10 +47,15 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
   private final DbString memberId = new DbString();
   private final DbCompositeKey<DbString, DbString> groupMemberKey =
       new DbCompositeKey<>(groupId, memberId);
+  // (rebalanceDueAt, groupId) — the due-ordered index key; the due time leads so the scan is
+  // chronological.
+  private final DbLong rebalanceDueAt = new DbLong();
+  private final DbCompositeKey<DbLong, DbString> rebalanceDueKey =
+      new DbCompositeKey<>(rebalanceDueAt, groupId);
 
   private final ColumnFamily<DbString, GroupState> groupColumnFamily;
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, MemberState> memberColumnFamily;
-  private final ColumnFamily<DbString, DbNil> pendingRebalanceColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil> rebalanceDueColumnFamily;
   private final ColumnFamily<DbString, DbNil> emptyColumnFamily;
 
   public DbConsumerGroupState(
@@ -63,11 +69,11 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
             context,
             groupMemberKey,
             new MemberState());
-    pendingRebalanceColumnFamily =
+    rebalanceDueColumnFamily =
         zeebeDb.createColumnFamily(
-            EventBridgeColumnFamilies.CONSUMER_GROUPS_PENDING_REBALANCE,
+            EventBridgeColumnFamilies.CONSUMER_GROUPS_REBALANCE_DUE,
             context,
-            groupId,
+            rebalanceDueKey,
             DbNil.INSTANCE);
     emptyColumnFamily =
         zeebeDb.createColumnFamily(
@@ -132,8 +138,19 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
   }
 
   @Override
-  public List<GroupSnapshot> pendingRebalanceGroups() {
-    return snapshots(indexedGroupIds(pendingRebalanceColumnFamily));
+  public List<GroupSnapshot> rebalancesDueBy(final long now) {
+    final var ids = new ArrayList<String>();
+    // Ascending by due time: collect every group already due, stop at the first still in the
+    // future.
+    rebalanceDueColumnFamily.whileTrue(
+        (key, value) -> {
+          if (key.first().getValue() > now) {
+            return false;
+          }
+          ids.add(key.second().toString());
+          return true;
+        });
+    return snapshots(ids);
   }
 
   @Override
@@ -227,15 +244,17 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
   }
 
   @Override
-  public void trackPendingRebalance(final String group) {
+  public void trackRebalanceDue(final String group, final long dueAt) {
+    rebalanceDueAt.wrapLong(dueAt);
     groupId.wrapString(group);
-    pendingRebalanceColumnFamily.upsert(groupId, DbNil.INSTANCE);
+    rebalanceDueColumnFamily.upsert(rebalanceDueKey, DbNil.INSTANCE);
   }
 
   @Override
-  public void untrackPendingRebalance(final String group) {
+  public void untrackRebalanceDue(final String group, final long dueAt) {
+    rebalanceDueAt.wrapLong(dueAt);
     groupId.wrapString(group);
-    pendingRebalanceColumnFamily.deleteIfExists(groupId);
+    rebalanceDueColumnFamily.deleteIfExists(rebalanceDueKey);
   }
 
   @Override

@@ -43,6 +43,7 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class CoordinatorProcessorTest {
 
   private static final TopicRegistry TOPIC_REGISTRY = topic -> "missing".equals(topic) ? 0 : 4;
+  private static final Duration DEBOUNCE = Duration.ofSeconds(2);
 
   @TempDir private Path dbDir;
   private ZeebeDb<EventBridgeColumnFamilies> db;
@@ -94,11 +96,11 @@ final class CoordinatorProcessorTest {
                     .onCommand(
                         EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                         CoordinatorIntent.JOIN_GROUP,
-                        new JoinGroupProcessor(processors.writers(), state, validator))
+                        new JoinGroupProcessor(processors.writers(), state, validator, DEBOUNCE))
                     .onCommand(
                         EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                         CoordinatorIntent.LEAVE_GROUP,
-                        new LeaveGroupProcessor(processors.writers(), state, validator))
+                        new LeaveGroupProcessor(processors.writers(), state, validator, DEBOUNCE))
                     .onCommand(
                         EventBridgeRecordValues.REBALANCE_VALUE_TYPE,
                         CoordinatorIntent.REBALANCE_GROUP,
@@ -131,15 +133,31 @@ final class CoordinatorProcessorTest {
   }
 
   @Test
-  void shouldStampPreparingRebalanceAndTrackPendingOnJoin() {
-    // when
+  void shouldStampPreparingRebalanceAndDebounceTheRebalanceOnJoin() {
+    // when — a join at t=0 with a 2s debounce
     join("g", "m1");
 
-    // then — the join resolves to PREPARING_REBALANCE and lands in the assignor's pending index
+    // then — the join resolves to PREPARING_REBALANCE with the rebalance due one debounce later: in
+    // the due index at its deadline, but not before it
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
     assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(1);
-    assertThat(groupIds(state.pendingRebalanceGroups())).containsExactly("g");
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isEqualTo(DEBOUNCE.toMillis());
+    assertThat(groupIds(state.rebalancesDueBy(DEBOUNCE.toMillis() - 1))).isEmpty();
+    assertThat(groupIds(state.rebalancesDueBy(DEBOUNCE.toMillis()))).containsExactly("g");
     assertThat(groupIds(state.emptyGroups())).isEmpty();
+  }
+
+  @Test
+  void shouldKeepTheRebalanceDeadlineWhileAlreadyPending() {
+    // given — a join opens the debounce window at t=0 → due at 2000
+    join("g", "m1", 0L);
+
+    // when — a second join lands while still pending (t=1000)
+    join("g", "m2", 1000L);
+
+    // then — the deadline is kept (a fixed window from the first change), not pushed to 3000
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isEqualTo(DEBOUNCE.toMillis());
+    assertThat(groupIds(state.rebalancesDueBy(DEBOUNCE.toMillis()))).containsExactly("g");
   }
 
   @Test
@@ -149,11 +167,12 @@ final class CoordinatorProcessorTest {
     // when — the only member leaves at a known time
     leave("g", "m1", 1, 1_700_000_000_000L);
 
-    // then — the group is retained EMPTY with the stamped deadline, in the retention index
+    // then — the group is retained EMPTY with the stamped deadline, in the retention index and out
+    // of the rebalance-due index
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
     assertThat(state.getGroup("g").getEmptySince()).isEqualTo(1_700_000_000_000L);
     assertThat(groupIds(state.emptyGroups())).containsExactly("g");
-    assertThat(groupIds(state.pendingRebalanceGroups())).isEmpty();
+    assertThat(groupIds(state.rebalancesDueBy(Long.MAX_VALUE))).isEmpty();
   }
 
   @Test
@@ -164,26 +183,27 @@ final class CoordinatorProcessorTest {
     // when — one of two members leaves
     leave("g", "m1", 1, 0L);
 
-    // then — the group stays alive in PREPARING_REBALANCE (no emptySince), back in the pending
-    // index
+    // then — the group stays alive in PREPARING_REBALANCE (no emptySince), still in the
+    // rebalance-due index
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
     assertThat(state.getGroup("g").getEmptySince()).isZero();
-    assertThat(groupIds(state.pendingRebalanceGroups())).containsExactly("g");
+    assertThat(groupIds(state.rebalancesDueBy(Long.MAX_VALUE))).containsExactly("g");
     assertThat(groupIds(state.emptyGroups())).isEmpty();
   }
 
   @Test
-  void shouldStampReconcilingOnRebalanceAndLeavePendingIndex() {
+  void shouldStampReconcilingOnRebalanceAndLeaveTheDueIndex() {
     join("g", "m1");
     join("g", "m2");
 
     // when — the assignor's target is committed (group epoch is 2 after two joins)
     rebalance("g", 2, Map.of("m1", List.of(1, 2), "m2", List.of(3, 4)));
 
-    // then — RECONCILING, targets applied, and out of the pending index (neither index)
+    // then — RECONCILING, targets applied, deadline cleared and out of both indexes
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isZero();
     assertThat(state.getMember("g", "m1").getTargetPartitions()).containsExactly(tp(1), tp(2));
-    assertThat(groupIds(state.pendingRebalanceGroups())).isEmpty();
+    assertThat(groupIds(state.rebalancesDueBy(Long.MAX_VALUE))).isEmpty();
     assertThat(groupIds(state.emptyGroups())).isEmpty();
   }
 
@@ -253,11 +273,15 @@ final class CoordinatorProcessorTest {
   // --- command helpers --------------------------------------------------------------------------
 
   private void join(final String group, final String member) {
+    join(group, member, 0L);
+  }
+
+  private void join(final String group, final String member, final long timestamp) {
     process(
         EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
         CoordinatorIntent.JOIN_GROUP,
         new MembershipRecord().setGroupId(group).setMemberId(member).setTopics(List.of("t")),
-        0L);
+        timestamp);
   }
 
   private void leave(

@@ -32,6 +32,9 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,14 +43,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Verifies the async assignor's debounce and the target it proposes from the mirror. */
+/**
+ * Verifies the stateless assignor: it proposes a target for every group whose replicated rebalance
+ * deadline has passed (read from the due-ordered index against its clock) and for nothing before
+ * that, with no in-memory debounce of its own.
+ */
 final class RebalanceAssignorTaskTest {
+
+  private static final long DUE_AT = 5_000L;
 
   @TempDir private Path dbDir;
   private ZeebeDb<EventBridgeColumnFamilies> db;
   private DbConsumerGroupState state;
   private MemberJoinedApplier memberJoined;
   private GroupRebalancedApplier groupRebalanced;
+  private MutableClock clock;
   private RebalanceAssignorTask task;
 
   @BeforeEach
@@ -62,9 +72,10 @@ final class RebalanceAssignorTaskTest {
     state = new DbConsumerGroupState(db, db.createContext());
     memberJoined = new MemberJoinedApplier(state);
     groupRebalanced = new GroupRebalancedApplier(state);
+    clock = new MutableClock();
     task =
         new RebalanceAssignorTask(
-            java.time.Duration.ofSeconds(1), state, new BalancedStickyAssignor());
+            Duration.ofSeconds(1), state, new BalancedStickyAssignor(), clock);
   }
 
   @AfterEach
@@ -73,31 +84,41 @@ final class RebalanceAssignorTaskTest {
   }
 
   @Test
-  void shouldDebounceThenProposeTargetOncePerEpoch() {
-    // given — a group with a pending rebalance (groupEpoch 1 > assignmentEpoch 0)
+  void shouldProposeTargetOnceTheRebalanceIsDue() {
+    // given — a group whose rebalance is due at DUE_AT
     join("m1", 1, 1);
 
-    // when — first tick only observes the epoch (debounce)
-    final var firstTick = run();
-    assertThat(firstTick).isEmpty();
-
-    // then — second tick (epoch stable for one interval) proposes the target
-    final var secondTick = run();
-    assertThat(secondTick).hasSize(1);
-    final var proposal = secondTick.get(0);
-    assertThat(proposal.getGroupId()).isEqualTo("g");
-    assertThat(proposal.getAssignmentEpoch()).isEqualTo(1);
-    assertThat(proposal.getMembers()).containsOnlyKeys("m1");
-    assertThat(proposal.getMembers().get("m1"))
-        .containsExactlyInAnyOrder(tp(1), tp(2), tp(3), tp(4));
-
-    // and a third tick does not re-propose while the same epoch is still pending
+    // when — before the deadline, nothing is proposed
+    clock.setMillis(DUE_AT - 1);
     assertThat(run()).isEmpty();
+
+    // then — at the deadline the target is proposed
+    clock.setMillis(DUE_AT);
+    final var proposals = run();
+    assertThat(proposals).hasSize(1);
+    assertThat(proposals.get(0).getGroupId()).isEqualTo("g");
+    assertThat(proposals.get(0).getAssignmentEpoch()).isEqualTo(1);
+    assertThat(proposals.get(0).getMembers().get("m1"))
+        .containsExactlyInAnyOrder(tp(1), tp(2), tp(3), tp(4));
   }
 
   @Test
-  void shouldNotProposeWhenAssignmentIsUpToDate() {
-    // given — the target is already applied (assignmentEpoch == groupEpoch)
+  void shouldProposeForTheLatestRoster() {
+    // given — two members joined, both due at DUE_AT (the second kept the first's deadline)
+    join("m1", 1, 1);
+    join("m2", 2, 2);
+
+    // then — once due, the proposal covers the whole roster
+    clock.setMillis(DUE_AT);
+    final var proposals = run();
+    assertThat(proposals).hasSize(1);
+    assertThat(proposals.get(0).getAssignmentEpoch()).isEqualTo(2);
+    assertThat(proposals.get(0).getMembers()).containsOnlyKeys("m1", "m2");
+  }
+
+  @Test
+  void shouldNotProposeOnceTheTargetIsApplied() {
+    // given — a due group whose target has already been committed (RECONCILING)
     join("m1", 1, 1);
     groupRebalanced.applyState(
         10,
@@ -107,27 +128,9 @@ final class RebalanceAssignorTaskTest {
             .setMembers(Map.of("m1", List.of(tp(1), tp(2), tp(3), tp(4))))
             .setState(GroupLifecycle.RECONCILING));
 
-    // then — no rebalance is proposed on any tick
+    // then — it has left the due index, so nothing is proposed even past the deadline
+    clock.setMillis(DUE_AT);
     assertThat(run()).isEmpty();
-    assertThat(run()).isEmpty();
-  }
-
-  @Test
-  void shouldResetDebounceWhenRosterChanges() {
-    // given — first member joins, observed once
-    join("m1", 1, 1);
-    assertThat(run()).isEmpty();
-
-    // when — a second member joins (group epoch advances) before the proposal fires
-    join("m2", 2, 2);
-
-    // then — the changed epoch is only observed this tick (debounce restarts), no proposal yet
-    assertThat(run()).isEmpty();
-    // next stable tick proposes for the latest epoch across both members
-    final var proposal = run();
-    assertThat(proposal).hasSize(1);
-    assertThat(proposal.get(0).getAssignmentEpoch()).isEqualTo(2);
-    assertThat(proposal.get(0).getMembers()).containsOnlyKeys("m1", "m2");
   }
 
   private void join(final String memberId, final long memberEpoch, final long groupEpoch) {
@@ -139,7 +142,8 @@ final class RebalanceAssignorTaskTest {
             .setMemberId(memberId)
             .setMemberEpoch(memberEpoch)
             .setGroupEpoch(groupEpoch)
-            .setState(GroupLifecycle.PREPARING_REBALANCE));
+            .setState(GroupLifecycle.PREPARING_REBALANCE)
+            .setRebalanceDueAt(DUE_AT));
   }
 
   private static TopicPartition tp(final int partition) {
@@ -150,6 +154,19 @@ final class RebalanceAssignorTaskTest {
     final var builder = new CapturingTaskResultBuilder();
     task.execute(builder);
     return builder.proposals;
+  }
+
+  private static final class MutableClock implements InstantSource {
+    private Instant now = Instant.ofEpochMilli(0);
+
+    private void setMillis(final long millis) {
+      now = Instant.ofEpochMilli(millis);
+    }
+
+    @Override
+    public Instant instant() {
+      return now;
+    }
   }
 
   /** Captures the {@code REBALANCE_GROUP} commands the task appends. */

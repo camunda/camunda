@@ -55,9 +55,10 @@ public final class MembershipRecord extends UnifiedRecordValue {
   private final LongProperty groupEpochProp = new LongProperty("groupEpoch", 0L);
   private final StringProperty stateProp = new StringProperty("state", GroupLifecycle.EMPTY.name());
   private final LongProperty emptySinceProp = new LongProperty("emptySince", 0L);
+  private final LongProperty rebalanceDueAtProp = new LongProperty("rebalanceDueAt", 0L);
 
   public MembershipRecord() {
-    super(8);
+    super(9);
     declareProperty(groupIdProp)
         .declareProperty(subscriptionsProp)
         .declareProperty(memberIdProp)
@@ -65,7 +66,8 @@ public final class MembershipRecord extends UnifiedRecordValue {
         .declareProperty(memberEpochProp)
         .declareProperty(groupEpochProp)
         .declareProperty(stateProp)
-        .declareProperty(emptySinceProp);
+        .declareProperty(emptySinceProp)
+        .declareProperty(rebalanceDueAtProp);
   }
 
   /**
@@ -180,6 +182,16 @@ public final class MembershipRecord extends UnifiedRecordValue {
 
   public MembershipRecord setEmptySince(final long emptySince) {
     emptySinceProp.setValue(emptySince);
+    return this;
+  }
+
+  /** Epoch millis the debounced rebalance is due (stamped when the group is pending); {@code 0}. */
+  public long getRebalanceDueAt() {
+    return rebalanceDueAtProp.getValue();
+  }
+
+  public MembershipRecord setRebalanceDueAt(final long rebalanceDueAt) {
+    rebalanceDueAtProp.setValue(rebalanceDueAt);
     return this;
   }
 }

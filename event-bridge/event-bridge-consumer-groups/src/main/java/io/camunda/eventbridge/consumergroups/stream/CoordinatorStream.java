@@ -64,10 +64,15 @@ import java.util.function.Supplier;
  */
 public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnFamilies> {
 
-  /**
-   * How often the async assignor scans for groups needing a rebalance (also the debounce window).
-   */
+  /** How often the async assignor scans for groups whose (debounced) rebalance is due. */
   private static final Duration ASSIGNOR_INTERVAL = Duration.ofSeconds(1);
+
+  /**
+   * How long a group's rebalance is debounced after it enters {@code PREPARING_REBALANCE}: a fixed
+   * window from the first change (membership processors stamp {@code now + this} into state), so a
+   * burst of joins/leaves yields one rebalance rather than one per change.
+   */
+  private static final Duration REBALANCE_DEBOUNCE = Duration.ofSeconds(2);
 
   // Session-eviction sweep cadence and the liveness windows it enforces: the heartbeat session
   // timeout, and the longest a rebalance may stall before non-converged members are evicted.
@@ -148,11 +153,13 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                 .onCommand(
                     EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                     CoordinatorIntent.JOIN_GROUP,
-                    new JoinGroupProcessor(processors.writers(), groupState, validator))
+                    new JoinGroupProcessor(
+                        processors.writers(), groupState, validator, REBALANCE_DEBOUNCE))
                 .onCommand(
                     EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                     CoordinatorIntent.LEAVE_GROUP,
-                    new LeaveGroupProcessor(processors.writers(), groupState, validator))
+                    new LeaveGroupProcessor(
+                        processors.writers(), groupState, validator, REBALANCE_DEBOUNCE))
                 .onCommand(
                     EventBridgeRecordValues.REBALANCE_VALUE_TYPE,
                     CoordinatorIntent.REBALANCE_GROUP,
@@ -179,7 +186,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     new GroupDeletedApplier(groupState, offsetState))
                 .withListener(
                     new RebalanceAssignorTask(
-                        ASSIGNOR_INTERVAL, taskGroupState(), new BalancedStickyAssignor()))
+                        ASSIGNOR_INTERVAL, taskGroupState(), new BalancedStickyAssignor(), clock))
                 .withListener(
                     new GroupRetentionTask(
                         RETENTION_INTERVAL, EMPTY_GROUP_RETENTION, taskGroupState(), clock))

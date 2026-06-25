@@ -30,10 +30,12 @@ public enum EventBridgeColumnFamilies implements EnumValue, ScopedColumnFamily {
   CONSUMER_GROUP_MEMBERS(3, ColumnFamilyScope.PARTITION_LOCAL),
 
   /**
-   * Secondary index of groups in {@code PREPARING_REBALANCE} ({@code groupId} → ∅) so the async
-   * assignor fetches only the groups that need a target computed, without scanning all groups.
+   * Due-ordered index of groups awaiting a rebalance, keyed by {@code (rebalanceDueAt, groupId)} →
+   * ∅. The async assignor scans it in ascending due order and proposes a target for every group
+   * whose debounce deadline has passed, stopping at the first not-yet-due entry — so it neither
+   * scans all groups nor keeps any in-memory debounce state.
    */
-  CONSUMER_GROUPS_PENDING_REBALANCE(4, ColumnFamilyScope.PARTITION_LOCAL),
+  CONSUMER_GROUPS_REBALANCE_DUE(4, ColumnFamilyScope.PARTITION_LOCAL),
 
   /**
    * Secondary index of {@code EMPTY} groups ({@code groupId} → ∅) so the retention task fetches

@@ -46,8 +46,11 @@ public interface ConsumerGroupState {
   /** Snapshots of every group — a full scan, for the coordinator's describe/seed reads. */
   List<GroupSnapshot> allGroups();
 
-  /** Snapshots of the {@code PREPARING_REBALANCE} groups, read from the index (no full scan). */
-  List<GroupSnapshot> pendingRebalanceGroups();
+  /**
+   * Snapshots of the groups whose debounced rebalance is due at or before {@code now}, in ascending
+   * due order, read from the due-ordered index (no full scan).
+   */
+  List<GroupSnapshot> rebalancesDueBy(long now);
 
   /** Snapshots of the {@code EMPTY} groups, read from the index (no full scan). */
   List<GroupSnapshot> emptyGroups();

@@ -49,6 +49,9 @@ final class ConsumerGroupStateTest {
   // Stand-in topic registry: every topic has 4 partitions except "missing" (unknown/not servable).
   private static final TopicRegistry TOPIC_REGISTRY = topic -> "missing".equals(topic) ? 0 : 4;
 
+  // The (debounced) rebalance deadline the processor would stamp; applier tests stamp it directly.
+  private static final long REBALANCE_DUE = 1_000L;
+
   @TempDir private Path dbDir;
   private ZeebeDb<EventBridgeColumnFamilies> db;
   private DbConsumerGroupState state;
@@ -99,8 +102,10 @@ final class ConsumerGroupStateTest {
     assertThat(snapshot.members().get("m1").memberEpoch()).isEqualTo(1);
     assertThat(snapshot.members().get("m1").targetPartitions()).isEmpty();
     assertThat(snapshot.isRebalancePending()).isTrue();
-    // a joined group is tracked in the assignor's pending-rebalance index
-    assertThat(groupIds(state.pendingRebalanceGroups())).containsExactly("g");
+    // the group is in the due-ordered rebalance index at its deadline, but not before it
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isEqualTo(REBALANCE_DUE);
+    assertThat(groupIds(state.rebalancesDueBy(REBALANCE_DUE - 1))).isEmpty();
+    assertThat(groupIds(state.rebalancesDueBy(REBALANCE_DUE))).containsExactly("g");
   }
 
   @Test
@@ -170,12 +175,18 @@ final class ConsumerGroupStateTest {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
     memberJoined.applyState(2, join("g", "m2", null, 2, 2, 4));
 
-    // a leave that keeps members resolves to PREPARING_REBALANCE (the LeaveGroupProcessor's job)
-    memberLeft.applyState(3, leave("g", "m1", 3).setState(GroupLifecycle.PREPARING_REBALANCE));
+    // a leave that keeps members resolves to PREPARING_REBALANCE (the LeaveGroupProcessor's job),
+    // keeping the group in the rebalance-due index
+    memberLeft.applyState(
+        3,
+        leave("g", "m1", 3)
+            .setState(GroupLifecycle.PREPARING_REBALANCE)
+            .setRebalanceDueAt(REBALANCE_DUE));
 
     assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(3);
     assertThat(state.getMember("g", "m1")).isNull();
     assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
+    assertThat(groupIds(state.rebalancesDueBy(REBALANCE_DUE))).containsExactly("g");
   }
 
   @Test
@@ -192,10 +203,11 @@ final class ConsumerGroupStateTest {
     assertThat(state.groupSnapshot("g").members()).isEmpty();
     assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(9);
     // emptySince is written from the event (the retention deadline base), and the group is in the
-    // EMPTY index (the retention task's work list), not the pending one
+    // EMPTY index (the retention task's work list) and out of the rebalance-due index
     assertThat(state.getGroup("g").getEmptySince()).isEqualTo(1_700_000_000_000L);
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isZero();
     assertThat(groupIds(state.emptyGroups())).containsExactly("g");
-    assertThat(groupIds(state.pendingRebalanceGroups())).isEmpty();
+    assertThat(groupIds(state.rebalancesDueBy(REBALANCE_DUE))).isEmpty();
   }
 
   @Test
@@ -229,11 +241,11 @@ final class ConsumerGroupStateTest {
 
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
     assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
-    // reviving clears the retention deadline and moves the group from the EMPTY to the pending
-    // index
+    // reviving clears the retention deadline and moves the group from the EMPTY to the
+    // rebalance-due index
     assertThat(state.getGroup("g").getEmptySince()).isZero();
     assertThat(groupIds(state.emptyGroups())).isEmpty();
-    assertThat(groupIds(state.pendingRebalanceGroups())).containsExactly("g");
+    assertThat(groupIds(state.rebalancesDueBy(REBALANCE_DUE))).containsExactly("g");
   }
 
   @Test
@@ -356,7 +368,8 @@ final class ConsumerGroupStateTest {
         .setMemberEpoch(memberEpoch)
         .setGroupEpoch(groupEpoch)
         .setState(GroupLifecycle.PREPARING_REBALANCE)
-        .setEmptySince(0L);
+        .setEmptySince(0L)
+        .setRebalanceDueAt(REBALANCE_DUE);
   }
 
   private static MembershipRecord leave(final String group, final String member, final long epoch) {

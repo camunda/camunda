@@ -16,6 +16,7 @@ import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -37,14 +38,17 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
   private final Writers writers;
   private final ConsumerGroupState state;
   private final CoordinationValidator validator;
+  private final Duration rebalanceDebounce;
 
   public JoinGroupProcessor(
       final Writers writers,
       final ConsumerGroupState state,
-      final CoordinationValidator validator) {
+      final CoordinationValidator validator,
+      final Duration rebalanceDebounce) {
     this.writers = writers;
     this.state = state;
     this.validator = validator;
+    this.rebalanceDebounce = rebalanceDebounce;
   }
 
   @Override
@@ -60,13 +64,18 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
     final var cmd = command.getValue();
     final var group = state.getGroup(cmd.getGroupId());
     final var newGroupEpoch = (group == null ? 0 : group.getGroupEpoch()) + 1;
+    // The join makes the target stale, so the group needs a (debounced) rebalance; keep an existing
+    // deadline if it is already pending, else open the window now.
+    final var rebalanceDueAt =
+        RebalanceDebounce.dueAt(group, command.getTimestamp(), rebalanceDebounce);
     appendMemberJoined(
         command,
         cmd.getMemberId(),
         cmd.getInstanceId(),
         newGroupEpoch,
         newGroupEpoch,
-        subscriptions);
+        subscriptions,
+        rebalanceDueAt);
     respondJoined(command, cmd.getMemberId(), newGroupEpoch);
   }
 
@@ -76,7 +85,8 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
       final String instanceId,
       final long memberEpoch,
       final long groupEpoch,
-      final Map<String, Integer> subscriptions) {
+      final Map<String, Integer> subscriptions,
+      final long rebalanceDueAt) {
     final var event =
         new MembershipRecord()
             .setGroupId(command.getValue().getGroupId())
@@ -89,7 +99,8 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
             // any
             // retention deadline a revived EMPTY group carried.
             .setState(GroupLifecycle.PREPARING_REBALANCE)
-            .setEmptySince(0L);
+            .setEmptySince(0L)
+            .setRebalanceDueAt(rebalanceDueAt);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_JOINED, event);
   }
 

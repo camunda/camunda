@@ -32,11 +32,13 @@ public interface MutableConsumerGroupState extends ConsumerGroupState {
   /** Removes a member. */
   void deleteMember(String groupId, String memberId);
 
-  /** Adds the group to the {@code PREPARING_REBALANCE} index (the assignor's work list). */
-  void trackPendingRebalance(String groupId);
+  /**
+   * Adds {@code (dueAt, groupId)} to the due-ordered rebalance index (the assignor's work list).
+   */
+  void trackRebalanceDue(String groupId, long dueAt);
 
-  /** Removes the group from the {@code PREPARING_REBALANCE} index. */
-  void untrackPendingRebalance(String groupId);
+  /** Removes {@code (dueAt, groupId)} from the due-ordered rebalance index. */
+  void untrackRebalanceDue(String groupId, long dueAt);
 
   /** Adds the group to the {@code EMPTY} index (the retention task's work list). */
   void trackEmpty(String groupId);

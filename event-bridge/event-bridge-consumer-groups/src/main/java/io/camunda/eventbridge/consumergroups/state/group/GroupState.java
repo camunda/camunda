@@ -34,6 +34,10 @@ import java.util.Map;
  *       EMPTY}, stamped from the emptying {@code MEMBER_LEFT} event so the retention task's
  *       deadline survives failover; only meaningful while the group is {@code EMPTY}, {@code 0}
  *       otherwise.
+ *   <li>{@code rebalanceDueAt} — the epoch millis the debounced rebalance is due; stamped when the
+ *       group enters {@code PREPARING_REBALANCE} and kept across further changes while still
+ *       pending (a fixed window from the first change). Doubles as the key into the {@code
+ *       CONSUMER_GROUPS_REBALANCE_DUE} index; {@code 0} when not pending.
  * </ul>
  */
 public final class GroupState extends UnpackedObject implements DbValue {
@@ -44,14 +48,16 @@ public final class GroupState extends UnpackedObject implements DbValue {
   private final ArrayProperty<TopicSubscriptionValue> subscriptionsProp =
       new ArrayProperty<>("subscriptions", TopicSubscriptionValue::new);
   private final LongProperty emptySinceProp = new LongProperty("emptySince", 0L);
+  private final LongProperty rebalanceDueAtProp = new LongProperty("rebalanceDueAt", 0L);
 
   public GroupState() {
-    super(5);
+    super(6);
     declareProperty(groupEpochProp)
         .declareProperty(assignmentEpochProp)
         .declareProperty(stateProp)
         .declareProperty(subscriptionsProp)
-        .declareProperty(emptySinceProp);
+        .declareProperty(emptySinceProp)
+        .declareProperty(rebalanceDueAtProp);
   }
 
   public GroupLifecycle getState() {
@@ -102,6 +108,16 @@ public final class GroupState extends UnpackedObject implements DbValue {
 
   public GroupState setEmptySince(final long emptySince) {
     emptySinceProp.setValue(emptySince);
+    return this;
+  }
+
+  /** Epoch millis the debounced rebalance is due; {@code 0} when the group is not pending one. */
+  public long getRebalanceDueAt() {
+    return rebalanceDueAtProp.getValue();
+  }
+
+  public GroupState setRebalanceDueAt(final long rebalanceDueAt) {
+    rebalanceDueAtProp.setValue(rebalanceDueAt);
     return this;
   }
 }

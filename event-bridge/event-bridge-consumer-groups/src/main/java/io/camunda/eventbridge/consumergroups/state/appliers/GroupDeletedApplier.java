@@ -34,9 +34,9 @@ public final class GroupDeletedApplier
   @Override
   public void applyState(final long key, final MembershipRecord value) {
     final var groupId = value.getGroupId();
-    // The group was EMPTY (in the retention index); drop its row, both index entries, and offsets.
+    // The group was EMPTY (in the retention index, and never in the rebalance-due index); drop its
+    // retention-index entry, its row, and its offsets.
     groupState.untrackEmpty(groupId);
-    groupState.untrackPendingRebalance(groupId);
     groupState.deleteGroup(groupId);
     offsetState.deleteGroupOffsets(groupId);
   }

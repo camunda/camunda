@@ -16,6 +16,7 @@ import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.Duration;
 
 /**
  * Handles the {@code LEAVE_GROUP} command — sent by a leaving member, and also written by the
@@ -29,14 +30,17 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
   private final Writers writers;
   private final ConsumerGroupState state;
   private final CoordinationValidator validator;
+  private final Duration rebalanceDebounce;
 
   public LeaveGroupProcessor(
       final Writers writers,
       final ConsumerGroupState state,
-      final CoordinationValidator validator) {
+      final CoordinationValidator validator,
+      final Duration rebalanceDebounce) {
     this.writers = writers;
     this.state = state;
     this.validator = validator;
+    this.rebalanceDebounce = rebalanceDebounce;
   }
 
   @Override
@@ -48,7 +52,8 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
 
   private void leave(final TypedRecord<MembershipRecord> command) {
     final var cmd = command.getValue();
-    final var newGroupEpoch = state.getGroup(cmd.getGroupId()).getGroupEpoch() + 1;
+    final var group = state.getGroup(cmd.getGroupId());
+    final var newGroupEpoch = group.getGroupEpoch() + 1;
 
     // Decide the resulting lifecycle here (not in the applier): the group becomes EMPTY iff the
     // leaver is its only member, else it drops back to PREPARING_REBALANCE for the assignor.
@@ -59,6 +64,12 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
     // Stamp the retention deadline base from the command's (replicated) processing time when the
     // group empties — identical on every replica, so it survives failover; 0 otherwise.
     final var emptySince = becomesEmpty ? command.getTimestamp() : 0L;
+    // When members remain, the target is stale so the group needs a (debounced) rebalance; an empty
+    // group is not pending one (0).
+    final var rebalanceDueAt =
+        becomesEmpty
+            ? 0L
+            : RebalanceDebounce.dueAt(group, command.getTimestamp(), rebalanceDebounce);
 
     final var event =
         new MembershipRecord()
@@ -66,7 +77,8 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
             .setMemberId(cmd.getMemberId())
             .setGroupEpoch(newGroupEpoch)
             .setState(resultingState)
-            .setEmptySince(emptySince);
+            .setEmptySince(emptySince)
+            .setRebalanceDueAt(rebalanceDueAt);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_LEFT, event);
     writers
         .response()

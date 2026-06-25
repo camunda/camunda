@@ -37,18 +37,20 @@ public final class MemberJoinedApplier
     final var groupId = value.getGroupId();
 
     var group = state.getGroup(groupId);
+    final var oldDueAt = group == null ? 0L : group.getRebalanceDueAt();
     if (group == null) {
       group = new GroupState().setSubscriptions(value.getSubscriptions()).setAssignmentEpoch(0);
     }
     group.setGroupEpoch(value.getGroupEpoch());
     group.setState(value.getState());
     group.setEmptySince(value.getEmptySince());
+    group.setRebalanceDueAt(value.getRebalanceDueAt());
     state.putGroup(groupId, group);
 
-    // A joined group has a member and a stale target → PREPARING_REBALANCE: in the assignor's
-    // index,
-    // and out of the empty index (in case this join revived a retained EMPTY group).
-    state.trackPendingRebalance(groupId);
+    // A joined group is PREPARING_REBALANCE: reflect its (debounced) due deadline into the
+    // rebalance
+    // index, and drop it from the empty index in case this join revived a retained EMPTY group.
+    Appliers.reindexRebalanceDue(state, groupId, oldDueAt, value.getRebalanceDueAt());
     state.untrackEmpty(groupId);
 
     final var member =
