@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
@@ -397,7 +398,9 @@ final class SystemContextTest {
 
     // when / then
     assertThat(ctx.getSecurityConfiguration()).isSameAs(defaultCfg);
-    assertThat(ctx.getSecurityConfiguration(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+    assertThat(
+            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .securityConfig())
         .isSameAs(defaultCfg);
   }
 
@@ -410,7 +413,7 @@ final class SystemContextTest {
             new BrokerCfg(), Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, defaultCfg));
 
     // when / then
-    assertThatThrownBy(() -> ctx.getSecurityConfiguration("unknown-tenant"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown-tenant"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id")
         .hasMessageContaining("unknown-tenant");
@@ -443,10 +446,12 @@ final class SystemContextTest {
             Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, defaultCfg, "pta", ptaCfg));
 
     // when / then
-    assertThat(ctx.getSecurityConfiguration(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+    assertThat(
+            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .securityConfig())
         .isSameAs(defaultCfg);
-    assertThat(ctx.getSecurityConfiguration("pta")).isSameAs(ptaCfg);
-    assertThatThrownBy(() -> ctx.getSecurityConfiguration("unknown"))
+    assertThat(ctx.getPhysicalTenantEngineContext("pta").securityConfig()).isSameAs(ptaCfg);
+    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -458,9 +463,11 @@ final class SystemContextTest {
 
     // when / then – the single-config ctor populates every known tenant with the supplied config
     assertThat(ctx.getSecurityConfiguration()).isNotNull();
-    assertThat(ctx.getSecurityConfiguration(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+    assertThat(
+            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .securityConfig())
         .isSameAs(ctx.getSecurityConfiguration());
-    assertThatThrownBy(() -> ctx.getSecurityConfiguration("any-other"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("any-other"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -486,10 +493,11 @@ final class SystemContextTest {
 
     // when / then
     assertThat(
-            ctx.getBrokerRequestAuthorizationConverter(
-                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .authorizationConverter())
         .isSameAs(defaultConverter);
-    assertThat(ctx.getBrokerRequestAuthorizationConverter("pta")).isSameAs(ptConverter);
+    assertThat(ctx.getPhysicalTenantEngineContext("pta").authorizationConverter())
+        .isSameAs(ptConverter);
   }
 
   @Test
@@ -506,10 +514,10 @@ final class SystemContextTest {
 
     // when / then
     assertThat(
-            ctx.getBrokerRequestAuthorizationConverter(
-                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .authorizationConverter())
         .isSameAs(defaultConverter);
-    assertThatThrownBy(() -> ctx.getBrokerRequestAuthorizationConverter("unknown"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -521,10 +529,10 @@ final class SystemContextTest {
 
     // when / then
     assertThat(
-            ctx.getBrokerRequestAuthorizationConverter(
-                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .authorizationConverter())
         .isNotNull();
-    assertThatThrownBy(() -> ctx.getBrokerRequestAuthorizationConverter("any-other"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("any-other"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -576,6 +584,49 @@ final class SystemContextTest {
         .hasMessageContaining("authorizations");
   }
 
+  @Test
+  void shouldReturnFeatureFlagsForGivenTenant() {
+    // given
+    final var tenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+    final var flags = FeatureFlags.createDefaultForTests();
+    final var ctx =
+        new SystemContext(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
+            new BrokerCfg(),
+            null,
+            mock(ActorScheduler.class),
+            mock(AtomixCluster.class),
+            mock(BrokerClient.class),
+            new SimpleMeterRegistry(),
+            Map.of(
+                tenantId,
+                new PhysicalTenantEngineContext(
+                    EngineSecurityConfigurations.defaultConfig(),
+                    mock(BrokerRequestAuthorizationConverter.class),
+                    flags)),
+            ignored -> mock(UserServices.class),
+            mock(PasswordEncoder.class),
+            authConfig -> mock(JwtDecoder.class),
+            authConfig -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+            mock(SearchClientsProxy.class),
+            mock(NodeIdProvider.class),
+            PhysicalTenantIds.DEFAULT);
+
+    // when / then
+    assertThat(ctx.getPhysicalTenantEngineContext(tenantId).featureFlags()).isSameAs(flags);
+  }
+
+  @Test
+  void shouldThrowForUnknownPhysicalTenantId() {
+    // given
+    final var ctx = initSystemContext(new BrokerCfg());
+
+    // when / then
+    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown-tenant"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("unknown-tenant");
+  }
+
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return SystemContextTestFactory.singleTenant(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
@@ -611,6 +662,17 @@ final class SystemContextTest {
       final BrokerCfg brokerCfg,
       final Map<String, EngineSecurityConfig> configsByTenant,
       final Map<String, BrokerRequestAuthorizationConverter> convertersByTenant) {
+    final Map<String, PhysicalTenantEngineContext> contextsByTenant = new HashMap<>();
+    configsByTenant
+        .keySet()
+        .forEach(
+            tenantId ->
+                contextsByTenant.put(
+                    tenantId,
+                    new PhysicalTenantEngineContext(
+                        configsByTenant.get(tenantId),
+                        convertersByTenant.get(tenantId),
+                        FeatureFlags.createDefaultForTests())));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -619,13 +681,12 @@ final class SystemContextTest {
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
         new SimpleMeterRegistry(),
-        configsByTenant,
+        contextsByTenant,
         tenantId -> mock(UserServices.class),
         mock(PasswordEncoder.class),
         authConfig -> mock(JwtDecoder.class),
         authConfig -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
         mock(SearchClientsProxy.class),
-        convertersByTenant,
         mock(NodeIdProvider.class),
         PhysicalTenantIds.DEFAULT);
   }

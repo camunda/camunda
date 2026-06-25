@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -93,6 +95,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
       mock(SnapshotApiRequestHandler.class);
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
+  private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
+  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts =
+      new LinkedHashMap<>();
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
@@ -368,8 +373,17 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public EngineSecurityConfig getSecurityConfiguration(final String physicalTenantId) {
-    return securityConfiguration;
+  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+    return physicalTenantEngineContexts.computeIfAbsent(
+        physicalTenantId,
+        id ->
+            new PhysicalTenantEngineContext(
+                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags));
+  }
+
+  public void setPhysicalTenantEngineContext(
+      final String physicalTenantId, final PhysicalTenantEngineContext context) {
+    physicalTenantEngineContexts.put(physicalTenantId, context);
   }
 
   public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
@@ -423,15 +437,13 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
   }
 
-  @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
-      final String physicalTenantId) {
-    return brokerRequestAuthorizationConverter;
-  }
-
   public void setBrokerRequestAuthorizationConverter(
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+  }
+
+  public void setFeatureFlags(final FeatureFlags featureFlags) {
+    this.featureFlags = featureFlags;
   }
 
   @Override

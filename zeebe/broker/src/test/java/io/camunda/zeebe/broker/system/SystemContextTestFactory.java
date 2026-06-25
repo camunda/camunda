@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.HashMap;
@@ -58,6 +59,44 @@ public final class SystemContextTestFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
+    return singleTenant(
+        shutdownTimeout,
+        brokerCfg,
+        identityConfiguration,
+        scheduler,
+        cluster,
+        brokerClient,
+        meterRegistry,
+        securityConfiguration,
+        userServices,
+        passwordEncoder,
+        jwtDecoder,
+        oidcClaimsProvider,
+        searchClientsProxy,
+        brokerRequestAuthorizationConverter,
+        featureFlagsFrom(brokerCfg),
+        nodeIdProvider,
+        physicalTenantIds);
+  }
+
+  public static SystemContext singleTenant(
+      final Duration shutdownTimeout,
+      final BrokerCfg brokerCfg,
+      final IdentityConfiguration identityConfiguration,
+      final ActorScheduler scheduler,
+      final AtomixCluster cluster,
+      final BrokerClient brokerClient,
+      final MeterRegistry meterRegistry,
+      final EngineSecurityConfig securityConfiguration,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final FeatureFlags featureFlags,
+      final NodeIdProvider nodeIdProvider,
+      final PhysicalTenantIds physicalTenantIds) {
     return new SystemContext(
         shutdownTimeout,
         brokerCfg,
@@ -66,15 +105,21 @@ public final class SystemContextTestFactory {
         cluster,
         brokerClient,
         meterRegistry,
-        singleValueMap(physicalTenantIds, securityConfiguration),
+        singleValueMap(
+            physicalTenantIds,
+            new PhysicalTenantEngineContext(
+                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags)),
         tenantId -> userServices,
         passwordEncoder,
         authConfig -> jwtDecoder,
         authConfig -> oidcClaimsProvider,
         searchClientsProxy,
-        singleValueMap(physicalTenantIds, brokerRequestAuthorizationConverter),
         nodeIdProvider,
         physicalTenantIds);
+  }
+
+  private static FeatureFlags featureFlagsFrom(final BrokerCfg brokerCfg) {
+    return brokerCfg.getExperimental().getFeatures().toFeatureFlags();
   }
 
   private static <T> Map<String, T> singleValueMap(

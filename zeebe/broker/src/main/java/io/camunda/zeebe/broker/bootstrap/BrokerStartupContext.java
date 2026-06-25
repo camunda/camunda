@@ -13,7 +13,6 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -150,11 +150,11 @@ public interface BrokerStartupContext {
   EngineSecurityConfig getSecurityConfiguration();
 
   /**
-   * Returns the security configuration for the given physical tenant.
+   * Returns the engine context for the given physical tenant.
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  EngineSecurityConfig getSecurityConfiguration(String physicalTenantId);
+  PhysicalTenantEngineContext getPhysicalTenantEngineContext(String physicalTenantId);
 
   Function<String, UserServices> getUserServicesForTenant();
 
@@ -167,14 +167,6 @@ public interface BrokerStartupContext {
   SnapshotApiRequestHandler getSnapshotApiRequestHandler();
 
   void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
-
-  /**
-   * Returns the request authorization converter for the given physical tenant.
-   *
-   * @throws IllegalArgumentException if the physical tenant id is unknown
-   */
-  BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
-      String physicalTenantId);
 
   CheckpointSchedulingService getCheckpointSchedulingService();
 

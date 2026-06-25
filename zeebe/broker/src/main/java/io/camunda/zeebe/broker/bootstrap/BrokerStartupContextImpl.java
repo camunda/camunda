@@ -16,7 +16,6 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -29,6 +28,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -70,7 +70,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
+  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -78,8 +78,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
-  private final Map<String, BrokerRequestAuthorizationConverter>
-      brokerRequestAuthorizationConvertersByPhysicalTenant;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -109,14 +107,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
+      final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
-      final Map<String, BrokerRequestAuthorizationConverter>
-          brokerRequestAuthorizationConvertersByPhysicalTenant,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
 
@@ -131,8 +127,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.securityConfigurationsByPhysicalTenant =
-        Collections.unmodifiableMap(securityConfigurationsByPhysicalTenant);
+    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
@@ -141,8 +136,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
-    this.brokerRequestAuthorizationConvertersByPhysicalTenant =
-        Collections.unmodifiableMap(brokerRequestAuthorizationConvertersByPhysicalTenant);
   }
 
   @Override
@@ -368,21 +361,20 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public EngineSecurityConfig getSecurityConfiguration() {
-    final var config =
-        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    if (config == null) {
+    final var ctx = physicalTenantEngineContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (ctx == null) {
       throw new IllegalStateException(
           "No security configuration registered for the default physical tenant");
     }
-    return config;
+    return ctx.securityConfig();
   }
 
   @Override
-  public EngineSecurityConfig getSecurityConfiguration(final String physicalTenantId) {
-    if (!securityConfigurationsByPhysicalTenant.containsKey(physicalTenantId)) {
+  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }
-    return securityConfigurationsByPhysicalTenant.get(physicalTenantId);
+    return physicalTenantEngineContexts.get(physicalTenantId);
   }
 
   @Override
@@ -414,15 +406,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setSnapshotApiRequestHandler(
       final SnapshotApiRequestHandler snapshotApiRequestHandler) {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
-  }
-
-  @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
-      final String physicalTenantId) {
-    if (!brokerRequestAuthorizationConvertersByPhysicalTenant.containsKey(physicalTenantId)) {
-      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
-    }
-    return brokerRequestAuthorizationConvertersByPhysicalTenant.get(physicalTenantId);
   }
 
   @Override

@@ -136,12 +136,22 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
     if (isRecovering(brokerStartupContext, memberId)) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
-      return PartitionManager.createRecoveryPartitionManager(
-          brokerStartupContext, physicalTenantId, topologyManager);
+      return recoveryPartitionManager(brokerStartupContext, topologyManager);
     } else {
-      return PartitionManager.createPartitionManager(
-          brokerStartupContext, physicalTenantId, topologyManager);
+      return partitionManager(brokerStartupContext, topologyManager);
     }
+  }
+
+  PartitionManager partitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+    return PartitionManager.createPartitionManager(
+        brokerStartupContext, physicalTenantId, topologyManager);
+  }
+
+  PartitionManager recoveryPartitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+    return PartitionManager.createRecoveryPartitionManager(
+        brokerStartupContext, physicalTenantId, topologyManager);
   }
 
   private void shutdownOnInconsistentTopology(
