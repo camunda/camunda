@@ -251,6 +251,31 @@ describe('<AgentDetails />', () => {
     expect(within(section).getByText('gpt-4')).toBeInTheDocument();
   });
 
+  it('should render tools available for the agent instance', () => {
+    render(
+      <AgentDetails
+        agentInstance={mockAgentInstance({
+          tools: [
+            {name: 'get_weather', description: null, elementId: null},
+            {name: 'tell_joke', description: null, elementId: null},
+          ],
+        })}
+        isLoading={false}
+        isError={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    const section = screen.getByTestId('agent-available-tools-section');
+    expect(section).toBeInTheDocument();
+    expect(
+      within(section).getByRole('listitem', {name: 'get_weather'}),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByRole('listitem', {name: 'tell_joke'}),
+    ).toBeInTheDocument();
+  });
+
   it('should render the system prompt with copy and expand options', () => {
     render(
       <AgentDetails

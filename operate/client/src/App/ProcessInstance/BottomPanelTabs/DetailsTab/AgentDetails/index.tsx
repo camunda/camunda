@@ -21,6 +21,7 @@ import {
   Chip,
   DocumentBlank,
   Chat,
+  Tools,
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
@@ -37,6 +38,7 @@ import {SectionTitle} from './SectionTitle';
 import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
+import {AvailableTools} from './AvailableTools';
 import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
@@ -185,6 +187,16 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             actor="SYSTEM"
             content={[{contentType: 'TEXT', text: definition.systemPrompt}]}
           />
+        </AccordionItem>
+        <AccordionItem
+          data-testid="agent-available-tools-section"
+          title={
+            <SectionTitle icon={<Tools size={16} />}>
+              Available tools
+            </SectionTitle>
+          }
+        >
+          <AvailableTools tools={agentInstance.tools} />
         </AccordionItem>
         <AccordionItem
           data-testid="agent-model-section"
