@@ -76,7 +76,10 @@ class PhysicalTenantDocumentAssignedValidation implements CrossTenantValidation 
           }
 
           final List<String> unknown =
-              assigned.stream().filter(id -> !knownStoreIds.contains(id)).distinct().toList();
+              assigned.stream()
+                  .filter(id -> !knownStoreIds.contains(Document.normalizeStoreId(id)))
+                  .distinct()
+                  .toList();
           if (!unknown.isEmpty()) {
             errors.add(
                 String.format(

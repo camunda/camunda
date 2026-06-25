@@ -137,13 +137,10 @@ public final class PhysicalTenantDocumentConfigurations {
       return;
     }
 
-    // Normalize assignedIds to lowercase to match Spring's relaxed binding, which lowercases map
-    // keys. Without normalization, user-typed case (e.g. "Shared-S3") will not match the
-    // lowercased store keys (e.g. "shared-s3"), causing retainAll to drop all stores.
     final Set<String> assignedIds = new LinkedHashSet<>();
     for (final String id : assigned) {
       if (!id.isBlank()) {
-        assignedIds.add(id.toLowerCase());
+        assignedIds.add(Document.normalizeStoreId(id));
       }
     }
 

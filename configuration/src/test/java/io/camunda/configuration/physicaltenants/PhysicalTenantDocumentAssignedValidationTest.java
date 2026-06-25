@@ -99,6 +99,20 @@ class PhysicalTenantDocumentAssignedValidationTest {
   }
 
   @Test
+  void shouldAcceptAssignedIdWithDifferentCaseOrWhitespace() {
+    // given assigned contains "Shared-S3" (mixed-case) and " store-a " (whitespace), while the
+    // store keys in the catalog are lowercased by Spring's relaxed binding
+    final Map<String, Camunda> resolved =
+        tenants("tenanta", camundaWithStore("store-a", List.of("Shared-S3", " store-a ")));
+
+    // when / then only truly unknown ids appear in the unknown list; " store-a " normalizes to
+    // "store-a" and is accepted — only "Shared-S3" has no matching store
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("unknown document store id(s) [Shared-S3]");
+  }
+
+  @Test
   void shouldFailOnBlankAssignedEntry() {
     // given blank entry (e.g. `- ""` in yaml) — must be rejected, not treated as unknown id
     final Map<String, Camunda> resolved =

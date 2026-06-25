@@ -75,7 +75,10 @@ public final class CamundaDocumentStoreConfigurationLoader
       final Map<String, DocumentStoreConfigurationRecord> storesById,
       final BiFunction<String, T, DocumentStoreConfigurationRecord> factory) {
     storeConfigs.forEach(
-        (id, store) -> storesById.put(id.toLowerCase(), factory.apply(id.toLowerCase(), store)));
+        (id, store) -> {
+          final String normalizedId = Document.normalizeStoreId(id);
+          storesById.put(normalizedId, factory.apply(normalizedId, store));
+        });
   }
 
   private DocumentStoreConfigurationRecord toAwsStore(
