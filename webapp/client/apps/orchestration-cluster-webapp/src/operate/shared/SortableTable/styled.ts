@@ -15,6 +15,7 @@ const TableContainer = styled(CarbonTableContainer)`
 `;
 
 const ScrollContainer = styled.div`
+	position: relative;
 	height: 100%;
 	background-color: var(--cds-layer);
 	overflow-y: auto;
