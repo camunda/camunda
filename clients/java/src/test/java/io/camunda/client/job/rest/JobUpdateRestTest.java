@@ -425,7 +425,7 @@ public class JobUpdateRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldSetRequestTimeoutForUpdatePriorityCommand() {
+  public void shouldSendUpdatePriorityRequestWhenRequestTimeoutIsConfigured() {
     // given
     final long jobKey = 12;
     final Duration requestTimeout = Duration.ofHours(124);
