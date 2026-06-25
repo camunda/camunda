@@ -58,6 +58,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
+import io.camunda.zeebe.gateway.api.util.GatewayTestFactory;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -542,7 +543,7 @@ public class ClusteringRule extends ExternalResource {
     topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
-        new Gateway(
+        GatewayTestFactory.create(
             gatewayCfg,
             EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,

@@ -14,9 +14,13 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -31,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,10 +72,10 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
   private final Map<String, EngineSecurityConfig> engineSecurityConfigsByPhysicalTenant;
-  private final UserServices userServices;
+  private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+  private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
@@ -88,11 +93,12 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
       final PhysicalTenantResolver physicalTenantResolver,
-      // The UserServices class is not available if you want to start-up the Standalone Broker
-      @Autowired(required = false) final UserServices userServices,
+      // The ServiceRegistry is not available if you want to start-up the Standalone Broker
+      @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
-      @Autowired(required = false) final JwtDecoder jwtDecoder,
-      @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
+      @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false)
+          final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
@@ -116,11 +122,10 @@ public class BrokerModuleConfiguration implements CloseableSilently {
                   s.getCompiledIdValidationPattern(),
                   s.getCompiledGroupIdValidationPattern());
             });
-    this.userServices = userServices;
+    this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider =
-        oidcClaimsProvider != null ? oidcClaimsProvider : (jwtClaims, tokenValue) -> jwtClaims;
+    this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
+    this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
@@ -146,6 +151,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
                     Collectors.toUnmodifiableMap(
                         Entry::getKey,
                         entry -> new BrokerRequestAuthorizationConverter(entry.getValue())));
+    final Function<String, UserServices> userServicesForTenant =
+        tenantId -> serviceRegistry.userServices(tenantId);
+    final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
+        authConfig -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig);
+    final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
+        authConfig -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authConfig);
+
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
@@ -156,10 +168,10 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             brokerClient,
             meterRegistry,
             engineSecurityConfigsByPhysicalTenant,
-            userServices,
+            userServicesForTenant,
             passwordEncoder,
-            jwtDecoder,
-            oidcClaimsProvider,
+            jwtDecoderFactory,
+            oidcClaimsProviderFactory,
             searchClientsProxy,
             brokerRequestAuthorizationConvertersByPhysicalTenant,
             nodeIdProvider,

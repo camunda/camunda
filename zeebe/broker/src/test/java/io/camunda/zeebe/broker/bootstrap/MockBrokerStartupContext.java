@@ -15,6 +15,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
@@ -49,6 +50,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -375,8 +377,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public UserServices getUserServices() {
-    return userServices;
+  public Function<String, UserServices> getUserServicesForTenant() {
+    return tenantId -> userServices;
   }
 
   public void setUserServices(final UserServices userServices) {
@@ -393,8 +395,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public JwtDecoder getJwtDecoder() {
-    return jwtDecoder;
+  public Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory() {
+    return authConfig -> jwtDecoder;
   }
 
   public void setJwtDecoder(final JwtDecoder jwtDecoder) {
@@ -402,8 +404,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public OidcClaimsProvider getOidcClaimsProvider() {
-    return oidcClaimsProvider;
+  public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
+    return authConfig -> oidcClaimsProvider;
   }
 
   public void setOidcClaimsProvider(final OidcClaimsProvider oidcClaimsProvider) {

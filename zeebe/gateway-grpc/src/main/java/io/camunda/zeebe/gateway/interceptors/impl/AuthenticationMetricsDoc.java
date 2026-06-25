@@ -36,6 +36,32 @@ public enum AuthenticationMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {LatencyKeyNames.AUTH_METHOD, LatencyKeyNames.AUTH_RESULT};
     }
+  },
+
+  /**
+   * Counts gRPC requests rejected before authentication is attempted, e.g. because the requested
+   * physical tenant is unknown. Can be filtered by {@link RejectionKeyNames#REASON}.
+   */
+  REJECTED {
+    @Override
+    public String getName() {
+      return "zeebe.gateway.grpc.auth.rejected";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Counts gRPC requests rejected before authentication is attempted";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {RejectionKeyNames.REASON};
+    }
   };
 
   public enum LatencyKeyNames implements KeyName {
@@ -69,6 +95,30 @@ public enum AuthenticationMetricsDoc implements ExtendedMeterDocumentation {
     private final String value;
 
     AuthResultValues(final String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return value;
+    }
+  }
+
+  public enum RejectionKeyNames implements KeyName {
+    /** The reason a request was rejected; possible values are {@link RejectionReasonValues}. */
+    REASON {
+      @Override
+      public String asString() {
+        return "reason";
+      }
+    }
+  }
+
+  public enum RejectionReasonValues {
+    UNKNOWN_TENANT("unknown_tenant");
+
+    private final String value;
+
+    RejectionReasonValues(final String value) {
       this.value = value;
     }
 

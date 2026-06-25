@@ -42,7 +42,7 @@ public class BrokerRequestPhysicalTenantRoutingTest extends GatewayTest {
   public BrokerRequestPhysicalTenantRoutingTest() {
     super(
         new GatewayCfg(),
-        EngineSecurityConfigurations.defaultConfig(),
+        EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
         () -> Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, KNOWN_TENANT));
   }
 
