@@ -53,29 +53,23 @@ compute_git_author() {
 
 # Pick a "random" zone, selected from the input value.
 function hashmod_zone() {
-  local input="${1?"Specify an initial value to compute the zone from"}"
+    local input="${1?"Specify an initial value to compute the zone from"}"
 
-  # We can get the list of zones with already created nodes with:
-  # kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io\/zone}{"\n"}{end}' | sort | uniq -c
-  local -a zones=(
-    europe-west1-b
-    europe-west1-c
-    europe-west1-d
-  )
-  local nb_zones=${#zones[@]}
+    # We can get the list of zones with already created nodes with:
+    # kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io\/zone}{"\n"}{end}' | sort | uniq -c
+    zones=(
+        europe-west1-b
+        europe-west1-c
+        europe-west1-d
+    )
+    nb_zones=${#zones[@]}
 
-  detect_os
-  local checksum
-  if [ "${GO_OS}" == "darwin" ]; then
-    checksum="$(printf '%s' "$input" | md5 -q | tr '[:lower:]' '[:upper:]')"
-  else
-    checksum="$(printf '%s' "$input" | md5sum | awk '{print $1}' | tr '[:lower:]' '[:upper:]')"
-  fi
+    # bc only accept hexadecimal with capitalized letters
+    checksum="$(echo "$input" | md5sum | cut -c 1-32 | tr "a-z" "A-Z")"
+    hashmod="$(echo "ibase=16; $checksum % $nb_zones" | bc)"
 
-  local hashmod
-  hashmod="$(echo "ibase=16; $checksum % $nb_zones" | bc)"
-
-  echo "${zones[$hashmod]}"
+    zone="${zones[$hashmod]}"
+    echo "$zone"
 }
 
 function get_existing_secret() {

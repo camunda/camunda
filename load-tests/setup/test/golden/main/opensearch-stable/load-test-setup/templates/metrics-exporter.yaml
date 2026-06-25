@@ -46,7 +46,7 @@ spec:
 
       # Node scheduling
       nodeSelector:
-        topology.kubernetes.io/zone: "europe-west1-b"
+        topology.kubernetes.io/zone: "europe-west1-c"
       tolerations:
       - effect: NoSchedule
         key: nodepool
