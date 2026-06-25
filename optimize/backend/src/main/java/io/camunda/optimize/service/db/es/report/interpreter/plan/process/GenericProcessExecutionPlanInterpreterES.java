@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.plan.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.DatabaseConstants.VERSION_BASELINE_AGGREGATION;
 import static java.util.stream.Collectors.toMap;
 
@@ -120,7 +121,9 @@ public class GenericProcessExecutionPlanInterpreterES
                                                       getConfigurationService()
                                                           .getElasticSearchConfiguration()
                                                           .getAggregationBucketLimit())
-                                                  .order(NamedValue.of("_key", SortOrder.Asc))))),
+                                                  .order(
+                                                      NamedValue.of(
+                                                          AGGREGATION_FIELD_KEY, SortOrder.Asc))))),
                   Object.class);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not retrieve per-version baseline counts", e);

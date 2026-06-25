@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_KEY_AGGREGATION;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.withSubaggregations;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY;
@@ -41,8 +43,6 @@ import org.springframework.stereotype.Component;
 public class ProcessGroupByProcessDefinitionKeyInterpreterOS
     extends AbstractProcessGroupByInterpreterOS {
 
-  private static final String PROCESS_DEFINITION_KEY_AGGREGATION = "processDefinitionKeyAgg";
-
   private final ConfigurationService configurationService;
   private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
@@ -66,7 +66,7 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterOS
       final Query query,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final int size = configurationService.getOpenSearchConfiguration().getAggregationBucketLimit();
-    final Map<String, SortOrder> order = Map.of("_key", SortOrder.Asc);
+    final Map<String, SortOrder> order = Map.of(AGGREGATION_FIELD_KEY, SortOrder.Asc);
     final Aggregation processDefinitionKeyAggregation =
         withSubaggregations(
             termAggregation(PROCESS_DEFINITION_KEY, size, order),

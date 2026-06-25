@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.view.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.NESTED_VARIABLE_AGGREGATION;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
@@ -44,7 +45,6 @@ import org.springframework.stereotype.Component;
 public class ProcessViewVariableInterpreterOS
     extends AbstractProcessViewMultiAggregationInterpreterOS {
 
-  private static final String NESTED_VARIABLE_AGGREGATION = "nestedVariableAggregation";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
 
   @Override

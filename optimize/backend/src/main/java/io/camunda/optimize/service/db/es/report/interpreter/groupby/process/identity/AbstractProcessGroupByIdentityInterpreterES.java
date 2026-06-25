@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.identity;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
@@ -108,7 +109,7 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
                                                                       + getIdentityField())
                                                               .order(
                                                                   NamedValue.of(
-                                                                      "_key",
+                                                                      AGGREGATION_FIELD_KEY,
                                                                       co.elastic.clients
                                                                           .elasticsearch._types
                                                                           .SortOrder.Asc))

@@ -7,6 +7,9 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.flownode;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.FILTERED_INCIDENT_AGGREGATION;
+import static io.camunda.optimize.service.db.DatabaseConstants.GROUPED_BY_FLOW_NODE_ID_AGGREGATION;
+import static io.camunda.optimize.service.db.DatabaseConstants.NESTED_INCIDENT_AGGREGATION;
 import static io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtilES.createIncidentAggregationFilter;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_INCIDENT_FLOW_NODE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
@@ -41,10 +44,6 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNodeInterpreterES {
 
-  private static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
-  private static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION =
-      "groupedByFlowNodeIdAggregation";
-  private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
   final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   final ProcessViewInterpreterFacadeES viewInterpreter;
   private final ConfigurationService configurationService;

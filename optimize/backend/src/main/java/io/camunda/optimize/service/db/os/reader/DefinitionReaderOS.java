@@ -7,9 +7,11 @@
  */
 package io.camunda.optimize.service.db.os.reader;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.VERSION_FOR_SORTING_AGGREGATION;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
@@ -637,14 +639,14 @@ public class DefinitionReaderOS implements DefinitionReader {
             .field(DEFINITION_VERSION)
             .size(1)
             // only return bucket for latest version
-            .order(Collections.singletonMap("versionForSorting", SortOrder.Desc))
+            .order(Collections.singletonMap(VERSION_FOR_SORTING_AGGREGATION, SortOrder.Desc))
             // custom sort agg to sort by numeric version value (instead of string bucket key)
             .build();
 
     final Map<String, Aggregation> subAggregations = new HashMap<>();
 
     subAggregations.put(
-        "versionForSorting",
+        VERSION_FOR_SORTING_AGGREGATION,
         AggregationBuilders.min().script(numericVersionScript).build().toAggregation());
 
     subAggregations.put(
@@ -690,7 +692,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             .field(DEFINITION_TENANT_ID)
             .size(LIST_FETCH_LIMIT)
             .missing(FieldValue.of(TENANT_NOT_DEFINED_VALUE))
-            .order(Collections.singletonMap("_key", SortOrder.Asc))
+            .order(Collections.singletonMap(AGGREGATION_FIELD_KEY, SortOrder.Asc))
             .build();
 
     // 2.2 group by name (should only be one)
@@ -698,16 +700,15 @@ public class DefinitionReaderOS implements DefinitionReader {
         new TermsAggregation.Builder()
             .field(DEFINITION_NAME)
             .size(1)
-            .order(Collections.singletonMap("versionForSorting", SortOrder.Desc))
+            .order(Collections.singletonMap(VERSION_FOR_SORTING_AGGREGATION, SortOrder.Desc))
             .build();
 
     // custom sort agg to sort by numeric version value (instead of string bucket key)
-    // "versionForSorting"
     final Aggregation nameAggregationSub =
         AggregationDSL.withSubaggregations(
             nameAggregation,
             Collections.singletonMap(
-                "versionForSorting",
+                VERSION_FOR_SORTING_AGGREGATION,
                 AggregationBuilders.min()
                     .script(createDefaultScript("Integer.parseInt(doc['version'].value)"))
                     .build()

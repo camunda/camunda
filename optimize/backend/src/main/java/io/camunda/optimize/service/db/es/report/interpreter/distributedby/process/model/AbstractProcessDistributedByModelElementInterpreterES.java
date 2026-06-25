@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.model;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -53,7 +54,7 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
                             getConfigurationService()
                                 .getElasticSearchConfiguration()
                                 .getAggregationBucketLimit())
-                        .order(NamedValue.of("_key", SortOrder.Asc))
+                        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))
                         .field(getModelElementIdPath()));
 
     getViewInterpreter()

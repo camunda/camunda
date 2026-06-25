@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_KEY_AGGREGATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
@@ -38,8 +40,6 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByProcessDefinitionKeyInterpreterES
     extends AbstractProcessGroupByInterpreterES {
-
-  private static final String PROCESS_DEFINITION_KEY_AGGREGATION = "processDefinitionKeyAgg";
 
   private final ConfigurationService configurationService;
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
@@ -73,7 +73,7 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
                                 .getElasticSearchConfiguration()
                                 .getAggregationBucketLimit())
                         .field(PROCESS_DEFINITION_KEY)
-                        .order(NamedValue.of("_key", SortOrder.Asc)));
+                        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Asc)));
     distributedByInterpreter
         .createAggregations(context, boolQuery)
         .forEach((key, value) -> builder.aggregations(key, value.build()));
