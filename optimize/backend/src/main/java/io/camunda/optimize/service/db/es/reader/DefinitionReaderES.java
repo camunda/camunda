@@ -24,8 +24,8 @@ import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.con
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.ScriptSortType;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregation;
@@ -38,6 +38,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.TopHitsAggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -72,6 +73,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -481,6 +483,16 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   @Override
+  public <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
+      final DefinitionType type,
+      final boolean fullyImported,
+      final boolean withXml,
+      final boolean includeDeleted) {
+    return getDefinitionsIterator(
+        type, Collections.emptySet(), fullyImported, withXml, includeDeleted);
+  }
+
+  @Override
   public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
       final DefinitionType type,
       final boolean fullyImported,
@@ -496,8 +508,29 @@ public class DefinitionReaderES implements DefinitionReader {
       final boolean fullyImported,
       final boolean withXml,
       final boolean includeDeleted) {
+    final Builder rootQuery =
+        createDefinitionsRootQuery(type, definitionKeys, fullyImported, includeDeleted);
+    return getDefinitions(type, rootQuery, withXml);
+  }
+
+  public <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
+      final DefinitionType type,
+      final Set<String> definitionKeys,
+      final boolean fullyImported,
+      final boolean withXml,
+      final boolean includeDeleted) {
+    final Builder rootQuery =
+        createDefinitionsRootQuery(type, definitionKeys, fullyImported, includeDeleted);
+    return getDefinitionsIterator(type, rootQuery, withXml);
+  }
+
+  private Builder createDefinitionsRootQuery(
+      final DefinitionType type,
+      final Set<String> definitionKeys,
+      final boolean fullyImported,
+      final boolean includeDeleted) {
     final String xmlField = resolveXmlFieldFromType(type);
-    final BoolQuery.Builder rootQuery = new BoolQuery.Builder();
+    final Builder rootQuery = new Builder();
     rootQuery.must(
         m -> {
           if (fullyImported) {
@@ -521,10 +554,10 @@ public class DefinitionReaderES implements DefinitionReader {
                               tt ->
                                   tt.value(definitionKeys.stream().map(FieldValue::of).toList()))));
     }
-    return getDefinitions(type, rootQuery, withXml);
+    return rootQuery;
   }
 
-  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
+  public <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
       final DefinitionType type, final BoolQuery.Builder filteredQuery, final boolean withXml) {
     final String xmlField = resolveXmlFieldFromType(type);
     final List<String> fieldsToExclude = withXml ? null : List.of(xmlField);
@@ -534,14 +567,12 @@ public class DefinitionReaderES implements DefinitionReader {
               s.optimizeIndex(esClient, resolveIndexNameForType(type))
                   .query(Query.of(q -> q.bool(filteredQuery.build())))
                   .size(LIST_FETCH_LIMIT)
-                  .scroll(
-                      Time.of(
-                          t ->
-                              t.time(
-                                  configurationService
-                                          .getElasticSearchConfiguration()
-                                          .getScrollTimeoutInSeconds()
-                                      + "s")));
+                  .sort(
+                      SortOptions.of(
+                          sort -> sort.field(f -> f.field(DEFINITION_KEY).order(SortOrder.Asc))),
+                      SortOptions.of(
+                          sort -> sort.field(f -> f.field("_doc").order(SortOrder.Asc))));
+
               if (fieldsToExclude != null) {
                 s.source(so -> so.filter(f -> f.excludes(fieldsToExclude)));
               }
@@ -549,22 +580,18 @@ public class DefinitionReaderES implements DefinitionReader {
             });
 
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    final SearchResponse<T> scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest, typeClass);
-    } catch (final IOException e) {
-      final String errorMsg =
-          String.format("Was not able to retrieve definitions of type %s", type);
-      LOG.error(errorMsg, e);
-      throw new OptimizeRuntimeException(errorMsg, e);
-    }
+    return ElasticsearchReaderUtil.searchIterator(esClient, searchRequest, typeClass);
+  }
 
-    return ElasticsearchReaderUtil.retrieveAllScrollResults(
-        scrollResp,
-        typeClass,
-        createMappingFunctionForDefinitionType(typeClass),
-        esClient,
-        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
+  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
+      final DefinitionType type, final BoolQuery.Builder filteredQuery, final boolean withXml) {
+    final Iterator<List<T>> definitionsIterator =
+        getDefinitionsIterator(type, filteredQuery, withXml);
+    final List<T> definitions = new ArrayList<>();
+    while (definitionsIterator.hasNext()) {
+      definitions.addAll(definitionsIterator.next());
+    }
+    return definitions;
   }
 
   private void addVersionFilterToQuery(
