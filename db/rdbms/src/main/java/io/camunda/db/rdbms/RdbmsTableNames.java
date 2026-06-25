@@ -26,6 +26,7 @@ public final class RdbmsTableNames {
       List.of(
           "AGENT_INSTANCE_ELEMENT_INSTANCE",
           "AGENT_INSTANCE",
+          "AGENT_HISTORY",
           "AUDIT_LOG",
           "AUTHORIZATIONS",
           "BATCH_OPERATION_ITEM",
