@@ -41,7 +41,7 @@ final class ModeChangeAcceptanceIT {
           .withEmbeddedGateway(true)
           .withBrokersCount(BROKERS_COUNT)
           .withPartitionsCount(PARTITIONS_COUNT)
-          .withReplicationFactor(1)
+          .withReplicationFactor(BROKERS_COUNT)
           .build();
 
   private static final String JOB_TYPE = "job";
@@ -65,7 +65,10 @@ final class ModeChangeAcceptanceIT {
       Awaitility.await("Cluster transitions to RECOVERING (iteration " + i + ")")
           .timeout(Duration.ofMinutes(2))
           .untilAsserted(
-              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(toRecovering));
+              () ->
+                  ClusterActuatorAssert.assertThat(actuator)
+                      .hasCompletedChanges(toRecovering)
+                      .doesNotHavePendingChanges());
 
       // then - a series of PI creation attempts must all fail across all partitions
       Awaitility.await("All PI creations blocked in RECOVERING mode (iteration " + i + ")")
@@ -77,7 +80,10 @@ final class ModeChangeAcceptanceIT {
       Awaitility.await("Cluster transitions to PROCESSING (iteration " + i + ")")
           .timeout(Duration.ofMinutes(2))
           .untilAsserted(
-              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(toProcessing));
+              () ->
+                  ClusterActuatorAssert.assertThat(actuator)
+                      .hasCompletedChanges(toProcessing)
+                      .doesNotHavePendingChanges());
 
       // then - PI creation must succeed on every partition after returning to processing mode
       final var createdKeys =
@@ -92,11 +98,6 @@ final class ModeChangeAcceptanceIT {
     }
   }
 
-  /**
-   * Issues {@code PARTITIONS_COUNT * 2} create-process-instance requests and asserts that every
-   * single one fails. The double-multiple ensures each partition is targeted at least twice given
-   * round-robin routing.
-   */
   private void assertAllCreateInstanceAttemptsFail(final String processId) {
     IntStream.range(0, PARTITIONS_COUNT * 2)
         .forEach(
