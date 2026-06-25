@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 /** An instruction to mock a DMN decision. */
@@ -40,9 +41,18 @@ public interface MockDmnDecisionInstruction extends TestCaseInstruction {
   String getDecisionDefinitionId();
 
   /**
+   * The decision output to mock. Optional.
+   *
+   * @return the decision output or empty if not set
+   */
+  Optional<Object> getDecisionOutput();
+
+  /**
    * The variables to set as the decision output. Optional.
    *
    * @return the variables or an empty map if no variables are set
+   * @deprecated use {@link #getDecisionOutput()} instead.
    */
+  @Deprecated
   Map<String, Object> getVariables();
 }
