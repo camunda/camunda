@@ -25,6 +25,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -119,6 +120,11 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     if (record.getIntent().equals(JobIntent.CREATED)) {
       entity.setCreationTime(recordTimestampAsOffsetDateTime);
       entity.setFlowNodeType(recordValue.getElementType().name());
+      // businessId is immutable and inherited at creation; never updated by later events
+      final String businessId = recordValue.getBusinessId();
+      if (!ExporterUtil.isEmpty(businessId)) {
+        entity.setBusinessId(businessId);
+      }
     }
     entity.setLastUpdateTime(recordTimestampAsOffsetDateTime);
 
