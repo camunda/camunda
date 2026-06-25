@@ -382,7 +382,7 @@ public class RdbmsFlushRollbackIT {
    * duplicate row in the batch INSERT. The {@code BatchInsertMerger} must absorb the second insert
    * so the flush succeeds with a single row instead of failing with a primary-key violation.
    */
-  @TestTemplate
+  @RdbmsTestTemplate
   void shouldDropDuplicateInsertWithinSameFlush(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
