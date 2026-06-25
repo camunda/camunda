@@ -11,8 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class AgentHistoryDbModelTest {
@@ -85,6 +89,26 @@ class AgentHistoryDbModelTest {
     // then — empty list serializes to null JSON (not "[]"), so the CLOB columns are null
     assertThat(modelWithEmptyContent.content()).isNull();
     assertThat(modelWithEmptyToolCalls.toolCalls()).isNull();
+  }
+
+  @Test
+  void shouldSerializeDocumentContentWithExpiresAt() {
+    // given — DocumentMetadata with a non-null expiresAt field (OffsetDateTime)
+    final var expiresAt = OffsetDateTime.parse("2030-01-01T00:00:00Z");
+    final var metadata =
+        new DocumentMetadata(
+            "application/pdf", "report.pdf", expiresAt, 1024L, null, null, Map.of());
+    final var docRef = new DocumentReference("store-1", "doc-1", null, metadata);
+    final var item = new ContentItem(ContentType.DOCUMENT, null, docRef, null);
+
+    // when
+    final var model = new AgentHistoryDbModel.Builder().contentItems(List.of(item)).build();
+
+    // then — JavaTimeModule must be registered; without it the MAPPER would throw and return null
+    assertThat(model.content())
+        .as("content must not be null — OffsetDateTime serialization requires JavaTimeModule")
+        .isNotNull();
+    assertThat(model.content()).contains("expiresAt");
   }
 
   @Test

@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
@@ -26,7 +27,8 @@ import org.slf4j.LoggerFactory;
 public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentHistoryDbModel.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
 
   private long agentHistoryKey;
   private long agentInstanceKey;
