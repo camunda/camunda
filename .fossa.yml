@@ -13,8 +13,10 @@ project:
 
 paths:
   exclude:
+    - .github/actions/read-db-versions
     - .github/optimize/scripts/healthStatusReport
     - c8run
+    - monorepo-docs-site
     - optimize
     - qa/c8-orchestration-cluster-e2e-test-suite
     - tasklist/qa/backup-restore-tests
