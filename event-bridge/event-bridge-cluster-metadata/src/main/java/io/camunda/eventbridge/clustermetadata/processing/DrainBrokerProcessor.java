@@ -12,40 +12,52 @@ import io.camunda.eventbridge.clustermetadata.state.broker.BrokerMetadata.Broker
 import io.camunda.eventbridge.clustermetadata.state.immutable.BrokerState;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * Handles the internal {@code DRAIN_BROKER} command (from a {@code draining} heartbeat): marks an
  * {@code ACTIVE} broker {@code DRAINING} for controlled shutdown, so placement stops targeting it
- * and the change-coordinator moves its replicas off. Self-guarded against a stale epoch, mirroring
- * {@code FenceBrokerProcessor}. Holds no client response.
+ * and the change-coordinator moves its replicas off. {@link
+ * BrokerTransitionValidator#validateDrain} guards the transition; on success it appends {@code
+ * BROKER_DRAINING}, otherwise a {@code COMMAND_REJECTION} with the reason (the command carries no
+ * request, so there is no reply).
  */
 public final class DrainBrokerProcessor implements TypedRecordProcessor<BrokerRecord> {
 
   private final Writers writers;
   private final BrokerState brokerState;
+  private final BrokerTransitionValidator validator;
 
-  public DrainBrokerProcessor(final Writers writers, final BrokerState brokerState) {
+  public DrainBrokerProcessor(
+      final Writers writers,
+      final BrokerState brokerState,
+      final BrokerTransitionValidator validator) {
     this.writers = writers;
     this.brokerState = brokerState;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<BrokerRecord> command) {
-    final var cmd = command.getValue();
-    final var existing = brokerState.get(cmd.getBrokerId());
-    if (existing == null
-        || existing.status() != BrokerStatus.ACTIVE
-        || existing.brokerEpoch() != cmd.getBrokerEpoch()) {
-      return;
-    }
+    validator
+        .validateDrain(command.getValue())
+        .ifRightOrLeft(ok -> drain(command), reason -> reject(command, reason));
+  }
+
+  private void drain(final TypedRecord<BrokerRecord> command) {
+    final var broker = brokerState.get(command.getValue().getBrokerId());
     final var event =
         new BrokerRecord()
-            .setBrokerId(existing.brokerId())
-            .setBrokerEpoch(existing.brokerEpoch())
+            .setBrokerId(broker.brokerId())
+            .setBrokerEpoch(broker.brokerEpoch())
             .setStatus(BrokerStatus.DRAINING)
-            .setIncarnation(existing.incarnation());
+            .setIncarnation(broker.incarnation());
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.BROKER_DRAINING, event);
+  }
+
+  private void reject(final TypedRecord<BrokerRecord> command, final String reason) {
+    writers.rejection().appendRejection(command, RejectionType.INVALID_STATE, reason);
   }
 }

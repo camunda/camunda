@@ -47,17 +47,16 @@ public final class RegisterBrokerProcessor implements TypedRecordProcessor<Broke
   public void processRecord(final TypedRecord<BrokerRecord> command) {
     final var cmd = command.getValue();
     final var existing = brokerState.get(cmd.getBrokerId());
-
-    if (existing != null
-        && existing.status() == BrokerStatus.ACTIVE
-        && existing.incarnation() == cmd.getIncarnation()) {
-      // Idempotent re-register (an RPC retry from the same incarnation): keep the epoch so the
-      // broker's in-flight heartbeats are not fenced; no state change, just echo the epoch.
-      respond(command, existing.brokerEpoch());
-      return;
-    }
-
-    final var epoch = (existing == null ? 0L : existing.brokerEpoch()) + 1;
+    // Idempotent for a retry from the same incarnation of an already-ACTIVE broker: keep the epoch
+    // so its in-flight heartbeats are not fenced. Otherwise (new broker, new incarnation/restart,
+    // or a fenced/draining broker returning) assign a fresh, monotonic epoch. Either way a
+    // BROKER_REGISTERED event is always appended (re-emitting the same epoch is a no-op apply).
+    final var idempotent =
+        existing != null
+            && existing.status() == BrokerStatus.ACTIVE
+            && existing.incarnation() == cmd.getIncarnation();
+    final var epoch =
+        idempotent ? existing.brokerEpoch() : (existing == null ? 0L : existing.brokerEpoch()) + 1;
     final var event =
         new BrokerRecord()
             .setBrokerId(cmd.getBrokerId())

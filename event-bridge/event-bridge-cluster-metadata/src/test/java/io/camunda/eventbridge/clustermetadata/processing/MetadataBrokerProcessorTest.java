@@ -62,6 +62,7 @@ final class MetadataBrokerProcessorTest {
             SimpleMeterRegistry::new);
     db = factory.createDb(dbDir.toFile());
     state = new DbBrokerState(db, db.createContext());
+    final var transitions = new BrokerTransitionValidator(state);
 
     engine =
         new RecordProcessingEngine(
@@ -74,15 +75,15 @@ final class MetadataBrokerProcessorTest {
                     .onCommand(
                         ValueType.EVENT_BRIDGE_BROKER,
                         MetadataIntent.FENCE_BROKER,
-                        new FenceBrokerProcessor(processors.writers(), state))
+                        new FenceBrokerProcessor(processors.writers(), state, transitions))
                     .onCommand(
                         ValueType.EVENT_BRIDGE_BROKER,
                         MetadataIntent.DRAIN_BROKER,
-                        new DrainBrokerProcessor(processors.writers(), state))
+                        new DrainBrokerProcessor(processors.writers(), state, transitions))
                     .onCommand(
                         ValueType.EVENT_BRIDGE_BROKER,
                         MetadataIntent.DEREGISTER_BROKER,
-                        new DeregisterBrokerProcessor(processors.writers(), state))
+                        new DeregisterBrokerProcessor(processors.writers(), transitions))
                     .withEventApplier(
                         MetadataIntent.BROKER_REGISTERED, new BrokerRegisteredApplier(state))
                     .withEventApplier(MetadataIntent.BROKER_FENCED, new BrokerFencedApplier(state))

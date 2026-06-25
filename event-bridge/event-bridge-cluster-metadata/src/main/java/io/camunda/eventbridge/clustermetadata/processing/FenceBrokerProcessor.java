@@ -12,41 +12,52 @@ import io.camunda.eventbridge.clustermetadata.state.broker.BrokerMetadata.Broker
 import io.camunda.eventbridge.clustermetadata.state.immutable.BrokerState;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * Handles the internal {@code FENCE_BROKER} command (from the {@code BrokerEvictionTask}): fences a
- * broker whose liveness session lapsed. It is self-guarded — a fence is a no-op unless the broker
- * still exists, is {@code ACTIVE}, and the command's epoch matches the registered one, so a broker
- * that re-registered (epoch bumped) since the eviction tick is not wrongly fenced. Holds no client
- * response; the new state is observed on the next read.
+ * broker whose liveness session lapsed. {@link BrokerTransitionValidator#validateFence} decides
+ * whether the fence still applies (broker exists, {@code ACTIVE}, epoch matches), so a broker that
+ * re-registered since the eviction tick is not wrongly fenced; on success it appends {@code
+ * BROKER_FENCED}, otherwise a {@code COMMAND_REJECTION} with the reason (the command carries no
+ * request, so there is no reply).
  */
 public final class FenceBrokerProcessor implements TypedRecordProcessor<BrokerRecord> {
 
   private final Writers writers;
   private final BrokerState brokerState;
+  private final BrokerTransitionValidator validator;
 
-  public FenceBrokerProcessor(final Writers writers, final BrokerState brokerState) {
+  public FenceBrokerProcessor(
+      final Writers writers,
+      final BrokerState brokerState,
+      final BrokerTransitionValidator validator) {
     this.writers = writers;
     this.brokerState = brokerState;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<BrokerRecord> command) {
-    final var cmd = command.getValue();
-    final var existing = brokerState.get(cmd.getBrokerId());
-    if (existing == null
-        || existing.status() != BrokerStatus.ACTIVE
-        || existing.brokerEpoch() != cmd.getBrokerEpoch()) {
-      return;
-    }
+    validator
+        .validateFence(command.getValue())
+        .ifRightOrLeft(ok -> fence(command), reason -> reject(command, reason));
+  }
+
+  private void fence(final TypedRecord<BrokerRecord> command) {
+    final var broker = brokerState.get(command.getValue().getBrokerId());
     final var event =
         new BrokerRecord()
-            .setBrokerId(existing.brokerId())
-            .setBrokerEpoch(existing.brokerEpoch())
+            .setBrokerId(broker.brokerId())
+            .setBrokerEpoch(broker.brokerEpoch())
             .setStatus(BrokerStatus.FENCED)
-            .setIncarnation(existing.incarnation());
+            .setIncarnation(broker.incarnation());
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.BROKER_FENCED, event);
+  }
+
+  private void reject(final TypedRecord<BrokerRecord> command, final String reason) {
+    writers.rejection().appendRejection(command, RejectionType.INVALID_STATE, reason);
   }
 }

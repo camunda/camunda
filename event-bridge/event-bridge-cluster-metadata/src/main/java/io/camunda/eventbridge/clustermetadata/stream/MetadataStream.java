@@ -10,6 +10,7 @@ package io.camunda.eventbridge.clustermetadata.stream;
 import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
 import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.processing.BrokerEvictionTask;
+import io.camunda.eventbridge.clustermetadata.processing.BrokerTransitionValidator;
 import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.DeregisterBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.DrainBrokerProcessor;
@@ -123,6 +124,7 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   @Override
   protected RecordProcessor createRecordProcessor() {
     final var validator = new TopicValidator(topicState);
+    final var brokerTransitions = new BrokerTransitionValidator(brokerState);
     // Placement targets registered, unfenced brokers, read from the replicated broker registry on
     // the processing actor — the broker liveness FSM is the source of placeable brokers. Until any
     // broker has registered (bootstrap), fall back to the Raft membership so placement still works.
@@ -159,15 +161,15 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                 .onCommand(
                     MetadataRecordValues.BROKER_VALUE_TYPE,
                     MetadataIntent.FENCE_BROKER,
-                    new FenceBrokerProcessor(processors.writers(), brokerState))
+                    new FenceBrokerProcessor(processors.writers(), brokerState, brokerTransitions))
                 .onCommand(
                     MetadataRecordValues.BROKER_VALUE_TYPE,
                     MetadataIntent.DRAIN_BROKER,
-                    new DrainBrokerProcessor(processors.writers(), brokerState))
+                    new DrainBrokerProcessor(processors.writers(), brokerState, brokerTransitions))
                 .onCommand(
                     MetadataRecordValues.BROKER_VALUE_TYPE,
                     MetadataIntent.DEREGISTER_BROKER,
-                    new DeregisterBrokerProcessor(processors.writers(), brokerState))
+                    new DeregisterBrokerProcessor(processors.writers(), brokerTransitions))
                 .withEventApplier(
                     MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState))
                 .withEventApplier(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState))
