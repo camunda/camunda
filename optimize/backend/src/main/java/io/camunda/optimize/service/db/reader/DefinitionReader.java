@@ -25,6 +25,7 @@ import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIds
 import io.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -79,6 +80,14 @@ public interface DefinitionReader {
 
   List<DefinitionVersionResponseDto> getDefinitionVersions(
       final DefinitionType type, final String key, final Set<String> tenantIds);
+
+  default <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
+      final DefinitionType type,
+      final boolean fullyImported,
+      final boolean withXml,
+      final boolean includeDeleted) {
+    throw new UnsupportedOperationException("getDefinitionsIterator is not implemented");
+  }
 
   <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
       final DefinitionType type,
