@@ -9,6 +9,8 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
+import {Modal} from 'components';
+
 import MultipleVariableFilter from './MultipleVariableFilter';
 import {DateInput} from './date';
 
@@ -57,6 +59,13 @@ it('should contain a modal', () => {
   const node = shallow(<MultipleVariableFilter {...props} />);
 
   expect(node.find('Modal')).toExist();
+});
+
+it('should render the variable export filter hint in the modal header', () => {
+  const node = shallow(<MultipleVariableFilter {...props} />);
+
+  const header = shallow(<div>{node.find(Modal.Header).prop('title')}</div>);
+  expect(header.find('ExportFilterHint')).toExist();
 });
 
 it('should take filter given by properties', async () => {

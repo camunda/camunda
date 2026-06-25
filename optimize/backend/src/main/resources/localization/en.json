@@ -966,6 +966,12 @@
     "instanceIds": "Instance IDs",
     "processInstanceIds": "Process instance IDs",
     "seeDocs": "See documentation",
+    "exportFilterHint": {
+      "iconLabel": "Information about export filtering",
+      "variableText": "The variables and results available here depend on your cluster's exporter configuration. Variable export filtering can affect which variables and process data appear.",
+      "reportSetupLabel": "Not seeing a process or variable?",
+      "reportSetupText": "The processes and variables available here depend on your cluster's exporter configuration. Process or variable export filtering can affect which processes and variables appear."
+    },
     "undefined": "undefined",
     "null": "null",
     "nullOrUndefined": "Null or undefined",
