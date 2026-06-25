@@ -10,6 +10,7 @@ package io.camunda.eventbridge.consumergroups.stream;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
+import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupQueryHandler;
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.transport.CoordinationRequestHandler;
@@ -36,6 +37,7 @@ public final class CoordinatorPartition
   private final TopicRegistry topicRegistry;
 
   private ConsumerGroupCoordinator consumerGroupCoordinator;
+  private ConsumerGroupQueryHandler consumerGroupQueryHandler;
 
   public CoordinatorPartition(
       final int partitionId,
@@ -80,9 +82,16 @@ public final class CoordinatorPartition
   protected void onLeaderReady() {
     consumerGroupCoordinator = new ConsumerGroupCoordinator(partitionId, clock, stream);
     actorScheduler.submitActor(consumerGroupCoordinator);
+    // Read-only requests (offset fetch, describe) run on their own actor with their own query
+    // contexts, so a heavy scan never blocks the coordinator's write/heartbeat path.
+    consumerGroupQueryHandler =
+        new ConsumerGroupQueryHandler(
+            partitionId, stream.newGroupQueryService(), stream.newOffsetQueryService());
+    actorScheduler.submitActor(consumerGroupQueryHandler);
     requestHandlerRegistry.register(
         CoordinationRequestHandler.topicName(partitionId),
-        new CoordinationRequestHandler(partitionId, consumerGroupCoordinator));
+        new CoordinationRequestHandler(
+            partitionId, consumerGroupCoordinator, consumerGroupQueryHandler));
   }
 
   @Override
@@ -91,6 +100,10 @@ public final class CoordinatorPartition
       requestHandlerRegistry.unregister(CoordinationRequestHandler.topicName(partitionId));
       consumerGroupCoordinator.closeAsync();
       consumerGroupCoordinator = null;
+    }
+    if (consumerGroupQueryHandler != null) {
+      consumerGroupQueryHandler.closeAsync();
+      consumerGroupQueryHandler = null;
     }
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.transport;
 
 import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupCoordinator;
+import io.camunda.eventbridge.consumergroups.membership.ConsumerGroupQueryHandler;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
@@ -44,10 +45,14 @@ public final class CoordinationRequestHandler implements RequestHandler {
   private static final String TOPIC_FORMAT = COORDINATOR_ROUTING_GROUP + "-coordinate-api-%d";
 
   private final ConsumerGroupCoordinator coordinator;
+  private final ConsumerGroupQueryHandler queryHandler;
 
   public CoordinationRequestHandler(
-      final int partitionId, final ConsumerGroupCoordinator coordinator) {
+      final int partitionId,
+      final ConsumerGroupCoordinator coordinator,
+      final ConsumerGroupQueryHandler queryHandler) {
     this.coordinator = coordinator;
+    this.queryHandler = queryHandler;
   }
 
   @Override
@@ -63,9 +68,9 @@ public final class CoordinationRequestHandler implements RequestHandler {
       case LEAVE_GROUP -> coordinator.handleLeaveGroup(read(new LeaveGroupRequest(), request));
       case HEARTBEAT -> coordinator.handleHeartbeat(read(new HeartbeatRequest(), request));
       case COMMIT -> coordinator.handleCommit(read(new CommitOffsetRequest(), request));
-      case OFFSET_FETCH -> coordinator.handleOffsetFetch(read(new OffsetFetchRequest(), request));
+      case OFFSET_FETCH -> queryHandler.handleOffsetFetch(read(new OffsetFetchRequest(), request));
       case DESCRIBE_GROUPS ->
-          coordinator.handleDescribeGroups(read(new DescribeGroupsRequest(), request));
+          queryHandler.handleDescribeGroups(read(new DescribeGroupsRequest(), request));
       default ->
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));

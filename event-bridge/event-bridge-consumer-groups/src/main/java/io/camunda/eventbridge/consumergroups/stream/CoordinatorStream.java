@@ -92,7 +92,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private DbOffsetState offsetState;
   private OffsetQueryService offsetQuery;
   private DbConsumerGroupState groupState;
-  // Off-actor group reads for the coordinator actor (heartbeat/describe/seed) — its own context.
+  // Off-actor group reads for the coordinator actor (heartbeat/seed) — its own context.
   private ConsumerGroupQueryService coordinatorGroupQuery;
   private MemberLivenessMirror liveness;
 
@@ -131,7 +131,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
     // Offsets are unbounded, so they are read on demand from state (its own context), not mirrored.
     offsetQuery = new OffsetQueryService(zeebeDb);
     groupState = new DbConsumerGroupState(zeebeDb, zeebeDb.createContext());
-    // Group membership is unbounded, so off-actor reads (heartbeat/describe/seed) go to state via a
+    // Group membership is unbounded, so off-actor reads (heartbeat/seed) go to state via a
     // query service (its own context), not an in-memory mirror.
     coordinatorGroupQuery = new ConsumerGroupQueryService(zeebeDb);
     liveness = new MemberLivenessMirror();
@@ -262,23 +262,38 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   }
 
   /**
-   * A snapshot of a group's membership/assignment read from state (off the processing actor via the
-   * coordinator's query context), or {@code null} if the group does not exist.
+   * A snapshot of a group's membership/assignment read from state via the coordinator actor's own
+   * query context (used by the {@code HeartbeatHandler}), or {@code null} if the group does not
+   * exist.
    */
   public GroupSnapshot groupSnapshot(final String groupId) {
     return coordinatorGroupQuery.groupSnapshot(groupId);
   }
 
-  /** Snapshots of all groups read from state — for the coordinator's describe/seed reads. */
+  /** Snapshots of all groups read from state via the coordinator actor's query context. */
   public List<GroupSnapshot> groupSnapshots() {
     return coordinatorGroupQuery.allGroups();
   }
 
   /**
    * Committed offsets for a group ({@code (topic, partition) → position}), read from state via the
-   * {@link OffsetQueryService} (off the processing actor, no in-memory mirror).
+   * coordinator actor's query context (no in-memory mirror).
    */
   public Map<TopicPartition, Long> committedOffsets(final String groupId) {
     return offsetQuery.committedOffsets(groupId);
+  }
+
+  /**
+   * A group-query view on its <em>own</em> {@link io.camunda.zeebe.db.ZeebeDb} context, for a
+   * reader actor other than the coordinator (e.g. the {@code ConsumerGroupQueryHandler}) so it
+   * never shares the coordinator's flyweights. One instance per reader actor.
+   */
+  public ConsumerGroupQueryService newGroupQueryService() {
+    return new ConsumerGroupQueryService(zeebeDb);
+  }
+
+  /** An offset-query view on its own context, for a reader actor other than the coordinator. */
+  public OffsetQueryService newOffsetQueryService() {
+    return new OffsetQueryService(zeebeDb);
   }
 }

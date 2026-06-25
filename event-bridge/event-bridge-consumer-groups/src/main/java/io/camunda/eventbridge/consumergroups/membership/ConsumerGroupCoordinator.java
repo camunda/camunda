@@ -7,40 +7,30 @@
  */
 package io.camunda.eventbridge.consumergroups.membership;
 
-import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.INVALID_GROUP_ID;
-import static io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode.NONE;
-
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
-import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
-import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsRequest;
-import io.camunda.eventbridge.protocol.request.coordination.DescribeGroupsResponse;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
-import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
-import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchResponse;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.InstantSource;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 
 /**
- * The leader-side coordinator for consumer-group requests. Membership and target assignment are
- * first-class replicated state on the coordinator stream (KIP-848 model): {@code JOIN_GROUP} and
- * {@code LEAVE_GROUP} are written as commands and validated in their processors, so this manager
- * only turns a request into a command and bridges the committed reply; offset-fetch and describe
- * are served as reads off replicated state. Heartbeats — the one request that stays
- * request/response and runs the in-memory assign/revoke handshake — are delegated to the {@link
- * HeartbeatHandler}, which also keeps the {@link MemberLivenessMirror} the off-actor {@code
- * SessionEvictionTask} reads up to date.
+ * The leader-side coordinator for consumer-group membership requests. Membership and target
+ * assignment are first-class replicated state on the coordinator stream (KIP-848 model): {@code
+ * JOIN_GROUP}, {@code LEAVE_GROUP} and {@code COMMIT_OFFSET} are written as commands and validated
+ * in their processors, so this manager only turns a request into a command and forwards the
+ * committed reply. Heartbeats — the one request that stays request/response and runs the in-memory
+ * assign/revoke handshake — are delegated to the {@link HeartbeatHandler}, which keeps the {@link
+ * MemberLivenessMirror} the off-actor {@code SessionEvictionTask} reads up to date. The read-only
+ * requests (offset fetch, describe) run on a separate {@link ConsumerGroupQueryHandler} actor.
  */
 public class ConsumerGroupCoordinator extends Actor {
 
@@ -81,7 +71,7 @@ public class ConsumerGroupCoordinator extends Actor {
   }
 
   /**
-   * Writes a {@code JOIN_GROUP} command and bridges the committed {@code JoinGroupResponse}. The
+   * Writes a {@code JOIN_GROUP} command and forwards the committed {@code JoinGroupResponse}. The
    * command carries only the request's intent (group id, subscribed topic, instance id); the
    * processor resolves the topic's partition count from the registry at processing time and
    * validates it, so the decision is made by the leader that actually produces the durable event.
@@ -101,7 +91,7 @@ public class ConsumerGroupCoordinator extends Actor {
     return result;
   }
 
-  /** Writes a {@code LEAVE_GROUP} command and bridges the committed {@code LeaveGroupResponse}. */
+  /** Writes a {@code LEAVE_GROUP} command and forwards the committed {@code LeaveGroupResponse}. */
   public CompletableFuture<byte[]> handleLeaveGroup(final LeaveGroupRequest request) {
     final var result = new CompletableFuture<byte[]>();
     actor.run(
@@ -116,78 +106,7 @@ public class ConsumerGroupCoordinator extends Actor {
     return result;
   }
 
-  /**
-   * Serves an offset fetch (request/response, no log write): reads the group's committed offsets
-   * from state off the processing actor — the read-from-state path, not a command through the
-   * stream — and returns the serialized reply (the handler frames it).
-   */
-  public CompletableFuture<byte[]> handleOffsetFetch(final OffsetFetchRequest request) {
-    final var result = new CompletableFuture<byte[]>();
-    actor.run(
-        () -> {
-          try {
-            final var groupId = request.getGroupId();
-            final var response = new OffsetFetchResponse();
-            if (groupId == null || groupId.isEmpty()) {
-              response.setErrorCode(INVALID_GROUP_ID);
-            } else {
-              response
-                  .setErrorCode(NONE)
-                  .setCommittedOffsets(coordinatorStream.committedOffsets(groupId));
-            }
-            result.complete(CoordinationResponseEncoder.serialize(response));
-          } catch (final RuntimeException e) {
-            result.completeExceptionally(e);
-          }
-        });
-    return result;
-  }
-
-  /**
-   * Serves a describe-groups read (request/response, no log write): reads the replicated group
-   * lifecycle/epochs/roster from state off the processing actor. An empty {@code groupId} returns
-   * all groups on this shard; a set one narrows to that group (empty result if it lives on another
-   * shard or does not exist).
-   */
-  public CompletableFuture<byte[]> handleDescribeGroups(final DescribeGroupsRequest request) {
-    final var result = new CompletableFuture<byte[]>();
-    actor.run(
-        () -> {
-          try {
-            final var groupId = request.getGroupId();
-            final var response = new DescribeGroupsResponse();
-            final List<GroupSnapshot> groups;
-            if (groupId == null || groupId.isEmpty()) {
-              groups = coordinatorStream.groupSnapshots();
-            } else {
-              final var group = coordinatorStream.groupSnapshot(groupId);
-              groups = group == null ? List.of() : List.of(group);
-            }
-            for (final var group : groups) {
-              final var members = new LinkedHashMap<String, Long>();
-              group.members().forEach((id, m) -> members.put(id, m.assignedEpoch()));
-              response.addGroup(
-                  description ->
-                      description
-                          .setGroupId(group.groupId())
-                          .setState(group.state().name())
-                          .setGroupEpoch(group.groupEpoch())
-                          .setAssignmentEpoch(group.assignmentEpoch())
-                          .setSubscriptions(group.subscriptions())
-                          .setMembers(members));
-            }
-            result.complete(CoordinationResponseEncoder.serialize(response));
-          } catch (final RuntimeException e) {
-            result.completeExceptionally(e);
-          }
-        });
-    return result;
-  }
-
-  /**
-   * Serves a heartbeat (request/response, no log write) and returns the serialized reply (the
-   * handler frames it).
-   */
+  /** Serves a heartbeat (request/response, no log write); returns the serialized reply. */
   public CompletableFuture<byte[]> handleHeartbeat(final HeartbeatRequest request) {
     final var result = new CompletableFuture<byte[]>();
     actor.run(
@@ -203,7 +122,7 @@ public class ConsumerGroupCoordinator extends Actor {
   }
 
   /**
-   * Replicates an offset commit through the coordinator stream and returns the encoded {@code
+   * Replicates an offset commit through the coordinator stream and forwards the committed {@code
    * CommitOffsetResponse}. Validation (member epoch + partition ownership) happens in the {@code
    * OffsetCommitProcessor} against replicated membership, not here.
    */
