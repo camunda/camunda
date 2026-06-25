@@ -52,9 +52,7 @@ public final class TestOtelSdkManager {
         new OtelSdkManager() {
           @Override
           protected SdkLoggerProvider createLoggerProvider(
-              final AnalyticsExporterConfig cfg,
-              final AnalyticsExporterContext context,
-              final MicrometerMeterProvider bridge) {
+              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return SdkLoggerProvider.builder()
                 .setResource(OtelSdkManager.buildResource(context))
                 .addLogRecordProcessor(SimpleLogRecordProcessor.create(logExporter))
@@ -91,44 +89,8 @@ public final class TestOtelSdkManager {
         new OtelSdkManager() {
           @Override
           protected LogRecordExporter createLogExporter(
-              final AnalyticsExporterConfig cfg,
-              final AnalyticsExporterContext context,
-              final MicrometerMeterProvider bridge) {
+              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return logExporter;
-          }
-
-          @Override
-          protected ManualMetricReader createMetricReader(
-              final AnalyticsExporterConfig config,
-              final AnalyticsExporterContext context,
-              final MicrometerMeterProvider bridge) {
-            // Use a noop exporter so the metrics pipeline never attempts HTTP connections.
-            return new ManualMetricReader(
-                new io.opentelemetry.sdk.metrics.export.MetricExporter() {
-                  @Override
-                  public io.opentelemetry.sdk.common.CompletableResultCode export(
-                      final java.util.Collection<io.opentelemetry.sdk.metrics.data.MetricData>
-                          metrics) {
-                    return io.opentelemetry.sdk.common.CompletableResultCode.ofSuccess();
-                  }
-
-                  @Override
-                  public io.opentelemetry.sdk.common.CompletableResultCode flush() {
-                    return io.opentelemetry.sdk.common.CompletableResultCode.ofSuccess();
-                  }
-
-                  @Override
-                  public io.opentelemetry.sdk.common.CompletableResultCode shutdown() {
-                    return io.opentelemetry.sdk.common.CompletableResultCode.ofSuccess();
-                  }
-
-                  @Override
-                  public io.opentelemetry.sdk.metrics.data.AggregationTemporality
-                      getAggregationTemporality(
-                          final io.opentelemetry.sdk.metrics.InstrumentType instrumentType) {
-                    return io.opentelemetry.sdk.metrics.data.AggregationTemporality.CUMULATIVE;
-                  }
-                });
           }
         };
     manager.initialize(

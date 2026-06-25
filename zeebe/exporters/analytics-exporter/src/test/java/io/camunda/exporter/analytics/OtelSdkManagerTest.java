@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -247,9 +248,7 @@ class OtelSdkManagerTest {
         new OtelSdkManager() {
           @Override
           protected LogRecordExporter createLogExporter(
-              final AnalyticsExporterConfig cfg,
-              final AnalyticsExporterContext context,
-              final MicrometerMeterProvider bridge) {
+              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return exporterFrom(
                 logs -> {
                   received.addAll(logs);
@@ -294,9 +293,7 @@ class OtelSdkManagerTest {
     return new OtelSdkManager() {
       @Override
       protected LogRecordExporter createLogExporter(
-          final AnalyticsExporterConfig cfg,
-          final AnalyticsExporterContext context,
-          final MicrometerMeterProvider bridge) {
+          final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
         return exporterFrom(exportFn);
       }
     }.initialize(
@@ -331,32 +328,25 @@ class OtelSdkManagerTest {
   @Test
   void shouldExposeOtelSdkLogCreatedMetricInMicrometer() {
     // given
-    final var micrometerRegistry = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
-    final var logExporter =
-        io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter.create();
+    final var micrometerRegistry = new SimpleMeterRegistry();
+    final var logExporter = InMemoryLogRecordExporter.create();
     final var manager = TestOtelSdkManager.inMemoryWithRegistry(logExporter, micrometerRegistry);
 
-    try {
-      // when — otel.sdk.log.created increments synchronously on emit(), no flush needed
-      manager.logEvent(
-          io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED,
-          1L,
-          b -> {});
+    // when — emit a log event; flushMetrics() drives the self-metrics reader → Micrometer
+    manager.logEvent(AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED, 1L, b -> {});
+    manager.flushMetrics();
 
-      // then — SdkLoggerProvider emits otel.sdk.log.created on every emit()
-      assertThat(
-              micrometerRegistry
-                  .find("otel.sdk.log.created")
-                  .tag(
-                      MicrometerMeterProvider.COMPONENT_TAG_KEY,
-                      MicrometerMeterProvider.COMPONENT_TAG_VALUE)
-                  .counter())
-          .isNotNull()
-          .extracting(io.micrometer.core.instrument.Counter::count)
-          .isEqualTo(1.0);
-    } finally {
-      manager.close();
-    }
+    // then — SdkLoggerProvider emits otel.sdk.log.created on every emit()
+    assertThat(
+            micrometerRegistry
+                .find("otel.sdk.log.created")
+                .tag(
+                    MicrometerMetricExporter.COMPONENT_TAG_KEY,
+                    MicrometerMetricExporter.COMPONENT_TAG_VALUE)
+                .counter())
+        .isNotNull()
+        .extracting(io.micrometer.core.instrument.Counter::count)
+        .isEqualTo(1.0);
   }
 
   @Nested

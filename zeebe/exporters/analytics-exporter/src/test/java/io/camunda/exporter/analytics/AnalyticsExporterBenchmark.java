@@ -140,9 +140,7 @@ public class AnalyticsExporterBenchmark {
         new OtelSdkManager() {
           @Override
           protected SdkLoggerProvider createLoggerProvider(
-              final AnalyticsExporterConfig cfg,
-              final AnalyticsExporterContext context,
-              final MicrometerMeterProvider bridge) {
+              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return SdkLoggerProvider.builder()
                 .setResource(OtelSdkManager.buildResource(context))
                 .addLogRecordProcessor(SimpleLogRecordProcessor.create(NOOP_EXPORTER))

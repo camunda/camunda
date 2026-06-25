@@ -49,6 +49,16 @@ import java.util.function.Consumer;
  * Manages the OTel SDK lifecycle for one partition. Provides log events via {@link #logEvent} and
  * pre-aggregated metric counters via {@link #incrementMetric}. Metric collection is triggered
  * manually via {@link #flushMetrics} from the partition thread — no background reader thread.
+ *
+ * <p>A second {@link SdkMeterProvider} ({@code selfMetricsSdkMeterProvider}) is registered with a
+ * {@link ManualMetricReader} backed by a {@link MicrometerMetricExporter}. OTel SDK components
+ * (BatchLogRecordProcessor, OtlpHttpLogRecordExporter, OtlpHttpMetricExporter) report their
+ * self-metrics into this provider; those metrics are flushed into Micrometer on every {@link
+ * #flushMetrics()} call.
+ *
+ * <p>Trade-offs vs. a MicrometerMeterProvider bridge: queue depth is a flush-interval snapshot
+ * rather than real-time, and {@link #flushMetrics()} performs two collection passes (self-metrics
+ * first, then product metrics).
  */
 public class OtelSdkManager implements AutoCloseable {
 
@@ -63,6 +73,8 @@ public class OtelSdkManager implements AutoCloseable {
   private Logger otelLogger;
   private Meter otelMeter;
   private ManualMetricReader metricReader;
+  private ManualMetricReader selfMetricsReader;
+  private SdkMeterProvider selfMetricsSdkMeterProvider;
   private AnalyticsExporterMetadata metadata;
   private final Map<String, LongCounter> counters = new HashMap<>();
   private final MetricWindow metricWindow = new MetricWindow();
@@ -84,11 +96,19 @@ public class OtelSdkManager implements AutoCloseable {
     counters.clear();
     metricWindow.reset();
 
-    final var bridge = new MicrometerMeterProvider(meterRegistry);
+    // Self-metrics pipeline: OTel SDK internal telemetry → ManualMetricReader →
+    // MicrometerMetricExporter → Micrometer. Flushed on each flushMetrics() call.
+    final var selfMetricsExporter = new MicrometerMetricExporter(meterRegistry);
+    selfMetricsReader = new ManualMetricReader(selfMetricsExporter);
+    selfMetricsSdkMeterProvider =
+        SdkMeterProvider.builder().registerMetricReader(selfMetricsReader).build();
 
-    metricReader = createMetricReader(config, context, bridge);
+    // Product metrics pipeline: pre-aggregated metrics → ManualMetricReader → OTLP.
+    metricReader = createMetricReader(config, context);
     final var meterProvider = createMeterProvider(context, metricReader);
-    final var loggerProvider = createLoggerProvider(config, context, bridge);
+
+    // Logger pipeline: BSP wired to selfMetricsSdkMeterProvider so SDK self-metrics are captured.
+    final var loggerProvider = createLoggerProvider(config, context);
 
     sdk =
         OpenTelemetrySdk.builder()
@@ -160,6 +180,9 @@ public class OtelSdkManager implements AutoCloseable {
   // a concern, offload to a background thread: create a fresh MeterProvider per flush ("seal &
   // create"), swap atomically, and collect the old provider on a background ExecutorService.
   void flushMetrics() {
+    if (selfMetricsReader != null) {
+      selfMetricsReader.collectAndExport();
+    }
     if (metricReader != null) {
       metricReader.collectAndExport();
     }
@@ -168,6 +191,9 @@ public class OtelSdkManager implements AutoCloseable {
   @Override
   public void close() {
     flushMetrics();
+    if (selfMetricsSdkMeterProvider != null) {
+      selfMetricsSdkMeterProvider.shutdown().join(5, TimeUnit.SECONDS);
+    }
     if (sdk != null) {
       sdk.shutdown().join(10, TimeUnit.SECONDS);
     }
@@ -193,18 +219,16 @@ public class OtelSdkManager implements AutoCloseable {
    * Override in tests that need full pipeline control (e.g. sync processor, custom queue sizes).
    */
   protected SdkLoggerProvider createLoggerProvider(
-      final AnalyticsExporterConfig config,
-      final AnalyticsExporterContext context,
-      final MicrometerMeterProvider bridge) {
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
     return SdkLoggerProvider.builder()
         .setResource(buildResource(context))
-        .setMeterProvider(() -> bridge)
+        .setMeterProvider(() -> selfMetricsSdkMeterProvider)
         .addLogRecordProcessor(
-            BatchLogRecordProcessor.builder(createLogExporter(config, context, bridge))
+            BatchLogRecordProcessor.builder(createLogExporter(config, context))
                 .setMaxQueueSize(config.getMaxQueueSize())
                 .setMaxExportBatchSize(config.getMaxBatchSize())
                 .setScheduleDelay(config.getPushInterval())
-                .setMeterProvider(bridge)
+                .setMeterProvider(selfMetricsSdkMeterProvider)
                 .setInternalTelemetryVersion(InternalTelemetryVersion.LATEST)
                 .build())
         .build();
@@ -212,15 +236,13 @@ public class OtelSdkManager implements AutoCloseable {
 
   /** Override in tests to swap the OTLP transport for an in-memory exporter. */
   protected LogRecordExporter createLogExporter(
-      final AnalyticsExporterConfig config,
-      final AnalyticsExporterContext context,
-      final MicrometerMeterProvider bridge) {
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
     final var builder =
         OtlpHttpLogRecordExporter.builder()
             .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
             .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId())
-            .setMeterProvider(bridge)
+            .setMeterProvider(selfMetricsSdkMeterProvider)
             .setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
 
     if (config.isSigning()) {
@@ -232,24 +254,20 @@ public class OtelSdkManager implements AutoCloseable {
 
   /** Override in tests to use an in-memory metric reader instead of OTLP. */
   protected ManualMetricReader createMetricReader(
-      final AnalyticsExporterConfig config,
-      final AnalyticsExporterContext context,
-      final MicrometerMeterProvider bridge) {
-    return new ManualMetricReader(createMetricExporter(config, context, bridge));
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
+    return new ManualMetricReader(createMetricExporter(config, context));
   }
 
   /** Override in tests to swap the OTLP metric transport for an in-memory exporter. */
   protected MetricExporter createMetricExporter(
-      final AnalyticsExporterConfig config,
-      final AnalyticsExporterContext context,
-      final MicrometerMeterProvider bridge) {
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
     final var builder =
         OtlpHttpMetricExporter.builder()
             .setEndpoint(config.getEndpoint() + OTLP_METRICS_PATH)
             .setAggregationTemporalitySelector(AggregationTemporalitySelector.deltaPreferred())
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
             .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId())
-            .setMeterProvider(bridge)
+            .setMeterProvider(selfMetricsSdkMeterProvider)
             .setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
 
     if (config.isSigning()) {
