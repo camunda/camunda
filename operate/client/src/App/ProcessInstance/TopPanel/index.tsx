@@ -60,6 +60,7 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
+import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
 import {
   getWaitStateLabel,
@@ -238,7 +239,7 @@ const TopPanel: React.FC = observer(() => {
     }
 
     // Group wait states by elementId (show only 1 label per element)
-    const waitStatesByElement = new Map<string, typeof inspectionData.items>();
+    const waitStatesByElement = new Map<string, ElementInstanceInspection[]>();
     for (const item of inspectionData.items) {
       const existing = waitStatesByElement.get(item.elementId) ?? [];
       existing.push(item);
@@ -268,7 +269,7 @@ const TopPanel: React.FC = observer(() => {
     }
 
     return overlays;
-  }, [inspectionData]);
+  }, [inspectionData?.items]);
 
   const {agentOverlays, elementsWithAgent} = useMemo(() => {
     if (!agentInstancesData?.items?.length) {
