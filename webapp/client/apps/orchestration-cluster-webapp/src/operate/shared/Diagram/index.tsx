@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef, useEffect, useLayoutEffect, useState, useCallback} from 'react';
+import {useRef, useEffect, useLayoutEffect, useState, useCallback, isValidElement, cloneElement, type Ref, type ReactNode, type ReactElement, type RefObject} from 'react';
 import {BpmnJS, type OnElementSelection, type OnElementDoubleClick} from './BpmnJS';
 import type {OverlayData, OverlayEntry} from './overlayTypes';
 import {DiagramControls} from './DiagramControls';
@@ -17,7 +17,7 @@ type OnRootChange = (rootElementId: string, getSelectionRootId: (elementId: stri
 
 type SelectedElementOverlayProps = {
 	selectedElementRef: SVGElement;
-	diagramCanvasRef: React.Ref<Element>;
+	diagramCanvasRef: Ref<Element>;
 };
 
 type Props = {
@@ -27,8 +27,8 @@ type Props = {
 	onElementSelection?: OnElementSelection;
 	onRootChange?: OnRootChange;
 	overlaysData?: OverlayData[];
-	children?: React.ReactNode;
-	selectedElementOverlay?: React.ReactElement<SelectedElementOverlayProps> | false;
+	children?: ReactNode;
+	selectedElementOverlay?: ReactElement<SelectedElementOverlayProps> | false;
 	highlightedSequenceFlows?: string[];
 	highlightedElementIds?: string[];
 	nonSelectableNodeTooltipText?: string;
@@ -38,8 +38,8 @@ type Props = {
 };
 
 const useFullscreen = (
-	diagramRef: React.RefObject<HTMLDivElement | null>,
-	viewerRef: React.RefObject<BpmnJS | null>,
+	diagramRef: RefObject<HTMLDivElement | null>,
+	viewerRef: RefObject<BpmnJS | null>,
 ) => {
 	const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -80,8 +80,8 @@ const useFullscreen = (
 };
 
 const useMinimap = (
-	diagramCanvasRef: React.RefObject<HTMLDivElement | null>,
-	viewerRef: React.RefObject<BpmnJS | null>,
+	diagramCanvasRef: RefObject<HTMLDivElement | null>,
+	viewerRef: RefObject<BpmnJS | null>,
 	isDiagramRendered: boolean,
 ) => {
 	const [isMinimapOpen, setIsMinimapOpen] = useState(false);
@@ -240,8 +240,8 @@ function Diagram({
 						{children}
 					</>
 				)}
-				{!isViewboxChanging && React.isValidElement(selectedElementOverlay) && selectedElement !== undefined
-					? React.cloneElement(selectedElementOverlay, {
+				{!isViewboxChanging && isValidElement(selectedElementOverlay) && selectedElement !== undefined
+					? cloneElement(selectedElementOverlay, {
 							selectedElementRef: selectedElement,
 							diagramCanvasRef,
 						})
