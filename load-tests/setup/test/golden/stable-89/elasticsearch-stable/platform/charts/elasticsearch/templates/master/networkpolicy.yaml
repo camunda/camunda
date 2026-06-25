@@ -1,0 +1,29 @@
+---
+# Source: camunda-platform/charts/elasticsearch/templates/master/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: elastic
+  namespace: "c8-golden-stable-89-elasticsearch-stable"
+  labels:
+    app.kubernetes.io/instance: c8-golden-stable-89-elasticsearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.18.0
+
+    app.kubernetes.io/component: master
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: c8-golden-stable-89-elasticsearch-stable
+      app.kubernetes.io/name: elasticsearch
+      app.kubernetes.io/component: master
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 9200
+        - port: 9300

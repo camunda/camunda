@@ -1,0 +1,13 @@
+---
+# Source: load-test-setup/templates/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "c8-golden-stable-89-rdbms-stable"
+  labels:
+    camunda.io/purpose: load-test
+    camunda.io/created-by: "golden-test"
+    deadline-date: TEST_DATE
+    registry: harbor
+  annotations:
+    topology.kubernetes.io/zone: "europe-west1-c"

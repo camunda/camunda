@@ -50,10 +50,12 @@ endif
 # set ups. The other values files are focused and only contain the necessary overrides for each storage type.
 platform_values := -f camunda-platform-values-defaults.yaml
 
+# The configuration for the "load test setup" local Helm Chart
 helm_chart_load_test_setup := charts/load-test-setup
 load_test_setup_values := -f load-test-setup-values.yaml
 additional_load_test_setup_configuration ?=
 
+# The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
 
 # Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
@@ -286,7 +288,6 @@ template-load-test-setup:
 		--output-dir $(template_output_dir)
 
 # Renders the load-test-setup chart with the chaos-killer enabled.
-# Equivalent to: make template-load-test-setup chaos=true
 .PHONY: template-load-test-setup-chaos
 template-load-test-setup-chaos:
 	$(MAKE) template-load-test-setup chaos=true

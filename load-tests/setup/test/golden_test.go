@@ -72,7 +72,7 @@ var scenarios = []scenario{
 // to generate its golden files, then commit them. No other code change is needed.
 var versions = []string{
 	"main",
-	// "stable-89",
+	 "stable-89",
 	// "stable-88",
 	// "stable-87",
 }
