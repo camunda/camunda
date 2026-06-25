@@ -3,7 +3,9 @@ package golden
 
 import (
 	"flag"
+	"os/exec"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -162,6 +164,32 @@ func TestGoldenFiles(t *testing.T) {
 			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
 		})
 	}
+}
+
+func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProvided(t *testing.T) {
+	ns := Scaffold(t, "main", "c8-golden-setup-flags", "postgresql", "true")
+	defer ns.Cleanup()
+
+	cmd := exec.Command(
+		"make",
+		"-n",
+		"install-load-test-setup",
+		"chaos=true",
+		"additional_load_test_setup_configuration=--set metricsExporter.image.tag=test-tag",
+	)
+	cmd.Dir = ns.Dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "make dry-run failed:\n%s", string(out))
+
+	helmCommand := string(out)
+	require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic:9200")
+	require.Contains(t, helmCommand, "--set chaosKiller.enabled=true")
+	require.Contains(t, helmCommand, "--set metricsExporter.image.tag=test-tag")
+	require.Less(
+		t,
+		strings.Index(helmCommand, "--set chaosKiller.enabled=true"),
+		strings.Index(helmCommand, "--set metricsExporter.image.tag=test-tag"),
+	)
 }
 
 // renderAndAssert renders a chart via the scaffolded Makefile's make target and
