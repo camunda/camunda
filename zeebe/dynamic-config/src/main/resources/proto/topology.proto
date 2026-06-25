@@ -111,6 +111,7 @@ message TopologyChangeOperation {
     PostScalingOperation postScaling = 20;
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
     ModeChangeOperation modeChange = 24;
+    AwaitModeChangeOperation awaitModeChange = 25;
   }
 }
 
@@ -219,6 +220,10 @@ message MemberLeaveOperation {}
 message MemberRemoveOperation { string memberToRemove = 1; }
 
 message ModeChangeOperation {
+  Mode mode = 1;
+}
+
+message AwaitModeChangeOperation {
   Mode mode = 1;
 }
 
