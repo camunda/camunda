@@ -16,7 +16,7 @@ const BASE_SEARCH: TasklistIndexSearch = {filter: 'all-open', sortBy: 'creation'
 
 describe('getCustomFilterSearch', () => {
 	afterEach(() => {
-		sessionStorage.clear();
+		localStorage.clear();
 	});
 
 	it('should return cleared criteria with the filter id when filter is not in storage', () => {

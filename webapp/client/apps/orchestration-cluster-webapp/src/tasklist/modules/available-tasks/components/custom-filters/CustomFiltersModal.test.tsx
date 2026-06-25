@@ -47,6 +47,7 @@ describe('<CustomFiltersModal />', () => {
 
 	afterEach(() => {
 		sessionStorage.clear();
+		localStorage.clear();
 	});
 
 	it('should persist custom filter to localStorage and call onSuccess on apply', async ({worker}) => {
