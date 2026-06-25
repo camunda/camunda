@@ -704,7 +704,6 @@ public class DefinitionReaderOS implements DefinitionReader {
             .build();
 
     // custom sort agg to sort by numeric version value (instead of string bucket key)
-    // VERSION_FOR_SORTING_AGGREGATION
     final Aggregation nameAggregationSub =
         AggregationDSL.withSubaggregations(
             nameAggregation,

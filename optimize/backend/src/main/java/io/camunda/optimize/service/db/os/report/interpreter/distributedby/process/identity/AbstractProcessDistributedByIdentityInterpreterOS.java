@@ -63,9 +63,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterOS
     final TermsAggregation termsAggregation =
         new TermsAggregation.Builder()
             .size(
-                getConfigurationService()
-                    .getElasticSearchConfiguration()
-                    .getAggregationBucketLimit())
+                getConfigurationService().getOpenSearchConfiguration().getAggregationBucketLimit())
             .order(Map.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))
             .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
             .missing(
