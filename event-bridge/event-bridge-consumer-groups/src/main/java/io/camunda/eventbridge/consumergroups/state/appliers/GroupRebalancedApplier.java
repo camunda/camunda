@@ -18,6 +18,10 @@ import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
  * target partitions (skipping members that left since the assignor computed the target). The
  * decision logic lives here. Runs identically on leader (after {@code RebalanceProcessor}) and
  * follower (on replay).
+ *
+ * <p>The event is only appended after {@code RebalanceProcessor} has confirmed the group exists
+ * (and the target epoch still matches), and replay reconstructs that same state in log order — so
+ * the group is always present here; no guard-and-return.
  */
 public final class GroupRebalancedApplier
     implements TypedEventApplier<CoordinatorIntent, RebalanceRecord> {
@@ -32,9 +36,6 @@ public final class GroupRebalancedApplier
   public void applyState(final long key, final RebalanceRecord value) {
     final var groupId = value.getGroupId();
     final var group = state.getGroup(groupId);
-    if (group == null) {
-      return;
-    }
     group.setAssignmentEpoch(value.getAssignmentEpoch());
     // The target is committed but members have not yet confirmed reconciling to it — the group is
     // RECONCILING until every member's assignedEpoch catches up (MEMBER_RECONCILED → STABLE).

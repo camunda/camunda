@@ -19,6 +19,10 @@ import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
  * the retention task, not here), or bumps the group epoch so the assignor recomputes the target.
  * The decision logic lives here. Runs identically on leader (after {@code LeaveGroupProcessor} or
  * an eviction) and follower (on replay).
+ *
+ * <p>The event is only appended after {@code LeaveGroupProcessor} (via {@code validateLeave}) has
+ * confirmed the group and member exist, and replay reconstructs that same state in log order — so
+ * the group is always present here; no guard-and-return.
  */
 public final class MemberLeftApplier
     implements TypedEventApplier<CoordinatorIntent, MembershipRecord> {
@@ -35,9 +39,6 @@ public final class MemberLeftApplier
     state.deleteMember(groupId, value.getMemberId());
 
     final var group = state.getGroup(groupId);
-    if (group == null) {
-      return;
-    }
     group.setGroupEpoch(value.getGroupEpoch());
     if (state.isGroupEmpty(groupId)) {
       // Last member left: retain the group (and its committed offsets) as EMPTY; the retention

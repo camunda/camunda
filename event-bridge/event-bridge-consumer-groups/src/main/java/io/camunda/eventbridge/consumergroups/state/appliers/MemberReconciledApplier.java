@@ -18,6 +18,10 @@ import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
  * it confirmed, then transitions the group to {@code STABLE} once every member has reconciled to
  * the current epoch (else it stays {@code RECONCILING}). Runs identically on leader (after {@code
  * ReconcileMemberProcessor}) and follower (on replay).
+ *
+ * <p>The event is only appended after {@code ReconcileMemberProcessor} has validated that the group
+ * and member exist (rejecting the command otherwise), and replay reconstructs that same state in
+ * log order — so the applier trusts both are present rather than guarding and silently returning.
  */
 public final class MemberReconciledApplier
     implements TypedEventApplier<CoordinatorIntent, MembershipRecord> {
@@ -31,17 +35,11 @@ public final class MemberReconciledApplier
   @Override
   public void applyState(final long key, final MembershipRecord value) {
     final var groupId = value.getGroupId();
-    final var group = state.getGroup(groupId);
-    if (group == null) {
-      return;
-    }
     final var member = state.getMember(groupId, value.getMemberId());
-    if (member == null) {
-      return;
-    }
     member.setAssignedEpoch(value.getGroupEpoch());
     state.putMember(groupId, value.getMemberId(), member);
 
+    final var group = state.getGroup(groupId);
     if (state.allMembersReconciled(groupId, group.getGroupEpoch())) {
       group.setState(GroupLifecycle.STABLE);
       state.putGroup(groupId, group);
