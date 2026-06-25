@@ -38,7 +38,7 @@ public final class MembershipStateAdapter implements MembershipPort {
   public List<String> mappingRuleIds(final MembershipQuery query) {
     final var rawClaims = query.tokenClaims().get(Authorization.USER_TOKEN_CLAIMS);
     @SuppressWarnings("unchecked")
-    final var tokenClaims =
+    final Map<String, Object> tokenClaims =
         rawClaims instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
     return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), tokenClaims)
         .map(PersistedMappingRule::getMappingRuleId)
