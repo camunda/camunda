@@ -1,0 +1,27 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/templates/headless-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-headless
+  namespace: "c8-golden-stable-89-rdbms"
+  labels:
+    app.kubernetes.io/instance: c8-golden-stable-89-rdbms
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 26.3.3
+
+    app.kubernetes.io/component: keycloak
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: http
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/instance: c8-golden-stable-89-rdbms
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: keycloak

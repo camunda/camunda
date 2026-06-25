@@ -1,0 +1,269 @@
+---
+# Source: camunda-platform/templates/orchestration/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-89-rdbms
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "8.9.9"
+apiVersion: v1
+data:
+  startup.sh: |
+    # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+    # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * 1 + 0]}"
+    echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
+
+    if [ "$ZEEBE_RESTORE" = "true" ]; then
+      if [ "${ZEEBE_RESTORE_FROM_BACKUP_ID:-}" ]; then
+        exec restore --backupId="${ZEEBE_RESTORE_FROM_BACKUP_ID}"
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ] && [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}" --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
+      elif [ "${ZEEBE_RESTORE_FROM_TIMESTAMP:-}" ]; then
+        exec restore --from="${ZEEBE_RESTORE_FROM_TIMESTAMP}"
+      elif [ "${ZEEBE_RESTORE_TO_TIMESTAMP:-}" ]; then
+        exec restore --to="${ZEEBE_RESTORE_TO_TIMESTAMP}"
+      else
+        exec restore
+      fi
+    else
+      exec camunda
+    fi
+  application.yaml: |    
+    spring:
+      config:
+        import:
+          - optional:file:/usr/local/camunda/config/application.yml
+          - optional:file:/usr/local/camunda/config/application-override.yml
+      profiles:
+        active: "admin,broker,operate,tasklist,consolidated-auth"
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+    
+    server:
+      address: 0.0.0.0
+      port: 8080
+      tomcat:
+        max-http-form-post-size: "10MB"
+    
+    management:
+      server:
+        address: 0.0.0.0
+        port: 9600
+        base-path: "/"
+    
+    camunda:
+      license:
+        key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
+    
+      system:
+        cpu-thread-count: 3
+        io-thread-count: 3
+        clock-controlled: false
+        validate-restore-config: true
+        upgrade:
+          enable-version-check: true
+    
+      cluster:
+        # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+        # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+        node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+        size: "3"
+        replication-factor: "3"
+        partition-count: "3"
+        # Keep the unified Camunda and legacy Zeebe network limits aligned while supported versions bind both namespaces.
+        network:
+          max-message-size: "10MB"
+        # zeebe.broker.cluster
+        initial-contact-points:
+          - camunda-0.${K8S_SERVICE_NAME}:26502
+          - camunda-1.${K8S_SERVICE_NAME}:26502
+          - camunda-2.${K8S_SERVICE_NAME}:26502
+    
+      api:
+        grpc:
+          address: 0.0.0.0
+          port: 26500
+          max-message-size: "10MB"
+    
+      # Database configuration - Separated syntax.
+      database:
+    
+      data:
+        snapshot-period: "5m"
+        primary-storage:
+          disk:
+            free-space:
+              processing: "2GB"
+              replication: "1GB"
+        secondary-storage:
+          autoconfigure-camunda-exporter: false
+          type: "rdbms"
+          retention:
+            enabled: true
+            minimum-age: "1d"
+          rdbms:
+            aws-enabled: false
+            url: "jdbc:postgresql://postgresql:5432/camunda"
+            username: "camunda"
+            password: "${VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD:}"
+    
+      # Security configuration - Separated syntax.
+      security:
+        authentication:
+          oidc:
+            username-claim: "preferred_username"
+            client-id-claim: "client_id"
+            client-id: "orchestration"
+            client-secret: ${VALUES_ORCHESTRATION_CLIENT_SECRET:}
+            audiences:
+              - "orchestration"
+              - "orchestration-api"
+              - "web-modeler-api"
+            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
+            jwk-set-uri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            token-uri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+            redirect-uri: "http://localhost:8080/sso-callback"
+            authenticationRefreshInterval: "PT30S"
+          method: "oidc"
+          unprotectedApi: false
+        authorizations:
+          enabled: true
+        initialization:
+          default-roles:
+            admin:
+              users:
+              - demo
+            connectors:
+              clients:
+              - connectors
+              users:
+              - connectors
+          authorizations:
+            - ownerId: orchestration
+              ownerType: CLIENT
+              permissions:
+              - CREATE
+              resourceId: '*'
+              resourceType: RESOURCE
+            - ownerId: orchestration
+              ownerType: CLIENT
+              permissions:
+              - CREATE_PROCESS_INSTANCE
+              - UPDATE_PROCESS_INSTANCE
+              - READ_PROCESS_INSTANCE
+              - READ_PROCESS_DEFINITION
+              resourceId: '*'
+              resourceType: PROCESS_DEFINITION
+            - ownerId: orchestration
+              ownerType: CLIENT
+              permissions:
+              - CREATE
+              resourceId: '*'
+              resourceType: MESSAGE
+        multiTenancy:
+          checksEnabled: false
+          apiEnabled: true
+      identity:
+        clientId: "orchestration"
+        audience: "orchestration-api"
+      persistent:
+        sessions:
+          enabled: true
+    
+      #
+      # Camunda Operate Configuration - Separated syntax.
+      #
+      operate:
+        multiTenancy:
+          enabled: false
+        identity:
+          redirectRootUrl: "http://localhost:8080/operate"
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "camunda-gateway:26500"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 1d
+    
+      #
+      # Camunda Tasklist Configuration - Separated syntax.
+      #
+      tasklist:
+        multiTenancy:
+          enabled: false
+        identity:
+          redirectRootUrl: "http://localhost:8080/tasklist"
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "camunda-gateway:26500"
+          restAddress: "http://camunda-gateway:8080"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 1d
+    
+    #
+    # Camunda Zeebe Configuration - Separated syntax.
+    #
+    zeebe:
+      host: 0.0.0.0
+      log:
+        level: "info"
+    
+      broker:
+        # zeebe.broker.gateway
+        gateway:
+          enable: true
+          multitenancy:
+            enabled: false
+    
+        # zeebe.broker.network
+        network:
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          host: 0.0.0.0
+          # Legacy Zeebe namespace retained while supported versions still bind it; keep it aligned with camunda.cluster.network.
+          maxMessageSize: "10MB"
+          commandApi:
+            port: 26501
+          internalApi:
+            port: 26502
+    
+        # zeebe.broker.cluster
+        cluster:
+          clusterName: c8-golden-stable-89-rdbms-zeebe
+        # zeebe.broker.exporters
+        exporters: {}
+    
+  log4j2.xml: |
+  application.yml: |
+    # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
+    zeebe.broker.executionMetricsExporterEnabled: "true"
+    camunda.flags.jfr.metrics: "true"
+    # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
+    zeebe.broker.data.disk.freeSpace.processing: "3GB"
+    zeebe.broker.data.disk.freeSpace.replication: "2GB"
+    # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+    # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
+    zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+    zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+    # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+    zeebe.broker.flowControl.write.enabled: "true"
+    zeebe.broker.flowControl.write.limit: 10000
+    zeebe.broker.flowControl.write.throttling.enabled: "true"
+    # History cleanup adjust batch sizes
+    camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize: 100000
+    camunda.data.secondary-storage.rdbms.history.historyCleanupProcessInstanceBatchSize: 2000
+  application-override.yml: |
+    # no overrides
