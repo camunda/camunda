@@ -108,6 +108,18 @@ public sealed interface ClusterConfigurationChangeOperation {
   record ModeChangeOperation(MemberId memberId, Mode mode)
       implements ClusterConfigurationChangeOperation {}
 
+  /**
+   * Verifies that a member's partition manager has finished starting in the target mode. Emitted
+   * after the {@link ModeChangeOperation}s of a mode change so that the cluster change only
+   * completes once every member's partitions are up. It changes no member state; it only gates the
+   * change plan until the local transition has settled.
+   *
+   * @param memberId the member whose mode transition is awaited
+   * @param mode the mode the member is expected to have transitioned into
+   */
+  record AwaitModeChangeOperation(MemberId memberId, Mode mode)
+      implements ClusterConfigurationChangeOperation {}
+
   sealed interface ScaleUpOperation extends ClusterConfigurationChangeOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute

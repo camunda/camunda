@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
@@ -146,6 +147,8 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
             case PROCESSING ->
                 new ExitRecoveryApplier(modeChangeOperation.memberId(), recoveryModeChangeExecutor);
           };
+      case final AwaitModeChangeOperation awaitModeChangeOperation ->
+          new AwaitModeChangeApplier(awaitModeChangeOperation.mode(), recoveryModeChangeExecutor);
     };
   }
 }
