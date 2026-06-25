@@ -19,7 +19,6 @@ package io.atomix.cluster.messaging.impl;
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.sun.security.auth.module.UnixSystem;
 import io.atomix.cluster.messaging.HeartbeatRequestDecoder;
 import io.atomix.cluster.messaging.HeartbeatResponseDecoder;
@@ -96,7 +95,10 @@ final class NettyMessagingServiceTest {
   }
 
   private Address newAddress() {
-    return Address.from(SocketUtil.getNextAddress().getPort());
+    // Use the host chosen by SocketUtil (localhost) rather than re-deriving it from the machine
+    // hostname via Address.from(port).
+    final var socketAddress = SocketUtil.getNextAddress();
+    return Address.from(socketAddress.getHostString(), socketAddress.getPort());
   }
 
   private void startMessagingServices(final NettyMessagingService... services) {
@@ -379,27 +381,37 @@ final class NettyMessagingServiceTest {
     }
 
     @Test
-    void testSendAsync() {
+    void testSendAsync() throws InterruptedException {
       final var invalidAddress = Address.from("127.0.0.1", 5007);
       final var subject = nextSubject();
-      final var latch1 = new CountDownLatch(1);
-      CompletableFuture<Void> response =
-          netty1.sendAsync(netty2.address(), subject, "hello world".getBytes());
-      response.whenComplete(
-          (r, e) -> {
-            assertThat(e).isNull();
-            latch1.countDown();
-          });
-      Uninterruptibles.awaitUninterruptibly(latch1);
 
-      final CountDownLatch latch2 = new CountDownLatch(1);
-      response = netty1.sendAsync(invalidAddress, subject, "hello world".getBytes());
-      response.whenComplete(
-          (r, e) -> {
-            assertThat(e).isInstanceOf(ConnectException.class);
-            latch2.countDown();
-          });
-      Uninterruptibles.awaitUninterruptibly(latch2);
+      final var error1 = new AtomicReference<Throwable>();
+      final var latch1 = new CountDownLatch(1);
+      netty1
+          .sendAsync(netty2.address(), subject, "hello world".getBytes())
+          .whenComplete(
+              (r, e) -> {
+                error1.set(e);
+                latch1.countDown();
+              });
+      assertThat(latch1.await(5, TimeUnit.SECONDS))
+          .as("sendAsync to a valid address completes within 5s")
+          .isTrue();
+      assertThat(error1.get()).isNull();
+
+      final var error2 = new AtomicReference<Throwable>();
+      final var latch2 = new CountDownLatch(1);
+      netty1
+          .sendAsync(invalidAddress, subject, "hello world".getBytes())
+          .whenComplete(
+              (r, e) -> {
+                error2.set(e);
+                latch2.countDown();
+              });
+      assertThat(latch2.await(5, TimeUnit.SECONDS))
+          .as("sendAsync to an invalid address completes within 5s")
+          .isTrue();
+      assertThat(error2.get()).isInstanceOf(ConnectException.class);
     }
 
     @Test
