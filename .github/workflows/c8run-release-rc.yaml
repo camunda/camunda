@@ -171,6 +171,8 @@ jobs:
             secret/data/products/distribution/ci APPLE_DEVELOPER_PASSWORD;
             secret/data/products/distribution/ci APPLE_TEAM_ID;
             secret/data/products/distribution/ci APPLE_COMMON_NAME;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
 
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
@@ -265,13 +267,77 @@ jobs:
         run: |
           mv ./c8run/tmp/c8run_complete.zip ./c8run/"$C8RUN_NAME_ARTIFACT"
 
-      - name: Upload RC artifact for staging
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ${{ matrix.os.id }}
-          path: ${{ matrix.os.workingDir }}/${{ env.C8RUN_NAME_ARTIFACT }}
-          if-no-files-found: error
-          retention-days: 7
+      - name: Install regctl CLI
+        env:
+          REGCTL_VERSION: "0.11.5"
+          REGCTL_SHA_LINUX_AMD64: "c93aa7638749f5aaac1a8e01787321889c78f0101809bb2880343478d0ba0467"
+          REGCTL_SHA_DARWIN_ARM64: "f4d536d64d0c3cc1db7400902175a1c314675991d22e87e15c319501a2676d3f"
+          REGCTL_SHA_DARWIN_AMD64: "c132fdddda68b9c7584ac19f3b40cd17f71916c2bca8182270ebe65b55198a12"
+          REGCTL_SHA_WINDOWS_AMD64: "9b83975d464e4ee5a9f899a3ead26072ed67e9a8ed0f582897bfad8141b45938"
+        run: |
+          case "${RUNNER_OS}_${RUNNER_ARCH}" in
+            Linux_X64)   asset="regctl-linux-amd64";       sha="${REGCTL_SHA_LINUX_AMD64}" ;;
+            macOS_ARM64) asset="regctl-darwin-arm64";      sha="${REGCTL_SHA_DARWIN_ARM64}" ;;
+            macOS_X64)   asset="regctl-darwin-amd64";      sha="${REGCTL_SHA_DARWIN_AMD64}" ;;
+            Windows_X64) asset="regctl-windows-amd64.exe"; sha="${REGCTL_SHA_WINDOWS_AMD64}" ;;
+            *) echo "::error::unsupported runner ${RUNNER_OS}_${RUNNER_ARCH}"; exit 1 ;;
+          esac
+          dir="${HOME}/regctl-bin"; mkdir -p "${dir}"
+          out="${dir}/regctl"; [ "${RUNNER_OS}" = "Windows" ] && out="${dir}/regctl.exe"
+          curl -fsSL -o "${out}" "https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/${asset}"
+          actual="$(openssl dgst -sha256 "${out}" | awk '{print $NF}')"
+          if [ "${actual}" != "${sha}" ]; then
+            echo "::error::regctl checksum mismatch: got ${actual}, want ${sha}"; exit 1
+          fi
+          chmod +x "${out}"
+          echo "REGCTL=${out}" >> "$GITHUB_ENV"
+          "${out}" version
+
+      # Push this OS's artifact straight to its own per-OS Harbor tag (no GHA staging hop, no gather):
+      # the four runners stage concurrently, each uploading once.
+      - name: Push RC artifact to Harbor
+        working-directory: ${{ matrix.os.workingDir }}
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
+          ARTIFACT: ${{ env.C8RUN_NAME_ARTIFACT }}
+          ARTIFACT_SUFFIX: ${{ matrix.os.artifactFileSuffix }}
+          RC_BASE: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
+        run: |
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::Built artifact ${ARTIFACT} not found in $(pwd)."
+            exit 1
+          fi
+          os_tag="${ARTIFACT_SUFFIX%%.*}"
+          case "${ARTIFACT_SUFFIX}" in
+            *.tar.gz) media_type="application/gzip" ;;
+            *.zip)    media_type="application/zip" ;;
+            *)        media_type="application/octet-stream" ;;
+          esac
+          rc_ref="${RC_BASE}-${os_tag}"
+          echo "Staging ${ARTIFACT} -> ${rc_ref}"
+          echo "Checksum (pre-push; compare against the public promote):"
+          openssl dgst -sha256 "${ARTIFACT}"
+
+          echo "${HARBOR_REGISTRY_PASSWORD}" | \
+            "${REGCTL}" registry login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --pass-stdin
+          # Upload in 320 MiB chunks (a monolithic PUT of the ~780 MB artifact overruns Harbor's
+          # ~60s per-request gateway timeout; 320 MiB measured ~33s/chunk at peak throughput).
+          "${REGCTL}" registry set "${HARBOR_REGISTRY_HOST}" --blob-chunk 335544320
+
+          attempt=1
+          until "${REGCTL}" artifact put --artifact-type application/vnd.camunda.c8run.v1 --file-title \
+            -f "${ARTIFACT}" -m "${media_type}" "${rc_ref}"; do
+            if [ "${attempt}" -ge 3 ]; then
+              echo "::error::regctl artifact put failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "::warning::regctl artifact put failed (attempt ${attempt}); re-authenticating and retrying..."
+            echo "${HARBOR_REGISTRY_PASSWORD}" | \
+              "${REGCTL}" registry login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --pass-stdin || true
+            attempt=$((attempt + 1))
+            sleep 30
+          done
 
       - name: Observe build status
         if: always()
@@ -284,106 +350,38 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  stage-rc:
-    name: Stage RC to Harbor
+  rc-summary:
+    name: RC summary
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
-      - name: Checkout observe-build-status action
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: .github/actions/observe-build-status
-          sparse-checkout-cone-mode: false
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
-            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
-
-      - name: Setup oras
-        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
-
-      - name: Download built RC artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          path: rc-artifacts
-          merge-multiple: true
-
-      - name: Push RC artifacts to Harbor
-        working-directory: rc-artifacts
-        env:
-          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
-          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
-          RC_REF: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
-        run: |
-          echo "Staging artifacts:"
-          ls -la
-          echo "Artifact checksums (pre-push; compare against the public promote):"
-          sha256sum ./* || true
-          mapfile -t files < <(find . -maxdepth 1 -type f -printf '%P\n')
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "::error::No RC artifacts found to push."
-            exit 1
-          fi
-
-          echo "${HARBOR_REGISTRY_PASSWORD}" | \
-            oras login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --password-stdin
-
-          # Retry oras push for transient Harbor 401s.
-          attempt=1
-          until oras push "${RC_REF}" "${files[@]}"; do
-            if [ "${attempt}" -ge 3 ]; then
-              echo "::error::oras push failed after ${attempt} attempts"
-              exit 1
-            fi
-            echo "::warning::oras push failed (attempt ${attempt}); re-authenticating and retrying..."
-            echo "${HARBOR_REGISTRY_PASSWORD}" | \
-              oras login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --password-stdin || true
-            attempt=$((attempt + 1))
-            sleep 30
-          done
-
       - name: Release summary
         env:
-          RC_REF: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
           DRY_RUN: ${{ inputs.dryRun }}
           BRANCH: ${{ inputs.branch }}
           CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
           CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+          RC_PREFIX: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
         run: |
           {
             if [ "${DRY_RUN}" = "true" ]; then
               echo "🧪 C8Run RC staged to Harbor (DRY RUN) 🧪"
               echo "- The .env bump PR was skipped."
-              echo "- Delete this tag when done: \`oras manifest delete ${RC_REF}\`"
+              echo "- Delete the dryrun tags when done: \`regctl tag rm ${RC_PREFIX}-<os>\` for each OS."
             else
               echo "⭐ C8Run RC staged to Harbor ⭐"
             fi
             echo "- Branch: \`${BRANCH}\`"
             echo "- Version: \`${CAMUNDA_VERSION}\`"
             echo "- Connectors: \`${CONNECTORS_VERSION}\`"
-            echo "- RC artifact: \`${RC_REF}\`"
+            echo "- RC artifacts (one tag per OS):"
+            for os in linux-x86_64 darwin-aarch64 darwin-x86_64 windows-x86_64; do
+              echo "  - \`${RC_PREFIX}-${os}\`"
+            done
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Persist exactly what was built: open (do not merge) a c8run/.env bump PR against the release
   # branch. This replaces the manual "Version Bump" runbook step. The PR is merged after QA sign-off
@@ -392,8 +390,9 @@ jobs:
   # backport.yml) so the PR triggers CI and can clear the main ruleset + merge queue.
   open-env-pr:
     name: Open c8run/.env bump PR
-    needs: stage-rc
+    needs: build
     if: ${{ !inputs.dryRun }}
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}

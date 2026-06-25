@@ -75,8 +75,17 @@ jobs:
             secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
             secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
 
-      - name: Setup oras
-        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
+      - name: Install regctl CLI
+        env:
+          REGCTL_VERSION: "0.11.5"
+          REGCTL_SHA256: "c93aa7638749f5aaac1a8e01787321889c78f0101809bb2880343478d0ba0467"
+        run: |
+          workdir="$(mktemp -d)"; cd "$workdir"
+          curl -fsSL -o regctl "https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-amd64"
+          echo "${REGCTL_SHA256}  regctl" | sha256sum -c -
+          chmod +x regctl
+          sudo mv regctl /usr/local/bin/regctl
+          regctl version
 
       - name: Guard - Camunda apps release must exist
         if: ${{ !inputs.dryRun }}
@@ -94,12 +103,15 @@ jobs:
         env:
           HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
           HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
-          RC_REF: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
+          RC_PREFIX: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
         run: |
           mkdir -p artifacts
           echo "${HARBOR_REGISTRY_PASSWORD}" | \
-            oras login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --password-stdin
-          oras pull "${RC_REF}" --output artifacts
+            regctl registry login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --pass-stdin
+          # The RC build stages one tag per OS in parallel; pull each into the same dir.
+          for os in linux-x86_64 darwin-aarch64 darwin-x86_64 windows-x86_64; do
+            regctl artifact get "${RC_PREFIX}-${os}" --output artifacts
+          done
           echo "Pulled RC artifacts (notarized bytes, unchanged):"
           ls -la artifacts
           echo "Artifact checksums (post-pull; must match the RC build's pre-push checksums):"
@@ -165,24 +177,10 @@ jobs:
           echo "Download Center own (minor):  c8run/${MINOR}/  <- artifacts/camunda8-run-${MINOR}-*"
           echo "Download Center apps version: c8run/${CAMUNDA_VERSION}/  <- artifacts/camunda8-run-${CAMUNDA_VERSION}-*"
 
-      # On a dry run ARCHIVE_TAG carries a -dryrun suffix, so this retags the isolated dryrun artifact
-      # rather than a public version — it intentionally runs in both modes and needs no dryRun guard.
-      - name: Harbor - Tag promoted version (archival)
-        env:
-          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
-          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
-          RC_REF: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
-          ARCHIVE_TAG: ${{ inputs.camundaVersion }}${{ inputs.dryRun && '-dryrun' || '' }}
-        run: |
-          echo "${HARBOR_REGISTRY_PASSWORD}" | \
-            oras login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --password-stdin
-          oras tag "${RC_REF}" "${ARCHIVE_TAG}"
-
       - name: Release summary
         env:
           MINOR: ${{ steps.vars.outputs.minor }}
           DRY_RUN: ${{ inputs.dryRun }}
-          ARCHIVE_TAG: ${{ inputs.camundaVersion }}${{ inputs.dryRun && '-dryrun' || '' }}
           CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
           REPO: ${{ github.repository }}
         run: |
@@ -190,9 +188,9 @@ jobs:
             if [ "${DRY_RUN}" = "true" ]; then
               echo "🧪 C8Run public promote (DRY RUN) 🧪"
               echo "- Version: \`${CAMUNDA_VERSION}\` (minor \`${MINOR}\`)"
-              echo "- Pulled & re-hashed the isolated \`${CAMUNDA_VERSION}-rc-dryrun\` tag — see the pull step for checksums."
+              echo "- Pulled & re-hashed the isolated \`${CAMUNDA_VERSION}-rc-dryrun-<os>\` tags — see the pull step for checksums."
               echo "- Public publishes (GitHub release + Download Center) were logged, not executed."
-              echo "- Delete the dryrun tags when done: \`oras manifest delete .../${RC_REPOSITORY}:${ARCHIVE_TAG}\` and \`...:${CAMUNDA_VERSION}-rc-dryrun\`"
+              echo "- No Harbor tags were written; the pulled \`${CAMUNDA_VERSION}-rc-dryrun-<os>\` tags are residue from the RC dry run (delete with \`regctl tag rm\`)."
             else
               echo "⭐ C8Run public release complete ⭐"
               echo "- Version: \`${CAMUNDA_VERSION}\` (minor \`${MINOR}\`)"
@@ -211,3 +209,73 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Merge the c8run/.env bump PR that the RC workflow opened, mirroring the Helm chart's public
+  # release. A non-merge is a branch-sync gap, not a release failure (the artifacts are already
+  # published), so this job never fails the run; it warns and leaves the PR for a manual merge.
+  merge-env-pr:
+    name: Merge c8run/.env bump PR
+    needs: promote
+    if: ${{ !inputs.dryRun }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        with:
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Find PR and enable auto-merge
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          ACTIONS_TOKEN: ${{ github.token }}
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          REPO: ${{ github.repository }}
+        run: |
+          pr_branch="c8run-release-${CAMUNDA_VERSION}"
+          pr_number="$(gh pr list --repo "${REPO}" --state open --head "${pr_branch}" --json number --jq '.[0].number // empty')"
+          if [ -z "${pr_number}" ]; then
+            echo "::notice::No open c8run/.env bump PR for ${pr_branch} (already merged, or the RC bump was a no-op). Nothing to merge."
+            echo "pr_number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
+          # Approve as the Actions identity, which differs from the app that authored the PR.
+          GH_TOKEN="${ACTIONS_TOKEN}" gh pr review "${pr_number}" --repo "${REPO}" --approve \
+            || echo "::warning::Could not approve PR #${pr_number}; relying on the merge queue / a human review."
+          # Enable auto-merge with the app token; the default Actions token cannot trigger the queue.
+          gh pr merge "${pr_number}" --repo "${REPO}" --auto --squash
+
+      - name: Shepherd PR through the merge queue
+        id: merge-queue
+        if: ${{ steps.find-pr.outputs.pr_number != '' }}
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        with:
+          pr-number: ${{ steps.find-pr.outputs.pr_number }}
+          app-token: ${{ steps.github-token.outputs.token }}
+          repository-owner: ${{ github.repository_owner }}
+          repository-name: ${{ github.event.repository.name }}
+          timeout-minutes: "90"
+          max-evictions: "3"
+
+      - name: Warn if PR did not merge
+        if: ${{ steps.find-pr.outputs.pr_number != '' && steps.merge-queue.outputs.result != 'merged' }}
+        env:
+          PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
+          RESULT: ${{ steps.merge-queue.outputs.result }}
+        run: |
+          echo "::warning::c8run/.env bump PR #${PR_NUMBER} did not merge (merge-queue result: ${RESULT:-unknown}). Merge it manually so the release branch records the published versions."
