@@ -29,7 +29,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Type check
         run: npm run typecheck
       - name: Observe build status
@@ -57,7 +62,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: ESLint
         run: npm run lint:eslint
       - name: Observe build status
@@ -85,7 +95,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Knip
         run: npm run lint:knip
       - name: Observe build status
@@ -113,7 +128,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Prettier
         run: npm run lint:prettier
       - name: Observe build status
@@ -141,7 +161,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Build packages
         run: npm run build
       - name: Observe build status
@@ -176,7 +201,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Unit tests
         run: npm run test:unit -w @camunda/orchestration-cluster-webapp
       - name: Upload blob report
@@ -221,7 +251,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Integration tests
@@ -267,7 +302,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Accessibility tests
@@ -313,7 +353,12 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: npm ci --prefix webapp/client
       - name: Build frontend
         run: npm run build:visual-regression -w @camunda/orchestration-cluster-webapp
       - name: Visual regression tests
