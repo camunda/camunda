@@ -11,6 +11,8 @@ import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.immutable.OffsetState;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.ZeebeDb;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,6 +39,23 @@ public final class OffsetQueryService {
   /** A group's committed offsets ({@code (topic, partition) → position}), read from state. */
   public Map<TopicPartition, Long> committedOffsets(final String group) {
     return state().committedOffsets(group);
+  }
+
+  /**
+   * The committed offsets for just the given partitions, point-read from state. A partition with no
+   * committed offset maps to {@code -1}. An empty filter falls back to every offset for the group.
+   */
+  public Map<TopicPartition, Long> committedOffsets(
+      final String group, final List<TopicPartition> filter) {
+    if (filter.isEmpty()) {
+      return committedOffsets(group);
+    }
+    final var state = state();
+    final var offsets = new LinkedHashMap<TopicPartition, Long>();
+    for (final var partition : filter) {
+      offsets.put(partition, state.getOffset(group, partition.topic(), partition.partition()));
+    }
+    return offsets;
   }
 
   private OffsetState state() {

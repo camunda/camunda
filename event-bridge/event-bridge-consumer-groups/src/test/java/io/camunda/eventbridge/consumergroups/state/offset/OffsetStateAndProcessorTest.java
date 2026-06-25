@@ -26,6 +26,8 @@ import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,8 +95,32 @@ final class OffsetStateAndProcessorTest {
     final var query = new OffsetQueryService(db);
     assertThat(query.committedOffsets("group-a"))
         .containsExactly(
-            java.util.Map.entry(new TopicPartition("t", 1), 8L),
-            java.util.Map.entry(new TopicPartition("t", 2), 4L));
+            Map.entry(new TopicPartition("t", 1), 8L), Map.entry(new TopicPartition("t", 2), 4L));
+  }
+
+  @Test
+  void shouldReturnOnlyFilteredPartitionsWithMinusOneForUncommitted() {
+    applier.applyState(1, commit("group-a", 1, 8));
+    applier.applyState(2, commit("group-a", 2, 4));
+
+    // given a filter for one committed and one uncommitted partition
+    final var query = new OffsetQueryService(db);
+    final var filter = List.of(new TopicPartition("t", 1), new TopicPartition("t", 9));
+
+    // then only the requested partitions come back; the uncommitted one is -1
+    assertThat(query.committedOffsets("group-a", filter))
+        .containsExactly(
+            Map.entry(new TopicPartition("t", 1), 8L), Map.entry(new TopicPartition("t", 9), -1L));
+  }
+
+  @Test
+  void shouldReturnAllOffsetsWhenFilterIsEmpty() {
+    applier.applyState(1, commit("group-a", 1, 8));
+    applier.applyState(2, commit("group-a", 2, 4));
+
+    final var query = new OffsetQueryService(db);
+    assertThat(query.committedOffsets("group-a", List.of()))
+        .isEqualTo(query.committedOffsets("group-a"));
   }
 
   @Test

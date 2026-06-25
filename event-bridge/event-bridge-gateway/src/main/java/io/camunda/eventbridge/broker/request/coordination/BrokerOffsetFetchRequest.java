@@ -24,6 +24,7 @@ public class BrokerOffsetFetchRequest extends BrokerExecuteCoordinateRequest<Off
 
   public BrokerOffsetFetchRequest wrapRequest(final OffsetFetchRequest req) {
     request.setGroupId(req.getGroupId());
+    req.getPartitions().forEach(request::addPartition);
     return this;
   }
 

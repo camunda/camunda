@@ -14,7 +14,9 @@ import io.camunda.eventbridge.mapper.RequestMapper;
 import io.camunda.eventbridge.mapper.ResponseMapper;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.eventbridge.service.CoordinatorService;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -158,8 +161,13 @@ public class CoordinationController {
   }
 
   @GetMapping("/{groupId}/offsets")
-  public CompletableFuture<ResponseEntity<Object>> offsets(@PathVariable final String groupId) {
+  public CompletableFuture<ResponseEntity<Object>> offsets(
+      @PathVariable final String groupId,
+      @RequestParam(name = "partition", required = false) final List<String> partitions) {
     final var request = new OffsetFetchRequest().setGroupId(groupId);
+    if (partitions != null) {
+      partitions.forEach(partition -> request.addPartition(parsePartition(partition)));
+    }
     return coordinatorService
         .offsetFetch(request)
         .handleAsync(
@@ -196,5 +204,17 @@ public class CoordinationController {
   /** The coordinator partition leader was unreachable; the client should retry. */
   private static ResponseEntity<Object> coordinatorUnavailable() {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+  }
+
+  /** Parses a {@code topic:partition} query parameter into a {@link TopicPartition}. */
+  private static TopicPartition parsePartition(final String partition) {
+    final var separator = partition.lastIndexOf(':');
+    if (separator <= 0 || separator == partition.length() - 1) {
+      throw new IllegalArgumentException(
+          "Expected partition filter as 'topic:partition' but got: " + partition);
+    }
+    final var topic = partition.substring(0, separator);
+    final var id = Integer.parseInt(partition.substring(separator + 1));
+    return new TopicPartition(topic, id);
   }
 }

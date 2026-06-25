@@ -56,7 +56,8 @@ public final class ConsumerGroupQueryHandler extends Actor {
 
   /**
    * Serves an offset fetch: reads the group's committed offsets from state and returns the
-   * serialized reply. An empty group id is rejected in the payload.
+   * serialized reply. With no partition filter the whole group is returned; with one, only those
+   * partitions are (uncommitted ones as {@code -1}). An empty group id is rejected in the payload.
    */
   public CompletableFuture<byte[]> handleOffsetFetch(final OffsetFetchRequest request) {
     final var result = new CompletableFuture<byte[]>();
@@ -70,7 +71,8 @@ public final class ConsumerGroupQueryHandler extends Actor {
             } else {
               response
                   .setErrorCode(NONE)
-                  .setCommittedOffsets(offsetQuery.committedOffsets(groupId));
+                  .setCommittedOffsets(
+                      offsetQuery.committedOffsets(groupId, request.getPartitions()));
             }
             result.complete(CoordinationResponseEncoder.serialize(response));
           } catch (final RuntimeException e) {
