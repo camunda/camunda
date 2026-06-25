@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.AgentHistoryMapper;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
@@ -50,6 +51,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 public record RdbmsMapperBundle(
     SqlSessionFactory sqlSessionFactory,
     VendorDatabaseProperties vendorDatabaseProperties,
+    AgentHistoryMapper agentHistoryMapper,
     AgentInstanceMapper agentInstanceMapper,
     AuditLogMapper auditLogMapper,
     AuthorizationMapper authorizationMapper,
@@ -94,6 +96,7 @@ public record RdbmsMapperBundle(
     return new RdbmsMapperBundle(
         sqlSessionFactory,
         vendorDatabaseProperties,
+        sqlSession.getMapper(AgentHistoryMapper.class),
         sqlSession.getMapper(AgentInstanceMapper.class),
         sqlSession.getMapper(AuditLogMapper.class),
         sqlSession.getMapper(AuthorizationMapper.class),

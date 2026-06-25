@@ -58,6 +58,7 @@ public class RdbmsWriterFactory {
         mapperBundle.correlatedMessageSubscriptionMapper(),
         mapperBundle.clusterVariableMapper(),
         mapperBundle.historyDeletionMapper(),
+        mapperBundle.agentHistoryMapper(),
         mapperBundle.agentInstanceMapper(),
         mapperBundle.waitStateMapper());
   }
