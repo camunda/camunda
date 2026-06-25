@@ -39,7 +39,10 @@ import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -47,18 +50,18 @@ import java.util.function.Consumer;
 
 /**
  * Manages the OTel SDK lifecycle for one partition. Provides log events via {@link #logEvent} and
- * pre-aggregated metric counters via {@link #incrementMetric}. Metric collection is triggered
- * manually via {@link #flushMetrics} from the partition thread — no background reader thread.
+ * pre-aggregated metric counters via {@link #incrementMetric}. Product metric collection is
+ * triggered manually via {@link #flushMetrics} from the partition thread — no background reader
+ * thread for product metrics.
  *
  * <p>A second {@link SdkMeterProvider} ({@code selfMetricsSdkMeterProvider}) is registered with a
- * {@link ManualMetricReader} backed by a {@link MicrometerMetricExporter}. OTel SDK components
+ * {@link PeriodicMetricReader} backed by a {@link MicrometerMetricExporter}. OTel SDK components
  * (BatchLogRecordProcessor, OtlpHttpLogRecordExporter, OtlpHttpMetricExporter) report their
- * self-metrics into this provider; those metrics are flushed into Micrometer on every {@link
- * #flushMetrics()} call.
+ * self-metrics into this provider; those metrics are collected on a dedicated background thread
+ * every 15 seconds, fully decoupled from the product metric push interval.
  *
- * <p>Trade-offs vs. a MicrometerMeterProvider bridge: queue depth is a flush-interval snapshot
- * rather than real-time, and {@link #flushMetrics()} performs two collection passes (self-metrics
- * first, then product metrics).
+ * <p>Trade-offs vs. a MicrometerMeterProvider bridge: queue depth is a periodic snapshot rather
+ * than real-time.
  */
 public class OtelSdkManager implements AutoCloseable {
 
@@ -73,7 +76,7 @@ public class OtelSdkManager implements AutoCloseable {
   private Logger otelLogger;
   private Meter otelMeter;
   private ManualMetricReader metricReader;
-  private ManualMetricReader selfMetricsReader;
+  private MetricReader selfMetricsReader;
   private SdkMeterProvider selfMetricsSdkMeterProvider;
   private AnalyticsExporterMetadata metadata;
   private final Map<String, LongCounter> counters = new HashMap<>();
@@ -96,10 +99,10 @@ public class OtelSdkManager implements AutoCloseable {
     counters.clear();
     metricWindow.reset();
 
-    // Self-metrics pipeline: OTel SDK internal telemetry → ManualMetricReader →
-    // MicrometerMetricExporter → Micrometer. Flushed on each flushMetrics() call.
+    // Self-metrics pipeline: OTel SDK internal telemetry → PeriodicMetricReader →
+    // MicrometerMetricExporter → Micrometer. Collected on a background thread every 15 s.
     final var selfMetricsExporter = new MicrometerMetricExporter(meterRegistry);
-    selfMetricsReader = new ManualMetricReader(selfMetricsExporter);
+    selfMetricsReader = createSelfMetricsReader(selfMetricsExporter);
     selfMetricsSdkMeterProvider =
         SdkMeterProvider.builder().registerMetricReader(selfMetricsReader).build();
 
@@ -180,11 +183,22 @@ public class OtelSdkManager implements AutoCloseable {
   // a concern, offload to a background thread: create a fresh MeterProvider per flush ("seal &
   // create"), swap atomically, and collect the old provider on a background ExecutorService.
   void flushMetrics() {
-    if (selfMetricsReader != null) {
-      selfMetricsReader.collectAndExport();
-    }
     if (metricReader != null) {
       metricReader.collectAndExport();
+    }
+  }
+
+  /**
+   * Forces an immediate collection of self-metrics (OTel SDK internal telemetry) into Micrometer.
+   *
+   * <p>In production, {@code selfMetricsReader} is a {@link PeriodicMetricReader} whose {@link
+   * MetricReader#forceFlush()} triggers an immediate out-of-band collection. In tests it is a
+   * {@link ManualMetricReader} whose {@code forceFlush()} calls {@code collectAndExport()}
+   * synchronously — ensuring deterministic assertions without background threads.
+   */
+  void flushSelfMetrics() {
+    if (selfMetricsReader != null) {
+      selfMetricsReader.forceFlush().join(5, TimeUnit.SECONDS);
     }
   }
 
@@ -275,6 +289,16 @@ public class OtelSdkManager implements AutoCloseable {
     }
 
     return builder.build();
+  }
+
+  /**
+   * Creates the {@link MetricReader} used for self-metrics collection. Defaults to a {@link
+   * PeriodicMetricReader} that collects on a background thread every 15 seconds, fully decoupled
+   * from the product metric flush interval. Override in tests to return a {@link
+   * ManualMetricReader} for synchronous, deterministic collection.
+   */
+  protected MetricReader createSelfMetricsReader(final MicrometerMetricExporter exporter) {
+    return PeriodicMetricReader.builder(exporter).setInterval(Duration.ofSeconds(15)).build();
   }
 
   /** Override in tests to use an in-memory metric reader instead of ManualMetricReader. */

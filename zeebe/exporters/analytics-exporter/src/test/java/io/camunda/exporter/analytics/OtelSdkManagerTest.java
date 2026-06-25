@@ -332,9 +332,9 @@ class OtelSdkManagerTest {
     final var logExporter = InMemoryLogRecordExporter.create();
     final var manager = TestOtelSdkManager.inMemoryWithRegistry(logExporter, micrometerRegistry);
 
-    // when — emit a log event; flushMetrics() drives the self-metrics reader → Micrometer
+    // when — emit a log event; flushSelfMetrics() drives the self-metrics reader → Micrometer
     manager.logEvent(AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED, 1L, b -> {});
-    manager.flushMetrics();
+    manager.flushSelfMetrics();
 
     // then — SdkLoggerProvider emits otel.sdk.log.created on every emit()
     assertThat(

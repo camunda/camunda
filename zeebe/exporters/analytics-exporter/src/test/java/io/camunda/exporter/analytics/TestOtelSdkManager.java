@@ -13,6 +13,7 @@ import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 
@@ -91,6 +92,12 @@ public final class TestOtelSdkManager {
           protected LogRecordExporter createLogExporter(
               final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return logExporter;
+          }
+
+          @Override
+          protected MetricReader createSelfMetricsReader(final MicrometerMetricExporter exporter) {
+            // Use ManualMetricReader so flushSelfMetrics() is synchronous in tests
+            return new ManualMetricReader(exporter);
           }
         };
     manager.initialize(

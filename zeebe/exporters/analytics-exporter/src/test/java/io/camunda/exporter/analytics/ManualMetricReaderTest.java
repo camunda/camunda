@@ -96,14 +96,15 @@ class ManualMetricReaderTest {
   }
 
   @Test
-  void shouldNotExportOnForceFlush() {
+  void shouldExportOnForceFlush() {
     // given
     counter.add(1, Attributes.empty());
 
-    // when
+    // when — forceFlush() delegates to collectAndExport() for synchronous test collection
     reader.forceFlush();
 
-    // then — no-op to prevent double-flush; final flush is driven by OtelSdkManager.close()
-    assertThat(exported).isEmpty();
+    // then
+    assertThat(exported).hasSize(1);
+    assertThat(exported.get(0)).isNotEmpty();
   }
 }
