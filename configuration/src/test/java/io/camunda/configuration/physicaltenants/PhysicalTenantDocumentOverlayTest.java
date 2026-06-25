@@ -18,11 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
-/**
- * Unit tests for {@link PhysicalTenantDocumentConfigurations#forPhysicalTenant}: verifies the
- * two-phase overlay strategy that correctly merges per-tenant document overrides on top of the root
- * document catalog.
- */
 class PhysicalTenantDocumentOverlayTest {
 
   private MockEnvironment environment;
@@ -40,7 +35,7 @@ class PhysicalTenantDocumentOverlayTest {
 
   @Test
   void shouldInheritRootStoreWhenTenantHasNoOverride() {
-    // given a root catalog with a single AWS store and no tenant-specific document config
+    // given
     environment
         .getPropertySources()
         .addFirst(
@@ -51,11 +46,11 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.document.aws.shared-s3.bucket-path", "root/path",
                     "camunda.document.aws.shared-s3.region", "us-east-1")));
 
-    // when resolving the document for a tenant that has no document overrides
+    // when
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
-    // then the root store is inherited unchanged
+    // then
     assertThat(doc.getAws()).containsKey("shared-s3");
     assertThat(doc.getAws().get("shared-s3").getBucketName()).isEqualTo("root-bucket");
     assertThat(doc.getAws().get("shared-s3").getBucketPath()).isEqualTo("root/path");
@@ -64,8 +59,7 @@ class PhysicalTenantDocumentOverlayTest {
 
   @Test
   void shouldOverrideOnlyTheFieldTenantSets() {
-    // given a root AWS store with bucket-name, bucket-path, and region, and a tenant that overrides
-    // only bucket-path — the other fields must survive from the root
+    // given tenant overrides only bucket-path; other root fields must survive
     environment
         .getPropertySources()
         .addFirst(
@@ -78,11 +72,11 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.physical-tenants.tenanta.document.aws.shared-s3.bucket-path",
                         "tenant-a/path")));
 
-    // when resolving the document for tenanta
+    // when
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
-    // then only the overridden field changes; root fields are preserved
+    // then
     assertThat(doc.getAws().get("shared-s3").getBucketPath()).isEqualTo("tenant-a/path");
     assertThat(doc.getAws().get("shared-s3").getBucketName()).isEqualTo("root-bucket");
     assertThat(doc.getAws().get("shared-s3").getRegion()).isEqualTo("us-east-1");
@@ -90,8 +84,7 @@ class PhysicalTenantDocumentOverlayTest {
 
   @Test
   void shouldAddTenantPrivateStore() {
-    // given a root catalog with one AWS store and a tenant declaring an additional private store
-    // not present in the root
+    // given
     environment
         .getPropertySources()
         .addFirst(
@@ -105,7 +98,7 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.physical-tenants.tenanta.document.aws.private-s3.bucket-path",
                         "tenanta/private")));
 
-    // when resolving the document for tenanta
+    // when
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
@@ -117,7 +110,7 @@ class PhysicalTenantDocumentOverlayTest {
 
   @Test
   void shouldNarrowToAssignedWhenDeclared() {
-    // given a root catalog with two AWS stores and a tenant declaring assigned: [shared-s3]
+    // given
     environment
         .getPropertySources()
         .addFirst(
@@ -130,17 +123,17 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.document.aws.other-store.bucket-path", "other/path",
                     "camunda.physical-tenants.tenanta.document.assigned[0]", "shared-s3")));
 
-    // when resolving the document for tenanta
+    // when
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
-    // then only the assigned store survives; the other root store is dropped
+    // then only the assigned store survives
     assertThat(doc.getAws()).containsOnlyKeys("shared-s3");
   }
 
   @Test
   void shouldNotNarrowWhenAssignedIsEmpty() {
-    // given a root catalog with two stores and a tenant declaring no assigned list
+    // given
     environment
         .getPropertySources()
         .addFirst(
@@ -150,18 +143,17 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.document.aws.store-a.bucket-name", "bucket-a",
                     "camunda.document.aws.store-b.bucket-name", "bucket-b")));
 
-    // when resolving the document for a tenant with no assigned declaration
+    // when
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
-    // then the full catalog survives — an empty assigned list means no restriction
+    // then full catalog survives — empty assigned means no restriction
     assertThat(doc.getAws()).containsKeys("store-a", "store-b");
   }
 
   @Test
   void shouldClearAssignedFromRoot() {
-    // given a root catalog that (hypothetically) has assigned set — this should never be
-    // inherited by tenants; the overlay clears assigned before applying the tenant overlay
+    // given root has assigned set — must never be inherited by tenants
     environment
         .getPropertySources()
         .addFirst(
@@ -171,20 +163,18 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.document.aws.shared-s3.bucket-name", "root-bucket",
                     "camunda.document.assigned[0]", "shared-s3")));
 
-    // when resolving the document for a tenant that declares no assigned of its own
+    // when
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
-    // then the root's assigned is cleared — the tenant sees the full catalog, not the root's
-    // restriction
+    // then
     assertThat(doc.getAssigned()).isEmpty();
     assertThat(doc.getAws()).containsKey("shared-s3");
   }
 
   @Test
   void shouldResetDefaultStoreIdWhenDefaultDroppedByAssigned() {
-    // given root catalog with two stores; default-store-id points to shared-s3, but tenanta's
-    // assigned list only includes other-store — so shared-s3 (and the default) must be dropped
+    // given default-store-id points to shared-s3, but tenant's assigned only includes other-store
     environment
         .getPropertySources()
         .addFirst(
@@ -200,7 +190,7 @@ class PhysicalTenantDocumentOverlayTest {
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
-    // then only other-store survives; shared-s3 is dropped along with the default-store-id
+    // then shared-s3 is dropped along with the default-store-id
     assertThat(doc.getAws()).containsKey("other-store");
     assertThat(doc.getAws()).doesNotContainKey("shared-s3");
     assertThat(doc.getDefaultStoreId()).isNullOrEmpty();
