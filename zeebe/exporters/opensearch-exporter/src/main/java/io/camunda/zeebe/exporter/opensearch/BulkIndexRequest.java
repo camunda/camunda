@@ -44,8 +44,8 @@ final class BulkIndexRequest {
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(JobRecordValue.class, JobMixin.class)
-          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
-          .addMixIn(DecisionEvaluationRecordValue.class, DecisionEvaluationMixin.class)
+          .addMixIn(UserTaskRecordValue.class, BusinessIdMixin.class)
+          .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -182,9 +182,7 @@ final class BulkIndexRequest {
   @JsonIgnoreProperties({PRIORITY_PROPERTY, ELEMENT_TYPE_PROPERTY})
   private static final class JobMixin {}
 
+  /** Shared by record values that only need to strip {@code businessId} for previous versions. */
   @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})
-  private static final class UserTaskMixin {}
-
-  @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})
-  private static final class DecisionEvaluationMixin {}
+  private static final class BusinessIdMixin {}
 }
