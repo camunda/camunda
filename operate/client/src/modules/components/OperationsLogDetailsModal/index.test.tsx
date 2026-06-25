@@ -136,6 +136,7 @@ describe('DetailsModal', () => {
 
     expect(screen.getByText(/inbound channel:/i)).toBeInTheDocument();
     expect(screen.getByText('MCP')).toBeInTheDocument();
+    expect(screen.getByTestId('mcp-icon')).toBeInTheDocument();
     expect(screen.getByText(/inbound channel tool name:/i)).toBeInTheDocument();
     expect(screen.getByText('someTool')).toBeInTheDocument();
   });
@@ -149,5 +150,20 @@ describe('DetailsModal', () => {
     expect(
       screen.queryByText(/inbound channel tool name:/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('renders the inbound channel row without the MCP icon for non-MCP channel types', () => {
+    const restAuditLog: AuditLog = {
+      ...baseAuditLog,
+      inboundChannelType: 'REST',
+    };
+
+    render(<DetailsModal isOpen onClose={() => {}} auditLog={restAuditLog} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText(/inbound channel:/i)).toBeInTheDocument();
+    expect(screen.getByText('REST')).toBeInTheDocument();
+    expect(screen.queryByTestId('mcp-icon')).not.toBeInTheDocument();
   });
 });

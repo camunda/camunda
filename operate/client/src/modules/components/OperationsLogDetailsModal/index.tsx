@@ -23,6 +23,7 @@ import {
   Password,
   ParentNode,
   Tools,
+  Channels,
 } from '@carbon/react/icons';
 import McpIcon from 'modules/components/Icon/mcp.svg?react';
 import {
@@ -139,7 +140,11 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
               )}
               {auditLog.inboundChannelType && (
                 <IconTextWithTopMargin>
-                  <McpIcon />
+                  {auditLog.inboundChannelType === 'MCP' ? (
+                    <McpIcon data-testid="mcp-icon" />
+                  ) : (
+                    <Channels />
+                  )}
                   <span>
                     Inbound channel:{' '}
                     <CodeSnippet type="inline" wrapText>
