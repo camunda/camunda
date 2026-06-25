@@ -539,7 +539,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .build())),
         Arguments.of(
-            "assert variable: satisfies judge with expectation, threshold, prompt",
+            "assert variable: satisfies judge with expectation, threshold, prompt, attachDocuments",
             singleTestCase(
                 ImmutableAssertVariableInstruction.builder()
                     .processInstanceSelector(
@@ -554,6 +554,7 @@ public class PojoCompatibilityTest {
                             .expectation("should be a properly formatted JSON response")
                             .threshold(0.8)
                             .customPrompt("You are evaluating data accuracy")
+                            .attachDocuments(true)
                             .build())
                     .build())),
         Arguments.of(

@@ -1355,6 +1355,10 @@
         "customPrompt": {
           "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
           "type": "string"
+        },
+        "attachDocuments": {
+          "description": "Whether to download and attach Camunda document references found in the variable to the judge call as structured content blocks. Overrides the preconfigured attach-documents toggle. Optional; defaults to the preconfigured value when omitted.",
+          "type": "boolean"
         }
       },
       "required": [
