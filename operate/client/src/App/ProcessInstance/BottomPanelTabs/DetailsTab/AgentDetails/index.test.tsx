@@ -209,21 +209,29 @@ describe('<AgentDetails />', () => {
       {wrapper: createWrapper()},
     );
 
-    const modelCalls = screen.getByRole('article', {name: 'Model Calls'});
+    const section = within(screen.getByTestId('agent-usage-section'));
+
+    const sectionHeader = section.getByRole('button', {name: 'Usage'});
+    expect(sectionHeader).toHaveTextContent('3 model calls');
+    expect(sectionHeader).toHaveTextContent('150 tokens');
+
+    const modelCalls = section.getByRole('article', {name: 'Model Calls'});
     expect(modelCalls).toBeInTheDocument();
     expect(within(modelCalls).getByText('3')).toBeInTheDocument();
     expect(within(modelCalls).getByText('of 10 limit')).toBeInTheDocument();
 
-    const tokensUsed = screen.getByRole('article', {name: 'Tokens Used'});
+    const tokensUsed = section.getByRole('article', {name: 'Tokens Used'});
     expect(tokensUsed).toBeInTheDocument();
     expect(within(tokensUsed).getByText('150')).toBeInTheDocument();
-    expect(within(tokensUsed).getByText('of 1000 limit')).toBeInTheDocument();
+    expect(
+      within(tokensUsed).getByText(`of ${(1000).toLocaleString()} limit`),
+    ).toBeInTheDocument();
     expect(within(tokensUsed).getByText('Input')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('100')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('Output')).toBeInTheDocument();
     expect(within(tokensUsed).getByText('50')).toBeInTheDocument();
 
-    const toolsCalled = screen.getByRole('article', {name: 'Tools Called'});
+    const toolsCalled = section.getByRole('article', {name: 'Tools Called'});
     expect(toolsCalled).toBeInTheDocument();
     expect(within(toolsCalled).getByText('2')).toBeInTheDocument();
     expect(within(toolsCalled).getByText('of 5 limit')).toBeInTheDocument();

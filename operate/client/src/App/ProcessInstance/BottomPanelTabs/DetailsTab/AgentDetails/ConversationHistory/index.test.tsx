@@ -427,4 +427,55 @@ describe('<ConversationHistory />', () => {
       assistantMessage.getByRole('button', {name: '"search" tool call.'}),
     ).toBeDisabled();
   });
+
+  it('should render metrics when they are available for a message', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'Here is my answer.'}],
+          metrics: {inputTokens: 100, outputTokens: 50, durationMs: 1234},
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '2',
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'Here is my answer.'}],
+          metrics: null,
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const message = within(screen.getByTestId('conversation-message-1'));
+    expect(message.getByTestId('message-token-metric')).toHaveTextContent(
+      '150 tokens',
+    );
+    expect(message.getByTestId('message-duration-metric')).toHaveTextContent(
+      '1.23s',
+    );
+    expect(message.getByText('Input: 100 · Output: 50')).toBeInTheDocument();
+
+    const messageNoMetrics = within(
+      screen.getByTestId('conversation-message-2'),
+    );
+    expect(
+      messageNoMetrics.queryByTestId('message-token-metric'),
+    ).not.toBeInTheDocument();
+    expect(
+      messageNoMetrics.queryByTestId('message-duration-metric'),
+    ).not.toBeInTheDocument();
+  });
 });

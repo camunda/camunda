@@ -11,7 +11,7 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {Accordion, AccordionItem, AccordionSkeleton} from '@carbon/react';
+import {Accordion, AccordionItem, AccordionSkeleton, Tag} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -139,8 +139,18 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         </AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
+          aria-label="Usage"
           title={
-            <SectionTitle icon={<MeterAlt size={16} />}>Usage</SectionTitle>
+            <SectionTitle icon={<MeterAlt size={16} />}>
+              Usage
+              <Tag type="gray" size="sm">
+                {metrics.modelCalls.toLocaleString()} model calls
+              </Tag>
+              <Tag type="gray" size="sm">
+                {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}
+                &nbsp;tokens
+              </Tag>
+            </SectionTitle>
           }
         >
           <MetricsRow>
