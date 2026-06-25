@@ -28,11 +28,12 @@ import java.util.function.BiConsumer;
  * Rebuilt identically on every replica via stream replay, so a new coordinator leader restores
  * membership after failover.
  *
- * <p>It owns the column families and does granular storage (get/put/delete) plus upkeep of two
- * lifecycle index families ({@code PREPARING_REBALANCE} and {@code EMPTY} groups) so the async
- * tasks fetch their work without scanning all groups. It also serves immutable {@link
- * GroupSnapshot} reads. The decision logic (create the group, bump epochs, transition state,
- * retain/delete) lives in the appliers.
+ * <p>It owns the column families and does granular storage only: get/put/delete of the group and
+ * member rows, track/untrack primitives for the two lifecycle index families ({@code
+ * PREPARING_REBALANCE} and {@code EMPTY} groups, which let the async tasks fetch their work without
+ * scanning all groups), and immutable {@link GroupSnapshot} reads. All decision logic — create the
+ * group, bump epochs, transition state, which index a group belongs in, retain/delete — lives in
+ * the appliers; this class makes no decisions.
  *
  * <p>There is no in-memory mirror: each reader (the async tasks, and the coordinator via {@code
  * ConsumerGroupQueryService}) holds its own instance on a private {@link ZeebeDb} context — the
@@ -92,22 +93,6 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
           return false; // stop at the first member
         });
     return empty[0];
-  }
-
-  @Override
-  public boolean allMembersReconciled(final String group, final long epoch) {
-    groupId.wrapString(group);
-    final var allReconciled = new boolean[] {true};
-    memberColumnFamily.whileEqualPrefix(
-        groupId,
-        (key, value) -> {
-          if (value.getAssignedEpoch() != epoch) {
-            allReconciled[0] = false;
-            return false; // stop at the first lagging member
-          }
-          return true;
-        });
-    return allReconciled[0];
   }
 
   @Override
@@ -212,20 +197,19 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
   }
 
   // --- writes (appliers, stream-processing actor) -----------------------------------------------
+  // Granular storage only. The appliers decide what to write — including which lifecycle index a
+  // group belongs in (via the track/untrack primitives below) — so no decision logic lives here.
 
   @Override
   public void putGroup(final String group, final GroupState value) {
     groupId.wrapString(group);
     groupColumnFamily.upsert(groupId, value);
-    updateLifecycleIndex(group, value.getState());
   }
 
   @Override
   public void deleteGroup(final String group) {
     groupId.wrapString(group);
     groupColumnFamily.deleteIfExists(groupId);
-    pendingRebalanceColumnFamily.deleteIfExists(groupId);
-    emptyColumnFamily.deleteIfExists(groupId);
   }
 
   @Override
@@ -242,23 +226,27 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
     memberColumnFamily.deleteIfExists(groupMemberKey);
   }
 
-  // --- internals --------------------------------------------------------------------------------
-
-  /**
-   * Keeps the lifecycle index families in sync with a group's state, so the assignor/retention
-   * tasks can list just the {@code PREPARING_REBALANCE} / {@code EMPTY} groups.
-   */
-  private void updateLifecycleIndex(final String group, final GroupLifecycle state) {
+  @Override
+  public void trackPendingRebalance(final String group) {
     groupId.wrapString(group);
-    if (state == GroupLifecycle.PREPARING_REBALANCE) {
-      pendingRebalanceColumnFamily.upsert(groupId, DbNil.INSTANCE);
-      emptyColumnFamily.deleteIfExists(groupId);
-    } else if (state == GroupLifecycle.EMPTY) {
-      emptyColumnFamily.upsert(groupId, DbNil.INSTANCE);
-      pendingRebalanceColumnFamily.deleteIfExists(groupId);
-    } else {
-      pendingRebalanceColumnFamily.deleteIfExists(groupId);
-      emptyColumnFamily.deleteIfExists(groupId);
-    }
+    pendingRebalanceColumnFamily.upsert(groupId, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void untrackPendingRebalance(final String group) {
+    groupId.wrapString(group);
+    pendingRebalanceColumnFamily.deleteIfExists(groupId);
+  }
+
+  @Override
+  public void trackEmpty(final String group) {
+    groupId.wrapString(group);
+    emptyColumnFamily.upsert(groupId, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void untrackEmpty(final String group) {
+    groupId.wrapString(group);
+    emptyColumnFamily.deleteIfExists(groupId);
   }
 }

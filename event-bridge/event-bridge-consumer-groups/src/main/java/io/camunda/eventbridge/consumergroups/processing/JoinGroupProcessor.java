@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupResponse;
@@ -24,7 +25,7 @@ import java.util.Map;
  * <p>A successful join is always a <em>new</em> member: it bumps the group epoch, sets the member
  * epoch to it, and appends a {@code MEMBER_JOINED} event. A static member whose {@code
  * group.instance.id} is already held by a live member is rejected upstream by {@link
- * CoordinationChecks#validateJoin} with {@code UNRELEASED_INSTANCE_ID} (KIP-848 fences the new
+ * CoordinationValidator#validateJoin} with {@code UNRELEASED_INSTANCE_ID} (KIP-848 fences the new
  * joiner); the incumbent's slot is freed only when it leaves or the eviction loop expires it. There
  * is therefore no idempotent "rejoin" path — and no no-op event.
  *
@@ -35,18 +36,20 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
 
   private final Writers writers;
   private final ConsumerGroupState state;
-  private final CoordinationChecks checks;
+  private final CoordinationValidator validator;
 
   public JoinGroupProcessor(
-      final Writers writers, final ConsumerGroupState state, final CoordinationChecks checks) {
+      final Writers writers,
+      final ConsumerGroupState state,
+      final CoordinationValidator validator) {
     this.writers = writers;
     this.state = state;
-    this.checks = checks;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<MembershipRecord> command) {
-    checks
+    validator
         .validateJoin(command.getValue())
         .ifRightOrLeft(
             subscriptions -> join(command, subscriptions), rejection -> reject(command, rejection));
@@ -81,7 +84,12 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
             .setMemberId(memberId)
             .setInstanceId(instanceId)
             .setMemberEpoch(memberEpoch)
-            .setGroupEpoch(groupEpoch);
+            .setGroupEpoch(groupEpoch)
+            // A join always lands the group in PREPARING_REBALANCE (target now stale) and clears
+            // any
+            // retention deadline a revived EMPTY group carried.
+            .setState(GroupLifecycle.PREPARING_REBALANCE)
+            .setEmptySince(0L);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_JOINED, event);
   }
 

@@ -14,11 +14,12 @@ import io.camunda.eventbridge.stream.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 
 /**
- * Applies {@code MEMBER_LEFT}: removes the member and either retains the now-empty group as {@code
- * EMPTY} (keeping its committed offsets so a later rejoin resumes — the group is reclaimed later by
- * the retention task, not here), or bumps the group epoch so the assignor recomputes the target.
- * The decision logic lives here. Runs identically on leader (after {@code LeaveGroupProcessor} or
- * an eviction) and follower (on replay).
+ * Applies {@code MEMBER_LEFT}: removes the member and writes the epoch/state/emptySince the {@code
+ * LeaveGroupProcessor} resolved onto the event — either {@code EMPTY} (retaining the group and its
+ * committed offsets for a later rejoin; reclaimed later by the retention task) or {@code
+ * PREPARING_REBALANCE} (the assignor recomputes the target) — and reflects that into the lifecycle
+ * index. Runs identically on leader (after {@code LeaveGroupProcessor} or an eviction) and follower
+ * (on replay).
  *
  * <p>The event is only appended after {@code LeaveGroupProcessor} (via {@code validateLeave}) has
  * confirmed the group and member exist, and replay reconstructs that same state in log order — so
@@ -40,17 +41,18 @@ public final class MemberLeftApplier
 
     final var group = state.getGroup(groupId);
     group.setGroupEpoch(value.getGroupEpoch());
-    if (state.isGroupEmpty(groupId)) {
-      // Last member left: retain the group (and its committed offsets) as EMPTY; the retention
-      // task reclaims it once it has been empty for the retention window. Stamp when it became
-      // empty (from the event, so it is identical on every replica) as the retention deadline.
-      group.setState(GroupLifecycle.EMPTY);
-      group.setEmptySince(value.getTimestamp());
-    } else {
-      // A leave bumps the group epoch, so the remaining members' target is stale: back to
-      // PREPARING_REBALANCE until the assignor recomputes.
-      group.setState(GroupLifecycle.PREPARING_REBALANCE);
-    }
+    group.setState(value.getState());
+    group.setEmptySince(value.getEmptySince());
     state.putGroup(groupId, group);
+
+    // Reflect the resolved lifecycle into the indexes: an emptied group joins the retention index,
+    // otherwise it goes back into the assignor's index.
+    if (value.getState() == GroupLifecycle.EMPTY) {
+      state.trackEmpty(groupId);
+      state.untrackPendingRebalance(groupId);
+    } else {
+      state.trackPendingRebalance(groupId);
+      state.untrackEmpty(groupId);
+    }
   }
 }

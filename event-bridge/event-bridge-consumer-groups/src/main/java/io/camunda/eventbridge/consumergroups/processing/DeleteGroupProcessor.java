@@ -8,8 +8,6 @@
 package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
-import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
-import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -18,32 +16,30 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * Handles the internal {@code DELETE_GROUP} command the retention task appends once a group has
- * been {@code EMPTY} long enough. It emits {@code GROUP_DELETED} when the group is still empty,
- * otherwise a rejection (no reply — internal command). Dropped when the group no longer exists or
- * is no longer empty (a member rejoined since the retention task observed it).
+ * been {@code EMPTY} long enough. {@link TransitionValidator#validateDelete} decides whether the
+ * group is still deletable (it exists and is still empty — a member may have rejoined since the
+ * retention task observed it); on success this emits {@code GROUP_DELETED} ({@code
+ * GroupDeletedApplier} removes the group + offsets), otherwise a {@code COMMAND_REJECTION} with the
+ * reason (no reply — internal command).
  */
 public final class DeleteGroupProcessor implements TypedRecordProcessor<MembershipRecord> {
 
   private final Writers writers;
-  private final ConsumerGroupState state;
+  private final TransitionValidator validator;
 
-  public DeleteGroupProcessor(final Writers writers, final ConsumerGroupState state) {
+  public DeleteGroupProcessor(final Writers writers, final TransitionValidator validator) {
     this.writers = writers;
-    this.state = state;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<MembershipRecord> command) {
-    final var groupId = command.getValue().getGroupId();
-    final var group = state.getGroup(groupId);
-    if (group == null) {
-      reject(command, "group no longer exists");
-      return;
-    }
-    if (group.getState() != GroupLifecycle.EMPTY || !state.isGroupEmpty(groupId)) {
-      reject(command, "group '%s' is no longer empty".formatted(groupId));
-      return;
-    }
+    validator
+        .validateDelete(command.getValue())
+        .ifRightOrLeft(ok -> delete(command), reason -> reject(command, reason));
+  }
+
+  private void delete(final TypedRecord<MembershipRecord> command) {
     writers
         .state()
         .appendFollowUpEvent(command.getKey(), CoordinatorIntent.GROUP_DELETED, command.getValue());

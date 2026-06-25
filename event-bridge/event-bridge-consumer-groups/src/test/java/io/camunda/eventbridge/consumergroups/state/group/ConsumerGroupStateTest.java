@@ -10,7 +10,7 @@ package io.camunda.eventbridge.consumergroups.state.group;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
-import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
+import io.camunda.eventbridge.consumergroups.processing.CoordinationValidator;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
@@ -19,7 +19,6 @@ import io.camunda.eventbridge.consumergroups.state.appliers.GroupDeletedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
-import io.camunda.eventbridge.consumergroups.state.appliers.MemberReconciledApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -43,7 +42,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Verifies the consumer-group appliers (which own the create/update/delete decision logic), the
  * replicated state they write through (read back via {@link DbConsumerGroupState}, including its
- * {@code GroupSnapshot} reads), and the {@link CoordinationChecks} fencing.
+ * {@code GroupSnapshot} reads), and the {@link CoordinationValidator} fencing.
  */
 final class ConsumerGroupStateTest {
 
@@ -58,7 +57,6 @@ final class ConsumerGroupStateTest {
   private MemberJoinedApplier memberJoined;
   private MemberLeftApplier memberLeft;
   private GroupRebalancedApplier groupRebalanced;
-  private MemberReconciledApplier memberReconciled;
   private OffsetCommittedApplier offsetCommitted;
 
   @BeforeEach
@@ -75,7 +73,6 @@ final class ConsumerGroupStateTest {
     memberJoined = new MemberJoinedApplier(state);
     memberLeft = new MemberLeftApplier(state);
     groupRebalanced = new GroupRebalancedApplier(state);
-    memberReconciled = new MemberReconciledApplier(state);
     offsetCommitted = new OffsetCommittedApplier(offsetState);
   }
 
@@ -102,6 +99,8 @@ final class ConsumerGroupStateTest {
     assertThat(snapshot.members().get("m1").memberEpoch()).isEqualTo(1);
     assertThat(snapshot.members().get("m1").targetPartitions()).isEmpty();
     assertThat(snapshot.isRebalancePending()).isTrue();
+    // a joined group is tracked in the assignor's pending-rebalance index
+    assertThat(groupIds(state.pendingRebalanceGroups())).containsExactly("g");
   }
 
   @Test
@@ -129,14 +128,14 @@ final class ConsumerGroupStateTest {
   void shouldFenceDuplicateStaticInstanceIdOnJoin() {
     // given — a static member already holds an instance id
     memberJoined.applyState(1, join("g", "m1", "instance-a", 1, 1, 4));
-    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
+    final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
 
     // then — a second join for that instance id is fenced (KIP-848 fences the new joiner)
-    assertThat(checks.validateJoin(join("g", "m2", "instance-a", 0, 0, 4)).getLeft().code())
+    assertThat(validator.validateJoin(join("g", "m2", "instance-a", 0, 0, 4)).getLeft().code())
         .isEqualTo(CoordinationErrorCode.UNRELEASED_INSTANCE_ID);
     // but a dynamic join (no instance id) and a join for a free instance id are allowed
-    assertThat(checks.validateJoin(join("g", "m2", null, 0, 0, 4)).isRight()).isTrue();
-    assertThat(checks.validateJoin(join("g", "m2", "instance-b", 0, 0, 4)).isRight()).isTrue();
+    assertThat(validator.validateJoin(join("g", "m2", null, 0, 0, 4)).isRight()).isTrue();
+    assertThat(validator.validateJoin(join("g", "m2", "instance-b", 0, 0, 4)).isRight()).isTrue();
   }
 
   @Test
@@ -167,52 +166,12 @@ final class ConsumerGroupStateTest {
   }
 
   @Test
-  void shouldBecomeStableOnlyWhenEveryMemberHasReconciled() {
-    // given — a two-member group with a committed target (RECONCILING)
-    memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
-    memberJoined.applyState(2, join("g", "m2", null, 2, 2, 4));
-    groupRebalanced.applyState(
-        3, rebalance("g", 2, Map.of("m1", List.of(1, 2), "m2", List.of(3, 4))));
-    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
-
-    // when — only m1 reconciles to the current epoch
-    memberReconciled.applyState(4, reconcile("g", "m1", 2));
-
-    // then — still RECONCILING (m2 lags), and m1's assignedEpoch advanced
-    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
-    assertThat(state.getMember("g", "m1").getAssignedEpoch()).isEqualTo(2);
-
-    // when — m2 reconciles too
-    memberReconciled.applyState(5, reconcile("g", "m2", 2));
-
-    // then — every member is at the group epoch, so the group is STABLE
-    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.STABLE);
-  }
-
-  @Test
-  void shouldReturnToPreparingRebalanceWhenAMemberLeaves() {
-    // given — a two-member group with a committed target and both members reconciled (STABLE)
-    memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
-    memberJoined.applyState(2, join("g", "m2", null, 2, 2, 4));
-    groupRebalanced.applyState(
-        3, rebalance("g", 2, Map.of("m1", List.of(1, 2), "m2", List.of(3, 4))));
-    memberReconciled.applyState(4, reconcile("g", "m1", 2));
-    memberReconciled.applyState(5, reconcile("g", "m2", 2));
-    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.STABLE);
-
-    // when — one member leaves (the group still has members)
-    memberLeft.applyState(6, leave("g", "m1", 6));
-
-    // then — the group goes back to PREPARING_REBALANCE for the assignor to recompute
-    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
-  }
-
-  @Test
   void shouldRemoveMemberAndBumpGroupEpochOnLeave() {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
     memberJoined.applyState(2, join("g", "m2", null, 2, 2, 4));
 
-    memberLeft.applyState(3, leave("g", "m1", 3));
+    // a leave that keeps members resolves to PREPARING_REBALANCE (the LeaveGroupProcessor's job)
+    memberLeft.applyState(3, leave("g", "m1", 3).setState(GroupLifecycle.PREPARING_REBALANCE));
 
     assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(3);
     assertThat(state.getMember("g", "m1")).isNull();
@@ -224,16 +183,19 @@ final class ConsumerGroupStateTest {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
     offsetCommitted.applyState(2, commit("g", 1, 9));
 
-    memberLeft.applyState(3, leave("g", "m1", 2).setTimestamp(1_700_000_000_000L));
+    memberLeft.applyState(
+        3, leave("g", "m1", 2).setState(GroupLifecycle.EMPTY).setEmptySince(1_700_000_000_000L));
 
     // the group is retained as EMPTY (not deleted) and its committed offsets survive
     assertThat(state.getGroup("g")).isNotNull();
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
     assertThat(state.groupSnapshot("g").members()).isEmpty();
     assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(9);
-    // emptySince is stamped from the emptying event (the retention deadline base)
+    // emptySince is written from the event (the retention deadline base), and the group is in the
+    // EMPTY index (the retention task's work list), not the pending one
     assertThat(state.getGroup("g").getEmptySince()).isEqualTo(1_700_000_000_000L);
-    assertThat(state.groupSnapshot("g").emptySince()).isEqualTo(1_700_000_000_000L);
+    assertThat(groupIds(state.emptyGroups())).containsExactly("g");
+    assertThat(groupIds(state.pendingRebalanceGroups())).isEmpty();
   }
 
   @Test
@@ -241,22 +203,24 @@ final class ConsumerGroupStateTest {
     // given — an EMPTY group with a committed offset
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
     offsetCommitted.applyState(2, commit("g", 1, 9));
-    memberLeft.applyState(3, leave("g", "m1", 2));
+    memberLeft.applyState(3, leave("g", "m1", 2).setState(GroupLifecycle.EMPTY));
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
 
     // when — the retention path deletes it
     new GroupDeletedApplier(state, offsetState)
         .applyState(4, new MembershipRecord().setGroupId("g"));
 
-    // then — the group and its offsets are gone
+    // then — the group, its offsets, and its index entry are gone
     assertThat(state.getGroup("g")).isNull();
     assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(-1);
+    assertThat(groupIds(state.emptyGroups())).isEmpty();
   }
 
   @Test
   void shouldReviveEmptyGroupToPreparingRebalanceOnRejoin() {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
-    memberLeft.applyState(2, leave("g", "m1", 2).setTimestamp(1_700_000_000_000L));
+    memberLeft.applyState(
+        2, leave("g", "m1", 2).setState(GroupLifecycle.EMPTY).setEmptySince(1_700_000_000_000L));
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
     assertThat(state.getGroup("g").getEmptySince()).isEqualTo(1_700_000_000_000L);
 
@@ -265,8 +229,11 @@ final class ConsumerGroupStateTest {
 
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
     assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
-    // reviving clears the retention deadline so a future empty period restarts the clock
+    // reviving clears the retention deadline and moves the group from the EMPTY to the pending
+    // index
     assertThat(state.getGroup("g").getEmptySince()).isZero();
+    assertThat(groupIds(state.emptyGroups())).isEmpty();
+    assertThat(groupIds(state.pendingRebalanceGroups())).containsExactly("g");
   }
 
   @Test
@@ -299,37 +266,37 @@ final class ConsumerGroupStateTest {
   void shouldFenceOffsetCommitsAgainstMembership() {
     memberJoined.applyState(1, join("g", "m1", null, 5, 5, 4));
     groupRebalanced.applyState(2, rebalance("g", 5, Map.of("m1", List.of(1, 2))));
-    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
+    final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
 
-    assertThat(checks.validateCommit(commit("g", "m1", 5, 1)).isRight()).isTrue();
-    assertThat(checks.validateCommit(commit("g", "ghost", 5, 1)).getLeft().code())
+    assertThat(validator.validateCommit(commit("g", "m1", 5, 1)).isRight()).isTrue();
+    assertThat(validator.validateCommit(commit("g", "ghost", 5, 1)).getLeft().code())
         .isEqualTo(CoordinationErrorCode.UNKNOWN_MEMBER_ID);
-    assertThat(checks.validateCommit(commit("g", "m1", 4, 1)).getLeft().code())
+    assertThat(validator.validateCommit(commit("g", "m1", 4, 1)).getLeft().code())
         .isEqualTo(CoordinationErrorCode.FENCED_MEMBER_EPOCH);
-    assertThat(checks.validateCommit(commit("g", "m1", 5, 3)).getLeft().code())
+    assertThat(validator.validateCommit(commit("g", "m1", 5, 3)).getLeft().code())
         .isEqualTo(CoordinationErrorCode.NOT_PARTITION_OWNER);
   }
 
   @Test
   void shouldValidateLeaveAndJoinAgainstMembership() {
     memberJoined.applyState(1, join("g", "m1", null, 2, 2, 4));
-    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
+    final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
 
-    assertThat(checks.validateLeave(leave("g", "m1", 2)).isRight()).isTrue();
-    assertThat(checks.validateLeave(leave("g", "m1", 1)).getLeft().code())
+    assertThat(validator.validateLeave(leave("g", "m1", 2)).isRight()).isTrue();
+    assertThat(validator.validateLeave(leave("g", "m1", 1)).getLeft().code())
         .isEqualTo(CoordinationErrorCode.FENCED_MEMBER_EPOCH);
-    assertThat(checks.validateLeave(leave("g", "ghost", 2)).getLeft().code())
+    assertThat(validator.validateLeave(leave("g", "ghost", 2)).getLeft().code())
         .isEqualTo(CoordinationErrorCode.UNKNOWN_MEMBER_ID);
-    assertThat(checks.validateJoin(join("", "m1", null, 0, 0, 0)).getLeft().code())
+    assertThat(validator.validateJoin(join("", "m1", null, 0, 0, 0)).getLeft().code())
         .isEqualTo(CoordinationErrorCode.INVALID_GROUP_ID);
   }
 
   @Test
   void shouldRejectJoinWithMissingTopic() {
-    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
+    final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
 
     // when — a join carries no subscribed topic
-    final var rejection = checks.validateJoin(join("g", "", "m1", null, 0, 0, 4));
+    final var rejection = validator.validateJoin(join("g", "", "m1", null, 0, 0, 4));
 
     // then
     assertThat(rejection.getLeft().code()).isEqualTo(CoordinationErrorCode.INVALID_TOPIC);
@@ -337,10 +304,10 @@ final class ConsumerGroupStateTest {
 
   @Test
   void shouldRejectJoinForUnservableTopic() {
-    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
+    final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
 
     // when — the coordinator could not resolve a partition count (unknown/not servable topic)
-    final var rejection = checks.validateJoin(join("g", "missing", "m1", null, 0, 0, 0));
+    final var rejection = validator.validateJoin(join("g", "missing", "m1", null, 0, 0, 0));
 
     // then
     assertThat(rejection.getLeft().code()).isEqualTo(CoordinationErrorCode.TOPIC_NOT_FOUND);
@@ -350,15 +317,15 @@ final class ConsumerGroupStateTest {
   void shouldRejectJoinToGroupBoundToDifferentTopic() {
     // given — a group already bound to topic "t"
     memberJoined.applyState(1, join("g", "t", "m1", null, 1, 1, 4));
-    final var checks = new CoordinationChecks(state, TOPIC_REGISTRY);
+    final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
 
     // when — a second member joins the same group subscribing to a different topic
-    final var rejection = checks.validateJoin(join("g", "other", "m2", null, 0, 0, 4));
+    final var rejection = validator.validateJoin(join("g", "other", "m2", null, 0, 0, 4));
 
     // then
     assertThat(rejection.getLeft().code()).isEqualTo(CoordinationErrorCode.INVALID_TOPIC);
     // but a join with the bound topic is accepted
-    assertThat(checks.validateJoin(join("g", "t", "m2", null, 0, 0, 4)).isRight()).isTrue();
+    assertThat(validator.validateJoin(join("g", "t", "m2", null, 0, 0, 4)).isRight()).isTrue();
   }
 
   private static MembershipRecord join(
@@ -379,18 +346,23 @@ final class ConsumerGroupStateTest {
       final long memberEpoch,
       final long groupEpoch,
       final int partitionCount) {
+    // The resolved MEMBER_JOINED event the JoinGroupProcessor would produce (a join always lands in
+    // PREPARING_REBALANCE with the retention deadline cleared); the applier writes it verbatim.
     return new MembershipRecord()
         .setGroupId(group)
         .setSubscriptions(Map.of(topic, partitionCount))
         .setMemberId(member)
         .setInstanceId(instanceId)
         .setMemberEpoch(memberEpoch)
-        .setGroupEpoch(groupEpoch);
+        .setGroupEpoch(groupEpoch)
+        .setState(GroupLifecycle.PREPARING_REBALANCE)
+        .setEmptySince(0L);
   }
 
   private static MembershipRecord leave(final String group, final String member, final long epoch) {
     // For applier tests the carried group epoch is what matters; for validation tests the member
-    // epoch is — set both to the same value so each test reads the field it cares about.
+    // epoch is — set both to the same value so each test reads the field it cares about. Applier
+    // tests stamp the resolved state/emptySince (the LeaveGroupProcessor's job) per case.
     return new MembershipRecord()
         .setGroupId(group)
         .setMemberId(member)
@@ -398,14 +370,11 @@ final class ConsumerGroupStateTest {
         .setGroupEpoch(epoch);
   }
 
-  private static MembershipRecord reconcile(
-      final String group, final String member, final long groupEpoch) {
-    return new MembershipRecord().setGroupId(group).setMemberId(member).setGroupEpoch(groupEpoch);
-  }
-
   private static RebalanceRecord rebalance(
       final String group, final long assignmentEpoch, final Map<String, List<Integer>> targets) {
-    // Targets are given as partition ints of the single topic "t" for brevity.
+    // Targets are given as partition ints of the single topic "t" for brevity; a committed
+    // rebalance
+    // resolves to RECONCILING (the RebalanceProcessor's job), written verbatim by the applier.
     final Map<String, List<TopicPartition>> tpTargets = new LinkedHashMap<>();
     targets.forEach(
         (member, partitions) ->
@@ -413,7 +382,8 @@ final class ConsumerGroupStateTest {
     return new RebalanceRecord()
         .setGroupId(group)
         .setAssignmentEpoch(assignmentEpoch)
-        .setMembers(tpTargets);
+        .setMembers(tpTargets)
+        .setState(GroupLifecycle.RECONCILING);
   }
 
   private static OffsetCommitRecord commit(
@@ -438,5 +408,9 @@ final class ConsumerGroupStateTest {
 
   private static TopicPartition tp(final int partition) {
     return new TopicPartition("t", partition);
+  }
+
+  private static List<String> groupIds(final List<GroupSnapshot> snapshots) {
+    return snapshots.stream().map(GroupSnapshot::groupId).toList();
   }
 }

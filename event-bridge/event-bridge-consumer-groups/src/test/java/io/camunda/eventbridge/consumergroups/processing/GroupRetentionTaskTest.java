@@ -14,6 +14,7 @@ import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -75,9 +76,13 @@ final class GroupRetentionTaskTest {
 
   @Test
   void shouldDeleteEmptyGroupOnlyAfterRetentionElapses() {
-    // given — a group that has just become EMPTY, stamping emptySince from the leave event
+    // given — a group that has just become EMPTY, with the emptySince the processor resolved
     memberJoined.applyState(1, join("g", "m1", 1));
-    memberLeft.applyState(2, leave("g", "m1", 2).setTimestamp(clock.instant().toEpochMilli()));
+    memberLeft.applyState(
+        2,
+        leave("g", "m1", 2)
+            .setState(GroupLifecycle.EMPTY)
+            .setEmptySince(clock.instant().toEpochMilli()));
 
     // when — still within the retention window
     assertThat(run()).isEmpty();
@@ -113,7 +118,8 @@ final class GroupRetentionTaskTest {
         .setSubscriptions(Map.of("t", 4))
         .setMemberId(member)
         .setMemberEpoch(epoch)
-        .setGroupEpoch(epoch);
+        .setGroupEpoch(epoch)
+        .setState(GroupLifecycle.PREPARING_REBALANCE);
   }
 
   private static MembershipRecord leave(final String group, final String member, final long epoch) {

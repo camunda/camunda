@@ -20,42 +20,45 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * Handles the {@code COMMIT_OFFSET} command. On success it appends an {@code OFFSET_COMMITTED}
  * event (applied monotonically by {@code OffsetCommittedApplier}) and replies with the resulting
  * committed position; on failure (fenced against replicated membership by {@link
- * CoordinationChecks}) it appends a rejection and replies with the error code.
+ * CoordinationValidator}) it appends a rejection and replies with the error code.
  */
 public final class OffsetCommitProcessor implements TypedRecordProcessor<OffsetCommitRecord> {
 
   private final Writers writers;
   private final OffsetState offsetState;
-  private final CoordinationChecks checks;
+  private final CoordinationValidator validator;
 
   public OffsetCommitProcessor(
-      final Writers writers, final OffsetState offsetState, final CoordinationChecks checks) {
+      final Writers writers, final OffsetState offsetState, final CoordinationValidator validator) {
     this.writers = writers;
     this.offsetState = offsetState;
-    this.checks = checks;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<OffsetCommitRecord> command) {
-    checks
+    validator
         .validateCommit(command.getValue())
         .ifRightOrLeft(member -> commit(command), rejection -> reject(command, rejection));
   }
 
   private void commit(final TypedRecord<OffsetCommitRecord> command) {
     final var cmd = command.getValue();
+    // Resolve the monotonic (never-rewind) committed position here and stamp the actual value on
+    // the event, so the applier just stores it and the reply is the real committed position (a
+    // read after the append would still see the pre-commit value).
+    final var existing =
+        offsetState.getOffset(cmd.getGroupId(), cmd.getTopic(), cmd.getPartitionId());
+    final var committed = existing < 0 ? cmd.getOffset() : Math.max(existing, cmd.getOffset());
     final var event =
         new OffsetCommitRecord()
             .setGroupId(cmd.getGroupId())
             .setTopic(cmd.getTopic())
             .setPartitionId(cmd.getPartitionId())
-            .setOffset(cmd.getOffset());
+            .setOffset(committed);
     writers
         .state()
         .appendFollowUpEvent(command.getKey(), CoordinatorIntent.OFFSET_COMMITTED, event);
-
-    final var committed =
-        offsetState.getOffset(cmd.getGroupId(), cmd.getTopic(), cmd.getPartitionId());
     writers
         .response()
         .respond(

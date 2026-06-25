@@ -8,7 +8,6 @@
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
-import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
@@ -37,10 +36,13 @@ public final class GroupRebalancedApplier
     final var groupId = value.getGroupId();
     final var group = state.getGroup(groupId);
     group.setAssignmentEpoch(value.getAssignmentEpoch());
-    // The target is committed but members have not yet confirmed reconciling to it — the group is
-    // RECONCILING until every member's assignedEpoch catches up (MEMBER_RECONCILED → STABLE).
-    group.setState(GroupLifecycle.RECONCILING);
+    // The target is committed but members have not yet confirmed reconciling to it — the processor
+    // resolved this to RECONCILING (until every member's assignedEpoch catches up via
+    // MEMBER_RECONCILED → STABLE); the applier just writes it.
+    group.setState(value.getState());
     state.putGroup(groupId, group);
+    // RECONCILING is in neither index, so the group leaves the assignor's pending index.
+    state.untrackPendingRebalance(groupId);
 
     value
         .getMembers()

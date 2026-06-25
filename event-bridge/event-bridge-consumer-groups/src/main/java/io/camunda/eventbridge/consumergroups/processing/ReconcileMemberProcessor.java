@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
@@ -17,52 +18,43 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * Handles the internal {@code RECONCILE_MEMBER} command the coordinator appends when a member's
- * heartbeat shows it has converged to the current target. It emits {@code MEMBER_RECONCILED} when
- * the report is still valid, else a rejection (no reply — the command carries no request). It is
- * dropped when:
- *
- * <ul>
- *   <li>the group or member no longer exists;
- *   <li>the reported group epoch no longer matches (a newer rebalance superseded it);
- *   <li>the member has already reconciled to this epoch (idempotent — the heartbeat may re-send).
- * </ul>
+ * heartbeat shows it has converged to the current target. {@link
+ * TransitionValidator#validateReconcile} decides whether the report is still valid (group/member
+ * exist, current epoch, not already reconciled); on success this emits {@code MEMBER_RECONCILED}
+ * carrying the resolved group state, otherwise a {@code COMMAND_REJECTION} with the reason (no
+ * reply — the command carries no request).
  */
 public final class ReconcileMemberProcessor implements TypedRecordProcessor<MembershipRecord> {
 
   private final Writers writers;
   private final ConsumerGroupState state;
+  private final TransitionValidator validator;
 
-  public ReconcileMemberProcessor(final Writers writers, final ConsumerGroupState state) {
+  public ReconcileMemberProcessor(
+      final Writers writers, final ConsumerGroupState state, final TransitionValidator validator) {
     this.writers = writers;
     this.state = state;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<MembershipRecord> command) {
+    validator
+        .validateReconcile(command.getValue())
+        .ifRightOrLeft(ok -> reconcile(command), reason -> reject(command, reason));
+  }
+
+  private void reconcile(final TypedRecord<MembershipRecord> command) {
     final var cmd = command.getValue();
-    final var group = state.getGroup(cmd.getGroupId());
-    if (group == null) {
-      reject(command, "group no longer exists");
-      return;
-    }
-    final var member = state.getMember(cmd.getGroupId(), cmd.getMemberId());
-    if (member == null) {
-      reject(
-          command,
-          "member '%s' is not in group '%s'".formatted(cmd.getMemberId(), cmd.getGroupId()));
-      return;
-    }
-    if (cmd.getGroupEpoch() != group.getGroupEpoch()) {
-      reject(
-          command,
-          "stale reconcile: reported epoch %d != group epoch %d"
-              .formatted(cmd.getGroupEpoch(), group.getGroupEpoch()));
-      return;
-    }
-    if (member.getAssignedEpoch() == group.getGroupEpoch()) {
-      reject(command, "member already reconciled to epoch %d".formatted(group.getGroupEpoch()));
-      return;
-    }
+    // Decide the resulting lifecycle here (not in the applier): once this member advances to the
+    // group epoch (validated as the current one), the group is STABLE iff every other member is
+    // already at it, else RECONCILING.
+    final var members = state.groupSnapshot(cmd.getGroupId()).members();
+    final var becomesStable =
+        members.entrySet().stream()
+            .filter(entry -> !entry.getKey().equals(cmd.getMemberId()))
+            .allMatch(entry -> entry.getValue().assignedEpoch() == cmd.getGroupEpoch());
+    cmd.setState(becomesStable ? GroupLifecycle.STABLE : GroupLifecycle.RECONCILING);
 
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_RECONCILED, cmd);
   }

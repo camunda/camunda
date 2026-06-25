@@ -16,6 +16,7 @@ import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -33,6 +34,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,7 +104,8 @@ final class RebalanceAssignorTaskTest {
         new RebalanceRecord()
             .setGroupId("g")
             .setAssignmentEpoch(1)
-            .setMembers(java.util.Map.of("m1", List.of(tp(1), tp(2), tp(3), tp(4)))));
+            .setMembers(Map.of("m1", List.of(tp(1), tp(2), tp(3), tp(4))))
+            .setState(GroupLifecycle.RECONCILING));
 
     // then — no rebalance is proposed on any tick
     assertThat(run()).isEmpty();
@@ -132,10 +135,11 @@ final class RebalanceAssignorTaskTest {
         memberEpoch,
         new MembershipRecord()
             .setGroupId("g")
-            .setSubscriptions(java.util.Map.of("t", 4))
+            .setSubscriptions(Map.of("t", 4))
             .setMemberId(memberId)
             .setMemberEpoch(memberEpoch)
-            .setGroupEpoch(groupEpoch));
+            .setGroupEpoch(groupEpoch)
+            .setState(GroupLifecycle.PREPARING_REBALANCE));
   }
 
   private static TopicPartition tp(final int partition) {

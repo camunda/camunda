@@ -58,11 +58,13 @@ final class OffsetStateAndProcessorTest {
   }
 
   @Test
-  void shouldCommitMonotonically() {
-    // given / when / then — the applier never moves an offset backwards
+  void shouldStoreCommittedOffsetFromEvent() {
+    // The applier writes the event's value verbatim — the monotonic never-rewind guard is resolved
+    // by the OffsetCommitProcessor and stamped on the event (covered in CoordinatorProcessorTest).
     applier.applyState(1, commit("group-a", 1, 5));
-    applier.applyState(2, commit("group-a", 1, 3));
-    applier.applyState(3, commit("group-a", 1, 8));
+    assertThat(state.getOffset("group-a", "t", 1)).isEqualTo(5);
+
+    applier.applyState(2, commit("group-a", 1, 8));
     assertThat(state.getOffset("group-a", "t", 1)).isEqualTo(8);
   }
 

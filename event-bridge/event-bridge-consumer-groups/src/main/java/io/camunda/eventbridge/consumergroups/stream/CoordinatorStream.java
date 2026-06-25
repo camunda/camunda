@@ -9,7 +9,7 @@ package io.camunda.eventbridge.consumergroups.stream;
 
 import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
-import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
+import io.camunda.eventbridge.consumergroups.processing.CoordinationValidator;
 import io.camunda.eventbridge.consumergroups.processing.DeleteGroupProcessor;
 import io.camunda.eventbridge.consumergroups.processing.GroupRetentionTask;
 import io.camunda.eventbridge.consumergroups.processing.JoinGroupProcessor;
@@ -19,6 +19,7 @@ import io.camunda.eventbridge.consumergroups.processing.RebalanceAssignorTask;
 import io.camunda.eventbridge.consumergroups.processing.RebalanceProcessor;
 import io.camunda.eventbridge.consumergroups.processing.ReconcileMemberProcessor;
 import io.camunda.eventbridge.consumergroups.processing.SessionEvictionTask;
+import io.camunda.eventbridge.consumergroups.processing.TransitionValidator;
 import io.camunda.eventbridge.consumergroups.record.EventBridgeRecordValues;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
@@ -133,34 +134,37 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
 
   @Override
   protected RecordProcessor createRecordProcessor() {
-    final var checks = new CoordinationChecks(groupState, topicRegistry);
+    // Client-command validation (with error codes + replies) and internal state-machine transition
+    // guards (reason-only, no reply) — both read the replicated state on the processing actor.
+    final var validator = new CoordinationValidator(groupState, topicRegistry);
+    final var transitions = new TransitionValidator(groupState);
     return new RecordProcessingEngine(
         processors ->
             processors
                 .onCommand(
                     EventBridgeRecordValues.OFFSET_VALUE_TYPE,
                     CoordinatorIntent.COMMIT_OFFSET,
-                    new OffsetCommitProcessor(processors.writers(), offsetState, checks))
+                    new OffsetCommitProcessor(processors.writers(), offsetState, validator))
                 .onCommand(
                     EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                     CoordinatorIntent.JOIN_GROUP,
-                    new JoinGroupProcessor(processors.writers(), groupState, checks))
+                    new JoinGroupProcessor(processors.writers(), groupState, validator))
                 .onCommand(
                     EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                     CoordinatorIntent.LEAVE_GROUP,
-                    new LeaveGroupProcessor(processors.writers(), groupState, checks))
+                    new LeaveGroupProcessor(processors.writers(), groupState, validator))
                 .onCommand(
                     EventBridgeRecordValues.REBALANCE_VALUE_TYPE,
                     CoordinatorIntent.REBALANCE_GROUP,
-                    new RebalanceProcessor(processors.writers(), groupState))
+                    new RebalanceProcessor(processors.writers(), transitions))
                 .onCommand(
                     EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                     CoordinatorIntent.RECONCILE_MEMBER,
-                    new ReconcileMemberProcessor(processors.writers(), groupState))
+                    new ReconcileMemberProcessor(processors.writers(), groupState, transitions))
                 .onCommand(
                     EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
                     CoordinatorIntent.DELETE_GROUP,
-                    new DeleteGroupProcessor(processors.writers(), groupState))
+                    new DeleteGroupProcessor(processors.writers(), transitions))
                 .withEventApplier(
                     CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(offsetState))
                 .withEventApplier(

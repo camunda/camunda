@@ -13,10 +13,11 @@ import io.camunda.eventbridge.stream.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 
 /**
- * Applies {@code OFFSET_COMMITTED}: commits the position monotonically (never moves backwards). The
- * never-rewind decision lives here; {@link MutableOffsetState} only does a raw put. Runs
- * identically on leader (after {@code OffsetCommitProcessor}) and follower (on replay), so every
- * replica converges; applying the same event twice is idempotent.
+ * Applies {@code OFFSET_COMMITTED}: stores the committed position the {@code OffsetCommitProcessor}
+ * already resolved (it applied the monotonic never-rewind rule and stamped the actual value on the
+ * event). {@link MutableOffsetState} does the raw put. Runs identically on leader (after {@code
+ * OffsetCommitProcessor}) and follower (on replay), so every replica converges; applying the same
+ * event twice is idempotent.
  */
 public final class OffsetCommittedApplier
     implements TypedEventApplier<CoordinatorIntent, OffsetCommitRecord> {
@@ -29,9 +30,7 @@ public final class OffsetCommittedApplier
 
   @Override
   public void applyState(final long key, final OffsetCommitRecord value) {
-    final var existing =
-        offsetState.getOffset(value.getGroupId(), value.getTopic(), value.getPartitionId());
-    final var committed = existing < 0 ? value.getOffset() : Math.max(existing, value.getOffset());
-    offsetState.putOffset(value.getGroupId(), value.getTopic(), value.getPartitionId(), committed);
+    offsetState.putOffset(
+        value.getGroupId(), value.getTopic(), value.getPartitionId(), value.getOffset());
   }
 }

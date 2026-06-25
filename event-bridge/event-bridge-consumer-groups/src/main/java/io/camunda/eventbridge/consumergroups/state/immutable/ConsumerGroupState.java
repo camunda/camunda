@@ -34,12 +34,6 @@ public interface ConsumerGroupState {
   /** Whether the group has no members (true also for an unknown group). */
   boolean isGroupEmpty(String groupId);
 
-  /**
-   * Whether every member of the group has reconciled to {@code epoch} (i.e. each member's {@code
-   * assignedEpoch == epoch}). Used to decide {@code STABLE} vs {@code RECONCILING}.
-   */
-  boolean allMembersReconciled(String groupId, long epoch);
-
   /** The member's state, or {@code null} if the member does not exist. */
   MemberState getMember(String groupId, String memberId);
 

@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.record;
 
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.topic.TopicSubscriptionValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -36,9 +37,11 @@ import java.util.Map;
  *   <li>{@code memberEpoch} — the member's generation, set to the group epoch at join.
  *   <li>{@code groupEpoch} — the group epoch after this change (the desired-state version the
  *       assignor reconciles toward).
- *   <li>{@code timestamp} — the processing wall-clock (epoch millis) of this change, stamped by the
- *       processor onto the {@code MEMBER_LEFT} event so the applier can record when a group became
- *       {@code EMPTY} without reading a (non-deterministic) clock; unset ({@code 0}) otherwise.
+ *   <li>{@code state} — the group's resulting {@link GroupLifecycle}, decided by the processor and
+ *       stamped on the event; the applier writes it verbatim (it does not re-derive it).
+ *   <li>{@code emptySince} — the epoch millis the group became {@code EMPTY}, stamped by the
+ *       processor on the emptying {@code MEMBER_LEFT} event (and {@code 0} on a join, clearing a
+ *       revived group's deadline); the applier writes it verbatim.
  * </ul>
  */
 public final class MembershipRecord extends UnifiedRecordValue {
@@ -50,17 +53,19 @@ public final class MembershipRecord extends UnifiedRecordValue {
   private final StringProperty instanceIdProp = new StringProperty("instanceId", "");
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", 0L);
   private final LongProperty groupEpochProp = new LongProperty("groupEpoch", 0L);
-  private final LongProperty timestampProp = new LongProperty("timestamp", 0L);
+  private final StringProperty stateProp = new StringProperty("state", GroupLifecycle.EMPTY.name());
+  private final LongProperty emptySinceProp = new LongProperty("emptySince", 0L);
 
   public MembershipRecord() {
-    super(7);
+    super(8);
     declareProperty(groupIdProp)
         .declareProperty(subscriptionsProp)
         .declareProperty(memberIdProp)
         .declareProperty(instanceIdProp)
         .declareProperty(memberEpochProp)
         .declareProperty(groupEpochProp)
-        .declareProperty(timestampProp);
+        .declareProperty(stateProp)
+        .declareProperty(emptySinceProp);
   }
 
   /**
@@ -156,13 +161,25 @@ public final class MembershipRecord extends UnifiedRecordValue {
     return this;
   }
 
-  /** The processing wall-clock (epoch millis) of this change; {@code 0} when unset. */
-  public long getTimestamp() {
-    return timestampProp.getValue();
+  /** The group's resulting lifecycle, decided by the processor and stamped on the event. */
+  public GroupLifecycle getState() {
+    return GroupLifecycle.fromName(BufferUtil.bufferAsString(stateProp.getValue()));
   }
 
-  public MembershipRecord setTimestamp(final long timestamp) {
-    timestampProp.setValue(timestamp);
+  public MembershipRecord setState(final GroupLifecycle state) {
+    stateProp.setValue(state.name());
+    return this;
+  }
+
+  /**
+   * Epoch millis the group became {@code EMPTY} (stamped on the emptying leave); {@code 0} else.
+   */
+  public long getEmptySince() {
+    return emptySinceProp.getValue();
+  }
+
+  public MembershipRecord setEmptySince(final long emptySince) {
+    emptySinceProp.setValue(emptySince);
     return this;
   }
 }

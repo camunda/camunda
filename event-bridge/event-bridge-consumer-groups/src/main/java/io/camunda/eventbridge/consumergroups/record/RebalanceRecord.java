@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.record;
 
 import io.camunda.eventbridge.consumergroups.processing.RebalanceProcessor;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -36,10 +37,15 @@ public final class RebalanceRecord extends UnifiedRecordValue {
   private final LongProperty assignmentEpochProp = new LongProperty("assignmentEpoch", 0L);
   private final ArrayProperty<MemberAssignment> membersProp =
       new ArrayProperty<>("members", MemberAssignment::new);
+  private final StringProperty stateProp =
+      new StringProperty("state", GroupLifecycle.RECONCILING.name());
 
   public RebalanceRecord() {
-    super(3);
-    declareProperty(groupIdProp).declareProperty(assignmentEpochProp).declareProperty(membersProp);
+    super(4);
+    declareProperty(groupIdProp)
+        .declareProperty(assignmentEpochProp)
+        .declareProperty(membersProp)
+        .declareProperty(stateProp);
   }
 
   /**
@@ -82,6 +88,16 @@ public final class RebalanceRecord extends UnifiedRecordValue {
     assignment.forEach(
         (memberId, partitions) ->
             membersProp.add().setMemberId(memberId).setPartitions(partitions));
+    return this;
+  }
+
+  /** The group's resulting lifecycle ({@code RECONCILING}), stamped by the processor. */
+  public GroupLifecycle getState() {
+    return GroupLifecycle.fromName(BufferUtil.bufferAsString(stateProp.getValue()));
+  }
+
+  public RebalanceRecord setState(final GroupLifecycle state) {
+    stateProp.setValue(state.name());
     return this;
   }
 }

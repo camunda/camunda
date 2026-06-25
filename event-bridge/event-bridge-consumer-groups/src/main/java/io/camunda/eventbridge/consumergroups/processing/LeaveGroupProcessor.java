@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupResponse;
@@ -27,18 +28,20 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
 
   private final Writers writers;
   private final ConsumerGroupState state;
-  private final CoordinationChecks checks;
+  private final CoordinationValidator validator;
 
   public LeaveGroupProcessor(
-      final Writers writers, final ConsumerGroupState state, final CoordinationChecks checks) {
+      final Writers writers,
+      final ConsumerGroupState state,
+      final CoordinationValidator validator) {
     this.writers = writers;
     this.state = state;
-    this.checks = checks;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<MembershipRecord> command) {
-    checks
+    validator
         .validateLeave(command.getValue())
         .ifRightOrLeft(member -> leave(command), rejection -> reject(command, rejection));
   }
@@ -46,14 +49,24 @@ public final class LeaveGroupProcessor implements TypedRecordProcessor<Membershi
   private void leave(final TypedRecord<MembershipRecord> command) {
     final var cmd = command.getValue();
     final var newGroupEpoch = state.getGroup(cmd.getGroupId()).getGroupEpoch() + 1;
+
+    // Decide the resulting lifecycle here (not in the applier): the group becomes EMPTY iff the
+    // leaver is its only member, else it drops back to PREPARING_REBALANCE for the assignor.
+    final var members = state.groupSnapshot(cmd.getGroupId()).members();
+    final var becomesEmpty = members.size() == 1 && members.containsKey(cmd.getMemberId());
+    final var resultingState =
+        becomesEmpty ? GroupLifecycle.EMPTY : GroupLifecycle.PREPARING_REBALANCE;
+    // Stamp the retention deadline base from the command's (replicated) processing time when the
+    // group empties — identical on every replica, so it survives failover; 0 otherwise.
+    final var emptySince = becomesEmpty ? command.getTimestamp() : 0L;
+
     final var event =
         new MembershipRecord()
             .setGroupId(cmd.getGroupId())
             .setMemberId(cmd.getMemberId())
             .setGroupEpoch(newGroupEpoch)
-            // Carry the processing time so the applier can stamp emptySince deterministically if
-            // this leave empties the group (the retention deadline must survive failover).
-            .setTimestamp(command.getTimestamp());
+            .setState(resultingState)
+            .setEmptySince(emptySince);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_LEFT, event);
     writers
         .response()

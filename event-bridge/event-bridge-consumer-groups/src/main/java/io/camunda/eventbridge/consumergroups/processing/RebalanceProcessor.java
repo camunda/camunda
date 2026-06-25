@@ -8,7 +8,7 @@
 package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
-import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
+import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.stream.TypedRecordProcessor;
 import io.camunda.eventbridge.stream.Writers;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -16,49 +16,34 @@ import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Handles the internal {@code REBALANCE_GROUP} command emitted by the async assignor. As with every
- * command processor here it always results in either a follow-up event or a rejection: it appends a
- * {@code GROUP_REBALANCED} event when the proposed target is still valid, otherwise it appends a
- * {@code COMMAND_REJECTION} record explaining why it was dropped (the command carries no request,
- * so there is no reply). It is dropped when:
- *
- * <ul>
- *   <li>the group no longer exists (its last member left between the assignor's read and now);
- *   <li>the group epoch has advanced past the epoch the target was computed for (stale roster);
- *   <li>the target is already applied (assignment epoch ≥ the proposed epoch — idempotent).
- * </ul>
+ * Handles the internal {@code REBALANCE_GROUP} command emitted by the async assignor. {@link
+ * TransitionValidator#validateRebalance} decides whether the proposed target is still valid (group
+ * exists, computed for the current epoch, not already applied); on success this appends a {@code
+ * GROUP_REBALANCED} event carrying the resolved group state, otherwise a {@code COMMAND_REJECTION}
+ * with the reason (the command carries no request, so there is no reply).
  */
 public final class RebalanceProcessor implements TypedRecordProcessor<RebalanceRecord> {
 
   private final Writers writers;
-  private final ConsumerGroupState state;
+  private final TransitionValidator validator;
 
-  public RebalanceProcessor(final Writers writers, final ConsumerGroupState state) {
+  public RebalanceProcessor(final Writers writers, final TransitionValidator validator) {
     this.writers = writers;
-    this.state = state;
+    this.validator = validator;
   }
 
   @Override
   public void processRecord(final TypedRecord<RebalanceRecord> command) {
+    validator
+        .validateRebalance(command.getValue())
+        .ifRightOrLeft(ok -> rebalance(command), reason -> reject(command, reason));
+  }
+
+  private void rebalance(final TypedRecord<RebalanceRecord> command) {
+    // A committed target lands the group in RECONCILING until members confirm — decided here, not
+    // in the applier.
     final var cmd = command.getValue();
-    final var group = state.getGroup(cmd.getGroupId());
-
-    if (group == null) {
-      reject(command, "group no longer exists");
-      return;
-    }
-    if (cmd.getAssignmentEpoch() != group.getGroupEpoch()) {
-      reject(
-          command,
-          "stale roster: target epoch %d != group epoch %d"
-              .formatted(cmd.getAssignmentEpoch(), group.getGroupEpoch()));
-      return;
-    }
-    if (group.getAssignmentEpoch() >= cmd.getAssignmentEpoch()) {
-      reject(command, "target epoch %d already applied".formatted(cmd.getAssignmentEpoch()));
-      return;
-    }
-
+    cmd.setState(GroupLifecycle.RECONCILING);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.GROUP_REBALANCED, cmd);
   }
 

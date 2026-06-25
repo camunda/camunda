@@ -13,15 +13,17 @@ import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 
 /**
  * Write view of the replicated consumer-group state — the event-bridge counterpart of the engine's
- * {@code MutableXxxState}. Only the appliers use this; it exposes granular put/delete primitives,
- * leaving the decision logic (create-if-absent, epoch bumps, delete-when-empty) to the appliers.
+ * {@code MutableXxxState}. Only the appliers use this; it exposes granular put/delete primitives
+ * (including explicit lifecycle-index track/untrack ops), leaving all decision logic —
+ * create-if-absent, epoch bumps, state transitions, which index a group belongs in,
+ * delete-when-empty — to the appliers.
  */
 public interface MutableConsumerGroupState extends ConsumerGroupState {
 
-  /** Inserts or replaces the group's state (and updates its lifecycle index). */
+  /** Inserts or replaces the group's row (only — the lifecycle index is maintained separately). */
   void putGroup(String groupId, GroupState group);
 
-  /** Removes the group (and its lifecycle index entries). */
+  /** Removes the group's row (only — the caller untracks it from the lifecycle indexes). */
   void deleteGroup(String groupId);
 
   /** Inserts or replaces a member's state. */
@@ -29,4 +31,16 @@ public interface MutableConsumerGroupState extends ConsumerGroupState {
 
   /** Removes a member. */
   void deleteMember(String groupId, String memberId);
+
+  /** Adds the group to the {@code PREPARING_REBALANCE} index (the assignor's work list). */
+  void trackPendingRebalance(String groupId);
+
+  /** Removes the group from the {@code PREPARING_REBALANCE} index. */
+  void untrackPendingRebalance(String groupId);
+
+  /** Adds the group to the {@code EMPTY} index (the retention task's work list). */
+  void trackEmpty(String groupId);
+
+  /** Removes the group from the {@code EMPTY} index. */
+  void untrackEmpty(String groupId);
 }

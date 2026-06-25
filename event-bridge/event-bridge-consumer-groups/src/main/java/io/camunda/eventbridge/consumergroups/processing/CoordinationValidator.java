@@ -27,14 +27,14 @@ import java.util.Set;
  * (append an event on the right, a rejection on the left). The checks read the replicated {@link
  * ConsumerGroupState} and the {@link TopicRegistry}; this runs on the stream-processing actor.
  */
-public final class CoordinationChecks {
+public final class CoordinationValidator {
 
   private static final Either<Rejection, Void> VALID = Either.right(null);
 
   private final ConsumerGroupState state;
   private final TopicRegistry topicRegistry;
 
-  public CoordinationChecks(final ConsumerGroupState state, final TopicRegistry topicRegistry) {
+  public CoordinationValidator(final ConsumerGroupState state, final TopicRegistry topicRegistry) {
     this.state = state;
     this.topicRegistry = topicRegistry;
   }

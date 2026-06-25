@@ -8,7 +8,6 @@
 package io.camunda.eventbridge.consumergroups.state.appliers;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
-import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.group.GroupState;
 import io.camunda.eventbridge.consumergroups.state.group.MemberState;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
@@ -17,11 +16,11 @@ import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import java.util.List;
 
 /**
- * Applies {@code MEMBER_JOINED}: creates the group on first join, bumps its group epoch, and adds
- * the new member (owning nothing until the assignor gives it a target). A join always carries a
- * fresh member id — a duplicate {@code group.instance.id} is rejected before reaching here — so
- * this only ever adds a member, never re-states an existing one. The decision logic lives here;
- * {@link MutableConsumerGroupState} only does granular put/get. Runs identically on leader (after
+ * Applies {@code MEMBER_JOINED}: creates the group on first join (or revives a retained one),
+ * writes the epoch/state/emptySince the {@code JoinGroupProcessor} resolved onto the event, and
+ * adds the new member (owning nothing until the assignor gives it a target). A join always carries
+ * a fresh member id — a duplicate {@code group.instance.id} is rejected before reaching here — so
+ * this only ever adds a member, never re-states an existing one. Runs identically on leader (after
  * {@code JoinGroupProcessor}) and follower (on replay).
  */
 public final class MemberJoinedApplier
@@ -42,13 +41,15 @@ public final class MemberJoinedApplier
       group = new GroupState().setSubscriptions(value.getSubscriptions()).setAssignmentEpoch(0);
     }
     group.setGroupEpoch(value.getGroupEpoch());
-    // A join bumps the group epoch, so the target is now stale until the assignor reruns: the
-    // group enters PREPARING_REBALANCE (a new group's first state too).
-    group.setState(GroupLifecycle.PREPARING_REBALANCE);
-    // The group now has a member, so it is no longer empty — clear any retention deadline left from
-    // an earlier EMPTY period (reviving a retained group resets its clock).
-    group.setEmptySince(0L);
+    group.setState(value.getState());
+    group.setEmptySince(value.getEmptySince());
     state.putGroup(groupId, group);
+
+    // A joined group has a member and a stale target → PREPARING_REBALANCE: in the assignor's
+    // index,
+    // and out of the empty index (in case this join revived a retained EMPTY group).
+    state.trackPendingRebalance(groupId);
+    state.untrackEmpty(groupId);
 
     final var member =
         new MemberState()
