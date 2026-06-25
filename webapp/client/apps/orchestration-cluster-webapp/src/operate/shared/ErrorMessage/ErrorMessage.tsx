@@ -6,16 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {type FC} from 'react';
 import {useTranslation} from 'react-i18next';
-import {EmptyMessage} from '../EmptyMessage';
+import {EmptyMessage} from '../EmptyMessage/EmptyMessage';
 
 type Props = {
 	message?: string;
 	additionalInfo?: string;
 };
 
-const ErrorMessage: React.FC<Props> = (props) => {
+const ErrorMessage: FC<Props> = (props) => {
 	const {t} = useTranslation();
 	const defaultError = {
 		message: t('operate.shared.errorMessage.message'),

@@ -6,16 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {forwardRef} from 'react';
+import {type ReactNode, forwardRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Header} from './styled';
-import {PanelTitle} from '../PanelTitle';
+import {PanelTitle} from '../PanelTitle/PanelTitle';
 
 type Props = {
 	title?: string;
 	count?: number;
 	hasMoreTotalItems?: boolean;
-	children?: React.ReactNode;
+	children?: ReactNode;
 	className?: string;
 	hasTopBorder?: boolean;
 	size?: 'sm' | 'md';

@@ -6,25 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {type ReactNode, type ComponentProps, type FC} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Loading} from '@carbon/react';
 import {Container, LoadingContainer, EmptyMessage, ErrorMessage} from './styled';
-import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage';
+import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage/EmptyMessage';
 
 type DefaultProps = {
-	children: React.ReactNode;
+	children: ReactNode;
 	status: 'error' | 'loading' | 'content' | 'forbidden';
 };
 
 type WithEmptyMessageProps = {
-	children: React.ReactNode;
+	children: ReactNode;
 	status: 'error' | 'empty' | 'loading' | 'content';
-	emptyMessage: React.ComponentProps<typeof BaseEmptyMessage>;
+	emptyMessage: ComponentProps<typeof BaseEmptyMessage>;
 	messagePosition?: 'top' | 'center';
 };
 
-const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children, status, ...props}) => {
+const DiagramShell: FC<DefaultProps | WithEmptyMessageProps> = ({children, status, ...props}) => {
 	const {t} = useTranslation();
 	return (
 		<Container data-testid="diagram-body" tabIndex={0}>

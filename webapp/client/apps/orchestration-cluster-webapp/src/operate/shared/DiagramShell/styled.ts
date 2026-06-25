@@ -7,8 +7,8 @@
  */
 
 import styled, {css} from 'styled-components';
-import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage';
-import {ErrorMessage as BaseErrorMessage} from '../ErrorMessage';
+import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage/EmptyMessage';
+import {ErrorMessage as BaseErrorMessage} from '../ErrorMessage/ErrorMessage';
 
 const Container = styled.div`
 	flex-grow: 1;

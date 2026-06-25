@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {type ComponentProps, type FC} from 'react';
 import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
 import {type CarbonIconType, Error, UnknownFilled} from '@carbon/react/icons';
 import type {DecisionInstanceState, ProcessInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -24,10 +24,10 @@ const stateIconsMap = {
 
 type Props = {
 	state: ProcessInstanceState | DecisionInstanceState | 'INCIDENT';
-	size: React.ComponentProps<CarbonIconType>['size'];
+	size: ComponentProps<CarbonIconType>['size'];
 };
 
-const StateIcon: React.FC<Props> = ({state, ...props}) => {
+const StateIcon: FC<Props> = ({state, ...props}) => {
 	const TargetComponent = stateIconsMap[state];
 	return <TargetComponent data-testid={`${state}-icon`} {...props} />;
 };
