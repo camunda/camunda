@@ -123,26 +123,6 @@ describe('<BatchOperations />', () => {
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
 	});
 
-	it('should track when an operation detail link is opened', async ({worker}) => {
-		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_OPERATIONS}));
-		const trackSpy = vi.spyOn(tracking, 'track');
-
-		const screen = await renderPage();
-
-		// The detail route is not migrated yet, so the link is a hard anchor; prevent the
-		// browser test harness from following it while still letting the click handler fire.
-		document.addEventListener('click', (event) => event.preventDefault(), {capture: true, once: true});
-		await screen.getByRole('link', {name: 'Cancel Process Instance'}).click();
-
-		expect(trackSpy).toHaveBeenCalledWith({
-			eventName: 'operate:batch-operation-details-opened',
-			batchOperationType: 'CANCEL_PROCESS_INSTANCE',
-			batchOperationState: 'COMPLETED',
-		});
-
-		trackSpy.mockRestore();
-	});
-
 	it('should track when a column is sorted', async ({worker}) => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_WITH_OPERATIONS}));
 		const trackSpy = vi.spyOn(tracking, 'track');

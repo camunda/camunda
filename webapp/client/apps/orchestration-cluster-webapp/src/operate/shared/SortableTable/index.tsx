@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DataTableSkeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@carbon/react';
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@carbon/react';
 import {TableContainer, LoadingOverlay, EmptyStateContainer} from './styled';
 import {ColumnHeader} from './ColumnHeader';
 
@@ -26,7 +26,6 @@ type Props<TRow> = {
 	rows: TRow[];
 	rowKey: (row: TRow) => string;
 	size?: TableSize;
-	isLoading?: boolean;
 	isFetching?: boolean;
 	emptyState?: React.ReactNode;
 	onSort?: (sortKey: string, order: 'asc' | 'desc') => void;
@@ -38,16 +37,11 @@ function SortableTable<TRow>({
 	rows,
 	rowKey,
 	size = 'md',
-	isLoading = false,
 	isFetching = false,
 	emptyState,
 	onSort,
 	'data-testid': dataTestId,
 }: Props<TRow>) {
-	if (isLoading) {
-		return <DataTableSkeleton columnCount={columns.length} rowCount={5} showHeader={false} showToolbar={false} />;
-	}
-
 	return (
 		<TableContainer data-testid={dataTestId}>
 			{isFetching && <LoadingOverlay aria-hidden />}
