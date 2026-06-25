@@ -43,6 +43,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class ClusterConfigurationManagerService
@@ -248,14 +249,18 @@ public final class ClusterConfigurationManagerService
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     managerActor.run(
-        () ->
-            clusterConfigurationManager.registerTopologyChangeAppliers(
-                new ConfigurationChangeAppliersImpl(
-                    partitionChangeExecutor,
-                    new NoopClusterMembershipChangeExecutor(),
-                    partitionScalingChangeExecutor,
-                    clusterChangeExecutor,
-                    modeChangeExecutor)));
+        () -> {
+          Objects.requireNonNull(
+              modeChangeExecutor,
+              "ModeChangeExecutor not set before registering topology appliers.");
+          clusterConfigurationManager.registerTopologyChangeAppliers(
+              new ConfigurationChangeAppliersImpl(
+                  partitionChangeExecutor,
+                  new NoopClusterMembershipChangeExecutor(),
+                  partitionScalingChangeExecutor,
+                  clusterChangeExecutor,
+                  modeChangeExecutor));
+        });
   }
 
   public void removePartitionChangeExecutor() {
