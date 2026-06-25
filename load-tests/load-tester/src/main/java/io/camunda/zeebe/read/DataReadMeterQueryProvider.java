@@ -140,6 +140,28 @@ public final class DataReadMeterQueryProvider {
             "wait_state_all",
             Duration.ofSeconds(30),
             (client, context) ->
-                client.newElementInstanceWaitStateSearchRequest().page(p -> p.limit(20))));
+                client.newElementInstanceWaitStateSearchRequest().page(p -> p.limit(20))),
+        // Deep pagination: fetch page 1, then page 2 using the returned cursor.
+        // Measures cumulative p1+p2 latency to detect keyset-pagination depth regression on RDBMS.
+        // ES/OS uses search_after (O(1) per page) so should stay flat; RDBMS may degrade if the
+        // keyset filter is not pushed through the WaitStateMapper subquery boundary by the planner.
+        new ReadQuery(
+            "wait_state_page2",
+            Duration.ofSeconds(30),
+            (client, context) -> {
+              final var page1 =
+                  client
+                      .newElementInstanceWaitStateSearchRequest()
+                      .page(p -> p.limit(20))
+                      .send()
+                      .join();
+              final var cursor = page1.page().endCursor();
+              if (cursor == null) {
+                return client.newElementInstanceWaitStateSearchRequest().page(p -> p.limit(20));
+              }
+              return client
+                  .newElementInstanceWaitStateSearchRequest()
+                  .page(p -> p.limit(20).after(cursor));
+            }));
   }
 }

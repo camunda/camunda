@@ -1,0 +1,27 @@
+# Scenario 3-pg — PG accumulation + deep pagination
+# Same as Scenario 3 (300 PI/s, 5 s worker delay, wait states enabled) but targeting PostgreSQL.
+# The WAIT_STATE table accumulates rows over the run. wait_state_page2 records page 1 and page 2
+# latency cumulatively to detect keyset-pagination depth regression as the table grows.
+#
+# Key question: does page 2 latency diverge from page 1 under a large and growing table?
+# If it does, the subquery in WaitStateMapper.xml prevents the PG planner from pushing the
+# keyset filter through the subquery boundary and the mapper needs to be flattened.
+#
+# ES/OS runs the same wait_state_page2 query (search_after is O(1) per page) and should
+# stay flat — use any concurrent ES run as a control for the cumulative timer.
+#
+# Trigger via camunda-load-test.yml with secondary-storage-type: postgresql
+global:
+  extraEnvVars:
+    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+      value: "true"
+    - name: ZEEBE_DISABLED_QUERIES
+      value: ""
+    - name: LOAD_TESTER_WORKER_COMPLETION_DELAY
+      value: "5000ms"
+
+orchestration:
+  extraConfiguration:
+    - file: application.yaml
+      content: |
+        camunda.data.wait-states.enabled: "true"
