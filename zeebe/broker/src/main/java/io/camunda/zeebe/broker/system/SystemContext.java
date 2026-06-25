@@ -805,22 +805,6 @@ public final class SystemContext {
   }
 
   /**
-   * Returns the feature flags for the {@code default} physical tenant.
-   *
-   * @throws IllegalStateException if no feature flags are registered for the default physical
-   *     tenant
-   */
-  public FeatureFlags getFeatureFlags() {
-    final var flags =
-        featureFlagsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    if (flags == null) {
-      throw new IllegalStateException(
-          "No feature flags registered for the default physical tenant");
-    }
-    return flags;
-  }
-
-  /**
    * Returns the feature flags for the given physical tenant.
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
