@@ -233,9 +233,8 @@ final class ManifestManagerTest {
         .hasMessageContaining("expected but unhandled");
   }
 
-  @SuppressWarnings("unchecked")
   @Test
-  void shouldRetryListBackupStatusesWhenTransientMetadataErrorOccurs() {
+  void shouldRetryListBackupStatusesWhenNonHttpIoStorageExceptionOccurs() {
     // given
     final var client = Mockito.mock(Storage.class);
     final var manager =
@@ -251,13 +250,13 @@ final class ManifestManagerTest {
     final var blob = Mockito.mock(Blob.class);
     Mockito.when(blob.getName()).thenReturn("basePathmanifests/2/3/1/manifest.json");
     Mockito.when(blob.getMetadata()).thenReturn(ManifestMetadata.fromManifest(manifest));
-    final var page = Mockito.mock(Page.class);
+    final var page = mockBlobPage(blob);
     Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
     Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
         .thenThrow(
             new StorageException(
                 new IOException(
-                    "Unexpected Error code 500 trying to get universe domain from Compute Engine metadata")))
+                    "universe domain metadata request failed while listing manifests")))
         .thenReturn(page);
     final var wildcard =
         new BackupIdentifierWildcardImpl(
@@ -278,6 +277,70 @@ final class ManifestManagerTest {
   }
 
   @Test
+  void shouldRetryListBackupStatusesWhenNonHttpIoStorageExceptionIsWrapped() {
+    // given
+    final var client = Mockito.mock(Storage.class);
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+    final var backup =
+        new BackupImpl(
+            new BackupIdentifierImpl(1, 2, 3),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new NamedFileSetImpl(Map.of()),
+            new NamedFileSetImpl(Map.of()));
+    final var manifest = Manifest.createInProgress(backup).complete();
+    final var blob = Mockito.mock(Blob.class);
+    Mockito.when(blob.getName()).thenReturn("basePathmanifests/2/3/1/manifest.json");
+    Mockito.when(blob.getMetadata()).thenReturn(ManifestMetadata.fromManifest(manifest));
+    final var page = mockBlobPage(blob);
+    Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+        .thenThrow(
+            new RuntimeException(
+                new StorageException(
+                    new IOException(
+                        "universe domain metadata request failed while listing manifests"))))
+        .thenReturn(page);
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
+
+    // when
+    final var statuses = manager.listBackupStatuses(wildcard);
+
+    // then
+    Assertions.assertThat(statuses)
+        .singleElement()
+        .satisfies(
+            status -> {
+              Assertions.assertThat(status.id()).isEqualTo(backup.id());
+              Assertions.assertThat(status.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
+            });
+    Mockito.verify(client, Mockito.times(2)).list(Mockito.eq("bucket"), Mockito.any());
+  }
+
+  @Test
+  void shouldNotRetryListBackupStatusesWhenStorageExceptionIsNotIoBacked() {
+    // given
+    final var client = Mockito.mock(Storage.class);
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+        .thenThrow(new StorageException(0, "not an I/O failure"));
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
+
+    // when/then
+    Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
+        .isInstanceOf(StorageException.class)
+        .hasMessageContaining("not an I/O failure");
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+  }
+
+  @Test
   void shouldNotRetryListBackupStatusesWhenErrorIsNotTransient() {
     // given
     final var client = Mockito.mock(Storage.class);
@@ -295,6 +358,13 @@ final class ManifestManagerTest {
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("bad request");
     Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Page<Blob> mockBlobPage(final Blob blob) {
+    final var page = Mockito.mock(Page.class);
+    Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
+    return page;
   }
 
   @Nested
