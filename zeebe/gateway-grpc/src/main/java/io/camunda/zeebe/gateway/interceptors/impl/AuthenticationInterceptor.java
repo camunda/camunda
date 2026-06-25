@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.RejectionKeyNames;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.RejectionReasonValues;
 import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.camunda.zeebe.util.Either.Left;
 import io.camunda.zeebe.util.Either.Right;
@@ -21,6 +23,8 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -44,16 +48,25 @@ public final class AuthenticationInterceptor implements ServerInterceptor {
   private final Map<String, AuthenticationHandler> handlersByTenantId;
   private final boolean authEnabled;
   private final Map<String, AuthenticationMetrics> metricsByTenantId;
+  private final Counter unknownTenantRejected;
 
   public AuthenticationInterceptor(
       final Set<String> knownTenantIds,
       final Map<String, AuthenticationHandler> handlersByTenantId,
       final boolean authEnabled,
-      final Map<String, AuthenticationMetrics> metricsByTenantId) {
+      final Map<String, AuthenticationMetrics> metricsByTenantId,
+      final MeterRegistry meterRegistry) {
     this.knownTenantIds = Set.copyOf(knownTenantIds);
     this.handlersByTenantId = Map.copyOf(handlersByTenantId);
     this.authEnabled = authEnabled;
     this.metricsByTenantId = Map.copyOf(metricsByTenantId);
+    unknownTenantRejected =
+        Counter.builder(AuthenticationMetricsDoc.REJECTED.getName())
+            .description(AuthenticationMetricsDoc.REJECTED.getDescription())
+            .tag(
+                RejectionKeyNames.REASON.asString(),
+                RejectionReasonValues.UNKNOWN_TENANT.getValue())
+            .register(meterRegistry);
   }
 
   @Override
@@ -67,6 +80,7 @@ public final class AuthenticationInterceptor implements ServerInterceptor {
     if (!authEnabled) {
       // unprotected API: an unknown tenant is a genuine routing miss → NOT_FOUND
       if (!knownTenantIds.contains(tenantId)) {
+        unknownTenantRejected.increment();
         return deny(call, Status.NOT_FOUND.withDescription("Unknown physical tenant: " + tenantId));
       }
       final Context contextWithTenant =
@@ -77,6 +91,7 @@ public final class AuthenticationInterceptor implements ServerInterceptor {
     // protected API. An unknown tenant must not reveal tenant existence to an unauthenticated
     // caller → respond UNAUTHENTICATED without echoing the tenant id.
     if (!knownTenantIds.contains(tenantId)) {
+      unknownTenantRejected.increment();
       return deny(call, Status.UNAUTHENTICATED);
     }
 

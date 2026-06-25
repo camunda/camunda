@@ -135,7 +135,8 @@ public final class StubbedGateway {
                         physicalTenantIds.known(),
                         handlersByTenant,
                         !securityConfiguration.getAuthentication().isUnprotectedApi(),
-                        metricsByTenant)));
+                        metricsByTenant,
+                        new SimpleMeterRegistry())));
     server = serverBuilder.build();
     server.start();
   }

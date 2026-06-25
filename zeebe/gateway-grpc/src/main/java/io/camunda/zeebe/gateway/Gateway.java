@@ -441,7 +441,11 @@ public final class Gateway implements CloseableSilently {
 
     interceptors.add(
         new AuthenticationInterceptor(
-            physicalTenantIds.known(), handlersByTenant, authEnabled, metricsByTenant));
+            physicalTenantIds.known(),
+            handlersByTenant,
+            authEnabled,
+            metricsByTenant,
+            meterRegistry));
     return ServerInterceptors.intercept(service, interceptors);
   }
 

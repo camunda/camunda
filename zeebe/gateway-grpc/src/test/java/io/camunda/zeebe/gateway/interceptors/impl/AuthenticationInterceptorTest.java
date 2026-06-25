@@ -29,6 +29,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAut
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.AuthResultValues;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.LatencyKeyNames;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.RejectionKeyNames;
 import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.grpc.Context;
 import io.grpc.Metadata;
@@ -66,11 +67,13 @@ final class AuthenticationInterceptorTest {
   @Mock private JwtDecoder jwtDecoder;
 
   private AuthenticationMetrics metrics;
+  private SimpleMeterRegistry meterRegistry;
 
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
-    metrics = new AuthenticationMetrics(new SimpleMeterRegistry(), AuthenticationMethod.OIDC);
+    meterRegistry = new SimpleMeterRegistry();
+    metrics = new AuthenticationMetrics(meterRegistry, AuthenticationMethod.OIDC);
   }
 
   // Auth behavior tests (BASIC + OIDC)
@@ -83,7 +86,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, alwaysAllow()),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -114,7 +118,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, new BasicAuth(userServices, passwordEncoder)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -144,7 +149,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, new BasicAuth(userServices, passwordEncoder)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -175,7 +181,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, new BasicAuth(userServices, passwordEncoder)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -204,7 +211,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, new BasicAuth(userServices, passwordEncoder)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -240,7 +248,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -273,7 +282,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -313,7 +323,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -352,7 +363,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -397,7 +409,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -430,7 +443,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -465,7 +479,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -500,7 +515,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -536,7 +552,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -570,7 +587,8 @@ final class AuthenticationInterceptorTest {
                 DEFAULT_PHYSICAL_TENANT_ID,
                 new Oidc(jwtDecoder, (jwtClaims, tokenValue) -> jwtClaims, oidcConfig)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -609,7 +627,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, new BasicAuth(userServices, passwordEncoder)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, basicMetrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, basicMetrics),
+            meterRegistry);
 
     // when
     interceptor.interceptCall(
@@ -648,7 +667,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, new BasicAuth(userServices, passwordEncoder)),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, basicMetrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, basicMetrics),
+            meterRegistry);
 
     // when
     interceptor.interceptCall(
@@ -678,7 +698,7 @@ final class AuthenticationInterceptorTest {
   void shouldStampResolvedTenantIntoContextForUnprotectedApi() {
     // given
     final var interceptor =
-        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), false, Map.of());
+        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), false, Map.of(), meterRegistry);
     final var headers = new Metadata();
     headers.put(GrpcHeaders.PHYSICAL_TENANT, "tenant-a");
     final AtomicReference<String> captured = new AtomicReference<>();
@@ -701,7 +721,7 @@ final class AuthenticationInterceptorTest {
     // given
     final var interceptor =
         new AuthenticationInterceptor(
-            Set.of(DEFAULT_PHYSICAL_TENANT_ID), Map.of(), false, Map.of());
+            Set.of(DEFAULT_PHYSICAL_TENANT_ID), Map.of(), false, Map.of(), meterRegistry);
     final AtomicReference<String> captured = new AtomicReference<>();
 
     // when
@@ -721,7 +741,7 @@ final class AuthenticationInterceptorTest {
   void shouldRejectUnknownTenantWithNotFound() {
     // given
     final var interceptor =
-        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), false, Map.of());
+        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), false, Map.of(), meterRegistry);
     final var headers = new Metadata();
     headers.put(GrpcHeaders.PHYSICAL_TENANT, "unknown");
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
@@ -736,6 +756,13 @@ final class AuthenticationInterceptorTest {
               assertThat(status.getCode()).isEqualTo(Status.NOT_FOUND.getCode());
               assertThat(status.getDescription()).contains("unknown");
             });
+    assertThat(
+            meterRegistry
+                .get("zeebe.gateway.grpc.auth.rejected")
+                .tag(RejectionKeyNames.REASON.asString(), "unknown_tenant")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
   }
 
   @Test
@@ -743,7 +770,7 @@ final class AuthenticationInterceptorTest {
     // given
     final var interceptor =
         new AuthenticationInterceptor(
-            Set.of("tenant-a"), Map.of(), true, Map.of("tenant-a", metrics));
+            Set.of("tenant-a"), Map.of(), true, Map.of("tenant-a", metrics), meterRegistry);
     final var headers = new Metadata();
     headers.put(GrpcHeaders.PHYSICAL_TENANT, "unknown");
     headers.put(AUTH_KEY, "Basic ZGVtbzpkZW1v");
@@ -756,12 +783,20 @@ final class AuthenticationInterceptorTest {
     assertThat(closedCall.closeStatus)
         .hasValueSatisfying(
             status -> assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode()));
+    assertThat(
+            meterRegistry
+                .get("zeebe.gateway.grpc.auth.rejected")
+                .tag(RejectionKeyNames.REASON.asString(), "unknown_tenant")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
   }
 
   @Test
   void shouldRejectAnyTenantWhenKnownSetIsEmptyAndUnprotected() {
     // given
-    final var interceptor = new AuthenticationInterceptor(Set.of(), Map.of(), false, Map.of());
+    final var interceptor =
+        new AuthenticationInterceptor(Set.of(), Map.of(), false, Map.of(), meterRegistry);
     final var headers = new Metadata();
     headers.put(GrpcHeaders.PHYSICAL_TENANT, "any-tenant");
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
@@ -786,7 +821,8 @@ final class AuthenticationInterceptorTest {
             Set.of(DEFAULT_PHYSICAL_TENANT_ID),
             Map.of(DEFAULT_PHYSICAL_TENANT_ID, alwaysAllow()),
             true,
-            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics));
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, metrics),
+            meterRegistry);
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
 
     // when
@@ -806,7 +842,8 @@ final class AuthenticationInterceptorTest {
             Set.of("tenant-a", "tenant-b"),
             Map.of("tenant-a", alwaysAllow(), "tenant-b", alwaysDeny()),
             true,
-            Map.of("tenant-a", metrics, "tenant-b", metrics));
+            Map.of("tenant-a", metrics, "tenant-b", metrics),
+            meterRegistry);
     final var headers = new Metadata();
     headers.put(GrpcHeaders.PHYSICAL_TENANT, "tenant-b");
     headers.put(AUTH_KEY, "Bearer token");
@@ -829,7 +866,8 @@ final class AuthenticationInterceptorTest {
             Set.of("tenant-a"),
             Map.of("tenant-a", alwaysAllow()),
             true,
-            Map.of("tenant-a", metrics));
+            Map.of("tenant-a", metrics),
+            meterRegistry);
     final var headers = new Metadata();
     headers.put(GrpcHeaders.PHYSICAL_TENANT, "tenant-a");
     headers.put(AUTH_KEY, "Bearer token");
