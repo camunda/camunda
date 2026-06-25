@@ -200,7 +200,7 @@ public class RandomizedRaftTest {
 
       final MemberId member = memberIter.next();
       try (final var ignored = MDC.putCloseable("actor-scheduler", member.toString())) {
-        LOG.info("{} on {}", operation, member);
+        LOG.trace("{} on {}", operation, member);
       }
       operation.run(raftContexts, member);
       raftContexts.assertAtMostOneLeader();
@@ -227,7 +227,7 @@ public class RandomizedRaftTest {
     final var memberIter = raftMembers.iterator();
     for (final RaftOperation operation : raftOperations) {
       final MemberId member = memberIter.next();
-      LOG.info("{} on {}", operation, member);
+      LOG.trace("{} on {}", operation, member);
       operation.run(raftContexts, member);
     }
 

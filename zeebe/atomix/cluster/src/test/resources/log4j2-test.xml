@@ -9,7 +9,7 @@
 
   <Loggers>
     <Logger name="io.camunda.zeebe" level="debug"/>
-    <Logger name="io.atomix" level="trace"/>
+    <Logger name="io.atomix" level="debug"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>
