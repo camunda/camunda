@@ -11,13 +11,13 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import org.slf4j.Logger;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
@@ -26,6 +26,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   private final String physicalTenantId;
   private TopologyManagerImpl topologyManager;
+  private PartitionModeHandler modeHandler;
 
   PartitionManagerStep(final String physicalTenantId) {
     this.physicalTenantId = physicalTenantId;
@@ -48,6 +49,12 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         new TopologyManagerImpl(
             brokerStartupContext.getClusterServices().getMembershipService(),
             brokerInfo.withPartitionGroup(physicalTenantId));
+
+    // Register mode handler before starting the respective partition manager so that cluster
+    // services already have the executor value set
+    modeHandler = new PartitionModeHandler(brokerStartupContext, physicalTenantId, topologyManager);
+    modeHandler.register();
+
     try {
       final var partitionStartupFuture =
           brokerStartupContext
@@ -56,8 +63,12 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
               .thenApply((ignore) -> buildPartitionManager(brokerStartupContext, topologyManager))
               .thenAccept(
                   (partitionManager) -> {
-                    partitionManager.start();
                     brokerStartupContext.addPartitionManager(physicalTenantId, partitionManager);
+
+                    // We intentionally do not wait for start() to complete: broker startup only
+                    // needs the partition manager registered. Individual partitions bootstrap
+                    // asynchronously afterwards
+                    partitionManager.start();
                   });
 
       concurrencyControl.runOnCompletion(
@@ -85,12 +96,10 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
-      brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
-    }
-
     concurrencyControl.runOnCompletion(
-        partitionManager.stop().andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
+        stopModeChangeHandler()
+            .andThen(ignore -> partitionManager.stop(), concurrencyControl)
+            .andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
         (ok, error) -> {
           brokerShutdownContext.removePartitionManager(physicalTenantId);
           if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
@@ -127,52 +136,12 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
     if (isRecovering(brokerStartupContext, memberId)) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
-      return recoveryPartitionManager(brokerStartupContext, topologyManager);
+      return PartitionManager.createRecoveryPartitionManager(
+          brokerStartupContext, physicalTenantId, topologyManager);
     } else {
-      return partitionManager(brokerStartupContext, topologyManager);
+      return PartitionManager.createPartitionManager(
+          brokerStartupContext, physicalTenantId, topologyManager);
     }
-  }
-
-  PartitionManager partitionManager(
-      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-
-    return new PartitionManagerImpl(
-        physicalTenantId,
-        brokerStartupContext.getConcurrencyControl(),
-        brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getBrokerConfiguration(),
-        brokerStartupContext.getBrokerInfo(),
-        brokerStartupContext.getClusterServices(),
-        brokerStartupContext.getHealthCheckService(),
-        brokerStartupContext.getDiskSpaceUsageMonitor(),
-        brokerStartupContext.getPartitionListeners(),
-        brokerStartupContext.getPartitionRaftListeners(),
-        brokerStartupContext.getSnapshotApiRequestHandler(),
-        brokerStartupContext.getExporterRepository(),
-        brokerStartupContext.getGatewayBrokerTransport(),
-        brokerStartupContext.getJobStreamService().jobStreamer(),
-        brokerStartupContext.getClusterConfigurationService(),
-        brokerStartupContext.getMeterRegistry(),
-        brokerStartupContext.getBrokerClient(),
-        brokerStartupContext.getRocksDbResources(),
-        brokerStartupContext.getSecurityConfiguration(physicalTenantId),
-        brokerStartupContext.getSearchClientsProxy(),
-        brokerStartupContext.getBrokerRequestAuthorizationConverter(physicalTenantId),
-        topologyManager);
-  }
-
-  PartitionManager recoveryPartitionManager(
-      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-
-    return new RecoveryPartitionManager(
-        physicalTenantId,
-        brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
-        brokerStartupContext.getConcurrencyControl(),
-        brokerStartupContext.getClusterConfigurationService(),
-        brokerStartupContext.getClusterServices(),
-        brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getMeterRegistry(),
-        topologyManager);
   }
 
   private void shutdownOnInconsistentTopology(
@@ -203,5 +172,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
     final var memberState = clusterConfiguration.getMember(memberId);
     return memberState != null && State.RECOVERING == memberState.state();
+  }
+
+  private ActorFuture<Void> stopModeChangeHandler() {
+    return modeHandler != null ? modeHandler.closeAsync() : CompletableActorFuture.completed(null);
   }
 }

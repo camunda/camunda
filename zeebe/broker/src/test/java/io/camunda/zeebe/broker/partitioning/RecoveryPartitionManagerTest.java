@@ -26,12 +26,16 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -50,6 +54,7 @@ final class RecoveryPartitionManagerTest {
   private ClusterConfigurationService clusterConfigurationService;
   private ClusterServices clusterServices;
   private RecoveryPartitionManager partitionManager;
+  private TopologyManagerImpl topologyManager;
 
   @BeforeEach
   void setUp() {
@@ -68,7 +73,6 @@ final class RecoveryPartitionManagerTest {
     clusterServices = mock(ClusterServices.class);
     when(clusterServices.getMembershipService()).thenReturn(membershipService);
 
-    // two partitions where the local broker is a member
     final var metadata = localPartitionMetadata(PARTITION_ID);
     final var metadata2 = localPartitionMetadata(PARTITION_ID_2);
     clusterConfigurationService = mock(ClusterConfigurationService.class);
@@ -76,7 +80,7 @@ final class RecoveryPartitionManagerTest {
         .thenReturn(new PartitionDistribution(Set.of(metadata, metadata2)));
 
     final var brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
-    final var topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
+    topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
     actorScheduler.submitActor(topologyManager).join();
 
     partitionManager =
@@ -85,7 +89,7 @@ final class RecoveryPartitionManagerTest {
             dataDirectory.toString(),
             controlActor,
             clusterConfigurationService,
-            clusterServices,
+            clusterServices.getMembershipService(),
             actorScheduler,
             new SimpleMeterRegistry(),
             topologyManager);
@@ -116,7 +120,7 @@ final class RecoveryPartitionManagerTest {
     // when
     controlActor.run(() -> partitionManager.start());
 
-    // then — both local partitions are published as INACTIVE in the broker's topology
+    // then
     await()
         .untilAsserted(
             () -> {
@@ -135,9 +139,79 @@ final class RecoveryPartitionManagerTest {
     // when
     controlActor.run(() -> partitionManager.start());
 
-    // then — recovery mode never brings up Raft or Zeebe partitions
+    // then
     assertThat(partitionManager.getRaftPartitions()).isEmpty();
     assertThat(partitionManager.getZeebePartitions()).isEmpty();
     assertThat(partitionManager.getRaftPartition(PARTITION_ID)).isNull();
+  }
+
+  @Nested
+  class Start {
+
+    private AtomicReference<ActorFuture<Void>> startFuture;
+
+    @BeforeEach
+    void setUp() {
+      startFuture = new AtomicReference<>();
+    }
+
+    @Test
+    void shouldCompleteStartFutureOnSuccess() {
+      // when
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
+
+      // then
+      awaitStart();
+      assertThat(startFuture.get().isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldCompleteImmediatelyWhenNoLocalPartitions() {
+      // given
+      when(clusterConfigurationService.getPartitionDistribution())
+          .thenReturn(new PartitionDistribution(Set.of()));
+
+      // when
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(1))
+          .until(() -> startFuture.get() != null && startFuture.get().isDone());
+      assertThat(startFuture.get().isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldFailStartWhenDeactivationFails() {
+      // given
+      topologyManager.closeAsync().join();
+
+      // when
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
+
+      // then
+      awaitStart();
+      assertThat(startFuture.get().isCompletedExceptionally()).isTrue();
+    }
+
+    @Test
+    void shouldStopCleanlyAfterDeactivationFailure() {
+      // given
+      topologyManager.closeAsync().join();
+
+      // when
+      controlActor.run(() -> startFuture.set(partitionManager.start()));
+      awaitStart();
+
+      // then
+      assertThat(startFuture.get().isCompletedExceptionally()).isTrue();
+      assertThat(partitionManager.stop()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    private void awaitStart() {
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> startFuture.get() != null && startFuture.get().isDone());
+    }
   }
 }

@@ -291,7 +291,7 @@ public final class PartitionManagerImpl
   }
 
   @Override
-  public void start() {
+  public ActorFuture<Void> start() {
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions();
 
@@ -301,20 +301,40 @@ public final class PartitionManagerImpl
       healthCheckService.registerBootstrapPartitions(memberPartitions);
       clusterConfigurationService.registerPartitionChangeExecutors(this, this);
     }
-    for (final var partitionMetadata : memberPartitions) {
-      final var initialPartitionConfig =
-          clusterConfigurationService
-              .getInitialClusterConfiguration()
-              .members()
-              .get(localMemberId)
-              .getPartition(partitionMetadata.id().id())
-              .config();
-      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
-    }
+
+    final var result = concurrencyControl.<Void>createFuture();
+    final var started =
+        memberPartitions.stream()
+            .map(
+                partitionMetadata -> {
+                  final var initialPartitionConfig =
+                      clusterConfigurationService
+                          .getInitialClusterConfiguration()
+                          .members()
+                          .get(localMemberId)
+                          .getPartition(partitionMetadata.id().id())
+                          .config();
+                  return bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
+                })
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+    concurrencyControl.runOnCompletion(
+        started,
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
+    return result;
   }
 
   @Override
   public ActorFuture<Void> stop() {
+    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
+      clusterConfigurationService.removePartitionChangeExecutor();
+    }
+
     final var result = concurrencyControl.<Void>createFuture();
     final var stop =
         partitions.values().stream()

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.Preconditions.assertNonEmpty;
 import static io.camunda.zeebe.util.Preconditions.assertPositive;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.Optional;
@@ -117,6 +118,18 @@ public sealed interface ClusterConfigurationManagementRequest {
     @Override
     public boolean dryRun() {
       return false;
+    }
+  }
+
+  record ModeChangeRequest(Mode mode, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
+
+    public static ModeChangeRequest recovering(final boolean dryRun) {
+      return new ModeChangeRequest(Mode.RECOVERING, dryRun);
+    }
+
+    public static ModeChangeRequest processing(final boolean dryRun) {
+      return new ModeChangeRequest(Mode.PROCESSING, dryRun);
     }
   }
 }

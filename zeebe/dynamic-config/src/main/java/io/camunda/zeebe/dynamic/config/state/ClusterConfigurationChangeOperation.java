@@ -105,6 +105,9 @@ public sealed interface ClusterConfigurationChangeOperation {
     }
   }
 
+  record ModeChangeOperation(MemberId memberId, Mode mode)
+      implements ClusterConfigurationChangeOperation {}
+
   sealed interface ScaleUpOperation extends ClusterConfigurationChangeOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute
