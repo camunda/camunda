@@ -416,19 +416,29 @@ func stripZstdJniNativeLibs(camundaVersion, osType, arch string) error {
 		log.Warn().Strs("jars", jars).Msg("multiple zstd-jni jars found; stripping only the first")
 	}
 
-	// Pre-scan: count entries to drop and verify idempotency.
+	// Pre-scan: count entries to drop, verify idempotency, and confirm the
+	// target platform's prefix is actually present — guards against a wrong
+	// mapping silently producing a JAR with no usable native lib.
 	r, err := zip.OpenReader(jars[0])
 	if err != nil {
 		return fmt.Errorf("stripZstdJniNativeLibs: open %s: %w", jars[0], err)
 	}
 	var toDrop int
+	var keepFound bool
 	for _, f := range r.File {
+		if strings.HasPrefix(f.Name, keepPrefix) {
+			keepFound = true
+		}
 		if isZstdNativeEntry(f.Name) && !strings.HasPrefix(f.Name, keepPrefix) {
 			toDrop++
 		}
 	}
 	if err := r.Close(); err != nil {
 		return fmt.Errorf("stripZstdJniNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if toDrop > 0 && !keepFound {
+		return fmt.Errorf("stripZstdJniNativeLibs: no entries matching prefix %q found in %s: verify zstdNativePrefix mapping", keepPrefix, jars[0])
 	}
 
 	if toDrop == 0 {

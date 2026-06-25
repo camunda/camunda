@@ -801,6 +801,57 @@ func TestStripZstdJniNativeLibsSkipsWhenJarMissing(t *testing.T) {
 	}
 }
 
+func TestStripZstdJniNativeLibsErrorsWhenKeepPrefixAbsent(t *testing.T) {
+	// given: JAR contains only foreign-platform native libs — the target prefix is absent.
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "zstd-jni-1.5.7-9.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	// Only linux/aarch64 — no linux/amd64/ entry for the target linux/x86_64.
+	fw, err := w.Create("linux/aarch64/libzstd-jni-1.5.7-9.so")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := fw.Write([]byte("binary")); err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64 — keepPrefix "linux/amd64/" is absent.
+	err = stripZstdJniNativeLibs(version, "linux", "x86_64")
+
+	// then: should return an error, not silently strip all native libs.
+	if err == nil {
+		t.Fatal("expected error when target prefix is absent in JAR, got nil")
+	}
+}
+
 func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
 	// given — minimal class file header with major version matching helperJavaRelease
 	dir := t.TempDir()
