@@ -44,6 +44,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
+  private String businessId;
   private String elementId;
   private Long elementInstanceKey;
   private String tenantId;
@@ -76,6 +77,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final Long processDefinitionKey,
       final Long processInstanceKey,
       final Long rootProcessInstanceKey,
+      final String businessId,
       final String elementId,
       final Long elementInstanceKey,
       final String tenantId,
@@ -103,6 +105,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    this.businessId = businessId;
     this.elementId = elementId;
     this.elementInstanceKey = elementInstanceKey;
     this.tenantId = tenantId;
@@ -144,6 +147,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
         processDefinitionKey,
         processInstanceKey,
         rootProcessInstanceKey,
+        businessId,
         elementId,
         elementInstanceKey,
         tenantId,
@@ -330,6 +334,14 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
+  public String businessId() {
+    return businessId;
+  }
+
+  public void businessId(final String businessId) {
+    this.businessId = businessId;
+  }
+
   public String elementId() {
     return elementId;
   }
@@ -400,6 +412,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
         .processDefinitionKey(processDefinitionKey)
         .processInstanceKey(processInstanceKey)
         .rootProcessInstanceKey(rootProcessInstanceKey)
+        .businessId(businessId)
         .elementId(elementId)
         .elementInstanceKey(elementInstanceKey)
         .tenantId(tenantId)
@@ -430,6 +443,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private Long rootProcessInstanceKey;
+    private String businessId;
     private String elementId;
     private Long elementInstanceKey;
     private String tenantId;
@@ -557,6 +571,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
       return this;
@@ -595,6 +614,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
           processDefinitionKey,
           processInstanceKey,
           rootProcessInstanceKey,
+          businessId,
           elementId,
           elementInstanceKey,
           tenantId,

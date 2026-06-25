@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.time.Instant;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 
 public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
 
@@ -72,6 +73,7 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
             .partitionId(record.getPartitionId())
             .processInstanceKey(value.getProcessInstanceKey())
             .rootProcessInstanceKey(value.getRootProcessInstanceKey())
+            .businessId(StringUtils.defaultIfEmpty(value.getBusinessId(), null))
             .elementInstanceKey(value.getElementInstanceKey())
             .processDefinitionId(value.getBpmnProcessId())
             .processDefinitionKey(value.getProcessDefinitionKey())

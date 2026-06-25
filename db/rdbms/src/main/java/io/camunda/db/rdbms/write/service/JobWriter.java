@@ -110,6 +110,8 @@ public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
               if (job.rootProcessInstanceKey() != null) {
                 b.rootProcessInstanceKey(job.rootProcessInstanceKey());
               }
+              // businessId is intentionally not updated: it is an immutable value inherited at
+              // job creation (written by the INSERT) and must never be changed by a later event.
               b.truncateErrorMessage(
                   vendorDatabaseProperties.errorMessageSize(),
                   vendorDatabaseProperties.charColumnMaxBytes());
