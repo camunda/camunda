@@ -21,8 +21,13 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({tools}) => {
   return (
     <ToolList>
       {tools.map((tool, i) => (
-        <li key={i} aria-labelledby={`agent-instance-tool-${i}`}>
-          <ToolName id={`agent-instance-tool-${i}`}>{tool.name}</ToolName>
+        <li
+          key={`${tool.name}-${i}`}
+          aria-labelledby={`agent-instance-tool-${tool.name}-${i}`}
+        >
+          <ToolName id={`agent-instance-tool-${tool.name}-${i}`}>
+            {tool.name}
+          </ToolName>
           {tool.description !== null && (
             <ToolDescription>{tool.description}</ToolDescription>
           )}
