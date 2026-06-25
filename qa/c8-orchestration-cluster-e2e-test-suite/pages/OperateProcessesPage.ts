@@ -357,7 +357,9 @@ class OperateProcessesPage {
 
   async clickCancelBatchOperationButton(): Promise<void> {
     await expect(async () => {
-      await expect(this.cancelBatchOperationButton).toBeVisible({timeout: 5000});
+      await expect(this.cancelBatchOperationButton).toBeVisible({
+        timeout: 5000,
+      });
       await this.cancelBatchOperationButton.click({timeout: 5000});
     }).toPass({timeout: 30000});
   }
