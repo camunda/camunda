@@ -119,6 +119,8 @@ public final class ElasticsearchConnector {
       setupSSLContext(httpAsyncClientBuilder, security);
     }
 
+    setupConnectionPool(httpAsyncClientBuilder, configuration);
+
     for (final HttpRequestInterceptor interceptor : interceptors) {
       httpAsyncClientBuilder.addInterceptorLast(interceptor);
     }
@@ -137,6 +139,16 @@ public final class ElasticsearchConnector {
       }
     } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
+    }
+  }
+
+  private void setupConnectionPool(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration elsConfig) {
+    if (elsConfig.getMaxConnections() != null) {
+      httpAsyncClientBuilder.setMaxConnTotal(elsConfig.getMaxConnections());
+    }
+    if (elsConfig.getMaxConnectionsPerRoute() != null) {
+      httpAsyncClientBuilder.setMaxConnPerRoute(elsConfig.getMaxConnectionsPerRoute());
     }
   }
 
