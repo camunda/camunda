@@ -1,0 +1,22 @@
+---
+# Source: camunda-platform/templates/common/configmap-identity-auth.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c8-golden-stable-88-opensearch-identity-env-vars
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/instance: c8-golden-stable-88-opensearch
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+  annotations:
+    {}
+data:
+  CAMUNDA_IDENTITY_BASEURL: "http://identity:80"
+  CAMUNDA_IDENTITY_TYPE: "KEYCLOAK"
+  CAMUNDA_IDENTITY_ISSUER: "http://localhost:18080/auth/realms/camunda-platform"
+  CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: "http://keycloak/auth/realms/camunda-platform"

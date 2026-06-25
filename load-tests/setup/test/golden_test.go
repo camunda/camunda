@@ -78,8 +78,8 @@ var defaultScenarios = []scenario{
 // to generate its golden files, then commit them. No other code change is needed.
 var versions = []string{
 	"main",
-	 "stable-89",
-	// "stable-88",
+	"stable-89",
+	"stable-88",
 	// "stable-87",
 }
 
@@ -94,11 +94,11 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 		for _, s := range scenarios {
 
 			// Filter out known invalid scenarios.
-			//if v == "stable-88" {
-			//    if s.Storage == "postgresql" {
-			//        continue
-			//    }
-			//}
+			if v == "stable-88" {
+				if s.Storage == "postgresql" {
+					continue
+				}
+			}
 
 			//if v == "stable-87" {
 			//    if s.Storage != "elasticsearch" {
@@ -125,12 +125,12 @@ func TestGoldenFiles(t *testing.T) {
 	t.Logf("Testing %d setup version(s): %v (%d total scenarios)", len(versions), versions, len(scenarios))
 
 	for _, s := range scenarios {
-		t.Run(s.Name, func(t *testing.T) {
-			t.Parallel()
+		// Namespace is unique per (version, scenario) to avoid directory
+		// collisions when all sub-tests run in parallel.
+		namespace := "c8-golden-" + s.Version + "-" + s.Name
 
-			// Namespace is unique per (version, scenario) to avoid directory
-			// collisions when all sub-tests run in parallel.
-			namespace := "c8-golden-" + s.Version + "-" + s.Name
+		t.Run(namespace, func(t *testing.T) {
+			t.Parallel()
 
 			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
 			defer ns.Cleanup()
@@ -191,8 +191,8 @@ func TestNormalize(t *testing.T) {
 
 	require.NotContains(t, got, "helm.sh/chart")
 	require.NotContains(t, got, "checksum/config")
-	require.NotContains(t, got, "2025-12-31")                  // date value normalized away
-	require.Contains(t, got, "deadline-date: TEST_DATE")       // label kept, value normalized
+	require.NotContains(t, got, "2025-12-31")            // date value normalized away
+	require.Contains(t, got, "deadline-date: TEST_DATE") // label kept, value normalized
 	require.Contains(t, got, "image: registry.example.com/camunda/zeebe:TEST")
 	require.Contains(t, got, `app.kubernetes.io/version: "8.6.0"`) // kept
 

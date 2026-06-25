@@ -30,7 +30,7 @@ data:
         url: http://localhost:18080/auth
       - name: Identity
         id: identity
-        version: 8.9.4
+        version: 8.9.5
         url: http://localhost:8080
         readiness: http://identity.c8-golden-stable-89-opensearch:82/actuator/health
         metrics: http://identity.c8-golden-stable-89-opensearch:82/actuator/prometheus

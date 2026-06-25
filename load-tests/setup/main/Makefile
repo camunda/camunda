@@ -158,7 +158,7 @@ create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
 	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
-# Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, OpenSearch)
+# Install secondary storage based on configuration
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)

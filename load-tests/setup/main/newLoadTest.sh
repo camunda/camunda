@@ -144,7 +144,7 @@ cp -v  "values/values-stable.yaml"                               "$TARGET_DIRECT
 cp -v  "values/camunda-platform-values-defaults.yaml"            "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$TARGET_DIRECTORY/"
 
-# Storage-specific copies. databases/ is created only for mssql/oracle.
+# Storage-specific copies.
 case "$secondaryStorage" in
   elasticsearch|opensearch)
     cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$TARGET_DIRECTORY/"

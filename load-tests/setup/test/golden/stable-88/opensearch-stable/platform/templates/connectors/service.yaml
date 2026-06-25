@@ -1,0 +1,32 @@
+---
+# Source: camunda-platform/templates/connectors/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: connectors
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/instance: c8-golden-stable-88-opensearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.8.11"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/name: opensearch
+    app.kubernetes.io/instance: c8-golden-stable-88-opensearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: connectors
