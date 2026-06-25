@@ -726,6 +726,7 @@ test.describe
 
     await taskPanelPage.goToTaskDetails(userTaskKey);
 
+    await expect(taskDetailsPage.detailsInfo).toBeVisible({timeout: 30000});
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
 
     await taskDetailsPage.clickCompleteTaskButton();
