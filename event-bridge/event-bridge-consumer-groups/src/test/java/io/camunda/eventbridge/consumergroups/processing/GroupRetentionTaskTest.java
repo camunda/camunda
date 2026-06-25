@@ -13,7 +13,6 @@ import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
-import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -65,9 +64,7 @@ final class GroupRetentionTaskTest {
     memberJoined = new MemberJoinedApplier(state);
     memberLeft = new MemberLeftApplier(state);
     clock = new MutableClock(Instant.parse("2026-06-25T00:00:00Z"));
-    task =
-        new GroupRetentionTask(
-            Duration.ofSeconds(10), RETENTION, new ConsumerGroupQueryService(db), clock);
+    task = new GroupRetentionTask(Duration.ofSeconds(10), RETENTION, state, clock);
   }
 
   @AfterEach

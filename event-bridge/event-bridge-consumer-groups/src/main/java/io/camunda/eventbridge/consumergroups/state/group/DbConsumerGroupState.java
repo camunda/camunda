@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.state.group;
 
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
+import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
@@ -15,6 +16,10 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 /**
@@ -23,14 +28,16 @@ import java.util.function.BiConsumer;
  * Rebuilt identically on every replica via stream replay, so a new coordinator leader restores
  * membership after failover.
  *
- * <p>This class only does granular storage on the stream-processing actor — get/put/delete plus
- * upkeep of two lifecycle index families ({@code PREPARING_REBALANCE} and {@code EMPTY} groups) so
- * the async tasks fetch their work without scanning all groups. The decision logic (create the
- * group, bump epochs, transition state, retain/delete) lives in the appliers.
+ * <p>It owns the column families and does granular storage (get/put/delete) plus upkeep of two
+ * lifecycle index families ({@code PREPARING_REBALANCE} and {@code EMPTY} groups) so the async
+ * tasks fetch their work without scanning all groups. It also serves immutable {@link
+ * GroupSnapshot} reads. The decision logic (create the group, bump epochs, transition state,
+ * retain/delete) lives in the appliers.
  *
- * <p>There is no in-memory mirror: off-actor reads (heartbeat handler, async tasks, describe) go
- * through {@code ConsumerGroupQueryService} (a separate {@link ZeebeDb} context) instead of a heap
- * projection, since group membership is unbounded.
+ * <p>There is no in-memory mirror: each reader (the async tasks, and the coordinator via {@code
+ * ConsumerGroupQueryService}) holds its own instance on a private {@link ZeebeDb} context — the
+ * engine's {@code ScheduledTaskState} / {@code StateQueryService} pattern — since group membership
+ * is unbounded.
  */
 public final class DbConsumerGroupState implements MutableConsumerGroupState {
 
@@ -125,6 +132,76 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
         };
     memberColumnFamily.whileEqualPrefix(groupId, visitor);
     return found[0];
+  }
+
+  @Override
+  public GroupSnapshot groupSnapshot(final String group) {
+    return readSnapshot(group);
+  }
+
+  @Override
+  public List<GroupSnapshot> allGroups() {
+    final var ids = new ArrayList<String>();
+    groupColumnFamily.forEach((key, value) -> ids.add(key.toString()));
+    return snapshots(ids);
+  }
+
+  @Override
+  public List<GroupSnapshot> pendingRebalanceGroups() {
+    return snapshots(indexedGroupIds(pendingRebalanceColumnFamily));
+  }
+
+  @Override
+  public List<GroupSnapshot> emptyGroups() {
+    return snapshots(indexedGroupIds(emptyColumnFamily));
+  }
+
+  private List<String> indexedGroupIds(final ColumnFamily<DbString, DbNil> index) {
+    final var ids = new ArrayList<String>();
+    index.forEach((key, value) -> ids.add(key.toString()));
+    return ids;
+  }
+
+  private List<GroupSnapshot> snapshots(final List<String> groupIds) {
+    final var snapshots = new ArrayList<GroupSnapshot>(groupIds.size());
+    for (final var id : groupIds) {
+      final var snapshot = readSnapshot(id);
+      if (snapshot != null) {
+        snapshots.add(snapshot);
+      }
+    }
+    return snapshots;
+  }
+
+  private GroupSnapshot readSnapshot(final String group) {
+    groupId.wrapString(group);
+    final var group0 = groupColumnFamily.get(groupId);
+    if (group0 == null) {
+      return null;
+    }
+    // Copy the durable values out of the shared flyweights before returning them.
+    final var groupEpoch = group0.getGroupEpoch();
+    final var assignmentEpoch = group0.getAssignmentEpoch();
+    final var lifecycle = group0.getState();
+    final var subscriptions = Map.copyOf(group0.getSubscriptions());
+
+    final Map<String, MemberSnapshot> members = new LinkedHashMap<>();
+    groupId.wrapString(group);
+    final BiConsumer<DbCompositeKey<DbString, DbString>, MemberState> visitor =
+        (key, value) -> {
+          final var member = key.second().toString();
+          members.put(
+              member,
+              new MemberSnapshot(
+                  member,
+                  value.getInstanceId(),
+                  value.getMemberEpoch(),
+                  value.getAssignedEpoch(),
+                  value.getTargetPartitions()));
+        };
+    memberColumnFamily.whileEqualPrefix(groupId, visitor);
+    return new GroupSnapshot(
+        group, groupEpoch, assignmentEpoch, lifecycle, subscriptions, Map.copyOf(members));
   }
 
   // --- writes (appliers, stream-processing actor) -----------------------------------------------

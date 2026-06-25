@@ -7,10 +7,14 @@
  */
 package io.camunda.eventbridge.consumergroups.state.immutable;
 
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
+import java.util.Map;
+
 /**
  * Read view of the replicated committed-offset state for the coordinator — the immutable half of
  * the engine-style state split. Used on the stream-processing actor (by the offset
- * processor/applier); off-actor reads go through {@code OffsetQueryService}, not here.
+ * processor/applier); off-actor reads go through {@code OffsetQueryService}, which wraps an
+ * instance of this on its own context.
  */
 public interface OffsetState {
 
@@ -19,4 +23,7 @@ public interface OffsetState {
    * none.
    */
   long getOffset(String groupId, String topic, int partitionId);
+
+  /** A group's committed offsets ({@code (topic, partition) → position}). */
+  Map<TopicPartition, Long> committedOffsets(String groupId);
 }

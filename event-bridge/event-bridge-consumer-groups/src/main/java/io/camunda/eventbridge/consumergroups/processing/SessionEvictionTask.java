@@ -9,7 +9,7 @@ package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
-import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
+import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -25,10 +25,10 @@ import java.util.HashSet;
  * StreamProcessorLifecycleAware} and self-scheduling on the async task group in {@link
  * #onRecovered}, exactly like {@link RebalanceAssignorTask}. On each tick it walks the off-actor
  * {@link MemberLivenessMirror} (its key set is the bounded work set — only groups with members
- * heartbeating), fetches each group's roster from the {@link ConsumerGroupQueryService}, and
- * appends a {@code LEAVE_GROUP} command for every member whose session lapsed — or, when a
- * rebalance has stalled, that never confirmed the target. The {@link LeaveGroupProcessor} then
- * removes the member and bumps the group epoch, identically to a voluntary leave.
+ * heartbeating), fetches each group's roster from its own {@link ConsumerGroupState} (a private
+ * context), and appends a {@code LEAVE_GROUP} command for every member whose session lapsed — or,
+ * when a rebalance has stalled, that never confirmed the target. The {@link LeaveGroupProcessor}
+ * then removes the member and bumps the group epoch, identically to a voluntary leave.
  *
  * <p>It emits commands only. The fixed-rate re-run is its own retry — a member still expired next
  * tick is appended again, and a {@code LEAVE_GROUP} that lost a race is harmless (the processor
@@ -40,7 +40,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
   private final Duration interval;
   private final Duration sessionTimeout;
   private final Duration rebalanceTimeout;
-  private final ConsumerGroupQueryService query;
+  private final ConsumerGroupState state;
   private final MemberLivenessMirror liveness;
   private final InstantSource clock;
 
@@ -48,13 +48,13 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
       final Duration interval,
       final Duration sessionTimeout,
       final Duration rebalanceTimeout,
-      final ConsumerGroupQueryService query,
+      final ConsumerGroupState state,
       final MemberLivenessMirror liveness,
       final InstantSource clock) {
     this.interval = interval;
     this.sessionTimeout = sessionTimeout;
     this.rebalanceTimeout = rebalanceTimeout;
-    this.query = query;
+    this.state = state;
     this.liveness = liveness;
     this.clock = clock;
   }
@@ -86,7 +86,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
     final var liveGroups = new HashSet<String>();
 
     for (final var groupId : liveness.groupIds()) {
-      final var group = query.groupSnapshot(groupId);
+      final var group = state.groupSnapshot(groupId);
       if (group == null) {
         continue;
       }

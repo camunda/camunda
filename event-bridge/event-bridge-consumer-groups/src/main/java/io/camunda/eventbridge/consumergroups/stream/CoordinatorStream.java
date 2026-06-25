@@ -33,6 +33,7 @@ import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedAppli
 import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
+import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
 import io.camunda.eventbridge.consumergroups.state.offset.OffsetQueryService;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
@@ -172,23 +173,28 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     new GroupDeletedApplier(groupState, offsetState))
                 .withListener(
                     new RebalanceAssignorTask(
-                        ASSIGNOR_INTERVAL,
-                        new ConsumerGroupQueryService(zeebeDb),
-                        new BalancedStickyAssignor()))
+                        ASSIGNOR_INTERVAL, taskGroupState(), new BalancedStickyAssignor()))
                 .withListener(
                     new GroupRetentionTask(
-                        RETENTION_INTERVAL,
-                        EMPTY_GROUP_RETENTION,
-                        new ConsumerGroupQueryService(zeebeDb),
-                        clock))
+                        RETENTION_INTERVAL, EMPTY_GROUP_RETENTION, taskGroupState(), clock))
                 .withListener(
                     new SessionEvictionTask(
                         EVICTION_INTERVAL,
                         SESSION_TIMEOUT,
                         REBALANCE_TIMEOUT,
-                        new ConsumerGroupQueryService(zeebeDb),
+                        taskGroupState(),
                         liveness,
                         clock)));
+  }
+
+  /**
+   * A read-only consumer-group state on its own {@link ZeebeDb} context, for one async task to read
+   * off the processing actor — the event-bridge counterpart of the engine handing each scheduled
+   * task its own {@code ScheduledTaskState}. A fresh instance (and context) per task keeps the
+   * flyweights confined to that task's actor.
+   */
+  private ConsumerGroupState taskGroupState() {
+    return new DbConsumerGroupState(zeebeDb, zeebeDb.createContext());
   }
 
   /**

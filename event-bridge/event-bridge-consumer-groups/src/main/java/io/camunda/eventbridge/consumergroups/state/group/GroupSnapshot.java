@@ -13,10 +13,9 @@ import java.util.Map;
 
 /**
  * An immutable snapshot of a consumer group's replicated membership and target assignment, read
- * from durable state by {@link ConsumerGroupQueryService} on its own {@link
- * io.camunda.zeebe.db.ZeebeDb} context. It is consumed off the stream-processing actor — by the
- * async assignor task (to compute a rebalance) and by the coordinator's heartbeat handler (to serve
- * assign/revoke deltas).
+ * from durable state by {@link DbConsumerGroupState}. It is consumed off the stream-processing
+ * actor — by the async assignor task (to compute a rebalance) and by the coordinator's heartbeat
+ * handler (to serve assign/revoke deltas), each from its own state instance on a private context.
  *
  * @param groupId the group id
  * @param groupEpoch the desired-state version (bumped on every membership change)

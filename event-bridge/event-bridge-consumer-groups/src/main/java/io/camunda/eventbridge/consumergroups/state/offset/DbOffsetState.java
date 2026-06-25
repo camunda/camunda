@@ -18,14 +18,18 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiConsumer;
 
 /**
  * RocksDB-backed {@link MutableOffsetState} keyed by {@code (groupId, topic, partitionId) →
- * position}, used on the stream-processing actor by the offset applier/processor. Granular storage
- * only — the monotonic (never-rewind) decision is made by the {@code OffsetCommittedApplier}.
+ * position}, used on the stream-processing actor by the offset applier/processor. It owns the
+ * offset column family and serves both point reads and a group's full offset map — the monotonic
+ * (never-rewind) decision is made by the {@code OffsetCommittedApplier}.
  *
  * <p>There is deliberately no in-memory mirror: offsets are unbounded, so off-actor reads go to
- * state through {@link OffsetQueryService} (a separate context) instead of a heap projection.
+ * state through {@link OffsetQueryService}, which wraps an instance of this on its own context.
  */
 public final class DbOffsetState implements MutableOffsetState {
 
@@ -56,6 +60,22 @@ public final class DbOffsetState implements MutableOffsetState {
     this.partitionId.wrapInt(partitionId);
     final var value = offsetsColumnFamily.get(offsetKey);
     return value == null ? -1L : value.getValue();
+  }
+
+  @Override
+  public Map<TopicPartition, Long> committedOffsets(final String group) {
+    groupId.wrapString(group);
+    final var result = new TreeMap<TopicPartition, Long>();
+    final BiConsumer<DbCompositeKey<DbString, DbCompositeKey<DbString, DbInt>>, DbLong> visitor =
+        (key, value) -> {
+          final var topicPartition = key.second();
+          result.put(
+              new TopicPartition(
+                  topicPartition.first().toString(), topicPartition.second().getValue()),
+              value.getValue());
+        };
+    offsetsColumnFamily.whileEqualPrefix(groupId, visitor);
+    return result;
   }
 
   @Override
