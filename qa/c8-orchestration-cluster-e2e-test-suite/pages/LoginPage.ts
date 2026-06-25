@@ -63,7 +63,20 @@ export class LoginPage {
     await this.fillUsername(username);
     await this.fillPassword(password);
     await expect(this.loginButton).toBeVisible({timeout: 120000});
-    await this.clickLoginButton();
+    // The login POST sets the session cookie via its response. The SPA can
+    // change the URL optimistically before that response lands, so a hard
+    // navigation fired right after the click races the cookie write and
+    // bounces back to the login page. Wait for the POST /login response to
+    // complete so the cookie is committed before any subsequent navigation.
+    await Promise.all([
+      this.page.waitForResponse(
+        (response) =>
+          response.url().includes('/login') &&
+          response.request().method() === 'POST',
+        {timeout: 60000},
+      ),
+      this.clickLoginButton(),
+    ]);
   }
 
   async expectInvalidCredentialsError(): Promise<void> {
