@@ -165,4 +165,15 @@ public interface ActivatedJob {
    *     pre-8.9 data)
    */
   Long getRootProcessInstanceKey();
+
+  /**
+   * The business ID of the owning process instance, inherited when the job was created.
+   *
+   * <p><b>Note:</b> This field is only available when using the REST API. When using the gRPC API,
+   * this method returns {@code null}.
+   *
+   * @return the business ID, or {@code null} if not available (gRPC API, jobs created before
+   *     version 8.10, or when the owning process instance has no business ID)
+   */
+  String getBusinessId();
 }

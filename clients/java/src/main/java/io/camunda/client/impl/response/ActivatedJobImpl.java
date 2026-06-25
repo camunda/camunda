@@ -59,6 +59,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final ListenerEventType listenerEventType;
   private final Set<String> tags;
   private final Long rootProcessInstanceKey;
+  private final String businessId;
 
   private Map<String, Object> variablesAsMap;
 
@@ -91,6 +92,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     tags = Collections.unmodifiableSet(new HashSet<>(job.getTagsList()));
     // gRPC doesn't have rootProcessInstanceKey - return null
     rootProcessInstanceKey = null;
+    // gRPC doesn't have businessId - return null
+    businessId = null;
   }
 
   public ActivatedJobImpl(
@@ -132,6 +135,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
         job.getRootProcessInstanceKey() != null
             ? Long.parseLong(job.getRootProcessInstanceKey())
             : null;
+    businessId = job.getBusinessId();
   }
 
   @Override
@@ -267,6 +271,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public Long getRootProcessInstanceKey() {
     return rootProcessInstanceKey;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 
   @Override
