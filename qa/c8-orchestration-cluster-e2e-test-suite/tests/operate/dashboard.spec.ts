@@ -304,18 +304,12 @@ test.describe('Dashboard', () => {
           await operateDashboardPage.expandItem(firstInstanceByError);
           await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
 
-          // Badge and heading counts come from independent queries and can
-          // diverge under concurrent load on shared CI. Assert both are
-          // positive — confirming the link was meaningful and navigation
-          // succeeded — without requiring the two counts to agree exactly.
-          const heading = page.getByRole('heading', {
-            name: /^Process Instances - \d+ results?$/,
-          });
-          await expect(heading).toBeVisible();
-          const headingText = await heading.innerText();
-          const pageCount = Number(headingText.match(/\d+/)?.[0] ?? '0');
-          expect(incidentCount).toBeGreaterThan(0);
-          expect(pageCount).toBeGreaterThan(0);
+          await expect(
+            operateDashboardPage.processInstancesHeading(
+              incidentCount,
+              Number(incidentCount) > 1,
+            ),
+          ).toBeVisible();
         },
         onFailure: async () => {
           await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
