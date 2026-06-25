@@ -39,7 +39,8 @@ function getScrollStepSize(size: SortableTableProps<unknown>['size']) {
 }
 
 function PaginatedSortableTable<TRow>({pagination, ...tableProps}: PaginatedSortableTableProps<TRow>) {
-	const {hasPreviousPage, hasNextPage, isFetchingPreviousPage, isFetchingNextPage, fetchPreviousPage, fetchNextPage} = pagination;
+	const {hasPreviousPage, hasNextPage, isFetchingPreviousPage, isFetchingNextPage, fetchPreviousPage, fetchNextPage} =
+		pagination;
 
 	const handleScrollStartReach: SortableTableProps<TRow>['onVerticalScrollStartReach'] = async (scrollDown) => {
 		if (!hasPreviousPage || isFetchingPreviousPage) {

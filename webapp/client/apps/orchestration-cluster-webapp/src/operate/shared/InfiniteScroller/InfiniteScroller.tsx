@@ -115,9 +115,8 @@ const InfiniteScroller: FC<Props> = ({
 	);
 
 	if (isValidElement(children)) {
-		return cloneElement(children, {
-			ref: observedContainerRef,
-		});
+		// eslint-disable-next-line react-hooks/refs
+		return cloneElement(children, {ref: observedContainerRef});
 	}
 
 	console.error('No valid child element provided for InfiniteScroller');
