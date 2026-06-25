@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
@@ -479,7 +480,9 @@ final class ClusterApiUtilsTest {
 
         // Mode change operations
         new ModeChangeOperation(memberId1, Mode.RECOVERING),
-        new ModeChangeOperation(memberId1, Mode.PROCESSING));
+        new ModeChangeOperation(memberId1, Mode.PROCESSING),
+        new AwaitModeChangeOperation(memberId1, Mode.RECOVERING),
+        new AwaitModeChangeOperation(memberId1, Mode.PROCESSING));
   }
 
   /** Provides all ClusterConfigurationChangeOperation implementations as test arguments. */
