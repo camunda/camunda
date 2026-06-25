@@ -130,9 +130,9 @@ which cluster/org a batch of events originates from. Each header is sent indepen
 **only when its source value is available** — there is no dependency on the deployment model
 (SaaS vs Self-Managed) or the configured authentication mechanism.
 
-|     Header     |                                  Source                                   |                   Sent when                    |
-|----------------|---------------------------------------------------------------------------|------------------------------------------------|
-| `X-Org-Id`     | `CAMUNDA_CLOUD_ORGANIZATION_ID` environment variable (set in SaaS)        | present, non-blank and not the `null` sentinel |
+|     Header     |                                                Source                                                 |                   Sent when                    |
+|----------------|-------------------------------------------------------------------------------------------------------|------------------------------------------------|
+| `X-Org-Id`     | `CAMUNDA_CLOUD_ORGANIZATION_ID` environment variable (set in SaaS)                                    | present, non-blank and not the `null` sentinel |
 | `X-Cluster-Id` | `clusterId` config option (preferred), else the `ZEEBE_BROKER_CLUSTER_CLUSTERID` environment variable | the chosen value is non-blank                  |
 
 Notes:
