@@ -35,13 +35,11 @@ PASS=0
 FAIL=0
 
 token() {
-  local url="$1" client_id="$2" client_secret="$3" user="$4" pass="$5"
+  local url="$1" client_id="$2" client_secret="$3"
   curl -fsS -X POST "$url" \
-    -d "grant_type=password" \
+    -d "grant_type=client_credentials" \
     -d "client_id=$client_id" \
     -d "client_secret=$client_secret" \
-    -d "username=$user" \
-    -d "password=$pass" \
     | jq -r .access_token
 }
 
@@ -73,16 +71,16 @@ check_401() {
 }
 
 echo "=== Acquiring one token per realm/audience ==="
-DEF=$(token  "$KC_DEFAULT" camunda-pt-default-client             default-secret             alice alice)
-TA=$(token   "$KC_TENANTA" camunda-pt-tenanta-client             tenanta-secret             bob   bob)
+DEF=$(token  "$KC_DEFAULT" camunda-pt-default-client             default-secret)
+TA=$(token   "$KC_TENANTA" camunda-pt-tenanta-client             tenanta-secret)
 # DVTA: same tenanta realm (issuer :8082) as TA, but default's client/audience — drives the
 # same-issuer AUDIENCE-isolation cells.
-DVTA=$(token "$KC_TENANTA" camunda-pt-default-via-tenanta-client default-via-tenanta-secret bob   bob)
-TB=$(token   "$KC_TENANTB" camunda-pt-tenantb-client             tenantb-secret             carol carol)
-echo "  default  (alice, :8081, aud pt-default-aud):             ${DEF:0:24}..."
-echo "  tenanta  (bob,   :8082, aud pt-tenanta-aud):             ${TA:0:24}..."
-echo "  dvta     (bob,   :8082, aud pt-default-via-tenanta-aud): ${DVTA:0:24}..."
-echo "  tenantb  (carol, :8083, aud pt-tenantb-aud):             ${TB:0:24}..."
+DVTA=$(token "$KC_TENANTA" camunda-pt-default-via-tenanta-client default-via-tenanta-secret)
+TB=$(token   "$KC_TENANTB" camunda-pt-tenantb-client             tenantb-secret)
+echo "  default  (:8081, aud pt-default-aud):             ${DEF:0:24}..."
+echo "  tenanta  (:8082, aud pt-tenanta-aud):             ${TA:0:24}..."
+echo "  dvta     (:8082, aud pt-default-via-tenanta-aud): ${DVTA:0:24}..."
+echo "  tenantb  (:8083, aud pt-tenantb-aud):             ${TB:0:24}..."
 echo
 
 echo "=== default token (pt-default-aud, realm :8081) — own PT only ==="

@@ -16,6 +16,7 @@ camunda:
         oidc:
           tenantb:
             username-claim: preferred_username
+            client-id-claim: client_id
             client-id: camunda-pt-tenantb-client
             client-secret: tenantb-secret
             issuer-uri: http://localhost:8083/realms/tenantb

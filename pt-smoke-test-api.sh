@@ -40,13 +40,11 @@ PASS=0
 FAIL=0
 
 token() {
-  local url="$1" client_id="$2" client_secret="$3" user="$4" pass="$5"
+  local url="$1" client_id="$2" client_secret="$3"
   curl -fsS -X POST "$url" \
-    -d "grant_type=password" \
+    -d "grant_type=client_credentials" \
     -d "client_id=$client_id" \
     -d "client_secret=$client_secret" \
-    -d "username=$user" \
-    -d "password=$pass" \
     | jq -r .access_token
 }
 
@@ -99,14 +97,14 @@ check_same() {
 }
 
 echo "=== Acquiring tokens ==="
-DEF=$(token "$KC_DEFAULT" camunda-pt-default-client default-secret alice alice)
-TA=$(token "$KC_TENANTA" camunda-pt-tenanta-client tenanta-secret bob bob)
+DEF=$(token "$KC_DEFAULT" camunda-pt-default-client default-secret)
+TA=$(token "$KC_TENANTA" camunda-pt-tenanta-client tenanta-secret)
 # DVTA: a token from the SHARED tenanta realm (same issuer :8082 as TA) but a different
 # client/audience (pt-default-via-tenanta-aud vs pt-tenanta-aud) — drives the audience-isolation cell.
-DVTA=$(token "$KC_TENANTA" camunda-pt-default-via-tenanta-client default-via-tenanta-secret bob bob)
-echo "  default token (alice, :8081, aud=pt-default-aud):                ${DEF:0:32}..."
-echo "  tenanta token (bob,   :8082, aud=pt-tenanta-aud):                ${TA:0:32}..."
-echo "  default-via-tenanta   (bob,   :8082, aud=pt-default-via-tenanta-aud): ${DVTA:0:32}..."
+DVTA=$(token "$KC_TENANTA" camunda-pt-default-via-tenanta-client default-via-tenanta-secret)
+echo "  default token (:8081, aud=pt-default-aud):             ${DEF:0:32}..."
+echo "  tenanta token (:8082, aud=pt-tenanta-aud):             ${TA:0:32}..."
+echo "  default-via-tenanta (:8082, aud=pt-default-via-tenanta-aud): ${DVTA:0:32}..."
 echo
 
 echo "=== Scoped tenant chain — /physical-tenants/tenanta/v2/... ==="

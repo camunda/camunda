@@ -11,11 +11,13 @@ camunda:
         username: sa
         password:
   security:
-    # Authorizations enabled, with alice and bob granted the admin role via the initialization
-    # block below. Their usernames resolve from the OIDC `preferred_username` claim (see
-    # `username-claim` on the providers) — the default `sub` claim would be the Keycloak UUID.
-    # NOTE: authorization grants are read from secondary storage (RDBMS); they only take effect once
-    # the broker exporter is healthy and the initialization data has been exported.
+    # Authorizations enabled. The initialization block below grants admin to:
+    # - Users: alice, bob (resolved from preferred_username)
+    # - Clients: all cluster OIDC clients (resolved from the `client_id` claim — the CLIENT branch
+    #   wins over the USER branch whenever a client id is present, so granting clients is what
+    #   actually takes effect for both webapp logins and M2M client-credentials calls)
+    # NOTE: grants are read from secondary storage (RDBMS); they only take effect once the broker
+    # exporter is healthy and the initialization data has been exported.
     authorizations:
       enabled: true
     initialization:
@@ -41,6 +43,11 @@ camunda:
         # Resolve the username from preferred_username (e.g. "alice") rather than the default
         # `sub` (a Keycloak UUID), so the admin-role grant in initialization matches.
         username-claim: preferred_username
+        # Resolve the client id from the `client_id` claim (added by the Keycloak protocol mapper).
+        # This is more explicit than `azp` (the OIDC "authorized party" field); both carry the
+        # registered OAuth client id, but `client_id` is purpose-specific. When a client id is
+        # resolved, engine authorization checks the CLIENT entity and does not fall back to the username.
+        client-id-claim: client_id
         client-id: camunda-pt-default-client
         client-secret: default-secret
         issuer-uri: http://localhost:8081/realms/default
@@ -57,6 +64,9 @@ camunda:
             # overlay below.
             # Resolve "bob" from preferred_username rather than the default `sub` UUID.
             username-claim: preferred_username
+            # Resolve the client id from `client_id` (Keycloak protocol mapper). The tenanta PT
+            # inherits this from the root provider (its overlay only overrides clientId/secret/audiences).
+            client-id-claim: client_id
             client-id: camunda-pt-default-via-tenanta-client
             client-secret: default-via-tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
