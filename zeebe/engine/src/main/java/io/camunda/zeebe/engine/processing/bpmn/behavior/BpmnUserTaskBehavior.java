@@ -219,8 +219,7 @@ public final class BpmnUserTaskBehavior {
     if (elementInstance == null) {
       return "";
     }
-    final var processInstance = elementInstance.getValue();
-    return processInstance != null ? processInstance.getBusinessId() : "";
+    return elementInstance.getValue().getBusinessId();
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(

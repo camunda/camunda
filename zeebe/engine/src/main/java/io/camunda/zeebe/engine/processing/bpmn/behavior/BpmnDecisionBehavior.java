@@ -202,8 +202,7 @@ public final class BpmnDecisionBehavior {
     if (elementInstance == null) {
       return "";
     }
-    final var processInstance = elementInstance.getValue();
-    return processInstance != null ? processInstance.getBusinessId() : "";
+    return elementInstance.getValue().getBusinessId();
   }
 
   private void triggerProcessEventWithResultVariable(
