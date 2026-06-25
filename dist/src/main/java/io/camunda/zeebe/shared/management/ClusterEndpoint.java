@@ -17,12 +17,14 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -70,7 +72,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
   private static final Set<String> ALLOWED_QUERY_PARAMETERS =
-      Set.of("dryRun", "force", "replicationFactor");
+      Set.of("dryRun", "force", "replicationFactor", "mode");
 
   private final ClusterConfigurationManagementRequestSender requestSender;
 
@@ -497,6 +499,13 @@ public class ClusterEndpoint {
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
+  }
+
+  @PatchMapping(path = "/mode")
+  public ResponseEntity<?> updateMode(
+      @RequestParam final Mode mode, @RequestParam(defaultValue = "false") final boolean dryRun) {
+    final var request = new ModeChangeRequest(mode, dryRun);
+    return ClusterApiUtils.mapOperationResponse(requestSender.modeChange(request).join());
   }
 
   /**
