@@ -3,7 +3,7 @@
 # type: CI
 # owner: @camunda/core-features
 ---
-name: "[Legacy] Tasklist"
+name: "Tasklist Integration Tests"
 on:
   workflow_dispatch:
   push:
