@@ -3,6 +3,9 @@ secondary_storage ?= __STORAGE_TYPE__
 template_output_dir ?= .
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
+# Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
+# Use named targets (make install-chaos) or pass directly: make install chaos=true
+chaos ?= false
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
@@ -99,6 +102,10 @@ else ifeq ($(enable_optimize),true)
 	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
 else
 	install_es_prom_exporter := false
+endif
+
+ifeq ($(chaos),true)
+	additional_load_test_setup_configuration += --set chaosKiller.enabled=true
 endif
 
 .PHONY: all
@@ -278,6 +285,12 @@ template-load-test-setup:
 		$(additional_load_test_setup_configuration) \
 		--output-dir $(template_output_dir)
 
+# Renders the load-test-setup chart with the chaos-killer enabled.
+# Equivalent to: make template-load-test-setup chaos=true
+.PHONY: template-load-test-setup-chaos
+template-load-test-setup-chaos:
+	$(MAKE) template-load-test-setup chaos=true
+
 # Generates templates from the load test helm chart
 .PHONY: template-load-test
 template-load-test:
@@ -295,6 +308,13 @@ print-scenario:
 	@echo "Scenario:         $(if $(scenario),$(scenario),(none — chart defaults apply))"
 	@echo "Load test flags:  $(if $(_scenario_load_test_flags),$(_scenario_load_test_flags),(none))"
 	@echo "Platform flags:   $(if $(_scenario_platform_flags),$(_scenario_platform_flags),(none))"
+
+# Chaos shortcuts — install (or render) with the chaos-killer CronJob enabled.
+.PHONY: install-chaos install-stable-chaos
+install-chaos:
+	$(MAKE) install chaos=true
+install-stable-chaos:
+	$(MAKE) install-stable chaos=true
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>

@@ -74,6 +74,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-chaos:
+        description: 'Enable chaos-killer to randomly kill pods'
+        type: boolean
+        required: false
+        default: false
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -174,6 +179,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-chaos:
+        description: 'Enable chaos-killer to randomly kill pods'
+        type: boolean
+        required: false
+        default: false
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -257,6 +267,7 @@ jobs:
           | TTL (days) | `${{ inputs.ttl }}` |
           | Stable VMs | `${{ inputs.stable-vms }}` |
           | Enable Optimize | `${{ inputs.enable-optimize }}` |
+          | Enable chaos | `${{ inputs.enable-chaos }}` |
           | Enable Optimize report metrics | `${{ inputs.enable-optimize-report-metrics }}` |
           | Build frontend | `${{ inputs.build-frontend }}` |
           | Perform read benchmarks | `${{ inputs.perform-read-benchmarks }}` |
@@ -661,6 +672,7 @@ jobs:
             scenario=${{ inputs.scenario }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
+            chaos=${{ inputs.enable-chaos }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config" \
             additional_load_test_setup_configuration="$additional_load_test_setup_configuration"
