@@ -25,17 +25,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Merged physical-tenant + authentication interceptor.
- *
- * <p>Reads the {@code Camunda-Physical-Tenant} header once, stamps the resolved id into the gRPC
+ * Reads the {@code Camunda-Physical-Tenant} header once, stamps the resolved id into the gRPC
  * {@link Context} (consumed downstream by {@code EndpointManager} for partition-group routing),
  * then selects the per-PT {@link AuthenticationHandler} from the registry and authenticates — but
- * ONLY when the API is not unprotected. The stamp happens for every call, including unprotected
- * ones.
+ * ONLY when the API is protected. The stamp happens for every call, including unprotected ones.
  *
- * <p>Fail-fast at registry build time (see {@link PhysicalTenantHandlerFactory}) ensures every
- * known PT id is represented; unknown ids are rejected at request time with {@link
- * Status#NOT_FOUND}.
+ * <p>An unknown physical tenant yields {@link Status#NOT_FOUND} on an unprotected API, and {@link
+ * Status#UNAUTHENTICATED} on a protected one — so an unauthenticated caller cannot probe whether a
+ * tenant exists.
  */
 public final class AuthenticationInterceptor implements ServerInterceptor {
 
@@ -63,47 +60,58 @@ public final class AuthenticationInterceptor implements ServerInterceptor {
       final ServerCall<ReqT, RespT> call,
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
+    final var latencyTimer = metrics.startLatencySample();
 
     final var tenantHeaderValue = headers.get(GrpcHeaders.PHYSICAL_TENANT);
     final var tenantId = tenantHeaderValue != null ? tenantHeaderValue : DEFAULT_PHYSICAL_TENANT_ID;
 
-    if (!knownTenantIds.contains(tenantId)) {
-      call.close(
-          Status.NOT_FOUND.withDescription("Unknown physical tenant: " + tenantId), new Metadata());
-      return new ServerCall.Listener<>() {};
-    }
-
-    final Context contextWithTenant =
-        Context.current().withValue(InterceptorUtil.getPhysicalTenantIdKey(), tenantId);
-
     if (!authEnabled) {
+      // unprotected API: an unknown tenant is a genuine routing miss → NOT_FOUND
+      if (!knownTenantIds.contains(tenantId)) {
+        metrics.recordFailureLatency(latencyTimer);
+        return deny(call, Status.NOT_FOUND.withDescription("Unknown physical tenant: " + tenantId));
+      }
+      metrics.recordSuccessLatency(latencyTimer);
+      final Context contextWithTenant =
+          Context.current().withValue(InterceptorUtil.getPhysicalTenantIdKey(), tenantId);
       return Contexts.interceptCall(contextWithTenant, call, headers, next);
     }
 
+    // protected API
     final var authorization = headers.get(AUTH_KEY);
     if (authorization == null) {
-      call.close(
+      metrics.recordFailureLatency(latencyTimer);
+      return deny(
+          call,
           Status.UNAUTHENTICATED.augmentDescription(
               "Expected authentication information at header with key [%s], but found nothing"
-                  .formatted(AUTH_KEY.name())),
-          new Metadata());
-      return new ServerCall.Listener<>() {};
+                  .formatted(AUTH_KEY.name())));
     }
 
-    final var latencyTimer = metrics.startLatencySample();
+    // An unknown tenant on a protected API must not reveal tenant existence to an
+    // unauthenticated caller → respond UNAUTHENTICATED without echoing the tenant id.
+    if (!knownTenantIds.contains(tenantId)) {
+      metrics.recordFailureLatency(latencyTimer);
+      return deny(call, Status.UNAUTHENTICATED);
+    }
+
     final var handler = handlersByTenantId.get(tenantId);
     return switch (handler.authenticate(authorization)) {
       case Left<Status, Context>(final var status) -> {
         metrics.recordFailureLatency(latencyTimer);
-        call.close(status, new Metadata());
-        yield new ServerCall.Listener<>() {};
+        yield deny(call, status);
       }
-      case Right<Status, Context>(final var authContext) -> {
+      case Right<Status, Context>(final var context) -> {
         metrics.recordSuccessLatency(latencyTimer);
-        final var merged =
-            authContext.withValue(InterceptorUtil.getPhysicalTenantIdKey(), tenantId);
+        final var merged = context.withValue(InterceptorUtil.getPhysicalTenantIdKey(), tenantId);
         yield Contexts.interceptCall(merged, call, headers, next);
       }
     };
+  }
+
+  private static <ReqT, RespT> ServerCall.Listener<ReqT> deny(
+      final ServerCall<ReqT, RespT> call, final Status status) {
+    call.close(status, new Metadata());
+    return new Listener<>() {};
   }
 }

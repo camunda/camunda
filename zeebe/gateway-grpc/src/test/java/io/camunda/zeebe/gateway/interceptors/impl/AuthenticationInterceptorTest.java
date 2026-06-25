@@ -720,7 +720,7 @@ final class AuthenticationInterceptorTest {
   void shouldRejectUnknownTenantWithNotFound() {
     // given
     final var interceptor =
-        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), true, metrics);
+        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), false, metrics);
     final var headers = new Metadata();
     headers.put(GrpcHeaders.PHYSICAL_TENANT, "unknown");
     final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
@@ -734,6 +734,45 @@ final class AuthenticationInterceptorTest {
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.NOT_FOUND.getCode());
               assertThat(status.getDescription()).contains("unknown");
+            });
+  }
+
+  @Test
+  void shouldRejectUnknownTenantWithUnauthenticatedWhenProtected() {
+    // given
+    final var interceptor =
+        new AuthenticationInterceptor(Set.of("tenant-a"), Map.of(), true, metrics);
+    final var headers = new Metadata();
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "unknown");
+    headers.put(AUTH_KEY, "Basic ZGVtbzpkZW1v");
+    final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
+
+    // when
+    interceptor.interceptCall(closedCall, headers, (call, h) -> null);
+
+    // then
+    assertThat(closedCall.closeStatus)
+        .hasValueSatisfying(
+            status -> assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode()));
+  }
+
+  @Test
+  void shouldRejectAnyTenantWhenKnownSetIsEmptyAndUnprotected() {
+    // given
+    final var interceptor = new AuthenticationInterceptor(Set.of(), Map.of(), false, metrics);
+    final var headers = new Metadata();
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "any-tenant");
+    final var closedCall = new CloseStatusCapturingServerCall<Object, Object>();
+
+    // when
+    interceptor.interceptCall(closedCall, headers, (call, h) -> null);
+
+    // then
+    assertThat(closedCall.closeStatus)
+        .hasValueSatisfying(
+            status -> {
+              assertThat(status.getCode()).isEqualTo(Status.NOT_FOUND.getCode());
+              assertThat(status.getDescription()).contains("any-tenant");
             });
   }
 
