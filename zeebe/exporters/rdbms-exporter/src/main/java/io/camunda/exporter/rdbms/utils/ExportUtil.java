@@ -74,4 +74,16 @@ public class ExportUtil {
   public static String emptyToNull(final String value) {
     return value == null || value.isEmpty() ? null : value;
   }
+
+  /**
+   * Returns {@code null} when {@code value} is zero or negative, otherwise boxes and returns the
+   * value.
+   *
+   * <p>Use this when mapping optional integer fields from protocol records to DB models. Protocol
+   * {@code int} fields default to {@code 0} when not set by the sender, but nullable DB columns
+   * should store {@code null} to correctly represent "absent".
+   */
+  public static Integer positiveOrNull(final int value) {
+    return value > 0 ? value : null;
+  }
 }

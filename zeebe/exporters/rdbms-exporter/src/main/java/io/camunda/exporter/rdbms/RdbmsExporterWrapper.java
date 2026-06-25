@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.exporter.rdbms.RdbmsExporter.Builder;
 import io.camunda.exporter.rdbms.cache.RdbmsCacheRegistry;
+import io.camunda.exporter.rdbms.handlers.AgentHistoryExportHandler;
 import io.camunda.exporter.rdbms.handlers.AgentInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
 import io.camunda.exporter.rdbms.handlers.ClusterVariableExportHandler;
@@ -262,6 +263,9 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.AGENT_INSTANCE,
         new AgentInstanceExportHandler(rdbmsWriters.getAgentInstanceWriter()));
+    builder.withHandler(
+        ValueType.AGENT_HISTORY,
+        new AgentHistoryExportHandler(rdbmsWriters.getAgentHistoryWriter()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new SequenceFlowExportHandler(rdbmsWriters.getSequenceFlowWriter()));
