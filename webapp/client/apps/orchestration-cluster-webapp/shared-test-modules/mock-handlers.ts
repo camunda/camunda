@@ -74,6 +74,11 @@ const mockSaasTokenEndpoint = createEndpointMock({
 	method: 'GET',
 });
 
+const mockGetUserTaskEndpoint = createEndpointMock({
+	endpoint: endpoints.getUserTask.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.getUserTask.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -81,6 +86,7 @@ export {
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
+	mockGetUserTaskEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,

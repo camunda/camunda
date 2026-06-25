@@ -17,6 +17,7 @@ const {
 } = createBrowserStorage(localStorage, {
 	theme: z.enum(['light', 'dark', 'system']),
 	wasReloaded: z.boolean(),
+	'tasklist.areNativeNotificationsEnabled': z.boolean(),
 	'tasklist.hasCompletedTask': z.boolean(),
 	'tasklist.customFilters': z.record(z.string(), namedCustomFiltersSchema),
 	'operate.panelStates': z.record(z.string(), z.union([z.boolean(), z.array(z.number())])),

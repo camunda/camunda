@@ -51,8 +51,8 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 		ref,
 	) => {
 		const {t} = useTranslation();
-		const {id: openTaskId} = useParams({strict: false});
-		const isActive = openTaskId === taskId;
+		const {userTaskKey} = useParams({strict: false});
+		const isActive = userTaskKey === taskId;
 
 		const creationDate = formatISODateTime(creationDateString);
 		const completionDate = formatISODate(completionDateString);
@@ -69,8 +69,8 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 			<article className={cn(styles.container, {[styles.active!]: isActive})}>
 				<Link
 					className={styles.taskLink}
-					to="/tasklist/$id"
-					params={{id: taskId}}
+					to="/tasklist/$userTaskKey"
+					params={{userTaskKey: taskId}}
 					aria-label={getNavLinkLabel({
 						displayName,
 						assigneeId: assignee,

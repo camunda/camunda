@@ -1,0 +1,53 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Loading} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
+import styles from './ActiveTransitionLoadingText.module.scss';
+
+type Props = {
+	taskState:
+		| 'CREATED'
+		| 'COMPLETED'
+		| 'CANCELED'
+		| 'FAILED'
+		| 'ASSIGNING'
+		| 'UPDATING'
+		| 'COMPLETING'
+		| 'CANCELING'
+		| 'CREATING';
+};
+
+const ActiveTransitionLoadingText: React.FC<Props> = ({taskState}) => {
+	const {t} = useTranslation();
+
+	const statusLoadingMessage: Record<Props['taskState'], string | null> = {
+		CREATED: null,
+		CREATING: null,
+		ASSIGNING: null,
+		COMPLETED: null,
+		CANCELED: null,
+		FAILED: null,
+		UPDATING: t('tasklist.taskStateUpdatingMessage'),
+		CANCELING: t('tasklist.taskStateCancelingMessage'),
+		COMPLETING: t('tasklist.taskDetailsCompletingTaskMessage'),
+	};
+
+	if (statusLoadingMessage[taskState] === null) {
+		return null;
+	}
+
+	return (
+		<div className={styles.container}>
+			<Loading small withOverlay={false} />
+			<p className={styles.message}>{statusLoadingMessage[taskState]}</p>
+		</div>
+	);
+};
+
+export {ActiveTransitionLoadingText};

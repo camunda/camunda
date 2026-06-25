@@ -11,6 +11,7 @@ import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
 	mockCurrentUserEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -61,6 +62,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockQueryUserTasksEndpoint({
 			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+		}),
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(createUserTask()),
 		}),
 	);
 });
