@@ -30,14 +30,9 @@ import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.util.Environment;
-import io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration;
-import io.camunda.client.spring.configuration.MetricsDefaultConfiguration;
-import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestAutoConfiguration;
-import io.camunda.process.test.impl.configuration.CamundaProcessTestDefaultConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
-import io.camunda.process.test.impl.configuration.LegacyCamundaProcessTestRuntimeConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -47,21 +42,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = CamundaProcessTestDefaultConfigurationTest.TestConfig.class)
-@EnableConfigurationProperties({
-  CamundaProcessTestRuntimeConfiguration.class,
-  LegacyCamundaProcessTestRuntimeConfiguration.class
-})
+@ContextConfiguration(classes = CamundaProcessTestAutoConfiguration.class)
 public class CamundaProcessTestDefaultConfigurationTest {
 
   private static CamundaClientConfiguration buildConfiguration(
@@ -69,6 +57,17 @@ public class CamundaProcessTestDefaultConfigurationTest {
     final CamundaClientBuilder builder = clientBuilderFactory.get();
     try (final CamundaClient client = builder.build()) {
       return client.getConfiguration();
+    }
+  }
+
+  @Configuration
+  static class CustomFactoryConfig {
+    @Bean
+    public CamundaClientBuilderFactory customCamundaClientBuilderFactory() {
+      return () ->
+          CamundaClient.newClientBuilder()
+              .restAddress(URI.create("http://custom-factory-host:9999"))
+              .grpcAddress(URI.create("http://custom-factory-host:26500"));
     }
   }
 
@@ -81,30 +80,6 @@ public class CamundaProcessTestDefaultConfigurationTest {
               .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
               .registerModule(new JavaTimeModule());
       return new CamundaObjectMapper(objectMapper);
-    }
-  }
-
-  @Configuration
-  @Import(CamundaProcessTestDefaultConfiguration.class)
-  @ImportAutoConfiguration({
-    CamundaClientAllAutoConfiguration.class,
-    MetricsDefaultConfiguration.class
-  })
-  static class TestConfig {
-    @Bean
-    public CamundaSpringProcessTestContext enableTestContext() {
-      return new CamundaSpringProcessTestContext();
-    }
-  }
-
-  @Configuration
-  static class CustomFactoryConfig {
-    @Bean
-    public CamundaClientBuilderFactory customCamundaClientBuilderFactory() {
-      return () ->
-          CamundaClient.newClientBuilder()
-              .restAddress(URI.create("http://custom-factory-host:9999"))
-              .grpcAddress(URI.create("http://custom-factory-host:26500"));
     }
   }
 
@@ -393,10 +368,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
 
   @Nested
   @ContextConfiguration(
-      classes = {
-        CamundaProcessTestDefaultConfigurationTest.TestConfig.class,
-        CamundaProcessTestDefaultConfigurationTest.CustomFactoryConfig.class
-      })
+      classes = {CamundaProcessTestDefaultConfigurationTest.CustomFactoryConfig.class})
   class ShouldUseCustomCamundaClientBuilderFactory {
 
     @Autowired
