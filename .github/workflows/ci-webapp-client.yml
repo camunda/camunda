@@ -12,6 +12,7 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Orchestration Cluster Webapp
   TEST_OWNER: "@camunda/core-features"
+  CLIENT_DIR: webapp/client
 
 jobs:
   typecheck:
@@ -21,7 +22,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -33,8 +34,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Type check
         run: npm run typecheck
       - name: Observe build status
@@ -54,7 +55,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -66,8 +67,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: ESLint
         run: npm run lint:eslint
       - name: Observe build status
@@ -87,7 +88,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -99,8 +100,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Knip
         run: npm run lint:knip
       - name: Observe build status
@@ -120,7 +121,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -132,8 +133,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Prettier
         run: npm run lint:prettier
       - name: Observe build status
@@ -153,7 +154,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -165,8 +166,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Build packages
         run: npm run build
       - name: Observe build status
@@ -191,7 +192,7 @@ jobs:
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -205,8 +206,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Unit tests
         run: npm run test:unit -w @camunda/orchestration-cluster-webapp
       - name: Upload blob report
@@ -241,7 +242,7 @@ jobs:
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -255,8 +256,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Integration tests
@@ -292,7 +293,7 @@ jobs:
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -306,8 +307,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build -w @camunda/orchestration-cluster-webapp
       - name: Accessibility tests
@@ -343,7 +344,7 @@ jobs:
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -357,8 +358,8 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          retry_wait_seconds: 15
-          command: npm ci --prefix webapp/client
+          retry_wait_seconds: 5
+          command: npm ci --prefix ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build:visual-regression -w @camunda/orchestration-cluster-webapp
       - name: Visual regression tests
