@@ -119,6 +119,10 @@ public final class SystemContextTestFactory {
         physicalTenantIds);
   }
 
+  private static FeatureFlags featureFlagsFrom(final BrokerCfg brokerCfg) {
+    return brokerCfg.getExperimental().getFeatures().toFeatureFlags();
+  }
+
   private static <T> Map<String, T> singleValueMap(
       final PhysicalTenantIds physicalTenantIds, final T value) {
     final Map<String, T> map = new HashMap<>();
