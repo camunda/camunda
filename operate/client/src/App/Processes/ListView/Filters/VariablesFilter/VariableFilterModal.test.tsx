@@ -561,7 +561,7 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
-    await user.click(screen.getByText('equals'));
+    await user.click(screen.getByRole('option', {name: 'equals'}));
 
     expect(screen.getByText(TRUNCATION_WARNING)).toBeInTheDocument();
   });
