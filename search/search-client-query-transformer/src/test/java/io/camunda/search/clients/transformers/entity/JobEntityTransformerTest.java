@@ -90,6 +90,24 @@ class JobEntityTransformerTest {
     assertThat(transformed.rootProcessInstanceKey()).isNull();
   }
 
+  @Test
+  void shouldMapBusinessId() {
+    when(entityValue.getBusinessId()).thenReturn("business-1");
+
+    final var transformed = transformer.apply(entityValue);
+
+    assertThat(transformed.businessId()).isEqualTo("business-1");
+  }
+
+  @Test
+  void shouldMapNullBusinessId() {
+    when(entityValue.getBusinessId()).thenReturn(null);
+
+    final var transformed = transformer.apply(entityValue);
+
+    assertThat(transformed.businessId()).isNull();
+  }
+
   @ParameterizedTest
   @EnumSource(ListenerEventType.class)
   void handlesAllListenerEventTypes(final ListenerEventType listenerEventType) {

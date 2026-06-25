@@ -39,6 +39,7 @@ public record JobEntity(
     Long processDefinitionKey,
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
+    @Nullable String businessId,
     String elementId,
     Long elementInstanceKey,
     String tenantId,
@@ -90,6 +91,7 @@ public record JobEntity(
     private @Nullable Long processDefinitionKey;
     private @Nullable Long processInstanceKey;
     private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String businessId;
     private @Nullable String elementId;
     private @Nullable Long elementInstanceKey;
     private @Nullable String tenantId;
@@ -196,6 +198,11 @@ public record JobEntity(
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     public Builder elementId(final String elementId) {
       this.elementId = elementId;
       return this;
@@ -245,6 +252,7 @@ public record JobEntity(
           processDefinitionKey,
           processInstanceKey,
           rootProcessInstanceKey,
+          businessId,
           elementId,
           elementInstanceKey,
           tenantId,

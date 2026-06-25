@@ -378,7 +378,7 @@ public class JobIT {
             .partitionId(original.partitionId())
             .lastUpdateTime(NOW)
             // intentionally omit: elementId, creationTime, errorMessage, errorCode, isDenied,
-            // deniedReason, deadline, endTime, rootProcessInstanceKey
+            // deniedReason, deadline, endTime, rootProcessInstanceKey, businessId
             .build();
     rdbmsWriters.getJobWriter().update(update);
     rdbmsWriters.flush();
@@ -395,6 +395,7 @@ public class JobIT {
     assertThat(stored.endTime())
         .isCloseTo(original.endTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(stored.rootProcessInstanceKey()).isEqualTo(original.rootProcessInstanceKey());
+    assertThat(stored.businessId()).isEqualTo(original.businessId());
     assertThat(stored.priority()).isEqualTo(original.priority());
   }
 

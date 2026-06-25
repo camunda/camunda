@@ -32,6 +32,7 @@
         PARTITION_ID,
         PROCESS_INSTANCE_KEY,
         ROOT_PROCESS_INSTANCE_KEY,
+        BUSINESS_ID,
         ELEMENT_INSTANCE_KEY,
         PROCESS_DEFINITION_ID,
         PROCESS_DEFINITION_KEY,
@@ -236,6 +237,7 @@
     <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
     <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" javaType="java.lang.Long" />
+    <result column="BUSINESS_ID" property="businessId" javaType="java.lang.String" />
     <result column="ELEMENT_INSTANCE_KEY" property="elementInstanceKey" javaType="java.lang.Long" />
     <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
     <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
