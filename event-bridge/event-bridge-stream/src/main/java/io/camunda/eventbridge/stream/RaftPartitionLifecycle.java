@@ -176,7 +176,14 @@ public abstract class RaftPartitionLifecycle<
 
     switch (role) {
       case LEADER -> start(role, StreamProcessorMode.PROCESSING, true);
-      case FOLLOWER, CANDIDATE, PROMOTABLE -> start(role, StreamProcessorMode.REPLAY, false);
+      // PASSIVE is a non-voting observer that still receives committed entries from the leader, so
+      // it
+      // must replay too: a passive metadata observer (any broker beyond the metadata replication
+      // factor) only provisions its assigned topic Raft groups once it has replayed the registry
+      // into
+      // its state DB. Without this it never reconciles, leaving "ghost" replicas no node hosts.
+      case FOLLOWER, CANDIDATE, PROMOTABLE, PASSIVE ->
+          start(role, StreamProcessorMode.REPLAY, false);
       default -> {
         // INACTIVE — stay torn down
       }
