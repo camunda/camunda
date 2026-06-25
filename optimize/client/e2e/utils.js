@@ -35,8 +35,13 @@ export async function login(t, userHandle = 'user1') {
     .maximizeWindow()
     .typeText('input[name="username"]', user.username)
     .typeText('input[name="password"]', user.username)
-    .click('[type="submit"]')
-    .wait(1000);
+    .pressKey('enter');
+
+  // Testcafe native automation's click('[type="submit"]') fires mouse events that fail to
+  // trigger the Keycloak form POST in quarantine retry sessions — no network request is made
+  // and the browser stays on Keycloak. Keyboard Enter on the focused password field uses a
+  // different event path that reliably submits the form across all attempts.
+  await t.expect(Common.collectionsPage.exists).ok({timeout: 30000});
 }
 
 export function getUser(t, userHandle) {
