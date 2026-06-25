@@ -233,8 +233,9 @@ public class FormStoreElasticSearch implements FormStore {
 
       final var searchRequest =
           new SearchRequest.Builder()
-              .index(taskTemplate.getFullQualifiedName())
+              .index(ElasticsearchUtil.whereToSearch(taskTemplate, QueryType.ALL))
               .query(tenantAwareQuery)
+              .size(1) // only need to know if at least one exists
               .build();
 
       final var response = esClient.search(searchRequest, ElasticsearchUtil.MAP_CLASS);
