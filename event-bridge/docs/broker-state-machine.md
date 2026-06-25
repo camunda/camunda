@@ -133,17 +133,61 @@ Validated on `run-local-cluster.sh` (3 `StandaloneEventBridge` nodes):
   2 registered … at epoch 2`, epoch bumped because it had been fenced) and it **recovers its existing
   partitions** (`Raft partition event-bridge-topic-orders/{1,2,3} bootstrapped`); no reconfiguration
   needed since it was never removed. Topology returns to `[0,1,2]`.
-- ⏳ **Expand onto a new broker / graceful drain** — both need a broker to *join* a per-topic group,
-  which is blocked by the pre-existing **#18** (`raftPartition.join()` fails with
-  `ReconfigurationHelper: "Sent join request to all known members, but all failed."`, even with all
-  brokers alive). The heal's expand *decision* is correct and unit-tested (a fenced replica is
-  swapped for an available spare); only the live JOIN is blocked.
+- ✅ **Metadata leader failover (RF-3)** — killing the *metadata-group leader* (broker-1) triggers a
+  clean Raft election: broker-2 goes `CANDIDATE -> LEADER` at term 2, the surviving gateway serves
+  `/v1/topology` again, and the new leader's `BrokerEvictionTask` picks up the liveness loop and
+  fences the dead broker (`Broker 1 session lapsed … fencing at epoch 1`). The only poll failure is a
+  plain `ConnectException: Connection refused` to the dead node — exactly what Raft expects. **No
+  `NoRemoteHandler`** anywhere in the run. This retires the earlier "#19 NoRemoteHandler breaks
+  failover" suspicion: that symptom was a *downstream effect of the now-fixed `UnifiedRecordValue`
+  `MatchException`* — when the metadata `StreamProcessor` crashed at startup the partition never
+  reached a healthy role, so that node's Raft handlers weren't live and a poll to it returned
+  `NoRemoteHandler`. With the value-type switch fixed, the per-group Raft subjects are wired
+  correctly on both send and receive (`<tenantName>-partition-<id>-<rpc>`, legacy subjects disabled),
+  and failover works. **Requires the metadata partition to actually have a voter quorum** (RF ≥ 3 for
+  a 3-node cluster); with a single metadata voter the others join as passive observers and cannot
+  elect a replacement — that is a configuration property, not a bug.
+- ✅ **Passive metadata observer provisions its assigned partitions (#18, bug A — fixed)** — on a
+  4-node / RF-3 cluster, broker-3 is a *passive observer* of the metadata group (it's beyond the
+  metadata replication factor). It was never provisioning the topic partitions assigned to it:
+  `RaftPartitionLifecycle.handleRoleChange` started the stream for `LEADER/FOLLOWER/CANDIDATE/
+  PROMOTABLE` but let **`PASSIVE` fall into the `default` (torn-down) arm**, so a passive observer
+  received the replicated metadata log over Raft but never *replayed* it into its state DB → its
+  `TopicReconciler` saw an empty registry → it provisioned nothing. The partitions then had a "ghost"
+  replica no node hosted, and any poll/append to it returned `NoRemoteHandler` (this is the
+  `event-bridge-topic-orders-partition-4-poll` `NoRemoteHandler` to a *live* broker-3 in the kill
+  test). **Fix:** add `PASSIVE` to the REPLAY arm. Validated on the cluster: broker-3 now goes
+  `PASSIVE → follower replaying`, logs `Provisioned topic orders … local partitions [2, 3, 4]`,
+  bootstraps `topic-orders/{2,3,4}`, and even **wins leadership of partition 3** — a fully functional
+  voting member, with zero `NoRemoteHandler`.
+- ✅ **Passive metadata observer survives the startup join race (#18, bug B — fixed)** — a passive
+  observer joining the metadata group commits a configuration change, which needs the group to
+  already have a leader. At startup it races the voters' election (every member answers `NO_LEADER`
+  until one wins), and Atomix's `ReconfigurationHelper.joinWithRetry` *drains* its `assistingMembers`
+  queue (one attempt per member) and gives up — `"Sent join request to all known members, but all
+  failed. No more members left."` — so the one-shot bootstrap join failed permanently and broker-3
+  never joined. **Fix (event-bridge side, no Atomix change):** `PartitionBootstrapper` now retries the
+  passive join until it succeeds, mirroring `BrokerRegistrar`'s register-until-leader loop and Zeebe's
+  `ClusterConfigurationManager` operation retry. Each retry first `close()`s the half-started server
+  (unregistering its Raft subjects) so the next `joinAsPassive` rebuilds a fresh server cleanly — only
+  the Raft server is rebuilt; the `MetadataPartition` actor + state DB are reused; the role listener is
+  wired only on the attempt that succeeds; a `closing` flag stops retries on shutdown. Validated by
+  starting broker-3 *before* its voters: attempts 1–5 fail with backoff (1s→2s→4s→8s), then once the
+  voters elect a leader the join succeeds, broker-3 goes `PASSIVE → follower replaying`, and provisions
+  `[2,3,4]` — zero `NoRemoteHandler`, retries stop cleanly.
+- ⏳ **Graceful expand/drain still needs runtime JOIN of a per-topic group** — the heal/reassign *grow*
+  step has a live broker join a per-topic Raft group at runtime. That join can hit the same
+  `joinWithRetry` give-up if it runs before the group is reachable; unlike the startup passive join it
+  isn't yet wrapped in a retry. A bootstrap-style retry (close → recreate → re-join) like the metadata
+  fix would cover it, or the orchestration retry could live in the reassignment driver. Tracked with
+  #17 (the LEAVE side still needs leader-driven remote removal in Atomix).
 
 **Conclusion:** the broker liveness FSM, broker-side loop, placement, fencing, the (non-eager) heal,
-and same-broker recovery all work end-to-end (validated on a cluster). The remaining gap is the
-**per-topic Raft group reconfiguration** the heal/reassignment feeds: LEAVE of a gone broker needs
-the postponed **leader-driven remote removal** (#17), and JOIN/grow is blocked by the pre-existing
-`raftPartition.join()` failure (#18). Both live in the reconfiguration/Atomix layer, not this change.
+same-broker recovery, **metadata-leader failover, and passive-observer provisioning (including the
+startup join race)** all work end-to-end (validated on a cluster). The remaining gap is **per-topic
+Raft group reconfiguration**: LEAVE of a gone broker still needs **leader-driven remote removal**
+(#17, Atomix), and the runtime grow-JOIN should get the same retry wrapper the metadata passive join
+now has.
 
 > A latent bug the smoke test caught: `UnifiedRecordValue.fromValueType` (an exhaustive `ValueType`
 > switch) didn't handle the new `EVENT_BRIDGE_BROKER`, throwing `MatchException` at stream startup —
@@ -167,6 +211,26 @@ and for a drained one (it shuts down before the `LEAVE` commits). The fix is two
 This is the single capability the smoke test showed missing, and it resolves both the kill and the
 drain paths. (For drain, with leader-driven removal the broker no longer has to stay alive through
 the move.)
+
+### Resilient JOIN retry (#18 bug B)
+
+`ReconfigurationHelper.joinWithRetry` polls each known member exactly once (draining a queue) and
+fails `"Sent join request to all known members, but all failed. No more members left."` when the
+queue empties — including the common case where the group has **no leader yet** (every member
+answers `NO_LEADER` / connection-refused). Rather than change that consensus-layer behaviour, the
+**retry is owned by the caller**, the same place every other "wait for the metadata leader"
+interaction lives:
+
+- **Startup passive join (metadata group) — DONE.** `PartitionBootstrapper.joinMetadataAsPassiveWithRetry`
+  retries until success: on failure it `close()`s the half-started server (unregistering its Raft
+  subjects) and re-`joinAsPassive`s after a capped backoff. The `RaftPartition.joinAsPassive`
+  `initServer` rebuild is fine *because the previous server is closed first* — that's exactly how
+  Zeebe's `RaftJoinStep`/`ClusterConfigurationManager` retry avoids duplicate registration. Only the
+  Raft server is rebuilt; the `MetadataPartition` actor + state DB are reused.
+- **Runtime grow join (per-topic group) — TODO.** The heal/reassign grow step (a spare broker joining
+  a per-topic group at runtime) can hit the same give-up if it runs before the group is reachable. Wrap
+  it in the same close→recreate→re-join retry, or put the retry in the reassignment driver. Tracked
+  with #17.
 
 ### Dynamic metadata-quorum reconfiguration (Phase 3)
 
