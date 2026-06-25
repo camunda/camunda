@@ -118,6 +118,14 @@ public final class StubbedGateway {
                                 new FakeJwtDecoder(),
                                 (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
                                 securityConfiguration.getAuthentication().getOidc())));
+    final var metricsByTenant =
+        physicalTenantIds.known().stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    tenantId -> tenantId,
+                    tenantId ->
+                        new AuthenticationMetrics(
+                            new SimpleMeterRegistry(), AuthenticationMethod.OIDC)));
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
@@ -127,8 +135,7 @@ public final class StubbedGateway {
                         physicalTenantIds.known(),
                         handlersByTenant,
                         !securityConfiguration.getAuthentication().isUnprotectedApi(),
-                        new AuthenticationMetrics(
-                            new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));
+                        metricsByTenant)));
     server = serverBuilder.build();
     server.start();
   }

@@ -14,6 +14,8 @@ import io.camunda.service.UserServices;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -33,6 +35,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
  * concrete CSL factory types.
  */
 public final class PhysicalTenantHandlerFactory {
+
+  private static final Logger LOG = LoggerFactory.getLogger(PhysicalTenantHandlerFactory.class);
 
   private PhysicalTenantHandlerFactory() {}
 
@@ -76,9 +80,16 @@ public final class PhysicalTenantHandlerFactory {
                           decoderFactory.apply(authConfig),
                           claimsProviderFactory.apply(authConfig),
                           authConfig.getOidc());
-                  case BASIC ->
-                      new AuthenticationHandler.BasicAuth(
-                          userServicesForTenant.apply(tenantId), passwordEncoder);
+                  case BASIC -> {
+                    LOG.atWarn()
+                        .log(
+                            "Basic Authentication only supports a very small number of API requests per second for physical tenant '{}'. "
+                                + "Please refer to the documentation "
+                                + "https://docs.camunda.io/docs/next/self-managed/operational-guides/troubleshooting/#basic-authentication-performance",
+                            tenantId);
+                    yield new AuthenticationHandler.BasicAuth(
+                        userServicesForTenant.apply(tenantId), passwordEncoder);
+                  }
                 };
           } catch (final Exception e) {
             throw new IllegalStateException(
