@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
+import io.camunda.configuration.Partitioning.Scheme;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
@@ -80,7 +81,20 @@ public class NodeIProviderConfigurationUtils {
                 });
           }
         };
-    nodeIdProvider.initialize(cluster.getSize()).join();
+    var brokerCount = cluster.getSize();
+    if (cluster.getPartitioning().getScheme() == Scheme.ZONE_AWARE) {
+      final var zoneAware = cluster.getPartitioning().getZoneAware();
+      final var zone =
+          zoneAware.zones().stream().filter(z -> z.name().equals(cluster.getZone())).findFirst();
+      if (zone.isEmpty()) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected to find zone %s configured in partition distribution configuration, but got %s",
+                cluster.getZone(), cluster.getPartitioning().getZoneAware().zones()));
+      }
+      brokerCount = zone.get().numberOfBrokers();
+    }
+    nodeIdProvider.initialize(brokerCount).join();
     return nodeIdProvider;
   }
 
