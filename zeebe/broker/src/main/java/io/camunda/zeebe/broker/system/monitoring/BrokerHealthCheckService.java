@@ -22,7 +22,7 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 
 /*
@@ -95,10 +95,13 @@ import org.slf4j.Logger;
 public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private Map<PartitionId, Boolean> partitionInstallStatus;
-  /* set to true when all partitions are installed. Once set to true, it is never
-  changed. */
-  private volatile boolean allPartitionsInstalled = false;
+  /* Tracks the install status of every bootstrap partition the broker is responsible for, keyed by
+  its full PartitionId (partition group + id). Each physical tenant registers its own partitions, so
+  this map accumulates across all tenants. Stays null until the first registration so that an
+  install status update before any partition is known fails fast. */
+  private volatile Map<PartitionId, Boolean> partitionInstallStatus;
+  /* Guards against logging "broker is ready" more than once. Only touched on the actor thread. */
+  private boolean readyLogged = false;
   private volatile boolean brokerStarted = false;
   private final HealthMonitor healthMonitor;
 
@@ -110,15 +113,24 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
-    partitionInstallStatus =
-        partitions.stream().collect(Collectors.toMap(PartitionMetadata::id, p -> false));
+    // Called once per physical tenant during startup, so accumulate rather than replace: each call
+    // adds the tenant's partitions without dropping the ones registered by previous tenants.
+    if (partitionInstallStatus == null) {
+      partitionInstallStatus = new ConcurrentHashMap<>();
+    }
     partitions.forEach(
-        metadata ->
-            healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().number())));
+        metadata -> {
+          partitionInstallStatus.putIfAbsent(metadata.id(), false);
+          healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().number()));
+        });
   }
 
   public boolean isBrokerReady() {
-    return brokerStarted && allPartitionsInstalled;
+    // Ready once every registered partition (across all physical tenants) has been installed.
+    // Computed live from the map so that partitions registered by a later physical tenant still
+    // gate readiness even if an earlier tenant's partitions were already installed.
+    final var status = partitionInstallStatus;
+    return brokerStarted && status != null && !status.containsValue(false);
   }
 
   public String componentName() {
@@ -147,13 +159,10 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private ActorFuture<Void> updateBrokerReadyStatus(final PartitionId partitionId) {
     return actor.call(
         () -> {
-          if (!allPartitionsInstalled) {
-            partitionInstallStatus.put(partitionId, true);
-            allPartitionsInstalled = !partitionInstallStatus.containsValue(false);
-
-            if (allPartitionsInstalled) {
-              LOG.info("All partitions are installed. Broker is ready!");
-            }
+          partitionInstallStatus.put(partitionId, true);
+          if (!readyLogged && !partitionInstallStatus.containsValue(false)) {
+            readyLogged = true;
+            LOG.info("All partitions are installed. Broker is ready!");
           }
         });
   }
