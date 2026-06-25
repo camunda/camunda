@@ -6,12 +6,13 @@
 > way; the heartbeat runs leader-locally over an in-memory `BrokerLivenessMirror`; a
 > clock-driven `BrokerEvictionTask` fences lapsed sessions; placement reads only registered,
 > unfenced brokers; a clock-driven `PlacementHealTask` re-places topics off fenced/draining
-> brokers (minimal-diff), fed to the change-coordinator. Unit-tested (`MetadataBrokerProcessorTest`,
-> `PlacementHealTaskTest`). **NOT yet validated on a running cluster.**
+> brokers (minimal-diff), fed to the change-coordinator. The broker side (`BrokerRegistrar`) is
+> implemented too. Unit-tested (`MetadataBrokerProcessorTest`, `PlacementHealTaskTest`) **and
+> smoke-tested on a local 3-node cluster** — see "Smoke-test results".
 >
-> **The one remaining piece is the broker-side register/heartbeat client loop** (see
-> "Remaining"), which is the only part that makes the FSM live in production and **must be
-> validated on a running cluster** (see the `event-bridge-runtime-smoke` note).
+> **The one capability still missing is evicting a member from a per-topic Raft group**, which both
+> the kill and graceful-drain paths need; it requires the postponed leader-driven remote-removal in
+> Atomix (see "Deliberately later"). Everything up to setting the heal target works end-to-end.
 
 ## The model: two channels
 
@@ -98,33 +99,72 @@ All in `event-bridge-cluster-metadata`, mirroring the consumer-groups module:
   (excluded from placement, bounded by cluster size) until it re-registers or is deregistered.
   GC'ing long-fenced brokers with no remaining replicas is a possible future cleanup.
 
-## Remaining: the broker-side register/heartbeat client loop
+## Broker-side register/heartbeat client loop (implemented)
 
-The metadata leader serves `REGISTER_BROKER` / `BROKER_HEARTBEAT` coordinate requests
-(`MetadataRequestHandler` → `BrokerHeartbeatHandler`). What's missing is the **broker
-sending them**:
+`BrokerRegistrar` (a `SmartLifecycle` in the gateway service layer) drives the broker side:
 
-1. On startup the broker generates a unique `incarnation` (once per process) and sends
-   `REGISTER_BROKER(brokerId, incarnation)` to the `event-bridge-metadata` routing group,
-   storing the epoch from the reply.
-2. Every interval (< the 10s session timeout) it sends `BROKER_HEARTBEAT(brokerId, epoch, …)`.
-   A `FENCED_MEMBER_EPOCH` reply means re-register.
-3. On graceful shutdown it sets `draining=true` and stops once the reply says
-   `shouldShutdown`.
+1. On startup it generates a unique `incarnation` and sends `REGISTER_BROKER(brokerId,
+   incarnation)` to the metadata routing group (retrying until the leader is up), storing the epoch.
+2. Every 3s (< the 10s session timeout) it sends `BROKER_HEARTBEAT(brokerId, epoch, draining)`. A
+   `FENCED_MEMBER_EPOCH` reply triggers re-registration.
+3. On graceful stop it heartbeats with `draining=true` until the leader acks `shouldShutdown`.
 
-**Transport decision + prerequisite.** This uses the broker client (symmetric with consumer
-heartbeats), which the broker does **not** have wired today: the `BrokerClient` is
-Spring-auto-configured in the gateway, and `BrokerExecuteCoordinateRequest` + a new
-`BrokerRegisterRequest`/`BrokerHeartbeatRequest` wrapper live in `event-bridge-gateway`
-(which the broker correctly does not depend on). So the prerequisite is to (a) relocate the
-coordinate-request base into a module the broker can use, and (b) construct a `BrokerClient`
-on the broker node. This layer is network wiring — it cannot be meaningfully unit-tested and
-must be validated on a running cluster.
+It **reuses the gateway's existing `BrokerClient`** — broker and gateway co-deploy in one
+`StandaloneEventBridge` process, so no new client or cross-module move was needed; the two
+coordinate-request wrappers (`BrokerRegisterRequest`, `BrokerLivenessHeartbeatRequest`) sit
+alongside the others in the gateway. The metadata leader serves these via `MetadataRequestHandler`
+→ `BrokerHeartbeatHandler`.
 
-## Deliberately later (Phase 3)
+## Smoke-test results (local 3-node cluster)
 
-Dynamic metadata-quorum reconfiguration — promote an observer to voter / demote a dead voter
-to keep the controller quorum healthy as brokers churn. The voter cap + observer attachment
-already exists (`PartitionBootstrapper.bootstrapMetadata`: RF voters, the rest passive
-observers); only runtime voter membership changes are missing, and they depend on this
-liveness FSM. Skip unless the metadata voters are meant to be ephemeral.
+Validated on `run-local-cluster.sh` (3 `StandaloneEventBridge` nodes):
+
+- ✅ **Registration** — all three brokers register (`BrokerRegistrar`, epoch 1) once the metadata
+  leader is up; the retry-until-registered loop handles the startup race.
+- ✅ **Placement over registered brokers** — a fresh RF-3 topic places cleanly round-robin over the
+  registered set (`[0,1,2]/[1,2,0]/[2,0,1]`).
+- ✅ **Fencing + heal trigger** — killing a broker fences it after the session timeout, and the
+  `PlacementHealTask` computes a target excluding it and drives the change-coordinator.
+- ❌ **Removing the gone broker does not complete — in *either* path.** The `LEAVE` step relies on
+  the departing member acting on its own removal (`raftPartition.leave()` is self-only):
+  - *killed broker*: the `LEAVE` command can't reach the dead node → retries forever;
+  - *graceful drain*: the broker shut down before the `LEAVE` committed (drain timed out after 30s;
+    the self-`LEAVE` failed repeatedly even while the node was briefly alive during teardown).
+  Net: the partition keeps the gone broker in its Raft membership (over-membered but still
+  available while quorum holds).
+
+**Conclusion:** the liveness FSM, broker-side loop, placement, fencing and heal-targeting all work
+end-to-end; the single missing capability is **evicting a member from a per-topic Raft group**, and
+both the kill and drain paths need it. The robust fix is the postponed **leader-driven remote
+removal** below — it resolves both, since it does not depend on the departing member.
+
+> A latent bug the smoke test caught: `UnifiedRecordValue.fromValueType` (an exhaustive `ValueType`
+> switch) didn't handle the new `EVENT_BRIDGE_BROKER`, throwing `MatchException` at stream startup —
+> hidden from the build by a stale build-cache entry. Fixed.
+
+## Deliberately later
+
+### Leader-driven member removal (next; unblocks kill + drain)
+
+Evicting a member from a per-topic Raft group needs a **live member (the partition leader) to
+drive the config change**, because Atomix's `RaftPartition` exposes only self-membership ops
+(`join`/`joinAsPassive`/`leave`/`promote`) — there is no "remove member X". So today the `LEAVE`
+step relies on the departing broker removing itself, which fails for a killed broker (can't act)
+and for a drained one (it shuts down before the `LEAVE` commits). The fix is two parts:
+1. add a leader-driven remote-removal API to Atomix `RaftPartition`/`RaftServer` (the leader
+   proposes a configuration change removing the dead member; commits with the surviving quorum) —
+   a sensitive consensus-layer change, postponed to its own session;
+2. route the `LEAVE` of a gone broker to a **surviving** member (the leader) instead of the
+   departing one.
+
+This is the single capability the smoke test showed missing, and it resolves both the kill and the
+drain paths. (For drain, with leader-driven removal the broker no longer has to stay alive through
+the move.)
+
+### Dynamic metadata-quorum reconfiguration (Phase 3)
+
+Promote an observer to voter / demote a dead voter to keep the controller quorum healthy as brokers
+churn. The voter cap + observer attachment already exists
+(`PartitionBootstrapper.bootstrapMetadata`: RF voters, the rest passive observers); only runtime
+voter membership changes are missing, and they depend on this liveness FSM. Skip unless the metadata
+voters are meant to be ephemeral.
