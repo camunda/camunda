@@ -12,9 +12,6 @@ import {TableContainer as CarbonTableContainer} from '@carbon/react';
 const TableContainer = styled(CarbonTableContainer)`
 	position: relative;
 	background-color: var(--cds-layer);
-	.cds--data-table-content {
-		overflow-x: inherit;
-	}
 `;
 
 const ScrollContainer = styled.div`
