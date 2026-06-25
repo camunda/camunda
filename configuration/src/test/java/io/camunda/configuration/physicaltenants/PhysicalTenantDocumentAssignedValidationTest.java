@@ -41,6 +41,17 @@ class PhysicalTenantDocumentAssignedValidationTest {
   }
 
   @Test
+  void shouldPassWhenNonDefaultTenantHasNoDocumentStores() {
+    // given a non-default tenant with no document stores in its catalog
+    final Camunda camunda = new Camunda();
+    camunda.getDocument().setAssigned(new ArrayList<>());
+    final Map<String, Camunda> resolved = tenants("tenanta", camunda);
+
+    // when / then no stores → nothing to assign → validation is a no-op
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldPassWhenDefaultTenantOmitsAssigned() {
     // given
     final Map<String, Camunda> resolved =

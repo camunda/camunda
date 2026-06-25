@@ -19,10 +19,10 @@ import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Cross-tenant rule: every non-default physical tenant must declare a non-empty {@code
- * document.assigned} list referencing only known store ids. Without it a tenant would silently
- * inherit the full root catalog, including stores intended for other tenants. The {@code default}
- * tenant is exempt.
+ * Cross-tenant rule: every non-default physical tenant that has document stores in its resolved
+ * catalog must declare a non-empty {@code document.assigned} list referencing only known store ids.
+ * Without it a tenant would silently inherit the full root catalog, including stores intended for
+ * other tenants. The {@code default} tenant and tenants with no stores are exempt.
  */
 @NullMarked
 class PhysicalTenantDocumentAssignedValidation implements CrossTenantValidation {
@@ -45,6 +45,11 @@ class PhysicalTenantDocumentAssignedValidation implements CrossTenantValidation 
           knownStoreIds.addAll(doc.getAzure().keySet());
           knownStoreIds.addAll(doc.getLocal().keySet());
           knownStoreIds.addAll(doc.getInMemory().keySet());
+
+          if (knownStoreIds.isEmpty()) {
+            // no document stores in catalog — nothing to assign, skip
+            return;
+          }
 
           final List<String> assigned = doc.getAssigned();
 
