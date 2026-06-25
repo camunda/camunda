@@ -88,7 +88,7 @@ public interface PartitionManager {
         brokerStartupContext.getRocksDbResources(),
         brokerStartupContext.getSecurityConfiguration(),
         brokerStartupContext.getSearchClientsProxy(),
-        brokerStartupContext.getBrokerRequestAuthorizationConverter(),
+        brokerStartupContext.getBrokerRequestAuthorizationConverter(physicalTenantId),
         topologyManager);
   }
 
