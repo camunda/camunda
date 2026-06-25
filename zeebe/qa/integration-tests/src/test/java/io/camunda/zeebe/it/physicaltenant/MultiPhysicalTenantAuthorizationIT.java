@@ -64,6 +64,9 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
     defaultAdmin = defaultAdminClient(BROKER);
     tenantAAdmin = adminClient(BROKER, TENANT_A);
     tenantBAdmin = adminClient(BROKER, TENANT_B);
+    awaitAdminReady(defaultAdmin, "default admin can authenticate");
+    awaitAdminReady(tenantAAdmin, "tenanta admin can authenticate");
+    awaitAdminReady(tenantBAdmin, "tenantb admin can authenticate");
   }
 
   @AfterAll

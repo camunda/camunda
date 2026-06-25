@@ -78,6 +78,14 @@ final class PhysicalTenantLogicalTenantScopingIT {
     BROKER.start().awaitCompleteTopology();
     tenantAAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_A, ADMIN_PASSWORD).build();
     tenantBAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_B, ADMIN_PASSWORD).build();
+    // wait for per-PT admin users to become ready (avoids transient post-startup 401s)
+    for (final CamundaClient admin : new CamundaClient[] {tenantAAdmin, tenantBAdmin}) {
+      Awaitility.await("per-PT admin can authenticate")
+          .atMost(PROPAGATION_TIMEOUT)
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
+    }
   }
 
   @AfterAll
