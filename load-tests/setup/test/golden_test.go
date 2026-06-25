@@ -79,9 +79,9 @@ var defaultScenarios = []scenario{
 //
 // to generate its golden files, then commit them. No other code change is needed.
 var versions = []string{
-	//"main",
-	//"stable-89",
-	//"stable-88",
+	"main",
+	"stable-89",
+	"stable-88",
 	"stable-87",
 }
 
@@ -105,16 +105,6 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 			if v == "stable-87" {
 				if s.Storage != "elasticsearch" {
 					// Only elasticsearch is supported on 8.7
-					continue
-				}
-
-				if s.Name == "chaos-killer" {
-					scenario := versionedScenario{
-						Version:  v,
-						scenario: s,
-					}
-					scenario.SetupTarget = ""
-					result = append(result, scenario)
 					continue
 				}
 			}
@@ -171,9 +161,7 @@ func TestGoldenFiles(t *testing.T) {
 
 			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "")
 			renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", "")
-			if s.Version != "stable-87" {
-				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
-			}
+			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
 		})
 	}
 }

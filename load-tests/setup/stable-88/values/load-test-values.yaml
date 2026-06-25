@@ -40,28 +40,14 @@ global:
           name: camunda-credentials
           key: identity-optimize-loadtest-client-secret
 
-# Saas configuration to run load tests against Camunda SaaS environment
+# OAuth configuration for load tests
 saas:
-  # Saas.enabled if true enables the load tests to run against Camunda SaaS
+  # Enable OAuth authentication
   enabled: true
 
-  # Saas.credentials configuration to connect to a Camunda SaaS cluster
+  # Credentials for the OAuth authentication
   credentials:
-    # Saas.existingSecret can be used to configure the secret name that should be referenced by the load tests
-    # applications to retrieve credential information.
-    #
-    # If this value is set, other credentials are not used.
-    #
-    # Credentials Secret need to follow the following format:
-    #
-    # apiVersion: v1
-    # kind: Secret
-    # metadata:
-    #   name: cloud-credentials
-    # type: Opaque
-    # stringData:
-    #   clientId: hH55UFivfw-bbHAuPwN545oyv8tTdW0z
-    #   clientSecret: xtHQB.zBLcQrw4GaP0k_ci~ePjbD8qVlYaFKNo__2a7ZJxL-DAVVHepq~X9elPRb
-    #   zeebeRestAddress: e314a337-a462-4988-a3be-d1f2e153e034.zeebe.ultrawombat.com:443
-    #   authServer: https://login.cloud.ultrawombat.com/oauth/token
+    # The name of the Kubernetes secrets where to find the OIDC parameters.
+    # The "load-test-credentials" Secret is created by the "load-test-setup"
+    # Helm Chart.
     existingSecret: load-test-credentials

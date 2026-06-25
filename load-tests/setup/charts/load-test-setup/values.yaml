@@ -40,3 +40,21 @@ chaosKiller:
   schedule: "0 * * * *"
   # -- Space-separated shell glob patterns. One pod matching any pattern is deleted per run.
   targetPatterns: "camunda-* elastic-* postgresql-*"
+
+# -- Configuration for the load test applications.
+loadTest:
+  # -- Client configuration
+  client:
+    # -- OIDC configuration for the load test applications
+    oidc:
+      clientId: orchestration
+      zeebeRestAddress: http://camunda:8080
+      authServer: http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token
+      zeebeGrpcAddress: http://camunda:26500
+      authorizationAudience: orchestration-api
+      # -- The name of the key used to generate credentials for the load test client applications.
+      # This key is used:
+      # 1. During the cluster provisioning, to create a client ID/password through Keycloak
+      # 2. While configuring the load test application, to create the same password as used by Keycloak.
+      secret:
+        key: orchestration-security-authentication-oidc-secret

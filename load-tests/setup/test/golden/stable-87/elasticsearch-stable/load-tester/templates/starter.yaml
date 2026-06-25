@@ -18,7 +18,7 @@ spec:
         app.kubernetes.io/component: zeebe-client
       annotations:
         
-        checksum/saas-credentials: edb826504288c0645a018ba14fc7bf5174e9a85c7893fc591b61fb79a88fc1b1
+        checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       imagePullSecrets:
         - name: harbor-registry
@@ -53,37 +53,37 @@ spec:
             - name: ZEEBE_REST_ADDRESS
               valueFrom:
                 secretKeyRef:
-                  name: c8-golden-stable-87-elasticsearch-stable-test-credentials
+                  name: load-test-credentials
                   key: zeebeRestAddress
             - name: ZEEBE_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: c8-golden-stable-87-elasticsearch-stable-test-credentials
+                  name: load-test-credentials
                   key: clientId
             - name: ZEEBE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: c8-golden-stable-87-elasticsearch-stable-test-credentials
+                  name: load-test-credentials
                   key: clientSecret
             - name: ZEEBE_AUTHORIZATION_SERVER_URL
               valueFrom:
                 secretKeyRef:
-                  name: c8-golden-stable-87-elasticsearch-stable-test-credentials
+                  name: load-test-credentials
                   key: authServer
             - name: ZEEBE_TOKEN_AUDIENCE
               valueFrom:
                 secretKeyRef:
-                  name: c8-golden-stable-87-elasticsearch-stable-test-credentials
+                  name: load-test-credentials
                   key: authorizationAudience
             - name: ZEEBE_AUTH_TYPE
               valueFrom:
                 secretKeyRef:
-                  name: c8-golden-stable-87-elasticsearch-stable-test-credentials
+                  name: load-test-credentials
                   key: authType
             - name: ZEEBE_GRPC_ADDRESS
               valueFrom:
                 secretKeyRef:
-                  name: c8-golden-stable-87-elasticsearch-stable-test-credentials
+                  name: load-test-credentials
                   key: zeebeGrpcAddress
             - name: LOAD_TESTER_LOG_APPENDER
               value: "Stackdriver"
@@ -93,6 +93,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: identity-optimize-loadtest-client-secret
+                  name: camunda-credentials
             ##
             ## Spring Boot compatible env vars (for migrated load tester, ignored by old HOCON app)
             ##
