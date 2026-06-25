@@ -248,7 +248,7 @@ class RdbmsExporterIT {
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
             .withIntent(VariableIntent.CREATED)
-            .withPosition(2L)
+            .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
             .build();
 
@@ -327,14 +327,7 @@ class RdbmsExporterIT {
   public void shouldExportAll() {
     // given
     final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
-
-    final Record<RecordValue> variableCreated =
-        ImmutableRecord.builder()
-            .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
-            .withIntent(VariableIntent.CREATED)
-            .withPosition(2L)
-            .withTimestamp(System.currentTimeMillis())
-            .build();
+    final var variableCreated = FIXTURES.getVariableCreatedRecord();
     final List<Record<RecordValue>> recordList = List.of(processInstanceRecord, variableCreated);
 
     // when
@@ -614,14 +607,14 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportRoleAndAddAndDeleteMember() {
     // given
-    final var roleId = "roleId";
-    final var roleRecord = FIXTURES.getRoleRecord(roleId, RoleIntent.CREATED);
-    final var recordValue = (RoleRecordValue) roleRecord.getValue();
     final var username = "username";
     final var userRecord = FIXTURES.getUserRecord(1L, username, UserIntent.CREATED);
     exporter.export(userRecord);
 
     // when
+    final var roleId = "roleId";
+    final var roleRecord = FIXTURES.getRoleRecord(roleId, RoleIntent.CREATED);
+    final var recordValue = (RoleRecordValue) roleRecord.getValue();
     exporter.export(roleRecord);
 
     // then
@@ -909,6 +902,7 @@ class RdbmsExporterIT {
     final var messageSubscriptionRecord =
         ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
             .build();
@@ -933,6 +927,7 @@ class RdbmsExporterIT {
     final var messageSubscriptionRecord =
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
             .build();
@@ -944,6 +939,7 @@ class RdbmsExporterIT {
         ImmutableRecord.builder()
             .from(messageSubscriptionRecord)
             .withIntent(ProcessMessageSubscriptionIntent.DELETED)
+            .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
             .build());
 
@@ -961,6 +957,7 @@ class RdbmsExporterIT {
     final Record<ProcessMessageSubscriptionRecordValue> correlatedMessageSubscriptionRecord =
         ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
             .withTimestamp(System.currentTimeMillis())
             .build();
@@ -988,7 +985,7 @@ class RdbmsExporterIT {
         ImmutableRecord.<MessageStartEventSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION))
             .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
-            .withPosition(2L)
+            .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
             .build();
 
@@ -1162,6 +1159,7 @@ class RdbmsExporterIT {
     final var batchOperationCreationRecord =
         ImmutableRecord.<BatchOperationCreationRecordValue>builder()
             .from(record)
+            .withPosition(FIXTURES.nextPosition())
             .withValue(
                 ImmutableBatchOperationCreationRecordValue.builder()
                     .from(record.getValue())
@@ -1228,6 +1226,7 @@ class RdbmsExporterIT {
             .from(record)
             .withIntent(BatchOperationChunkIntent.CREATE)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .withBatchOperationReference(batchOperationKey)
             .withValue(
                 ImmutableBatchOperationChunkRecordValue.builder()
@@ -1394,6 +1393,7 @@ class RdbmsExporterIT {
     final Record<RecordValue> jobCreatedRecord =
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.JOB))
+            .withPosition(FIXTURES.nextPosition())
             .withIntent(JobIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
             .build();
@@ -1417,7 +1417,7 @@ class RdbmsExporterIT {
             .withRecordType(RecordType.EVENT)
             .withIntent(ProcessInstanceCreationIntent.CREATED)
             .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, "user"))
-            .withPosition(1L)
+            .withPosition(FIXTURES.nextPosition())
             .withPartitionId(1)
             .withTimestamp(System.currentTimeMillis())
             .build();
@@ -1467,7 +1467,7 @@ class RdbmsExporterIT {
     final var skippedRecord =
         ImmutableRecord.<RecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.TIMER))
-            .withPosition(42L)
+            .withPosition(FIXTURES.nextPosition())
             .withPartitionId(2)
             .withTimestamp(System.currentTimeMillis())
             .build();
@@ -1479,14 +1479,14 @@ class RdbmsExporterIT {
     intervalController.runScheduledTasks(Duration.ofSeconds(1));
 
     // then - broker position is updated even though no data handler processed the record
-    assertThat(intervalController.getPosition()).isEqualTo(42L);
+    assertThat(intervalController.getPosition()).isEqualTo(FIXTURES.currentPosition());
 
     // then - RDBMS position is updated: the pre-flush listener adds the position update
     // to the queue before the empty-queue check, so it is persisted even though the queue
     // contained no data writes
     final var rdbmsPosition = exporterPositionMapper.findOne(2);
     assertThat(rdbmsPosition).isNotNull();
-    assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
+    assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(FIXTURES.currentPosition());
   }
 
   private static void verifyRootProcessInstanceKey(
@@ -1523,6 +1523,7 @@ class RdbmsExporterIT {
             .from(record)
             .withIntent(BatchOperationIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .withValue(
                 ImmutableBatchOperationCreationRecordValue.builder()
                     .from(record.getValue())

@@ -209,9 +209,14 @@ public final class RdbmsExporter {
         record.getValueType(),
         record.getIntent());
 
+    // this may be a retry - do not re-process the record but still trigger a flush
+    // when it is not a retry but a re-delivery because of other reasons (exporter guarantees
+    // at-least-once), the queue will be empty and flush will be a no-op.
+    final boolean alreadyProcessed = record.getPosition() <= lastPosition;
+
     boolean exported = false;
     boolean shouldFlushAfterRecordProcessed = false;
-    if (registeredHandlers.containsKey(record.getValueType())) {
+    if (!alreadyProcessed && registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
           LOG.trace(
@@ -230,27 +235,32 @@ public final class RdbmsExporter {
               record.getValueType());
         }
       }
-    } else {
+    } else if (!alreadyProcessed) {
       LOG.trace(
           "[RDBMS Exporter P{}] No registered handler found for {}",
           partitionId,
           record.getValueType());
     }
 
-    // Always update lastPosition for every record, including ignored ones, so that the exporter
-    // position is advanced even when no handler processes the record.
-    lastPosition = record.getPosition();
+    if (!alreadyProcessed) {
+      lastPosition = record.getPosition();
+    }
 
-    if (exported) {
-      // Track the oldest record timestamp in the current batch
-      final long recordTimestamp = record.getTimestamp();
-      if (oldestRecordTimestampInBatch < 0 || recordTimestamp < oldestRecordTimestampInBatch) {
-        oldestRecordTimestampInBatch = recordTimestamp;
+    if (exported || alreadyProcessed) {
+      if (exported) {
+        // Track the oldest record timestamp in the current batch
+        final long recordTimestamp = record.getTimestamp();
+        if (oldestRecordTimestampInBatch < 0 || recordTimestamp < oldestRecordTimestampInBatch) {
+          oldestRecordTimestampInBatch = recordTimestamp;
+        }
       }
       // causes a flush check after each processed record. Depending on the queue size and
-      // configuration, the writers ExecutionQueue may or may not flush here.
+      // configuration, the writers ExecutionQueue may or may not flush here. When retrying an
+      // already-processed record we force the flush so the queue that failed to flush before is
+      // drained instead of lingering.
       try {
-        final boolean shouldFlush = flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
+        final boolean shouldFlush =
+            alreadyProcessed || flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
         final boolean flushed = rdbmsWriters.flush(shouldFlush);
         if (flushed) {
           resetIntervalFlush();
