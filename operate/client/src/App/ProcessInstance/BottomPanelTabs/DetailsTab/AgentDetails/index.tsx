@@ -41,6 +41,7 @@ import {IS_CONVERSATION_HISTORY_ENABLED} from 'modules/feature-flags';
 import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
+  UNKNOWN: 'Unknown',
   INITIALIZING: 'Initializing',
   THINKING: 'Thinking',
   TOOL_CALLING: 'Calling tools',

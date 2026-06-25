@@ -21,8 +21,8 @@ import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstance
 import {searchResult} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {AgentDetails} from './index';
-import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
+import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
 
 vi.mock('modules/feature-flags', () => ({
   IS_CONVERSATION_HISTORY_ENABLED: true,
@@ -43,34 +43,7 @@ function createWrapper() {
   };
 }
 
-const mockAgentInstance: AgentInstance = {
-  agentInstanceKey: '2251799813851828',
-  status: 'TOOL_CALLING',
-  definition: {
-    model: 'gpt-4',
-    provider: 'openai',
-    systemPrompt: 'You are a helpful assistant.',
-  },
-  metrics: {
-    inputTokens: 100,
-    outputTokens: 50,
-    modelCalls: 3,
-    toolCalls: 2,
-  },
-  limits: {
-    maxModelCalls: 10,
-    maxToolCalls: 5,
-    maxTokens: 1000,
-  },
-  elementId: 'Activity_1',
-  processInstanceKey: '123456789',
-  processDefinitionKey: '444555666',
-  tenantId: '<default>',
-  creationDate: '2025-01-15T10:00:00.000Z',
-  lastUpdatedDate: '2025-01-15T10:05:00.000Z',
-  completionDate: null,
-  elementInstanceKeys: ['111222333'],
-};
+const agentInstance = mockAgentInstance();
 
 describe('<AgentDetails />', () => {
   beforeEach(() => {
@@ -80,7 +53,7 @@ describe('<AgentDetails />', () => {
   it('should render AI Agent heading and status for TOOL_CALLING', () => {
     render(
       <AgentDetails
-        agentInstance={mockAgentInstance}
+        agentInstance={agentInstance}
         isLoading={false}
         isError={false}
       />,
@@ -97,7 +70,7 @@ describe('<AgentDetails />', () => {
   it('should render status for THINKING', () => {
     render(
       <AgentDetails
-        agentInstance={{...mockAgentInstance, status: 'THINKING'}}
+        agentInstance={{...agentInstance, status: 'THINKING'}}
         isLoading={false}
         isError={false}
       />,
@@ -113,7 +86,7 @@ describe('<AgentDetails />', () => {
   it('should render status for IDLE', () => {
     render(
       <AgentDetails
-        agentInstance={{...mockAgentInstance, status: 'IDLE'}}
+        agentInstance={{...agentInstance, status: 'IDLE'}}
         isLoading={false}
         isError={false}
       />,
@@ -127,7 +100,7 @@ describe('<AgentDetails />', () => {
   it('should render status for COMPLETED', () => {
     render(
       <AgentDetails
-        agentInstance={{...mockAgentInstance, status: 'COMPLETED'}}
+        agentInstance={{...agentInstance, status: 'COMPLETED'}}
         isLoading={false}
         isError={false}
       />,
@@ -143,7 +116,7 @@ describe('<AgentDetails />', () => {
   it('should render status for INITIALIZING', () => {
     render(
       <AgentDetails
-        agentInstance={{...mockAgentInstance, status: 'INITIALIZING'}}
+        agentInstance={{...agentInstance, status: 'INITIALIZING'}}
         isLoading={false}
         isError={false}
       />,
@@ -159,7 +132,7 @@ describe('<AgentDetails />', () => {
   it('should render status for TOOL_DISCOVERY', () => {
     render(
       <AgentDetails
-        agentInstance={{...mockAgentInstance, status: 'TOOL_DISCOVERY'}}
+        agentInstance={{...agentInstance, status: 'TOOL_DISCOVERY'}}
         isLoading={false}
         isError={false}
       />,
@@ -207,7 +180,7 @@ describe('<AgentDetails />', () => {
 
     render(
       <AgentDetails
-        agentInstance={mockAgentInstance}
+        agentInstance={agentInstance}
         isLoading={false}
         isError={false}
       />,
@@ -233,7 +206,7 @@ describe('<AgentDetails />', () => {
   it('should render usage metrics', () => {
     render(
       <AgentDetails
-        agentInstance={mockAgentInstance}
+        agentInstance={agentInstance}
         isLoading={false}
         isError={false}
       />,
@@ -266,7 +239,7 @@ describe('<AgentDetails />', () => {
   it('should render the model provider and name', () => {
     render(
       <AgentDetails
-        agentInstance={mockAgentInstance}
+        agentInstance={agentInstance}
         isLoading={false}
         isError={false}
       />,
@@ -285,7 +258,7 @@ describe('<AgentDetails />', () => {
   it('should render the system prompt with copy and expand options', () => {
     render(
       <AgentDetails
-        agentInstance={mockAgentInstance}
+        agentInstance={agentInstance}
         isLoading={false}
         isError={false}
       />,
@@ -308,15 +281,16 @@ describe('<AgentDetails />', () => {
 
   it('should not fetch the conversation history until its accordion item is opened', async () => {
     const historySpy = vi.fn();
-    mockSearchAgentInstanceHistory(
-      mockAgentInstance.agentInstanceKey,
-    ).withSuccess(searchResult([]), {mockResolverFn: historySpy});
+    mockSearchAgentInstanceHistory(agentInstance.agentInstanceKey).withSuccess(
+      searchResult([]),
+      {mockResolverFn: historySpy},
+    );
     // Latest message is always fetched. Handle first before history spy handler.
     mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
 
     const {user} = render(
       <AgentDetails
-        agentInstance={mockAgentInstance}
+        agentInstance={agentInstance}
         isLoading={false}
         isError={false}
       />,

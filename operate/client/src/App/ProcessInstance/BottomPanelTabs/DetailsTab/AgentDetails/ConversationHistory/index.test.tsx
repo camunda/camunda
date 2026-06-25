@@ -207,7 +207,7 @@ describe('<ConversationHistory />', () => {
     const item = mockAgentInstanceHistoryItem();
     mockServer.use(
       http.post(
-        endpoints.searchAgentInstanceHistory.getUrl({
+        endpoints.queryAgentInstanceHistory.getUrl({
           agentInstanceKey: AGENT_INSTANCE_KEY,
         }),
         async ({request}) => {

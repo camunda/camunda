@@ -7,11 +7,11 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import type {SearchAgentInstanceHistoryRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {QueryAgentInstanceHistoryRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {searchAgentInstanceHistory} from 'modules/api/v2/agentInstances/searchAgentInstanceHistory';
 import {queryKeys} from '../queryKeys';
 
-const REQUEST_BODY: SearchAgentInstanceHistoryRequestBody = {
+const REQUEST_BODY: QueryAgentInstanceHistoryRequestBody = {
   sort: [{field: 'producedAt', order: 'desc'}],
   filter: {commitStatus: 'COMMITTED', role: 'ASSISTANT'},
   page: {limit: 1},
