@@ -1,7 +1,17 @@
 # Release Process
 
-Releases are owned by `@camunda/distribution` and triggered manually via the
-[C8Run Release GitHub workflow](https://github.com/camunda/camunda/actions/workflows/c8run-release.yaml).
+Releases are owned by `@camunda/distribution` and follow a **build-once → promote** model:
+
+- [`c8run-release-rc.yaml`](https://github.com/camunda/camunda/actions/workflows/c8run-release-rc.yaml)
+  builds, signs, and notarizes the four OS artifacts **once** and stages them in Harbor as the release
+  candidate (RC).
+- [`c8run-release-public.yaml`](https://github.com/camunda/camunda/actions/workflows/c8run-release-public.yaml)
+  promotes the **exact same bytes** from Harbor to the public targets — no rebuild, no re-signing.
+
+The release train drives both workflows via BPMN; the `gh`/UI invocations below are for ad-hoc or
+hotfix runs. The legacy single-stage
+[`c8run-release.yaml`](https://github.com/camunda/camunda/actions/workflows/c8run-release.yaml)
+remains available during the transition.
 
 ---
 
@@ -61,33 +71,29 @@ fails the release before upload.
 
 ## Before You Start
 
-### 1. Check Docker Compose is released
+### Determine the versions to release
 
-> [!WARNING]
-> Ensure the Docker Compose versions were released correctly prior to the C8Run release.
+The easiest place to look up all updated component versions at once is the Renovate PR in
+[camunda/camunda-distributions](https://github.com/camunda/camunda-distributions/pulls) labelled
+`deps/docker-compose` and `version/8.x`. The table at the top of the PR body lists every version
+change. The two versions the release workflows take as inputs are:
 
-The easiest place to verify this — and to look up all updated component versions at once — is the
-Renovate PR in [camunda/camunda-distributions](https://github.com/camunda/camunda-distributions/pulls)
-labelled `deps/docker-compose` and `version/8.x`. That PR shows the full version delta for
-Camunda, Connectors, and Docker Compose in one place. Wait for it to be merged before proceeding.
+|        Input        |               Where to read it from                |
+|---------------------|----------------------------------------------------|
+| `camundaVersion`    | `camunda/camunda` row in the Renovate PR           |
+| `connectorsVersion` | `camunda/connectors-bundle` row in the Renovate PR |
 
-### 2. Determine the versions to release
+`camundaVersion` is the **full** version (e.g. `8.8.29`, `8.8.0-alpha4.1`) — it is the C8Run version.
+The minor (e.g. `8.8`) is derived from it automatically; you do not enter it separately.
 
-Open the Renovate PR described above. The table at the top of the PR body lists every version
-change. Record:
+> **Docker Compose readiness (8.7/8.8 only).** For branches whose `c8run/.env` pins `COMPOSE_TAG`,
+> the RC workflow **verifies** that the rolling `docker-compose-<minor>` release already pins the
+> target `CAMUNDA_VERSION` and fails the build if it is behind. Make sure the Renovate PR above is
+> merged (or the release train has refreshed the compose) before triggering the RC. C8Run cannot
+> refresh the compose itself — it pins only 2 of Docker Compose's component versions. `main`/`stable/8.9`
+> have no Docker Compose dependency and skip this check.
 
-These two variables are the ones you will update in `./c8run/.env`:
-
-| `./c8run/.env` variable |               Where to read it from                |
-|-------------------------|----------------------------------------------------|
-| `CAMUNDA_VERSION`       | `camunda/camunda` row in the Renovate PR           |
-| `CONNECTORS_VERSION`    | `camunda/connectors-bundle` row in the Renovate PR |
-
-> **Note:** `CAMUNDA_DOCKER_VERSION` and `ELASTICSEARCH_VERSION` are **not** part of `./c8run/.env`
-> — they belong to the Docker Compose distribution and are managed separately in
-> `camunda/camunda-distributions`.
-
-You can also cross-check that no c8run artifacts have been published yet for the target release:
+You can cross-check that no c8run artifacts have been published yet for the target release:
 
 ```bash
 gh release view <version> --repo camunda/camunda --json assets --jq '.assets[].name' 2>/dev/null \
@@ -98,94 +104,74 @@ If there is no output, the c8run release has not been done yet.
 
 ---
 
-## Release Candidates
+## Release Candidate
 
-### 1. Version Bump
+Build once, sign + notarize once, and stage the artifacts in Harbor. QA validates this exact RC; the
+public release later promotes the **same bytes** without rebuilding.
 
-For each version:
+There is **no manual `.env` version bump** — the workflow updates `c8run/.env` in place (preserving the
+compose/Elasticsearch keys) and opens the `deps: update c8run versions to <version>` PR itself.
 
-1. Clone [camunda/camunda](https://github.com/camunda/camunda).
-2. Create a new branch from the version base branch:
-   - `main` for the latest alpha.
-   - `stable/8.8` for 8.8, etc.
-   - Branch name convention: `c8run-release-<version>` (e.g. `c8run-release-8.8.24`)
-3. Update `./c8run/.env` with the correct versions determined above.
-4. Commit with `deps: update c8run versions to <version>` and open a PR targeting the version
-   base branch (e.g. `stable/8.8`). Get it merged before triggering the workflow.
-
-### 2. Artifact
-
-For each version, trigger the
-[C8Run Release GitHub workflow](https://github.com/camunda/camunda/actions/workflows/c8run-release.yaml)
+Trigger
+[`c8run-release-rc.yaml`](https://github.com/camunda/camunda/actions/workflows/c8run-release-rc.yaml)
 via the UI or the `gh` CLI:
 
 ```bash
-gh workflow run c8run-release.yaml \
+gh workflow run c8run-release-rc.yaml \
   --repo camunda/camunda \
   --ref main \
   --field branch=stable/8.8 \
-  --field camundaVersion=8.8 \
-  --field camundaAppsRelease=8.8.24 \
-  --field publishToCamundaAppsRelease=true \
-  --field publishToCamundaDownloadCenter=false \
-  --field typePrerelease=false \
-  --field artifactVersionSuffix="-rc"
+  --field camundaVersion=8.8.29 \
+  --field connectorsVersion=8.8.15
 ```
 
-If using the UI instead:
+|        Input        |                              Value                              |
+|---------------------|-----------------------------------------------------------------|
+| Run workflow from   | `Branch: main` (always)                                         |
+| `branch`            | release branch, e.g. `stable/8.8` (`main` for the latest alpha) |
+| `camundaVersion`    | full version, e.g. `8.8.29` or `8.8.0-alpha4.1`                 |
+| `connectorsVersion` | full connectors version, e.g. `8.8.15`                          |
 
-|                    Input                    |                            Value                            |
-|---------------------------------------------|-------------------------------------------------------------|
-| Run workflow from                           | `Branch: main` (always)                                     |
-| Release branch                              | e.g. `stable/8.7` for 8.7                                   |
-| Camunda minor version                       | e.g. `8.7`                                                  |
-| Camunda app GH release                      | e.g. `8.7.4`                                                |
-| Publish to Camunda apps GitHub release page | **Ticked**                                                  |
-| Publish to Camunda Download Center          | **Unticked** (RCs are not published to the Download Center) |
-| Artifact version suffix                     | `-rc` (include the dash)                                    |
+The workflow then:
 
-Then:
+1. (8.7/8.8) verifies the rolling `docker-compose-<minor>` is at the target version;
+2. updates `c8run/.env` in place and builds + signs + notarizes the four OS artifacts;
+3. pushes them to Harbor as `registry.camunda.cloud/team-distribution/c8run:<camundaVersion>-rc`;
+4. opens the `c8run/.env` bump PR (merged after QA sign-off by the release train).
 
-1. Monitor the GitHub Action logs.
-2. Confirm `*-rc` artifacts are published in [Camunda repo GitHub releases](https://github.com/camunda/camunda/releases) under the correct Camunda tag version.
-3. Report back each version in the release train form in the Slack release thread that the RC artifacts for C8Run are created.
+The RC lives **only in Harbor** — nothing is published to GitHub releases or the Download Center yet.
+QA validates the artifact at the RC tag.
 
 ---
 
 ## Public Release
 
-For each version, trigger the workflow via the `gh` CLI:
+Promotes the staged RC — pulls the exact notarized bytes from Harbor and publishes them. **No rebuild,
+no re-signing.** The Camunda apps GitHub release (tag `<camundaVersion>`) must already exist; it is
+created by the monorepo release.
+
+Trigger
+[`c8run-release-public.yaml`](https://github.com/camunda/camunda/actions/workflows/c8run-release-public.yaml):
 
 ```bash
-gh workflow run c8run-release.yaml \
+gh workflow run c8run-release-public.yaml \
   --repo camunda/camunda \
   --ref main \
-  --field branch=stable/8.8 \
-  --field camundaVersion=8.8 \
-  --field camundaAppsRelease=8.8.24 \
-  --field publishToCamundaAppsRelease=true \
-  --field publishToCamundaDownloadCenter=true \
-  --field typePrerelease=false \
-  --field artifactVersionSuffix=""
+  --field camundaVersion=8.8.29
 ```
 
-If using the UI instead:
+|       Input       |                 Value                  |
+|-------------------|----------------------------------------|
+| Run workflow from | `Branch: main` (always)                |
+| `camundaVersion`  | full version to promote, e.g. `8.8.29` |
 
-|                    Input                    |                    Value                     |
-|---------------------------------------------|----------------------------------------------|
-| Run workflow from                           | `Branch: main` (always)                      |
-| Release branch                              | e.g. `stable/8.8` for 8.8, `main` for latest |
-| Camunda minor version                       | e.g. `8.6`, `8.7`, `8.8`                     |
-| Camunda app GH release                      | e.g. `8.7.1`, `8.8-alpha4.1`                 |
-| Publish to Camunda apps GitHub release page | **Ticked**                                   |
-| Publish to Camunda Download Center          | **Ticked**                                   |
-| Artifact version suffix                     | *(leave empty)*                              |
+The workflow pulls `c8run:<camundaVersion>-rc` from Harbor and:
 
-Then:
+1. uploads the artifacts to the Camunda apps GitHub release (tag `<camundaVersion>`);
+2. uploads to the Download Center (own minor release + apps version);
+3. tags Harbor `<camundaVersion>` for archival.
 
-1. Monitor the GitHub Action logs.
-2. Confirm artifacts are added to the [Camunda repo GitHub release](https://github.com/camunda/camunda/releases).
-3. Delete any prior C8Run releases tagged with `-pending-removal`.
-4. Delete the RC artifacts from the Camunda GitHub release (the version specified in the release inputs).
-5. Report back each version in the release train form in the Slack release thread that the C8Run release is complete.
+No `-rc` / `-pending-removal` cleanup is needed — the RC never lands on the GitHub release or the
+Download Center, so there is nothing to delete. Report back in the release train Slack thread that the
+C8Run release is complete.
 
