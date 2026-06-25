@@ -11,6 +11,9 @@ public enum ContextType {
   // delete+insert is used for AGENT_INSTANCE_ELEMENT_INSTANCE child rows, so order must be
   // preserved to ensure DELETE runs before INSERT
   AGENT_INSTANCE(true),
+  // only INSERT (CREATED) and UPDATE (COMMITTED/DISCARDED) are issued — no delete+insert pattern;
+  // INSERT-before-UPDATE ordering within a batch is guaranteed by optimizeQueueOrder's
+  // WriteStatementType sort, so no explicit preservation is needed here
   AGENT_HISTORY(false),
   AUDIT_LOG(false),
   AUTHORIZATION(true),

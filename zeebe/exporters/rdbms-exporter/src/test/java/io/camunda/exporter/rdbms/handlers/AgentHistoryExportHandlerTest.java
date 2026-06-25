@@ -27,6 +27,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolC
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -448,6 +450,62 @@ class AgentHistoryExportHandlerTest {
     assertThat(mappedItem.contentType()).isEqualTo(ContentType.TEXT);
     assertThat(mappedItem.text()).isEqualTo("hello");
     assertThat(mappedItem.documentReference()).isNull();
+  }
+
+  @Test
+  void shouldMapDocumentContentType() {
+    // given — DOCUMENT content item with a fully-populated document reference
+    final long expiresAtMs = 1_800_000_000_000L;
+    final long docProcessInstanceKey = 999L;
+    final var metadata =
+        ImmutableDocumentReferenceMetadataValue.builder()
+            .withExpiresAt(expiresAtMs)
+            .withSize(2048L)
+            .withProcessInstanceKey(docProcessInstanceKey)
+            .withContentType("application/pdf")
+            .withFileName("report.pdf")
+            .withProcessDefinitionId("my-process")
+            .build();
+    final var docRef =
+        ImmutableDocumentReferenceValue.builder()
+            .withDocumentId("doc-42")
+            .withStoreId("store-1")
+            .withContentHash("sha256abc")
+            .withMetadata(metadata)
+            .build();
+    final var documentContent =
+        ImmutableAgentHistoryMessageContentValue.builder()
+            .withContentType(AgentHistoryContentType.DOCUMENT)
+            .withDocumentReference(docRef)
+            .build();
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildRecordValue())
+            .withContent(List.of(documentContent))
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(61L).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    final var mappedItem = modelCaptor.getValue().contentItems().getFirst();
+    assertThat(mappedItem.contentType()).isEqualTo(ContentType.DOCUMENT);
+    assertThat(mappedItem.text()).isNull();
+    final var mappedRef = mappedItem.documentReference();
+    assertThat(mappedRef).isNotNull();
+    assertThat(mappedRef.documentId()).isEqualTo("doc-42");
+    assertThat(mappedRef.storeId()).isEqualTo("store-1");
+    assertThat(mappedRef.contentHash()).isEqualTo("sha256abc");
+    assertThat(mappedRef.metadata()).isNotNull();
+    assertThat(mappedRef.metadata().expiresAt())
+        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(expiresAtMs)));
+    assertThat(mappedRef.metadata().processInstanceKey()).isEqualTo(docProcessInstanceKey);
+    assertThat(mappedRef.metadata().processDefinitionId()).isEqualTo("my-process");
   }
 
   /**
