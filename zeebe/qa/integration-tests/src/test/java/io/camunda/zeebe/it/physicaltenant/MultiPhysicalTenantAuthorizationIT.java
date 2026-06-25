@@ -336,12 +336,18 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
         .atMost(PROPAGATION_TIMEOUT)
         .ignoreExceptions()
         .untilAsserted(() -> assertThat(activeInstanceCount(tenantBAdmin, processId)).isZero());
-    assertThat(activeInstanceCount(defaultAdmin, processId))
-        .as("default instances must be untouched by tenantb's batch")
-        .isEqualTo(instancesPerTenant);
-    assertThat(activeInstanceCount(tenantAAdmin, processId))
-        .as("tenanta instances must be untouched by tenantb's batch")
-        .isEqualTo(instancesPerTenant);
+    Awaitility.await("default and tenanta instances stay untouched by tenantb's batch")
+        .during(PROPAGATION_TIMEOUT.dividedBy(6))
+        .atMost(PROPAGATION_TIMEOUT)
+        .untilAsserted(
+            () -> {
+              assertThat(activeInstanceCount(defaultAdmin, processId))
+                  .as("default instances must be untouched by tenantb's batch")
+                  .isEqualTo(instancesPerTenant);
+              assertThat(activeInstanceCount(tenantAAdmin, processId))
+                  .as("tenanta instances must be untouched by tenantb's batch")
+                  .isEqualTo(instancesPerTenant);
+            });
   }
 
   // --- helpers -------------------------------------------------------------

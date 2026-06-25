@@ -13,6 +13,7 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -89,21 +90,20 @@ public final class PhysicalTenantsITHelper {
    * defaultRoles.admin} assignment {@link #configure} already sets) into the given tenant's own
    * {@code security.initialization}, so the user can authenticate via that tenant's REST path once
    * authorizations and basic auth are enabled. Basic-auth specific (an OIDC variant would seed a
-   * mapping rule instead). Additive to {@link #configure}; call both.
+   * mapping rule instead). Appends the per-PT admin user to the tenant's existing initialization
+   * users list; call in addition to {@link #configure}.
    */
   public TestStandaloneBroker seedBasicAuthAdminUser(
       final TestStandaloneBroker broker, final String tenantId, final String password) {
     final String username = adminUsername(tenantId);
     broker.withPtConfig(
         tenantId,
-        camunda ->
-            camunda
-                .getSecurity()
-                .getInitialization()
-                .setUsers(
-                    List.of(
-                        new ConfiguredUser(
-                            username, password, username, username + "@example.com"))));
+        camunda -> {
+          final var init = camunda.getSecurity().getInitialization();
+          final var users = new ArrayList<>(init.getUsers());
+          users.add(new ConfiguredUser(username, password, username, username + "@example.com"));
+          init.setUsers(users);
+        });
     return broker;
   }
 
