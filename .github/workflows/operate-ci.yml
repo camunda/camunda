@@ -1,8 +1,8 @@
-# description: Runs legacy integration CI tests
+# description: Runs integration CI tests
 # test location: operate/qa/integration-tests
 # type: CI
 # owner: @camunda/core-features, @camunda/data-layer
-name: "[Legacy] Operate"
+name: "Operate Integration Tests"
 on:
   workflow_dispatch:
   push:
