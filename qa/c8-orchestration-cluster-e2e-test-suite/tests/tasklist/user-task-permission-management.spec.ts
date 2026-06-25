@@ -27,6 +27,7 @@ import {
 
 const PROCESS_ID = 'user_task_api_test_process';
 const TASK_NAME = 'test user task api';
+let completePermissionTestId: string;
 
 let aliceUser: {
   username: string;
@@ -646,7 +647,10 @@ test.describe
     await deploy(['./resources/user_task_api_test_process.bpmn']);
     await sleep(500);
 
-    const instance = await createSingleInstance(PROCESS_ID, 1);
+    completePermissionTestId = Date.now().toString();
+    const instance = await createSingleInstance(PROCESS_ID, 1, {
+      testId: completePermissionTestId,
+    });
     const processInstanceKey = instance.processInstanceKey;
 
     aliceUser = await createUser(request);
