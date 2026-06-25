@@ -15,9 +15,11 @@ import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
+import io.camunda.eventbridge.consumergroups.state.appliers.GroupDeletedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.MemberReconciledApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -55,6 +57,7 @@ final class ConsumerGroupStateTest {
   private MemberJoinedApplier memberJoined;
   private MemberLeftApplier memberLeft;
   private GroupRebalancedApplier groupRebalanced;
+  private MemberReconciledApplier memberReconciled;
   private OffsetCommittedApplier offsetCommitted;
 
   @BeforeEach
@@ -71,6 +74,7 @@ final class ConsumerGroupStateTest {
     memberJoined = new MemberJoinedApplier(state);
     memberLeft = new MemberLeftApplier(state);
     groupRebalanced = new GroupRebalancedApplier(state);
+    memberReconciled = new MemberReconciledApplier(state);
     offsetCommitted = new OffsetCommittedApplier(offsetState);
   }
 
@@ -154,24 +158,49 @@ final class ConsumerGroupStateTest {
 
     assertThat(state.getGroup("g").getAssignmentEpoch()).isEqualTo(2);
     assertThat(state.groupSnapshot("g").isRebalancePending()).isFalse();
-    // a committed rebalance transitions the group to STABLE
-    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.STABLE);
+    // a committed rebalance transitions the group to RECONCILING (members not yet converged)
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
     assertThat(state.getMember("g", "m1").getTargetPartitions()).containsExactly(tp(1), tp(2));
     assertThat(state.groupSnapshot("g").members().get("m2").targetPartitions())
         .containsExactly(tp(3), tp(4));
   }
 
   @Test
-  void shouldReturnToPreparingRebalanceWhenAMemberLeaves() {
-    // given — a stable two-member group
+  void shouldBecomeStableOnlyWhenEveryMemberHasReconciled() {
+    // given — a two-member group with a committed target (RECONCILING)
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
     memberJoined.applyState(2, join("g", "m2", null, 2, 2, 4));
     groupRebalanced.applyState(
         3, rebalance("g", 2, Map.of("m1", List.of(1, 2), "m2", List.of(3, 4))));
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
+
+    // when — only m1 reconciles to the current epoch
+    memberReconciled.applyState(4, reconcile("g", "m1", 2));
+
+    // then — still RECONCILING (m2 lags), and m1's assignedEpoch advanced
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
+    assertThat(state.getMember("g", "m1").getAssignedEpoch()).isEqualTo(2);
+
+    // when — m2 reconciles too
+    memberReconciled.applyState(5, reconcile("g", "m2", 2));
+
+    // then — every member is at the group epoch, so the group is STABLE
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.STABLE);
+  }
+
+  @Test
+  void shouldReturnToPreparingRebalanceWhenAMemberLeaves() {
+    // given — a two-member group with a committed target and both members reconciled (STABLE)
+    memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
+    memberJoined.applyState(2, join("g", "m2", null, 2, 2, 4));
+    groupRebalanced.applyState(
+        3, rebalance("g", 2, Map.of("m1", List.of(1, 2), "m2", List.of(3, 4))));
+    memberReconciled.applyState(4, reconcile("g", "m1", 2));
+    memberReconciled.applyState(5, reconcile("g", "m2", 2));
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.STABLE);
 
     // when — one member leaves (the group still has members)
-    memberLeft.applyState(4, leave("g", "m1", 4));
+    memberLeft.applyState(6, leave("g", "m1", 6));
 
     // then — the group goes back to PREPARING_REBALANCE for the assignor to recompute
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
@@ -190,13 +219,47 @@ final class ConsumerGroupStateTest {
   }
 
   @Test
-  void shouldDeleteGroupWhenLastMemberLeaves() {
+  void shouldRetainGroupAsEmptyWhenLastMemberLeaves() {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
+    offsetCommitted.applyState(2, commit("g", 1, 9));
 
-    memberLeft.applyState(2, leave("g", "m1", 2));
+    memberLeft.applyState(3, leave("g", "m1", 2));
 
+    // the group is retained as EMPTY (not deleted) and its committed offsets survive
+    assertThat(state.getGroup("g")).isNotNull();
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
+    assertThat(state.groupSnapshot("g").members()).isEmpty();
+    assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(9);
+  }
+
+  @Test
+  void shouldDeleteEmptyGroupAndItsOffsetsOnGroupDeleted() {
+    // given — an EMPTY group with a committed offset
+    memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
+    offsetCommitted.applyState(2, commit("g", 1, 9));
+    memberLeft.applyState(3, leave("g", "m1", 2));
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
+
+    // when — the retention path deletes it
+    new GroupDeletedApplier(state, offsetState)
+        .applyState(4, new MembershipRecord().setGroupId("g"));
+
+    // then — the group and its offsets are gone
     assertThat(state.getGroup("g")).isNull();
-    assertThat(state.groupSnapshot("g")).isNull();
+    assertThat(offsetState.getOffset("g", "t", 1)).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldReviveEmptyGroupToPreparingRebalanceOnRejoin() {
+    memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
+    memberLeft.applyState(2, leave("g", "m1", 2));
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
+
+    // a new member joining the retained group revives it
+    memberJoined.applyState(3, join("g", "m2", null, 3, 3, 4));
+
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
+    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
   }
 
   @Test
@@ -327,6 +390,11 @@ final class ConsumerGroupStateTest {
         .setMemberId(member)
         .setMemberEpoch(epoch)
         .setGroupEpoch(epoch);
+  }
+
+  private static MembershipRecord reconcile(
+      final String group, final String member, final long groupEpoch) {
+    return new MembershipRecord().setGroupId(group).setMemberId(member).setGroupEpoch(groupEpoch);
   }
 
   private static RebalanceRecord rebalance(

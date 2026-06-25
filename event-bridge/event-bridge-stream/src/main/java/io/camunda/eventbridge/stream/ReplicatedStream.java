@@ -199,6 +199,25 @@ public abstract class ReplicatedStream<C extends Enum<? extends EnumValue> & Enu
     return registration.response();
   }
 
+  /**
+   * Writes a fire-and-forget command to the replicated log (no request id, no reply). Used for
+   * internally-triggered commands whose effect is observed later via replicated state rather than a
+   * correlated response (e.g. a coordinator recording a member's reconciliation). Leader only.
+   */
+  protected final void writeCommand(
+      final Intent intent, final ValueType valueType, final UnifiedRecordValue command) {
+    if (writer == null) {
+      throw new IllegalStateException("Cannot write " + intent + ": stream not started");
+    }
+    final var metadata =
+        new RecordMetadata().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
+    final var result =
+        writer.tryWrite(WriteContext.internal(), LogAppendEntry.of(metadata, command));
+    if (result.isLeft()) {
+      throw new IllegalStateException("Failed to write " + intent + ": " + result.getLeft());
+    }
+  }
+
   /** The underlying stream processor, e.g. for the snapshot director. */
   public final StreamProcessor streamProcessor() {
     return streamProcessor;

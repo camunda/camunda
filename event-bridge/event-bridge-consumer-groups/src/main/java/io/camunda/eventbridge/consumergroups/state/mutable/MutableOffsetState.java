@@ -18,4 +18,7 @@ public interface MutableOffsetState extends OffsetState {
 
   /** Stores the committed position for {@code (groupId, topic, partitionId)}. */
   void putOffset(String groupId, String topic, int partitionId, long position);
+
+  /** Deletes all committed offsets of a group (when the group is reclaimed). */
+  void deleteGroupOffsets(String groupId);
 }

@@ -27,6 +27,8 @@ import java.util.List;
  *   <li>{@code instanceId} — the static-membership instance id (empty for a dynamic member).
  *   <li>{@code memberEpoch} — the member's generation, set to the group epoch at join, used to
  *       fence stale (zombie) requests.
+ *   <li>{@code assignedEpoch} — the group epoch this member has confirmed reconciling to (owns
+ *       exactly its target); the group is STABLE once every member's assignedEpoch == groupEpoch.
  *   <li>{@code targetPartitions} — the assignor's target for this member; offset commits are fenced
  *       against it.
  * </ul>
@@ -35,14 +37,25 @@ public final class MemberState extends UnpackedObject implements DbValue {
 
   private final StringProperty instanceIdProp = new StringProperty("instanceId", "");
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", 0L);
+  private final LongProperty assignedEpochProp = new LongProperty("assignedEpoch", 0L);
   private final ArrayProperty<TopicPartitionValue> targetPartitionsProp =
       new ArrayProperty<>("targetPartitions", TopicPartitionValue::new);
 
   public MemberState() {
-    super(3);
+    super(4);
     declareProperty(instanceIdProp)
         .declareProperty(memberEpochProp)
+        .declareProperty(assignedEpochProp)
         .declareProperty(targetPartitionsProp);
+  }
+
+  public long getAssignedEpoch() {
+    return assignedEpochProp.getValue();
+  }
+
+  public MemberState setAssignedEpoch(final long assignedEpoch) {
+    assignedEpochProp.setValue(assignedEpoch);
+    return this;
   }
 
   /** The static-membership instance id, or {@code null} for a dynamic member. */

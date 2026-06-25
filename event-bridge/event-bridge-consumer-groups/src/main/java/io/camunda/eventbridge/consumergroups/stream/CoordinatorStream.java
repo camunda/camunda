@@ -10,20 +10,25 @@ package io.camunda.eventbridge.consumergroups.stream;
 import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.processing.CoordinationChecks;
+import io.camunda.eventbridge.consumergroups.processing.DeleteGroupProcessor;
+import io.camunda.eventbridge.consumergroups.processing.GroupRetentionTask;
 import io.camunda.eventbridge.consumergroups.processing.JoinGroupProcessor;
 import io.camunda.eventbridge.consumergroups.processing.LeaveGroupProcessor;
 import io.camunda.eventbridge.consumergroups.processing.OffsetCommitProcessor;
 import io.camunda.eventbridge.consumergroups.processing.RebalanceAssignorTask;
 import io.camunda.eventbridge.consumergroups.processing.RebalanceProcessor;
+import io.camunda.eventbridge.consumergroups.processing.ReconcileMemberProcessor;
 import io.camunda.eventbridge.consumergroups.processing.SessionEvictionTask;
 import io.camunda.eventbridge.consumergroups.record.EventBridgeRecordValues;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
+import io.camunda.eventbridge.consumergroups.state.appliers.GroupDeletedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.MemberReconciledApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
@@ -66,6 +71,11 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private static final Duration EVICTION_INTERVAL = Duration.ofSeconds(1);
   private static final Duration SESSION_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration REBALANCE_TIMEOUT = Duration.ofSeconds(30);
+
+  // How long an EMPTY group (and its committed offsets) is retained before being reclaimed, and how
+  // often the retention task scans — the event-bridge analog of Kafka's offsets.retention.
+  private static final Duration EMPTY_GROUP_RETENTION = Duration.ofMinutes(5);
+  private static final Duration RETENTION_INTERVAL = Duration.ofSeconds(10);
 
   private final InstantSource clock;
   private final TopicRegistry topicRegistry;
@@ -137,16 +147,32 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     EventBridgeRecordValues.REBALANCE_VALUE_TYPE,
                     CoordinatorIntent.REBALANCE_GROUP,
                     new RebalanceProcessor(processors.writers(), groupState))
+                .onCommand(
+                    EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
+                    CoordinatorIntent.RECONCILE_MEMBER,
+                    new ReconcileMemberProcessor(processors.writers(), groupState))
+                .onCommand(
+                    EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
+                    CoordinatorIntent.DELETE_GROUP,
+                    new DeleteGroupProcessor(processors.writers(), groupState))
                 .withEventApplier(
                     CoordinatorIntent.OFFSET_COMMITTED, new OffsetCommittedApplier(offsetState))
                 .withEventApplier(
                     CoordinatorIntent.MEMBER_JOINED, new MemberJoinedApplier(groupState))
                 .withEventApplier(CoordinatorIntent.MEMBER_LEFT, new MemberLeftApplier(groupState))
                 .withEventApplier(
+                    CoordinatorIntent.MEMBER_RECONCILED, new MemberReconciledApplier(groupState))
+                .withEventApplier(
                     CoordinatorIntent.GROUP_REBALANCED, new GroupRebalancedApplier(groupState))
+                .withEventApplier(
+                    CoordinatorIntent.GROUP_DELETED,
+                    new GroupDeletedApplier(groupState, offsetState))
                 .withListener(
                     new RebalanceAssignorTask(
                         ASSIGNOR_INTERVAL, groupState, new BalancedStickyAssignor()))
+                .withListener(
+                    new GroupRetentionTask(
+                        RETENTION_INTERVAL, EMPTY_GROUP_RETENTION, groupState, clock))
                 .withListener(
                     new SessionEvictionTask(
                         EVICTION_INTERVAL,
@@ -186,6 +212,16 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   public CompletableFuture<byte[]> leaveGroup(final MembershipRecord command) {
     return writeRequest(
         CoordinatorIntent.LEAVE_GROUP, EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE, command);
+  }
+
+  /**
+   * Fire-and-forget: records that a member has reconciled to the current target (the coordinator
+   * appends this from a heartbeat once the member owns exactly its target). No reply — the effect
+   * (STABLE once all members converge) is observed via replicated state. Leader only.
+   */
+  public void reconcileMember(final MembershipRecord command) {
+    writeCommand(
+        CoordinatorIntent.RECONCILE_MEMBER, EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE, command);
   }
 
   /**

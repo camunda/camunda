@@ -41,7 +41,18 @@ public enum CoordinatorIntent implements Intent {
   /** Command: the async assignor proposes a target assignment (EVENT_BRIDGE_REBALANCE). */
   REBALANCE_GROUP((short) 6, false),
   /** Event: a target assignment has been committed; member targets + epoch are set. */
-  GROUP_REBALANCED((short) 7, true);
+  GROUP_REBALANCED((short) 7, true),
+
+  /**
+   * Command: a member reports it has reconciled to the current target (EVENT_BRIDGE_MEMBERSHIP).
+   */
+  RECONCILE_MEMBER((short) 8, false),
+  /** Event: a member's assigned epoch advanced to the group epoch (converged to the target). */
+  MEMBER_RECONCILED((short) 9, true),
+  /** Command: reclaim an empty group after its retention elapses (EVENT_BRIDGE_MEMBERSHIP). */
+  DELETE_GROUP((short) 10, false),
+  /** Event: an empty group (and its offsets) has been removed. */
+  GROUP_DELETED((short) 11, true);
 
   private final short value;
   private final boolean isEvent;
@@ -69,6 +80,14 @@ public enum CoordinatorIntent implements Intent {
         return REBALANCE_GROUP;
       case 7:
         return GROUP_REBALANCED;
+      case 8:
+        return RECONCILE_MEMBER;
+      case 9:
+        return MEMBER_RECONCILED;
+      case 10:
+        return DELETE_GROUP;
+      case 11:
+        return GROUP_DELETED;
       default:
         return Intent.UNKNOWN;
     }

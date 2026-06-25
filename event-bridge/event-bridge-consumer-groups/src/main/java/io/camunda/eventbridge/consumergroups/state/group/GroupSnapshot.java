@@ -38,10 +38,11 @@ public record GroupSnapshot(
     return assignmentEpoch < groupEpoch;
   }
 
-  /** One member's replicated identity, epoch, and target partitions. */
+  /** One member's replicated identity, epoch, convergence epoch, and target partitions. */
   public record MemberSnapshot(
       String memberId,
       String instanceId,
       long memberEpoch,
+      long assignedEpoch,
       List<TopicPartition> targetPartitions) {}
 }

@@ -14,40 +14,37 @@ import io.camunda.eventbridge.stream.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
 
 /**
- * Applies {@code MEMBER_LEFT}: removes the member and either retains the now-empty group as {@code
- * EMPTY} (keeping its committed offsets so a later rejoin resumes — the group is reclaimed later by
- * the retention task, not here), or bumps the group epoch so the assignor recomputes the target.
- * The decision logic lives here. Runs identically on leader (after {@code LeaveGroupProcessor} or
- * an eviction) and follower (on replay).
+ * Applies {@code MEMBER_RECONCILED}: advances the member's {@code assignedEpoch} to the group epoch
+ * it confirmed, then transitions the group to {@code STABLE} once every member has reconciled to
+ * the current epoch (else it stays {@code RECONCILING}). Runs identically on leader (after {@code
+ * ReconcileMemberProcessor}) and follower (on replay).
  */
-public final class MemberLeftApplier
+public final class MemberReconciledApplier
     implements TypedEventApplier<CoordinatorIntent, MembershipRecord> {
 
   private final MutableConsumerGroupState state;
 
-  public MemberLeftApplier(final MutableConsumerGroupState state) {
+  public MemberReconciledApplier(final MutableConsumerGroupState state) {
     this.state = state;
   }
 
   @Override
   public void applyState(final long key, final MembershipRecord value) {
     final var groupId = value.getGroupId();
-    state.deleteMember(groupId, value.getMemberId());
-
     final var group = state.getGroup(groupId);
     if (group == null) {
       return;
     }
-    group.setGroupEpoch(value.getGroupEpoch());
-    if (state.isGroupEmpty(groupId)) {
-      // Last member left: retain the group (and its committed offsets) as EMPTY; the retention
-      // task reclaims it after it has been empty long enough.
-      group.setState(GroupLifecycle.EMPTY);
-    } else {
-      // A leave bumps the group epoch, so the remaining members' target is stale: back to
-      // PREPARING_REBALANCE until the assignor recomputes.
-      group.setState(GroupLifecycle.PREPARING_REBALANCE);
+    final var member = state.getMember(groupId, value.getMemberId());
+    if (member == null) {
+      return;
     }
-    state.putGroup(groupId, group);
+    member.setAssignedEpoch(value.getGroupEpoch());
+    state.putMember(groupId, value.getMemberId(), member);
+
+    if (state.allMembersReconciled(groupId, group.getGroupEpoch())) {
+      group.setState(GroupLifecycle.STABLE);
+      state.putGroup(groupId, group);
+    }
   }
 }

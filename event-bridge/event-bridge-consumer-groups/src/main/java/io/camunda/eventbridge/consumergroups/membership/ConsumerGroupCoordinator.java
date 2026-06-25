@@ -181,6 +181,8 @@ public class ConsumerGroupCoordinator extends Actor {
               groups = group == null ? List.of() : List.of(group);
             }
             for (final var group : groups) {
+              final var members = new java.util.LinkedHashMap<String, Long>();
+              group.members().forEach((id, m) -> members.put(id, m.assignedEpoch()));
               response.addGroup(
                   description ->
                       description
@@ -189,7 +191,7 @@ public class ConsumerGroupCoordinator extends Actor {
                           .setGroupEpoch(group.groupEpoch())
                           .setAssignmentEpoch(group.assignmentEpoch())
                           .setSubscriptions(group.subscriptions())
-                          .setMembers(List.copyOf(group.members().keySet())));
+                          .setMembers(members));
             }
             result.complete(CoordinationResponseEncoder.encodeDescribeGroups(response));
           } catch (final RuntimeException e) {
@@ -259,6 +261,20 @@ public class ConsumerGroupCoordinator extends Actor {
     // groups that have since disappeared (their last member left).
     liveness.publish(groupId, reconciliation.liveness());
     pruneReconciliations();
+
+    // Record the member's convergence as replicated state once it owns exactly the current target
+    // (and that hasn't been recorded yet), so the group can transition RECONCILING -> STABLE. This
+    // is the only point where a heartbeat writes to the log; it's idempotent (the processor drops a
+    // duplicate) and fire-and-forget — the new state is reflected on a later heartbeat.
+    if (!group.isRebalancePending()
+        && reconciliation.hasConverged(memberId, group.assignmentEpoch())
+        && member.assignedEpoch() < group.groupEpoch()) {
+      coordinatorStream.reconcileMember(
+          new MembershipRecord()
+              .setGroupId(groupId)
+              .setMemberId(memberId)
+              .setGroupEpoch(group.groupEpoch()));
+    }
 
     return new HeartbeatResponse()
         .setErrorCode(reconciliation.isRebalancing(group) ? REBALANCE_IN_PROGRESS : NONE)

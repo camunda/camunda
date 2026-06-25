@@ -9,6 +9,7 @@ package io.camunda.eventbridge.consumergroups.state.offset;
 
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableOffsetState;
+import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import java.util.ArrayList;
 
 /**
  * RocksDB-backed {@link MutableOffsetState} keyed by {@code (groupId, topic, partitionId) →
@@ -64,5 +66,27 @@ public final class DbOffsetState implements MutableOffsetState {
     this.partitionId.wrapInt(partitionId);
     offset.wrapLong(position);
     offsetsColumnFamily.upsert(offsetKey, offset);
+  }
+
+  @Override
+  public void deleteGroupOffsets(final String groupId) {
+    this.groupId.wrapString(groupId);
+    // Collect the (topic, partition)s first — deleting while iterating a column-family prefix is
+    // unsafe — then delete each via the shared key flyweights.
+    final var toDelete = new ArrayList<TopicPartition>();
+    offsetsColumnFamily.whileEqualPrefix(
+        this.groupId,
+        (key, value) -> {
+          final var topicPartition = key.second();
+          toDelete.add(
+              new TopicPartition(
+                  topicPartition.first().toString(), topicPartition.second().getValue()));
+        });
+    for (final var tp : toDelete) {
+      this.groupId.wrapString(groupId);
+      topic.wrapString(tp.topic());
+      partitionId.wrapInt(tp.partition());
+      offsetsColumnFamily.deleteIfExists(offsetKey);
+    }
   }
 }

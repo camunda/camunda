@@ -80,7 +80,9 @@ public final class RebalanceAssignorTask implements Task, StreamProcessorLifecyc
   private void maybeProposeRebalance(
       final GroupSnapshot snapshot, final TaskResultBuilder taskResultBuilder) {
     final var groupId = snapshot.groupId();
-    if (!snapshot.isRebalancePending()) {
+    if (!snapshot.isRebalancePending() || snapshot.members().isEmpty()) {
+      // Nothing to assign: either the target is current, or the group is EMPTY (retained with no
+      // members until the retention task reclaims it).
       debounce.remove(groupId);
       return;
     }

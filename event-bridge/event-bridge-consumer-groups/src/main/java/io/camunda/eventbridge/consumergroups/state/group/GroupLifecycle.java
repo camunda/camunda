@@ -17,19 +17,20 @@ package io.camunda.eventbridge.consumergroups.state.group;
  *
  * <pre>
  *   (create) --MEMBER_JOINED--> PREPARING_REBALANCE
- *   PREPARING_REBALANCE --GROUP_REBALANCED--> STABLE
- *   STABLE --MEMBER_JOINED/MEMBER_LEFT--> PREPARING_REBALANCE
- *   PREPARING_REBALANCE --MEMBER_LEFT (last member)--> (group deleted)
+ *   PREPARING_REBALANCE --GROUP_REBALANCED--> RECONCILING
+ *   RECONCILING --MEMBER_RECONCILED (all members converged)--> STABLE
+ *   STABLE/RECONCILING --MEMBER_JOINED/MEMBER_LEFT--> PREPARING_REBALANCE
+ *   (any) --MEMBER_LEFT (last member)--> EMPTY --retention--> (group deleted)
  * </pre>
  */
 public enum GroupLifecycle {
-  /** Has members but its target assignment is stale ({@code assignmentEpoch < groupEpoch}). */
+  /** Has members but no target is computed for the current epoch yet (the assignor is pending). */
   PREPARING_REBALANCE,
-  /** Has members and the committed target reflects the current group epoch. */
+  /** Target committed, but not every member has confirmed reconciling to it yet. */
+  RECONCILING,
+  /** Has members and every member has reconciled to the current target. */
   STABLE,
-  /**
-   * Exists with no members (not normally persisted — the group is deleted when the last leaves).
-   */
+  /** Exists with no members; retained (with its committed offsets) until retention elapses. */
   EMPTY,
   /**
    * The group does not exist (deleted, or never created) — never stored, only reported by reads.

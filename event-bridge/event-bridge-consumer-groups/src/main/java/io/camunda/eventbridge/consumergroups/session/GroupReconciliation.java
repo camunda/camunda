@@ -92,6 +92,16 @@ public final class GroupReconciliation {
     return new GroupLiveness(rebalanceStartedAt, members);
   }
 
+  /**
+   * Whether the member has confirmed (this generation) that it owns exactly its target for {@code
+   * targetEpoch} — i.e. the ephemeral handshake has converged. The coordinator uses this to decide
+   * whether to record the member's reconciliation in replicated state.
+   */
+  public boolean hasConverged(final String memberId, final long targetEpoch) {
+    final var session = sessions.get(memberId);
+    return session != null && session.confirmedEpoch() == targetEpoch;
+  }
+
   /** Seeds a session as already-converged to its current target (used on leader activation). */
   public void seedSession(
       final MemberSnapshot member, final long assignmentEpoch, final Instant now) {

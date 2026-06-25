@@ -142,7 +142,8 @@ final class GroupReconciliationTest {
 
   private static MemberSnapshot member(
       final String memberId, final long memberEpoch, final int... target) {
-    return new MemberSnapshot(memberId, null, memberEpoch, tps(target));
+    // assignedEpoch is irrelevant to the ephemeral handshake under test; mirror the member epoch.
+    return new MemberSnapshot(memberId, null, memberEpoch, memberEpoch, tps(target));
   }
 
   private static TopicPartition tp(final int partition) {

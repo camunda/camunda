@@ -85,6 +85,22 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
   }
 
   @Override
+  public boolean allMembersReconciled(final String group, final long epoch) {
+    groupId.wrapString(group);
+    final var allReconciled = new boolean[] {true};
+    memberColumnFamily.whileEqualPrefix(
+        groupId,
+        (key, value) -> {
+          if (value.getAssignedEpoch() != epoch) {
+            allReconciled[0] = false;
+            return false; // stop at the first lagging member
+          }
+          return true;
+        });
+    return allReconciled[0];
+  }
+
+  @Override
   public MemberState getMember(final String group, final String member) {
     groupId.wrapString(group);
     memberId.wrapString(member);
@@ -186,6 +202,7 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
                   member,
                   value.getInstanceId(),
                   value.getMemberEpoch(),
+                  value.getAssignedEpoch(),
                   value.getTargetPartitions()));
         };
     memberColumnFamily.whileEqualPrefix(groupId, visitor);

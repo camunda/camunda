@@ -111,7 +111,8 @@ public final class EventBridgeDtos {
 
   /**
    * One consumer group's observable description for {@code GET /v1/groups} — its lifecycle state,
-   * epochs, subscription ({@code topic → partitionCount}), and member ids.
+   * epochs, subscription ({@code topic → partitionCount}), and members ({@code memberId →
+   * assignedEpoch}; a member whose assignedEpoch &lt; groupEpoch is lagging the current rebalance).
    */
   public record GroupDescription(
       String groupId,
@@ -119,7 +120,7 @@ public final class EventBridgeDtos {
       long groupEpoch,
       long assignmentEpoch,
       Map<String, Integer> subscriptions,
-      List<String> members) {}
+      Map<String, Long> members) {}
 
   public record LatestPositionResponse(long position) {}
 

@@ -36,9 +36,9 @@ public final class GroupRebalancedApplier
       return;
     }
     group.setAssignmentEpoch(value.getAssignmentEpoch());
-    // The committed target now reflects the group epoch — the group is stable until the next
-    // membership change bumps the epoch again.
-    group.setState(GroupLifecycle.STABLE);
+    // The target is committed but members have not yet confirmed reconciling to it — the group is
+    // RECONCILING until every member's assignedEpoch catches up (MEMBER_RECONCILED → STABLE).
+    group.setState(GroupLifecycle.RECONCILING);
     state.putGroup(groupId, group);
 
     value
