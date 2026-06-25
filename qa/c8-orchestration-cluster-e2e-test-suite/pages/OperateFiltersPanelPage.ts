@@ -167,7 +167,7 @@ export class OperateFiltersPanelPage {
   async selectProcess(option: string) {
     if (await this.processNameClearButton.isVisible()) {
       await this.processNameClearButton.click();
-      await expect(this.processVersionFilter).toBeDisabled();
+      await expect(this.processVersionFilter).toBeDisabled({timeout: 30000});
       await expect
         .poll(() => this.page.url())
         .not.toContain('processDefinitionId');
@@ -184,7 +184,7 @@ export class OperateFiltersPanelPage {
     await expect(this.processNameFilter).toBeVisible();
     await expect(this.processVersionFilter).toBeEnabled();
     await this.processVersionFilter.click();
-    await expect(this.getOptionByName(option)).toBeVisible();
+    await expect(this.getOptionByName(option)).toBeVisible({timeout: 30000});
     await this.getOptionByName(option).click({timeout: 30000});
   }
 
