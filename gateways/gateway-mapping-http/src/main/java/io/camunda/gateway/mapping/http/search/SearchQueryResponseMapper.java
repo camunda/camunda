@@ -923,6 +923,7 @@ public final class SearchQueryResponseMapper {
         .type(job.type())
         .worker(job.worker())
         .rootProcessInstanceKey(keyToStringOrNull(job.rootProcessInstanceKey()))
+        .businessId(job.businessId())
         .creationTime(formatDateOrNull(job.creationTime()))
         .deadline(formatDateOrNull(job.deadline()))
         .deniedReason(job.deniedReason())
