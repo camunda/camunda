@@ -105,8 +105,7 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
     final String requestUri = request.getRequestURI();
 
     if (isAuthorizationRequest(requestUri)) {
-      final String location = response.getHeader(HttpHeaders.LOCATION);
-      final String actualRedirectUri = extractRedirectUri(location);
+      final String actualRedirectUri = extractRedirectUri(response.getHeader(HttpHeaders.LOCATION));
       if (actualRedirectUri != null && !actualRedirectUri.equals(expectedRedirectUri)) {
         LOG.warn(
             "OIDC redirect_uri mismatch on {}: the authorization request sends redirect_uri={} but the server expected {} (derived from the external base URL + callback path). "
@@ -117,9 +116,7 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
       }
     }
 
-    if (isCallback(requestUri)
-        && request.getParameter("code") != null
-        && request.getSession(false) == null) {
+    if (indicatesLostSession(request, callbackPath)) {
       LOG.warn(
           "OIDC callback {} received an authorization code but there is no valid HTTP session. "
               + "The session created at the start of the login was lost before the callback (likely a redirect/login loop); "
@@ -128,15 +125,25 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
     }
   }
 
-  private boolean isAuthorizationRequest(final String requestUri) {
+  static boolean isAuthorizationRequest(final String requestUri) {
     return requestUri != null && requestUri.contains(AUTHORIZATION_REQUEST_PREFIX);
   }
 
-  private boolean isCallback(final String requestUri) {
+  static boolean isCallback(final String requestUri, final String callbackPath) {
     return requestUri != null && callbackPath != null && requestUri.contains(callbackPath);
   }
 
-  private static String extractRedirectUri(final String location) {
+  /**
+   * Returns {@code true} when a callback request carries an authorization {@code code} but has no
+   * valid HTTP session — the classic signature of a session lost mid-login (a redirect/login loop).
+   */
+  static boolean indicatesLostSession(final HttpServletRequest request, final String callbackPath) {
+    return isCallback(request.getRequestURI(), callbackPath)
+        && request.getParameter("code") != null
+        && request.getSession(false) == null;
+  }
+
+  static String extractRedirectUri(final String location) {
     if (location == null || location.isBlank()) {
       return null;
     }
@@ -183,7 +190,7 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
    * Computes the externally-visible base URL ({@code scheme://host[:port][prefix]}), honouring
    * reverse-proxy forwarded headers when present and falling back to the servlet request otherwise.
    */
-  private static String computeExternalBaseUrl(final HttpServletRequest request) {
+  static String computeExternalBaseUrl(final HttpServletRequest request) {
     final UriComponentsBuilder builder =
         UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
             .replacePath(null)

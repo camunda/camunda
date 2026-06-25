@@ -9,180 +9,124 @@ package io.camunda.authentication.filters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import jakarta.servlet.FilterChain;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.AbstractAppender;
-import org.apache.logging.log4j.core.config.Property;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpHeaders;
-import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
 
 public class OidcRedirectDiagnosticsFilterTest {
 
   private static final String CALLBACK_PATH = "/sso-callback";
 
-  private final OidcRedirectDiagnosticsFilter filter =
-      new OidcRedirectDiagnosticsFilter(CALLBACK_PATH);
-
-  private Logger filterLogger;
-  private Level originalLevel;
-  private CapturingAppender appender;
-
-  @BeforeEach
-  void setUp() {
-    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-    filterLogger = ctx.getLogger(OidcRedirectDiagnosticsFilter.class.getName());
-    originalLevel = filterLogger.getLevel();
-    appender = new CapturingAppender();
-    appender.start();
-    filterLogger.addAppender(appender);
-    // ensure WARN events are not filtered out by the default root level
-    filterLogger.setLevel(Level.WARN);
-  }
-
-  @AfterEach
-  void tearDown() {
-    filterLogger.removeAppender(appender);
-    filterLogger.setLevel(originalLevel);
-  }
-
   @Test
-  void shouldWarnWhenAuthorizationRedirectUriDoesNotMatch() throws Exception {
-    // given - an authorization request whose generated redirect_uri points at a different host
+  void shouldComputeExternalBaseUrlFromForwardedHeaders() {
+    // given - a request behind a reverse proxy terminating TLS on a non-default port
     final MockHttpServletRequest request =
         new MockHttpServletRequest("GET", "/oauth2/authorization/oidc");
-    request.setServerName("localhost");
-    final MockHttpServletResponse response = new MockHttpServletResponse();
-    final FilterChain chain =
-        (req, res) ->
-            ((MockHttpServletResponse) res)
-                .setHeader(
-                    HttpHeaders.LOCATION,
-                    "https://idp.example.com/authorize?client_id=x&redirect_uri=https://wrong-host/sso-callback");
+    request.setServerName("internal-host");
+    request.addHeader("X-Forwarded-Proto", "https");
+    request.addHeader("X-Forwarded-Host", "auth.example.com:8443");
 
     // when
-    filter.doFilter(request, response, chain);
+    final String baseUrl = OidcRedirectDiagnosticsFilter.computeExternalBaseUrl(request);
 
     // then
-    assertThat(warnMessages())
-        .anySatisfy(
-            message ->
-                assertThat(message)
-                    .contains("redirect_uri mismatch")
-                    .contains("https://wrong-host/sso-callback"));
+    assertThat(baseUrl).isEqualTo("https://auth.example.com:8443");
   }
 
   @Test
-  void shouldNotWarnWhenAuthorizationRedirectUriMatches() throws Exception {
-    // given - redirect_uri matches the expected externalBaseUrl + callback path
-    final MockHttpServletRequest request =
-        new MockHttpServletRequest("GET", "/oauth2/authorization/oidc");
-    request.setServerName("localhost");
-    final MockHttpServletResponse response = new MockHttpServletResponse();
-    final FilterChain chain =
-        (req, res) ->
-            ((MockHttpServletResponse) res)
-                .setHeader(
-                    HttpHeaders.LOCATION,
-                    "https://idp.example.com/authorize?client_id=x&redirect_uri=http://localhost/sso-callback");
-
-    // when
-    filter.doFilter(request, response, chain);
-
-    // then
-    assertThat(warnMessages()).noneMatch(message -> message.contains("redirect_uri mismatch"));
-  }
-
-  @Test
-  void shouldComputeExpectedRedirectUriFromBracketedIpv6ForwardedHost() throws Exception {
-    // given - the request comes through a reverse proxy reporting a bracketed IPv6 host + port.
-    // A naive ':' split would corrupt the IPv6 literal; the expected redirect_uri in the mismatch
-    // warning must preserve the full bracketed authority and its port.
+  void shouldComputeExternalBaseUrlFromBracketedIpv6ForwardedHost() {
+    // given - the reverse proxy reports a bracketed IPv6 host + port. A naive ':' split would
+    // corrupt the IPv6 literal; the authority must be preserved verbatim.
     final MockHttpServletRequest request =
         new MockHttpServletRequest("GET", "/oauth2/authorization/oidc");
     request.setServerName("internal-host");
     request.addHeader("X-Forwarded-Proto", "https");
     request.addHeader("X-Forwarded-Host", "[2001:db8::1]:8443");
-    final MockHttpServletResponse response = new MockHttpServletResponse();
-    final FilterChain chain =
-        (req, res) ->
-            ((MockHttpServletResponse) res)
-                .setHeader(
-                    HttpHeaders.LOCATION,
-                    "https://idp.example.com/authorize?client_id=x&redirect_uri=https://wrong-host/sso-callback");
 
     // when
-    filter.doFilter(request, response, chain);
+    final String baseUrl = OidcRedirectDiagnosticsFilter.computeExternalBaseUrl(request);
 
-    // then - the expected URI is derived correctly from the bracketed IPv6 authority + port
-    assertThat(warnMessages())
-        .anySatisfy(
-            message ->
-                assertThat(message)
-                    .contains("redirect_uri mismatch")
-                    .contains("https://[2001:db8::1]:8443/sso-callback"));
+    // then
+    assertThat(baseUrl).isEqualTo("https://[2001:db8::1]:8443");
   }
 
   @Test
-  void shouldWarnWhenCallbackReceivesCodeWithoutSession() throws Exception {
+  void shouldHonourForwardedPrefixInExternalBaseUrl() {
+    // given - the app is served under a path prefix by the proxy
+    final MockHttpServletRequest request =
+        new MockHttpServletRequest("GET", "/oauth2/authorization/oidc");
+    request.setServerName("internal-host");
+    request.addHeader("X-Forwarded-Proto", "https");
+    request.addHeader("X-Forwarded-Host", "auth.example.com");
+    request.addHeader("X-Forwarded-Prefix", "/camunda/");
+
+    // when
+    final String baseUrl = OidcRedirectDiagnosticsFilter.computeExternalBaseUrl(request);
+
+    // then - trailing slash on the prefix is stripped
+    assertThat(baseUrl).isEqualTo("https://auth.example.com/camunda");
+  }
+
+  @Test
+  void shouldExtractRedirectUriFromLocationHeader() {
+    // given
+    final String location =
+        "https://idp.example.com/authorize?client_id=x&redirect_uri=https://app.example.com/sso-callback";
+
+    // when
+    final String redirectUri = OidcRedirectDiagnosticsFilter.extractRedirectUri(location);
+
+    // then
+    assertThat(redirectUri).isEqualTo("https://app.example.com/sso-callback");
+  }
+
+  @Test
+  void shouldReturnNullRedirectUriWhenLocationHasNoRedirectUriParam() {
+    assertThat(
+            OidcRedirectDiagnosticsFilter.extractRedirectUri("https://idp.example.com/authorize"))
+        .isNull();
+    assertThat(OidcRedirectDiagnosticsFilter.extractRedirectUri(null)).isNull();
+    assertThat(OidcRedirectDiagnosticsFilter.extractRedirectUri("")).isNull();
+  }
+
+  @Test
+  void shouldDetectAuthorizationRequests() {
+    assertThat(OidcRedirectDiagnosticsFilter.isAuthorizationRequest("/oauth2/authorization/oidc"))
+        .isTrue();
+    assertThat(OidcRedirectDiagnosticsFilter.isAuthorizationRequest("/sso-callback")).isFalse();
+    assertThat(OidcRedirectDiagnosticsFilter.isAuthorizationRequest(null)).isFalse();
+  }
+
+  @Test
+  void shouldFlagCallbackWithCodeAndNoSessionAsLostSession() {
     // given - a callback carrying an authorization code but no HTTP session
     final MockHttpServletRequest request = new MockHttpServletRequest("GET", CALLBACK_PATH);
-    request.setServerName("localhost");
     request.setParameter("code", "auth-code-123");
-    final MockHttpServletResponse response = new MockHttpServletResponse();
 
-    // when
-    filter.doFilter(request, response, new MockFilterChain());
-
-    // then
-    assertThat(warnMessages()).anyMatch(message -> message.contains("no valid HTTP session"));
+    // when / then
+    assertThat(OidcRedirectDiagnosticsFilter.indicatesLostSession(request, CALLBACK_PATH)).isTrue();
   }
 
   @Test
-  void shouldNotWarnWhenCallbackHasSession() throws Exception {
+  void shouldNotFlagCallbackWhenSessionIsPresent() {
     // given - a callback carrying a code and a valid session
     final MockHttpServletRequest request = new MockHttpServletRequest("GET", CALLBACK_PATH);
-    request.setServerName("localhost");
     request.setParameter("code", "auth-code-123");
     request.getSession(true);
-    final MockHttpServletResponse response = new MockHttpServletResponse();
 
-    // when
-    filter.doFilter(request, response, new MockFilterChain());
-
-    // then
-    assertThat(warnMessages()).noneMatch(message -> message.contains("no valid HTTP session"));
+    // when / then
+    assertThat(OidcRedirectDiagnosticsFilter.indicatesLostSession(request, CALLBACK_PATH))
+        .isFalse();
   }
 
-  private List<String> warnMessages() {
-    return appender.events.stream()
-        .filter(event -> event.getLevel() == Level.WARN)
-        .map(event -> event.getMessage().getFormattedMessage())
-        .toList();
-  }
+  @Test
+  void shouldNotFlagNonCallbackRequestAsLostSession() {
+    // given - an authorization request (not the callback) with no session
+    final MockHttpServletRequest request =
+        new MockHttpServletRequest("GET", "/oauth2/authorization/oidc");
+    request.setParameter("code", "auth-code-123");
 
-  /** Minimal in-memory Log4j2 appender that records the events it receives. */
-  private static final class CapturingAppender extends AbstractAppender {
-
-    private final List<LogEvent> events = new CopyOnWriteArrayList<>();
-
-    private CapturingAppender() {
-      super("capturing", null, null, false, Property.EMPTY_ARRAY);
-    }
-
-    @Override
-    public void append(final LogEvent event) {
-      events.add(event.toImmutable());
-    }
+    // when / then
+    assertThat(OidcRedirectDiagnosticsFilter.indicatesLostSession(request, CALLBACK_PATH))
+        .isFalse();
   }
 }
