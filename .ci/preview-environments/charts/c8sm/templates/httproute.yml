@@ -61,7 +61,9 @@ spec:
     - path:
         type: PathPrefix
         value: {{ .Values.camundaPlatform.console.contextPath | quote }}
-    filters:
+    # Vouch + error-pages filter set, anchored here and reused by every other
+    # authenticated rule below via the *authFilters alias.
+    filters: &authFilters
     - type: ExtensionRef
       extensionRef:
         group: traefik.io
@@ -82,19 +84,7 @@ spec:
     - path:
         type: PathPrefix
         value: {{ .Values.camundaPlatform.orchestration.contextPath | quote }}
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $vouchMiddleware }}
-    {{- if $errorsEnabled }}
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $errorsMiddleware }}
-    {{- end }}
+    filters: *authFilters
     backendRefs:
     - name: {{ template "orchestration.fullname" $camundaPlatform }}-gateway
       port: {{ .Values.camundaPlatform.orchestration.service.httpPort }}
@@ -103,19 +93,7 @@ spec:
     - path:
         type: PathPrefix
         value: {{ include "identity.keycloak.contextPath" $camundaPlatform | quote }}
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $vouchMiddleware }}
-    {{- if $errorsEnabled }}
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $errorsMiddleware }}
-    {{- end }}
+    filters: *authFilters
     backendRefs:
     - name: {{ include "identity.keycloak.service" $camundaPlatform }}
       port: {{ include "identity.keycloak.port" $camundaPlatform }}
@@ -156,19 +134,7 @@ spec:
     - path:
         type: PathPrefix
         value: {{ .Values.camundaPlatform.identity.contextPath | quote }}
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $vouchMiddleware }}
-    {{- if $errorsEnabled }}
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $errorsMiddleware }}
-    {{- end }}
+    filters: *authFilters
     backendRefs:
     - name: {{ template "identity.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.identity.service.port }}
@@ -177,19 +143,7 @@ spec:
     - path:
         type: PathPrefix
         value: {{ .Values.camundaPlatform.optimize.contextPath | quote }}
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $vouchMiddleware }}
-    {{- if $errorsEnabled }}
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $errorsMiddleware }}
-    {{- end }}
+    filters: *authFilters
     backendRefs:
     - name: {{ template "optimize.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.optimize.service.port }}
@@ -198,19 +152,7 @@ spec:
     - path:
         type: PathPrefix
         value: {{ .Values.camundaPlatform.webModeler.contextPath | quote }}
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $vouchMiddleware }}
-    {{- if $errorsEnabled }}
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $errorsMiddleware }}
-    {{- end }}
+    filters: *authFilters
     backendRefs:
     - name: {{ template "webModeler.restapi.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.webModeler.restapi.service.port }}
@@ -219,19 +161,7 @@ spec:
     - path:
         type: PathPrefix
         value: {{ include "webModeler.websocketContextPath" $camundaPlatform | quote }}
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $vouchMiddleware }}
-    {{- if $errorsEnabled }}
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $errorsMiddleware }}
-    {{- end }}
+    filters: *authFilters
     backendRefs:
     - name: {{ template "webModeler.websockets.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.webModeler.websockets.service.port }}
@@ -240,19 +170,7 @@ spec:
     - path:
         type: PathPrefix
         value: {{ .Values.camundaPlatform.connectors.contextPath | quote }}
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $vouchMiddleware }}
-    {{- if $errorsEnabled }}
-    - type: ExtensionRef
-      extensionRef:
-        group: traefik.io
-        kind: Middleware
-        name: {{ $errorsMiddleware }}
-    {{- end }}
+    filters: *authFilters
     backendRefs:
     - name: {{ template "connectors.fullname" $camundaPlatform }}
       port: {{ .Values.camundaPlatform.connectors.service.serverPort }}
