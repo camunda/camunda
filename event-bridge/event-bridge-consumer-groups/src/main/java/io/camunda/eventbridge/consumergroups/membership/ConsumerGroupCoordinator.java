@@ -137,7 +137,7 @@ public class ConsumerGroupCoordinator extends Actor {
                   .setErrorCode(NONE)
                   .setCommittedOffsets(coordinatorStream.committedOffsets(groupId));
             }
-            result.complete(CoordinationResponseEncoder.encodeOffsetFetch(response));
+            result.complete(CoordinationResponseEncoder.encode(response));
           } catch (final RuntimeException e) {
             result.completeExceptionally(e);
           }
@@ -178,7 +178,7 @@ public class ConsumerGroupCoordinator extends Actor {
                           .setSubscriptions(group.subscriptions())
                           .setMembers(members));
             }
-            result.complete(CoordinationResponseEncoder.encodeDescribeGroups(response));
+            result.complete(CoordinationResponseEncoder.encode(response));
           } catch (final RuntimeException e) {
             result.completeExceptionally(e);
           }
@@ -192,8 +192,7 @@ public class ConsumerGroupCoordinator extends Actor {
     actor.run(
         () -> {
           try {
-            result.complete(
-                CoordinationResponseEncoder.encodeHeartbeat(heartbeatHandler.handle(request)));
+            result.complete(CoordinationResponseEncoder.encode(heartbeatHandler.handle(request)));
           } catch (final RuntimeException e) {
             result.completeExceptionally(e);
           }

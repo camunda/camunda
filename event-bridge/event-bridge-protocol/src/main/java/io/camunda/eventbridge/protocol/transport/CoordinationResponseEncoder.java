@@ -32,30 +32,6 @@ public final class CoordinationResponseEncoder {
 
   private CoordinationResponseEncoder() {}
 
-  public static byte[] encodeJoinGroup(final BufferWriter response) {
-    return encode(response);
-  }
-
-  public static byte[] encodeLeaveGroup(final BufferWriter response) {
-    return encode(response);
-  }
-
-  public static byte[] encodeHeartbeat(final BufferWriter response) {
-    return encode(response);
-  }
-
-  public static byte[] encodeCommit(final BufferWriter response) {
-    return encode(response);
-  }
-
-  public static byte[] encodeOffsetFetch(final BufferWriter response) {
-    return encode(response);
-  }
-
-  public static byte[] encodeDescribeGroups(final BufferWriter response) {
-    return encode(response);
-  }
-
   /**
    * Frames an already-serialized response value (e.g. the bytes a stream's response writer produced
    * after a command committed) as a successful reply. Stream-backed handlers (join/leave/commit,
