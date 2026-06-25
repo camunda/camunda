@@ -256,14 +256,17 @@ final class ConsumerGroupStateTest {
   @Test
   void shouldReviveEmptyGroupToPreparingRebalanceOnRejoin() {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
-    memberLeft.applyState(2, leave("g", "m1", 2));
+    memberLeft.applyState(2, leave("g", "m1", 2).setTimestamp(1_700_000_000_000L));
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
+    assertThat(state.getGroup("g").getEmptySince()).isEqualTo(1_700_000_000_000L);
 
     // a new member joining the retained group revives it
     memberJoined.applyState(3, join("g", "m2", null, 3, 3, 4));
 
     assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
     assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
+    // reviving clears the retention deadline so a future empty period restarts the clock
+    assertThat(state.getGroup("g").getEmptySince()).isZero();
   }
 
   @Test

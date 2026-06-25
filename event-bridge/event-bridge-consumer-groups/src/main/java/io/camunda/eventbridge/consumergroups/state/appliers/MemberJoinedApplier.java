@@ -45,6 +45,9 @@ public final class MemberJoinedApplier
     // A join bumps the group epoch, so the target is now stale until the assignor reruns: the
     // group enters PREPARING_REBALANCE (a new group's first state too).
     group.setState(GroupLifecycle.PREPARING_REBALANCE);
+    // The group now has a member, so it is no longer empty — clear any retention deadline left from
+    // an earlier EMPTY period (reviving a retained group resets its clock).
+    group.setEmptySince(0L);
     state.putGroup(groupId, group);
 
     final var member =
