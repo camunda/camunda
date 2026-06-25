@@ -281,6 +281,7 @@ describe('<AgentDetails />', () => {
         })}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
