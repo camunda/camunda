@@ -383,13 +383,8 @@ jobs:
           {
             echo "### AlwaysGreen Streak Detector"
             echo ""
-            echo "| Branch | Result |"
-            echo "|--------|--------|"
             for line in "${SUMMARY_LINES[@]}"; do
-              # Convert "- \`branch\`: detail" → table row
-              branch=$(echo "$line" | grep -oP '`\K[^`]+' | head -1)
-              detail=$(echo "$line" | sed 's/^- `[^`]*`: //')
-              echo "| \`${branch}\` | ${detail} |"
+              echo "${line}"
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
