@@ -621,40 +621,13 @@ jobs:
     timeout-minutes: 5
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions:
-      pull-requests: write
+
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: |
           # shellcheck disable=SC2242
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
-      - name: Add Helm debugging guidance on failure
-        if: failure()
-        run: |
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
-          {
-            echo "## Helm Integration Tests Failed"
-            echo ""
-            echo "### Where to look"
-            echo "Open [this run](${RUN_URL}) → job \`Helm chart Integration Tests\`"
-            echo "Expand the reusable workflow steps to find the failing install or test step."
-            echo ""
-            echo "### Common failure patterns"
-            echo "| Symptom | Likely cause |"
-            echo "|---|---|"
-            echo "| Pod not ready / CrashLoopBackOff | Container image issue or misconfiguration — check pod logs in the job output |"
-            echo "| Helm install timeout | Resource limits, PVC issues, or missing secrets — check Kubernetes events |"
-            echo "| E2E assertions failed | App started but behaving incorrectly — check E2E test output and screenshots |"
-            echo "| ImagePullBackOff | Harbor push failed or wrong tag — re-run the Docker build job |"
-            echo "| Namespace cleanup error | Previous run left dangling resources — usually safe to re-run |"
-            echo ""
-            echo "### Full debugging guide"
-            echo "[CI Debugging Cookbook — Helm Chart Setup/Integration failures](${COOKBOOK_URL}#failure-type-3--helm-chart-setup--integration-tests) · [Helm Chart E2E failures](${COOKBOOK_URL}#failure-type-4--helm-chart-e2e-tests)"
-            echo ""
-            echo "### Need help?"
-            echo "- Slack: [#ask-alwaysgreen](https://camunda.slack.com/archives/C0AQ378VBEV) / [#alwaysgreen-reliability](https://camunda.slack.com/archives/C0AK0AVKRL0)"
-          } >> "$GITHUB_STEP_SUMMARY"
       # Standardised AlwaysGreen feedback → also post a Verdict/Evidence/Next-steps
       # comment on the PR (resolved from the merge_group head_ref). Best-effort.
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -1112,3 +1085,4 @@ jobs:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
+
