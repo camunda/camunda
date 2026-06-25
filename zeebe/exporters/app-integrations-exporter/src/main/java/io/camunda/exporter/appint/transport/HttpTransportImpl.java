@@ -12,10 +12,14 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.Timeout;
 import dev.failsafe.TimeoutExceededException;
 import io.camunda.exporter.appint.event.Event;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics.Phase;
 import io.camunda.exporter.appint.transport.Authentication.ApiKey;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -38,15 +42,21 @@ public class HttpTransportImpl implements Transport<Event> {
   private final CloseableHttpClient httpClient;
   private final String url;
   private final Authentication authentication;
+  private final ContextHeaders contextHeaders;
   private final Timeout<Object> timeout;
   private final RetryPolicy<Object> retryPolicy;
+  private final AppIntegrationsExporterMetrics metrics;
 
   public HttpTransportImpl(
-      final JsonMapper jsonMapper, final HttpTransportConfig httpTransportConfig) {
+      final JsonMapper jsonMapper,
+      final HttpTransportConfig httpTransportConfig,
+      final AppIntegrationsExporterMetrics metrics) {
     this.jsonMapper = jsonMapper;
+    this.metrics = metrics;
 
     url = httpTransportConfig.url();
     authentication = httpTransportConfig.authentication();
+    contextHeaders = httpTransportConfig.contextHeaders();
 
     retryPolicy =
         RetryPolicy.builder()
@@ -66,19 +76,43 @@ public class HttpTransportImpl implements Transport<Event> {
   @Override
   public void send(final List<Event> events) {
     log.debug("Posting records to url: {}", url);
+    metrics.recordBatchSize(events.size());
     final var json = jsonMapper.toJson(new BatchRequest(events));
-    sendPostRequest(url, json);
+    try {
+      metrics.measureFlushDuration(() -> sendPostRequest(url, json));
+    } catch (final RuntimeException e) {
+      metrics.recordExportFailed();
+      throw e;
+    }
+    metrics.recordExported(events.size());
   }
 
   private void sendPostRequest(final String url, final String json) {
-    final HttpPost httpPost = new HttpPost(url);
-    switch (authentication) {
-      case final ApiKey apiKeyAuth -> httpPost.setHeader(ApiKey.HEADER_NAME, apiKeyAuth.apiKey());
-      case final Authentication.None ignored ->
-          log.warn("No authentication provided for HTTP transport");
+    final StringEntity entity = createJsonEntity(json);
+    // Build the HttpPost (and re-apply auth) inside the retry loop so that transient failures
+    // when obtaining credentials (e.g. OAuth token endpoint blips) are retried as well.
+    post(
+        () -> {
+          final HttpPost httpPost = new HttpPost(url);
+          switch (authentication) {
+            case final ApiKey apiKeyAuth ->
+                httpPost.setHeader(ApiKey.HEADER_NAME, apiKeyAuth.apiKey());
+            case final Authentication.OAuth oauth -> applyOAuth(httpPost, oauth);
+            case final Authentication.None ignored ->
+                log.warn("No authentication provided for HTTP transport");
+          }
+          contextHeaders.applyTo(httpPost::setHeader);
+          httpPost.setEntity(entity);
+          return httpPost;
+        });
+  }
+
+  private void applyOAuth(final HttpPost httpPost, final Authentication.OAuth oauth) {
+    try {
+      oauth.credentialsProvider().applyCredentials(httpPost::setHeader);
+    } catch (final IOException e) {
+      throw new TransportException("Failed to obtain OAuth credentials", e);
     }
-    httpPost.setEntity(createJsonEntity(json));
-    post(httpPost);
   }
 
   private StringEntity createJsonEntity(final String json) {
@@ -88,16 +122,26 @@ public class HttpTransportImpl implements Transport<Event> {
     return entity;
   }
 
-  private void post(final HttpPost httpPost) {
+  private void post(final Supplier<HttpPost> httpPostSupplier) {
+    final AtomicReference<HttpPost> currentRequest = new AtomicReference<>();
     Failsafe.with(timeout)
         .compose(retryPolicy)
         .onFailure(
             event -> {
               if (event.getException() instanceof TimeoutExceededException) {
-                abortRequest(httpPost);
+                metrics.recordTimeout(Phase.EXPORT);
+                final HttpPost inFlight = currentRequest.get();
+                if (inFlight != null) {
+                  abortRequest(inFlight);
+                }
               }
             })
-        .run(() -> executeRequest(httpPost));
+        .run(
+            () -> {
+              final HttpPost httpPost = httpPostSupplier.get();
+              currentRequest.set(httpPost);
+              executeRequest(httpPost);
+            });
   }
 
   private void executeRequest(final HttpPost httpPost) {
@@ -114,6 +158,12 @@ public class HttpTransportImpl implements Transport<Event> {
     final String responseReason = response.getStatusLine().getReasonPhrase();
     if (statusCode >= 200 && statusCode < 300) {
       log.debug("Successfully posted records to: {}", responseReason);
+    } else if (statusCode == 401 && authentication instanceof final Authentication.OAuth oauth) {
+      log.debug("Received 401; invalidating OAuth token and retrying with a fresh token");
+      metrics.recordUnauthorized();
+      oauth.credentialsProvider().invalidate();
+      throw new TransportException(
+          "Unauthorized (401); OAuth token invalidated, retrying with a fresh token");
     } else {
       log.debug("Failed posting records. Status: {} reason: {}", statusCode, responseReason);
       throw new TransportException(
@@ -134,6 +184,9 @@ public class HttpTransportImpl implements Transport<Event> {
 
   @Override
   public void close() {
+    if (authentication instanceof final Authentication.OAuth oauth) {
+      oauth.credentialsProvider().close();
+    }
     try {
       httpClient.close();
     } catch (final Exception e) {

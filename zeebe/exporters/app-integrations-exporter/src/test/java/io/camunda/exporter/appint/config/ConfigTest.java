@@ -8,6 +8,7 @@
 package io.camunda.exporter.appint.config;
 
 import static io.camunda.exporter.appint.config.ConfigValidator.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,5 +24,15 @@ public class ConfigTest {
     final Config invalidConfig1 = new Config().setUrl("");
     org.junit.jupiter.api.Assertions.assertThrows(
         IllegalArgumentException.class, () -> validate(invalidConfig1));
+  }
+
+  @Test
+  void shouldExposeClusterId() {
+    // given
+    final Config config = new Config().setUrl("http://example.com").setClusterId("my-cluster");
+
+    // when / then — clusterId is optional and does not affect validation
+    validate(config);
+    assertThat(config.getClusterId()).isEqualTo("my-cluster");
   }
 }
