@@ -34,6 +34,12 @@ type scenario struct {
 	SetupTarget string // named make target for template-load-test-setup variants
 }
 
+// versionedScenario defines a scenario with a specific version
+type versionedScenario struct {
+	scenario
+	Version string
+}
+
 // scenarios covers every unique rendering path produced by the Makefile.
 // postgresql is used as the representative rdbms backend (all rdbms types share
 // the same rdbms.yaml base; only the storage-specific file differs).
@@ -44,7 +50,7 @@ type scenario struct {
 // from the camunda-load-tests-helm repo at render time — the same live-latest
 // policy as the load-tester chart itself, so its golden is regenerated when that
 // file changes.
-var scenarios = []scenario{
+var defaultScenarios = []scenario{
 	{Name: "elasticsearch", Storage: "elasticsearch", Optimize: true, Stable: false},
 	{Name: "opensearch", Storage: "opensearch", Optimize: true, Stable: false},
 	{Name: "rdbms", Storage: "postgresql", Optimize: false, Stable: false},
@@ -77,52 +83,83 @@ var versions = []string{
 	// "stable-87",
 }
 
-func TestGoldenFiles(t *testing.T) {
-	t.Logf("testing %d setup version(s): %v", len(versions), versions)
+// generateScenarios generates the list of possible scenarios for each
+// scenarios, from the list of default scenarios.
+// On some versions, a specific scenario may not always be supported ; or we
+// may want to drop specific scenarios which are not useful to test.
+func generateScenarios(versions []string, scenarios []scenario) []versionedScenario {
+	result := make([]versionedScenario, 0)
 
-	for _, version := range versions {
-		version := version
-		t.Run(version, func(t *testing.T) {
-			t.Parallel()
-			for _, s := range scenarios {
-				s := s
-				t.Run(s.Name, func(t *testing.T) {
-					t.Parallel()
+	for _, v := range versions {
+		for _, s := range scenarios {
 
-					// Namespace is unique per (version, scenario) to avoid directory
-					// collisions when all sub-tests run in parallel.
-					namespace := "c8-golden-" + version + "-" + s.Name
+			// Filter out known invalid scenarios.
+			//if v == "stable-88" {
+			//    if s.Storage == "postgresql" {
+			//        continue
+			//    }
+			//}
 
-					ns := Scaffold(t, version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
-					defer ns.Cleanup()
+			//if v == "stable-87" {
+			//    if s.Storage != "elasticsearch" {
+			//        // Only elasticsearch is supported on 8.7
+			//        continue
+			//    }
+			//}
 
-					// Workload scenarios only affect the load-tester chart, so we
-					// render just that one with the workload profile applied.
-					if s.Workload != "" {
-						renderAndAssert(t, version, s.Name, "load-tester", ns, "template-load-test", s.Workload)
-						return
-					}
-
-					// SetupTarget scenarios verify opt-in load-test-setup features
-					// via their dedicated Makefile target. They render only that
-					// chart to avoid duplicating the full platform/load-tester matrix.
-					if s.SetupTarget != "" {
-						renderAndAssert(t, version, s.Name, "load-test-setup", ns, s.SetupTarget, "")
-						return
-					}
-
-					// The platform chart has separate make targets for the
-					// install vs install-stable values composition.
-					platformTarget := "template"
-					if s.Stable {
-						platformTarget = "template-stable"
-					}
-
-					renderAndAssert(t, version, s.Name, "platform", ns, platformTarget, "")
-					renderAndAssert(t, version, s.Name, "load-tester", ns, "template-load-test", "")
-					renderAndAssert(t, version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
-				})
+			scenario := versionedScenario{
+				Version:  v,
+				scenario: s,
 			}
+
+			result = append(result, scenario)
+		}
+	}
+
+	return result
+}
+
+func TestGoldenFiles(t *testing.T) {
+	scenarios := generateScenarios(versions, defaultScenarios)
+
+	t.Logf("Testing %d setup version(s): %v (%d total scenarios)", len(versions), versions, len(scenarios))
+
+	for _, s := range scenarios {
+		t.Run(s.Name, func(t *testing.T) {
+			t.Parallel()
+
+			// Namespace is unique per (version, scenario) to avoid directory
+			// collisions when all sub-tests run in parallel.
+			namespace := "c8-golden-" + s.Version + "-" + s.Name
+
+			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
+			defer ns.Cleanup()
+
+			// Workload scenarios only affect the load-tester chart, so we
+			// render just that one with the workload profile applied.
+			if s.Workload != "" {
+				renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", s.Workload)
+				return
+			}
+
+			// SetupTarget scenarios verify opt-in load-test-setup features
+			// via their dedicated Makefile target. They render only that
+			// chart to avoid duplicating the full platform/load-tester matrix.
+			if s.SetupTarget != "" {
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, s.SetupTarget, "")
+				return
+			}
+
+			// The platform chart has separate make targets for the
+			// install vs install-stable values composition.
+			platformTarget := "template"
+			if s.Stable {
+				platformTarget = "template-stable"
+			}
+
+			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "")
+			renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", "")
+			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
 		})
 	}
 }
