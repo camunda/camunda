@@ -17,6 +17,8 @@ import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.session.GroupReconciliation;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
+import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
+import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
 import io.camunda.eventbridge.consumergroups.state.offset.OffsetQueryService;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorStream;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -109,8 +111,7 @@ public final class HeartbeatHandler extends Actor {
     final var now = clock.instant();
     final var groups = groupQuery.allGroups();
     for (final var group : groups) {
-      final var reconciliation =
-          reconciliations.computeIfAbsent(group.groupId(), ignored -> new GroupReconciliation());
+      final var reconciliation = reconciliationFor(group.groupId());
       group
           .members()
           .values()
@@ -143,28 +144,14 @@ public final class HeartbeatHandler extends Actor {
       return new HeartbeatResponse().setErrorCode(epochError);
     }
 
-    final var reconciliation =
-        reconciliations.computeIfAbsent(groupId, ignored -> new GroupReconciliation());
+    final var reconciliation = reconciliationFor(groupId);
     final var delta =
         reconciliation.reconcile(group, memberId, request.getOwnedPartitions(), clock.instant());
     // Publish the refreshed liveness for the off-actor eviction task, and drop reconciliations for
     // groups that have since disappeared (their last member left).
     liveness.publish(groupId, reconciliation.liveness());
     pruneReconciliations();
-
-    // Record the member's convergence as replicated state once it owns exactly the current target
-    // (and that hasn't been recorded yet), so the group can transition RECONCILING -> STABLE. This
-    // is the only point where a heartbeat writes to the log; it's idempotent (the processor drops a
-    // duplicate) and fire-and-forget — the new state is reflected on a later heartbeat.
-    if (!group.isRebalancePending()
-        && reconciliation.hasConverged(memberId, group.assignmentEpoch())
-        && member.assignedEpoch() < group.groupEpoch()) {
-      coordinatorStream.reconcileMember(
-          new MembershipRecord()
-              .setGroupId(groupId)
-              .setMemberId(memberId)
-              .setGroupEpoch(group.groupEpoch()));
-    }
+    maybeRecordConvergence(group, member, reconciliation);
 
     return new HeartbeatResponse()
         .setErrorCode(reconciliation.isRebalancing(group) ? REBALANCE_IN_PROGRESS : NONE)
@@ -175,6 +162,32 @@ public final class HeartbeatHandler extends Actor {
         .setAssignment(delta.assignment())
         .setAssignmentEpoch(group.assignmentEpoch())
         .setCommittedOffsets(offsetQuery.committedOffsets(groupId));
+  }
+
+  private GroupReconciliation reconciliationFor(final String groupId) {
+    return reconciliations.computeIfAbsent(groupId, ignored -> new GroupReconciliation());
+  }
+
+  /**
+   * Records the member's convergence in replicated state once it owns exactly the current target
+   * (and that hasn't been recorded yet), so the group can transition {@code RECONCILING -> STABLE}.
+   * This is the only point where a heartbeat writes to the log; it's idempotent (the processor
+   * drops a duplicate) and fire-and-forget — the new state is reflected on a later heartbeat.
+   */
+  private void maybeRecordConvergence(
+      final GroupSnapshot group,
+      final MemberSnapshot member,
+      final GroupReconciliation reconciliation) {
+    if (group.isRebalancePending()
+        || !reconciliation.hasConverged(member.memberId(), group.assignmentEpoch())
+        || member.assignedEpoch() >= group.groupEpoch()) {
+      return;
+    }
+    coordinatorStream.reconcileMember(
+        new MembershipRecord()
+            .setGroupId(group.groupId())
+            .setMemberId(member.memberId())
+            .setGroupEpoch(group.groupEpoch()));
   }
 
   private static CoordinationErrorCode validateEpoch(final long expected, final long presented) {
