@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  type InfiniteData,
+} from '@tanstack/react-query';
 import type {
   QuerySortOrder,
   QueryAgentInstanceHistoryRequestBody,
@@ -21,7 +25,7 @@ type QueryOptions<T> = {
   enabled?: boolean;
   enablePeriodicRefetch?: boolean;
   sortOrder?: QuerySortOrder;
-  elementInstanceKey?: string;
+  elementInstanceKey?: string | null;
   select?: (result: InfiniteData<QueryAgentInstanceHistoryResponseBody>) => T;
 };
 
@@ -35,7 +39,7 @@ const useAgentInstanceHistory = <
     sort: [{field: 'producedAt', order: options?.sortOrder ?? 'desc'}],
     filter: {
       commitStatus: 'COMMITTED',
-      elementInstanceKey: options?.elementInstanceKey,
+      elementInstanceKey: options?.elementInstanceKey ?? undefined,
     },
   };
 
@@ -48,6 +52,7 @@ const useAgentInstanceHistory = <
     select: options?.select,
     staleTime: 5000,
     refetchInterval: options?.enablePeriodicRefetch ? 5000 : undefined,
+    placeholderData: keepPreviousData,
     queryFn: async ({pageParam, signal}) => {
       const {response, error} = await searchAgentInstanceHistory(
         agentInstanceKey,

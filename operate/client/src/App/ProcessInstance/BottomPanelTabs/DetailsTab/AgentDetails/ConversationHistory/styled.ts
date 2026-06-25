@@ -13,6 +13,22 @@ const ConversationContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-04);
+
+  .cds--btn-set > .cds--btn {
+    inline-size: auto;
+  }
+`;
+
+const Messages = styled.div`
+  display: flex;
+  flex-direction: inherit;
+  gap: inherit;
+  transition: opacity 150ms ease;
+
+  &[data-dimmed='true'] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
 `;
 
 const StatusHint = styled.span`
@@ -20,6 +36,7 @@ const StatusHint = styled.span`
   font-weight: var(--cds-body-compact-01-font-weight);
   line-height: var(--cds-body-compact-01-line-height);
   letter-spacing: var(--cds-body-compact-01-letter-spacing);
+  text-align: center;
   color: var(--cds-text-secondary);
 `;
 
@@ -27,11 +44,4 @@ const ShowMoreButton = styled(Button)`
   align-self: center;
 `;
 
-const HistoryControls = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--cds-spacing-03);
-`;
-
-export {ConversationContainer, StatusHint, ShowMoreButton, HistoryControls};
+export {ConversationContainer, Messages, StatusHint, ShowMoreButton};

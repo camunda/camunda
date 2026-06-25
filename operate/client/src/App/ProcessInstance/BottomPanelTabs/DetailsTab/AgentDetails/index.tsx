@@ -109,7 +109,6 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   const statusLabel =
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
-  const hasMultipleActivations = agentInstance.elementInstanceKeys.length > 1;
 
   return (
     <AgentDetailsContainer
@@ -187,7 +186,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             isVisible={isConversationHistoryOpen}
             enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
             selectedElementInstanceKey={selectedElementInstanceKey}
-            hasMultipleActivations={hasMultipleActivations}
+            agentsElementInstanceKeys={agentInstance.elementInstanceKeys}
           />
         </AccordionItem>
         <AccordionItem
