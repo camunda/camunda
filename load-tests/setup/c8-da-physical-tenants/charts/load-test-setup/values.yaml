@@ -1,0 +1,42 @@
+# -- Name of the load test.
+name: ""
+
+# -- Name or handle of the person owning this load-test deployment.
+author: ""
+
+# -- Date (YYYY-MM-DD) after which this load-test environment can be reclaimed.
+deadlineDate: ""
+
+# -- Optional Kubernetes topology zone to pin workloads to (e.g. `europe-west1-b`).
+# When set, configures the `topology.kubernetes.io/zone` annotation on the namespace resources.
+topologyZone: ""
+
+# -- Internal URL of the Camunda management endpoint. Used by the
+# `leader-balancer` CronJob to trigger periodic partition rebalancing via
+# `POST {{ camundaManagementUrl }}/actuator/rebalance`.
+camundaManagementUrl: http://camunda:9600
+
+# -- The configuration for the load test metrics exporter
+metricsExporter:
+  image:
+    # -- The registry hosting the load test metrics exporter Docker image
+    registry: registry.camunda.cloud/team-reliability-testing
+    # -- The repository hosting the load test metrics exporter Docker image
+    repository: metrics-exporter
+    # -- The tag of the load test metrics exporter Docker image
+    tag: latest
+
+  database:
+    # -- The URL to the database (Elasticsearch or OpenSearch) endpoint to fetch metrics from.
+    url: http://elastic:9200
+
+# -- Configuration for the optional chaos-killer CronJob.
+# When enabled, one randomly-selected matching pod is deleted per run to simulate
+# unscheduled restarts (e.g. PostgreSQL, Zeebe broker, Elasticsearch).
+chaosKiller:
+  # -- Set to true to deploy the chaos-killer CronJob.
+  enabled: false
+  # -- Cron schedule for the chaos-killer (default: once per hour).
+  schedule: "0 * * * *"
+  # -- Space-separated shell glob patterns. One pod matching any pattern is deleted per run.
+  targetPatterns: "camunda-* elastic-* postgresql-*"

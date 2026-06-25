@@ -1,0 +1,5 @@
+name: "c8-da-physical-tenants"
+author: "Deepthi-Devaki-Akkoorath"
+deadlineDate: "2026-07-02"
+# Can be unset using "topologyZone: ~"
+topologyZone: europe-west1-c

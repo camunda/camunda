@@ -1,0 +1,3 @@
+saas:
+  credentials:
+    existingSecret: load-test-credentials-testfoo

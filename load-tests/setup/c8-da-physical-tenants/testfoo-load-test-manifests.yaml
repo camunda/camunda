@@ -1,0 +1,276 @@
+# Source: camunda-load-tests/templates/starter.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starter-testfoo
+  labels:
+    app: starter-testfoo
+spec:
+  selector:
+    matchLabels:
+      app: starter-testfoo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: starter-testfoo
+        app.kubernetes.io/component: zeebe-client
+      annotations:
+        
+        checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      nodeSelector:
+        component: benchmark-n2-standard-4
+        topology.kubernetes.io/zone: europe-west1-c
+      tolerations:
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-4
+      containers:
+        - name: starter-testfoo
+          image: "registry.camunda.cloud/team-zeebe/starter:SNAPSHOT"
+          imagePullPolicy: Always
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: >-
+                -Dconfig.override_with_env_vars=true
+                -Dapp.tls=false
+                -Dapp.preferRest=true
+                -Dapp.performReadBenchmarks=false
+                -Dapp.starter.rate=25
+                -Dzeebe.client.requestTimeout=62000
+                -Dapp.starter.processId="benchmark"
+                -Dapp.starter.bpmnXmlPath="bpmn/typical_process.bpmn"
+                -Dapp.starter.businessKey="businessKey"
+                -Dapp.starter.payloadPath="bpmn/typical_payload.json"
+                -XX:+HeapDumpOnOutOfMemoryError
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: zeebeRestAddress
+            - name: ZEEBE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: clientId
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: clientSecret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: authServer
+            - name: ZEEBE_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: authorizationAudience
+            - name: ZEEBE_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: authType
+            - name: ZEEBE_GRPC_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: zeebeGrpcAddress
+            - name: LOAD_TESTER_LOG_APPENDER
+              value: "Stackdriver"
+            - name: CAMUNDA_CLIENT_WORKER_DEFAULTS_STREAM_ENABLED
+              value: "false"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
+              value: "load-tester"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: identity-optimize-loadtest-client-secret
+                  name: camunda-credentials
+            ##
+            ## Spring Boot compatible env vars (for migrated load tester, ignored by old HOCON app)
+            ##
+            - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
+              value: "true"
+            - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+              value: "false"
+            - name: CAMUNDA_CLIENT_MODE
+              value: "saas"
+            - name: CAMUNDA_CLIENT_AUTH_METHOD
+              value: "oidc"
+            - name: LOAD_TESTER_STARTER_RATE
+              value: "25"
+            - name: LOAD_TESTER_STARTER_PROCESS_ID
+              value: "benchmark"
+            - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
+              value: "bpmn/typical_process.bpmn"
+            - name: LOAD_TESTER_STARTER_BUSINESS_KEY
+              value: "businessKey"
+            - name: LOAD_TESTER_STARTER_PAYLOAD_PATH
+              value: "bpmn/typical_payload.json"
+            - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
+              value: "INFO"
+          envFrom:
+            - configMapRef:
+                name: starter-testfoo-config
+                optional: true
+          resources:
+            limits:
+              cpu: 250m
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 2Gi
+          ports:
+            - containerPort: 9600
+              name: "http"
+---
+# Source: camunda-load-tests/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-testfoo
+  labels:
+    app: worker-testfoo
+spec:
+  selector:
+    matchLabels:
+      app: worker-testfoo
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: worker-testfoo
+        app.kubernetes.io/component: zeebe-client
+      annotations:
+        
+        checksum/saas-credentials: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      nodeSelector:
+        component: benchmark-n2-standard-4
+        topology.kubernetes.io/zone: europe-west1-c
+      tolerations:
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-4
+      containers:
+        - name: worker-testfoo
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
+          imagePullPolicy: Always
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: >-
+                -Dconfig.override_with_env_vars=true
+                -Dapp.tls=false
+                -Dapp.preferRest=true
+                -Dapp.performReadBenchmarks=false
+                -Dzeebe.client.requestTimeout=62000
+                -Dapp.worker.capacity=60
+                -Dapp.worker.threads=10
+                -Dapp.worker.completionDelay=50ms
+                -Dapp.worker.workerName="worker"
+                -Dapp.worker.jobType="benchmark-task"
+                -Dapp.worker.payloadPath="bpmn/typical_payload.json"
+                -XX:+HeapDumpOnOutOfMemoryError
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: zeebeRestAddress
+            - name: ZEEBE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: clientId
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: clientSecret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: authServer
+            - name: ZEEBE_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: authorizationAudience
+            - name: ZEEBE_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: authType
+            - name: ZEEBE_GRPC_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials-testfoo
+                  key: zeebeGrpcAddress
+            - name: LOAD_TESTER_LOG_APPENDER
+              value: "Stackdriver"
+            - name: CAMUNDA_CLIENT_WORKER_DEFAULTS_STREAM_ENABLED
+              value: "false"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
+              value: "load-tester"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: identity-optimize-loadtest-client-secret
+                  name: camunda-credentials
+            ##
+            ## Spring Boot compatible env vars (for migrated load tester, ignored by old HOCON app)
+            ##
+            - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
+              value: "true"
+            - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+              value: "false"
+            - name: CAMUNDA_CLIENT_MODE
+              value: "saas"
+            - name: CAMUNDA_CLIENT_AUTH_METHOD
+              value: "oidc"
+            - name: LOAD_TESTER_WORKER_CAPACITY
+              value: "60"
+            - name: LOAD_TESTER_WORKER_THREADS
+              value: "10"
+            - name: LOAD_TESTER_WORKER_COMPLETION_DELAY
+              value: "50ms"
+            - name: LOAD_TESTER_WORKER_WORKER_NAME
+              value: "worker"
+            - name: LOAD_TESTER_WORKER_JOB_TYPE
+              value: "benchmark-task"
+            - name: LOAD_TESTER_WORKER_PAYLOAD_PATH
+              value: "bpmn/typical_payload.json"
+            - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
+              value: "INFO"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+          ports:
+            - containerPort: 9600
+              name: "http"
