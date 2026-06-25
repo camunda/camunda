@@ -24,7 +24,6 @@ import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
-import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
@@ -43,6 +42,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -52,7 +52,7 @@ public class IncidentIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldSaveAndFindIncidentByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -66,7 +66,7 @@ public class IncidentIT {
     compareIncident(instance, original);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldSaveAndFindIncidentWithLargeErrorMessageByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -82,7 +82,7 @@ public class IncidentIT {
     assertThat(instance.errorMessage().length()).isLessThan(original.errorMessage().length());
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldSaveAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -100,7 +100,7 @@ public class IncidentIT {
     assertThat(instance.errorMessage()).isEqualTo(original.errorMessage());
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldSaveAndResolveIncidentInSingleFlush(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -119,7 +119,7 @@ public class IncidentIT {
     assertThat(instance.errorMessage()).isEqualTo(original.errorMessage());
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentByBpmnProcessId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -145,7 +145,7 @@ public class IncidentIT {
     compareIncident(instance, original);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -169,7 +169,7 @@ public class IncidentIT {
     compareIncident(searchResult.items().getFirst(), original);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -191,7 +191,7 @@ public class IncidentIT {
     compareIncident(searchResult.items().getFirst(), original);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindAllIncidentPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -213,7 +213,7 @@ public class IncidentIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindAllIncidentPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -238,7 +238,7 @@ public class IncidentIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -277,7 +277,7 @@ public class IncidentIT {
     assertThat(searchResult.items().getFirst().incidentKey()).isEqualTo(original.incidentKey());
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -327,7 +327,7 @@ public class IncidentIT {
         .isCloseTo(original.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -369,7 +369,7 @@ public class IncidentIT {
         .containsExactlyInAnyOrder(item1.incidentKey(), item3.incidentKey());
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -411,7 +411,7 @@ public class IncidentIT {
         .containsExactlyInAnyOrder(item1.incidentKey(), item3.incidentKey());
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentProcessInstanceStatisticsByError(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -489,7 +489,7 @@ public class IncidentIT {
             org.assertj.core.api.Assertions.tuple(error2Hash, error2, 2L));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentProcessInstanceStatisticsByErrorWithSortAndPagination(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -640,7 +640,7 @@ public class IncidentIT {
                 .errorMessageHash(hash));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentProcessInstanceStatisticsByDefinition(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -720,7 +720,7 @@ public class IncidentIT {
                 1L));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFindIncidentProcessInstanceStatisticsByDefinitionWithSortAndPagination(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
