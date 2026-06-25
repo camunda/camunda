@@ -1573,7 +1573,7 @@
   "agenticControl": {
     "agenticControlPlaneDashboardName": "Agentic Control Dashboard",
     "report": {
-      "agenticKpiExecutionCompletedName": "Abgeschlossene Agenten-Läufe",
+      "agenticKpiExecutionCompletedName": "Abgeschlossene Ausführungen",
       "agenticKpiExecutionCompletedDescription": "Gesamtanzahl der abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
       "agenticKpiExecutionAvgDurationName": "Durchschnittliche Ausführungsdauer",
       "agenticKpiExecutionAvgDurationDescription": "Durchschnittliche Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
