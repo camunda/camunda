@@ -9,31 +9,51 @@ package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.partitioning.PartitionModeHandler.PartitionManagerFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 final class PartitionModeHandlerTest {
 
   private static final String GROUP = PartitionManagerImpl.DEFAULT_GROUP_NAME;
   private static final String NON_DEFAULT_GROUP = "tenant-2";
-  private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final MemberId LOCAL_MEMBER = MemberId.from("0");
+
+  @RegisterExtension
+  private final ControlledActorSchedulerExtension scheduler =
+      new ControlledActorSchedulerExtension();
+
+  private final ControlActor controlActor = new ControlActor();
 
   private BrokerStartupContext brokerStartupContext;
   private ClusterConfigurationService clusterConfigurationService;
@@ -41,11 +61,14 @@ final class PartitionModeHandlerTest {
   private Map<String, PartitionManager> partitionManagers;
   private PartitionManagerImpl normalManager;
   private RecoveryPartitionManager recoveryManager;
-  private MockedStatic<PartitionManager> partitionManagerStatic;
+  private PartitionManagerFactory partitionManagerFactory;
   private PartitionModeHandler handler;
 
   @BeforeEach
   void setUp() {
+    scheduler.submitActor(controlActor);
+    scheduler.workUntilDone();
+
     clusterConfigurationService = mock(ClusterConfigurationService.class);
     topologyManager = mock(TopologyManagerImpl.class);
     partitionManagers = new HashMap<>();
@@ -59,32 +82,81 @@ final class PartitionModeHandlerTest {
     when(recoveryManager.stop()).thenReturn(CompletableActorFuture.completed(null));
 
     brokerStartupContext = mock(BrokerStartupContext.class);
-    when(brokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
+    when(brokerStartupContext.getConcurrencyControl()).thenReturn(controlActor.getActorControl());
     when(brokerStartupContext.getClusterConfigurationService())
         .thenReturn(clusterConfigurationService);
     when(brokerStartupContext.getPartitionManagers()).thenReturn(partitionManagers);
+    // publish the new manager into the resolved map so currentManager()/isRecovering() reflect the
+    // transition (the production context does this; a bare mock would leave the map unchanged)
+    doAnswer(
+            invocation -> {
+              partitionManagers.put(invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(brokerStartupContext)
+        .addPartitionManager(any(), any());
 
-    partitionManagerStatic = mockStatic(PartitionManager.class);
-    partitionManagerStatic
-        .when(() -> PartitionManager.isDefaultPhysicalTenant(GROUP))
-        .thenReturn(true);
-    partitionManagerStatic
-        .when(() -> PartitionManager.createPartitionManager(any(), any(), any()))
-        .thenReturn(normalManager);
-    partitionManagerStatic
-        .when(() -> PartitionManager.createRecoveryPartitionManager(any(), any(), any()))
-        .thenReturn(recoveryManager);
+    // local member resolution used by awaitModeApplied to compute the expected partition set
+    final var clusterServices = mock(ClusterServicesImpl.class);
+    final var membershipService = mock(ClusterMembershipService.class);
+    final var localMember = mock(Member.class);
+    when(localMember.id()).thenReturn(LOCAL_MEMBER);
+    when(membershipService.getLocalMember()).thenReturn(localMember);
+    when(clusterServices.getMembershipService()).thenReturn(membershipService);
+    when(brokerStartupContext.getClusterServices()).thenReturn(clusterServices);
 
-    handler = new PartitionModeHandler(brokerStartupContext, GROUP, topologyManager);
+    partitionManagerFactory = mode -> mode == Mode.RECOVERING ? recoveryManager : normalManager;
+
+    handler = newHandler(GROUP);
   }
 
-  @AfterEach
-  void tearDown() {
-    partitionManagerStatic.close();
+  private PartitionModeHandler newHandler(final String group) {
+    return new PartitionModeHandler(
+        brokerStartupContext, group, topologyManager, partitionManagerFactory);
   }
 
   private void givenCurrentManager(final String tenantId, final PartitionManager current) {
     partitionManagers.put(tenantId, current);
+  }
+
+  /**
+   * Stubs the partition distribution so the given partitions are replicated by the local member.
+   */
+  private void givenLocalPartitions(final Integer... partitionIds) {
+    final Set<PartitionMetadata> metadata =
+        Arrays.stream(partitionIds)
+            .map(
+                id ->
+                    new PartitionMetadata(
+                        PartitionId.from(GROUP, id),
+                        Set.of(LOCAL_MEMBER),
+                        Map.of(LOCAL_MEMBER, 1),
+                        1,
+                        LOCAL_MEMBER))
+            .collect(Collectors.toSet());
+    when(clusterConfigurationService.getPartitionDistribution())
+        .thenReturn(new PartitionDistribution(metadata));
+  }
+
+  private void givenPartitionRoles(final Map<Integer, PartitionRole> roles) {
+    when(topologyManager.getLocalPartitionRoles())
+        .thenReturn(CompletableActorFuture.completed(Map.copyOf(roles)));
+  }
+
+  private void progress() {
+    scheduler.workUntilDone();
+  }
+
+  /** Fires one readiness poll: advances the clock by the poll interval and runs the actor. */
+  private void advancePoll() {
+    scheduler.updateClock(PartitionModeHandler.READINESS_POLL_INTERVAL);
+    scheduler.workUntilDone();
+  }
+
+  private static final class ControlActor extends Actor {
+    ActorControl getActorControl() {
+      return actor;
+    }
   }
 
   @Nested
@@ -99,6 +171,7 @@ final class PartitionModeHandlerTest {
     void shouldCompleteSuccessfully() {
       // when
       final ActorFuture<Void> result = handler.enterRecovery();
+      progress();
 
       // then
       assertThat(result.isCompletedExceptionally()).isFalse();
@@ -108,6 +181,7 @@ final class PartitionModeHandlerTest {
     void shouldStopCurrentManagerAndStartRecoveryManager() {
       // when
       handler.enterRecovery();
+      progress();
 
       // then
       verify(normalManager).stop();
@@ -118,6 +192,7 @@ final class PartitionModeHandlerTest {
     void shouldPublishRecoveryManagerOnContext() {
       // when
       handler.enterRecovery();
+      progress();
 
       // then
       verify(brokerStartupContext).addPartitionManager(GROUP, recoveryManager);
@@ -127,13 +202,30 @@ final class PartitionModeHandlerTest {
     void shouldNotRegisterPartitionExecutors() {
       // when — partition change executors are registered by the manager itself on start()
       handler.enterRecovery();
+      progress();
 
       // then
       verify(clusterConfigurationService, never()).registerPartitionChangeExecutors(any(), any());
     }
 
     @Test
-    void shouldFailWhenRecoveryManagerStartFails() {
+    void shouldCompleteWithoutAwaitingStart() {
+      // given - the recovery manager start stays pending (e.g. waiting on a slow partition
+      // shutdown)
+      when(recoveryManager.start()).thenReturn(new CompletableActorFuture<>());
+
+      // when
+      final ActorFuture<Void> result = handler.enterRecovery();
+      progress();
+
+      // then - the operation completes so the cluster change plan can advance to the next member,
+      // even though the recovery partitions are not yet fully started
+      assertThat(result.isDone()).isTrue();
+      assertThat(result.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldCompleteSuccessfullyEvenWhenStartFails() {
       // given
       when(recoveryManager.start())
           .thenReturn(
@@ -141,23 +233,11 @@ final class PartitionModeHandlerTest {
 
       // when
       final ActorFuture<Void> result = handler.enterRecovery();
+      progress();
 
-      // then
-      assertThat(result.isCompletedExceptionally()).isTrue();
-    }
-
-    @Test
-    void shouldNotPublishOnFailure() {
-      // given
-      when(recoveryManager.start())
-          .thenReturn(
-              CompletableActorFuture.completedExceptionally(new RuntimeException("start failed")));
-
-      // when
-      handler.enterRecovery();
-
-      // then
-      verify(brokerStartupContext, never()).addPartitionManager(GROUP, recoveryManager);
+      // then - a failed start is logged and handled by health monitoring, not propagated as an
+      // operation failure that would stall the cluster change plan
+      assertThat(result.isCompletedExceptionally()).isFalse();
     }
 
     @Test
@@ -167,6 +247,7 @@ final class PartitionModeHandlerTest {
 
       // when
       handler.enterRecovery();
+      progress();
 
       // then
       verify(recoveryManager, never()).stop();
@@ -180,6 +261,7 @@ final class PartitionModeHandlerTest {
 
       // when
       final ActorFuture<Void> result = handler.enterRecovery();
+      progress();
 
       // then
       assertThat(result.isCompletedExceptionally()).isTrue();
@@ -198,6 +280,7 @@ final class PartitionModeHandlerTest {
     void shouldCompleteSuccessfully() {
       // when
       final ActorFuture<Void> result = handler.exitRecovery();
+      progress();
 
       // then
       assertThat(result.isCompletedExceptionally()).isFalse();
@@ -207,6 +290,7 @@ final class PartitionModeHandlerTest {
     void shouldStopRecoveryManagerAndStartNormalManager() {
       // when
       handler.exitRecovery();
+      progress();
 
       // then
       verify(recoveryManager).stop();
@@ -217,6 +301,7 @@ final class PartitionModeHandlerTest {
     void shouldNotRegisterPartitionExecutors() {
       // when — partition change executors are registered by the manager itself on start()
       handler.exitRecovery();
+      progress();
 
       // then
       verify(clusterConfigurationService, never()).registerPartitionChangeExecutors(any(), any());
@@ -229,10 +314,209 @@ final class PartitionModeHandlerTest {
 
       // when
       handler.exitRecovery();
+      progress();
 
       // then
       verify(normalManager, never()).stop();
       verify(normalManager, never()).start();
+    }
+
+    @Test
+    void shouldPublishNormalManagerOnContext() {
+      // when
+      handler.exitRecovery();
+      progress();
+
+      // then
+      verify(brokerStartupContext).addPartitionManager(GROUP, normalManager);
+    }
+
+    @Test
+    void shouldCompleteWithoutAwaitingStart() {
+      // given - the normal manager start stays pending (e.g. waiting for a Raft leader to be
+      // elected)
+      when(normalManager.start()).thenReturn(new CompletableActorFuture<>());
+
+      // when
+      final ActorFuture<Void> result = handler.exitRecovery();
+      progress();
+
+      // then - the operation completes so the cluster change plan can advance to the next member,
+      // even though the partitions are not yet ready
+      assertThat(result.isDone()).isTrue();
+      assertThat(result.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldCompleteSuccessfullyEvenWhenStartFails() {
+      // given
+      when(normalManager.start())
+          .thenReturn(
+              CompletableActorFuture.completedExceptionally(new RuntimeException("start failed")));
+
+      // when
+      final ActorFuture<Void> result = handler.exitRecovery();
+      progress();
+
+      // then - a failed start is logged and handled by health monitoring, not propagated as an
+      // operation failure that would stall the cluster change plan
+      assertThat(result.isCompletedExceptionally()).isFalse();
+    }
+  }
+
+  @Nested
+  class AwaitModeApplied {
+
+    @BeforeEach
+    void setUp() {
+      // already in processing mode; readiness is verified against the topology partition roles
+      givenCurrentManager(GROUP, normalManager);
+    }
+
+    @Test
+    void shouldFailWhenNotInExpectedMode() {
+      // given - the member is in processing mode but a recovery transition is awaited
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.RECOVERING);
+      progress();
+
+      // then
+      assertThat(await.isCompletedExceptionally()).isTrue();
+    }
+
+    @Test
+    void shouldCompleteWhenNoLocalPartitions() {
+      // given - this member replicates no partitions of the group
+      givenLocalPartitions();
+
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      progress();
+
+      // then
+      assertThat(await.isDone()).isTrue();
+      assertThat(await.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldCompleteWhenAllPartitionsReachedProcessingRoles() {
+      // given
+      givenLocalPartitions(1, 2);
+      givenPartitionRoles(Map.of(1, PartitionRole.LEADER, 2, PartitionRole.FOLLOWER));
+
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      progress();
+
+      // then - the first poll already sees ready roles
+      assertThat(await.isDone()).isTrue();
+      assertThat(await.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldStayPendingUntilPartitionsReachProcessingRoles() {
+      // given - the partition has not yet joined the group / elected a leader
+      givenLocalPartitions(1);
+      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
+
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      progress();
+
+      // then - not ready, the await keeps polling
+      assertThat(await.isDone()).isFalse();
+
+      // when - the partition becomes a follower and the next poll runs
+      givenPartitionRoles(Map.of(1, PartitionRole.FOLLOWER));
+      advancePoll();
+
+      // then
+      assertThat(await.isDone()).isTrue();
+      assertThat(await.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldWaitForAllPartitionsToBecomeReady() {
+      // given - one partition ready, one still inactive
+      givenLocalPartitions(1, 2);
+      givenPartitionRoles(Map.of(1, PartitionRole.LEADER, 2, PartitionRole.INACTIVE));
+
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      progress();
+
+      // then
+      assertThat(await.isDone()).isFalse();
+
+      // when - the lagging partition becomes a follower
+      givenPartitionRoles(Map.of(1, PartitionRole.LEADER, 2, PartitionRole.FOLLOWER));
+      advancePoll();
+
+      // then
+      assertThat(await.isDone()).isTrue();
+      assertThat(await.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldCompleteForRecoveryWhenPartitionsInactive() {
+      // given - in recovery mode, the partitions are expected to be deactivated
+      givenCurrentManager(GROUP, recoveryManager);
+      givenLocalPartitions(1, 2);
+      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE, 2, PartitionRole.INACTIVE));
+
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.RECOVERING);
+      progress();
+
+      // then
+      assertThat(await.isDone()).isTrue();
+      assertThat(await.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldStayPendingForRecoveryUntilPartitionsInactive() {
+      // given - in recovery mode but a partition is still leading (not yet deactivated)
+      givenCurrentManager(GROUP, recoveryManager);
+      givenLocalPartitions(1);
+      givenPartitionRoles(Map.of(1, PartitionRole.LEADER));
+
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.RECOVERING);
+      progress();
+
+      // then
+      assertThat(await.isDone()).isFalse();
+
+      // when - the partition is deactivated
+      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
+      advancePoll();
+
+      // then
+      assertThat(await.isDone()).isTrue();
+      assertThat(await.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldFailWhenPartitionsDoNotReachRolesWithinTimeout() {
+      // given - the partition never reaches a processing role
+      givenLocalPartitions(1);
+      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
+
+      // when
+      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      progress();
+
+      // poll until the readiness timeout elapses
+      final long polls =
+          PartitionModeHandler.PARTITION_READINESS_TIMEOUT.dividedBy(
+                  PartitionModeHandler.READINESS_POLL_INTERVAL)
+              + 1;
+      for (long i = 0; i < polls && !await.isDone(); i++) {
+        advancePoll();
+      }
+
+      // then - the operation fails so the cluster change can be retried
+      assertThat(await.isCompletedExceptionally()).isTrue();
     }
   }
 
@@ -244,14 +528,14 @@ final class PartitionModeHandlerTest {
     @BeforeEach
     void setUp() {
       givenCurrentManager(NON_DEFAULT_GROUP, normalManager);
-      nonDefaultHandler =
-          new PartitionModeHandler(brokerStartupContext, NON_DEFAULT_GROUP, topologyManager);
+      nonDefaultHandler = newHandler(NON_DEFAULT_GROUP);
     }
 
     @Test
     void shouldTransitionWithoutRegisteringExecutors() {
       // when
       final ActorFuture<Void> result = nonDefaultHandler.enterRecovery();
+      progress();
 
       // then
       assertThat(result.isCompletedExceptionally()).isFalse();
@@ -300,6 +584,7 @@ final class PartitionModeHandlerTest {
     void shouldRemoveModeExecutorOnClose() {
       // when
       handler.closeAsync();
+      progress();
 
       // then
       verify(clusterConfigurationService).removeModeChangeExecutor();
@@ -309,6 +594,7 @@ final class PartitionModeHandlerTest {
     void shouldNotRemovePartitionExecutorOnClose() {
       // when — partition change executors are removed by the partition manager on stop()
       handler.closeAsync();
+      progress();
 
       // then
       verify(clusterConfigurationService, never()).removePartitionChangeExecutor();

@@ -66,7 +66,13 @@ final class ClusterModeChangeIT {
       Awaitility.await("Cluster transitions to RECOVERING (iteration " + i + ")")
           .timeout(Duration.ofMinutes(2))
           .untilAsserted(
-              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(toRecovering));
+              () ->
+                  // wait for the change plan to fully complete (not just the broker topology to
+                  // match) so the next updateMode is not rejected with a 409 while it is still in
+                  // progress
+                  ClusterActuatorAssert.assertThat(actuator)
+                      .hasCompletedChanges(toRecovering)
+                      .doesNotHavePendingChanges());
 
       // then - a series of PI creation attempts must all fail across all partitions
       Awaitility.await("All PI creations blocked in RECOVERING mode (iteration " + i + ")")
@@ -78,7 +84,10 @@ final class ClusterModeChangeIT {
       Awaitility.await("Cluster transitions to PROCESSING (iteration " + i + ")")
           .timeout(Duration.ofMinutes(2))
           .untilAsserted(
-              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(toProcessing));
+              () ->
+                  ClusterActuatorAssert.assertThat(actuator)
+                      .hasCompletedChanges(toProcessing)
+                      .doesNotHavePendingChanges());
 
       // then - PI creation must succeed on every partition after returning to processing mode
       final var createdKeys =

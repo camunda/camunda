@@ -12,9 +12,16 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.Duration;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,19 +42,49 @@ import org.slf4j.LoggerFactory;
  */
 public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClosable {
 
+  @VisibleForTesting static final Duration PARTITION_READINESS_TIMEOUT = Duration.ofSeconds(10);
+  @VisibleForTesting static final Duration READINESS_POLL_INTERVAL = Duration.ofMillis(100);
+
   private static final Logger LOG = LoggerFactory.getLogger(PartitionModeHandler.class);
 
   private final BrokerStartupContext brokerStartupContext;
   private final String partitionGroup;
   private final TopologyManagerImpl topologyManager;
+  private final PartitionManagerFactory partitionManagerFactory;
 
   public PartitionModeHandler(
       final BrokerStartupContext brokerStartupContext,
       final String partitionGroup,
       final TopologyManagerImpl topologyManager) {
+    this(
+        brokerStartupContext,
+        partitionGroup,
+        topologyManager,
+        defaultPartitionManagerFactory(brokerStartupContext, partitionGroup, topologyManager));
+  }
+
+  @VisibleForTesting
+  PartitionModeHandler(
+      final BrokerStartupContext brokerStartupContext,
+      final String partitionGroup,
+      final TopologyManagerImpl topologyManager,
+      final PartitionManagerFactory partitionManagerFactory) {
     this.brokerStartupContext = brokerStartupContext;
     this.partitionGroup = partitionGroup;
     this.topologyManager = topologyManager;
+    this.partitionManagerFactory = partitionManagerFactory;
+  }
+
+  private static PartitionManagerFactory defaultPartitionManagerFactory(
+      final BrokerStartupContext brokerStartupContext,
+      final String partitionGroup,
+      final TopologyManagerImpl topologyManager) {
+    return mode ->
+        mode == Mode.RECOVERING
+            ? PartitionManager.createRecoveryPartitionManager(
+                brokerStartupContext, partitionGroup, topologyManager)
+            : PartitionManager.createPartitionManager(
+                brokerStartupContext, partitionGroup, topologyManager);
   }
 
   /**
@@ -93,6 +130,43 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
     return result;
   }
 
+  /**
+   * Completes once this member's partitions have settled into the roles expected for {@code mode} -
+   * {@code LEADER}/{@code FOLLOWER} for processing, {@code INACTIVE} for recovery - as reported by
+   * the {@link TopologyManagerImpl}. The roles are driven by the partitions actually starting and
+   * (for processing) joining their Raft groups, so this gates the cluster change on the transition
+   * having genuinely taken effect rather than merely having been initiated.
+   *
+   * <p>It is safe to block here: all members have already flipped mode by the time the {@code
+   * AwaitModeChange} operations run, so the quorum needed for leader election is available and this
+   * cannot deadlock the change plan. A timeout fails the operation so the cluster change can be
+   * retried.
+   */
+  @Override
+  public ActorFuture<Void> awaitModeApplied(final Mode mode) {
+    final var concurrencyControl = concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var expectedRecovering = mode == Mode.RECOVERING;
+          if (isRecovering() != expectedRecovering) {
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "Expected partition group %s to be in %s mode, but it was not"
+                        .formatted(partitionGroup, mode)));
+            return;
+          }
+          final var expectedPartitions = expectedLocalPartitionIds();
+          if (expectedPartitions.isEmpty()) {
+            result.complete(null);
+            return;
+          }
+          pollPartitionsReady(
+              expectedPartitions, readyRolesFor(mode), PARTITION_READINESS_TIMEOUT, result);
+        });
+    return result;
+  }
+
   @Override
   public ActorFuture<Void> closeAsync() {
     final var concurrencyControl = concurrencyControl();
@@ -125,27 +199,44 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
             result.completeExceptionally(stopError);
             return;
           }
-          final var manager = createPartitionManager(mode);
-          concurrencyControl.runOnCompletion(
-              manager.start(),
-              (ignore, startError) -> {
-                if (startError != null) {
-                  result.completeExceptionally(startError);
-                  return;
-                }
-                brokerStartupContext.addPartitionManager(partitionGroup, manager);
-                LOG.info("Partition group {} transitioned to {} mode", partitionGroup, mode);
-                result.complete(null);
-              });
+          final var manager = partitionManagerFactory.create(mode);
+          startManager(mode, manager, result);
         });
   }
 
-  private PartitionManager createPartitionManager(final Mode mode) {
-    return mode == Mode.RECOVERING
-        ? PartitionManager.createRecoveryPartitionManager(
-            brokerStartupContext, partitionGroup, topologyManager)
-        : PartitionManager.createPartitionManager(
-            brokerStartupContext, partitionGroup, topologyManager);
+  /**
+   * Completes the mode transition once the new partition manager's start has been
+   * <em>initiated</em> - it does not wait for the partitions to become ready.
+   *
+   * <p>Mode-change operations are applied one member at a time across the cluster: the next member
+   * only transitions after this one's operation completes. Awaiting full readiness here deadlocks a
+   * replicated cluster - a partition cannot elect a leader until a quorum of its members have
+   * restarted their partitions, but those members are still waiting for this operation to complete.
+   * The current member's partitions are already stopped (the previous manager's {@code stop()} was
+   * awaited before this call), so it is safe to publish the new manager and complete the operation;
+   * the partitions start, and any leader election, happen asynchronously once a quorum of members
+   * has transitioned. Full readiness is verified separately by {@link #awaitModeApplied(Mode)},
+   * which runs after every member has flipped. A failed start is logged and surfaced through health
+   * monitoring rather than stalling the cluster change plan.
+   */
+  private void startManager(
+      final Mode mode, final PartitionManager manager, final ActorFuture<Void> result) {
+    brokerStartupContext.addPartitionManager(partitionGroup, manager);
+    concurrencyControl()
+        .runOnCompletion(
+            manager.start(),
+            (ignore, startError) -> {
+              if (startError != null) {
+                LOG.error(
+                    "Failed to start partition group {} after transitioning to {} mode",
+                    partitionGroup,
+                    mode,
+                    startError);
+              } else {
+                LOG.info("Partition group {} transitioned to {} mode", partitionGroup, mode);
+              }
+            });
+    result.complete(null);
   }
 
   private PartitionManager currentManager() {
@@ -166,5 +257,75 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
 
   private ClusterConfigurationService clusterConfigurationService() {
     return brokerStartupContext.getClusterConfigurationService();
+  }
+
+  private void pollPartitionsReady(
+      final Set<Integer> expectedPartitions,
+      final Set<PartitionRole> targetRoles,
+      final Duration remaining,
+      final ActorFuture<Void> result) {
+    final var concurrencyControl = concurrencyControl();
+    concurrencyControl.runOnCompletion(
+        topologyManager.getLocalPartitionRoles(),
+        (roles, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+            return;
+          }
+          final var notReady =
+              expectedPartitions.stream()
+                  .filter(partitionId -> !targetRoles.contains(roles.get(partitionId)))
+                  .toList();
+          if (notReady.isEmpty()) {
+            result.complete(null);
+            return;
+          }
+          if (!remaining.isPositive()) {
+            result.completeExceptionally(
+                new TimeoutException(
+                    "Partition group %s: partitions %s did not reach roles %s within %s (current roles: %s)"
+                        .formatted(
+                            partitionGroup,
+                            notReady,
+                            targetRoles,
+                            PARTITION_READINESS_TIMEOUT,
+                            roles)));
+            return;
+          }
+          concurrencyControl.schedule(
+              READINESS_POLL_INTERVAL,
+              () ->
+                  pollPartitionsReady(
+                      expectedPartitions,
+                      targetRoles,
+                      remaining.minus(READINESS_POLL_INTERVAL),
+                      result));
+        });
+  }
+
+  private static Set<PartitionRole> readyRolesFor(final Mode mode) {
+    return mode == Mode.RECOVERING
+        ? EnumSet.of(PartitionRole.INACTIVE)
+        : EnumSet.of(PartitionRole.LEADER, PartitionRole.FOLLOWER);
+  }
+
+  /** The ids of the partitions of this group that the local member replicates. */
+  private Set<Integer> expectedLocalPartitionIds() {
+    final var localMemberId =
+        brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
+    return clusterConfigurationService()
+        .getPartitionDistribution()
+        .withGroupName(partitionGroup)
+        .partitions()
+        .stream()
+        .filter(partition -> partition.members().contains(localMemberId))
+        .map(partition -> partition.id().id())
+        .collect(Collectors.toSet());
+  }
+
+  /** Creates the partition manager for a target mode */
+  @FunctionalInterface
+  interface PartitionManagerFactory {
+    PartitionManager create(Mode mode);
   }
 }
