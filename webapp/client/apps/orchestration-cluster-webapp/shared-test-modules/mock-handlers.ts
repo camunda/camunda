@@ -39,6 +39,11 @@ const mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint = createEndpo
 	method: endpoints.getIncidentProcessInstanceStatisticsByDefinition.method as 'POST',
 });
 
+const mockQueryBatchOperationsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryBatchOperations.getUrl(),
+	method: endpoints.queryBatchOperations.method as 'POST',
+});
+
 const mockCurrentUserEndpoint = createEndpointMock({
 	endpoint: endpoints.getCurrentUser.getUrl(),
 	method: endpoints.getCurrentUser.method,
@@ -82,4 +87,5 @@ export {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
+	mockQueryBatchOperationsEndpoint,
 };
