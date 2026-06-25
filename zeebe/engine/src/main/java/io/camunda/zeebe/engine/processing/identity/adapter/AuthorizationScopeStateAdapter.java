@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity.adapter;
 
-import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.EntityType;
@@ -15,6 +14,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -37,11 +37,8 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       final Map<EntityType, Set<String>> ownerIds,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    final var zeebeResourceType =
-        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.valueOf(
-            resourceType.name());
-    final var zeebePermissionType =
-        io.camunda.zeebe.protocol.record.value.PermissionType.valueOf(permissionType.name());
+    final var zeebeResourceType = AuthzModelMapper.toProtocol(resourceType);
+    final var zeebePermissionType = AuthzModelMapper.toProtocol(permissionType);
     final var result = new HashSet<AuthorizationScope>();
     for (final var entry : ownerIds.entrySet()) {
       final var ownerType = toAuthorizationOwnerType(entry.getKey());
@@ -71,9 +68,7 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       final Map<EntityType, Set<String>> ownerIds,
       final AuthorizationResourceType resourceType,
       final List<String> resourceIds) {
-    final var zeebeResourceType =
-        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.valueOf(
-            resourceType.name());
+    final var zeebeResourceType = AuthzModelMapper.toProtocol(resourceType);
     final var result = new HashSet<PermissionType>();
     for (final var entry : ownerIds.entrySet()) {
       final var ownerType = toAuthorizationOwnerType(entry.getKey());
@@ -85,7 +80,7 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
             .filter(auth -> auth.getResourceType() == zeebeResourceType)
             .filter(auth -> matchesPersistedAuthByResourceId(auth, resourceIds))
             .flatMap(auth -> auth.getPermissionTypes().stream())
-            .map(pt -> PermissionType.valueOf(pt.name()))
+            .map(AuthzModelMapper::fromProtocol)
             .forEach(result::add);
       }
     }
@@ -105,9 +100,7 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
 
   private AuthorizationScope toCslScope(
       final io.camunda.zeebe.protocol.record.value.AuthorizationScope zeebeScope) {
-    final var cslMatcher = AuthorizationResourceMatcher.valueOf(zeebeScope.getMatcher().name());
-    return new AuthorizationScope(
-        cslMatcher, zeebeScope.getResourceId(), zeebeScope.getResourcePropertyName());
+    return AuthzModelMapper.fromProtocol(zeebeScope);
   }
 
   private boolean matchesCslScopeByResourceId(
