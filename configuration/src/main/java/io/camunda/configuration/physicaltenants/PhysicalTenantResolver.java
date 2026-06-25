@@ -71,7 +71,9 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   private static final List<CrossTenantValidation> CROSS_TENANT_VALIDATIONS =
       List.of(
           new SecondaryStorageIsolationValidation(),
-          new SecondaryStorageTypeHomogeneityValidation());
+          new SecondaryStorageTypeHomogeneityValidation(),
+          new DocumentStoreIsolationValidation(),
+          new PhysicalTenantDocumentAssignedValidation());
 
   private final Map<String, Camunda> resolved;
 
