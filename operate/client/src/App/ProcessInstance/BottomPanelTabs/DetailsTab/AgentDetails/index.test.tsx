@@ -24,10 +24,6 @@ import {AgentDetails} from './index';
 import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
 
-vi.mock('modules/feature-flags', () => ({
-  IS_CONVERSATION_HISTORY_ENABLED: true,
-}));
-
 function createWrapper() {
   const queryClient = getMockQueryClient();
   return ({children}: {children: ReactNode}) => {
