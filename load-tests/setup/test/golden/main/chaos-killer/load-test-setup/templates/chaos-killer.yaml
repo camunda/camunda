@@ -1,0 +1,98 @@
+---
+# Source: load-test-setup/templates/chaos-killer.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaos-killer
+  namespace: c8-golden-main-chaos-killer
+---
+# Source: load-test-setup/templates/chaos-killer.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: chaos-killer
+  namespace: c8-golden-main-chaos-killer
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+---
+# Source: load-test-setup/templates/chaos-killer.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: chaos-killer
+  namespace: c8-golden-main-chaos-killer
+subjects:
+  - kind: ServiceAccount
+    name: chaos-killer
+    namespace: c8-golden-main-chaos-killer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: chaos-killer
+---
+# Source: load-test-setup/templates/chaos-killer.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: chaos-killer
+  namespace: c8-golden-main-chaos-killer
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: chaos-killer
+          restartPolicy: OnFailure
+          containers:
+            - name: chaos-killer
+              image: bitnami/kubectl:TEST
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: CHAOS_TARGET_PATTERNS
+                  value: "camunda-* elastic-* postgresql-*"
+              command:
+                - /bin/sh
+                - -ceu
+                - |-
+                  if [ -z "$CHAOS_TARGET_PATTERNS" ]; then
+                    echo "No chaos target patterns configured."
+                    exit 1
+                  fi
+
+                  all_pods="$(kubectl get pods --namespace c8-golden-main-chaos-killer -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')"
+                  if [ -z "$all_pods" ]; then
+                    echo "No pods found in namespace c8-golden-main-chaos-killer."
+                    exit 1
+                  fi
+
+                  matched_pods="$({
+                    for pattern in $CHAOS_TARGET_PATTERNS; do
+                      for pod in $all_pods; do
+                        case "$pod" in
+                          $pattern) printf '%s\n' "$pod" ;;
+                        esac
+                      done
+                    done
+                  } | awk 'NF && !seen[$0]++')"
+
+                  if [ -z "$matched_pods" ]; then
+                    echo "No pods matched patterns: $CHAOS_TARGET_PATTERNS"
+                    exit 1
+                  fi
+
+                  selected_pod="$(printf '%s\n' "$matched_pods" | awk 'BEGIN { srand(); } { pods[NR] = $0 } END { if (NR > 0) print pods[int(rand() * NR) + 1] }')"
+                  if [ -z "$selected_pod" ]; then
+                    echo "Failed to choose a pod from the matched set."
+                    exit 1
+                  fi
+
+                  echo "Matched pods:"
+                  printf ' - %s\n' $matched_pods
+                  echo "Deleting pod $selected_pod in namespace c8-golden-main-chaos-killer"
+                  kubectl delete pod "$selected_pod" --namespace c8-golden-main-chaos-killer --ignore-not-found=true --wait=false
