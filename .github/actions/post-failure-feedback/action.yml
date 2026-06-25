@@ -31,7 +31,7 @@ inputs:
   repo:
     description: "owner/repo of the failing run (defaults to the calling repo)"
     required: false
-    default: ${{ github.repository }}
+    default: ""
   pr:
     description: >
       PR number, or a merge_group head_ref to extract it from
@@ -67,10 +67,11 @@ runs:
         FB_RUN_URL: ${{ inputs.run_url }}
         FB_STATUS: ${{ inputs.status }}
         FB_EVIDENCE: ${{ inputs.evidence }}
-        FB_REPO: ${{ inputs.repo }}
+        FB_REPO: ${{ inputs.repo || github.repository }}
         FB_PR: ${{ inputs.pr }}
         FB_COOKBOOK_URL: ${{ inputs.cookbook_url }}
         FB_SLACK_CHANNEL: ${{ inputs.slack_channel }}
         SLACK_BOT_TOKEN: ${{ inputs.slack_bot_token }}
         GH_TOKEN: ${{ inputs.github_token }}
       run: node "$GITHUB_ACTION_PATH/feedback.mjs"
+
