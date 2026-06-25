@@ -218,9 +218,13 @@ test.describe('Batch Operations', () => {
     operateOperationsDetailsPage,
   }) => {
     test.slow();
+    // The batch must still have pending cancellations when Suspend is clicked,
+    // otherwise it completes before the suspend command is applied and the state
+    // reads "Completed". 2000 instances were borderline and raced with engine
+    // throughput; use a larger batch so suspend reliably lands first.
     const batchKey = await createCancellationBatch(
       request,
-      2000,
+      5000,
       'batch_suspension_long_process',
     );
     await operateOperationsDetailsPage.goto(batchKey);
