@@ -165,14 +165,17 @@ manual port-forward required.
 1. Active Teleport session with kubectl access to the benchmark cluster.
 2. A Grafana service account token. Generate one in the Grafana UI under
    *Administration → Service Accounts*, with the `Viewer` role. Store it locally:
+
    ```bash
    echo "<YOUR_TOKEN>" > ~/.grafana-sa-token
    ```
 3. Install the `mcp-grafana` binary:
+
    ```bash
    pip install mcp-grafana
    ```
 4. Create a wrapper script at `~/.local/bin/grafana-mcp-wrapper.sh`:
+
    ```bash
    #!/bin/bash
    set -e
@@ -188,13 +191,16 @@ manual port-forward required.
    sleep 2
    mcp-grafana "$@"
    ```
+
    ```bash
    chmod +x ~/.local/bin/grafana-mcp-wrapper.sh
    ```
 5. Register it as an MCP server in Claude Code:
+
    ```bash
    claude mcp add -s user grafana -- ~/.local/bin/grafana-mcp-wrapper.sh
    ```
+
    Restart Claude Code for the change to take effect.
 
 **Usage in Claude Code sessions:**
