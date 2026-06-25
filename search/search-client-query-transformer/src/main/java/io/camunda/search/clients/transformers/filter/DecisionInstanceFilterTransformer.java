@@ -17,6 +17,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
@@ -64,6 +65,7 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getProcessDefinitionKeysQuery(filter.processDefinitionKeys()))
         .ifPresent(queries::add);
     ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
+    queries.addAll(getBusinessIdQuery(filter.businessIdOperations()));
     queries.addAll(getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeyOperations()));
     queries.addAll(getFlowNodeInstanceKeysQuery(filter.flowNodeInstanceKeyOperations()));
     ofNullable(getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds()))
@@ -120,6 +122,10 @@ public final class DecisionInstanceFilterTransformer
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
     return longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys);
+  }
+
+  private List<SearchQuery> getBusinessIdQuery(final List<Operation<String>> businessIdOperations) {
+    return stringOperations(BUSINESS_ID, businessIdOperations);
   }
 
   private List<SearchQuery> getDecisionDefinitionKeysQuery(

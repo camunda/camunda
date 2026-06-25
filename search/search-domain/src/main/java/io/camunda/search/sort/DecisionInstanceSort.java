@@ -61,6 +61,11 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
+    public Builder businessId() {
+      currentOrdering = new FieldSorting("businessId", null);
+      return this;
+    }
+
     public Builder flowNodeInstanceKey() {
       currentOrdering = new FieldSorting("flowNodeInstanceKey", null);
       return this;

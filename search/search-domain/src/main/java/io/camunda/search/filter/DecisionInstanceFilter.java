@@ -29,6 +29,7 @@ public record DecisionInstanceFilter(
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
     List<Long> processInstanceKeys,
+    List<Operation<String>> businessIdOperations,
     List<Operation<Long>> flowNodeInstanceKeyOperations,
     List<Operation<Long>> decisionDefinitionKeyOperations,
     List<String> decisionDefinitionIds,
@@ -55,6 +56,7 @@ public record DecisionInstanceFilter(
         .evaluationFailures(evaluationFailures)
         .processDefinitionKeys(processDefinitionKeys)
         .processInstanceKeys(processInstanceKeys)
+        .businessIdOperations(businessIdOperations)
         .flowNodeInstanceKeyOperations(flowNodeInstanceKeyOperations)
         .decisionDefinitionKeyOperations(decisionDefinitionKeyOperations)
         .decisionDefinitionIds(decisionDefinitionIds)
@@ -76,6 +78,7 @@ public record DecisionInstanceFilter(
     private List<String> evaluationFailures;
     private List<Long> processDefinitionKeys;
     private List<Long> processInstanceKeys;
+    private List<Operation<String>> businessIdOperations;
     private List<Operation<Long>> flowNodeInstanceKeyOperations;
     private List<Operation<Long>> decisionDefinitionKeyOperations;
     private List<String> decisionDefinitionIds;
@@ -163,6 +166,21 @@ public record DecisionInstanceFilter(
 
     public Builder processInstanceKeys(final Long... values) {
       return processInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder businessIdOperations(final List<Operation<String>> operations) {
+      businessIdOperations = addValuesToList(businessIdOperations, operations);
+      return this;
+    }
+
+    public Builder businessIds(final String value, final String... values) {
+      return businessIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder businessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return businessIdOperations(collectValues(operation, operations));
     }
 
     public Builder flowNodeInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -289,6 +307,7 @@ public record DecisionInstanceFilter(
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(businessIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),

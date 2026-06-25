@@ -19,6 +19,7 @@ import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.DecisionInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
@@ -56,6 +57,26 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
 
   /** Filter by processInstanceKey */
   DecisionInstanceFilter processInstanceKey(long processInstanceKey);
+
+  /**
+   * Filters decision instances by the business ID of their owning process instance. This only works
+   * for decision instances created with 8.10 and onwards. Decision instances from prior versions
+   * and standalone evaluations don't contain this data.
+   *
+   * @param businessId the business ID of the owning process instance
+   * @return the updated filter
+   */
+  DecisionInstanceFilter businessId(final String businessId);
+
+  /**
+   * Filters decision instances by the business ID of their owning process instance using {@link
+   * StringProperty} consumer. This only works for decision instances created with 8.10 and onwards.
+   * Decision instances from prior versions and standalone evaluations don't contain this data.
+   *
+   * @param fn the business ID {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  DecisionInstanceFilter businessId(final Consumer<StringProperty> fn);
 
   /** Filter by elementInstanceKey */
   DecisionInstanceFilter elementInstanceKey(long elementInstanceKey);

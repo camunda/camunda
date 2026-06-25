@@ -32,6 +32,7 @@ public final class DecisionInstanceFixtures extends CommonFixtures {
             .decisionInstanceKey(decisionInstanceKey)
             .processInstanceKey(nextKey())
             .rootProcessInstanceKey(nextKey())
+            .businessId(generateRandomString("businessId"))
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + decisionInstanceKey)
             .flowNodeInstanceKey(nextKey())

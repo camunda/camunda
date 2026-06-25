@@ -62,6 +62,11 @@ public class DecisionInstanceSortImpl extends SearchRequestSortBase<DecisionInst
   }
 
   @Override
+  public DecisionInstanceSort businessId() {
+    return field("businessId");
+  }
+
+  @Override
   public DecisionInstanceSort elementInstanceKey() {
     return field("elementInstanceKey");
   }

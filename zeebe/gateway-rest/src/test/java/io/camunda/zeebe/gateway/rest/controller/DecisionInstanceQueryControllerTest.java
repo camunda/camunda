@@ -201,7 +201,18 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 }
           ]
       }""",
-            q -> q.sort(s -> s.rootDecisionDefinitionKey().asc())));
+            q -> q.sort(s -> s.rootDecisionDefinitionKey().asc())),
+        new TestArguments(
+            """
+      {
+          "sort": [
+                {
+                    "field": "businessId",
+                    "order": "DESC"
+                }
+          ]
+      }""",
+            q -> q.sort(s -> s.businessId().desc())));
   }
 
   @ParameterizedTest
@@ -497,6 +508,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionEvaluationInstanceKey",
         ops -> new DecisionInstanceFilter.Builder().decisionInstanceIdOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "businessId",
+        ops -> new DecisionInstanceFilter.Builder().businessIdOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",

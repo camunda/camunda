@@ -11,6 +11,7 @@ import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithBusinessId;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static io.camunda.search.schema.config.IndexConfiguration.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,12 @@ class UserTaskSearchIT {
   private static OffsetDateTime defaultProcessTaskDate;
   private static final String LARGE_VAR_NAME = "largeVariable";
   private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
+  // the two plain "process" instances carry distinct businessIds so the filter/sort can be
+  // asserted deterministically; the parent process carries a non-"order-*" businessId that the
+  // child user task inherits (mirroring the rootProcessInstanceKey child-inheritance test)
+  private static final String BUSINESS_ID_1 = "order-001";
+  private static final String BUSINESS_ID_2 = "order-002";
+  private static final String CHILD_PARENT_BUSINESS_ID = "biz-parent-001";
 
   private static CamundaClient camundaClient;
 
@@ -76,9 +83,9 @@ class UserTaskSearchIT {
     deployProcessFromResourcePath(
         "/process/parent_with_child_usertask.bpmn", "parent_with_child_usertask.bpmn");
 
-    startProcessInstance(camundaClient, "process");
+    startProcessInstanceWithBusinessId(camundaClient, "process", BUSINESS_ID_1);
     startProcessInstance(camundaClient, "process-2");
-    startProcessInstance(camundaClient, "process");
+    startProcessInstanceWithBusinessId(camundaClient, "process", BUSINESS_ID_2);
     startProcessInstance(camundaClient, "process-3");
     startProcessInstance(camundaClient, "bpmProcessVariable");
     startProcessInstance(camundaClient, "processWithForm");
@@ -91,7 +98,9 @@ class UserTaskSearchIT {
 
     // Start parent process that calls child process with user task
     parentProcessInstanceKey =
-        startProcessInstance(camundaClient, "parentWithChildUserTask").getProcessInstanceKey();
+        startProcessInstanceWithBusinessId(
+                camundaClient, "parentWithChildUserTask", CHILD_PARENT_BUSINESS_ID)
+            .getProcessInstanceKey();
 
     startProcessInstance(camundaClient, "processWithOverlappingVars");
 
@@ -870,6 +879,78 @@ class UserTaskSearchIT {
                       variable.getName())
                   .isEqualTo(childProcessInstanceKey);
             });
+  }
+
+  @Test
+  void shouldReturnUserTaskBusinessIdInheritedFromOwningInstance() {
+    // when - get the child user task from a call activity whose parent was started with a
+    // businessId
+    final var childUserTask = camundaClient.newUserTaskGetRequest(childUserTaskKey).send().join();
+
+    // then - the child instance inherits the owning (parent) instance's businessId, and the user
+    // task is stamped from its owning instance (mirroring rootProcessInstanceKey inheritance)
+    assertThat(childUserTask.getBusinessId()).isEqualTo(CHILD_PARENT_BUSINESS_ID);
+  }
+
+  @Test
+  void shouldRetrieveUserTaskByBusinessId() {
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(BUSINESS_ID_1))
+            .send()
+            .join();
+
+    // then - only the "process" instance started with that businessId matches
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getBusinessId()).isEqualTo(BUSINESS_ID_1);
+    assertThat(result.items().getFirst().getBpmnProcessId()).isEqualTo("process");
+  }
+
+  @Test
+  void shouldRetrieveUserTaskByBusinessIdLike() {
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .send()
+            .join();
+
+    // then - both "process" instances carry an "order-*" businessId
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting(UserTask::getBusinessId)
+        .containsExactlyInAnyOrder(BUSINESS_ID_1, BUSINESS_ID_2);
+  }
+
+  @Test
+  void shouldSortUserTasksByBusinessId() {
+    // when - filter to the in-process tasks carrying an "order-*" businessId (the rest are null,
+    // which sorts inconsistently across backends) and order by businessId
+    final var resultAsc =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().asc())
+            .send()
+            .join();
+    final var resultDesc =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(resultAsc.items()).hasSize(2);
+    assertThat(resultDesc.items()).hasSize(2);
+    assertThat(resultAsc.items().getFirst().getBusinessId()).isEqualTo(BUSINESS_ID_1);
+    assertThat(resultAsc.items().getLast().getBusinessId()).isEqualTo(BUSINESS_ID_2);
+    assertThat(resultDesc.items().getFirst().getBusinessId()).isEqualTo(BUSINESS_ID_2);
+    assertThat(resultDesc.items().getLast().getBusinessId()).isEqualTo(BUSINESS_ID_1);
   }
 
   @Test
