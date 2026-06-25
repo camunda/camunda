@@ -58,7 +58,7 @@ public final class ResponseWriter {
    * writeRejectionOnCommand}. The reply is a {@code COMMAND_REJECTION}, so the waiting caller
    * completes <em>exceptionally</em> (a rejected command is not a success). Use this for malformed
    * or invalid commands, not for protocol signals a client is expected to act on (those are
-   * ordinary responses carrying a status, Kafka-style).
+   * ordinary responses carrying a status).
    */
   public void writeRejection(
       final TypedRecord<? extends UnifiedRecordValue> command,

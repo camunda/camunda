@@ -20,14 +20,13 @@ import java.time.Instant;
 import java.time.InstantSource;
 
 /**
- * Reclaims empty consumer groups (and their committed offsets) after a retention window — the
- * event-bridge analog of Kafka's {@code offsets.retention}. Registered as a {@link
- * StreamProcessorLifecycleAware} listener that self-schedules at a fixed rate on the async task
- * group (leader only, off the processing path), mirroring {@link RebalanceAssignorTask}. On each
- * tick it reads the {@code EMPTY} groups from the {@link ConsumerGroupState} lifecycle index (no
- * full scan) and, for any whose replicated {@code emptySince} is older than the retention window,
- * appends a {@code DELETE_GROUP} command (the {@link DeleteGroupProcessor} validates and commits
- * it; {@code GroupDeletedApplier} removes the group + offsets).
+ * Reclaims empty consumer groups (and their committed offsets) after a retention window. Registered
+ * as a {@link StreamProcessorLifecycleAware} listener that self-schedules at a fixed rate on the
+ * async task group (leader only, off the processing path), mirroring {@link RebalanceAssignorTask}.
+ * On each tick it reads the {@code EMPTY} groups from the {@link ConsumerGroupState} lifecycle
+ * index (no full scan) and, for any whose replicated {@code emptySince} is older than the retention
+ * window, appends a {@code DELETE_GROUP} command (the {@link DeleteGroupProcessor} validates and
+ * commits it; {@code GroupDeletedApplier} removes the group + offsets).
  *
  * <p>The retention deadline lives in replicated state ({@code GroupState.emptySince}, stamped when
  * the group became empty), so it survives failover and the task itself is stateless — the scan

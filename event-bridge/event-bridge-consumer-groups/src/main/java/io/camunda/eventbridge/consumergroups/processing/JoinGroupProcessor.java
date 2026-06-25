@@ -26,8 +26,8 @@ import java.util.Map;
  * <p>A successful join is always a <em>new</em> member: it bumps the group epoch, sets the member
  * epoch to it, and appends a {@code MEMBER_JOINED} event. A static member whose {@code
  * group.instance.id} is already held by a live member is rejected upstream by {@link
- * CoordinationValidator#validateJoin} with {@code UNRELEASED_INSTANCE_ID} (KIP-848 fences the new
- * joiner); the incumbent's slot is freed only when it leaves or the eviction loop expires it. There
+ * CoordinationValidator#validateJoin} with {@code UNRELEASED_INSTANCE_ID} (the new joiner is
+ * fenced); the incumbent's slot is freed only when it leaves or the eviction loop expires it. There
  * is therefore no idempotent "rejoin" path — and no no-op event.
  *
  * <p>The reply is {@code REBALANCE_IN_PROGRESS}: the member learns its assignment from the

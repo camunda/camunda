@@ -22,11 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Enforces Kafka-style record retention on a data partition: it keeps the most recent {@code
- * maxRecords} records and periodically compacts older Raft log segments. Retention is driven purely
- * by the partition's own committed log — <b>not</b> by consumer progress — so a slow or absent
- * consumer can never pin the log and exhaust disk; a consumer that falls behind the retained window
- * resumes via its {@code OffsetResetPolicy}.
+ * Enforces record retention on a data partition: it keeps the most recent {@code maxRecords}
+ * records and periodically compacts older Raft log segments. Retention is driven purely by the
+ * partition's own committed log — <b>not</b> by consumer progress — so a slow or absent consumer
+ * can never pin the log and exhaust disk; a consumer that falls behind the retained window resumes
+ * via its {@code OffsetResetPolicy}.
  *
  * <p>Rather than deleting segments directly, it takes an empty <b>marker snapshot</b> at the
  * retention bound. A data partition is a pure event log with no state machine, so the snapshot

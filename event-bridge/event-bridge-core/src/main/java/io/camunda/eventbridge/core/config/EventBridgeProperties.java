@@ -176,10 +176,9 @@ public record EventBridgeProperties(
       @DefaultValue("10485760") int maxBatchBytes) {}
 
   /**
-   * Log retention configuration. Retention is Kafka-style: each data-partition leader keeps the
-   * most recent records and compacts older log segments on a timer, independent of consumer
-   * progress. A consumer that falls behind the retained window resumes via its {@code
-   * OffsetResetPolicy}.
+   * Log retention configuration. Each data-partition leader keeps the most recent records and
+   * compacts older log segments on a timer, independent of consumer progress. A consumer that falls
+   * behind the retained window resumes via its {@code OffsetResetPolicy}.
    *
    * @param maxRecordsPerPartition maximum number of most-recent records to retain per partition;
    *     older log segments are eligible for compaction (default 1000000)

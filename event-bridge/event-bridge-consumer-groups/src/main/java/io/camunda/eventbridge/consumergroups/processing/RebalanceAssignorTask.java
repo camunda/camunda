@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 /**
- * The async rebalance assignor — the server-side counterpart of Kafka KIP-848's target-assignment
- * computation. It is registered as a {@link StreamProcessorLifecycleAware} listener and
+ * The async rebalance assignor — it computes each group's target assignment off the
+ * command-processing path. It is registered as a {@link StreamProcessorLifecycleAware} listener and
  * self-schedules at a fixed rate on the async task group in {@link #onRecovered} — leader only, off
  * the command-processing path, and only after recovery (when the async task group is up), mirroring
  * the engine's {@code MessageTimeToLiveCheckScheduler}.

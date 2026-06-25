@@ -13,9 +13,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Maps a consumer group to its coordinator partition. The coordinator Raft group is sharded by
- * {@code groupId} (Kafka {@code __consumer_offsets}-style): all coordination for a group — its
- * membership, rebalances, and committed offsets — is owned by a single partition, so the gateway
- * routes every join/heartbeat/leave/commit for that group to the same coordinator leader.
+ * {@code groupId}: all coordination for a group — its membership, rebalances, and committed offsets
+ * — is owned by a single partition, so the gateway routes every join/heartbeat/leave/commit for
+ * that group to the same coordinator leader.
  *
  * <p>This is Zeebe's <b>message-correlation</b> routing pattern (the one that routes a keyed
  * request to a stable partition), not the round-robin "request handling" pattern used for keyless

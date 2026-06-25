@@ -76,9 +76,9 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private static final Duration SESSION_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration REBALANCE_TIMEOUT = Duration.ofSeconds(30);
 
-  // How long an EMPTY group (and its committed offsets) is retained before being reclaimed — the
-  // event-bridge analog of Kafka's offsets.retention. The retention deadline is stamped into
-  // replicated state, so the scan only needs to run coarsely: its cadence bounds how promptly an
+  // How long an EMPTY group (and its committed offsets) is retained before being reclaimed. The
+  // retention deadline is stamped into replicated state, so the scan only needs to run coarsely:
+  // its cadence bounds how promptly an
   // expired group is reclaimed (worst case retention + interval), never the deadline itself.
   private static final Duration EMPTY_GROUP_RETENTION = Duration.ofMinutes(5);
   private static final Duration RETENTION_INTERVAL = Duration.ofMinutes(1);

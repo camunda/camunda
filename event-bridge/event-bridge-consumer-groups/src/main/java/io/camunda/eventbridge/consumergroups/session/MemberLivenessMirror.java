@@ -16,10 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * leader's heartbeat handler (on the coordinator actor) publishes, and the off-actor session
  * eviction task reads. It carries the ephemeral member liveness that the eviction loop needs but
  * which — unlike topic/group membership — is deliberately not replicated (heartbeats are cheap,
- * leader-local liveness, Kafka-style). Same single-writer/single-reader contract as the
- * replicated-state mirror in {@code DbConsumerGroupState}; constructed at stream startup so the
- * task (built with the record processor) and the coordinator (built on leader activation) share one
- * instance.
+ * leader-local liveness). Same single-writer/single-reader contract as the replicated-state mirror
+ * in {@code DbConsumerGroupState}; constructed at stream startup so the task (built with the record
+ * processor) and the coordinator (built on leader activation) share one instance.
  */
 public final class MemberLivenessMirror {
 
