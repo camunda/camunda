@@ -8,7 +8,6 @@
 package io.camunda.webapps.schema.entities.dmn;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
@@ -63,7 +62,6 @@ public class DecisionInstanceEntity
 
   /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String businessId;
 
   @JsonIgnore private Object[] sortValues;
