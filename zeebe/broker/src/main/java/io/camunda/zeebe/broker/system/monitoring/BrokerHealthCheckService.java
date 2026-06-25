@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 
@@ -95,6 +96,11 @@ import org.slf4j.Logger;
 public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  /* The physical tenants this broker is configured to run. The broker is only ready once every one
+  of them has registered its bootstrap partitions, so that a tenant that never started (and thus
+  never contributed its partitions) cannot be mistaken for "no partitions to wait for". */
+  private final Set<String> expectedPhysicalTenants;
+  private final Set<String> registeredPhysicalTenants = ConcurrentHashMap.newKeySet();
   /* Tracks the install status of every bootstrap partition the broker is responsible for, keyed by
   its full PartitionId (partition group + id). Each physical tenant registers its own partitions, so
   this map accumulates across all tenants. Stays null until the first registration so that an
@@ -106,15 +112,22 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private final HealthMonitor healthMonitor;
 
   public BrokerHealthCheckService(
-      final MemberId nodeId, final HealthTreeMetrics healthGraphMetrics) {
+      final MemberId nodeId,
+      final HealthTreeMetrics healthGraphMetrics,
+      final Set<String> expectedPhysicalTenants) {
+    this.expectedPhysicalTenants = Set.copyOf(expectedPhysicalTenants);
     healthMonitor =
         new CriticalComponentsHealthMonitor(
             "Broker-" + nodeId, actor, healthGraphMetrics, Optional.empty(), LOG);
   }
 
-  public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
-    // Called once per physical tenant during startup, so accumulate rather than replace: each call
-    // adds the tenant's partitions without dropping the ones registered by previous tenants.
+  public void registerBootstrapPartitions(
+      final String physicalTenantId, final Collection<PartitionMetadata> partitions) {
+    // Called once per physical tenant during startup. Record the tenant even when it has no local
+    // partitions, so readiness can tell "tenant started with nothing to install" apart from "tenant
+    // never started". Accumulate rather than replace so a later tenant's call does not drop the
+    // partitions registered by previous tenants.
+    registeredPhysicalTenants.add(physicalTenantId);
     if (partitionInstallStatus == null) {
       partitionInstallStatus = new ConcurrentHashMap<>();
     }
@@ -126,11 +139,15 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   public boolean isBrokerReady() {
-    // Ready once every registered partition (across all physical tenants) has been installed.
-    // Computed live from the map so that partitions registered by a later physical tenant still
-    // gate readiness even if an earlier tenant's partitions were already installed.
+    // Ready once every expected physical tenant has registered and every one of their partitions
+    // has been installed. Both conditions are evaluated live: requiring all tenants prevents a
+    // missing tenant from being silently ignored, and reading the map directly lets partitions
+    // registered by a later tenant still gate readiness even if an earlier tenant already finished.
     final var status = partitionInstallStatus;
-    return brokerStarted && status != null && !status.containsValue(false);
+    return brokerStarted
+        && registeredPhysicalTenants.containsAll(expectedPhysicalTenants)
+        && status != null
+        && !status.containsValue(false);
   }
 
   public String componentName() {

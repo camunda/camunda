@@ -35,7 +35,7 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldNotBeReadyHealthyOrStartedBeforePartitionManagerIsRegistered() {
     // given
-    final var healthCheckService = newHealthCheckService();
+    final var healthCheckService = newHealthCheckService(DEFAULT_PARTITION_GROUP_NAME);
 
     // when
 
@@ -55,7 +55,7 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldThrowIllegalStateExceptionIfStatusIsUpdatedBeforePartitionsAreKnown() {
     // given
-    final var healthCheckService = newHealthCheckService();
+    final var healthCheckService = newHealthCheckService(DEFAULT_PARTITION_GROUP_NAME);
 
     // when + then
     final var partitionId = new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 0);
@@ -69,10 +69,12 @@ public class BrokerHealthCheckServiceTest {
   public void shouldNotBeReadyUntilPartitionsFromAllPhysicalTenantsAreInstalled() {
     // given a broker started with one partition in each of two physical tenants. Each physical
     // tenant registers its own partitions, mirroring how PartitionManagerImpl#start does it.
-    final var healthCheckService = newStartedHealthCheckService();
+    final var healthCheckService =
+        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
     healthCheckService.registerBootstrapPartitions(
-        List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
-    healthCheckService.registerBootstrapPartitions(List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
+        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+    healthCheckService.registerBootstrapPartitions(
+        SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
     scheduler.workUntilDone();
 
     // when only the second tenant's partition is installed
@@ -95,15 +97,17 @@ public class BrokerHealthCheckServiceTest {
     // given a broker where the default tenant registers and fully installs its partition before a
     // second physical tenant comes up. This is the ordering that a naive "all installed" latch gets
     // wrong: it would freeze on the first completion.
-    final var healthCheckService = newStartedHealthCheckService();
+    final var healthCheckService =
+        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
     healthCheckService.registerBootstrapPartitions(
-        List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
     scheduler.workUntilDone();
     healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
     scheduler.workUntilDone();
 
     // when a second physical tenant registers its not-yet-installed partition
-    healthCheckService.registerBootstrapPartitions(List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
+    healthCheckService.registerBootstrapPartitions(
+        SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
     scheduler.workUntilDone();
 
     // then the broker is no longer ready: it must wait for the new tenant's partition
@@ -117,12 +121,58 @@ public class BrokerHealthCheckServiceTest {
     assertThat(healthCheckService.isBrokerReady()).isTrue();
   }
 
-  private BrokerHealthCheckService newHealthCheckService() {
-    return new BrokerHealthCheckService(member, new HealthTreeMetrics(new SimpleMeterRegistry()));
+  @Test
+  public void shouldNotBeReadyWhileAnExpectedPhysicalTenantNeverRegistered() {
+    // given a broker configured with two physical tenants, but only the default tenant comes up and
+    // installs its partition; the second tenant never registers (e.g. its startup stalled).
+    final var healthCheckService =
+        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+    scheduler.workUntilDone();
+
+    // when + then the broker must not report ready: a configured tenant is entirely unaccounted
+    // for, so an "all known partitions installed" check alone would falsely pass.
+    assertThat(healthCheckService.isBrokerReady()).isFalse();
+
+    // when the missing tenant finally registers and installs its partition
+    healthCheckService.registerBootstrapPartitions(
+        SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
+    healthCheckService.onBecameRaftLeader(new PartitionId(SECOND_PHYSICAL_TENANT, 1), 1);
+    scheduler.workUntilDone();
+
+    // then the broker becomes ready
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
   }
 
-  private BrokerHealthCheckService newStartedHealthCheckService() {
-    final var healthCheckService = newHealthCheckService();
+  @Test
+  public void shouldBeReadyWhenAnExpectedPhysicalTenantHasNoLocalPartitions() {
+    // given a broker with two physical tenants where the second tenant has no partitions on this
+    // node, so it registers an empty set
+    final var healthCheckService =
+        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+    healthCheckService.registerBootstrapPartitions(SECOND_PHYSICAL_TENANT, List.of());
+    scheduler.workUntilDone();
+
+    // when the default tenant's only partition is installed
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+    scheduler.workUntilDone();
+
+    // then the broker is ready: the second tenant started and simply had nothing to install
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
+  private BrokerHealthCheckService newHealthCheckService(final String... expectedPhysicalTenants) {
+    return new BrokerHealthCheckService(
+        member, new HealthTreeMetrics(new SimpleMeterRegistry()), Set.of(expectedPhysicalTenants));
+  }
+
+  private BrokerHealthCheckService newStartedHealthCheckService(
+      final String... expectedPhysicalTenants) {
+    final var healthCheckService = newHealthCheckService(expectedPhysicalTenants);
     scheduler.submitActor(healthCheckService);
     healthCheckService.setBrokerStarted();
     scheduler.workUntilDone();

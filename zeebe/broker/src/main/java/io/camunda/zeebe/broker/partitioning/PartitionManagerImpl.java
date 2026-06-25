@@ -296,7 +296,7 @@ public final class PartitionManagerImpl
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions();
 
-    healthCheckService.registerBootstrapPartitions(memberPartitions);
+    healthCheckService.registerBootstrapPartitions(partitionGroup, memberPartitions);
 
     if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
       clusterConfigurationService.registerPartitionChangeExecutors(this, this);
