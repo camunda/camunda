@@ -80,26 +80,30 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
    */
   @Test
   void shouldAuthorizeControlPlaneInGrantedTenantAndDenyInUngrantedTenant() {
-    // given — a restricted user in each PT, with deploy granted ONLY in tenantb
-    final String userInB = createRestrictedUser(tenantBAdmin, "ctrl-b");
-    final String userInA = createRestrictedUser(tenantAAdmin, "ctrl-a");
-    grantDeployPermission(tenantBAdmin, userInB);
+    // given — the same identity mirrored into both PTs, with deploy granted ONLY in tenantb
+    final String username = "ctrl-" + UUID.randomUUID().toString().substring(0, 8);
+    createRestrictedUserNamed(tenantBAdmin, username);
+    createRestrictedUserNamed(tenantAAdmin, username);
+    grantDeployPermission(tenantBAdmin, username);
 
     // when / then — the grant authorizes deploy via tenantb (positive)
-    try (final CamundaClient restrictedInB = restrictedClient(BROKER, TENANT_B, userInB)) {
+    try (final CamundaClient restrictedInB = restrictedClient(BROKER, TENANT_B, username)) {
       awaitDeployAllowed(restrictedInB, "granted user can deploy via tenantb");
     }
 
-    // and — the same (ungranted) user is forbidden (403) via tenanta (isolation)
-    try (final CamundaClient restrictedInA = restrictedClient(BROKER, TENANT_A, userInA)) {
+    // and — the same identity (same ownerId), ungranted in tenanta, is forbidden (403) via tenanta;
+    // a cross-PT leak by ownerId would flip this denial to allowed and fail the test
+    try (final CamundaClient restrictedInA = restrictedClient(BROKER, TENANT_A, username)) {
       assertThatThrownBy(() -> deploy(restrictedInA))
-          .as("ungranted user is denied via tenanta — a grant in tenantb must not leak")
+          .as(
+              "same identity ungranted in tenanta is denied — a grant in tenantb must not leak"
+                  + " (same ownerId, so a cross-PT leak would flip this to allowed)")
           .isInstanceOf(ProblemException.class)
           .hasMessageContaining("status: 403")
           .hasMessageContaining("FORBIDDEN");
 
       // positive control — granting the same permission in tenanta flips it to allowed
-      grantDeployPermission(tenantAAdmin, userInA);
+      grantDeployPermission(tenantAAdmin, username);
       awaitDeployAllowed(restrictedInA, "granting in tenanta flips the denial to allowed");
     }
   }
@@ -111,30 +115,35 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
    */
   @Test
   void shouldNotAuthorizeInTenantBFromGrantsInDefaultOrTenantA() {
-    // given — deploy granted to a user in default and to a user in tenanta...
-    final String userInDefault = createRestrictedUser(defaultAdmin, "leak-default");
-    final String userInA = createRestrictedUser(tenantAAdmin, "leak-a");
-    grantDeployPermission(defaultAdmin, userInDefault);
-    grantDeployPermission(tenantAAdmin, userInA);
+    // given — the same identity mirrored into default, tenanta, and tenantb; deploy granted only in
+    // default and tenanta (NOT tenantb), so a cross-PT leak of that grant would flip the tenantb
+    // denial to allowed (same ownerId) and fail the test
+    final String username = "leak-" + UUID.randomUUID().toString().substring(0, 8);
+    createRestrictedUserNamed(defaultAdmin, username);
+    createRestrictedUserNamed(tenantAAdmin, username);
+    createRestrictedUserNamed(tenantBAdmin, username);
+    grantDeployPermission(defaultAdmin, username);
+    grantDeployPermission(tenantAAdmin, username);
 
-    // ...and a restricted user in tenantb that is NOT granted anything
-    final String userInB = createRestrictedUser(tenantBAdmin, "leak-b");
-
-    try (final CamundaClient restrictedInB = restrictedClient(BROKER, TENANT_B, userInB)) {
-      // then — the tenantb user stays denied across the propagation window (leakage would flip it)
-      Awaitility.await("tenantb user stays denied despite grants in default and tenanta")
+    try (final CamundaClient restrictedInB = restrictedClient(BROKER, TENANT_B, username)) {
+      // then — the same identity stays denied via tenantb across the propagation window;
+      // a cross-PT leak from default/tenanta would flip this to allowed (same ownerId)
+      Awaitility.await(
+              "same identity stays denied in tenantb despite grants in default and tenanta")
           .during(PROPAGATION_TIMEOUT.dividedBy(6))
           .atMost(PROPAGATION_TIMEOUT)
           .untilAsserted(
               () ->
                   assertThatThrownBy(() -> deploy(restrictedInB))
-                      .as("grants in default/tenanta must not authorize in tenantb")
+                      .as(
+                          "grants in default/tenanta must not authorize the same identity in tenantb"
+                              + " — a cross-PT leak by ownerId would flip this to allowed")
                       .isInstanceOf(ProblemException.class)
                       .hasMessageContaining("status: 403")
                       .hasMessageContaining("FORBIDDEN"));
 
       // positive control — granting in tenantb itself flips the tenantb user to allowed
-      grantDeployPermission(tenantBAdmin, userInB);
+      grantDeployPermission(tenantBAdmin, username);
       awaitDeployAllowed(restrictedInB, "granting in tenantb itself authorizes the operation");
     }
   }
