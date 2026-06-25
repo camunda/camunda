@@ -29,6 +29,7 @@
     di.DECISION_INSTANCE_KEY,
     di.PROCESS_INSTANCE_KEY,
     di.ROOT_PROCESS_INSTANCE_KEY,
+    di.BUSINESS_ID,
     di.FLOW_NODE_INSTANCE_KEY,
     di.PROCESS_DEFINITION_ID,
     di.PROCESS_DEFINITION_KEY,
@@ -206,6 +207,7 @@
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String"/>
       <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
@@ -234,6 +236,7 @@
                                             DECISION_INSTANCE_KEY,
                                             PROCESS_INSTANCE_KEY,
                                             ROOT_PROCESS_INSTANCE_KEY,
+                                            BUSINESS_ID,
                                             PROCESS_DEFINITION_KEY,
                                             PROCESS_DEFINITION_ID,
                                             DECISION_DEFINITION_KEY,
@@ -254,6 +257,7 @@
                                             HISTORY_CLEANUP_DATE)
     VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
             #{rootProcessInstanceKey},
+            #{businessId},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
             #{decisionRequirementsKey}, #{decisionRequirementsId},

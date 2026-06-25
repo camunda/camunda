@@ -22,6 +22,7 @@ import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.DateUtil;
@@ -152,6 +153,31 @@ class UserTaskExportHandlerTest {
 
     // ensure no other methods are called
     verifyNoMoreInteractions(userTaskWriter);
+  }
+
+  @Test
+  void shouldNotSetBusinessIdWhenEmpty() {
+    // given - the owning instance has no business ID, stored as an empty string on the record
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CREATING)
+                    .withValue(
+                        ImmutableUserTaskRecordValue.builder()
+                            .from(factory.generateObject(UserTaskRecordValue.class))
+                            .withBusinessId("")
+                            .build()));
+    final var recordValue = record.getValue();
+    when(processCache.get(recordValue.getProcessDefinitionKey())).thenReturn(Optional.empty());
+
+    // when
+    handler.export(record);
+
+    // then - the empty string is normalised to null, matching the Elasticsearch/OpenSearch
+    // behaviour
+    verify(userTaskWriter).create(taskDbModelCaptor.capture());
+    assertThat(taskDbModelCaptor.getValue().businessId()).isNull();
   }
 
   @ParameterizedTest(name = "Should handle user task transition started record with {0} intent")
@@ -325,6 +351,7 @@ class UserTaskExportHandlerTest {
     assertThat(model.processDefinitionKey()).isEqualTo(recordValue.getProcessDefinitionKey());
     assertThat(model.processInstanceKey()).isEqualTo(recordValue.getProcessInstanceKey());
     assertThat(model.rootProcessInstanceKey()).isEqualTo(recordValue.getRootProcessInstanceKey());
+    assertThat(model.businessId()).isEqualTo(recordValue.getBusinessId());
     assertThat(model.elementInstanceKey()).isEqualTo(recordValue.getElementInstanceKey());
     assertThat(model.tenantId()).isEqualTo(recordValue.getTenantId());
     assertThat(model.candidateGroups()).isEqualTo(recordValue.getCandidateGroupsList());

@@ -1402,6 +1402,7 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionInstanceResult toDecisionInstance(final DecisionInstanceEntity entity) {
     return DecisionInstanceResult.Builder.create()
+        .businessId(entity.businessId())
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionName(entity.decisionDefinitionName())
@@ -1428,6 +1429,7 @@ public final class SearchQueryResponseMapper {
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return DecisionInstanceGetQueryResult.Builder.create()
+        .businessId(entity.businessId())
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionName(entity.decisionDefinitionName())

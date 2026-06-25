@@ -46,6 +46,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long rootProcessInstanceKey;
+  private final String businessId;
   private final Long elementInstanceKey;
   private final long decisionKey;
   private final String decisionDefinitionId;
@@ -69,6 +70,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
         ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey()),
+        item.getBusinessId(),
         Long.parseLong(item.getElementInstanceKey()),
         Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
@@ -94,6 +96,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
         ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey()),
+        item.getBusinessId(),
         Long.parseLong(item.getElementInstanceKey()),
         Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
@@ -121,6 +124,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final Long processDefinitionKey,
       final Long processInstanceKey,
       final Long rootProcessInstanceKey,
+      final String businessId,
       final Long elementInstanceKey,
       final long decisionKey,
       final String decisionDefinitionId,
@@ -141,6 +145,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    this.businessId = businessId;
     this.elementInstanceKey = elementInstanceKey;
     this.decisionKey = decisionKey;
     this.decisionDefinitionId = decisionDefinitionId;
@@ -239,6 +244,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  @Override
   public Long getElementInstanceKey() {
     return elementInstanceKey;
   }
@@ -309,6 +319,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         processDefinitionKey,
         processInstanceKey,
         rootProcessInstanceKey,
+        businessId,
         elementInstanceKey,
         decisionKey,
         decisionDefinitionId,
@@ -339,6 +350,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(businessId, that.businessId)
         && Objects.equals(elementInstanceKey, that.elementInstanceKey)
         && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
         && Objects.equals(decisionDefinitionName, that.decisionDefinitionName)

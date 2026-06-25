@@ -428,4 +428,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_business_id_to_decision_instance" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}DECISION_INSTANCE" columnName="BUSINESS_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}DECISION_INSTANCE">
+      <column name="BUSINESS_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

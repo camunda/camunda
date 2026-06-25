@@ -60,6 +60,10 @@ public class DecisionInstanceEntity
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String businessId;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -349,6 +353,15 @@ public class DecisionInstanceEntity
     return this;
   }
 
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public DecisionInstanceEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result1 =
@@ -381,7 +394,8 @@ public class DecisionInstanceEntity
             evaluatedInputs,
             evaluatedOutputs,
             tenantId,
-            rootProcessInstanceKey);
+            rootProcessInstanceKey,
+            businessId);
     result1 = 31 * result1 + Arrays.hashCode(sortValues);
     return result1;
   }
@@ -424,6 +438,7 @@ public class DecisionInstanceEntity
         && Objects.equals(evaluatedOutputs, that.evaluatedOutputs)
         && Objects.equals(tenantId, that.tenantId)
         && Arrays.equals(sortValues, that.sortValues)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(businessId, that.businessId);
   }
 }
