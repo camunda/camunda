@@ -24,7 +24,6 @@ import io.camunda.it.rdbms.db.fixtures.JobFixtures;
 import io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
-import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
 import io.camunda.search.entities.JobEntity.JobState;
@@ -47,6 +46,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -101,7 +101,7 @@ public class JobMetricsBatchIT {
     jobMetricsBatchWriter.cleanupMetrics(PARTITION_ID, NOW.plusDays(100), Integer.MAX_VALUE);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateGlobalJobStatistics() {
     // given
     final var metric1 =
@@ -128,7 +128,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateMetricsAcrossMultipleTenants() {
     // given
     final var metricTenant1 = JobMetricsBatchFixtures.createRandomized(b -> b.tenantId(TENANT1));
@@ -153,7 +153,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateMetricsAcrossMultipleJobTypes() {
     // given
     final var metricJobTypeA = JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A));
@@ -178,7 +178,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateMetricsAcrossMultipleWorkers() {
     // given
     final var metricWorker1 =
@@ -205,7 +205,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterMetricsByTimeRange() {
     // given
     final var metricOld =
@@ -236,7 +236,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metricMiddle);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterMetricsByJobType() {
     // given
     final var metricJobTypeA =
@@ -264,7 +264,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metricJobTypeA);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnMaxLastUpdatedAtTimestamp() {
     // given
     final var metric1 = JobMetricsBatchFixtures.createRandomized(b -> b);
@@ -288,7 +288,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnIncompleteWhenAnyBatchIsIncomplete() {
     // given
     final var metricComplete =
@@ -315,7 +315,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.isIncomplete()).isTrue();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyResultWhenNoMetricsExist() {
     // when
     final var actual =
@@ -334,7 +334,7 @@ public class JobMetricsBatchIT {
                 false));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyResultWhenNoMetricsMatchFilter() {
     // given
     final var metric = JobMetricsBatchFixtures.createRandomized(b -> b);
@@ -361,7 +361,7 @@ public class JobMetricsBatchIT {
                 false));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterByAuthorizedTenants() {
     // given
     final var metricTenant1 = JobMetricsBatchFixtures.createRandomized(b -> b.tenantId(TENANT1));
@@ -387,7 +387,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metricTenant1);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyResultWhenNoAuthorizedTenants() {
     // given
     final var metric = JobMetricsBatchFixtures.createRandomized(b -> b.tenantId(TENANT1));
@@ -415,7 +415,7 @@ public class JobMetricsBatchIT {
                 false));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldHandleMetricsWithNullTimestamps() {
     // given - metrics with some zero counts (null timestamps)
     final var metric =
@@ -449,7 +449,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.failed().lastUpdatedAt()).isNull();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAsyncWriteAndReadMetrics() {
     // given
     final var metric = JobMetricsBatchFixtures.createRandomized(b -> b);
@@ -472,7 +472,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metric);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldInsertJobMetricsBatch() {
     // given
     final var metric = JobMetricsBatchFixtures.createRandomized(b -> b);
@@ -494,7 +494,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metric);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldInsertMultipleJobMetricsBatches() {
     // given
     final var metric1 =
@@ -515,7 +515,7 @@ public class JobMetricsBatchIT {
     assertThat(rdbmsWriters).isNotNull();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldInsertJobMetricsBatchWithDifferentTenants() {
     // given
     final var metricTenant1 =
@@ -540,7 +540,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldInsertJobMetricsBatchWithIncompleteBatch() {
     // given
     final var metric = JobMetricsBatchFixtures.createRandomized(b -> b.incompleteBatch(true));
@@ -561,7 +561,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertGlobalStats(actual, metric);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldInsertJobMetricsBatchWithNullLastUpdatedTimes() {
     // given - create a batch with zero counts, so no lastUpdatedAt times
     final var model =
@@ -589,7 +589,7 @@ public class JobMetricsBatchIT {
     assertThat(model.lastCreatedAt()).isNull();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldCleanupJobMetricsBatchesProperly() {
     // given
     final var recentA =
@@ -656,7 +656,7 @@ public class JobMetricsBatchIT {
     assertThat(deletedCount).isEqualTo(2);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldCleanupJobMetricsBatchesWithLimit() {
     // given - create 5 old records
     final var oldTimestamp = NOW.minusYears(3);
@@ -679,7 +679,7 @@ public class JobMetricsBatchIT {
     assertThat(deletedCount).isEqualTo(3);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldNotCleanupRecentJobMetricsBatches() {
     // given - create only recent records
     final var startTime1 = NOW.minusMinutes(3);
@@ -706,7 +706,7 @@ public class JobMetricsBatchIT {
   // Job Type Statistics Tests
   // ==========================================================================
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateJobStatisticsByJobType() {
     // given
     final var metricJobTypeA = JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A));
@@ -741,7 +741,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertJobTypeStats(actual.items().get(1), metricJobTypeB);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateJobTypeStatsAcrossMultipleBatches() {
     // given - multiple batches for same job type
     final var metric1 = JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A));
@@ -771,7 +771,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertJobTypeStats(actual.items().get(0), metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldCountDistinctWorkersPerJobType() {
     // given - multiple workers for same job type
     final var metricWorker1 =
@@ -802,7 +802,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.items().get(0).workers()).isEqualTo(2); // WORKER_1 and WORKER_2
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterJobTypeStatsByTimeRange() {
     // given
     final var metricOld =
@@ -832,7 +832,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.items().get(0).jobType()).isEqualTo(metricMiddle.jobType());
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterJobTypeStatsByJobTypeExactMatch() {
     // given
     final var metricJobTypeA =
@@ -864,7 +864,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertJobTypeStats(actual.items().getFirst(), metricJobTypeA);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterJobTypeStatsByJobTypeLike() {
     // given
     final var metricFetchOrders =
@@ -898,7 +898,7 @@ public class JobMetricsBatchIT {
     assertThat(jobTypes).containsExactly("fetch-customers", "fetch-orders");
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterJobTypeStatsByJobTypeIn() {
     // given
     final var metricA =
@@ -938,7 +938,7 @@ public class JobMetricsBatchIT {
   // Job Worker Statistics Tests
   // ==========================================================================
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateJobStatisticsByWorker() {
     // given
     final var metricWorker1 =
@@ -981,7 +981,7 @@ public class JobMetricsBatchIT {
         metricWorker2);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateWorkerStatsAcrossMultipleBatches() {
     // given - multiple batches for same worker
     final var metric1 =
@@ -1015,7 +1015,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterWorkerStatsByJobType() {
     // given - workers for different job types
     final var metricWorkerA =
@@ -1047,7 +1047,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metricWorkerA);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterWorkerStatsByTimeRange() {
     // given
     final var metricOld =
@@ -1086,7 +1086,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_2);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterWorkerStatsByAuthorizedTenants() {
     // given
     final var metricTenant1 =
@@ -1119,7 +1119,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metricTenant1);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyWorkerStatsWhenNoMetricsMatchFilter() {
     // given
     final var metric =
@@ -1143,7 +1143,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.total()).isZero();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyWorkerStatsWhenJobTypeDoesNotMatch() {
     // given
     final var metric =
@@ -1167,7 +1167,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.total()).isZero();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyWorkerStatsWhenNoAuthorizedTenants() {
     // given
     final var metric =
@@ -1192,7 +1192,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.total()).isZero();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnMaxLastUpdatedAtForWorkerStats() {
     // given - multiple batches for the same worker
     final var metric1 =
@@ -1221,7 +1221,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateWorkerStatsAcrossMultipleTenants() {
     // given - same worker, same job type, different tenants
     final var metricTenant1 =
@@ -1257,7 +1257,7 @@ public class JobMetricsBatchIT {
   // Time-series statistics
   // -----------------------------------------------------------------------
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnSingleTimeBucketForSingleMetric() {
     // given — one row with a resolution larger than the window so everything lands in one bucket
     final var metric =
@@ -1283,7 +1283,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().getFirst(), metric);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateTwoBatchesIntoSameBucket() {
     // given — two rows with the same start-hour, same jobType → both collapse into one bucket
     final var base = NOW.truncatedTo(ChronoUnit.HOURS);
@@ -1327,7 +1327,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().getFirst(), metrics);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnTwoBucketsWhenMetricsSpanTwoHours() {
     // given — two rows in different hours
     final var base = NOW.truncatedTo(ChronoUnit.HOURS);
@@ -1372,7 +1372,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(1), metric2);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateTwoBatchesIntoFirstBucketAndKeepThirdBucketSeparate() {
     // given — metric1 and metric2 start within the same minute → same bucket
     //         metric3 starts in a different minute → separate bucket
@@ -1433,7 +1433,7 @@ public class JobMetricsBatchIT {
     JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(1), metric3);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldRespectJobTypeFilterForTimeSeries() {
     // given — two different job types in the same time range
     final var metric1 =
@@ -1463,7 +1463,7 @@ public class JobMetricsBatchIT {
     assertTimeSeriesStats(actual.items().get(0), metric1);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyTimeSeriesWhenNoDataInRange() {
     // given — data outside the query window
     final var metric =
@@ -1489,7 +1489,7 @@ public class JobMetricsBatchIT {
     assertThat(actual.items()).isEmpty();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnFirstPageOfTimeSeries() {
     // given — 3 batches each in a distinct minute bucket
     final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
@@ -1543,7 +1543,7 @@ public class JobMetricsBatchIT {
     assertTimeSeriesStats(firstPage.items().get(1), metric2);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnSecondPageOfTimeSeriesUsingCursor() {
     // given — 3 batches each in a distinct minute bucket
     final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
@@ -1611,7 +1611,7 @@ public class JobMetricsBatchIT {
     assertTimeSeriesStats(secondPage.items().getFirst(), metric3);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyTimeSeriesWhenTenantNotAuthorized() {
     // given
     final var metric =
@@ -1641,7 +1641,7 @@ public class JobMetricsBatchIT {
   // getJobErrorStatistics
   // -----------------------------------------------------------------------
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnErrorStatisticsGroupedByErrorCodeAndMessage() {
     // given — two jobs with the same error, one job with a different error
     final var uniqueTenant = "error-tenant-" + CommonFixtures.generateRandomString(8);
@@ -1707,7 +1707,7 @@ public class JobMetricsBatchIT {
     assertErrorStats(timeout, "TIMEOUT", "Connection timed out", 1);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterErrorStatisticsByErrorCodePrefix() {
     // given
     final var uniqueTenant = "error-tenant-" + CommonFixtures.generateRandomString(8);
@@ -1754,7 +1754,7 @@ public class JobMetricsBatchIT {
     assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnEmptyErrorStatisticsWhenTenantNotAuthorized() {
     // given
     final var now = NOW;
@@ -1785,7 +1785,7 @@ public class JobMetricsBatchIT {
     assertThat(result.items()).isEmpty();
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldOnlyCountJobsFromAuthorizedTenants() {
     // given — one job on TENANT1 (authorized), one on TENANT2 (not authorized), same error
     final var now = NOW;
@@ -1827,7 +1827,7 @@ public class JobMetricsBatchIT {
     assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldIncludeFailedStateAndExcludeCompletedState() {
     // given — one ERROR_THROWN job (with errorCode), one FAILED job (no errorCode),
     //         one COMPLETED job (must be excluded by the state filter)
@@ -1896,7 +1896,7 @@ public class JobMetricsBatchIT {
     assertThat(failed.workers()).isEqualTo(1);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldReturnPagesOfErrorStatisticsUsingCursor() throws InterruptedException {
     // given — 5 jobs: two FAILED with empty errorCode and three ERROR_THROWN with distinct codes.
     // Sort order is errorCode ASC NULLS FIRST, then errorMessage ASC, so:

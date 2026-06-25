@@ -24,7 +24,6 @@ import io.camunda.db.rdbms.write.service.UsageMetricWriter;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
-import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
@@ -42,6 +41,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -116,7 +116,7 @@ public class UsageMetricIT {
     usageMetricTUWriter.cleanupMetrics(PARTITION_ID.intValue(), NOW.plusDays(1), Integer.MAX_VALUE);
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateMetricsWithTenant() {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
@@ -148,7 +148,7 @@ public class UsageMetricIT {
                     new UsageMetricStatisticsEntityTenant(6L, 6L))));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateTUMetricsWithTenant() {
     // given
     writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
@@ -175,7 +175,7 @@ public class UsageMetricIT {
                     new UsageMetricTUStatisticsEntityTenant(3L))));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateMetricsWithoutTenant() {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
@@ -194,7 +194,7 @@ public class UsageMetricIT {
     assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(16, 14, 2, null));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldAggregateTUMetricsWithoutTenant() {
     // given
     writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
@@ -213,7 +213,7 @@ public class UsageMetricIT {
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(3, null));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterMetricsByDate() {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
@@ -232,7 +232,7 @@ public class UsageMetricIT {
     assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(1, 1, 1, null));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterTUMetricsByDate() {
     // given
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT1, ASSIGNEE_HASH_1);
@@ -255,7 +255,7 @@ public class UsageMetricIT {
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(2, null));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterMetricsWithTenantByDate() {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
@@ -287,7 +287,7 @@ public class UsageMetricIT {
                     TENANT2, new UsageMetricStatisticsEntityTenant(1L, 1L))));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterTUMetricsWithTenantByDate() {
     // given
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_1);
@@ -312,7 +312,7 @@ public class UsageMetricIT {
                 1, Map.of(TENANT2, new UsageMetricTUStatisticsEntityTenant(1L))));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterMetricsWithTenantByTenantId() {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
@@ -332,7 +332,7 @@ public class UsageMetricIT {
                 1, 0, 1, Map.of(TENANT1, new UsageMetricStatisticsEntityTenant(1L, 0L))));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldFilterTUMetricsWithTenantByTenantId() {
     // given
     writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_1);
@@ -354,7 +354,7 @@ public class UsageMetricIT {
                 2, Map.of(TENANT1, new UsageMetricTUStatisticsEntityTenant(2L))));
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldCleanupUsageMetricsProperly() {
     // given
     writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
@@ -390,7 +390,7 @@ public class UsageMetricIT {
             });
   }
 
-  @RdbmsTestTemplate
+  @TestTemplate
   public void shouldCleanupUsageMetricsTUProperly() {
     // given
     writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
