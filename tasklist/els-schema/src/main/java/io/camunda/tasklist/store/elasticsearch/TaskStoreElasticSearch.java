@@ -12,6 +12,7 @@ import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static java.util.stream.Collectors.toList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.ScriptSortType;
@@ -115,7 +116,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         throw new NotFoundException(
             String.format("%s with id %s was not found", taskTemplate.getIndexName(), userTaskKey));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -308,8 +309,8 @@ public class TaskStoreElasticSearch implements TaskStore {
       } else {
         throw new NotFoundException(String.format("No tasks were found for ids %s", ids));
       }
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
+    } catch (final IOException | ElasticsearchException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
@@ -471,7 +472,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         }
       }
       return tasks;
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);

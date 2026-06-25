@@ -9,6 +9,7 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -24,6 +26,7 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.views.TaskSearchView;
@@ -117,6 +120,20 @@ class TaskStoreElasticSearchTest {
     // Then
     verify(tenantHelper).makeQueryTenantAware(any(Query.class), eq(Set.of("tenant_a", "tenant_b")));
     assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void getTaskShouldWrapElasticsearchExceptionInTasklistRuntimeException() throws IOException {
+    // Given a server-side ES failure (e.g. "all shards failed") surfaces as an
+    // ElasticsearchException, which is a RuntimeException rather than an IOException.
+    when(tenantHelper.makeQueryTenantAware(any(Query.class))).thenAnswer(i -> i.getArgument(0));
+    when(esClient.search(any(SearchRequest.class), eq(TaskEntity.class)))
+        .thenThrow(mock(ElasticsearchException.class));
+
+    // When / Then it must be mapped to a TasklistRuntimeException (handled at WARN) instead of
+    // leaking to the generic exception handler (logged at ERROR). See issue #35823.
+    assertThatThrownBy(() -> instance.getTask("123456789"))
+        .isInstanceOf(TasklistRuntimeException.class);
   }
 
   @SuppressWarnings("unchecked")

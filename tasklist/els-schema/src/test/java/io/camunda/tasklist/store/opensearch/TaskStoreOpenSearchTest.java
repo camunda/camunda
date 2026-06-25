@@ -9,6 +9,7 @@ package io.camunda.tasklist.store.opensearch;
 
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
@@ -38,6 +40,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -120,6 +123,19 @@ public class TaskStoreOpenSearchTest {
     // Then
     verify(tenantAwareClient, never()).search(any(), any(Class.class));
     assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void getTaskShouldWrapOpenSearchExceptionInTasklistRuntimeException() throws IOException {
+    // Given a server-side OS failure (e.g. "all shards failed") surfaces as an
+    // OpenSearchException, which is a RuntimeException rather than an IOException.
+    when(tenantAwareClient.search(any(), eq(TaskEntity.class)))
+        .thenThrow(mock(OpenSearchException.class));
+
+    // When / Then it must be mapped to a TasklistRuntimeException (handled at WARN) instead of
+    // leaking to the generic exception handler (logged at ERROR). See issue #35823.
+    assertThatThrownBy(() -> instance.getTask("123456789"))
+        .isInstanceOf(TasklistRuntimeException.class);
   }
 
   private static TaskEntity getTaskEntity(final TaskState taskState) {

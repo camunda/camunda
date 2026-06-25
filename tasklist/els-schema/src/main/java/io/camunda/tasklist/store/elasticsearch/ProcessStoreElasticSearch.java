@@ -8,6 +8,7 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
@@ -80,7 +81,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Process with key %s not found", processDefinitionKey));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException(e);
     }
   }
@@ -124,7 +125,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -150,7 +151,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", processId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -437,7 +438,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         return getAggregateSearchHits(bpmnProcessIdBuckets);
       }
 
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);

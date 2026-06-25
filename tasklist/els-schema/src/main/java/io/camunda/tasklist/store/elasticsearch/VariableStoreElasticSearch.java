@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -168,7 +169,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     try {
       final var bulkOperations = finalVariables.stream().map(this::createUpsertRequest).toList();
       ElasticsearchUtil.executeBulkRequest(esClient, bulkOperations, Refresh.WaitFor);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new TasklistRuntimeException("Error persisting task variables", e);
     }
   }
@@ -211,7 +212,7 @@ public class VariableStoreElasticSearch implements VariableStore {
       } else {
         throw new NotFoundException(String.format("Variable with id %s was not found", variableId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -241,7 +242,7 @@ public class VariableStoreElasticSearch implements VariableStore {
         throw new NotFoundException(
             String.format("Task variable with id %s was not found", variableId));
       }
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
