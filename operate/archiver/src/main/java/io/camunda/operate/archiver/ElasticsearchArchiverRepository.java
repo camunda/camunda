@@ -424,7 +424,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
               metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_REINDEXED_DOCS, total);
               timer.stop(
                   metrics.getHistogram(
-                      Metrics.TIMER_NAME_ARCHIVER_REQUEST_DURATION, Metrics.TAG_KEY_TYPE,
+                      Metrics.TIMER_NAME_ARCHIVER_REQUEST_DURATION,
+                      Metrics.TAG_KEY_TYPE,
                       "reindex"));
             },
             executor);
@@ -467,7 +468,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
               metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_DELETED_DOCS, deleted);
               timer.stop(
                   metrics.getHistogram(
-                      Metrics.TIMER_NAME_ARCHIVER_REQUEST_DURATION, Metrics.TAG_KEY_TYPE,
+                      Metrics.TIMER_NAME_ARCHIVER_REQUEST_DURATION,
+                      Metrics.TAG_KEY_TYPE,
                       "delete"));
             },
             executor);

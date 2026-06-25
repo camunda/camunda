@@ -36,8 +36,7 @@ import org.slf4j.LoggerFactory;
 
 class ArchiveByIdTaskSupplierTest {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ArchiveByIdTaskSupplierTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveByIdTaskSupplierTest.class);
   private static final Executor DIRECT_EXECUTOR = Runnable::run;
   private final Metrics metrics = mock(Metrics.class);
 
@@ -106,8 +105,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -139,8 +137,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(nonRetryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -186,8 +183,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> {
               final var call = reindexCallCount.incrementAndGet();
               if (call == 1 || call == 3 || call == 4 || call == 5 || call == 6) {
@@ -383,8 +379,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             (searchAfter, size) ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(
-                        List.of(IdWithRouting.of("doc1")), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor(),

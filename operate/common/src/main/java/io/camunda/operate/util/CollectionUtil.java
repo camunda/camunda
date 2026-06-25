@@ -164,19 +164,13 @@ public abstract class CollectionUtil {
     if (subsetId >= subsetCount) {
       return new ArrayList<>();
     }
-    final Integer size = list.size();
-    final int bucketSize = (int) Math.round((double) size / (double) subsetCount);
+    final int size = list.size();
+    final int bucketSize = (int) Math.ceil((double) size / (double) subsetCount);
     final int start = bucketSize * subsetId;
     if (start >= size) {
       return new ArrayList<>();
     }
-    final int end;
-    if (subsetId == subsetCount - 1) {
-      end = size;
-    } else {
-      end = Math.min(start + bucketSize, size);
-    }
-    return new ArrayList<>(list.subList(start, end));
+    return new ArrayList<>(list.subList(start, Math.min(start + bucketSize, size)));
   }
 
   public static <T> T chooseOne(final List<T> items) {

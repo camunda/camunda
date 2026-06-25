@@ -89,9 +89,10 @@ public class Archiver {
         LOGGER.info("Archive-by-ID mode enabled (opt-in).");
       }
 
-      for (int i = 0; i < threadsCount; i++) {
+      final int effectiveThreadsCount = Math.min(threadsCount, partitionIds.size());
+      for (int i = 0; i < effectiveThreadsCount; i++) {
         final List<Integer> partitionIdsSubset =
-            CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
+            CollectionUtil.splitAndGetSublist(partitionIds, effectiveThreadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
           final AbstractArchiverJob processInstancesArchiverJob =
               archiveById

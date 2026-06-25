@@ -110,8 +110,7 @@ public class ArchiveByIdTaskSupplier<T> {
                         if (isRetryableError(ex)
                             && retryCount.incrementAndGet()
                                 <= archiverProperties.getArchiveByIdMaxRetryAttempts()) {
-                          metrics.recordCounts(
-                              Metrics.COUNTER_NAME_ARCHIVER_BATCH_RETRIES, 1);
+                          metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_BATCH_RETRIES, 1);
                           adjustBatchSize(ex);
 
                           logger.trace(
@@ -171,8 +170,7 @@ public class ArchiveByIdTaskSupplier<T> {
     return deleter
         .apply(sourceIdx, batch.documents())
         .thenApply(
-            deleteCount ->
-                validateProcessedCount("delete", deleteCount, batch.documents().size()));
+            deleteCount -> validateProcessedCount("delete", deleteCount, batch.documents().size()));
   }
 
   private long validateProcessedCount(
