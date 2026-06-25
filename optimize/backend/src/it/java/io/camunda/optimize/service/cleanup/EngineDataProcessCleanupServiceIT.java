@@ -36,7 +36,8 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
       new RandomStringGenerator.Builder().withinRange('a', 'z').get();
 
   @RegisterExtension
-  LogCapturer cleanupServiceLogs = LogCapturer.create().captureForType(CleanupService.class);
+  LogCapturer engineDataProcessCleanupServiceLogs =
+      LogCapturer.create().captureForType(EngineDataProcessCleanupService.class);
 
   @BeforeEach
   public void enableProcessCleanup() {
@@ -328,7 +329,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
 
     assertProcessInstanceDataExists(List.of(unaffectedProcessInstanceForSameDefinition));
     // and the misconfigured process is logged
-    cleanupServiceLogs.assertContains(
+    engineDataProcessCleanupServiceLogs.assertContains(
         String.format(
             "History Cleanup Configuration contains definition keys for which there is no "
                 + "definition imported yet. The keys without a match in the database are: [%s]",
