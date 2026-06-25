@@ -915,6 +915,29 @@ class JobMetricsBatchDbReaderTest {
   }
 
   @Test
+  void shouldCoerceNullErrorCodeAndErrorMessageToEmptyString() {
+    // given — Oracle stores empty strings as NULL; the mapper returns null for both fields
+    final var dbResult = new JobErrorStatisticsDbResult(null, null, 2);
+    when(jobMetricsBatchMapper.jobErrorStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobErrorStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobErrorStatistics(query, resourceAccessChecks);
+
+    // then — null must be coerced to "" so the OAS schema (required, non-nullable) is respected
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().errorCode()).isEqualTo("");
+    assertThat(result.items().getFirst().errorMessage()).isEqualTo("");
+    assertThat(result.items().getFirst().workers()).isEqualTo(2);
+  }
+
+  @Test
   void shouldReturnEmptyErrorStatisticsWhenMapperReturnsEmptyList() {
     // given
     when(jobMetricsBatchMapper.jobErrorStatistics(any())).thenReturn(List.of());
