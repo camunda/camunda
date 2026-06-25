@@ -14,7 +14,8 @@ import {Checkbox, ComboBox, Dropdown} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
 import {InstancesList} from '#/operate/shared/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel';
-import {SectionLabel, IndentedGroup} from './styled';
+import {RadioButtonChecked, WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled';
+import {SectionLabel, IndentedGroup, IconLabel, CanceledIcon} from './styled';
 
 type Props = {
 	process?: string;
@@ -120,7 +121,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 					<IndentedGroup>
 						<Checkbox
 							id="filter-active"
-							labelText={t('operate.processes.filters.active')}
+							labelText={
+								<IconLabel>
+									<RadioButtonChecked size={16} />
+									{t('operate.processes.filters.active')}
+								</IconLabel>
+							}
 							checked={active}
 							onChange={(_, {checked}) => {
 								void navigate({to: '.', search: (prev) => ({...prev, active: checked})});
@@ -128,7 +134,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 						/>
 						<Checkbox
 							id="filter-incidents"
-							labelText={t('operate.processes.filters.incidents')}
+							labelText={
+								<IconLabel>
+									<WarningFilled size={16} />
+									{t('operate.processes.filters.incidents')}
+								</IconLabel>
+							}
 							checked={incidents}
 							onChange={(_, {checked}) => {
 								void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
@@ -147,7 +158,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 					<IndentedGroup>
 						<Checkbox
 							id="filter-completed"
-							labelText={t('operate.processes.filters.completed')}
+							labelText={
+								<IconLabel>
+									<CheckmarkOutline size={16} />
+									{t('operate.processes.filters.completed')}
+								</IconLabel>
+							}
 							checked={completed}
 							onChange={(_, {checked}) => {
 								void navigate({to: '.', search: (prev) => ({...prev, completed: checked})});
@@ -155,7 +171,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 						/>
 						<Checkbox
 							id="filter-canceled"
-							labelText={t('operate.processes.filters.canceled')}
+							labelText={
+								<IconLabel>
+									<CanceledIcon size={16} />
+									{t('operate.processes.filters.canceled')}
+								</IconLabel>
+							}
 							checked={canceled}
 							onChange={(_, {checked}) => {
 								void navigate({to: '.', search: (prev) => ({...prev, canceled: checked})});

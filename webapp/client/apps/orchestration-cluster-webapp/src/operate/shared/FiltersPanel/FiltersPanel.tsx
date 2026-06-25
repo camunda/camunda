@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {CollapsablePanel} from '../CollapsablePanel/CollapsablePanel';
 import {Button} from '@carbon/react';
-import {Footer} from './styled';
+import {Container, Footer} from './styled';
 
 type Props = {
 	localStorageKey: 'isFiltersCollapsed' | 'isDecisionsFiltersCollapsed' | 'isAuditLogsFiltersCollapsed' | 'isProcessesFiltersCollapsed';
@@ -56,7 +56,7 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 				</Footer>
 			}
 		>
-			{children}
+			<Container>{children}</Container>
 		</CollapsablePanel>
 	);
 };
