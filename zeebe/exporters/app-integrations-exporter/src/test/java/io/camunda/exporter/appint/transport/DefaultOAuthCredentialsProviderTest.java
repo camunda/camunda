@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -288,6 +289,30 @@ class DefaultOAuthCredentialsProviderTest {
         .isInstanceOf(IOException.class)
         .hasMessageContaining("HTTP 400")
         .hasMessageContaining("invalid_client");
+  }
+
+  @Test
+  void shouldFallBackToDefaultTimeoutsWhenNullOrNonPositive() throws Exception {
+    // given — null, zero and negative timeouts must not reach HttpClient as 0ms (infinite)
+    for (final Duration invalid : new Duration[] {null, Duration.ZERO, Duration.ofMillis(-1)}) {
+      // when
+      provider = newProvider(invalid, invalid);
+
+      // then — both timeouts fall back to the bounded defaults
+      assertThat(timeoutField("connectTimeout"))
+          .isEqualTo(DefaultOAuthCredentialsProvider.DEFAULT_CONNECT_TIMEOUT);
+      assertThat(timeoutField("readTimeout"))
+          .isEqualTo(DefaultOAuthCredentialsProvider.DEFAULT_READ_TIMEOUT);
+
+      provider.close();
+      provider = null;
+    }
+  }
+
+  private Duration timeoutField(final String name) throws Exception {
+    final Field field = DefaultOAuthCredentialsProvider.class.getDeclaredField(name);
+    field.setAccessible(true);
+    return (Duration) field.get(provider);
   }
 
   private DefaultOAuthCredentialsProvider newProvider() {

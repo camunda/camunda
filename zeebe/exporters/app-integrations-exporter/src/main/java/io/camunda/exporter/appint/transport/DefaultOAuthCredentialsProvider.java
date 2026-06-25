@@ -77,6 +77,18 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
 
   static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(5);
 
+  /**
+   * Returns {@code configured} only when it is a positive duration; otherwise falls back to {@code
+   * fallback}. A non-positive value (null, zero or negative) would otherwise reach Apache
+   * HttpClient as a {@code 0}ms timeout, which it treats as <em>infinite</em> and would defeat the
+   * bounded token-fetch safety.
+   */
+  private static Duration boundedTimeout(final Duration configured, final Duration fallback) {
+    return configured != null && !configured.isZero() && !configured.isNegative()
+        ? configured
+        : fallback;
+  }
+
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
@@ -115,8 +127,8 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
     this.audience = audience;
     this.scope = scope;
     this.resource = resource;
-    this.connectTimeout = connectTimeout != null ? connectTimeout : DEFAULT_CONNECT_TIMEOUT;
-    this.readTimeout = readTimeout != null ? readTimeout : DEFAULT_READ_TIMEOUT;
+    this.connectTimeout = boundedTimeout(connectTimeout, DEFAULT_CONNECT_TIMEOUT);
+    this.readTimeout = boundedTimeout(readTimeout, DEFAULT_READ_TIMEOUT);
     this.metrics = metrics;
 
     // Build the shared client once; it is thread-safe and reused by both the background refresher
