@@ -30,7 +30,7 @@ import {
   variableFilterStore,
   type VariableCondition,
 } from 'modules/stores/variableFilter';
-import type {DraftCondition} from './constants';
+import {VARIABLE_FILTER_OPERATORS, type DraftCondition} from './constants';
 import {
   validateCondition,
   hasErrors,
@@ -341,12 +341,10 @@ const VariableFilterModal: React.FC = observer(() => {
                             {form
                               .getState()
                               .values?.conditions?.some((c) =>
-                                [
-                                  'equals',
-                                  'notEqual',
-                                  'contains',
-                                  'oneOf',
-                                ].includes(c.operator),
+                                VARIABLE_FILTER_OPERATORS.some(
+                                  (op) =>
+                                    op.id === c.operator && op.requiresValue,
+                                ),
                               ) && (
                               <InlineNotification
                                 kind="warning"
