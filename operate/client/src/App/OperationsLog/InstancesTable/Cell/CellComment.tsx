@@ -8,7 +8,7 @@
 
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {Information} from '@carbon/react/icons';
-import {Button} from '@carbon/react';
+import {IconButton} from '@carbon/react';
 import type {DetailsModalState} from 'modules/components/OperationsLogDetailsModal';
 
 type Props = {
@@ -18,16 +18,17 @@ type Props = {
 
 const CellComment: React.FC<Props> = ({item, setDetailsModal}: Props) => {
   return (
-    <Button
+    <IconButton
       kind="ghost"
       size="sm"
-      tooltipPosition="left"
-      iconDescription="Open details"
+      label="Open details"
+      align="bottom-start"
+      autoAlign
       aria-label="Open details"
       onClick={() => setDetailsModal({isOpen: true, auditLog: item})}
-      hasIconOnly
-      renderIcon={Information}
-    />
+    >
+      <Information />
+    </IconButton>
   );
 };
 
