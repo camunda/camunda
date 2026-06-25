@@ -14,6 +14,7 @@ import {Checkbox, ComboBox, Dropdown} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
 import {InstancesList} from '#/operate/shared/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel';
+import {SectionLabel, IndentedGroup} from './styled';
 
 type Props = {
 	process?: string;
@@ -61,7 +62,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 	const selectedProcess = processItems.find((i) => i.id === process) ?? null;
 	const selectedVersion = versionItems.find((i) => i.id === version) ?? versionItems[0] ?? null;
 
-	const isResetDisabled = !process && !active && !incidents && !completed && !canceled;
+	const runningChecked = active && incidents;
+	const runningIndeterminate = !runningChecked && (active || incidents);
+	const finishedChecked = completed && canceled;
+	const finishedIndeterminate = !finishedChecked && (completed || canceled);
+
+	const isResetDisabled = active && incidents && !completed && !canceled && !process;
 
 	return (
 		<InstancesList
@@ -72,6 +78,7 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 					isResetButtonDisabled={isResetDisabled}
 					onResetClick={() => void navigate({to: '.', search: {}})}
 				>
+					<SectionLabel>{t('operate.processes.filters.processSection')}</SectionLabel>
 					<ComboBox
 						id="process-name-filter"
 						titleText={t('operate.processes.filters.name')}
@@ -85,54 +92,76 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 							});
 						}}
 					/>
-					{process && (
-						<Dropdown
-							id="process-version-filter"
-							titleText={t('operate.processes.filters.version')}
-							label=""
-							items={versionItems}
-							itemToString={(item) => item?.label ?? ''}
-							selectedItem={selectedVersion}
-							onChange={({selectedItem}) => {
-								void navigate({
-									to: '.',
-									search: (prev) => ({...prev, version: selectedItem?.id}),
-								});
+					<Dropdown
+						id="process-version-filter"
+						titleText={t('operate.processes.filters.version')}
+						label={t('operate.processes.filters.selectVersion')}
+						items={versionItems}
+						itemToString={(item) => item?.label ?? ''}
+						selectedItem={process ? selectedVersion : null}
+						disabled={!process}
+						onChange={({selectedItem}) => {
+							void navigate({
+								to: '.',
+								search: (prev) => ({...prev, version: selectedItem?.id}),
+							});
+						}}
+					/>
+					<SectionLabel>{t('operate.processes.filters.instancesStates')}</SectionLabel>
+					<Checkbox
+						id="filter-running-instances"
+						labelText={t('operate.processes.filters.runningInstances')}
+						checked={runningChecked}
+						indeterminate={runningIndeterminate}
+						onChange={(_, {checked}) => {
+							void navigate({to: '.', search: (prev) => ({...prev, active: checked, incidents: checked})});
+						}}
+					/>
+					<IndentedGroup>
+						<Checkbox
+							id="filter-active"
+							labelText={t('operate.processes.filters.active')}
+							checked={active}
+							onChange={(_, {checked}) => {
+								void navigate({to: '.', search: (prev) => ({...prev, active: checked})});
 							}}
 						/>
-					)}
+						<Checkbox
+							id="filter-incidents"
+							labelText={t('operate.processes.filters.incidents')}
+							checked={incidents}
+							onChange={(_, {checked}) => {
+								void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
+							}}
+						/>
+					</IndentedGroup>
 					<Checkbox
-						id="filter-active"
-						labelText={t('operate.processes.filters.active')}
-						checked={active}
+						id="filter-finished-instances"
+						labelText={t('operate.processes.filters.finishedInstances')}
+						checked={finishedChecked}
+						indeterminate={finishedIndeterminate}
 						onChange={(_, {checked}) => {
-							void navigate({to: '.', search: (prev) => ({...prev, active: checked})});
+							void navigate({to: '.', search: (prev) => ({...prev, completed: checked, canceled: checked})});
 						}}
 					/>
-					<Checkbox
-						id="filter-incidents"
-						labelText={t('operate.processes.filters.incidents')}
-						checked={incidents}
-						onChange={(_, {checked}) => {
-							void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
-						}}
-					/>
-					<Checkbox
-						id="filter-completed"
-						labelText={t('operate.processes.filters.completed')}
-						checked={completed}
-						onChange={(_, {checked}) => {
-							void navigate({to: '.', search: (prev) => ({...prev, completed: checked})});
-						}}
-					/>
-					<Checkbox
-						id="filter-canceled"
-						labelText={t('operate.processes.filters.canceled')}
-						checked={canceled}
-						onChange={(_, {checked}) => {
-							void navigate({to: '.', search: (prev) => ({...prev, canceled: checked})});
-						}}
-					/>
+					<IndentedGroup>
+						<Checkbox
+							id="filter-completed"
+							labelText={t('operate.processes.filters.completed')}
+							checked={completed}
+							onChange={(_, {checked}) => {
+								void navigate({to: '.', search: (prev) => ({...prev, completed: checked})});
+							}}
+						/>
+						<Checkbox
+							id="filter-canceled"
+							labelText={t('operate.processes.filters.canceled')}
+							checked={canceled}
+							onChange={(_, {checked}) => {
+								void navigate({to: '.', search: (prev) => ({...prev, canceled: checked})});
+							}}
+						/>
+					</IndentedGroup>
 				</FiltersPanel>
 			}
 			topPanel={<div />}

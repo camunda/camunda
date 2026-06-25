@@ -14,8 +14,8 @@ import {Processes} from '#/operate/pages/Processes/Processes';
 const processesSearchSchema = z.object({
 	process: z.string().optional(),
 	version: z.number().int().positive().optional(),
-	active: z.boolean().default(false),
-	incidents: z.boolean().default(false),
+	active: z.boolean().default(true),
+	incidents: z.boolean().default(true),
 	completed: z.boolean().default(false),
 	canceled: z.boolean().default(false),
 });

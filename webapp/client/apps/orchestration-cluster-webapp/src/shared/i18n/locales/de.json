@@ -437,9 +437,14 @@
 			"processes": {
 				"title": "Prozesse",
 				"filters": {
+					"processSection": "Prozess",
 					"name": "Name",
 					"version": "Version",
+					"selectVersion": "Prozessversion auswählen",
 					"allVersions": "Alle Versionen",
+					"instancesStates": "Instanzstatus",
+					"runningInstances": "Laufende Instanzen",
+					"finishedInstances": "Abgeschlossene Instanzen",
 					"active": "Aktiv",
 					"incidents": "Vorfälle",
 					"completed": "Abgeschlossen",

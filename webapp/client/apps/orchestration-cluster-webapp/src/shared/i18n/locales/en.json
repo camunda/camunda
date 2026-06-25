@@ -451,9 +451,14 @@
 			"processes": {
 				"title": "Processes",
 				"filters": {
+					"processSection": "Process",
 					"name": "Name",
 					"version": "Version",
+					"selectVersion": "Select a Process Version",
 					"allVersions": "All versions",
+					"instancesStates": "Instances States",
+					"runningInstances": "Running Instances",
+					"finishedInstances": "Finished Instances",
 					"active": "Active",
 					"incidents": "Incidents",
 					"completed": "Completed",
