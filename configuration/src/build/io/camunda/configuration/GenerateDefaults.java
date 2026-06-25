@@ -82,7 +82,10 @@ public class GenerateDefaults {
 
     final var metadata = readMetadata(inputFile);
     final var expected = generateYamlContent(metadata);
-    final var actual = Files.readString(outputFile.toPath(), StandardCharsets.UTF_8);
+    // Normalize line endings: on Windows, git may check the file out with CRLF even though
+    // the generator always emits LF.
+    final var actual =
+        Files.readString(outputFile.toPath(), StandardCharsets.UTF_8).replace("\r\n", "\n");
 
     if (!expected.equals(actual)) {
       throw new IllegalStateException(
@@ -181,7 +184,6 @@ public class GenerateDefaults {
 
     final StringBuilder sb = new StringBuilder();
     for (final var entry : entries.entrySet()) {
-      sb.append("\n");
       sb.append(renderYamlEntry(entry.getKey(), entry.getValue(), path, metadata));
     }
     return sb.toString();
@@ -218,7 +220,7 @@ public class GenerateDefaults {
       final PropertyMetadata metadata,
       final String currentPath,
       final Map<String, PropertyMetadata> metadataMap) {
-    return "%s%s: # Type: %s%s"
+    return "%s%s: # Type: %s\n%s"
         .formatted(
             renderDescriptionComment(metadata),
             key,
@@ -229,7 +231,7 @@ public class GenerateDefaults {
   private static String renderLeafValue(
       final String key, final Object value, final PropertyMetadata metadata) {
 
-    return "%s%s: %s # Type: %s, Env: %s"
+    return "%s%s: %s # Type: %s, Env: %s\n"
         .formatted(
             renderDescriptionComment(metadata),
             key,
