@@ -123,20 +123,26 @@ Validated on `run-local-cluster.sh` (3 `StandaloneEventBridge` nodes):
   leader is up; the retry-until-registered loop handles the startup race.
 - ✅ **Placement over registered brokers** — a fresh RF-3 topic places cleanly round-robin over the
   registered set (`[0,1,2]/[1,2,0]/[2,0,1]`).
-- ✅ **Fencing + heal trigger** — killing a broker fences it after the session timeout, and the
-  `PlacementHealTask` computes a target excluding it and drives the change-coordinator.
-- ❌ **Removing the gone broker does not complete — in *either* path.** The `LEAVE` step relies on
-  the departing member acting on its own removal (`raftPartition.leave()` is self-only):
-  - *killed broker*: the `LEAVE` command can't reach the dead node → retries forever;
-  - *graceful drain*: the broker shut down before the `LEAVE` committed (drain timed out after 30s;
-    the self-`LEAVE` failed repeatedly even while the node was briefly alive during teardown).
-  Net: the partition keeps the gone broker in its Raft membership (over-membered but still
-  available while quorum holds).
+- ✅ **Fencing + heal trigger** — killing a broker fences it after the session timeout (logged by
+  `BrokerEvictionTask`), and `PlacementHealTask` logs and appends a target excluding it
+  (`active=[0,1]; committed={1=[0,1,2],…} target={1=[0,1],…}`), driving the change-coordinator. The
+  surviving per-topic groups keep their leaders at 2/3 quorum (so the failure below is provably the
+  routing/eviction gap, not lost quorum).
+- ❌ **The actual per-topic Raft reconfiguration does not complete — in *both* directions.** This is
+  the pre-existing CC-3 execution path (`ReconfigurationExecutor` → `TopicReconciler` →
+  Atomix `raftPartition.join()/leave()`), which the liveness FSM only drives:
+  - *LEAVE (shrink)* relies on the departing member self-leaving (`leave()` is self-only): a killed
+    broker can't act (command can't reach it → retries forever), and a drained one exits before the
+    `LEAVE` commits (drain timed out after 30s).
+  - *JOIN (grow)* — even reassigning RF 2→3 with **all brokers alive** stalls: Atomix
+    `raftPartition.join()` of the new member into the existing topic group fails with
+    `ReconfigurationHelper: "Sent join request to all known members, but all failed."`
 
-**Conclusion:** the liveness FSM, broker-side loop, placement, fencing and heal-targeting all work
-end-to-end; the single missing capability is **evicting a member from a per-topic Raft group**, and
-both the kill and drain paths need it. The robust fix is the postponed **leader-driven remote
-removal** below — it resolves both, since it does not depend on the departing member.
+**Conclusion:** the broker liveness FSM, broker-side loop, placement, fencing, and heal-targeting
+all work end-to-end (validated). What does **not** complete is the **per-topic Raft group
+reconfiguration** the heal/reassignment feeds — both JOIN and LEAVE — which lives in the pre-existing
+reconfiguration/Atomix layer, not in this change. LEAVE needs the postponed **leader-driven remote
+removal** below; JOIN needs the `raftPartition.join()` failure investigated (task #18).
 
 > A latent bug the smoke test caught: `UnifiedRecordValue.fromValueType` (an exhaustive `ValueType`
 > switch) didn't handle the new `EVENT_BRIDGE_BROKER`, throwing `MatchException` at stream startup —
