@@ -125,6 +125,47 @@
       </foreach>
     </if>
   </sql>
+  <!--
+    Oracle treats empty strings as NULL. When a cursor field value is '' (empty string),
+    comparison operators like = '' and > '' evaluate to UNKNOWN (NULL comparison), so no
+    rows would be returned.  Map empty-string cursor comparisons to their null-safe equivalents:
+      EQUALS ''  → IS NULL       (match the rows that contain NULL)
+      GREATER '' → IS NOT NULL   (in ASC NULLS FIRST, NULLs sort first; anything after them is non-NULL)
+    All other operators with '' fall through to the default behaviour (which yields no rows,
+    the correct result for e.g. LOWER '' in a NULLS FIRST ascending sort).
+  -->
+  <sql id="keySetPageFilter" databaseId="oracle">
+    <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">
+      WHERE
+      <foreach collection="page.keySetPagination" item="keySet" open="(" separator=" OR "
+        close=")">
+        <foreach collection="keySet.entries" item="entry" open="(" separator=" AND "
+          close=")">
+          <choose>
+            <when test="entry.fieldValue != null and entry.fieldValue.toString().equals('')">
+              <choose>
+                <when test="entry.operator.name().equals('EQUALS')">
+                  ${entry.fieldName} IS NULL
+                </when>
+                <when test="entry.operator.name().equals('GREATER')">
+                  ${entry.fieldName} IS NOT NULL
+                </when>
+                <otherwise>
+                  ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+                </otherwise>
+              </choose>
+            </when>
+            <when test="entry.fieldValue != null">
+              ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+            </when>
+            <otherwise>
+              ${entry.fieldName} ${entry.operator.symbol}
+            </otherwise>
+          </choose>
+        </foreach>
+      </foreach>
+    </if>
+  </sql>
 
   <sql id="orderBy">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
