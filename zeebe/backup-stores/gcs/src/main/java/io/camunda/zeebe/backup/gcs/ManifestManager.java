@@ -56,8 +56,8 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
-  private static final int MAX_LIST_ATTEMPTS = 6;
-  private static final Duration INITIAL_LIST_RETRY_DELAY = Duration.ofMillis(100);
+  private static final int LIST_MAX_RETRIES = 6;
+  private static final Duration MIN_LIST_RETRY_DELAY = Duration.ofMillis(100);
   private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
   private static final RetryDecorator MANIFEST_LIST_RETRY =
       new RetryDecorator(manifestListRetryConfiguration())
@@ -203,7 +203,8 @@ public final class ManifestManager {
   public Collection<BackupStatus> listBackupStatuses(final BackupIdentifierWildcard wildcard) {
     final var blobFilter = filterBlobsByWildcard(wildcard);
     LOG.debug("Listing backup statuses for wildcard {}", wildcard);
-    final var listing = listManifestBlobsWithRetry(wildcardPrefix(wildcard));
+    final var prefix = wildcardPrefix(wildcard);
+    final var listing = listManifestBlobsWithRetry(prefix);
     final var statusFutures = new ArrayList<CompletableFuture<BackupStatus>>();
     for (final var blob : listing) {
       if (!blobFilter.test(blob)) {
@@ -229,15 +230,18 @@ public final class ManifestManager {
 
   private List<Blob> listManifestBlobsWithRetry(final String prefix) {
     try {
-      return MANIFEST_LIST_RETRY.decorate(
+      final var operationName =
           "list GCS backup manifests from bucket '%s' with prefix '%s'"
-              .formatted(bucketInfo.getName(), prefix),
-          () -> listManifestBlobs(prefix),
-          ignored -> false);
+              .formatted(bucketInfo.getName(), prefix);
+      return MANIFEST_LIST_RETRY.decorate(
+          operationName, () -> listManifestBlobs(prefix), ignored -> false);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to list GCS backup manifests", e);
+      throw new RuntimeException(
+          "Failed to list GCS backup manifests from bucket '%s' with prefix '%s'"
+              .formatted(bucketInfo.getName(), prefix),
+          e);
     }
   }
 
@@ -251,10 +255,19 @@ public final class ManifestManager {
   }
 
   private static boolean shouldRetryListOperation(final Throwable error) {
-    return error instanceof StorageException storageException
-        && (storageException.isRetryable()
-            || isServerError(storageException)
-            || isTransientComputeEngineMetadataError(storageException));
+    for (var current = error; current != null; current = current.getCause()) {
+      if (current instanceof final StorageException storageException
+          && shouldRetryStorageException(storageException)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean shouldRetryStorageException(final StorageException storageException) {
+    return storageException.isRetryable()
+        || isServerError(storageException)
+        || isNonHttpIoError(storageException);
   }
 
   private static boolean isServerError(final StorageException e) {
@@ -262,12 +275,14 @@ public final class ManifestManager {
     return statusCode >= 500 && statusCode < 600;
   }
 
-  private static boolean isTransientComputeEngineMetadataError(final Throwable error) {
-    for (Throwable current = error; current != null; current = current.getCause()) {
-      final var message = current.getMessage();
-      if (message != null
-          && message.contains("Unexpected Error code 500")
-          && message.contains("Compute Engine metadata")) {
+  private static boolean isNonHttpIoError(final StorageException e) {
+    return e.getCode() == 0 && hasCause(e, IOException.class);
+  }
+
+  private static boolean hasCause(
+      final Throwable error, final Class<? extends Throwable> causeType) {
+    for (var current = error; current != null; current = current.getCause()) {
+      if (causeType.isInstance(current)) {
         return true;
       }
     }
@@ -276,8 +291,8 @@ public final class ManifestManager {
 
   private static RetryConfiguration manifestListRetryConfiguration() {
     final var retryConfiguration = new RetryConfiguration();
-    retryConfiguration.setMaxRetries(MAX_LIST_ATTEMPTS);
-    retryConfiguration.setMinRetryDelay(INITIAL_LIST_RETRY_DELAY);
+    retryConfiguration.setMaxRetries(LIST_MAX_RETRIES);
+    retryConfiguration.setMinRetryDelay(MIN_LIST_RETRY_DELAY);
     retryConfiguration.setMaxRetryDelay(MAX_LIST_RETRY_DELAY);
     return retryConfiguration;
   }
