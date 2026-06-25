@@ -20,12 +20,18 @@ var update = flag.Bool("update-golden", false,
 // Workload, when set, selects a Makefile workload profile (scenario=<workload>).
 // Workload scenarios render only the load-tester chart — that is where the
 // workload flags apply — so they don't duplicate the storage-matrix renders.
+//
+// SetupTarget, when set, names an alternative Makefile target for rendering the
+// load-test-setup chart only — used to test opt-in chart features that have a
+// dedicated make target (e.g. template-load-test-setup-chaos). This avoids
+// duplicating the full storage matrix for features that are orthogonal to storage.
 type scenario struct {
-	Name     string
-	Storage  string // elasticsearch | opensearch | postgresql | none
-	Optimize bool
-	Stable   bool
-	Workload string // "" = default profile; e.g. "max", "realistic"
+	Name        string
+	Storage     string // elasticsearch | opensearch | postgresql | none
+	Optimize    bool
+	Stable      bool
+	Workload    string // "" = default profile; e.g. "max", "realistic"
+	SetupTarget string // named make target for template-load-test-setup variants
 }
 
 // scenarios covers every unique rendering path produced by the Makefile.
@@ -49,6 +55,10 @@ var scenarios = []scenario{
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
 	{Name: "max", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "max"},
 	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
+	// SetupTarget scenarios render only the load-test-setup chart via a named
+	// Makefile target, verifying opt-in chart features without duplicating the
+	// full storage matrix.
+	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
 }
 
 // versions lists the setup directories under test, each the name of a directory
@@ -90,6 +100,14 @@ func TestGoldenFiles(t *testing.T) {
 					// render just that one with the workload profile applied.
 					if s.Workload != "" {
 						renderAndAssert(t, version, s.Name, "load-tester", ns, "template-load-test", s.Workload)
+						return
+					}
+
+					// SetupTarget scenarios verify opt-in load-test-setup features
+					// via their dedicated Makefile target. They render only that
+					// chart to avoid duplicating the full platform/load-tester matrix.
+					if s.SetupTarget != "" {
+						renderAndAssert(t, version, s.Name, "load-test-setup", ns, s.SetupTarget, "")
 						return
 					}
 
