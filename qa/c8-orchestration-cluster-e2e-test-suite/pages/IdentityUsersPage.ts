@@ -147,10 +147,9 @@ export class IdentityUsersPage {
         exact: true,
       },
     );
-    this.deleteUserModalDeleteButton = this.deleteUserModal.getByRole(
-      'button',
-      {name: /^(danger )?Delete user$/},
-    );
+    this.deleteUserModalDeleteButton = this.deleteUserModal
+      .getByRole('button')
+      .filter({hasText: 'Delete user'});
 
     this.emptyState = page.getByText('No users created yet', {exact: true});
     this.userCell = (name) =>
