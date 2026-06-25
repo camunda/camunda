@@ -199,23 +199,17 @@ manual port-forward required.
 
 **Usage in Claude Code sessions:**
 
-```
-# Verify connection
-mcp__grafana__check_datasources_health()
-  → datasourceUid: "prometheus" should show status: OK
+Always call `mcp__grafana__check_datasources_health()` first to confirm the `prometheus`
+datasource is reachable. Then discover metric names before writing any PromQL query — guessed
+names return empty results silently:
 
-# Always discover metric names before writing queries — guessed names return empty silently
+```bash
 mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="zeebe.*", limit=50)
-
-# Discover active namespaces
-mcp__grafana__list_prometheus_label_values(
-  datasourceUid="prometheus", labelName="namespace",
-  matches=[{filters: [{name: "__name__", value: "zeebe_.*", type: "=~"}]}],
-  startRfc3339="now-24h")
 ```
 
-The `load-test-ops` skill (see [skills/load-test-ops/SKILL.md](skills/load-test-ops/SKILL.md))
-documents confirmed metric names and known dashboard UIDs for the benchmark cluster.
+For the full list of metric names and PromQL queries, see [docs/metrics.md](docs/metrics.md).
+The `load-test-ops` skill ([skills/load-test-ops/SKILL.md](skills/load-test-ops/SKILL.md))
+documents known dashboard UIDs for the benchmark cluster.
 
 ## Test Scenarios
 
