@@ -465,6 +465,57 @@ final class BulkIndexRequestTest {
     }
 
     @Test
+    void shouldIndexJobRecordWithoutBusinessIdOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new JobRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs(
+              "Expect that job records are NOT serialized with businessId on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobRecordWithBusinessIdOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new JobRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs("Expect that job records are serialized with businessId on current version")
+          .containsExactly("order-123");
+    }
+
+    @Test
     void shouldIndexUserTaskRecordWithoutBusinessIdOnPreviousVersion() throws IOException {
       // given
       final var record =

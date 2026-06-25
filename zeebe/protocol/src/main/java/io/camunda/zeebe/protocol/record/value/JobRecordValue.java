@@ -131,6 +131,16 @@ public interface JobRecordValue
   long getRootProcessInstanceKey();
 
   /**
+   * Returns the business ID inherited from the owning process instance, captured when the job is
+   * created within a process. Every job is created inside a process element, so the value is
+   * present whenever the owning instance carries a business ID.
+   *
+   * @return the business ID of the owning process instance, or an empty string when the owning
+   *     instance has no business ID (and for jobs created before 8.10)
+   */
+  String getBusinessId();
+
+  /**
    * @return the bpmn process id of the corresponding process definition
    */
   @Override

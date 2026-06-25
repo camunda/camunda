@@ -179,7 +179,7 @@ final class BulkIndexRequest {
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
 
-  @JsonIgnoreProperties({PRIORITY_PROPERTY, ELEMENT_TYPE_PROPERTY})
+  @JsonIgnoreProperties({PRIORITY_PROPERTY, ELEMENT_TYPE_PROPERTY, BUSINESS_ID_PROPERTY})
   private static final class JobMixin {}
 
   /** Shared by record values that only need to strip {@code businessId} for previous versions. */
