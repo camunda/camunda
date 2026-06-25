@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.plan.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.DatabaseConstants.VERSION_BASELINE_AGGREGATION;
 import static java.util.stream.Collectors.toMap;
 
@@ -113,7 +114,7 @@ public class GenericProcessExecutionPlanInterpreterOS
                                     getConfigurationService()
                                         .getOpenSearchConfiguration()
                                         .getAggregationBucketLimit())
-                                .order(Map.of("_key", SortOrder.Asc))));
+                                .order(Map.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))));
     final SearchResponse<?> response =
         getOsClient()
             .searchWithFixedAggregations(

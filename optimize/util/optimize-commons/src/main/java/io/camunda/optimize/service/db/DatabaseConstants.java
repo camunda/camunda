@@ -78,8 +78,19 @@ public final class DatabaseConstants {
   public static final String ZEEBE_DATA_SOURCE = "zeebe";
   public static final String INGESTED_DATA_SOURCE = "ingested";
   // Aggregation constants
+  public static final String AGGREGATION_FIELD_KEY = "_key";
+  public static final String DATE_AGGREGATION = "dateAggregation";
+  public static final String ELEMENT_AGGREGATION = "elementAggregation";
+  public static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
+  public static final String FILTERED_USER_TASKS_AGGREGATION = "userTasksFilterAggregation";
   public static final String FREQUENCY_AGGREGATION = "_frequency";
+  public static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION = "groupedByFlowNodeIdAggregation";
+  public static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
+  public static final String NESTED_VARIABLE_AGGREGATION = "nestedVariableAggregation";
+  public static final String PROCESS_DEFINITION_KEY_AGGREGATION = "processDefinitionKeyAgg";
+  public static final String PROCESS_DEFINITION_VERSION_AGGREGATION = "processDefinitionVersionAgg";
   public static final String VERSION_BASELINE_AGGREGATION = "versionBaselineAgg";
+  public static final String VERSION_FOR_SORTING_AGGREGATION = "versionForSorting";
   // Units
   public static final String GB_UNIT = "gb";
 

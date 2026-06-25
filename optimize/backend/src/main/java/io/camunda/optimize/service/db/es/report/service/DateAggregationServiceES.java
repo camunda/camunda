@@ -8,6 +8,8 @@
 package io.camunda.optimize.service.db.es.report.service;
 
 import static io.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
+import static io.camunda.optimize.service.db.DatabaseConstants.DATE_AGGREGATION;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.es.filter.util.DateHistogramFilterUtilES.createModelElementDateHistogramLimitingFilterFor;
@@ -58,7 +60,6 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class DateAggregationServiceES extends DateAggregationService {
 
-  private static final String DATE_AGGREGATION = "dateAggregation";
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
   private final DateTimeFormatter dateTimeFormatter;
@@ -195,7 +196,7 @@ public class DateAggregationServiceES extends DateAggregationService {
         .format(OPTIMIZE_DATE_FORMAT)
         .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
         .timeZone(context.getTimezone().toString())
-        .order(NamedValue.of("_key", SortOrder.Desc));
+        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Desc));
 
     if (context.isExtendBoundsToMinMaxStats()
         && context.getMinMaxStats().isMaxValid()
@@ -218,7 +219,7 @@ public class DateAggregationServiceES extends DateAggregationService {
         .format(OPTIMIZE_DATE_FORMAT)
         .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
         .timeZone(context.getTimezone().toString())
-        .order(NamedValue.of("_key", SortOrder.Desc));
+        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Desc));
 
     final Aggregation.Builder.ContainerBuilder abuilder =
         new Aggregation.Builder().dateHistogram(builder.build());

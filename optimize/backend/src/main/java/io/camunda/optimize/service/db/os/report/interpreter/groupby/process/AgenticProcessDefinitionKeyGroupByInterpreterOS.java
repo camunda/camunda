@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_KEY_AGGREGATION;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.withSubaggregations;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_PROCESS_DEFINITION_KEY;
@@ -50,7 +51,6 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterOS
 
   // Must match the aggregation name used by the superclass so the inherited result handling finds
   // the buckets.
-  private static final String PROCESS_DEFINITION_KEY_AGGREGATION = "processDefinitionKeyAgg";
   private static final String PROCESS_DEFINITION_KEY_COUNT_AGGREGATION =
       "processDefinitionKeyCountAgg";
 

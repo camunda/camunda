@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.identity;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
+import static io.camunda.optimize.service.db.DatabaseConstants.FILTERED_USER_TASKS_AGGREGATION;
 import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createInclusiveFlowNodeIdFilterQuery;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
@@ -43,7 +45,6 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 public abstract class AbstractProcessDistributedByIdentityInterpreterOS
     extends AbstractProcessDistributedByInterpreterOS {
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
-  private static final String FILTERED_USER_TASKS_AGGREGATION = "userTasksFilterAggregation";
 
   protected abstract ConfigurationService getConfigurationService();
 
@@ -65,7 +66,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterOS
                 getConfigurationService()
                     .getElasticSearchConfiguration()
                     .getAggregationBucketLimit())
-            .order(Map.of("_key", SortOrder.Asc))
+            .order(Map.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))
             .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
             .missing(
                 FieldValue.of(

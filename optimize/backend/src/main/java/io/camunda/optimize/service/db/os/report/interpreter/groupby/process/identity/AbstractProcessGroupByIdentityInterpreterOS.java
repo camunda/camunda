@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.identity;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
@@ -68,7 +69,9 @@ public abstract class AbstractProcessGroupByIdentityInterpreterOS
             .size(
                 getConfigurationService().getOpenSearchConfiguration().getAggregationBucketLimit())
             .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
-            .order(Map.of("_key", org.opensearch.client.opensearch._types.SortOrder.Asc))
+            .order(
+                Map.of(
+                    AGGREGATION_FIELD_KEY, org.opensearch.client.opensearch._types.SortOrder.Asc))
             .missing(FieldValue.of(GROUP_BY_IDENTITY_MISSING_KEY))
             .build();
     final Aggregation groupByIdentityTermsAggregation =
