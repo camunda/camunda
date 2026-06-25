@@ -10,4 +10,4 @@ metadata:
     deadline-date: TEST_DATE
     registry: harbor
   annotations:
-    topology.kubernetes.io/zone: "europe-west1-d"
+    topology.kubernetes.io/zone: "europe-west1-c"

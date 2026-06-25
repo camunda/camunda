@@ -179,7 +179,7 @@ spec:
           type: RuntimeDefault
       nodeSelector:
         component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-d
+        topology.kubernetes.io/zone: europe-west1-c
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
