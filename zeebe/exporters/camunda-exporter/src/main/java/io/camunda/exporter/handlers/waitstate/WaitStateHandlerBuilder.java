@@ -17,8 +17,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Builds matched pairs of {@link WaitStateAddHandler} and {@link WaitStateRemoveHandler} from a set
- * of {@link WaitStateTransformer}s, so that handler registration stays concise and DRY.
+ * Builds matched triples of {@link WaitStateAddHandler}, {@link WaitStateUpdateHandler}, and {@link
+ * WaitStateRemoveHandler} from a set of {@link WaitStateTransformer}s, so that handler registration
+ * stays concise and DRY.
  *
  * <p>Usage:
  *
@@ -47,6 +48,7 @@ public final class WaitStateHandlerBuilder {
   public <R extends RecordValue & WaitStateRelated> WaitStateHandlerBuilder addTransformer(
       final WaitStateTransformer<R> transformer) {
     handlers.add(new WaitStateAddHandler<>(indexName, transformer, objectMapper));
+    handlers.add(new WaitStateUpdateHandler<>(indexName, transformer, objectMapper));
     handlers.add(new WaitStateRemoveHandler<>(indexName, transformer));
     return this;
   }

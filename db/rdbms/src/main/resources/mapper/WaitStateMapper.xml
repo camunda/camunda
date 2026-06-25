@@ -131,11 +131,18 @@
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.WaitStateDbModel">
     UPDATE ${prefix}WAIT_STATE
-    SET ELEMENT_INSTANCE_KEY  = #{elementInstanceKey},
-        ELEMENT_ID            = #{elementId},
-        ELEMENT_TYPE          = #{elementType},
-        PROCESS_DEFINITION_ID = #{processDefinitionId},
-        DETAILS               = #{details, jdbcType=CLOB}
+    <set>
+      ELEMENT_INSTANCE_KEY  = #{elementInstanceKey},
+      <!--
+        elementId is conditionally updated because the transformer nulls it for FAILED /
+        RETRIES_UPDATED records that may carry the NO_CATCH_EVENT_FOUND sentinel. Omitting
+        it from the SET clause preserves the stored value instead of overwriting it.
+      -->
+      <if test="elementId != null">ELEMENT_ID = #{elementId},</if>
+      ELEMENT_TYPE          = #{elementType},
+      PROCESS_DEFINITION_ID = #{processDefinitionId},
+      DETAILS               = #{details, jdbcType=CLOB}
+    </set>
     WHERE WAIT_STATE_KEY = #{waitStateKey}
   </update>
 
