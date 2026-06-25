@@ -11,9 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
-import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
@@ -146,45 +144,14 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   PartitionManager partitionManager(
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-    final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
-    return new PartitionManagerImpl(
-        physicalTenantId,
-        brokerStartupContext.getConcurrencyControl(),
-        brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getBrokerConfiguration(),
-        brokerStartupContext.getBrokerInfo(),
-        brokerStartupContext.getClusterServices(),
-        brokerStartupContext.getHealthCheckService(),
-        brokerStartupContext.getDiskSpaceUsageMonitor(),
-        brokerStartupContext.getPartitionListeners(),
-        brokerStartupContext.getPartitionRaftListeners(),
-        brokerStartupContext.getSnapshotApiRequestHandler(),
-        brokerStartupContext.getExporterRepository(),
-        brokerStartupContext.getGatewayBrokerTransport(),
-        brokerStartupContext.getJobStreamService().jobStreamer(),
-        brokerStartupContext.getClusterConfigurationService(),
-        brokerStartupContext.getMeterRegistry(),
-        brokerStartupContext.getBrokerClient(),
-        brokerStartupContext.getRocksDbResources(),
-        engineContext.securityConfig(),
-        brokerStartupContext.getSearchClientsProxy(),
-        engineContext.authorizationConverter(),
-        engineContext.featureFlags(),
-        topologyManager);
+    return PartitionManager.createPartitionManager(
+        brokerStartupContext, physicalTenantId, topologyManager);
   }
 
   PartitionManager recoveryPartitionManager(
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-
-    return new RecoveryPartitionManager(
-        physicalTenantId,
-        brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
-        brokerStartupContext.getConcurrencyControl(),
-        brokerStartupContext.getClusterConfigurationService(),
-        brokerStartupContext.getClusterServices().getMembershipService(),
-        brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getMeterRegistry(),
-        topologyManager);
+    return PartitionManager.createRecoveryPartitionManager(
+        brokerStartupContext, physicalTenantId, topologyManager);
   }
 
   private void shutdownOnInconsistentTopology(

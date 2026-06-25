@@ -44,7 +44,10 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             .collect(
                 Collectors.toUnmodifiableMap(
                     physicalTenantId -> physicalTenantId,
-                    brokerStartupContext::getSecurityConfiguration));
+                    physicalTenantId ->
+                        brokerStartupContext
+                            .getPhysicalTenantEngineContext(physicalTenantId)
+                            .securityConfig()));
 
     final var embeddedGatewayService =
         new EmbeddedGatewayService(

@@ -142,7 +142,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
         authConfig -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authConfig);
 
-
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),

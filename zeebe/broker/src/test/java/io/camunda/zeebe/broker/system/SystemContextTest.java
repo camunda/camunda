@@ -604,10 +604,10 @@ final class SystemContextTest {
                     EngineSecurityConfigurations.defaultConfig(),
                     mock(BrokerRequestAuthorizationConverter.class),
                     flags)),
-            mock(UserServices.class),
+            ignored -> mock(UserServices.class),
             mock(PasswordEncoder.class),
-            mock(JwtDecoder.class),
-            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+            authConfig -> mock(JwtDecoder.class),
+            authConfig -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             mock(SearchClientsProxy.class),
             mock(NodeIdProvider.class),
             PhysicalTenantIds.DEFAULT);

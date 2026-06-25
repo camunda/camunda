@@ -18,12 +18,15 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
@@ -212,27 +215,43 @@ class PartitionManagerStepTest {
     }
 
     @Test
-    void shouldPassPerTenantFeatureFlagsToPartitionFactory() throws Exception {
-      // given
-      final var perTenantFlags = FeatureFlags.createDefaultForTests();
-      testBrokerStartupContext.setFeatureFlags(perTenantFlags);
+    void shouldPassDistinctFeatureFlagsToEachPhysicalTenant() throws Exception {
+      // given — two tenants each with a distinct FeatureFlags instance
+      final var flagsA = new FeatureFlags(true, false, false, false, false, false);
+      final var flagsB = new FeatureFlags(false, false, true, false, false, false);
+      final var secondTenantId = "second";
 
-      // when
+      final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+      final var conv = new BrokerRequestAuthorizationConverter(secCfg);
+      testBrokerStartupContext.setPhysicalTenantEngineContext(
+          PHYSICAL_TENANT_ID, new PhysicalTenantEngineContext(secCfg, conv, flagsA));
+      testBrokerStartupContext.setPhysicalTenantEngineContext(
+          secondTenantId, new PhysicalTenantEngineContext(secCfg, conv, flagsB));
+
+      final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
+      final var secondStep = new PartitionManagerStep(secondTenantId);
+
+      // when — start both steps
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      secondStep.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, secondFuture);
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      assertThat(secondFuture).succeedsWithin(TIME_OUT);
 
-      // then — the per-PT flags (not a freshly constructed cluster default) are wired in
-      final var partitionManager =
-          (PartitionManagerImpl)
-              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      // then — each tenant's ZeebePartitionFactory holds its own flags, not the other's
       final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
       factoryField.setAccessible(true);
-      final var zeebeFactory = factoryField.get(partitionManager);
-
       final var flagsField = ZeebePartitionFactory.class.getDeclaredField("featureFlags");
       flagsField.setAccessible(true);
 
-      assertThat(flagsField.get(zeebeFactory)).isSameAs(perTenantFlags);
+      final var managerA =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var managerB =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(secondTenantId);
+
+      assertThat(flagsField.get(factoryField.get(managerA))).isSameAs(flagsA);
+      assertThat(flagsField.get(factoryField.get(managerB))).isSameAs(flagsB);
     }
 
     @Test
