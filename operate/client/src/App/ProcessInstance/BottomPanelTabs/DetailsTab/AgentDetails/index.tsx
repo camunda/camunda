@@ -68,12 +68,14 @@ function StatusIcon({status}: {status: AgentInstanceStatus}) {
 }
 
 type AgentDetailsProps = {
+  selectedElementInstanceKey: string | null;
   agentInstance: AgentInstance | undefined;
   isLoading: boolean;
   isError: boolean;
 };
 
 const AgentDetails: React.FC<AgentDetailsProps> = ({
+  selectedElementInstanceKey,
   agentInstance,
   isLoading,
   isError,
@@ -107,6 +109,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   const statusLabel =
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
+  const hasMultipleActivations = agentInstance.elementInstanceKeys.length > 1;
 
   return (
     <AgentDetailsContainer
@@ -183,6 +186,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             agentInstanceKey={agentInstance.agentInstanceKey}
             isVisible={isConversationHistoryOpen}
             enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+            selectedElementInstanceKey={selectedElementInstanceKey}
+            hasMultipleActivations={hasMultipleActivations}
           />
         </AccordionItem>
         <AccordionItem

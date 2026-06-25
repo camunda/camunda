@@ -21,6 +21,7 @@ type QueryOptions<T> = {
   enabled?: boolean;
   enablePeriodicRefetch?: boolean;
   sortOrder?: QuerySortOrder;
+  elementInstanceKey?: string;
   select?: (result: InfiniteData<QueryAgentInstanceHistoryResponseBody>) => T;
 };
 
@@ -32,7 +33,10 @@ const useAgentInstanceHistory = <
 ) => {
   const historyPayload: QueryAgentInstanceHistoryRequestBody = {
     sort: [{field: 'producedAt', order: options?.sortOrder ?? 'desc'}],
-    filter: {commitStatus: 'COMMITTED'},
+    filter: {
+      commitStatus: 'COMMITTED',
+      elementInstanceKey: options?.elementInstanceKey,
+    },
   };
 
   return useInfiniteQuery({

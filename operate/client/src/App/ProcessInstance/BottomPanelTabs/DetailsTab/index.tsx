@@ -531,6 +531,7 @@ const DetailsTab: React.FC = () => {
           agentInstance={agentInstance}
           isLoading={isAgentLoading}
           isError={isAgentError}
+          selectedElementInstanceKey={elementInstanceKey}
         />
       )}
     </Container>

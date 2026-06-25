@@ -27,4 +27,11 @@ const ShowMoreButton = styled(Button)`
   align-self: center;
 `;
 
-export {ConversationContainer, StatusHint, ShowMoreButton};
+const HistoryControls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+`;
+
+export {ConversationContainer, StatusHint, ShowMoreButton, HistoryControls};

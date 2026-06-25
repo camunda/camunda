@@ -51,6 +51,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -68,6 +70,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -89,6 +93,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -128,6 +134,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -178,6 +186,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -222,6 +232,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -282,6 +294,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -359,6 +373,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -407,6 +423,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -451,6 +469,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        hasMultipleActivations={false}
       />,
       {wrapper: createWrapper()},
     );
@@ -477,5 +497,73 @@ describe('<ConversationHistory />', () => {
     expect(
       messageNoMetrics.queryByTestId('message-duration-metric'),
     ).not.toBeInTheDocument();
+  });
+
+  it('should only show a scope hint when the agent was activated multiple times', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({role: 'ASSISTANT'})]),
+    );
+
+    const {rerender} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey="111"
+        hasMultipleActivations={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(
+      screen.queryByText(
+        'History is scoped to the selected AI agent activation. Other element instances contain more conversation messages.',
+      ),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey="111"
+        hasMultipleActivations={true}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        'History is scoped to the selected AI agent activation. Other element instances contain more conversation messages.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('should show a scoped empty hint when the agent was activated multiple times', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey="111"
+        hasMultipleActivations
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(
+      screen.getByText(
+        'No conversation with the agent instance for this activation found.',
+      ),
+    ).toBeVisible();
   });
 });

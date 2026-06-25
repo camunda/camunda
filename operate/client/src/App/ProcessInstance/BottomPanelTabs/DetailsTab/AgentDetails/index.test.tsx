@@ -52,6 +52,7 @@ describe('<AgentDetails />', () => {
         agentInstance={agentInstance}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -69,6 +70,7 @@ describe('<AgentDetails />', () => {
         agentInstance={{...agentInstance, status: 'THINKING'}}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -85,6 +87,7 @@ describe('<AgentDetails />', () => {
         agentInstance={{...agentInstance, status: 'IDLE'}}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -99,6 +102,7 @@ describe('<AgentDetails />', () => {
         agentInstance={{...agentInstance, status: 'COMPLETED'}}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -115,6 +119,7 @@ describe('<AgentDetails />', () => {
         agentInstance={{...agentInstance, status: 'INITIALIZING'}}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -131,6 +136,7 @@ describe('<AgentDetails />', () => {
         agentInstance={{...agentInstance, status: 'TOOL_DISCOVERY'}}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -147,6 +153,7 @@ describe('<AgentDetails />', () => {
         agentInstance={undefined}
         isLoading={true}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
     );
 
@@ -160,6 +167,7 @@ describe('<AgentDetails />', () => {
         agentInstance={undefined}
         isLoading={false}
         isError={true}
+        selectedElementInstanceKey={null}
       />,
     );
 
@@ -179,6 +187,7 @@ describe('<AgentDetails />', () => {
         agentInstance={agentInstance}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -205,6 +214,7 @@ describe('<AgentDetails />', () => {
         agentInstance={agentInstance}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -246,6 +256,7 @@ describe('<AgentDetails />', () => {
         agentInstance={agentInstance}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -290,6 +301,7 @@ describe('<AgentDetails />', () => {
         agentInstance={agentInstance}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
@@ -322,6 +334,7 @@ describe('<AgentDetails />', () => {
         agentInstance={agentInstance}
         isLoading={false}
         isError={false}
+        selectedElementInstanceKey={null}
       />,
       {wrapper: createWrapper()},
     );
