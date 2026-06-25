@@ -193,6 +193,54 @@ now has.
 > switch) didn't handle the new `EVENT_BRIDGE_BROKER`, throwing `MatchException` at stream startup —
 > hidden from the build by a stale build-cache entry. Fixed.
 
+## Topic readiness & placement (logged leadership)
+
+Two related changes landed alongside the broker FSM; both follow the same principle — correctness by
+re-derivation over replicated state, never a transient side channel.
+
+### Topic readiness: `CREATING → ACTIVE` from logged per-partition leadership
+
+A topic was previously flipped to `ACTIVE` by one-shot gossip (`TopicProvisionedGossip`): each broker
+broadcast "I provisioned partitions X", the registry-shard leader accumulated coverage **in
+leader-local memory**, and flipped when all partitions were covered. That was failover-fragile — if
+the leader died mid-provisioning, the new leader started with empty coverage and the brokers never
+re-reported, leaving the topic stuck `CREATING` forever.
+
+Now each per-topic partition's **elected Raft leader** reports itself to the metadata leader (the
+authoritative, one-reporter-per-partition signal):
+
+```
+per-topic PartitionLifecycle becomes Raft leader (term t)
+   └─ PartitionLeaderReporter callback ─► PartitionLeadershipReporter (gateway, reuses BrokerClient)
+        └─ REPORT_PARTITION_LEADER coordinate-request to the metadata leader, retried until acked
+             └─ ReportPartitionLeaderProcessor: validate (topic serveable, partition in range,
+                term ≥ recorded — the leader-epoch guard) → PARTITION_LEADER_REPORTED
+                  └─ recorded in replicated TOPIC_PARTITION_LEADER state {leader, term}
+                     └─ derive: every partition has a leader ⇒ append TOPIC_REGISTERED(ACTIVE)
+```
+
+Because coverage lives in **replicated** state, a new metadata leader re-derives readiness after
+failover; the report is retried until durably acked, so a leader change before the ack just lands the
+report on the new leader. The gossip (`TopicProvisionedGossip`, the `provisionedSinkRef`
+`AtomicReference` bridge, `MetadataManager.onTopicProvisioned`) is removed. This mirrors the proven
+`BrokerRegistrar` register-until-leader loop. The topic `status` still exists and still drives the
+reconciler's bootstrap-vs-join decision (a Raft necessity — an initial replica bootstraps, a later
+one joins); only its transition is now logged + failover-safe. Validated on a 3-node cluster: a topic
+reaches `ACTIVE` via the report path, stays `ACTIVE` across a metadata-leader kill, and a topic
+created after failover also reaches `ACTIVE`.
+
+### Placement: `SpreadPlacement` (deterministic, topic-seeded)
+
+`RoundRobinPlacement` was replaced by `SpreadPlacement`, seeded by the topic name (still deterministic
+— the reconfiguration planner re-derives the same layout after failover):
+
+- **Rotated start** — a topic's partition 1 no longer always begins on the first broker, so small
+  topics (fewer partitions than brokers) don't pile their leaders onto the front of the broker list.
+- **Shifting follower stride** — followers step away from the leader by a per-topic, wrapping stride
+  instead of sitting consecutively. Consecutive followers make the replica-pairing graph a ring (a
+  failed broker dumps recovery onto its two neighbours); the stride spreads pairings into a mesh, so a
+  failure's leadership/re-replication load fans out across the cluster.
+
 ## Deliberately later
 
 ### Leader-driven member removal (next; unblocks kill + drain)
