@@ -19,6 +19,7 @@ const {
 	wasReloaded: z.boolean(),
 	'tasklist.hasCompletedTask': z.boolean(),
 	'tasklist.customFilters': z.record(z.string(), namedCustomFiltersSchema),
+	'operate.panelStates': z.record(z.string(), z.union([z.boolean(), z.array(z.number())])),
 });
 
 export {storeStateLocally, getStateLocally, clearStateLocally};

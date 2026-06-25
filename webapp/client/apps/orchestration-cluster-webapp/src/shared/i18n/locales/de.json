@@ -431,6 +431,21 @@
 			},
 			"batchOperations": {
 				"title": "Stapeloperationen"
+			},
+			"shared": {
+				"errorMessage": {
+					"message": "Daten konnten nicht abgerufen werden",
+					"additionalInfo": "Laden Sie die Seite neu, um es erneut zu versuchen"
+				},
+				"panelHeader": {
+					"resultCount_one": "{{count}} Ergebnis",
+					"resultCount_other": "{{count}} Ergebnisse",
+					"resultCountMore": "{{count}}+ Ergebnisse"
+				},
+				"diagramShell": {
+					"forbiddenMessage": "Fehlende Berechtigungen zum Anzeigen der Definition",
+					"forbiddenAdditionalInfo": "Bitte wenden Sie sich an den Eigentümer oder Administrator Ihrer Organisation, um die erforderlichen Leseberechtigungen zu erhalten"
+				}
 			}
 		}
 	}
