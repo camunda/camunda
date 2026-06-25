@@ -232,16 +232,17 @@ jobs:
             if [[ "${IS_STREAK}" == "true" && -z "${EXISTING_TS}" ]]; then
               # Path 1: new alert — medic is pinged
               PAYLOAD=$(jq -n \
-                --arg channel  "${ALERT_CHANNEL_ID}" \
-                --arg text     ":rotating_light: ${ACTIVE_MARKER} (${STREAK} consecutive failures)" \
-                --arg pings    "${MEDIC_PINGS}" \
-                --arg streak   "${STREAK}" \
-                --arg base     "${BASE_REF}" \
-                --arg wfurl    "${WORKFLOW_URL}" \
-                --arg runurl   "${LATEST_URL}" \
-                --arg runid    "${LATEST_ID}" \
-                --arg event    "${LATEST_EVENT}" \
-                --arg branch   "${LATEST_BRANCH}" \
+                --arg channel   "${ALERT_CHANNEL_ID}" \
+                --arg text      ":rotating_light: ${ACTIVE_MARKER} (${STREAK} consecutive failures)" \
+                --arg pings     "${MEDIC_PINGS}" \
+                --arg streak    "${STREAK}" \
+                --arg threshold "${STREAK_THRESHOLD}" \
+                --arg base      "${BASE_REF}" \
+                --arg wfurl     "${WORKFLOW_URL}" \
+                --arg runurl    "${LATEST_URL}" \
+                --arg runid     "${LATEST_ID}" \
+                --arg event     "${LATEST_EVENT}" \
+                --arg branch    "${LATEST_BRANCH}" \
                 '{
                   channel: $channel,
                   text:    $text,
@@ -257,7 +258,7 @@ jobs:
                         { type: "mrkdwn", text: ("*Workflow:*\n<" + $wfurl + "|docker-build-helm-integration.yml>") },
                         { type: "mrkdwn", text: ("*Base ref:*\n`" + $base + "`") },
                         { type: "mrkdwn", text: ("*Latest failing run:*\n<" + $runurl + "|#" + $runid + "> (`" + $event + "` on `" + $branch + "`)") },
-                        { type: "mrkdwn", text: ("*Streak threshold:*\n" + $streak + " ≥ 3") }
+                        { type: "mrkdwn", text: ("*Streak threshold:*\n" + $threshold) }
                       ] },
                     { type: "context",
                       elements: [ { type: "mrkdwn",
@@ -280,17 +281,18 @@ jobs:
             elif [[ "${IS_STREAK}" == "true" && -n "${EXISTING_TS}" ]]; then
               # Path 2: update existing alert (silent — no re-notification)
               PAYLOAD=$(jq -n \
-                --arg channel  "${ALERT_CHANNEL_ID}" \
-                --arg ts       "${EXISTING_TS}" \
-                --arg text     ":rotating_light: ${ACTIVE_MARKER} (${STREAK} consecutive failures, ongoing)" \
-                --arg pings    "${MEDIC_PINGS}" \
-                --arg streak   "${STREAK}" \
-                --arg base     "${BASE_REF}" \
-                --arg wfurl    "${WORKFLOW_URL}" \
-                --arg runurl   "${LATEST_URL}" \
-                --arg runid    "${LATEST_ID}" \
-                --arg event    "${LATEST_EVENT}" \
-                --arg branch   "${LATEST_BRANCH}" \
+                --arg channel   "${ALERT_CHANNEL_ID}" \
+                --arg ts        "${EXISTING_TS}" \
+                --arg text      ":rotating_light: ${ACTIVE_MARKER} (${STREAK} consecutive failures, ongoing)" \
+                --arg pings     "${MEDIC_PINGS}" \
+                --arg streak    "${STREAK}" \
+                --arg threshold "${STREAK_THRESHOLD}" \
+                --arg base      "${BASE_REF}" \
+                --arg wfurl     "${WORKFLOW_URL}" \
+                --arg runurl    "${LATEST_URL}" \
+                --arg runid     "${LATEST_ID}" \
+                --arg event     "${LATEST_EVENT}" \
+                --arg branch    "${LATEST_BRANCH}" \
                 '{
                   channel: $channel,
                   ts:      $ts,
@@ -307,7 +309,7 @@ jobs:
                         { type: "mrkdwn", text: ("*Workflow:*\n<" + $wfurl + "|docker-build-helm-integration.yml>") },
                         { type: "mrkdwn", text: ("*Base ref:*\n`" + $base + "`") },
                         { type: "mrkdwn", text: ("*Latest failing run:*\n<" + $runurl + "|#" + $runid + "> (`" + $event + "` on `" + $branch + "`)") },
-                        { type: "mrkdwn", text: ("*Streak threshold:*\n" + $streak + " ≥ 3") }
+                        { type: "mrkdwn", text: ("*Streak threshold:*\n" + $threshold) }
                       ] },
                     { type: "context",
                       elements: [ { type: "mrkdwn",
