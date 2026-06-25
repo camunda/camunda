@@ -12,6 +12,7 @@ import io.camunda.eventbridge.consumergroups.state.group.GroupState;
 import io.camunda.eventbridge.consumergroups.state.group.MemberState;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Read view of the replicated consumer-group state — the event-bridge counterpart of the engine's
@@ -42,6 +43,9 @@ public interface ConsumerGroupState {
 
   /** An immutable snapshot of a group (with its members), or {@code null} if it does not exist. */
   GroupSnapshot groupSnapshot(String groupId);
+
+  /** The ids of every existing group, materialized from a key-only scan (no member reads). */
+  Set<String> groupIds();
 
   /** Snapshots of every group — a full scan, for the coordinator's describe/seed reads. */
   List<GroupSnapshot> allGroups();

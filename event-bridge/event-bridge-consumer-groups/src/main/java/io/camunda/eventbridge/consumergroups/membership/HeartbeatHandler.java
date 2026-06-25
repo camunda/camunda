@@ -202,6 +202,8 @@ public final class HeartbeatHandler extends Actor {
 
   /** Drops reconciliation state for groups that no longer exist (their last member left). */
   private void pruneReconciliations() {
-    reconciliations.keySet().removeIf(groupId -> groupQuery.groupSnapshot(groupId) == null);
+    // Read the live group ids once (pinned into a set) and retain against them, rather than reading
+    // a snapshot per tracked group while iterating.
+    reconciliations.keySet().retainAll(groupQuery.groupIds());
   }
 }

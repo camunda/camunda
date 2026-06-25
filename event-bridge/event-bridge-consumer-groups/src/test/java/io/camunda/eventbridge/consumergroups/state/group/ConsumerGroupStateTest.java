@@ -229,6 +229,19 @@ final class ConsumerGroupStateTest {
   }
 
   @Test
+  void shouldListExistingGroupIds() {
+    memberJoined.applyState(1, join("g1", "m1", null, 1, 1, 4));
+    memberJoined.applyState(2, join("g2", "m1", null, 1, 1, 4));
+
+    assertThat(state.groupIds()).containsExactlyInAnyOrder("g1", "g2");
+
+    // a deleted group drops out of the id set
+    new GroupDeletedApplier(state, offsetState)
+        .applyState(3, new MembershipRecord().setGroupId("g1"));
+    assertThat(state.groupIds()).containsExactly("g2");
+  }
+
+  @Test
   void shouldReviveEmptyGroupToPreparingRebalanceOnRejoin() {
     memberJoined.applyState(1, join("g", "m1", null, 1, 1, 4));
     memberLeft.applyState(

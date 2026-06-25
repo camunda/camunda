@@ -11,6 +11,7 @@ import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.zeebe.db.ZeebeDb;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The coordinator's off-actor read view of consumer-group state — the event-bridge counterpart of
@@ -41,6 +42,11 @@ public final class ConsumerGroupQueryService {
   /** Snapshots of every group — for the coordinator's describe/seed reads. */
   public List<GroupSnapshot> allGroups() {
     return state().allGroups();
+  }
+
+  /** The ids of every existing group, materialized for safe downstream use (no member reads). */
+  public Set<String> groupIds() {
+    return state().groupIds();
   }
 
   private ConsumerGroupState state() {

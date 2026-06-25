@@ -18,9 +18,11 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
@@ -132,9 +134,16 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
 
   @Override
   public List<GroupSnapshot> allGroups() {
-    final var ids = new ArrayList<String>();
+    return snapshots(new ArrayList<>(groupIds()));
+  }
+
+  @Override
+  public Set<String> groupIds() {
+    // Materialize the keys (copied out of the shared flyweight) before returning, so the caller
+    // iterates a stable set rather than reading the column family lazily downstream.
+    final var ids = new HashSet<String>();
     groupColumnFamily.forEach((key, value) -> ids.add(key.toString()));
-    return snapshots(ids);
+    return ids;
   }
 
   @Override
