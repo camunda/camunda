@@ -48,6 +48,9 @@ defaults:
     shell: bash
 
 env:
+  AT: ${{ inputs.at }}
+  DURATION_SECONDS: ${{ inputs.duration-seconds }}
+  NAMESPACE: ${{ inputs.namespace }}
   PROM_URL: https://ci-monitor.benchmark.camunda.cloud
 
 jobs:
@@ -58,16 +61,10 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    env:
-      NAMESPACE: ${{ inputs.namespace }}
-      DURATION_SECONDS: ${{ inputs.duration-seconds }}
-      AT: ${{ inputs.at }}
     outputs:
       results-json: ${{ steps.run-queries.outputs.results-json }}
     steps:
       - name: Validate namespace prefix
-        env:
-          NAMESPACE: ${{ inputs.namespace }}
         run: |
           if [[ ! "$NAMESPACE" =~ ^c8- ]]; then
             echo "::error::Namespace '$NAMESPACE' must start with 'c8-' (e.g. c8-pgoyal-quicker-pr-1234)."
@@ -76,6 +73,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Import Prometheus credentials from Vault
         id: secrets

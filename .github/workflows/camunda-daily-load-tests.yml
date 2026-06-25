@@ -29,6 +29,7 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/reliability-testing'
+  REUSE_TAG: ${{ inputs.reuse-tag }}
 
 jobs:
   benchmark-data:
@@ -40,12 +41,12 @@ jobs:
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Collect benchmark data
         id: data
         run: |
-          var=${{ inputs.reuse-tag || '' }}
-          # ${#var} will return the length of the string
-          if [[ ${#var} -eq 0 ]]; then
+          if [[ -z "${REUSE_TAG}" ]]; then
             echo "Creating new daily load test benchmark"
             echo "benchmark=medic-daily-$(date --utc "+%Y-%m-%d")-$(git rev-parse --short HEAD)-test" >> "$GITHUB_OUTPUT"
           else
@@ -54,9 +55,8 @@ jobs:
             # medic-daily-2025-12-18-b1bd4006-test-b1bd400
             # $ echo ${tag%-*}
             # medic-daily-2025-12-18-b1bd4006-test
-            tag=${{ inputs.reuse-tag }}
-            var=${tag%-*}
-            echo "Re-creating daily load test, with name: $var and tag: $tag"
+            var=${REUSE_TAG%-*}
+            echo "Re-creating daily load test, with name: $var and tag: $REUSE_TAG"
             echo "benchmark=$var" >> "$GITHUB_OUTPUT"
           fi
       - name: Observe build status
@@ -115,6 +115,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -177,6 +178,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -198,6 +200,8 @@ jobs:
     permissions: { }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -267,6 +271,8 @@ jobs:
     permissions: { }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
