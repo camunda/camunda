@@ -24,6 +24,7 @@ import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UserFilter;
@@ -34,7 +35,6 @@ import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -43,7 +43,7 @@ public class TenantIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindTenantByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -55,7 +55,7 @@ public class TenantIT {
     compareTenant(actual, tenant);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindByTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -77,7 +77,7 @@ public class TenantIT {
     compareTenant(searchResult.items().getFirst(), tenant);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -99,7 +99,7 @@ public class TenantIT {
     compareTenant(searchResult.items().getFirst(), tenant);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -118,7 +118,7 @@ public class TenantIT {
     compareTenant(instance, tenantUpdate);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -136,7 +136,7 @@ public class TenantIT {
     assertThat(deletedInstance).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -156,7 +156,7 @@ public class TenantIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -178,7 +178,7 @@ public class TenantIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -202,7 +202,7 @@ public class TenantIT {
     assertThat(searchResult.items().getFirst().key()).isEqualTo(instance.tenantKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -234,7 +234,7 @@ public class TenantIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldAddMemberToTenant(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -260,7 +260,7 @@ public class TenantIT {
     assertThat(users.total()).isEqualTo(1);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldRemoveMemberFromTenant(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

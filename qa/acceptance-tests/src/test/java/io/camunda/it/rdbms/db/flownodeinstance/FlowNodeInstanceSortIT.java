@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -35,7 +35,7 @@ public class FlowNodeInstanceSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByFlowNodeInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -44,7 +44,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::flowNodeInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByFlowNodeInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -53,7 +53,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::flowNodeInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByFlowNodeIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -61,7 +61,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::flowNodeId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByFlowNodeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -69,7 +69,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::flowNodeId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKey(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -77,7 +77,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::processInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessDefinitionKey(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -85,7 +85,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::processDefinitionKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByStartDateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -93,7 +93,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::startDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByStartDateDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -101,7 +101,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::startDate).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByEndDate(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -109,7 +109,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::endDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByState(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -117,7 +117,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::state));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantId(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -125,7 +125,7 @@ public class FlowNodeInstanceSortIT {
         Comparator.comparing(FlowNodeInstanceEntity::tenantId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByIncidentKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -136,7 +136,7 @@ public class FlowNodeInstanceSortIT {
                 Comparator.nullsLast(Comparator.naturalOrder()))));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByIncidentKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -148,7 +148,7 @@ public class FlowNodeInstanceSortIT {
                 .reversed()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByType(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

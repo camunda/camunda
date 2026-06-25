@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -36,7 +36,7 @@ public class GroupMemberIT {
   public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGroupMember(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

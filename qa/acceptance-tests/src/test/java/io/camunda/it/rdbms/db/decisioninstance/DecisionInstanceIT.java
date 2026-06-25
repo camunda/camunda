@@ -23,6 +23,7 @@ import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
@@ -38,7 +39,6 @@ import java.util.List;
 import javax.sql.DataSource;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -47,7 +47,7 @@ public class DecisionInstanceIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindDecisionInstanceById(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -77,7 +77,7 @@ public class DecisionInstanceIT {
     assertThat(actual.evaluatedOutputs()).hasSize(original.evaluatedOutputs().size());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -103,7 +103,7 @@ public class DecisionInstanceIT {
     assertThat(instance.decisionInstanceKey()).isEqualTo(original.decisionInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -128,7 +128,7 @@ public class DecisionInstanceIT {
     assertThat(instance.decisionInstanceKey()).isEqualTo(original.decisionInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllDecisionInstancePaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -157,7 +157,7 @@ public class DecisionInstanceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllDecisionInstancePagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -189,7 +189,7 @@ public class DecisionInstanceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDecisionInstanceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -233,7 +233,7 @@ public class DecisionInstanceIT {
         .isEqualTo(instance.decisionInstanceId());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDecisionInstanceWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -288,7 +288,7 @@ public class DecisionInstanceIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindDecisionInstanceWithLargeFailureMessage(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -306,7 +306,7 @@ public class DecisionInstanceIT {
     assertThat(actual.evaluationFailureMessage().length()).isEqualTo(4000);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -348,7 +348,7 @@ public class DecisionInstanceIT {
         .containsExactlyInAnyOrder(item1.decisionInstanceKey(), item3.decisionInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -390,7 +390,7 @@ public class DecisionInstanceIT {
         .containsExactlyInAnyOrder(item1.decisionInstanceKey(), item3.decisionInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveDecisionInstancesWithLargeInputOutputsAndResultsAndFindDecisionInstanceById(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -443,7 +443,7 @@ public class DecisionInstanceIT {
             List.of(new DecisionInstanceInputEntity(evaluatedInputId, "inputName", largeInput)));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFallbackToOldColumnsWhenFindingDecisionInstanceById(
       final CamundaRdbmsTestApplication testApplication) throws SQLException {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

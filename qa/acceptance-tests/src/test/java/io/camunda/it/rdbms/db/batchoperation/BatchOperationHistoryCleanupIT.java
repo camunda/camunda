@@ -15,20 +15,20 @@ import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class BatchOperationHistoryCleanupIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCleanupBatchOperations(final CamundaRdbmsTestApplication testApplication) {
     // GIVEN
     final var rdbmsService = testApplication.getRdbmsService();
@@ -72,7 +72,7 @@ public class BatchOperationHistoryCleanupIT {
         .isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNOTCleanupBatchOperations(final CamundaRdbmsTestApplication testApplication) {
     // GIVEN
     final var rdbmsService = testApplication.getRdbmsService();

@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel.ClusterVariableDb
 import io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.filter.ClusterVariableFilter;
@@ -28,14 +29,13 @@ import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.sort.ClusterVariableSort;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class ClusterVariableValueFilterIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given 20 random tenant variables
@@ -61,7 +61,7 @@ public class ClusterVariableValueFilterIT {
         testApplication.getRdbmsService(), variableWithFixedName, varName, tenantId, null);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndEqValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -88,7 +88,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndLikeValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -115,7 +115,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndEqNumberValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -142,7 +142,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndEqBooleanValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -168,7 +168,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndNeqValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 20 random variables
@@ -197,7 +197,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndGtValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -223,7 +223,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndGteValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -249,7 +249,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndLtValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -275,7 +275,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndLteValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -301,7 +301,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithNameAndLtValueDouble(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -328,7 +328,7 @@ public class ClusterVariableValueFilterIT {
         rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithMultipleNamesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -369,7 +369,7 @@ public class ClusterVariableValueFilterIT {
     assertThat(searchResult.items().getFirst().name()).isEqualTo(varName);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithMultipleNamesAndValuesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -412,7 +412,7 @@ public class ClusterVariableValueFilterIT {
     assertThat(searchResult.items().getFirst().value()).isEqualTo(varValue);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldTransformAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -459,7 +459,7 @@ public class ClusterVariableValueFilterIT {
     }
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldTransformSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -504,7 +504,7 @@ public class ClusterVariableValueFilterIT {
     }
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldIgnoreEscapedSQLAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -547,7 +547,7 @@ public class ClusterVariableValueFilterIT {
     assertThat(actual.items().getFirst().value()).isEqualTo(variableValue);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldIgnoreEscapedSQLSingleWildcard(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -591,7 +591,7 @@ public class ClusterVariableValueFilterIT {
     assertThat(actual.items().getFirst().value()).isEqualTo(variableValue);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUnescapeESAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -635,7 +635,7 @@ public class ClusterVariableValueFilterIT {
     assertThat(actual.items()).extracting("value").containsExactlyInAnyOrder(varValue, varValue2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUnescapeESSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

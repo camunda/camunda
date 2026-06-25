@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -35,7 +35,7 @@ public class AuditLogSortIT {
 
   public static final long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByAuditLogKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -43,7 +43,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::auditLogKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByAuditLogKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -51,7 +51,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::auditLogKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTimestampAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -59,7 +59,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::timestamp));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTimestampDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -67,7 +67,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::timestamp).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByActorIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -75,7 +75,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::actorId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByActorIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -83,7 +83,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::actorId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -91,7 +91,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::tenantId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -99,7 +99,7 @@ public class AuditLogSortIT {
         Comparator.comparing(AuditLogEntity::tenantId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByEntityTypeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -107,7 +107,7 @@ public class AuditLogSortIT {
         Comparator.comparing(e -> e.entityType().name()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByEntityTypeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

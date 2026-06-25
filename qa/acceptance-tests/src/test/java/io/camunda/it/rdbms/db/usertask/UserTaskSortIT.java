@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -25,7 +26,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -34,7 +34,7 @@ public class UserTaskSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCreationTimeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -42,7 +42,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::creationDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCreationTimeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -50,7 +50,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::creationDate).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCompletionTimeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -58,7 +58,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::creationDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCompletionTimeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -66,7 +66,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::creationDate).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByPriorityAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -74,7 +74,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::priority));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByPriorityDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -82,7 +82,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::priority).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDueDateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -90,7 +90,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::dueDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDueDateDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -98,7 +98,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::dueDate).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByFollowUpDateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -106,7 +106,7 @@ public class UserTaskSortIT {
         Comparator.comparing(UserTaskEntity::followUpDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByFollowUpDateDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

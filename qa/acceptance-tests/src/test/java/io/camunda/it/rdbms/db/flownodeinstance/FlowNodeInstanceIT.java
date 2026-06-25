@@ -21,6 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -32,7 +33,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -42,7 +42,7 @@ public class FlowNodeInstanceIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindFlowNodeInstanceByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -56,7 +56,7 @@ public class FlowNodeInstanceIT {
     compareFlowNodeInstance(actual, flowNodeInstance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -84,7 +84,7 @@ public class FlowNodeInstanceIT {
     assertThat(resolvedInstance.incidentKey()).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindElementInstanceByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -110,7 +110,7 @@ public class FlowNodeInstanceIT {
     compareFlowNodeInstance(searchResult.items().getFirst(), flowNodeInstance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindElementInstanceByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -135,7 +135,7 @@ public class FlowNodeInstanceIT {
     compareFlowNodeInstance(searchResult.items().getFirst(), flowNodeInstance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindElementInstanceByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -158,7 +158,7 @@ public class FlowNodeInstanceIT {
     compareFlowNodeInstance(searchResult.items().getFirst(), flowNodeInstance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllElementInstancePaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -181,7 +181,7 @@ public class FlowNodeInstanceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllElementInstancePagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -207,7 +207,7 @@ public class FlowNodeInstanceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllElementInstancePageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -232,7 +232,7 @@ public class FlowNodeInstanceIT {
     assertThat(searchResult.items()).hasSize(20);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindElementInstanceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -292,7 +292,7 @@ public class FlowNodeInstanceIT {
         .isCloseTo(expected.endDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindElementInstanceWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -337,7 +337,7 @@ public class FlowNodeInstanceIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -379,7 +379,7 @@ public class FlowNodeInstanceIT {
         .containsExactlyInAnyOrder(item1.flowNodeInstanceKey(), item3.flowNodeInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given

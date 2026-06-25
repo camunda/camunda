@@ -16,10 +16,10 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.query.UserTaskQuery;
 import java.util.Set;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -30,7 +30,7 @@ public class UserTaskTagIT {
   private static final String TAG_FOO = "foo";
   private static final String TAG_BAR = "bar";
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskWithSingleTag(final CamundaRdbmsTestApplication testApplication) {
     final var reader = setupReader(testApplication);
     final var writer = setupWriter(testApplication);
@@ -52,7 +52,7 @@ public class UserTaskTagIT {
     assertThat(searchResult.items().getFirst().tags()).containsOnly(TAG_FOO);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindOnlyUserTasksWithAllRequestedTags(
       final CamundaRdbmsTestApplication testApplication) {
     final var reader = setupReader(testApplication);
@@ -90,7 +90,7 @@ public class UserTaskTagIT {
     assertThat(searchResult.items().getFirst().tags()).containsExactlyInAnyOrder(TAG_FOO, TAG_BAR);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotFindUserTasksWithoutTags(final CamundaRdbmsTestApplication testApplication) {
     final var reader = setupReader(testApplication);
     final var writer = setupWriter(testApplication);

@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -25,7 +26,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -34,7 +34,7 @@ public class BatchOperationItemSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByBatchOperationKey(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -42,7 +42,7 @@ public class BatchOperationItemSortIT {
         Comparator.comparing(BatchOperationItemEntity::batchOperationKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByItemKey(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -50,7 +50,7 @@ public class BatchOperationItemSortIT {
         Comparator.comparing(BatchOperationItemEntity::itemKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKey(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -58,7 +58,7 @@ public class BatchOperationItemSortIT {
         Comparator.comparing(BatchOperationItemEntity::processInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByState(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

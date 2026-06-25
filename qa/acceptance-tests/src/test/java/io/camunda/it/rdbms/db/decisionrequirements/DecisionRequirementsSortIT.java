@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -35,7 +35,7 @@ public class DecisionRequirementsSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionRequirementsIdAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -44,7 +44,7 @@ public class DecisionRequirementsSortIT {
         Comparator.comparing(DecisionRequirementsEntity::decisionRequirementsId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionRequirementsIdDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -53,7 +53,7 @@ public class DecisionRequirementsSortIT {
         Comparator.comparing(DecisionRequirementsEntity::decisionRequirementsId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionRequirementsKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -62,7 +62,7 @@ public class DecisionRequirementsSortIT {
         Comparator.comparing(DecisionRequirementsEntity::decisionRequirementsKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionRequirementsKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -71,7 +71,7 @@ public class DecisionRequirementsSortIT {
         Comparator.comparing(DecisionRequirementsEntity::decisionRequirementsKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByNameAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -79,7 +79,7 @@ public class DecisionRequirementsSortIT {
         Comparator.comparing(DecisionRequirementsEntity::name));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByNameDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -87,7 +87,7 @@ public class DecisionRequirementsSortIT {
         Comparator.comparing(DecisionRequirementsEntity::name).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByVersionAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -95,7 +95,7 @@ public class DecisionRequirementsSortIT {
         Comparator.comparing(DecisionRequirementsEntity::version));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByVersionDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

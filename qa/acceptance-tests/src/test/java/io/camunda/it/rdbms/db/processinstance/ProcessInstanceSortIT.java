@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -28,7 +29,6 @@ import java.util.Comparator;
 import java.util.Random;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -37,7 +37,7 @@ public class ProcessInstanceSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -45,7 +45,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::processInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -54,7 +54,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::processInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessDefinitionKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -63,7 +63,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::processDefinitionKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessDefinitionIdAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -72,7 +72,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::processDefinitionId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByStartDateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -80,7 +80,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::startDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByEndDateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -88,7 +88,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::endDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -96,7 +96,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::tenantId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByHasIncidentAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -104,7 +104,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::hasIncident));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByParentProcessInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -113,7 +113,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::parentProcessInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByParentElementInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -122,7 +122,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(ProcessInstanceEntity::parentFlowNodeInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByStateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -130,7 +130,7 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(p -> p.state().name()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByBusinessIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -139,7 +139,7 @@ public class ProcessInstanceSortIT {
             ProcessInstanceEntity::businessId, Comparator.nullsFirst(Comparator.naturalOrder())));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByBusinessIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.VariableFilter;
@@ -27,14 +28,13 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class VariableValueFilterIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameFilter(final CamundaRdbmsTestApplication testApplication) {
     // given 20 random variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -51,7 +51,7 @@ public class VariableValueFilterIT {
         testApplication.getRdbmsService(), randomizedVariable, varName, null);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndEqValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -69,7 +69,7 @@ public class VariableValueFilterIT {
         rdbmsService, randomizedVariable, randomizedVariable.name(), operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndLikeValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -85,7 +85,7 @@ public class VariableValueFilterIT {
         rdbmsService, randomizedVariable, randomizedVariable.name(), operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndEqNumberValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -102,7 +102,7 @@ public class VariableValueFilterIT {
         rdbmsService, randomizedVariable, randomizedVariable.name(), operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndEqBooleanValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -119,7 +119,7 @@ public class VariableValueFilterIT {
         rdbmsService, randomizedVariable, randomizedVariable.name(), operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndNeqValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 20 random variables
@@ -139,7 +139,7 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndGtValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -155,7 +155,7 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndGteValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -171,7 +171,7 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndLtValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -187,7 +187,7 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndLteValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -203,7 +203,7 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithNameAndLtValueDouble(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -219,7 +219,7 @@ public class VariableValueFilterIT {
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithMultipleNamesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -250,7 +250,7 @@ public class VariableValueFilterIT {
     assertThat(searchResult.items().getFirst().name()).isEqualTo(randomizedVariable.name());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithMultipleNamesAndValuesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -284,7 +284,7 @@ public class VariableValueFilterIT {
     assertThat(searchResult.items().getFirst().name()).isEqualTo(randomizedVariable.name());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldTransformAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -310,7 +310,7 @@ public class VariableValueFilterIT {
     }
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldTransformSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -336,7 +336,7 @@ public class VariableValueFilterIT {
     }
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldIgnoreEscapedSQLAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -360,7 +360,7 @@ public class VariableValueFilterIT {
     assertThat(actual.items().getFirst().value()).isEqualTo(variableValue);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldIgnoreEscapedSQLSingleWildcard(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -386,7 +386,7 @@ public class VariableValueFilterIT {
     assertThat(actual.items().getFirst().value()).isEqualTo(variableValue);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUnescapeESAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -411,7 +411,7 @@ public class VariableValueFilterIT {
         .containsExactly("value*any%wildcards1", "value*any%wildcards2");
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUnescapeESSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

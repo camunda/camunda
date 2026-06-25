@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.it.rdbms.db.fixtures.MessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.filter.MessageSubscriptionFilter;
@@ -29,7 +30,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -39,7 +39,7 @@ public class MessageSubscriptionIT {
   public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -57,7 +57,7 @@ public class MessageSubscriptionIT {
     compareMessageSubscriptions(instance, subscriptionDbModel);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -81,7 +81,7 @@ public class MessageSubscriptionIT {
     compareMessageSubscriptions(instance, roleUpdate);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -105,7 +105,7 @@ public class MessageSubscriptionIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -129,7 +129,7 @@ public class MessageSubscriptionIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessDefinitionMessageSubscriptionStatisticsWithPagination(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -229,7 +229,7 @@ public class MessageSubscriptionIT {
     assertThat(nextPage.items()).isEqualTo(allResults.items().subList(2, 3));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -283,7 +283,7 @@ public class MessageSubscriptionIT {
             subscription1.processInstanceKey(), subscription3.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given

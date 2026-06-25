@@ -21,6 +21,7 @@ import io.camunda.db.rdbms.write.domain.DeployedResourceDbModel;
 import io.camunda.it.rdbms.db.fixtures.DeployedResourceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DeployedResourceQuery;
@@ -28,7 +29,6 @@ import io.camunda.search.sort.DeployedResourceSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -37,7 +37,7 @@ public class DeployedResourceIT {
 
   public static final int PARTITION_ID = 0;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindDeployedResourceByKey(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -64,7 +64,7 @@ public class DeployedResourceIT {
     assertThat(entity.resourceContent()).isEqualTo(resource.resourceContent());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindDeployedResourceMetadataByKey(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -92,7 +92,7 @@ public class DeployedResourceIT {
     assertThat(entity.resourceContent()).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -120,7 +120,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceId()).isEqualTo(resource.resourceId());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByResourceType(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -148,7 +148,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceKey()).isEqualTo(resource.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByDeploymentKey(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -176,7 +176,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceKey()).isEqualTo(resource.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByVersion(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -208,7 +208,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceKey()).isEqualTo(resource.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByVersionTag(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -236,7 +236,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceKey()).isEqualTo(resource.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -264,7 +264,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceKey()).isEqualTo(resource.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -300,7 +300,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceKey()).isEqualTo(resource.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllDeployedResourcesPaged(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -326,7 +326,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllDeployedResourcesPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -353,7 +353,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -397,7 +397,7 @@ public class DeployedResourceIT {
     assertThat(nextPage.items()).isEqualTo(fullResult.items().subList(10, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteDeployedResource(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -431,7 +431,7 @@ public class DeployedResourceIT {
         .containsExactlyInAnyOrder(resource1.resourceKey(), resource3.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -455,7 +455,7 @@ public class DeployedResourceIT {
     assertThat(searchResult.items().getFirst().resourceKey()).isEqualTo(resource.resourceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindDeployedResourceByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     // given

@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.GlobalListenerDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -24,14 +25,13 @@ import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.sort.GlobalListenerSort;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class GlobalListenerIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCreateAndGetGlobalListenerByListenerIdAndListenerType(
       final CamundaRdbmsTestApplication testApplication) {
     // given a randomized listener
@@ -55,7 +55,7 @@ public class GlobalListenerIT {
     assertDbModelEqualToEntity(globalListener, entity);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllGlobalListenersPaged(final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
     // ensure that only the listeners created in this specific test are returned
@@ -82,7 +82,7 @@ public class GlobalListenerIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllGlobalListenersPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final String testIdentifier = nextStringId();
@@ -109,7 +109,7 @@ public class GlobalListenerIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateGlobalListener(final CamundaRdbmsTestApplication testApplication) {
     // given an existing global listener
     final GlobalListenerDbModel globalListener =
@@ -139,7 +139,7 @@ public class GlobalListenerIT {
     assertDbModelEqualToEntity(updatedGlobalListener, instance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteGlobalListener(final CamundaRdbmsTestApplication testApplication) {
     // given an existing global listener
     final GlobalListenerDbModel globalListener =

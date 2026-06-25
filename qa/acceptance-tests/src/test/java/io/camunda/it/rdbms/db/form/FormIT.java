@@ -18,20 +18,20 @@ import io.camunda.db.rdbms.write.domain.FormDbModel.FormDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.FormFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.sort.FormSort;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class FormIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindFormByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -42,7 +42,7 @@ public class FormIT {
     assertFormEntity(form, randomizedForm);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateAndFindFormByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -57,7 +57,7 @@ public class FormIT {
     assertFormEntity(form, updatedModel);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindFormByFormId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -79,7 +79,7 @@ public class FormIT {
     assertFormEntity(searchResult.items().getFirst(), randomizedForm);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindFormByTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -101,7 +101,7 @@ public class FormIT {
     assertFormEntity(searchResult.items().getFirst(), randomizedForm);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllFormsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -122,7 +122,7 @@ public class FormIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllFormsPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -145,7 +145,7 @@ public class FormIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindFormWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final FormDbReader formReader = rdbmsService.getFormReader();

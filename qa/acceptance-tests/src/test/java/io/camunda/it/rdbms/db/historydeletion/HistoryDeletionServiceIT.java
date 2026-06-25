@@ -20,16 +20,16 @@ import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.history.ProcessInstanceHistory;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import java.time.Duration;
 import java.time.InstantSource;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldExecuteHistoryDeletionForProcessInstanceSuccessfully(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -75,7 +75,7 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     processInstanceAndRelatedRecordsExist(rdbmsService, otherProcessInstanceKey);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldExitEarlyIfProcessInstanceDependentChildrenNotFullyDeleted(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -120,7 +120,7 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     auditLogsNotDeleted(rdbmsService, processInstanceKey);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteVariableNameLookupWhenDeletingProcessDefinition(
       final CamundaRdbmsTestApplication testApplication) {
     // given

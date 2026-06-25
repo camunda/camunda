@@ -20,6 +20,7 @@ import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MappingRuleFilter.Claim;
@@ -29,7 +30,6 @@ import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class MappingRuleIT {
   private static final long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindMappingRuleByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -54,7 +54,7 @@ public class MappingRuleIT {
     assertThat(mappingRule).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteMappingRule(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -79,7 +79,7 @@ public class MappingRuleIT {
     assertThat(deletedMappingRuleResult).isEmpty();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindMappingRuleByClaimName(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -109,7 +109,7 @@ public class MappingRuleIT {
     assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindMappingRuleByClaimValue(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -139,7 +139,7 @@ public class MappingRuleIT {
     assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindMappingRuleByClaims(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -173,7 +173,7 @@ public class MappingRuleIT {
         .containsExactly(mappingRule1.mappingRuleId(), mappingRule2.mappingRuleId());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindMappingRuleByAuthorizationResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -202,7 +202,7 @@ public class MappingRuleIT {
     assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllMappingRulesPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -224,7 +224,7 @@ public class MappingRuleIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllMappingRulesPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -248,7 +248,7 @@ public class MappingRuleIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindMappingRuleWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -279,7 +279,7 @@ public class MappingRuleIT {
         .isEqualTo(randomizedMappingRule.mappingRuleId());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateMappingRule(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

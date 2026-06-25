@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.WaitStateDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.filter.ElementInstanceWaitStateFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -27,7 +28,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -36,7 +36,7 @@ public class WaitStateSortIT {
 
   public static final long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -44,7 +44,7 @@ public class WaitStateSortIT {
         Comparator.comparing(WaitStateEntity::elementInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -53,7 +53,7 @@ public class WaitStateSortIT {
         Comparator.comparing(WaitStateEntity::elementInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -61,7 +61,7 @@ public class WaitStateSortIT {
         Comparator.comparing(WaitStateEntity::processInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -70,7 +70,7 @@ public class WaitStateSortIT {
         Comparator.comparing(WaitStateEntity::processInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByRootProcessInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -79,7 +79,7 @@ public class WaitStateSortIT {
         Comparator.comparing(WaitStateEntity::rootProcessInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByRootProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -88,7 +88,7 @@ public class WaitStateSortIT {
         Comparator.comparing(WaitStateEntity::rootProcessInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -96,7 +96,7 @@ public class WaitStateSortIT {
         Comparator.comparing(WaitStateEntity::elementId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

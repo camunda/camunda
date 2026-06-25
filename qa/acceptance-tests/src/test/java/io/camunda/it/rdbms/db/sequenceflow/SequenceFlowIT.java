@@ -18,13 +18,13 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -34,7 +34,7 @@ public class SequenceFlowIT {
   public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCreateSequenceFlow(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -64,7 +64,7 @@ public class SequenceFlowIT {
                 .build());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSearchSequenceFlow(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -96,7 +96,7 @@ public class SequenceFlowIT {
                 .build());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindSequenceFlowByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -121,7 +121,7 @@ public class SequenceFlowIT {
         .isEqualTo(sequenceFlow.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindSequenceFlowByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -145,7 +145,7 @@ public class SequenceFlowIT {
         .isEqualTo(sequenceFlow.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCreateSequenceFlowIfNotExists(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -169,7 +169,7 @@ public class SequenceFlowIT {
     assertThat(items.getFirst().processInstanceKey()).isEqualTo(sequenceFlow.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotCreateSequenceFlowIfExists(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -195,7 +195,7 @@ public class SequenceFlowIT {
     assertThat(items.getFirst().processInstanceKey()).isEqualTo(dbModel.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteSequenceFlow(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -229,7 +229,7 @@ public class SequenceFlowIT {
     assertThat(itemsAfterDelete).isEmpty();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -262,7 +262,7 @@ public class SequenceFlowIT {
     assertThat(findByProcessInstanceKey(sequenceFlowReader, item3.processInstanceKey())).hasSize(1);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given

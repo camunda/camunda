@@ -23,6 +23,7 @@ import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.UserFilter;
@@ -33,7 +34,6 @@ import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.UserSort;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -43,7 +43,7 @@ public class GroupIT {
   public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -57,7 +57,7 @@ public class GroupIT {
     compareGroups(instance, group);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -71,7 +71,7 @@ public class GroupIT {
     compareGroups(instance, group);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -90,7 +90,7 @@ public class GroupIT {
     compareGroups(instance, groupUpdate);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -108,7 +108,7 @@ public class GroupIT {
     assertThat(deletedInstance).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindByName(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -135,7 +135,7 @@ public class GroupIT {
     assertThat(instance.name()).isEqualTo(group.name());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindByGroupIds(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -160,7 +160,7 @@ public class GroupIT {
         .containsExactlyInAnyOrder(group1.groupId(), group2.groupId());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -180,7 +180,7 @@ public class GroupIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -201,7 +201,7 @@ public class GroupIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -223,7 +223,7 @@ public class GroupIT {
     assertThat(searchResult.items().getFirst().groupKey()).isEqualTo(group.groupKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -254,7 +254,7 @@ public class GroupIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldAddMemberToGroup(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -280,7 +280,7 @@ public class GroupIT {
     assertThat(users.total()).isEqualTo(1);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldRemoveMemberFromGroup(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

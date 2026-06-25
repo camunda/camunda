@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -27,7 +28,6 @@ import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -37,7 +37,7 @@ public class DecisionRequirementsIT {
   public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -63,7 +63,7 @@ public class DecisionRequirementsIT {
     assertThat(instance.xml()).isEqualTo(decisionRequirements.xml());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -101,7 +101,7 @@ public class DecisionRequirementsIT {
     assertThat(instance.xml()).isEqualTo(decisionRequirements.xml());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -128,7 +128,7 @@ public class DecisionRequirementsIT {
         .isEqualTo(decisionRequirements.decisionRequirementsKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindByAuthorizedTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -153,7 +153,7 @@ public class DecisionRequirementsIT {
         .isEqualTo(decisionRequirements.decisionRequirementsKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -186,7 +186,7 @@ public class DecisionRequirementsIT {
             });
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -213,7 +213,7 @@ public class DecisionRequirementsIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -246,7 +246,7 @@ public class DecisionRequirementsIT {
         .isEqualTo(decisionRequirements.decisionRequirementsKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

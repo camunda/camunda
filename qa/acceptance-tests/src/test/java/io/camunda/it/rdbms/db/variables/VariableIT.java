@@ -23,6 +23,7 @@ import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -32,7 +33,6 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -42,7 +42,7 @@ public class VariableIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindVariableByKey(final CamundaRdbmsTestApplication testApplication) {
     final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
 
@@ -58,7 +58,7 @@ public class VariableIT {
     assertThat(instance.isPreview()).isFalse();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateAndFindVariableByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
@@ -77,7 +77,7 @@ public class VariableIT {
     assertVariableDbModelEqualToEntity(updatedVariable, instance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindBigVariableByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -94,7 +94,7 @@ public class VariableIT {
     assertThat(instance.value()).hasSizeLessThan(instance.fullValue().length());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindLargeByteVariableByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -114,7 +114,7 @@ public class VariableIT {
         .hasSizeLessThan(instance.fullValue().length());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableByProcessInstanceKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -143,7 +143,7 @@ public class VariableIT {
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -171,7 +171,7 @@ public class VariableIT {
         .isEqualTo(randomizedVariable.variableKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -197,7 +197,7 @@ public class VariableIT {
         .isEqualTo(randomizedVariable.variableKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllVariablesPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -218,7 +218,7 @@ public class VariableIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllVariablesPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -241,7 +241,7 @@ public class VariableIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllVariablesPageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -263,7 +263,7 @@ public class VariableIT {
     assertThat(searchResult.items()).hasSize(20);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final VariableDbReader variableReader = rdbmsService.getVariableReader();
@@ -292,7 +292,7 @@ public class VariableIT {
         .isEqualTo(randomizedVariable.variableKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindVariableWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final VariableDbReader variableReader = rdbmsService.getVariableReader();
@@ -325,7 +325,7 @@ public class VariableIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -360,7 +360,7 @@ public class VariableIT {
         .containsExactlyInAnyOrder(item1.variableKey(), item3.variableKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given

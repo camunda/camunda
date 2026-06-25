@@ -16,17 +16,17 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.history.ProcessInstanceHistory;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class HistoryCleanupIT extends ProcessInstanceHistory {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldExecuteHistoryCleanupSuccessfully(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -66,7 +66,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     processInstanceAndRelatedRecordsExist(rdbmsService, otherRootProcessInstanceKey);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldExitEarlyIfDependentChildrenNotFullyDeleted(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -105,7 +105,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     assertThat(auditLogCount(rdbmsService, rootProcessInstanceKey)).isEqualTo(10L);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteDependentProcesses(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
@@ -141,7 +141,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     processInstanceAndRelatedRecordsHaveBeenDeleted(rdbmsService, dependentProcessInstanceKey);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldExitEarlyIfDependentProcessesNotFullyDeleted(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -184,7 +184,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     assertThat(processInstanceCount(rdbmsService, dependentProcessInstanceIds)).isEqualTo(0L);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldIgnoreNonRootProcessInstancesWithCleanupDateSet(
       final CamundaRdbmsTestApplication testApplication) {
     // given

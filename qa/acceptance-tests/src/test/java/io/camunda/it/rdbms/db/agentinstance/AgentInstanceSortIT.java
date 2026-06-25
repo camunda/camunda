@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.filter.AgentInstanceFilter;
@@ -26,14 +27,13 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class AgentInstanceSortIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCreationDateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -41,7 +41,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::creationDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCreationDateDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -49,7 +49,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::creationDate).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByLastUpdatedDateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -57,7 +57,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::lastUpdatedDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByLastUpdatedDateDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -65,13 +65,13 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::lastUpdatedDate).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByStatusAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication, b -> b.status().asc(), Comparator.comparing(e -> e.status().name()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByStatusDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -79,7 +79,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing((AgentInstanceEntity e) -> e.status().name()).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByAgentInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -87,7 +87,7 @@ public class AgentInstanceSortIT {
         Comparator.comparingLong(AgentInstanceEntity::agentInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByAgentInstanceKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -95,7 +95,7 @@ public class AgentInstanceSortIT {
         Comparator.comparingLong(AgentInstanceEntity::agentInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -103,7 +103,7 @@ public class AgentInstanceSortIT {
         Comparator.comparingLong(AgentInstanceEntity::processInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -112,7 +112,7 @@ public class AgentInstanceSortIT {
         Comparator.comparingLong(AgentInstanceEntity::processInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessDefinitionKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -121,7 +121,7 @@ public class AgentInstanceSortIT {
         Comparator.comparingLong(AgentInstanceEntity::processDefinitionKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessDefinitionKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -130,7 +130,7 @@ public class AgentInstanceSortIT {
         Comparator.comparingLong(AgentInstanceEntity::processDefinitionKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -138,7 +138,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::elementId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -146,7 +146,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::elementId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -154,7 +154,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::tenantId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -162,7 +162,7 @@ public class AgentInstanceSortIT {
         Comparator.comparing(AgentInstanceEntity::tenantId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByRootProcessInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -171,7 +171,7 @@ public class AgentInstanceSortIT {
         Comparator.comparingLong(AgentInstanceEntity::rootProcessInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByRootProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(

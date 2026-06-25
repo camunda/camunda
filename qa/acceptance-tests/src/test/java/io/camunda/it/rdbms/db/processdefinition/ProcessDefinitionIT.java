@@ -26,6 +26,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -38,7 +39,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -48,7 +48,7 @@ public class ProcessDefinitionIT {
   public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindProcessDefinitionByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -69,7 +69,7 @@ public class ProcessDefinitionIT {
     assertThat(instance.resourceName()).isEqualTo(processDefinition.resourceName());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceByBpmnProcessId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -103,7 +103,7 @@ public class ProcessDefinitionIT {
     assertThat(instance.resourceName()).isEqualTo(processDefinition.resourceName());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldStoreLongProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();
@@ -133,7 +133,7 @@ public class ProcessDefinitionIT {
         .isEqualTo(processDefinition.processDefinitionKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldStoreAndFindUTF8ProcessDefinitionName(
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();
@@ -155,7 +155,7 @@ public class ProcessDefinitionIT {
         .containsExactly(name);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldStoreLongUTF8ProcessDefinitionName(
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();
@@ -177,7 +177,7 @@ public class ProcessDefinitionIT {
         .containsExactly(name);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceByAuthorizationResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -202,7 +202,7 @@ public class ProcessDefinitionIT {
         .isEqualTo(processDefinition.processDefinitionKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceByAuthorizationTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -225,7 +225,7 @@ public class ProcessDefinitionIT {
         .isEqualTo(processDefinition.processDefinitionKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllProcessDefinitionPaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -250,7 +250,7 @@ public class ProcessDefinitionIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllProcessDefinitionPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -276,7 +276,7 @@ public class ProcessDefinitionIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllProcessInstancePageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -296,7 +296,7 @@ public class ProcessDefinitionIT {
     assertThat(searchResult.items()).hasSizeGreaterThanOrEqualTo(20);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -330,7 +330,7 @@ public class ProcessDefinitionIT {
         .isEqualTo(processDefinition.processDefinitionKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessDefinitionsWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -370,7 +370,7 @@ public class ProcessDefinitionIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessDefinitionInstanceStatistics(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -421,7 +421,7 @@ public class ProcessDefinitionIT {
     assertThat(statistics.activeInstancesWithoutIncidentCount()).isEqualTo(1);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessDefinitionInstanceVersionStatistics(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -494,7 +494,7 @@ public class ProcessDefinitionIT {
                 1L));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessDefinitionsByKey(
       final CamundaRdbmsTestApplication testApplication) {
     // given

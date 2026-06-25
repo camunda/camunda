@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -35,7 +35,7 @@ public class UserSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByUsernameAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -43,7 +43,7 @@ public class UserSortIT {
         Comparator.comparing(UserEntity::username));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByUsernameDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -51,7 +51,7 @@ public class UserSortIT {
         Comparator.comparing(UserEntity::username).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByUserKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -59,7 +59,7 @@ public class UserSortIT {
         Comparator.comparing(UserEntity::userKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByNameAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -67,7 +67,7 @@ public class UserSortIT {
         Comparator.comparing(UserEntity::name));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByEmailAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

@@ -22,6 +22,7 @@ import io.camunda.it.rdbms.db.fixtures.JobFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.JobQuery;
@@ -33,7 +34,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -43,7 +43,7 @@ public class JobIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindJobByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -63,7 +63,7 @@ public class JobIT {
     assertThat(instance.isDenied()).isFalse();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindJobWithLargeErrorMessageByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -79,7 +79,7 @@ public class JobIT {
     assertThat(instance.errorMessage().length()).isLessThan(original.errorMessage().length());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveUpdateAndFindJobWithLargeErrorMessageByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -100,7 +100,7 @@ public class JobIT {
     assertThat(instance.errorMessage().length()).isLessThan(errorMessage.length());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -127,7 +127,7 @@ public class JobIT {
     compareJob(instance, original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobByPartitionId(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -162,7 +162,7 @@ public class JobIT {
     assertThat(searchResult.items()).hasSize(3);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -186,7 +186,7 @@ public class JobIT {
     compareJob(searchResult.items().getFirst(), original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobByAuthorizedTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -207,7 +207,7 @@ public class JobIT {
     compareJob(searchResult.items().getFirst(), original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllJobPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -229,7 +229,7 @@ public class JobIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllJobPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -253,7 +253,7 @@ public class JobIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -287,7 +287,7 @@ public class JobIT {
     assertThat(searchResult.items().getFirst().jobKey()).isEqualTo(original.jobKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -340,7 +340,7 @@ public class JobIT {
         .isCloseTo(original.deadline(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateJobWithoutOverwritingNullableFieldsWithNull(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -398,7 +398,7 @@ public class JobIT {
     assertThat(stored.priority()).isEqualTo(original.priority());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -440,7 +440,7 @@ public class JobIT {
         .containsExactlyInAnyOrder(item1.jobKey(), item3.jobKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -482,7 +482,7 @@ public class JobIT {
         .containsExactlyInAnyOrder(item1.jobKey(), item3.jobKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobByPriorityFilter(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -509,7 +509,7 @@ public class JobIT {
     assertThat(rangeResult.items().getFirst().jobKey()).isEqualTo(target.jobKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindJobSortedByPriority(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -539,7 +539,7 @@ public class JobIT {
         .containsExactly(low.jobKey(), mid.jobKey(), high.jobKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldExcludeNullPriorityJobsFromPriorityFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given — a job with NULL priority (pre-8.10) and a job with explicit priority

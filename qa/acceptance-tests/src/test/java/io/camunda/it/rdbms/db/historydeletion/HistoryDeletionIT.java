@@ -17,10 +17,10 @@ import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -49,7 +49,7 @@ public class HistoryDeletionIT {
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldInsertHistoryDeletion() {
     // given
     final var model =
@@ -65,7 +65,7 @@ public class HistoryDeletionIT {
     assertThat(actual.historyDeletionModels()).containsExactly(model);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldBeEmpty() {
     // when
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 1);
@@ -74,7 +74,7 @@ public class HistoryDeletionIT {
     assertThat(actual.historyDeletionModels()).isEmpty();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldInsertAndRetrieveMultipleModels() {
     // given
     final var model1 =
@@ -102,7 +102,7 @@ public class HistoryDeletionIT {
     assertThat(actual.historyDeletionModels()).containsExactlyInAnyOrder(model1, model2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByPartition() {
     // given
     final var modelPartition0 =
@@ -132,7 +132,7 @@ public class HistoryDeletionIT {
     assertThat(actualPartition1.historyDeletionModels()).containsExactly(modelPartition1);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByBatchOperationKeyAndResourceKey() {
     // given
     final var modelA =
@@ -173,7 +173,7 @@ public class HistoryDeletionIT {
             );
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotFailOnDuplicateInsert() {
     // given
     final var model =
@@ -191,7 +191,7 @@ public class HistoryDeletionIT {
     assertThat(actual.historyDeletionModels()).containsExactly(model);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteHistoryDeletion() {
     // given
     final var model =

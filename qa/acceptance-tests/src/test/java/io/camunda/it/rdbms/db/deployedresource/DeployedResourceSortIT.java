@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.DeployedResourceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DeployedResourceQuery;
@@ -25,14 +26,13 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class DeployedResourceSortIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -40,7 +40,7 @@ public class DeployedResourceSortIT {
         Comparator.comparing(DeployedResourceEntity::resourceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -48,7 +48,7 @@ public class DeployedResourceSortIT {
         Comparator.comparing(DeployedResourceEntity::resourceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -56,7 +56,7 @@ public class DeployedResourceSortIT {
         Comparator.comparing(DeployedResourceEntity::resourceId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceNameAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -64,7 +64,7 @@ public class DeployedResourceSortIT {
         Comparator.comparing(DeployedResourceEntity::resourceName));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByVersionAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -72,7 +72,7 @@ public class DeployedResourceSortIT {
         Comparator.comparing(DeployedResourceEntity::version));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByVersionDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -80,7 +80,7 @@ public class DeployedResourceSortIT {
         Comparator.comparing(DeployedResourceEntity::version).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByVersionTagAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -89,7 +89,7 @@ public class DeployedResourceSortIT {
             DeployedResourceEntity::versionTag, Comparator.nullsFirst(Comparator.naturalOrder())));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDeploymentKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -97,7 +97,7 @@ public class DeployedResourceSortIT {
         Comparator.comparing(DeployedResourceEntity::deploymentKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

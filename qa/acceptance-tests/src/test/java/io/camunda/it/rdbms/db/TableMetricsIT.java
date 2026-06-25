@@ -10,15 +10,15 @@ package io.camunda.it.rdbms.db;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class TableMetricsIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCountTableRows(final CamundaRdbmsTestApplication testApplication) {
     final var tableMetricsMapper = testApplication.bean(TableMetricsMapper.class);
 

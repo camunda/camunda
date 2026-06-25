@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.write.domain.GlobalListenerDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.Operation;
@@ -26,13 +27,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class GlobalListenerFilterIT {
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithEqListenerIdFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given multiple listeners but only one with "expectedEq" listenerId
@@ -63,7 +63,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithLikeListenerIdFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given multiple listeners but only two with listenerId matching "expectedLike*"
@@ -96,7 +96,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithInListenerIdFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given multiple listeners but only two with listenerId either "expectedIn1" or "expectedIn2"
@@ -129,7 +129,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithEqTypeFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given multiple listeners but only one with "expectedEq" type
@@ -157,7 +157,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithLikeTypeFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given multiple listeners but only two with type matching "expectedLike*"
@@ -187,7 +187,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithInTypeFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given multiple listeners but only two with type either "expectedIn1" or "expectedIn2"
@@ -217,7 +217,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithEqRetriesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -250,7 +250,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithGtRetriesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -285,7 +285,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithGteRetriesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -320,7 +320,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithLtRetriesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -355,7 +355,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithLteRetriesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -390,7 +390,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithInRetriesFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -425,7 +425,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithAfterNonGlobalFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // given multiple listeners but only one with afterNonGlobal=true
@@ -451,7 +451,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithEqPriorityFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -484,7 +484,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithGtPriorityFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -519,7 +519,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithGtePriorityFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -554,7 +554,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithLtPriorityFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -589,7 +589,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithLtePriorityFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -624,7 +624,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithInPriorityFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -659,7 +659,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithEqEventTypeFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -698,7 +698,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithLikeEventTypeFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to
@@ -737,7 +737,7 @@ public class GlobalListenerFilterIT {
     assertExpectedResult(searchResult, expectedListener1, expectedListener2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindGlobalListenerWithInEventTypeFilter(
       final CamundaRdbmsTestApplication testApplication) {
     // This value is set in the "type" of all listeners and used in the search query in order to

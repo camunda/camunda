@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @Tag("rdbms")
@@ -26,7 +26,7 @@ public class ReplicationStatusLogIT {
       new CamundaRdbmsInvocationContextProviderExtension(
           "camundaWithPostgresReplicationCluster", "camundaWithMssqlReplicationCluster");
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final var replicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();

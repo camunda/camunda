@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -35,7 +35,7 @@ public class IncidentSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByIncidentKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -43,7 +43,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::incidentKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByIncidentKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -51,7 +51,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::incidentKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -59,7 +59,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::flowNodeId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessDefinitionIdDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -68,7 +68,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::processDefinitionId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessDefinitionKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -77,7 +77,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::processDefinitionKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -86,7 +86,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::processInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByErrorTypeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -94,7 +94,7 @@ public class IncidentSortIT {
         Comparator.comparing(it -> it.errorType().name()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByStateAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -102,7 +102,7 @@ public class IncidentSortIT {
         Comparator.comparing(it -> it.state().name()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByJobKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -110,7 +110,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::jobKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -118,7 +118,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::tenantId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCreationTimeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -126,7 +126,7 @@ public class IncidentSortIT {
         Comparator.comparing(IncidentEntity::creationTime));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByCreationTimeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

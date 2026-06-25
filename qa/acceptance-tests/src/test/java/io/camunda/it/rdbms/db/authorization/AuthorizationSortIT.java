@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -35,7 +35,7 @@ public class AuthorizationSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByOwnerKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -43,7 +43,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::ownerId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByOwnerKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -51,7 +51,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::ownerId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByOwnerTypeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -59,7 +59,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::ownerType));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByOwnerTypeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -67,7 +67,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::ownerType).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceTypeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -75,7 +75,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::resourceType));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceTypeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -83,7 +83,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::resourceType).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -91,7 +91,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::resourceId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourceIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -99,7 +99,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::resourceId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourcePropertyNameAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -108,7 +108,7 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::resourcePropertyName));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByResourcePropertyNameDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(

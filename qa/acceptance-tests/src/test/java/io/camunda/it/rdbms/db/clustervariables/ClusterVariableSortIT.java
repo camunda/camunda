@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -24,14 +25,13 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class ClusterVariableSortIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByValueAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -39,7 +39,7 @@ public class ClusterVariableSortIT {
         Comparator.comparing(ClusterVariableEntity::value));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByValueDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -47,7 +47,7 @@ public class ClusterVariableSortIT {
         Comparator.comparing(ClusterVariableEntity::value).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByNameAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -55,7 +55,7 @@ public class ClusterVariableSortIT {
         Comparator.comparing(ClusterVariableEntity::name));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByNameDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -63,7 +63,7 @@ public class ClusterVariableSortIT {
         Comparator.comparing(ClusterVariableEntity::name).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByScopeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -71,7 +71,7 @@ public class ClusterVariableSortIT {
         Comparator.comparing(ClusterVariableEntity::scope));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByScopeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -79,7 +79,7 @@ public class ClusterVariableSortIT {
         Comparator.comparing(ClusterVariableEntity::scope).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -87,7 +87,7 @@ public class ClusterVariableSortIT {
         Comparator.comparing(ClusterVariableEntity::tenantId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -31,7 +32,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -40,7 +40,7 @@ public class TenantSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     final var aggregator =
         "AggregatorSortByKeyAsc " + nextStringId(); // Will be used to have isolated test data
@@ -53,7 +53,7 @@ public class TenantSortIT {
         b -> b.name(aggregator));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     final var aggregator =
         "AggregatorSortByKeyDesc " + nextStringId(); // Will be used to have isolated test data
@@ -66,7 +66,7 @@ public class TenantSortIT {
         b -> b.name(aggregator));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     final var aggregator =
         "AggregatorSortByKeyAsc " + nextStringId(); // Will be used to have isolated test data
@@ -79,7 +79,7 @@ public class TenantSortIT {
         b -> b.name(aggregator));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByNameAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

@@ -15,10 +15,10 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -27,7 +27,7 @@ public class WaitStateIT {
 
   public static final int PARTITION_ID = 0;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldInsertAndFindWaitStateByKey(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -53,7 +53,7 @@ public class WaitStateIT {
     assertThat(found.partitionId()).isEqualTo(PARTITION_ID);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteWaitStateByKey(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

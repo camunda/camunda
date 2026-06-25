@@ -26,6 +26,7 @@ import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
@@ -49,7 +50,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -59,7 +59,7 @@ public class UserTaskIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCreateAndFindUserTaskByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -70,7 +70,7 @@ public class UserTaskIT {
     assertUserTaskEntity(instance, userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCreateAndFindUserTaskByKeyWithCustomHeader(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -84,7 +84,7 @@ public class UserTaskIT {
     assertThat(instance.customHeaders()).containsExactly(entry("headerKey", "headerValue"));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCreateAndFindUserTaskWithoutCandidatesByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -97,7 +97,7 @@ public class UserTaskIT {
     assertUserTaskEntity(instance, userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateAndFindUserTaskByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -114,7 +114,7 @@ public class UserTaskIT {
     assertUserTaskEntity(instance, updatedModel);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateAndFindUserTaskWithoutCandidatesByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -140,7 +140,7 @@ public class UserTaskIT {
     assertUserTaskEntity(instance, updatedModel);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeletingExistingCandidates(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -157,7 +157,7 @@ public class UserTaskIT {
     assertUserTaskEntity(instance, updatedModel);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateCandidateUserAndGroupAndFindByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -178,7 +178,7 @@ public class UserTaskIT {
     assertUserTaskEntity(instance, updatedModel);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllUserTasksPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -202,7 +202,7 @@ public class UserTaskIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessInstanceKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -227,7 +227,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessDefinitionIdEq(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -255,7 +255,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessDefinitionIdNeq(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -291,7 +291,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), taskB);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessDefinitionIdLike(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -319,7 +319,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByBusinessIdEq(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -346,7 +346,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByBusinessIdLike(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -374,7 +374,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessDefinitionKeyNeq(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -404,7 +404,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), taskB);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessDefinitionKeyIn(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -439,7 +439,7 @@ public class UserTaskIT {
         .containsExactlyInAnyOrder(taskA.userTaskKey(), taskB.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessInstanceKeyNeq(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -469,7 +469,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), taskB);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessInstanceKeyIn(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -503,7 +503,7 @@ public class UserTaskIT {
         .containsExactlyInAnyOrder(taskA.userTaskKey(), taskB.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -526,7 +526,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -547,7 +547,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByPropertyBasedAuthorizationWithAssignee(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -576,7 +576,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByPropertyBasedAuthorizationWithCandidateUser(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -607,7 +607,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByPropertyBasedAuthorizationWithCandidateGroup(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -639,7 +639,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindSeveralUserTaskByPropertyBasedAuthorizationWithCandidateGroups(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -676,7 +676,7 @@ public class UserTaskIT {
         .containsExactlyInAnyOrder(task1.userTaskKey(), task2.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByPropertyBasedAuthorizationCombiningMultipleProperties(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -728,7 +728,7 @@ public class UserTaskIT {
         .containsExactlyInAnyOrder(task1.userTaskKey(), task2.userTaskKey(), task3.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompositeAuthorizationWhenBothBranchesMatch(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -769,7 +769,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompositeAuthorizationWhenOnlyProcessDefinitionMatches(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -812,7 +812,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompositeAuthorizationWhenOnlyUserTaskMatches(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -851,7 +851,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldReturnEmptyResultWhenNeitherCompositeAuthorizationBranchMatches(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -887,7 +887,7 @@ public class UserTaskIT {
     assertThat(searchResult.items()).isEmpty();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindMultipleUserTasksByCompositeAuthorizationWithPartialMatches(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -933,7 +933,7 @@ public class UserTaskIT {
         .containsExactlyInAnyOrder(userTask1.userTaskKey(), userTask2.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompositeAuthorizationWithMultipleResourceIdsPerType(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -991,7 +991,7 @@ public class UserTaskIT {
             userTask4.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompositeAuthorizationWhenOnlyIdBranchMatches(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -1030,7 +1030,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompositeAuthorizationWhenOnlyPropertyBranchMatches(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -1070,7 +1070,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void
       shouldFindMultipleUserTasksByCompositeAuthorizationWithIdAndPropertyBasedPartialMatches(
           final CamundaRdbmsTestApplication testApplication) {
@@ -1124,7 +1124,7 @@ public class UserTaskIT {
         .containsExactlyInAnyOrder(task1.userTaskKey(), task2.userTaskKey(), task3.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessInstanceVariableName(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1162,7 +1162,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByTwoProcessInstanceVariableNames(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1209,7 +1209,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByProcessInstanceVariableNameAndValue(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1247,7 +1247,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByTwoProcessInstanceVariableNamesAndValues(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1301,7 +1301,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByLocalVariableName(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1336,7 +1336,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByTwoLocalVariableNames(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1385,7 +1385,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllUserTasksPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -1406,7 +1406,7 @@ public class UserTaskIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllUserTasksPageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1428,7 +1428,7 @@ public class UserTaskIT {
     assertThat(searchResult.items()).hasSize(20);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCreationDateGt(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1455,7 +1455,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompletionDateGte(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1482,7 +1482,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCreationDateLte(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1509,7 +1509,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompletionDateLt(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1536,7 +1536,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResultGte.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByDueDateGt(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -1561,7 +1561,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByDueDateLte(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -1584,7 +1584,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByFollowUpDateGt(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1611,7 +1611,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByFollowUpDateLte(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1638,7 +1638,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskByCompletionDateEquals(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -1665,7 +1665,7 @@ public class UserTaskIT {
     assertUserTaskEntity(searchResultGte.items().getFirst(), userTask);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindUserTaskWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final UserTaskDbReader processInstanceReader = rdbmsService.getUserTaskReader();
@@ -1701,7 +1701,7 @@ public class UserTaskIT {
     assertThat(searchResult.items().getFirst().userTaskKey()).isEqualTo(userTask.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
@@ -1791,7 +1791,7 @@ public class UserTaskIT {
     }
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -1833,7 +1833,7 @@ public class UserTaskIT {
         .containsExactlyInAnyOrder(item1.userTaskKey(), item3.userTaskKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given

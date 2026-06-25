@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -26,7 +27,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -35,7 +35,7 @@ public class JobSortIT {
 
   public static final long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByJobKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -43,7 +43,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::jobKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByJobKeyDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -51,7 +51,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::jobKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTypeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -59,7 +59,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::type));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTypeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -67,7 +67,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::type).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByWorkerAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -75,7 +75,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::worker));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByWorkerDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -83,7 +83,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::worker).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -91,7 +91,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::tenantId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTenantIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -99,7 +99,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::tenantId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -107,7 +107,7 @@ public class JobSortIT {
         Comparator.comparing(JobEntity::processInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(

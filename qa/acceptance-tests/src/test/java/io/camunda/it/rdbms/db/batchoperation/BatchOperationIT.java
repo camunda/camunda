@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -48,14 +49,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class BatchOperationIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotFailOnSecondCreate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0);
@@ -73,7 +73,7 @@ public class BatchOperationIT {
     assertThat(updatedBatchOperation).isNotNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldInsertBatchItems(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -109,7 +109,7 @@ public class BatchOperationIT {
     assertThat(updatedItems.items().getFirst().rootProcessInstanceKey()).isNotNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateCompletedBatchItem(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -178,7 +178,7 @@ public class BatchOperationIT {
     assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateCompletedBatchItemWithLargeErrorMessage(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -238,7 +238,7 @@ public class BatchOperationIT {
     assertThat(updatedItem.errorMessage().length()).isEqualTo(4000);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateCompletedBatchItemWithoutInitialExport(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -291,7 +291,7 @@ public class BatchOperationIT {
     assertThat(firstItem.errorMessage()).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateFailedBatchItem(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -359,7 +359,7 @@ public class BatchOperationIT {
     assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateSkippedBatchItem(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -427,7 +427,7 @@ public class BatchOperationIT {
     assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCancelBatchOperationAndActiveItems(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -468,7 +468,7 @@ public class BatchOperationIT {
         .isEqualTo(BatchOperationState.CANCELED);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSuspendBatchOperation(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -492,7 +492,7 @@ public class BatchOperationIT {
         .isEqualTo(BatchOperationState.SUSPENDED);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldResumeBatchOperation(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -519,7 +519,7 @@ public class BatchOperationIT {
         .isEqualTo(BatchOperationState.ACTIVE);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFinishBatchOperation(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -545,7 +545,7 @@ public class BatchOperationIT {
         .isEqualTo(BatchOperationState.COMPLETED);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFinishBatchOperationWithErrors(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -599,7 +599,7 @@ public class BatchOperationIT {
     assertThat(error2.message()).isEqualTo("error message 2");
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFinishBatchOperationWithErrorWithLargeMessage(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -640,7 +640,7 @@ public class BatchOperationIT {
     assertThat(error.message().length()).isEqualTo(4000);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldActivateBatchOperation(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -670,7 +670,7 @@ public class BatchOperationIT {
             });
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindBatchOperationByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -694,7 +694,7 @@ public class BatchOperationIT {
     assertBatchOperationEntity(searchResult.items().getFirst(), batchOperation);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindBatchOperationByOperationType(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -723,7 +723,7 @@ public class BatchOperationIT {
     assertThat(operationTypes).containsOnly(batchOperation.operationType());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindBatchOperationByState(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -751,7 +751,7 @@ public class BatchOperationIT {
     assertThat(searchResult.items()).anySatisfy(i -> assertBatchOperationEntity(i, batchOperation));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindBatchOperationWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -782,7 +782,7 @@ public class BatchOperationIT {
     assertThat(searchResult.items()).anySatisfy(i -> assertBatchOperationEntity(i, batchOperation));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllBatchOperationsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -804,7 +804,7 @@ public class BatchOperationIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllBatchOperationItemsPaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -831,7 +831,7 @@ public class BatchOperationIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllBatchOperationsPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -855,7 +855,7 @@ public class BatchOperationIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllBatchOperationItemsPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -881,7 +881,7 @@ public class BatchOperationIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindBatchOperationItemsWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

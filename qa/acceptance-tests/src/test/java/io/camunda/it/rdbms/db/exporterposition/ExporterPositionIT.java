@@ -15,9 +15,9 @@ import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -28,7 +28,7 @@ public class ExporterPositionIT {
   public static final int OTHER_PARTITION_ID = 1001;
   private static final LocalDateTime NOW = LocalDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindExporterPositionByPartitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -48,7 +48,7 @@ public class ExporterPositionIT {
     assertThat(position.lastExportedPosition()).isEqualTo(readPosition.lastExportedPosition());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSelectForUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(OTHER_PARTITION_ID);

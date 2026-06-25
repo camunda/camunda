@@ -20,11 +20,11 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
@@ -51,7 +51,7 @@ public class RdbmsFlushRollbackIT {
   private static final int PARTITION_ID_FULL_SCENARIO = 10_005;
   private static final int PARTITION_ID_DUPLICATE_INSERT = 10_006;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   void shouldRollbackAllStatementsWhenSecondStatementFails(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -86,7 +86,7 @@ public class RdbmsFlushRollbackIT {
    * listener — if it survived a failed flush, the DB position would advance without
    * lastFlushedPosition being updated, causing a permanent "position mismatch" on the next flush.
    */
-  @TestTemplate
+  @RdbmsTestTemplate
   void shouldRollbackPreFlushListenerItemsWhenFlushFails(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -151,7 +151,7 @@ public class RdbmsFlushRollbackIT {
    * in-memory state (e.g. lastFlushedPosition) is not advanced when the DB transaction was rolled
    * back.
    */
-  @TestTemplate
+  @RdbmsTestTemplate
   void shouldNotCallPostFlushListenerWhenFlushFails(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -191,7 +191,7 @@ public class RdbmsFlushRollbackIT {
    * queued items are rolled back. This mirrors the production scenario where
    * registerLockPositionHook detects divergence and prevents a double-write.
    */
-  @TestTemplate
+  @RdbmsTestTemplate
   void shouldRollbackAllItemsWhenInTransactionHookFails(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -247,7 +247,7 @@ public class RdbmsFlushRollbackIT {
    *   <li>A retry flush succeeds: all queued items are committed and the position advances.
    * </ol>
    */
-  @TestTemplate
+  @RdbmsTestTemplate
   void shouldNotAdvanceExporterPositionAfterFailedFlush(
       final CamundaRdbmsTestApplication testApplication) {
     // given

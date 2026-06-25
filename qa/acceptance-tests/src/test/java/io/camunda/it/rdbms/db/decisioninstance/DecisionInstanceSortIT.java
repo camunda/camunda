@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -27,7 +28,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -36,7 +36,7 @@ public class DecisionInstanceSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionInstanceIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -44,7 +44,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionInstanceId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionInstanceIdDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -53,7 +53,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionInstanceId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -62,7 +62,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -71,7 +71,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -80,7 +80,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::processInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -88,7 +88,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::processInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByFlowNodeInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -97,7 +97,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::flowNodeInstanceKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByElementInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -105,7 +105,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::flowNodeInstanceKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionDefinitionKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     // TODO this makes no sense since builder.decisionDefinitionKey sets the field to "decisionId"
@@ -115,7 +115,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionDefinitionId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionDefinitionKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -124,7 +124,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionDefinitionKey).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionDefinitionName(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -133,7 +133,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionDefinitionName));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByDecisionDefinitionVersion(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -142,7 +142,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::decisionDefinitionVersion));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByEvaluationDate(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -150,7 +150,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::evaluationDate));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByEvaluationDateDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -158,7 +158,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::evaluationDate).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByState(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -166,7 +166,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::state));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByRootDecisionDefinitionKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
@@ -175,7 +175,7 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::rootDecisionDefinitionKey));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByRootDecisionDefinitionKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(

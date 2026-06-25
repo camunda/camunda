@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.query.AuditLogQuery;
@@ -40,7 +41,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -50,7 +50,7 @@ public class AuditLogIT {
   public static final int PARTITION_ID = 0;
   private static final int LIMIT = 10000;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldGetAuditLogById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -66,7 +66,7 @@ public class AuditLogIT {
     compareAuditLog(instance, original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAuditLogByEntityType(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -90,7 +90,7 @@ public class AuditLogIT {
         .contains(original.auditLogKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAuditLogByProcessInstanceKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -117,7 +117,7 @@ public class AuditLogIT {
     compareAuditLog(instance, original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllAuditLogsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -139,7 +139,7 @@ public class AuditLogIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllAuditLogsPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -163,7 +163,7 @@ public class AuditLogIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAuditLogWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -198,7 +198,7 @@ public class AuditLogIT {
     assertThat(searchResult.items().getFirst().entityKey()).isEqualTo(original.entityKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAuditLogWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -236,7 +236,7 @@ public class AuditLogIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByAuthorizedCategories(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -277,7 +277,7 @@ public class AuditLogIT {
         .doesNotContain(deployedResourcesLog.auditLogKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByProcessDefinitionWithReadProcessInstance(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -323,7 +323,7 @@ public class AuditLogIT {
         .doesNotContain(log3.auditLogKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByProcessDefinitionWithReadProcessInstanceWildcard(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -376,7 +376,7 @@ public class AuditLogIT {
         .doesNotContain(logWithoutProcessDefId.auditLogKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByProcessDefinitionWithReadUserTask(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -428,7 +428,7 @@ public class AuditLogIT {
         .doesNotContain(log3.auditLogKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByProcessDefinitionWithReadUserTaskWildcard(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -478,7 +478,7 @@ public class AuditLogIT {
         .doesNotContain(adminLog.auditLogKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByCompositeAuthorization(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -539,7 +539,7 @@ public class AuditLogIT {
         .doesNotContain(log4.auditLogKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldReturnEmptyResultWhenNoAuthorizationMatch(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -568,7 +568,7 @@ public class AuditLogIT {
     assertThat(searchResult.items()).isEmpty();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldReturnAllWhenAuthorizationDisabled(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -588,7 +588,7 @@ public class AuditLogIT {
     assertThat(searchResult.items()).hasSize(20);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCombineAuthorizationWithOtherFilters(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -655,7 +655,7 @@ public class AuditLogIT {
     assertThat(instance.entityType()).isEqualTo(original.entityType());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessDefinitionRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -704,7 +704,7 @@ public class AuditLogIT {
     assertThat(searchResult.items()).isEmpty();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -744,7 +744,7 @@ public class AuditLogIT {
         .containsOnly(processInstanceKey2);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -812,7 +812,7 @@ public class AuditLogIT {
         .containsOnly(processInstanceKey1);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSetCleanupDateForProcessInstances(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -852,7 +852,7 @@ public class AuditLogIT {
         .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSetCleanupDateForProcessDefinitions(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -892,7 +892,7 @@ public class AuditLogIT {
         .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSetCleanupDateForDecisionInstances(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -932,7 +932,7 @@ public class AuditLogIT {
         .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSetCleanupDateForDecisionRequirements(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -972,7 +972,7 @@ public class AuditLogIT {
         .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotOverwriteNonNullCleanupDates(
       final CamundaRdbmsTestApplication testApplication) {
     // given

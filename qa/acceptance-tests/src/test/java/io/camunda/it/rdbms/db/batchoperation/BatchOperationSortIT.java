@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -21,14 +22,13 @@ import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.sort.BatchOperationSort;
 import java.util.Comparator;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class BatchOperationSortIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortIdAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final BatchOperationDbReader batchOperationReader = rdbmsService.getBatchOperationReader();

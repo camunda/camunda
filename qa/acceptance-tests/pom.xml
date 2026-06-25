@@ -787,6 +787,20 @@
             <configuration>
               <groups>rdbms</groups>
               <excludedGroups>rdbms-aurora, multi-db-test, compatibility-test, history</excludedGroups>
+              <properties>
+                <configurationParameters>
+                  <!-- Run the 6 DB-backend invocations of each @RdbmsTestTemplate method in
+                       parallel. Each invocation targets its own isolated container (H2, PG,
+                       MariaDB, MySQL, Oracle, MSSQL), so concurrent execution is safe. Classes
+                       and methods within a class remain sequential to avoid sharing the same
+                       container across concurrent writes. -->
+                  junit.jupiter.execution.parallel.enabled = true
+                  junit.jupiter.execution.parallel.config.strategy = fixed
+                  junit.jupiter.execution.parallel.config.fixed.parallelism = 6
+                  junit.jupiter.execution.parallel.mode.default = same_thread
+                  junit.jupiter.execution.parallel.mode.classes.default = same_thread
+                </configurationParameters>
+              </properties>
             </configuration>
           </plugin>
         </plugins>

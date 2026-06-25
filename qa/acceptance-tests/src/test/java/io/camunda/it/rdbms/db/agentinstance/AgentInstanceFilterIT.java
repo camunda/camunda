@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.filter.AgentInstanceFilter;
@@ -24,14 +25,13 @@ import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class AgentInstanceFilterIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByAgentInstanceKey(final CamundaRdbmsTestApplication testApplication) {
     final var model = createAndSaveRandomAgentInstance(testApplication, b -> b);
     createAndSaveRandomAgentInstance(testApplication, b -> b);
@@ -45,7 +45,7 @@ public class AgentInstanceFilterIT {
     assertThat(result.items().getFirst().agentInstanceKey()).isEqualTo(model.agentInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByProcessInstanceKey(final CamundaRdbmsTestApplication testApplication) {
     final long piKey = nextKey();
     final var model =
@@ -60,7 +60,7 @@ public class AgentInstanceFilterIT {
     assertThat(result.items().getFirst().processInstanceKey()).isEqualTo(piKey);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByProcessDefinitionId(final CamundaRdbmsTestApplication testApplication) {
     final String procDefId = "myProcess-" + nextStringId();
     createAndSaveRandomAgentInstance(testApplication, b -> b.processDefinitionId(procDefId));
@@ -76,7 +76,7 @@ public class AgentInstanceFilterIT {
     assertThat(result.items()).allMatch(e -> procDefId.equals(e.processDefinitionId()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByStatus(final CamundaRdbmsTestApplication testApplication) {
     final String procDefId = "proc-status-" + nextStringId();
     createAndSaveRandomAgentInstance(
@@ -99,7 +99,7 @@ public class AgentInstanceFilterIT {
     assertThat(result.items()).allMatch(e -> e.status() == AgentInstanceStatus.IDLE);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByTenantId(final CamundaRdbmsTestApplication testApplication) {
     final String tenantId = "tenant-" + nextStringId();
     createAndSaveRandomAgentInstance(testApplication, b -> b.tenantId(tenantId));
@@ -113,7 +113,7 @@ public class AgentInstanceFilterIT {
     assertThat(result.items()).allMatch(e -> tenantId.equals(e.tenantId()));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByElementId(final CamundaRdbmsTestApplication testApplication) {
     final String elementId = "Task_specificElement";
     final var model =
@@ -127,7 +127,7 @@ public class AgentInstanceFilterIT {
     assertThat(result.items().getFirst().elementId()).isEqualTo(elementId);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByRootProcessInstanceKey(
       final CamundaRdbmsTestApplication testApplication) {
     final long rootKey = nextKey();
@@ -145,7 +145,7 @@ public class AgentInstanceFilterIT {
     assertThat(result.items().getFirst().rootProcessInstanceKey()).isEqualTo(rootKey);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFilterByElementInstanceKey(final CamundaRdbmsTestApplication testApplication) {
     final long elementInstanceKey = nextKey();
     final var model =

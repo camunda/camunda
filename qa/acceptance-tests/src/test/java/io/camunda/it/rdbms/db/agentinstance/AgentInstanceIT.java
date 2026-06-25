@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.filter.AgentInstanceFilter;
@@ -23,14 +24,13 @@ import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class AgentInstanceIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldCreateAndGetAgentInstanceByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final AgentInstanceDbModel model = createAndSaveRandomAgentInstance(testApplication, b -> b);
@@ -46,7 +46,7 @@ public class AgentInstanceIT {
     assertFieldsMatch(model, entity);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldReturnNullForUnknownKey(final CamundaRdbmsTestApplication testApplication) {
     final var entity =
         testApplication
@@ -57,7 +57,7 @@ public class AgentInstanceIT {
     assertThat(entity).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllAgentInstancesPaged(final CamundaRdbmsTestApplication testApplication) {
     final String processId = "process-paged-" + nextStringId();
     createAndSaveRandomAgentInstances(testApplication, 20, b -> b.processDefinitionId(processId));
@@ -78,7 +78,7 @@ public class AgentInstanceIT {
     assertThat(result.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldReturnEmptyResultForPageSizeZero(
       final CamundaRdbmsTestApplication testApplication) {
     final String processId = "process-zero-" + nextStringId();

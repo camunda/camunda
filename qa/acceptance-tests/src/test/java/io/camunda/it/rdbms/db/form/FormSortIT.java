@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.it.rdbms.db.fixtures.FormFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -22,14 +23,13 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.sort.FormSort;
 import java.util.Comparator;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class FormSortIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortFormsByVersionAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final FormDbReader formReader = rdbmsService.getFormReader();
@@ -48,7 +48,7 @@ public class FormSortIT {
     assertThat(searchResult.items()).isSortedAccordingTo(Comparator.comparing(FormEntity::version));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortFormsByVersionDesc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final FormDbReader formReader = rdbmsService.getFormReader();

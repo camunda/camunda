@@ -17,11 +17,11 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;
 import java.util.Set;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -32,7 +32,7 @@ public class ProcessInstanceTagIT {
   public static final String TAG_VALUE_FOO = "foo_tag";
   public static final String TAG_VALUE_BAR = "bar_tag";
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindProcessInstanceByTag(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -61,7 +61,7 @@ public class ProcessInstanceTagIT {
     assertThat(searchResult.items().getFirst().tags()).containsOnly(TAG_VALUE_FOO);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindProcessInstanceWithMultipleTags(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

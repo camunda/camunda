@@ -24,6 +24,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -35,7 +36,6 @@ import java.util.List;
 import java.util.Set;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -45,7 +45,7 @@ public class ProcessInstanceIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindProcessInstanceByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -86,7 +86,7 @@ public class ProcessInstanceIT {
     assertThat(instance.businessId()).isEqualTo("test-business-id");
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -112,7 +112,7 @@ public class ProcessInstanceIT {
     assertThat(resolvedInstance.hasIncident()).isFalse();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveTagsAndCompleteInSameFlush(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -135,7 +135,7 @@ public class ProcessInstanceIT {
     assertThat(readInstance.tags()).containsExactlyInAnyOrder("foo", "bar");
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceByBpmnProcessId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -183,7 +183,7 @@ public class ProcessInstanceIT {
     assertThat(instance.processDefinitionVersion()).isEqualTo(1);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceByAuthorizationResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -209,7 +209,7 @@ public class ProcessInstanceIT {
         .isEqualTo(processInstance.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceByAuthorizationTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -230,7 +230,7 @@ public class ProcessInstanceIT {
         .isEqualTo(processInstance.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceWithIncidents(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -264,7 +264,7 @@ public class ProcessInstanceIT {
             incidentPI1.processInstanceKey(), incidentPI2.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllProcessInstancePaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -287,7 +287,7 @@ public class ProcessInstanceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllProcessInstancePagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -312,7 +312,7 @@ public class ProcessInstanceIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -359,7 +359,7 @@ public class ProcessInstanceIT {
     assertThat(searchResult.items().getFirst().processInstanceKey()).isEqualTo(processInstanceKey);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindProcessInstanceWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -411,7 +411,7 @@ public class ProcessInstanceIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessByKey(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -461,7 +461,7 @@ public class ProcessInstanceIT {
         .containsExactlyInAnyOrder(pi1.processInstanceKey(), pi3.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteChildrenByRootProcessInstances(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -524,7 +524,7 @@ public class ProcessInstanceIT {
         .containsExactlyInAnyOrder(rootProcessInstanceKey, pi3.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSelectRootExpiredRootProcessInstances(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -567,7 +567,7 @@ public class ProcessInstanceIT {
         .containsExactlyInAnyOrder(pi1.processInstanceKey(), pi3.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSelectExpiredRootProcessInstancesWithLimit(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -622,7 +622,7 @@ public class ProcessInstanceIT {
             pi5.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotSelectExpiredRootProcessInstancesFromDifferentPartition(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -656,7 +656,7 @@ public class ProcessInstanceIT {
     assertThat(expiredPIs).containsExactly(pi1.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotSelectRootProcessInstancesWithoutCleanupDate(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -688,7 +688,7 @@ public class ProcessInstanceIT {
     assertThat(expiredPIs).containsExactly(pi1.processInstanceKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotScheduleNonRootProcessInstancesForCleanupByThemselves(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

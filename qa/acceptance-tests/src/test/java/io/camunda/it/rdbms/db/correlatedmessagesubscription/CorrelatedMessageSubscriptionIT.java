@@ -18,6 +18,7 @@ import io.camunda.it.rdbms.db.fixtures.CorrelatedMessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.sort.CorrelatedMessageSubscriptionSort;
@@ -28,7 +29,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -38,7 +38,7 @@ public class CorrelatedMessageSubscriptionIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindCorrelatedMessageSubscriptionByCompositeKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -57,7 +57,7 @@ public class CorrelatedMessageSubscriptionIT {
     compareCorrelatedMessageSubscription(instance, original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindCorrelatedMessageSubscriptionByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -81,7 +81,7 @@ public class CorrelatedMessageSubscriptionIT {
         .contains(original.processDefinitionId());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindCorrelatedMessageSubscriptionByBusinessId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -106,7 +106,7 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(searchResult.items().getFirst().businessId()).isEqualTo(original.businessId());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindCorrelatedMessageSubscriptionByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -130,7 +130,7 @@ public class CorrelatedMessageSubscriptionIT {
     compareCorrelatedMessageSubscription(searchResult.items().getFirst(), original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindCorrelatedMessageSubscriptionByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -153,7 +153,7 @@ public class CorrelatedMessageSubscriptionIT {
     compareCorrelatedMessageSubscription(searchResult.items().getFirst(), original);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllCorrelatedMessageSubscriptionsPaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -178,7 +178,7 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllCorrelatedMessageSubscriptionsPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -204,7 +204,7 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindCorrelatedMessageSubscriptionWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -244,7 +244,7 @@ public class CorrelatedMessageSubscriptionIT {
         .isEqualTo(original.subscriptionKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindCorrelatedMessageSubscriptionWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -285,7 +285,7 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindCorrelatedMessageSubscriptionWithSearchAfterByNullableBusinessId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -340,7 +340,7 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(nextPage.items()).isEqualTo(allItems.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByBusinessId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -375,7 +375,7 @@ public class CorrelatedMessageSubscriptionIT {
         .isSortedAccordingTo(Comparator.reverseOrder());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -418,7 +418,7 @@ public class CorrelatedMessageSubscriptionIT {
         .containsExactlyInAnyOrder(item1.messageKey(), item3.messageKey());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given

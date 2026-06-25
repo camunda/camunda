@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.write.domain.GlobalListenerDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.Operation;
@@ -25,19 +26,18 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class GlobalListenerSortIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(testApplication, b -> b.id().asc(), Comparator.comparing(GlobalListenerEntity::id));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -45,7 +45,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::id).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByListenerIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -53,7 +53,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::listenerId));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByListenerIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -61,13 +61,13 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::listenerId).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTypeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication, b -> b.type().asc(), Comparator.comparing(GlobalListenerEntity::type));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByTypeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -75,7 +75,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::type).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByAfterNonGlobalAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -83,7 +83,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::afterNonGlobal));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByAfterNonGlobalDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -91,7 +91,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::afterNonGlobal).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByPriorityAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -99,7 +99,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::priority));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByPriorityDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -107,13 +107,13 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::priority).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortBySourceAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication, b -> b.source().asc(), Comparator.comparing(GlobalListenerEntity::source));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortBySourceDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -121,7 +121,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::source).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByListenerTypeAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -129,7 +129,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::listenerType));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortByListenerTypeDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication,
@@ -137,7 +137,7 @@ public class GlobalListenerSortIT {
         Comparator.comparing(GlobalListenerEntity::listenerType).reversed());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSortWhenCombiningWithDefaultSorting(
       final CamundaRdbmsTestApplication testApplication) {
     // When searching global listeners through API, a default sorting is applied:

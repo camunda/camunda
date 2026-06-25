@@ -18,16 +18,16 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class ProcessDefinitionVariableNameLookupIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldRecordVariableNameForProcessDefinition(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -48,7 +48,7 @@ public class ProcessDefinitionVariableNameLookupIT {
         .containsExactly(varName);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldRecordDistinctVariableNamesForProcessDefinition(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -70,7 +70,7 @@ public class ProcessDefinitionVariableNameLookupIT {
         .containsExactlyInAnyOrder(varNameA, varNameB);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldNotInsertDuplicateLookupEntryWithinSameWriterSession(
       final CamundaRdbmsTestApplication testApplication) {
     // given: a single writer instance whose in-memory cache tracks seen (procDefKey, varName) pairs
@@ -116,7 +116,7 @@ public class ProcessDefinitionVariableNameLookupIT {
         .containsExactly(varName);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteAllLookupEntriesWhenProcessDefinitionDeleted(
       final CamundaRdbmsTestApplication testApplication) {
     // given

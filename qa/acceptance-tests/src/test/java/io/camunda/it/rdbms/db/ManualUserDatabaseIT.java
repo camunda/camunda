@@ -15,9 +15,9 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class ManualUserDatabaseIT {
   private static final Logger LOGGER = LoggerFactory.getLogger(ManualUserDatabaseIT.class);
   private static final int PARTITION_ID = 0;
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldWorkWithManualUser(final CamundaRdbmsTestApplication testApplication) {
     LOGGER.info("Testing with manual user...");
 

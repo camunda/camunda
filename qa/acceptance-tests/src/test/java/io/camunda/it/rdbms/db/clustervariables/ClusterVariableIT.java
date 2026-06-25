@@ -22,6 +22,7 @@ import io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.filter.ClusterVariableFilter;
@@ -31,7 +32,6 @@ import io.camunda.search.sort.ClusterVariableSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
@@ -41,7 +41,7 @@ public class ClusterVariableIT {
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindTenantClusterVariableByNameAndResource(
       final CamundaRdbmsTestApplication testApplication) {
     final ClusterVariableDbModel randomizedVariable =
@@ -63,7 +63,7 @@ public class ClusterVariableIT {
     assertThat(instance.isPreview()).isFalse();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindGlobalClusterVariableByNameAndResource(
       final CamundaRdbmsTestApplication testApplication) {
     final ClusterVariableDbModel randomizedVariable =
@@ -84,7 +84,7 @@ public class ClusterVariableIT {
     assertThat(instance.isPreview()).isFalse();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindBigTenantClusterVariableByNameAndResource(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -109,7 +109,7 @@ public class ClusterVariableIT {
     assertThat(instance.value()).hasSizeLessThan(instance.fullValue().length());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindBigGlobalClusterVariableByNameAndResource(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -133,7 +133,7 @@ public class ClusterVariableIT {
     assertThat(instance.value()).hasSizeLessThan(instance.fullValue().length());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllTenantClusterVariablesPaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -159,7 +159,7 @@ public class ClusterVariableIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllGlobalClusterVariablesPaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -181,7 +181,7 @@ public class ClusterVariableIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllTenantClusterVariablesPagedWithHasMoreHits(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -208,7 +208,7 @@ public class ClusterVariableIT {
     assertThat(searchResult.items()).hasSize(5);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllTenantClusterVariablesPageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -234,7 +234,7 @@ public class ClusterVariableIT {
     assertThat(searchResult.items()).hasSize(20);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -270,7 +270,7 @@ public class ClusterVariableIT {
     assertThat(searchResult.items().getFirst().tenantId()).isEqualTo(tenantId);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindClusterVariableWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -310,7 +310,7 @@ public class ClusterVariableIT {
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateTenantClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -341,7 +341,7 @@ public class ClusterVariableIT {
     assertVariableDbModelEqualToEntity(updatedClusterVariable, instance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateGlobalClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -371,7 +371,7 @@ public class ClusterVariableIT {
     assertVariableDbModelEqualToEntity(updatedClusterVariable, instance);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteTenantClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -407,7 +407,7 @@ public class ClusterVariableIT {
     assertThat(deletedInstance).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteGlobalClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

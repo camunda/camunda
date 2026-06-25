@@ -13,19 +13,19 @@ import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.it.rdbms.db.util.RdbmsTestTemplate;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class PersistentWebSessionIT {
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldSaveAndFindWebSessionById(final CamundaRdbmsTestApplication testApplication) {
     final PersistentWebSessionDbReader reader =
         testApplication.bean(PersistentWebSessionDbReader.class);
@@ -61,7 +61,7 @@ public class PersistentWebSessionIT {
     assertThat(foundSession.attributes().get("role")).isEqualTo("admin".getBytes());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldUpdateExistingWebSession(final CamundaRdbmsTestApplication testApplication) {
     final PersistentWebSessionDbReader reader =
         testApplication.bean(PersistentWebSessionDbReader.class);
@@ -105,7 +105,7 @@ public class PersistentWebSessionIT {
     assertThat(foundSession.attributes().get("newAttribute")).isEqualTo("value".getBytes());
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldDeleteWebSession(final CamundaRdbmsTestApplication testApplication) {
     final PersistentWebSessionDbReader reader =
         testApplication.bean(PersistentWebSessionDbReader.class);
@@ -133,7 +133,7 @@ public class PersistentWebSessionIT {
     assertThat(reader.findById(sessionId)).isNull();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldFindAllWebSessions(final CamundaRdbmsTestApplication testApplication) {
     final PersistentWebSessionDbReader reader =
         testApplication.bean(PersistentWebSessionDbReader.class);
@@ -165,7 +165,7 @@ public class PersistentWebSessionIT {
         .contains(sessionId1, sessionId2, sessionId3);
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldHandleEmptyAttributes(final CamundaRdbmsTestApplication testApplication) {
     final PersistentWebSessionDbReader reader =
         testApplication.bean(PersistentWebSessionDbReader.class);
@@ -194,7 +194,7 @@ public class PersistentWebSessionIT {
     assertThat(foundSession.attributes()).isEmpty();
   }
 
-  @TestTemplate
+  @RdbmsTestTemplate
   public void shouldHandleLargeAttributes(final CamundaRdbmsTestApplication testApplication) {
     final PersistentWebSessionDbReader reader =
         testApplication.bean(PersistentWebSessionDbReader.class);
