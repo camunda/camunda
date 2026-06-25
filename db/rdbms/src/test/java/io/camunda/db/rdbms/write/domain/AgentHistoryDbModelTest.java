@@ -89,6 +89,15 @@ class AgentHistoryDbModelTest {
     // then — empty list serializes to null JSON (not "[]"), so the CLOB columns are null
     assertThat(modelWithEmptyContent.content()).isNull();
     assertThat(modelWithEmptyToolCalls.toolCalls()).isNull();
+
+    // given — null list passed to builder
+    final var modelWithNullContent = new AgentHistoryDbModel.Builder().contentItems(null).build();
+    final var modelWithNullToolCalls =
+        new AgentHistoryDbModel.Builder().toolCallValues(null).build();
+
+    // then — null list also results in null JSON (not "[]")
+    assertThat(modelWithNullContent.content()).isNull();
+    assertThat(modelWithNullToolCalls.toolCalls()).isNull();
   }
 
   @Test
