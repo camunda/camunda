@@ -23,15 +23,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 public class FuturesUtilTest {
-  @AutoClose private static final ExecutorService EXECUTOR = Executors.newWorkStealingPool();
 
   @Nested
   class TraverseIgnoring {
+    @AutoClose private final ExecutorService executor = Executors.newWorkStealingPool();
+
     @Test
     public void shouldReturnCompletedFutureWhenCollectionIsEmpty() {
       assertThat(
               FuturesUtil.traverseIgnoring(
-                  List.of(), a -> CompletableFuture.supplyAsync(() -> null), EXECUTOR))
+                  List.of(), a -> CompletableFuture.supplyAsync(() -> null), executor))
           .isCompleted();
     }
 
@@ -46,7 +47,7 @@ public class FuturesUtilTest {
       }
       // when
       FuturesUtil.traverseIgnoring(
-              elements, i -> CompletableFuture.runAsync(() -> map.add(i)), EXECUTOR)
+              elements, i -> CompletableFuture.runAsync(() -> map.add(i)), executor)
           .join();
       // then
       assertThat(map).containsExactlyElementsOf(elements);
@@ -64,7 +65,7 @@ public class FuturesUtilTest {
                   i % 2 == 0
                       ? CompletableFuture.failedFuture(new RuntimeException("Expected"))
                       : CompletableFuture.runAsync(() -> map.put(i, i)),
-              EXECUTOR);
+              executor);
       // then
       assertThat(future)
           .failsWithin(Duration.ofSeconds(5))
