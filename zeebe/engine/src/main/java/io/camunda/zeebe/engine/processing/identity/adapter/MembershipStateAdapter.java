@@ -36,10 +36,10 @@ public final class MembershipStateAdapter implements MembershipPort {
 
   @Override
   public List<String> mappingRuleIds(final MembershipQuery query) {
+    final var rawClaims = query.tokenClaims().get(Authorization.USER_TOKEN_CLAIMS);
     @SuppressWarnings("unchecked")
     final var tokenClaims =
-        (Map<String, Object>)
-            query.tokenClaims().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
+        rawClaims instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
     return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), tokenClaims)
         .map(PersistedMappingRule::getMappingRuleId)
         .toList();
@@ -47,11 +47,13 @@ public final class MembershipStateAdapter implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    @SuppressWarnings("unchecked")
-    final var groupsClaims =
-        (List<String>) query.tokenClaims().get(Authorization.USER_GROUPS_CLAIMS);
-    if (groupsClaims != null) {
-      return groupsClaims;
+    final var rawGroups = query.tokenClaims().get(Authorization.USER_GROUPS_CLAIMS);
+    if (rawGroups instanceof List<?> groupsClaims) {
+      return groupsClaims.stream()
+          .filter(String.class::isInstance)
+          .map(String.class::cast)
+          .distinct()
+          .toList();
     }
     return membershipState.getMemberships(
         toEntityType(query.principalType()), query.principalId(), RelationType.GROUP);
