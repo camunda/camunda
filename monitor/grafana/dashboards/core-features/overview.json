@@ -3826,7 +3826,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\r\n<strong><a href=\"/d/zeebe-overview/zeebe-overview?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe Overview<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/zeebe-dashboard/zeebe?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe<br/>Dashboard</a></strong>\r\n</center>",
+            "content": "<center>\r\n<strong><a href=\"/d/zeebe-overview/zeebe-overview?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&var-cluster=${cluster}\" target=\"_blank\">\r\nZeebe Overview<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/zeebe-dashboard/zeebe?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&var-cluster=${cluster}\" target=\"_blank\">\r\nZeebe<br/>Dashboard</a></strong>\r\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -6923,7 +6923,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\r\n<strong><a href=\"/d/6MTxqUDWk/operate?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nOperate<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/benchmark-1/camunda-cloud??orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nBenchmark<br/>Dashboard</a></strong>\r\n</center>",
+            "content": "<center>\r\n<strong><a href=\"/d/6MTxqUDWk/operate?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nOperate<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/benchmark-1/camunda-cloud?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nBenchmark<br/>Dashboard</a></strong>\r\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -7564,7 +7564,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\n<strong><a href=\"/d/kubernetes-workload/kubernetes-workload?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all)\" target=\"_blank\">\nSRE<br/>Dashboard</a></strong>\n</center>",
+            "content": "<center>\n<strong><a href=\"/d/kubernetes-workload/kubernetes-workload?orgId=1&$__url_time_range&var-datasource=${datasource}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\nSRE<br/>Dashboard</a></strong>\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
