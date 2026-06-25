@@ -146,8 +146,8 @@ const mockAuditLogs: QueryAuditLogsResponseBody = {
       relatedEntityType: null,
       entityDescription: null,
       agentElementId: null,
-      inboundChannelType: null,
-      inboundChannelToolName: null,
+      inboundChannelType: 'MCP',
+      inboundChannelToolName: 'resolveIncident',
     },
   ],
   page: {
