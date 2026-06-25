@@ -36,6 +36,12 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** The connection timeout for ES and OS connector */
   private Duration connectionTimeout;
 
+  /** Total number of connections allowed in the ES and OS connector connection pool. */
+  private Integer maxConnections;
+
+  /** Maximum number of connections allowed per route in the ES and OS connector connection pool. */
+  private Integer maxConnectionsPerRoute;
+
   /** How many shards the search engine database uses for all indices. */
   private int numberOfShards = 1;
 
@@ -350,6 +356,22 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setConnectionTimeout(final Duration connectionTimeout) {
     this.connectionTimeout = connectionTimeout;
+  }
+
+  public Integer getMaxConnections() {
+    return maxConnections;
+  }
+
+  public void setMaxConnections(final Integer maxConnections) {
+    this.maxConnections = maxConnections;
+  }
+
+  public Integer getMaxConnectionsPerRoute() {
+    return maxConnectionsPerRoute;
+  }
+
+  public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
+    this.maxConnectionsPerRoute = maxConnectionsPerRoute;
   }
 
   public int getNumberOfReplicas() {

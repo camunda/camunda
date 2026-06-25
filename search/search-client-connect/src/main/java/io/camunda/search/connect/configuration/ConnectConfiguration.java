@@ -24,6 +24,8 @@ public class ConnectConfiguration {
   private String fieldDateFormat = FIELD_DATE_FORMAT_DEFAULT;
   private Integer socketTimeout;
   private Integer connectTimeout;
+  private Integer maxConnections;
+  private Integer maxConnectionsPerRoute;
   private String url = URL_DEFAULT;
   private List<String> urls = new ArrayList<>();
   private String username;
@@ -94,6 +96,22 @@ public class ConnectConfiguration {
 
   public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public Integer getMaxConnections() {
+    return maxConnections;
+  }
+
+  public void setMaxConnections(final Integer maxConnections) {
+    this.maxConnections = maxConnections;
+  }
+
+  public Integer getMaxConnectionsPerRoute() {
+    return maxConnectionsPerRoute;
+  }
+
+  public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
+    this.maxConnectionsPerRoute = maxConnectionsPerRoute;
   }
 
   public String getUrl() {

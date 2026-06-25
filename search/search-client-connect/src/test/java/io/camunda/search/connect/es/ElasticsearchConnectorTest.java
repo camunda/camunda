@@ -26,6 +26,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.protocol.BasicHttpContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -88,6 +89,40 @@ class ElasticsearchConnectorTest {
 
     assertThat(reqWrapper.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
         .isEqualTo(VALUE_CUSTOM_HEADER);
+  }
+
+  @Test
+  void shouldConfigureConnectionPoolLimitsWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setMaxConnections(75);
+    configuration.setMaxConnectionsPerRoute(40);
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    Mockito.verify(builder).setMaxConnTotal(75);
+    Mockito.verify(builder).setMaxConnPerRoute(40);
+  }
+
+  @Test
+  void shouldNotConfigureConnectionPoolLimitsWhenUnset() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    Mockito.verify(builder, Mockito.never()).setMaxConnTotal(Mockito.anyInt());
+    Mockito.verify(builder, Mockito.never()).setMaxConnPerRoute(Mockito.anyInt());
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

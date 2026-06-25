@@ -55,6 +55,8 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     elasticsearch.setDateFormat("yyyy");
     elasticsearch.setSocketTimeout(Duration.ofSeconds(7));
     elasticsearch.setConnectionTimeout(Duration.ofSeconds(11));
+    elasticsearch.setMaxConnections(64);
+    elasticsearch.setMaxConnectionsPerRoute(32);
     elasticsearch.setIndexPrefix("es-prefix");
     elasticsearch.getSecurity().setEnabled(true);
     elasticsearch.getSecurity().setCertificatePath("/etc/cert.pem");
@@ -73,6 +75,8 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     assertThat(result.getDateFormat()).isEqualTo("yyyy");
     assertThat(result.getSocketTimeout()).isEqualTo(7_000);
     assertThat(result.getConnectTimeout()).isEqualTo(11_000);
+    assertThat(result.getMaxConnections()).isEqualTo(64);
+    assertThat(result.getMaxConnectionsPerRoute()).isEqualTo(32);
     assertThat(result.getIndexPrefix()).isEqualTo("es-prefix");
     assertThat(result.getSecurity().isEnabled()).isTrue();
     assertThat(result.getSecurity().getCertificatePath()).isEqualTo("/etc/cert.pem");

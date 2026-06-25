@@ -30,6 +30,7 @@ import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.util.Timeout;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -192,9 +193,7 @@ public final class OpensearchConnector {
       httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
     }
 
-    if (osConfig.getSecurity() != null && osConfig.getSecurity().isEnabled()) {
-      setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
-    }
+    setupConnectionManager(httpAsyncClientBuilder, osConfig);
 
     final var proxyConfig = osConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
@@ -271,9 +270,42 @@ public final class OpensearchConnector {
     LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
-  private void setupSSLContext(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final SecurityConfiguration configuration) {
+  /**
+   * Builds and assigns a {@link
+   * org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager} when TLS or connection
+   * pool limits need to be configured. When neither is configured the builder is left untouched so
+   * the Apache HttpClient defaults remain in effect.
+   */
+  private void setupConnectionManager(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration osConfig) {
+    final var security = osConfig.getSecurity();
+    final boolean securityEnabled = security != null && security.isEnabled();
+    final boolean poolConfigured =
+        osConfig.getMaxConnections() != null || osConfig.getMaxConnectionsPerRoute() != null;
+
+    if (!securityEnabled && !poolConfigured) {
+      return;
+    }
+
+    final var connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create();
+
+    if (securityEnabled) {
+      final var tlsStrategy = buildTlsStrategy(security);
+      if (tlsStrategy != null) {
+        connectionManagerBuilder.setTlsStrategy(tlsStrategy);
+      }
+    }
+    if (osConfig.getMaxConnections() != null) {
+      connectionManagerBuilder.setMaxConnTotal(osConfig.getMaxConnections());
+    }
+    if (osConfig.getMaxConnectionsPerRoute() != null) {
+      connectionManagerBuilder.setMaxConnPerRoute(osConfig.getMaxConnectionsPerRoute());
+    }
+
+    httpAsyncClientBuilder.setConnectionManager(connectionManagerBuilder.build());
+  }
+
+  private TlsStrategy buildTlsStrategy(final SecurityConfiguration configuration) {
     try {
       final var tlsStrategyBuilder = ClientTlsStrategyBuilder.create();
       final var sslContext = SecurityUtil.getSSLContext(configuration, "opensearch-host");
@@ -283,14 +315,10 @@ public final class OpensearchConnector {
         tlsStrategyBuilder.setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
 
-      final var tlsStrategy = tlsStrategyBuilder.build();
-      final var connectionManager =
-          PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
-
-      httpAsyncClientBuilder.setConnectionManager(connectionManager);
-
+      return tlsStrategyBuilder.build();
     } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
+      return null;
     }
   }
 }
