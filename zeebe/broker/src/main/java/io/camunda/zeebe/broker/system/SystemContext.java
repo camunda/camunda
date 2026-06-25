@@ -64,6 +64,7 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -134,6 +135,7 @@ public final class SystemContext {
   private final MeterRegistry meterRegistry;
   private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
   private final Function<String, UserServices> userServicesForTenant;
+  private final Map<String, FeatureFlags> featureFlagsByPhysicalTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
@@ -146,7 +148,7 @@ public final class SystemContext {
 
   /**
    * Creates a {@code SystemContext} where each physical tenant carries its own {@link
-   * EngineSecurityConfig} and {@link BrokerRequestAuthorizationConverter}.
+   * EngineSecurityConfig}, {@link BrokerRequestAuthorizationConverter}, and {@link FeatureFlags}.
    */
   public SystemContext(
       final Duration shutdownTimeout,
@@ -164,6 +166,7 @@ public final class SystemContext {
       final SearchClientsProxy searchClientsProxy,
       final Map<String, BrokerRequestAuthorizationConverter>
           brokerRequestAuthorizationConvertersByPhysicalTenant,
+      final Map<String, FeatureFlags> featureFlagsByPhysicalTenant,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
@@ -184,6 +187,7 @@ public final class SystemContext {
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConvertersByPhysicalTenant =
         Collections.unmodifiableMap(brokerRequestAuthorizationConvertersByPhysicalTenant);
+    this.featureFlagsByPhysicalTenant = Map.copyOf(featureFlagsByPhysicalTenant);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
@@ -798,6 +802,39 @@ public final class SystemContext {
   public Map<String, BrokerRequestAuthorizationConverter>
       getBrokerRequestAuthorizationConvertersByPhysicalTenant() {
     return brokerRequestAuthorizationConvertersByPhysicalTenant;
+  }
+
+  /**
+   * Returns the feature flags for the {@code default} physical tenant.
+   *
+   * @throws IllegalStateException if no feature flags are registered for the default physical
+   *     tenant
+   */
+  public FeatureFlags getFeatureFlags() {
+    final var flags =
+        featureFlagsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (flags == null) {
+      throw new IllegalStateException(
+          "No feature flags registered for the default physical tenant");
+    }
+    return flags;
+  }
+
+  /**
+   * Returns the feature flags for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  public FeatureFlags getFeatureFlags(final String physicalTenantId) {
+    if (!featureFlagsByPhysicalTenant.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return featureFlagsByPhysicalTenant.get(physicalTenantId);
+  }
+
+  /** Returns the per-physical-tenant feature flags map (unmodifiable). */
+  public Map<String, FeatureFlags> getFeatureFlagsByPhysicalTenant() {
+    return featureFlagsByPhysicalTenant;
   }
 
   public NodeIdProvider getNodeIdProvider() {

@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
@@ -576,6 +577,46 @@ final class SystemContextTest {
         .hasMessageContaining("authorizations");
   }
 
+  @Test
+  void shouldReturnFeatureFlagsForGivenTenant() {
+    // given
+    final var tenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+    final var flags = FeatureFlags.createDefaultForTests();
+    final var ctx =
+        new SystemContext(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
+            new BrokerCfg(),
+            null,
+            mock(ActorScheduler.class),
+            mock(AtomixCluster.class),
+            mock(BrokerClient.class),
+            new SimpleMeterRegistry(),
+            Map.of(tenantId, EngineSecurityConfigurations.defaultConfig()),
+            mock(UserServices.class),
+            mock(PasswordEncoder.class),
+            mock(JwtDecoder.class),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+            mock(SearchClientsProxy.class),
+            Map.of(tenantId, mock(BrokerRequestAuthorizationConverter.class)),
+            Map.of(tenantId, flags),
+            mock(NodeIdProvider.class),
+            PhysicalTenantIds.DEFAULT);
+
+    // when / then
+    assertThat(ctx.getFeatureFlags(tenantId)).isSameAs(flags);
+  }
+
+  @Test
+  void shouldThrowForUnknownFeatureFlagsTenant() {
+    // given
+    final var ctx = initSystemContext(new BrokerCfg());
+
+    // when / then
+    assertThatThrownBy(() -> ctx.getFeatureFlags("unknown-tenant"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("unknown-tenant");
+  }
+
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return SystemContextTestFactory.singleTenant(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
@@ -611,6 +652,11 @@ final class SystemContextTest {
       final BrokerCfg brokerCfg,
       final Map<String, EngineSecurityConfig> configsByTenant,
       final Map<String, BrokerRequestAuthorizationConverter> convertersByTenant) {
+    final Map<String, FeatureFlags> featureFlagsByTenant = new HashMap<>();
+    configsByTenant
+        .keySet()
+        .forEach(
+            tenantId -> featureFlagsByTenant.put(tenantId, FeatureFlags.createDefaultForTests()));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -626,6 +672,7 @@ final class SystemContextTest {
         authConfig -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
         mock(SearchClientsProxy.class),
         convertersByTenant,
+        featureFlagsByTenant,
         mock(NodeIdProvider.class),
         PhysicalTenantIds.DEFAULT);
   }

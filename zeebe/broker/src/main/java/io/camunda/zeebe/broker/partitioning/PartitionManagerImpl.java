@@ -46,6 +46,7 @@ import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -106,6 +107,7 @@ public final class PartitionManagerImpl
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final FeatureFlags featureFlags,
       final TopologyManagerImpl topologyManager) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
@@ -119,7 +121,6 @@ public final class PartitionManagerImpl
     this.brokerClient = brokerClient;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
-    final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     brokerMeterRegistry = meterRegistry;
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);

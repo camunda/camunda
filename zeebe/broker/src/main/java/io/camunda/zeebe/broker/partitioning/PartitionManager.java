@@ -89,6 +89,7 @@ public interface PartitionManager {
         brokerStartupContext.getSecurityConfiguration(),
         brokerStartupContext.getSearchClientsProxy(),
         brokerStartupContext.getBrokerRequestAuthorizationConverter(physicalTenantId),
+        brokerStartupContext.getFeatureFlags(physicalTenantId),
         topologyManager);
   }
 

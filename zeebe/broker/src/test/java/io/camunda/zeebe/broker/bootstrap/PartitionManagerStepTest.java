@@ -35,6 +35,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
@@ -208,6 +209,30 @@ class PartitionManagerStepTest {
       proxyField.setAccessible(true);
 
       assertThat(proxyField.get(zeebeFactory)).isSameAs(scopedProxy);
+    }
+
+    @Test
+    void shouldPassPerTenantFeatureFlagsToPartitionFactory() throws Exception {
+      // given
+      final var perTenantFlags = FeatureFlags.createDefaultForTests();
+      testBrokerStartupContext.setFeatureFlags(perTenantFlags);
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+
+      // then — the per-PT flags (not a freshly constructed cluster default) are wired in
+      final var partitionManager =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
+      factoryField.setAccessible(true);
+      final var zeebeFactory = factoryField.get(partitionManager);
+
+      final var flagsField = ZeebePartitionFactory.class.getDeclaredField("featureFlags");
+      flagsField.setAccessible(true);
+
+      assertThat(flagsField.get(zeebeFactory)).isSameAs(perTenantFlags);
     }
 
     @Test

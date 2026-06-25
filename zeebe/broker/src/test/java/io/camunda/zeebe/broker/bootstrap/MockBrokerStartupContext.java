@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -93,6 +94,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
       mock(SnapshotApiRequestHandler.class);
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
+  private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
@@ -432,6 +434,15 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   public void setBrokerRequestAuthorizationConverter(
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+  }
+
+  @Override
+  public FeatureFlags getFeatureFlags(final String physicalTenantId) {
+    return featureFlags;
+  }
+
+  public void setFeatureFlags(final FeatureFlags featureFlags) {
+    this.featureFlags = featureFlags;
   }
 
   @Override

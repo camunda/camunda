@@ -39,6 +39,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
@@ -175,6 +176,13 @@ public interface BrokerStartupContext {
    */
   BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter(
       String physicalTenantId);
+
+  /**
+   * Returns the feature flags for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  FeatureFlags getFeatureFlags(String physicalTenantId);
 
   CheckpointSchedulingService getCheckpointSchedulingService();
 

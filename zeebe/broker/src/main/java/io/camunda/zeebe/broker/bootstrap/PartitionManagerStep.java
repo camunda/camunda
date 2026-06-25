@@ -136,12 +136,53 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
     if (isRecovering(brokerStartupContext, memberId)) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
-      return PartitionManager.createRecoveryPartitionManager(
-          brokerStartupContext, physicalTenantId, topologyManager);
+      return recoveryPartitionManager(brokerStartupContext, topologyManager);
     } else {
-      return PartitionManager.createPartitionManager(
-          brokerStartupContext, physicalTenantId, topologyManager);
+      return partitionManager(brokerStartupContext, topologyManager);
     }
+  }
+
+  PartitionManager partitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+
+    return new PartitionManagerImpl(
+        physicalTenantId,
+        brokerStartupContext.getConcurrencyControl(),
+        brokerStartupContext.getActorSchedulingService(),
+        brokerStartupContext.getBrokerConfiguration(),
+        brokerStartupContext.getBrokerInfo(),
+        brokerStartupContext.getClusterServices(),
+        brokerStartupContext.getHealthCheckService(),
+        brokerStartupContext.getDiskSpaceUsageMonitor(),
+        brokerStartupContext.getPartitionListeners(),
+        brokerStartupContext.getPartitionRaftListeners(),
+        brokerStartupContext.getSnapshotApiRequestHandler(),
+        brokerStartupContext.getExporterRepository(),
+        brokerStartupContext.getGatewayBrokerTransport(),
+        brokerStartupContext.getJobStreamService().jobStreamer(),
+        brokerStartupContext.getClusterConfigurationService(),
+        brokerStartupContext.getMeterRegistry(),
+        brokerStartupContext.getBrokerClient(),
+        brokerStartupContext.getRocksDbResources(),
+        brokerStartupContext.getSecurityConfiguration(physicalTenantId),
+        brokerStartupContext.getSearchClientsProxy(),
+        brokerStartupContext.getBrokerRequestAuthorizationConverter(physicalTenantId),
+        brokerStartupContext.getFeatureFlags(physicalTenantId),
+        topologyManager);
+  }
+
+  PartitionManager recoveryPartitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+
+    return new RecoveryPartitionManager(
+        physicalTenantId,
+        brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
+        brokerStartupContext.getConcurrencyControl(),
+        brokerStartupContext.getClusterConfigurationService(),
+        brokerStartupContext.getClusterServices(),
+        brokerStartupContext.getActorSchedulingService(),
+        brokerStartupContext.getMeterRegistry(),
+        topologyManager);
   }
 
   private void shutdownOnInconsistentTopology(
