@@ -7,12 +7,9 @@
  */
 package io.camunda.eventbridge.clustermetadata;
 
-import io.camunda.eventbridge.clustermetadata.placement.PlacementStrategy;
-import io.camunda.eventbridge.clustermetadata.placement.RoundRobinPlacement;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
-import io.camunda.eventbridge.clustermetadata.state.broker.BrokerQueryService;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
@@ -59,8 +56,6 @@ public class MetadataManager extends Actor {
   private final int partitionId;
   private final MetadataStream metadataStream;
   private final TopicQueryService topics;
-  private final BrokerQueryService brokers;
-  private final PlacementStrategy placement = new RoundRobinPlacement();
 
   // Brokers report provisioned partitions here; the registry-shard leader registers itself as the
   // sink. Per-topic covered partition ids drive the CREATING -> ACTIVE transition.
@@ -76,13 +71,11 @@ public class MetadataManager extends Actor {
       final int partitionId,
       final MetadataStream metadataStream,
       final TopicQueryService topics,
-      final BrokerQueryService brokers,
       final AtomicReference<BiConsumer<String, List<Integer>>> provisionedSinkRef,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
     this.metadataStream = metadataStream;
     this.topics = topics;
-    this.brokers = brokers;
     this.provisionedSinkRef = provisionedSinkRef;
     this.reconfigurationExecutor = reconfigurationExecutor;
   }
@@ -189,13 +182,12 @@ public class MetadataManager extends Actor {
   }
 
   /**
-   * Change-coordinator kickoff/retry/anti-entropy tick: heals placement off unavailable brokers,
-   * then starts driving any topic with an in-flight target. After a failover the new leader picks
-   * up here from the persisted committed/target.
+   * Change-coordinator kickoff/retry/anti-entropy tick: starts driving any topic with an in-flight
+   * target (set by a client reassignment or the {@code PlacementHealTask}). After a failover the
+   * new leader picks up here from the persisted committed/target.
    */
   protected void scheduleReconfiguration() {
     if (reconfigurationExecutor != null) {
-      healPlacement();
       topics
           .topicsSnapshot()
           .forEach(
@@ -206,51 +198,6 @@ public class MetadataManager extends Actor {
               });
     }
     schedule(RECONFIG_INTERVAL, this::scheduleReconfiguration);
-  }
-
-  /**
-   * Moves replicas off brokers that are no longer placement-eligible (fenced or draining): for any
-   * steady-state topic whose committed assignment references a non-active broker, it computes a
-   * fresh target over the active brokers and sets it, which the change-coordinator then drives.
-   * Idempotent — a topic already healthy or already reconfiguring is skipped.
-   */
-  private void healPlacement() {
-    final var active = brokers.activeBrokers();
-    if (active.isEmpty()) {
-      return;
-    }
-    final var live = Set.copyOf(active);
-    topics
-        .topicsSnapshot()
-        .forEach(
-            (name, meta) -> {
-              if (meta.status() != TopicMetadata.TopicStatus.ACTIVE
-                  || meta.hasTarget()
-                  || reconfiguring.contains(name)) {
-                return;
-              }
-              final var onDeadBroker =
-                  meta.assignment().values().stream()
-                      .flatMap(List::stream)
-                      .anyMatch(broker -> !live.contains(broker));
-              if (!onDeadBroker) {
-                return;
-              }
-              final var target =
-                  placement.assign(meta.partitionCount(), meta.replicationFactor(), active);
-              if (target.isEmpty() || target.equals(meta.assignment())) {
-                return;
-              }
-              LOG.info("Healing topic {} placement off unavailable brokers", name);
-              metadataStream.registerTopic(
-                  name,
-                  new TopicMetadata(
-                      meta.partitionCount(),
-                      meta.replicationFactor(),
-                      meta.status(),
-                      meta.assignment(),
-                      target));
-            });
   }
 
   /** Executes the next single step toward a topic's target, chaining until committed == target. */

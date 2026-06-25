@@ -15,6 +15,7 @@ import io.camunda.eventbridge.clustermetadata.processing.CreateTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.DeregisterBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.DrainBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.FenceBrokerProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.PlacementHealTask;
 import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.RegisterBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
@@ -76,6 +77,8 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   // Liveness sweep cadence + how long without a broker heartbeat before it is fenced.
   private static final Duration BROKER_EVICTION_INTERVAL = Duration.ofSeconds(1);
   private static final Duration BROKER_SESSION_TIMEOUT = Duration.ofSeconds(10);
+  // Re-placement sweep cadence (heals topic placement off fenced/draining brokers).
+  private static final Duration PLACEMENT_HEAL_INTERVAL = Duration.ofSeconds(1);
 
   private final InstantSource clock;
   private final Supplier<List<Integer>> raftMembers;
@@ -185,9 +188,22 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
                     new BrokerEvictionTask(
                         BROKER_EVICTION_INTERVAL,
                         BROKER_SESSION_TIMEOUT,
-                        brokerState,
+                        taskBrokerState(),
                         brokerLiveness,
-                        clock)));
+                        clock))
+                .withListener(
+                    new PlacementHealTask(
+                        PLACEMENT_HEAL_INTERVAL, taskTopicState(), taskBrokerState(), placement)));
+  }
+
+  // Async tasks read state off the processing actor, so each gets its own private ZeebeDb context
+  // (its flyweights belong to the task group), mirroring consumer-groups' taskGroupState().
+  private DbTopicState taskTopicState() {
+    return new DbTopicState(zeebeDb, zeebeDb.createContext());
+  }
+
+  private DbBrokerState taskBrokerState() {
+    return new DbBrokerState(zeebeDb, zeebeDb.createContext());
   }
 
   /**

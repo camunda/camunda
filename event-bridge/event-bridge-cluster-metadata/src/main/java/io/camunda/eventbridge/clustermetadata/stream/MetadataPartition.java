@@ -129,7 +129,6 @@ public final class MetadataPartition
             partitionId,
             stream,
             stream.newTopicQueryService(),
-            stream.newBrokerQueryService(),
             provisionedSinkRef,
             reconfigurationExecutor);
     actorScheduler.submitActor(metadataManager);
