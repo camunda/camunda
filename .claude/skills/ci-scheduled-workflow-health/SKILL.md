@@ -1,7 +1,7 @@
 ---
 
 name: ci-scheduled-workflow-health
-description: Generate an HTML health report for all scheduled GitHub Actions workflows in this monorepo. Discovers workflows with `schedule:` triggers from the `main` branch via git, queries the GitHub API for recent run results, extracts `# owner:` metadata from YAML comments, and produces a categorized report (failing, flaky, ok, no runs). Use when asked about CI health, scheduled workflow health, nightly build failures, flaky CI, or workflow ownership.
+description: Generate a health report for scheduled GitHub Actions workflows in this monorepo. Use when asked about scheduled workflow health, nightly build failures, flaky CI, or workflow ownership.
 
 ---
 
