@@ -65,7 +65,6 @@ cluster.raft.segment-preallocation-strategy
 cluster.raft.snapshot-chunk-size
 cluster.raft.snapshot-request-timeout
 cluster.receive-on-legacy-subject
-cluster.send-on-legacy-subject
 cluster.size
 cluster.zone
 data.secondary-storage.rdbms.max-varchar-field-length
