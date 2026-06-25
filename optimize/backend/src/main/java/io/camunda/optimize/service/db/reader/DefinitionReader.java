@@ -81,13 +81,11 @@ public interface DefinitionReader {
   List<DefinitionVersionResponseDto> getDefinitionVersions(
       final DefinitionType type, final String key, final Set<String> tenantIds);
 
-  default <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
+  <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
       final DefinitionType type,
       final boolean fullyImported,
       final boolean withXml,
-      final boolean includeDeleted) {
-    throw new UnsupportedOperationException("getDefinitionsIterator is not implemented");
-  }
+      final boolean includeDeleted);
 
   <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
       final DefinitionType type,
