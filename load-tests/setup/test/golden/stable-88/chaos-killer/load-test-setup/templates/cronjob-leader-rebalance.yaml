@@ -1,0 +1,32 @@
+---
+# Source: load-test-setup/templates/cronjob-leader-rebalance.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: leader-balancer
+  labels:
+    app: leader-balancer
+spec:
+  concurrencyPolicy: Allow
+  jobTemplate:
+    metadata:
+      name: leader-balancer
+    spec:
+      template:
+        metadata:
+          labels:
+            app: leader-balancer
+        spec:
+          containers:
+          - name: leader-balancer
+            image: curlimages/curl:TEST
+            command: ["/bin/sh", "-c"]
+            args:
+              - |-
+                curl -L -v -X POST "http://camunda:9600/actuator/rebalance"
+
+          restartPolicy: OnFailure
+  schedule: '*/10 * * * *'
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 3
+  suspend: false
