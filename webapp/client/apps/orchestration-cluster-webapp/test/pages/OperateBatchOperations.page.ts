@@ -31,7 +31,7 @@ class OperateBatchOperationsPage extends BasePage {
 	}
 
 	get pagination() {
-		return this.page.getByRole('navigation', {name: 'pagination'});
+		return this.page.getByRole('combobox', {name: 'Items per page:'});
 	}
 
 	cellByText(text: string) {
