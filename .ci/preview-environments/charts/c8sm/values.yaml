@@ -437,3 +437,19 @@ camunda-platform:
       - key: "previews"
         operator: "Exists"
         effect: "NoSchedule"
+
+# Infra-managed Gateway API plumbing (Gateway + Vouch Middleware + wildcard-cert
+# TLS termination) rendered into the preview namespace. Replaces the former
+# `infra-preview-environments-ingress` dependency. The HTTPRoutes are
+# hand-written in templates/httproute.yml, so the chart's values-driven route is
+# disabled.
+infra-preview-environments-gateway-api:
+  baseDomain: camunda.camunda.cloud
+  # Releases are named "camunda-<branch>"; strip the prefix to derive
+  # "<branch>.camunda.camunda.cloud" (mirrors the ingress.domain helper).
+  namePrefix: "camunda-"
+  gateway:
+    # Stable name so the hand-written HTTPRoutes can attach to this Gateway.
+    name: preview-gateway
+    tls:
+      secretName: camunda-wildcard-certificate-tls
