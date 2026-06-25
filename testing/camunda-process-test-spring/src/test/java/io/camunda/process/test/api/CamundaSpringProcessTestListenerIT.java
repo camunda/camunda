@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,7 +58,7 @@ public class CamundaSpringProcessTestListenerIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
-    CamundaAssert.assertThatProcessInstance(processInstance)
+    assertThatProcessInstance(processInstance)
         .isActive()
         .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
@@ -67,7 +68,6 @@ public class CamundaSpringProcessTestListenerIT {
   void shouldTriggerTimerEvent() {
     // given
     final Duration timerDuration = Duration.ofHours(1);
-
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -75,7 +75,6 @@ public class CamundaSpringProcessTestListenerIT {
             .userTask("A")
             .name("A")
             .endEvent()
-            // attach boundary timer event
             .moveToActivity("A")
             .boundaryEvent()
             .timerWithDuration(timerDuration.toString())
@@ -90,19 +89,15 @@ public class CamundaSpringProcessTestListenerIT {
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // when
-    CamundaAssert.assertThatProcessInstance(processInstance).hasActiveElements(byName("A"));
-
+    assertThatProcessInstance(processInstance).hasActiveElements(byName("A"));
     final Instant timeBefore = processTestContext.getCurrentTime();
-
     processTestContext.increaseTime(timerDuration);
-
     final Instant timeAfter = processTestContext.getCurrentTime();
 
     // then
-    CamundaAssert.assertThatProcessInstance(processInstance)
+    assertThatProcessInstance(processInstance)
         .hasTerminatedElements(byName("A"))
         .hasActiveElements(byName("B"));
-
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));
   }
