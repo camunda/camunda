@@ -24,13 +24,11 @@ import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
 import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchResponse;
 import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
-import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 
@@ -98,7 +96,7 @@ public class ConsumerGroupCoordinator extends Actor {
                   .setTopics(request.getTopics())
                   .setMemberId(generateMemberId())
                   .setInstanceId(request.getInstanceId());
-          coordinatorStream.joinGroup(command).whenComplete(bridge(result));
+          coordinatorStream.joinGroup(command).whenComplete(forward(result));
         });
     return result;
   }
@@ -113,7 +111,7 @@ public class ConsumerGroupCoordinator extends Actor {
                   .setGroupId(request.getGroupId())
                   .setMemberId(request.getMemberId())
                   .setMemberEpoch(request.getMemberEpoch());
-          coordinatorStream.leaveGroup(command).whenComplete(bridge(result));
+          coordinatorStream.leaveGroup(command).whenComplete(forward(result));
         });
     return result;
   }
@@ -121,7 +119,7 @@ public class ConsumerGroupCoordinator extends Actor {
   /**
    * Serves an offset fetch (request/response, no log write): reads the group's committed offsets
    * from state off the processing actor — the read-from-state path, not a command through the
-   * stream — and returns the framed reply.
+   * stream — and returns the serialized reply (the handler frames it).
    */
   public CompletableFuture<byte[]> handleOffsetFetch(final OffsetFetchRequest request) {
     final var result = new CompletableFuture<byte[]>();
@@ -137,7 +135,7 @@ public class ConsumerGroupCoordinator extends Actor {
                   .setErrorCode(NONE)
                   .setCommittedOffsets(coordinatorStream.committedOffsets(groupId));
             }
-            result.complete(CoordinationResponseEncoder.encode(response));
+            result.complete(CoordinationResponseEncoder.serialize(response));
           } catch (final RuntimeException e) {
             result.completeExceptionally(e);
           }
@@ -178,7 +176,7 @@ public class ConsumerGroupCoordinator extends Actor {
                           .setSubscriptions(group.subscriptions())
                           .setMembers(members));
             }
-            result.complete(CoordinationResponseEncoder.encode(response));
+            result.complete(CoordinationResponseEncoder.serialize(response));
           } catch (final RuntimeException e) {
             result.completeExceptionally(e);
           }
@@ -186,13 +184,17 @@ public class ConsumerGroupCoordinator extends Actor {
     return result;
   }
 
-  /** Serves a heartbeat (request/response, no log write) and returns the framed reply. */
+  /**
+   * Serves a heartbeat (request/response, no log write) and returns the serialized reply (the
+   * handler frames it).
+   */
   public CompletableFuture<byte[]> handleHeartbeat(final HeartbeatRequest request) {
     final var result = new CompletableFuture<byte[]>();
     actor.run(
         () -> {
           try {
-            result.complete(CoordinationResponseEncoder.encode(heartbeatHandler.handle(request)));
+            result.complete(
+                CoordinationResponseEncoder.serialize(heartbeatHandler.handle(request)));
           } catch (final RuntimeException e) {
             result.completeExceptionally(e);
           }
@@ -216,35 +218,22 @@ public class ConsumerGroupCoordinator extends Actor {
             .setOffset(request.getPosition());
 
     final var result = new CompletableFuture<byte[]>();
-    actor.run(() -> coordinatorStream.commit(command).whenComplete(bridge(result)));
+    actor.run(() -> coordinatorStream.commit(command).whenComplete(forward(result)));
     return result;
   }
 
   /**
-   * Completes {@code result} with the committed stream reply, framed in the {@code
-   * ExecuteCoordinateResponse} envelope the gateway's broker client decodes — so every handler
-   * method returns ready-to-send bytes and the transport layer only routes.
-   *
-   * <p>A rejected command (the processor wrote a {@code COMMAND_REJECTION} reply, surfaced here as
-   * a {@link CommandRejectionException}) is framed as a <em>rejection</em> response, not completed
-   * exceptionally: the gateway decodes it into a {@code BrokerRejection} and maps it to an HTTP
-   * status. A genuine transport/processing failure still completes exceptionally.
+   * Forwards the stream's raw reply (or its failure) to {@code result} as-is — no framing. The
+   * {@code CoordinationRequestHandler} frames a successful payload and turns a {@code
+   * CommandRejectionException} into a rejection response, so this manager returns raw responses and
+   * the transport layer owns the wire envelope.
    */
-  private BiConsumer<byte[], Throwable> bridge(final CompletableFuture<byte[]> result) {
+  private static BiConsumer<byte[], Throwable> forward(final CompletableFuture<byte[]> result) {
     return (response, error) -> {
-      if (error == null) {
-        result.complete(CoordinationResponseEncoder.encodeValue(response));
-        return;
-      }
-      final var cause =
-          error instanceof CompletionException && error.getCause() != null
-              ? error.getCause()
-              : error;
-      if (cause instanceof final CommandRejectionException rejection) {
-        result.complete(
-            CoordinationResponseEncoder.encodeRejection(rejection.type(), rejection.getMessage()));
-      } else {
+      if (error != null) {
         result.completeExceptionally(error);
+      } else {
+        result.complete(response);
       }
     };
   }

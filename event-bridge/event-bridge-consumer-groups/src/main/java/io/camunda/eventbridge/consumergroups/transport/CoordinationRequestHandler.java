@@ -15,16 +15,22 @@ import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
 import io.camunda.eventbridge.protocol.transport.CoordinationRequest;
+import io.camunda.eventbridge.protocol.transport.CoordinationResponseEncoder;
+import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.eventbridge.transport.RequestHandler;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * Routes consumer-group coordination requests (join/heartbeat/leave/commit) on the coordinator Raft
- * group to the {@link ConsumerGroupCoordinator}. Topic admin is served by {@code
- * MetadataRequestHandler} on the metadata Raft group; the two handlers are deliberately symmetric:
- * each parses the {@link CoordinationRequest} and dispatches to its manager, which returns the
- * reply already framed for the broker client.
+ * group to the {@link ConsumerGroupCoordinator}, then frames the reply for the broker client —
+ * mirroring the engine's {@code AsyncApiRequestHandler}, which owns request decoding and response
+ * framing so the business code returns raw results. The coordinator returns the raw response
+ * payload (or fails with a {@link CommandRejectionException}); this handler wraps a success in the
+ * {@code ExecuteCoordinateResponse} envelope and a rejection into a {@code BrokerRejection} the
+ * gateway maps to an HTTP status. Topic admin is served by {@code MetadataRequestHandler} on the
+ * metadata Raft group.
  */
 public final class CoordinationRequestHandler implements RequestHandler {
 
@@ -47,6 +53,11 @@ public final class CoordinationRequestHandler implements RequestHandler {
   @Override
   public CompletableFuture<byte[]> handle(final byte[] requestBytes) {
     final var request = CoordinationRequest.from(requestBytes);
+    return dispatch(request).handle(CoordinationRequestHandler::frame);
+  }
+
+  /** Decodes the typed request and routes it to the coordinator, which returns the raw response. */
+  private CompletableFuture<byte[]> dispatch(final CoordinationRequest request) {
     return switch (request.type()) {
       case JOIN_GROUP -> coordinator.handleJoinGroup(read(new JoinGroupRequest(), request));
       case LEAVE_GROUP -> coordinator.handleLeaveGroup(read(new LeaveGroupRequest(), request));
@@ -59,6 +70,25 @@ public final class CoordinationRequestHandler implements RequestHandler {
           CompletableFuture.failedFuture(
               new IllegalArgumentException("Unknown request type: " + request.type()));
     };
+  }
+
+  /**
+   * Frames the coordinator's raw reply: a success wraps the payload in the response envelope, a
+   * {@link CommandRejectionException} becomes a rejection response, and any other failure
+   * propagates (the messaging layer fails the request).
+   */
+  private static byte[] frame(final byte[] response, final Throwable error) {
+    if (error == null) {
+      return CoordinationResponseEncoder.encodeValue(response);
+    }
+    final var cause =
+        error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
+    if (cause instanceof final CommandRejectionException rejection) {
+      return CoordinationResponseEncoder.encodeRejection(rejection.type(), rejection.getMessage());
+    }
+    throw error instanceof final CompletionException completion
+        ? completion
+        : new CompletionException(error);
   }
 
   /** Decodes the request's value payload into the given DTO. */

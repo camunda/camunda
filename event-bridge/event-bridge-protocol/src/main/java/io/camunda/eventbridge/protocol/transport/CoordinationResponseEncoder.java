@@ -43,9 +43,18 @@ public final class CoordinationResponseEncoder {
   }
 
   public static byte[] encode(final BufferWriter response) {
+    return encodeValue(serialize(response));
+  }
+
+  /**
+   * Serializes a response to its raw payload bytes <em>without</em> the envelope — the form a
+   * request handler frames with {@link #encodeValue(byte[])} (so the handler, not the producer,
+   * owns the framing).
+   */
+  public static byte[] serialize(final BufferWriter response) {
     final var value = new byte[response.getLength()];
     response.write(new UnsafeBuffer(value), 0);
-    return frame(CoordinateRejectionType.NONE, value, EMPTY);
+    return value;
   }
 
   /**
