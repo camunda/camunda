@@ -279,20 +279,6 @@ public class CamundaMultiDBExtension
     return value == null || value.isBlank() ? null : value;
   }
 
-  private static boolean isRdbms(final DatabaseType type) {
-    return switch (type) {
-      case RDBMS_H2,
-          RDBMS_POSTGRES,
-          RDBMS_MARIADB,
-          RDBMS_MYSQL,
-          RDBMS_ORACLE,
-          RDBMS_MSSQL,
-          RDBMS_AURORA ->
-          true;
-      default -> false;
-    };
-  }
-
   private DatabaseType currentMultiDbDatabaseType(final ExtensionContext context) {
     final String property =
         System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
@@ -402,7 +388,7 @@ public class CamundaMultiDBExtension
 
     final var databaseType = getDatabaseType(context);
     physicalTenantId = getPhysicalTenant();
-    if (physicalTenantId != null && !isRdbms(databaseType)) {
+    if (physicalTenantId != null && !databaseType.isRdbms()) {
       throw new IllegalStateException(
           "Physical-tenant mode (%s) is only supported on RDBMS storage; got %s."
               .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
@@ -904,16 +890,26 @@ public class CamundaMultiDBExtension
   }
 
   public enum DatabaseType {
-    LOCAL,
-    ES,
-    OS,
-    RDBMS_H2,
-    RDBMS_MARIADB,
-    RDBMS_MSSQL,
-    RDBMS_MYSQL,
-    RDBMS_ORACLE,
-    RDBMS_POSTGRES,
-    RDBMS_AURORA,
-    AWS_OS
+    LOCAL(false),
+    ES(false),
+    OS(false),
+    RDBMS_H2(true),
+    RDBMS_MARIADB(true),
+    RDBMS_MSSQL(true),
+    RDBMS_MYSQL(true),
+    RDBMS_ORACLE(true),
+    RDBMS_POSTGRES(true),
+    RDBMS_AURORA(true),
+    AWS_OS(false);
+
+    private final boolean rdbms;
+
+    DatabaseType(final boolean rdbms) {
+      this.rdbms = rdbms;
+    }
+
+    public boolean isRdbms() {
+      return rdbms;
+    }
   }
 }
