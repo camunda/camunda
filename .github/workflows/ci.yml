@@ -1396,6 +1396,7 @@ jobs:
       - history-tests
       - identity-tests
       - integration-tests
+      - physical-tenant-acceptance-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
@@ -1435,6 +1436,12 @@ jobs:
         id: integration-matrix-read
         with:
           matrix-step-name: integration-tests
+      - name: Read Physical-tenant acceptance tests matrix outputs
+        if: steps.bypass.outputs.present != 'true'
+        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        id: physical-tenant-acceptance-matrix-read
+        with:
+          matrix-step-name: physical-tenant-acceptance-tests
       - name: Read Database integration tests matrix outputs
         if: steps.bypass.outputs.present != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
@@ -1475,6 +1482,8 @@ jobs:
           zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
           integration-tests-result: ${{ needs.integration-tests.result }}
           integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
+          physical-tenant-acceptance-tests-result: ${{ needs.physical-tenant-acceptance-tests.result }}
+          physical-tenant-acceptance-matrix-output-result: ${{ steps.physical-tenant-acceptance-matrix-read.outputs.result }}
 
       - name: Check if there are flaky tests to analyze
         if: steps.bypass.outputs.present != 'true'
