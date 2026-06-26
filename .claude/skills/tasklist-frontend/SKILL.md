@@ -1,7 +1,7 @@
 ---
 
 name: tasklist-frontend
-description: Use when building, changing, or testing features in the Tasklist pod area of the orchestration cluster webapp at webapp/client/apps/orchestration-cluster-webapp/src/tasklist/. Trigger whenever someone is adding or modifying Tasklist pages, modules, components, hooks, stores, or Tasklist routes — even for small changes like adding a column, filter, panel, or schema. Also use when someone asks about Tasklist pod structure, conventions, or where Tasklist code belongs.
+description: Use when building, changing, or testing Tasklist features in the orchestration cluster webapp (webapp/client/apps/orchestration-cluster-webapp/src/tasklist/). Trigger for Tasklist pages, modules, components, hooks, stores, routes, or schema — even small changes like a column, filter, or panel — and questions about Tasklist pod structure and conventions.
 
 ---
 

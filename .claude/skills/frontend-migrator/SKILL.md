@@ -1,7 +1,7 @@
 ---
 
 name: frontend-migrator
-description: Use when migrating, porting, rewriting, or moving frontend code from operate/client/ or tasklist/client/ to the orchestration cluster webapp at webapp/client/apps/orchestration-cluster-webapp/. Trigger whenever someone mentions migrating a legacy page, component, or module to the new unified frontend, converting React Router to TanStack Router, replacing MobX stores with TanStack Query or URL state, rewriting styled-components as SCSS modules, or converting legacy test patterns to Vitest browser mode. Also use when someone asks how a legacy pattern maps to the new architecture, even for small questions like "how would I write this Operate component in the new app?" or "what's the equivalent of this Tasklist store in the unified frontend?"
+description: Use when migrating, porting, or rewriting frontend code from operate/client/ or tasklist/client/ to the orchestration cluster webapp. Trigger when migrating legacy pages/components, converting React Router to TanStack Router, replacing MobX with TanStack Query, rewriting styled-components as SCSS, converting legacy tests to Vitest browser mode, or asking how a legacy pattern maps to the new app.
 
 ---
 
