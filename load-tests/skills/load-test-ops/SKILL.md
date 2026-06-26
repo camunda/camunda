@@ -353,6 +353,40 @@ gh run view "$RUN_ID" --repo camunda/camunda
 for a ~20-min window. Results render in the job summary; the workflow is also reusable via
 `workflow_call` and exposes `results-json` for downstream jobs (e.g. analyze → delete).
 
+### Via Grafana MCP (in Claude Code sessions — no port-forward needed)
+
+Use `mcp__grafana__*` tools directly when running inside Claude Code. Confirm tools are active
+with `mcp__grafana__check_datasources_health` at session start.
+
+**Rule: always run `list_prometheus_metric_names` before writing any PromQL query.** Guessed
+metric names return empty results silently — one discovery call eliminates all name-guess failures.
+
+**Session startup:**
+```
+mcp__grafana__check_datasources_health()
+  → datasourceUid: "prometheus" should show status: OK
+
+mcp__grafana__list_prometheus_label_values(
+  datasourceUid="prometheus", labelName="namespace",
+  matches=[{filters: [{name: "__name__", value: "zeebe_.*", type: "=~"}]}],
+  startRfc3339="now-24h")
+  → lists all namespaces with recent Zeebe data
+```
+
+**Metric name discovery:**
+```
+mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="optimize.*", limit=50)
+mcp__grafana__list_prometheus_metric_names(datasourceUid="prometheus", regex="zeebe.*process.*", limit=20)
+```
+
+For metric names and PromQL queries, see [load-tests/docs/metrics.md](../../docs/metrics.md).
+
+**Known benchmark cluster dashboards:**
+- `camunda-performance` — general throughput/latency/resource overview (namespace variable)
+- `zeebe-dashboard` — deep dive into Zeebe internals (backpressure, partitions, exporters)
+
+See `load-tests/README.md` → **Accessing metrics via Claude Code (Grafana MCP)** for setup instructions.
+
 ### Via local script (kubectl + port-forward)
 
 Faster when you have cluster access. First port-forward the monitoring Prometheus pod, then run
