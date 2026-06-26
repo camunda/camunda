@@ -17,14 +17,13 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryContent.DocumentContent;
+import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
+import io.camunda.client.api.command.AgentInstanceHistoryContent.TextContent;
+import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
+import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent.DocumentContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent.ObjectContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent.TextContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryMetrics;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryToolCall;
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.CreateAgentHistoryItemCommandStep2;
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.CreateAgentHistoryItemCommandStep3;
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.CreateAgentHistoryItemCommandStep4;
@@ -33,6 +32,7 @@ import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.CreateAg
 import io.camunda.client.api.response.CreateAgentHistoryItemResponse;
 import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAgentHistoryItemResponseImpl;
@@ -94,17 +94,23 @@ public class CreateAgentHistoryItemCommandImpl
   }
 
   @Override
-  public CreateAgentHistoryItemCommandStep4 role(final AgentHistoryRole role) {
+  public CreateAgentHistoryItemCommandStep4 role(final AgentInstanceHistoryRole role) {
     ArgumentUtil.ensureNotNull("role", role);
-    request.role(AgentInstanceHistoryRoleEnum.fromValue(role.name()));
+    final AgentInstanceHistoryRoleEnum protoRole =
+        AgentInstanceHistoryRoleEnum.fromValue(role.name());
+    if (protoRole == null) {
+      throw new IllegalArgumentException("Invalid role: " + role);
+    }
+    request.role(protoRole);
     return this;
   }
 
   @Override
-  public CreateAgentHistoryItemCommandStep5 content(final List<AgentHistoryContent> content) {
+  public CreateAgentHistoryItemCommandStep5 content(
+      final List<AgentInstanceHistoryContent> content) {
     ArgumentUtil.ensureNotNull("content", content);
     final List<AgentInstanceMessageContent> protocolContent = new ArrayList<>(content.size());
-    for (final AgentHistoryContent item : content) {
+    for (final AgentInstanceHistoryContent item : content) {
       if (item == null) {
         throw new IllegalArgumentException("content must not contain null elements");
       }
@@ -124,7 +130,7 @@ public class CreateAgentHistoryItemCommandImpl
       } else if (item instanceof DocumentContent) {
         protocolContent.add(toProtocolDocumentContent((DocumentContent) item));
       } else {
-        throw new IllegalArgumentException("Unsupported AgentHistoryContent type: " + item);
+        throw new IllegalArgumentException("Unsupported AgentInstanceHistoryContent type: " + item);
       }
     }
     request.content(protocolContent);
@@ -133,6 +139,9 @@ public class CreateAgentHistoryItemCommandImpl
 
   private AgentInstanceDocumentContent toProtocolDocumentContent(final DocumentContent item) {
     final DocumentReferenceResponse ref = item.getDocumentReference();
+    if (ref == null) {
+      throw new IllegalArgumentException("documentReference must not be null");
+    }
     if (ref.getDocumentId() == null || ref.getDocumentId().trim().isEmpty()) {
       throw new IllegalArgumentException("documentReference.documentId must not be null or blank");
     }
@@ -203,12 +212,12 @@ public class CreateAgentHistoryItemCommandImpl
 
   @Override
   public CreateAgentHistoryItemFinalCommandStep toolCalls(
-      final List<AgentHistoryToolCall> toolCalls) {
+      final List<AgentInstanceHistoryToolCall> toolCalls) {
     if (toolCalls == null) {
       return this;
     }
     final List<AgentInstanceToolCall> protocolToolCalls = new ArrayList<>(toolCalls.size());
-    for (final AgentHistoryToolCall tc : toolCalls) {
+    for (final AgentInstanceHistoryToolCall tc : toolCalls) {
       if (tc == null) {
         throw new IllegalArgumentException("toolCalls must not contain null elements");
       }
@@ -230,7 +239,7 @@ public class CreateAgentHistoryItemCommandImpl
   }
 
   @Override
-  public CreateAgentHistoryItemFinalCommandStep metrics(final AgentHistoryMetrics metrics) {
+  public CreateAgentHistoryItemFinalCommandStep metrics(final AgentInstanceHistoryMetrics metrics) {
     if (metrics == null) {
       return this;
     }
