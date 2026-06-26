@@ -61,8 +61,7 @@ runs:
         retry_wait_seconds: 15
         timeout_minutes: 10
         command: |
-          cd ${{ inputs.directory }}
-          npm ci
+          cd "${{ inputs.directory }}" && npm ci
 
     - name: Install dependencies with yarn
       if: inputs.package-manager == 'yarn'
@@ -73,8 +72,7 @@ runs:
         retry_wait_seconds: 15
         timeout_minutes: 10
         command: |
-          cd ${{ inputs.directory }}
-          yarn install --frozen-lockfile
+          cd "${{ inputs.directory }}" && yarn install --frozen-lockfile
 
     - name: Generate SBOM with npm
       if: inputs.package-manager == 'npm'
