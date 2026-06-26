@@ -987,9 +987,12 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to set as the decision output. Optional.",
+          "description": "The variables to set as the decision output. Optional. Deprecated, use decisionOutput.",
           "type": "object",
           "additionalProperties": true
+        },
+        "decisionOutput": {
+          "description": "The decision output to mock. Can be any JSON type. Optional."
         }
       },
       "required": [

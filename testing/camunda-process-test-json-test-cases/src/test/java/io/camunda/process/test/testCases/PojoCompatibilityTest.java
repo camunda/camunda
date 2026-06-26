@@ -496,6 +496,13 @@ public class PojoCompatibilityTest {
                     .putVariables("approved", true)
                     .putVariables("score", 750)
                     .build())),
+        Arguments.of(
+            "mock dmn decision: with decision output",
+            singleTestCase(
+                ImmutableMockDmnDecisionInstruction.builder()
+                    .decisionDefinitionId("credit-check-decision")
+                    .decisionOutput(15)
+                    .build())),
         // ===== ASSERT_VARIABLES =====
         Arguments.of(
             "assert variables: minimal",
