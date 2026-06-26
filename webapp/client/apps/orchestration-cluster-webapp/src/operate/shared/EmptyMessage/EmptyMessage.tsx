@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type FC} from 'react';
 import {Message, AdditionalInfo, Stack} from './styled';
 
 type Props = {
@@ -14,7 +13,7 @@ type Props = {
 	additionalInfo?: string;
 };
 
-const EmptyMessage: FC<Props> = ({message, additionalInfo, ...props}) => {
+const EmptyMessage: React.FC<Props> = ({message, additionalInfo, ...props}) => {
 	return (
 		<Stack {...props} gap={3}>
 			<Message>{message}</Message>

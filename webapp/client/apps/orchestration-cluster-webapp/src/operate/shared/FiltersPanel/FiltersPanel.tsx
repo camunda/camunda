@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState, type FC, type ReactNode} from 'react';
+import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {CollapsablePanel} from '../CollapsablePanel/CollapsablePanel';
@@ -15,12 +15,12 @@ import {Footer} from './styled';
 
 type Props = {
 	localStorageKey: 'isFiltersCollapsed' | 'isDecisionsFiltersCollapsed' | 'isAuditLogsFiltersCollapsed';
-	children: ReactNode;
+	children: React.ReactNode;
 	onResetClick?: () => void;
 	isResetButtonDisabled: boolean;
 };
 
-const FiltersPanel: FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
+const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
 	const {t} = useTranslation();
 	const storedState = getStateLocally('operate.panelStates')?.[localStorageKey];
 	const isCollapsed = typeof storedState === 'boolean' ? storedState : false;
