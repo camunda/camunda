@@ -7,10 +7,17 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import java.net.URI;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -19,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.awaitility.Awaitility;
 
 /**
  * Reusable helper for booting a single {@link TestStandaloneBroker} that serves several physical
@@ -54,6 +62,8 @@ public final class PhysicalTenantsITHelper {
 
   public static final String DEFAULT_TENANT_ID = "default";
 
+  private static final Duration ADMIN_READY_TIMEOUT = Duration.ofSeconds(30);
+
   private final Map<String, Storage> tenants;
 
   private PhysicalTenantsITHelper(final Map<String, Storage> tenants) {
@@ -80,6 +90,64 @@ public final class PhysicalTenantsITHelper {
           }
         });
     return broker;
+  }
+
+  /**
+   * Seeds a basic-auth per-PT admin {@code <tenantId>-admin} user for a non-{@code default}
+   * physical tenant (matching the {@code defaultRoles.admin} assignment {@link #configure} sets)
+   * into that tenant's {@code security.initialization}, so the user can authenticate via the
+   * tenant-prefixed REST path once authorizations and basic auth are enabled. Basic-auth specific
+   * (an OIDC variant would seed a mapping rule instead). Appends the per-PT admin user to the
+   * tenant's existing initialization users list; call in addition to {@link #configure}.
+   */
+  public TestStandaloneBroker seedBasicAuthAdminUser(
+      final TestStandaloneBroker broker, final String tenantId, final String password) {
+    final String username = adminUsername(tenantId);
+    broker.withPtConfig(
+        tenantId,
+        camunda -> {
+          final var init = camunda.getSecurity().getInitialization();
+          final var users = new ArrayList<>(init.getUsers());
+          users.add(new ConfiguredUser(username, password, username, username + "@example.com"));
+          init.setUsers(users);
+        });
+    return broker;
+  }
+
+  /** The conventional admin username for a physical tenant: {@code <tenantId>-admin}. */
+  public String adminUsername(final String tenantId) {
+    return tenantId + "-admin";
+  }
+
+  /**
+   * Waits until the given physical-tenant admin client can authenticate, tolerating the transient
+   * 401s that occur immediately after startup until the PT's admin user is initialized in its
+   * schema. Prefer this over cluster-topology readiness checks for a multi-PT broker, whose
+   * partition-id-keyed topology cannot represent the per-PT raft groups.
+   */
+  public void awaitAdminReady(final CamundaClient admin) {
+    Awaitility.await("per-PT admin can authenticate")
+        .atMost(ADMIN_READY_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
+  }
+
+  /**
+   * Builds an authenticated, REST-first client for the basic-auth per-PT admin user (see {@link
+   * #seedBasicAuthAdminUser}). The client is scoped to the tenant's REST path and authenticates
+   * over basic auth.
+   */
+  public CamundaClientBuilder newBasicAuthAdminClientBuilder(
+      final TestGateway<?> gateway, final String tenantId, final String password) {
+    return newClientBuilder(gateway, tenantId)
+        .preferRestOverGrpc(true)
+        .credentialsProvider(
+            new BasicAuthCredentialsProviderBuilder()
+                .applyEnvironmentOverrides(false)
+                .username(adminUsername(tenantId))
+                .password(password)
+                .build());
   }
 
   public CamundaClientBuilder newClientBuilder(
