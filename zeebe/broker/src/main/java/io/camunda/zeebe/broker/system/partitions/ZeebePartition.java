@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
@@ -86,7 +87,7 @@ public final class ZeebePartition extends Actor
     actorName = buildActorName("ZeebePartition", partitionId);
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
-            componentName(partitionId),
+            componentName(context.partitionId()),
             actor,
             transitionContext.getComponentTreeListener(),
             Optional.of(transitionContext.brokerHealthCheckService().componentName()),
@@ -101,8 +102,8 @@ public final class ZeebePartition extends Actor
             transitionContext.getPartitionId());
   }
 
-  public static String componentName(final int partitionId) {
-    return String.format("Partition-%s", partitionId);
+  public static String componentName(final PartitionId partitionId) {
+    return String.format("Partition-%s-%d", partitionId.group(), partitionId.number());
   }
 
   public PartitionAdminAccess getAdminAccess() {
@@ -210,7 +211,7 @@ public final class ZeebePartition extends Actor
 
   @Override
   public String componentName() {
-    return String.format("Partition-%d", getPartitionId());
+    return componentName(context.partitionId());
   }
 
   @Override

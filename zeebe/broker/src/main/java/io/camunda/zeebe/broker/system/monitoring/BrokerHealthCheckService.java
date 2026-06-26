@@ -134,7 +134,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     partitions.forEach(
         metadata -> {
           partitionInstallStatus.putIfAbsent(metadata.id(), false);
-          healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().number()));
+          healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id()));
         });
   }
 

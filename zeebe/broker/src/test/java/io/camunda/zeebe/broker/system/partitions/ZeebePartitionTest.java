@@ -30,6 +30,7 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -71,7 +72,8 @@ public class ZeebePartitionTest {
     transition.updateTransitionContext(ctx);
 
     raft = mock(RaftPartition.class);
-    when(raft.id()).thenReturn(new PartitionId("", 0));
+    final var partitionId = new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, 0);
+    when(raft.id()).thenReturn(partitionId);
     when(raft.getRole()).thenReturn(Role.INACTIVE);
     when(raft.getServer()).thenReturn(mock(RaftPartitionServer.class));
 
@@ -80,6 +82,7 @@ public class ZeebePartitionTest {
     when(ctx.getPartitionAdminControl()).thenReturn(mock(PartitionAdminControl.class));
     when(ctx.getRaftPartition()).thenReturn(raft);
     when(ctx.getPartitionContext()).thenReturn(ctx);
+    when(ctx.partitionId()).thenReturn(partitionId);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
     when(ctx.createTransitionContext()).thenReturn(ctx);
     final BrokerHealthCheckService brokerCheckMock = mock();
