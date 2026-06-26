@@ -54,15 +54,27 @@ runs:
 
     - name: Install dependencies with npm
       if: inputs.package-manager == 'npm'
-      working-directory: ${{ inputs.directory }}
-      shell: bash
-      run: npm ci
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        retry_on: error
+        retry_wait_seconds: 15
+        timeout_minutes: 10
+        command: |
+          cd ${{ inputs.directory }}
+          npm ci
 
     - name: Install dependencies with yarn
       if: inputs.package-manager == 'yarn'
-      working-directory: ${{ inputs.directory }}
-      shell: bash
-      run: yarn install --frozen-lockfile
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        retry_on: error
+        retry_wait_seconds: 15
+        timeout_minutes: 10
+        command: |
+          cd ${{ inputs.directory }}
+          yarn install --frozen-lockfile
 
     - name: Generate SBOM with npm
       if: inputs.package-manager == 'npm'
