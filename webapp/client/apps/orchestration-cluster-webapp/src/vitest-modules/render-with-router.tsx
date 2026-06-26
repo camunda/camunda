@@ -50,6 +50,7 @@ async function renderWithRouter(
 		routeTree: rootRoute.addChildren([testRoute]),
 		history: createMemoryHistory({initialEntries: [initialEntry]}),
 		defaultPendingMinMs: 0,
+		defaultNotFoundComponent: () => null,
 		context: {
 			queryClient,
 		},
