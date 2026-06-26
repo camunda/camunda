@@ -181,6 +181,42 @@ class PhysicalTenantDocumentOverlayTest {
   }
 
   @Test
+  void shouldFailWhenSameStoreIdUsedAcrossProviders() {
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.aws.abc.bucket-name", "aws-bucket",
+                    "camunda.document.gcp.abc.bucket-name", "gcp-bucket")));
+
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () -> PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment))
+        .withMessageContaining("abc");
+  }
+
+  @Test
+  void shouldFailWhenTenantPrivateStoreIdCollidesWithRootStoreId() {
+    // tenant introduces a private gcp store with the same id as a root aws store
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.aws.abc.bucket-name", "aws-bucket",
+                    "camunda.physical-tenants.tenanta.document.gcp.abc.bucket-name",
+                        "gcp-bucket")));
+
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () -> PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment))
+        .withMessageContaining("abc");
+  }
+
+  @Test
   void shouldFailWhenRootAssignedIsSet() {
     environment.setProperty("camunda.document.assigned[0]", "some-store");
 

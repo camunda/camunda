@@ -9,10 +9,12 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Document;
 import io.camunda.configuration.Document.AwsStore;
+import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.Document.AzureStore;
 import io.camunda.configuration.Document.GcpStore;
 import io.camunda.configuration.Document.InMemoryStore;
 import io.camunda.configuration.Document.LocalStore;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,6 +55,8 @@ public final class PhysicalTenantDocumentConfigurations {
     binder.bind(ptPrefix, Bindable.ofInstance(doc));
 
     mergeSharedStores(doc, rootAws, rootGcp, rootAzure, rootLocal, rootInMemory, binder, ptPrefix);
+
+    validateStoreIdUniqueness(tenantId, doc);
 
     narrowToAssigned(doc, binder, ptPrefix);
 
@@ -98,6 +102,28 @@ public final class PhysicalTenantDocumentConfigurations {
           binder.bind(ptPrefix + ".in-memory." + storeId, Bindable.ofInstance(rootStore));
           doc.getInMemory().put(storeId, rootStore);
         });
+  }
+
+  private static void validateStoreIdUniqueness(final String tenantId, final Document doc) {
+    final Set<String> seen = new LinkedHashSet<>();
+    final List<String> duplicates = new ArrayList<>();
+    for (final Set<String> keys :
+        List.of(
+            doc.getAws().keySet(),
+            doc.getGcp().keySet(),
+            doc.getAzure().keySet(),
+            doc.getLocal().keySet(),
+            doc.getInMemory().keySet())) {
+      keys.forEach(id -> { if (!seen.add(id)) duplicates.add(id); });
+    }
+    if (!duplicates.isEmpty()) {
+      throw new UnifiedConfigurationException(
+          "Physical tenant '"
+              + tenantId
+              + "' has duplicate document store id(s) across provider types: "
+              + duplicates
+              + ". Store ids must be unique across aws, gcp, azure, local, and in-memory.");
+    }
   }
 
   private static void narrowToAssigned(
