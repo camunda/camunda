@@ -461,7 +461,6 @@ jobs:
 
       - name: Run smoke tests
         working-directory: ./optimize/client
-        continue-on-error: true # temporary: flaky test, tracked in #55958
         run: yarn run e2e:ci:sm:smoke:headless
 
       - name: Upload logs
