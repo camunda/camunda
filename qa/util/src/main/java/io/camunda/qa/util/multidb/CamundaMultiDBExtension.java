@@ -388,7 +388,7 @@ public class CamundaMultiDBExtension
 
     final var databaseType = getDatabaseType(context);
     physicalTenantId = getPhysicalTenant();
-    if (physicalTenantId != null && !databaseType.isRdbms()) {
+    if (physicalTenantId != null && !databaseType.storageType().isRdbms()) {
       throw new IllegalStateException(
           "Physical-tenant mode (%s) is only supported on RDBMS storage; got %s."
               .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
@@ -889,27 +889,33 @@ public class CamundaMultiDBExtension
     public void close() throws Exception {}
   }
 
+  /**
+   * Test database flavors, each mapped to the storage family it exercises. The family
+   * (Elasticsearch / OpenSearch / RDBMS) is reused from the production {@link
+   * io.camunda.search.connect.configuration.DatabaseType} so capability checks (e.g. RDBMS-only
+   * features) don't hard-code flavor lists here.
+   */
   public enum DatabaseType {
-    LOCAL(false),
-    ES(false),
-    OS(false),
-    RDBMS_H2(true),
-    RDBMS_MARIADB(true),
-    RDBMS_MSSQL(true),
-    RDBMS_MYSQL(true),
-    RDBMS_ORACLE(true),
-    RDBMS_POSTGRES(true),
-    RDBMS_AURORA(true),
-    AWS_OS(false);
+    LOCAL(io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
+    ES(io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
+    OS(io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH),
+    RDBMS_H2(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_MARIADB(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_MSSQL(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_MYSQL(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_ORACLE(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_POSTGRES(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_AURORA(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    AWS_OS(io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
 
-    private final boolean rdbms;
+    private final io.camunda.search.connect.configuration.DatabaseType storageType;
 
-    DatabaseType(final boolean rdbms) {
-      this.rdbms = rdbms;
+    DatabaseType(final io.camunda.search.connect.configuration.DatabaseType storageType) {
+      this.storageType = storageType;
     }
 
-    public boolean isRdbms() {
-      return rdbms;
+    public io.camunda.search.connect.configuration.DatabaseType storageType() {
+      return storageType;
     }
   }
 }
