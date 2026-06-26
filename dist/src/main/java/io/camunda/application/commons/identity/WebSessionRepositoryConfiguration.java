@@ -60,6 +60,9 @@ public class WebSessionRepositoryConfiguration {
     this.connectConfiguration = connectConfiguration;
   }
 
+  // No @ConditionalOnMissingBean: the migration must always be active for this deployment.
+  // A duplicate WebSessionAttributeConverter bean would mean two configurations are fighting
+  // over session handling, which is a bug — failing loudly at startup is the correct behaviour.
   @Bean
   public WebSessionAttributeConverter webSessionAttributeConverter() {
     return new MigratingWebSessionAttributeConverter();

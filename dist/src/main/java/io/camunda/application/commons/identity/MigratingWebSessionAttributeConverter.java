@@ -33,6 +33,11 @@ import org.springframework.core.serializer.support.SerializingConverter;
 final class MigratingWebSessionAttributeConverter implements WebSessionAttributeConverter {
 
   // Old FQN baked into sessions serialized before the CSL migration.
+  // Safe to remove once all sessions from pre-migration deployments have naturally expired
+  // (bounded by the configured maxInactiveInterval). When removed, also delete:
+  //   - MigratingDeserializer, MigratingObjectInputStream (this file)
+  //   - dist/src/test/java/io/camunda/security/auth/CamundaAuthentication.java (test stub)
+  //   - the old-FQN test case in MigratingWebSessionAttributeConverterTest
   private static final Map<String, Class<?>> CLASS_RENAMES =
       Map.of("io.camunda.security.auth.CamundaAuthentication", CamundaAuthentication.class);
 
