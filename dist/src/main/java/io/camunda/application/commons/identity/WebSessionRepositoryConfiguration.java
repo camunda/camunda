@@ -19,6 +19,7 @@ import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.security.core.port.out.SessionStorePort;
 import io.camunda.security.spring.annotation.ConditionalOnPersistentWebSessionEnabled;
+import io.camunda.security.spring.session.WebSessionAttributeConverter;
 import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.session.WebSessionRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -57,6 +58,11 @@ public class WebSessionRepositoryConfiguration {
 
   public WebSessionRepositoryConfiguration(final ConnectConfiguration connectConfiguration) {
     this.connectConfiguration = connectConfiguration;
+  }
+
+  @Bean
+  public WebSessionAttributeConverter webSessionAttributeConverter() {
+    return new MigratingWebSessionAttributeConverter();
   }
 
   @Bean
