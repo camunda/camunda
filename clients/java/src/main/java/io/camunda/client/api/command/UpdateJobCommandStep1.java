@@ -21,7 +21,7 @@ import java.time.Duration;
 public interface UpdateJobCommandStep1 {
 
   /**
-   * Update the retries and/or the timeout of this job.
+   * Update the retries, timeout, and/or priority of this job.
    *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
    * subscription and a related incident will be marked as resolved.
@@ -37,7 +37,7 @@ public interface UpdateJobCommandStep1 {
   UpdateJobCommandStep2 update(JobChangeset jobChangeset);
 
   /**
-   * Update the retries and/or the timeout of this job.
+   * Update the retries, timeout, and/or priority of this job.
    *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
    * subscription and a related incident will be marked as resolved.

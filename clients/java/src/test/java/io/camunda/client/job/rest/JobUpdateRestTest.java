@@ -441,6 +441,8 @@ public class JobUpdateRestTest extends ClientRestTest {
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
     assertThat(request.getChangeset().getPriority()).isEqualTo(5);
+    assertThat(request.getChangeset().getTimeout()).isNull();
+    assertThat(request.getChangeset().getRetries()).isNull();
   }
 
   @Test

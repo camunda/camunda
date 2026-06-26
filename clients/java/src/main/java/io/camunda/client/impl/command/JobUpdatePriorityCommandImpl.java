@@ -76,7 +76,7 @@ public final class JobUpdatePriorityCommandImpl
   @Override
   public UpdateJobPriorityCommandStep2 priority(final int priority) {
     grpcRequestObjectBuilder.setPriority(priority);
-    getChangesetEnsureInitialized().priority(priority);
+    getChangesetEnsureInitialized().setPriority(priority);
     return this;
   }
 
