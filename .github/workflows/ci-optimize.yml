@@ -296,61 +296,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  optimize-frontend-sbom-snyk:
-    name: "Tool / Front End - Snyk SBOM"
-    if: inputs.runFeTests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    defaults:
-      run:
-        working-directory: optimize/client
-    env:
-      TEST_TYPE: Tool
-    steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-      - name: "Parse pom.xml for versions"
-        id: "pom_info"
-        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
-        with:
-          work-dir: ./optimize
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache: v1.0.0
-        with:
-          directory: optimize/client
-      - name: Import Snyk token from Vault
-        id: snyk-secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
-      - name: Generate and scan frontend SBOM
-        uses: ./.github/actions/frontend-sbom-snyk
-        env:
-          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
-        with:
-          directory: optimize/client
-          package-manager: yarn
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-          sbom-file: optimize/client/dist/cyclonedx/bom.json
-          project-name: Optimize frontend
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
   hadolint:
     if: inputs.runBeTests
     name: "Tool / Dockerfile / Hadolint"
