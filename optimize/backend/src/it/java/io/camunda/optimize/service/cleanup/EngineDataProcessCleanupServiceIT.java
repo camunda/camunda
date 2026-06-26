@@ -19,6 +19,7 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
+import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -112,13 +113,110 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
 
     assertProcessInstanceDataExists(unaffectedProcessInstances);
+  }
+
+  @Test
+  public void testCleanupModeAll_disabled() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setEnabled(false);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+
+    final List<ProcessInstanceDto> instancesPastCleanupTTL =
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup));
+
+    persistProcessInstances(instancesPastCleanupTTL);
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertProcessInstanceDataExists(instancesPastCleanupTTL);
+  }
+
+  @Test
+  public void testCleanupModeAll_customBatchSize() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setBatchSize(1);
+
+    final var now = LocalDateUtil.getCurrentDateTime();
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+
+    final List<ProcessInstanceDto> instancesToGetCleanedUp =
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup));
+    final ProcessInstanceDto unaffectedProcessInstanceForSameDefinition =
+        processInstanceWithEndDate(processDefinitionKey, now);
+
+    final List<ProcessInstanceDto> allInstances =
+        ImmutableList.<ProcessInstanceDto>builder()
+            .addAll(instancesToGetCleanedUp)
+            .add(unaffectedProcessInstanceForSameDefinition)
+            .build();
+
+    persistProcessInstances(allInstances);
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
+
+    assertProcessInstanceDataExists(List.of(unaffectedProcessInstanceForSameDefinition));
+  }
+
+  @Test
+  public void testCleanupModeAll_specificKeyTtl() {
+    // given
+    final var processDefinitionKey1 = KEY_GENERATOR.generate(10);
+    final var processDefinitionKey2 = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    configureHigherProcessSpecificTtl(processDefinitionKey2);
+
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+    final List<ProcessInstanceDto> instancesToGetCleanedUp =
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey1, endDateForCleanup),
+            processInstanceWithEndDate(processDefinitionKey1, endDateForCleanup));
+
+    final List<ProcessInstanceDto> instancesOfDefinitionWithHigherTtl =
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey2, endDateForCleanup),
+            processInstanceWithEndDate(processDefinitionKey2, endDateForCleanup));
+
+    final List<ProcessInstanceDto> allInstances =
+        ImmutableList.<ProcessInstanceDto>builder()
+            .addAll(instancesToGetCleanedUp)
+            .addAll(instancesOfDefinitionWithHigherTtl)
+            .build();
+
+    persistProcessInstances(allInstances);
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
+    assertProcessInstanceDataExists(instancesOfDefinitionWithHigherTtl);
   }
 
   private void assertNoProcessInstanceDataExists(final List<ProcessInstanceDto> instances) {
@@ -139,6 +237,19 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
 
   private ProcessCleanupConfiguration getProcessDataCleanupConfiguration() {
     return getCleanupConfiguration().getProcessDataCleanupConfiguration();
+  }
+
+  private void configureHigherProcessSpecificTtl(final String processDefinitionKey) {
+    getCleanupConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(
+            processDefinitionKey,
+            ProcessDefinitionCleanupConfiguration.builder()
+                .cleanupMode(CleanupMode.ALL)
+                // higher ttl than default
+                .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
+                .build());
   }
 
   private OffsetDateTime getEndTimeLessThanGlobalTtl() {
