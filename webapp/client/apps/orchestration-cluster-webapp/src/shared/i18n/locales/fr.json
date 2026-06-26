@@ -448,6 +448,14 @@
 				"diagramShell": {
 					"forbiddenMessage": "Autorisations manquantes pour afficher la définition",
 					"forbiddenAdditionalInfo": "Veuillez contacter le propriétaire ou l'administrateur de votre organisation pour obtenir les autorisations nécessaires"
+				},
+				"collapsablePanel": {
+					"expand": "Développer {{label}}",
+					"collapse": "Réduire {{label}}"
+				},
+				"filtersPanel": {
+					"label": "Filtre",
+					"resetFilters": "Réinitialiser les filtres"
 				}
 			}
 		}

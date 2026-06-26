@@ -459,6 +459,14 @@
 				"diagramShell": {
 					"forbiddenMessage": "Missing permissions to view the Definition",
 					"forbiddenAdditionalInfo": "Please contact your organization owner or admin to give you the necessary permissions to read this definition"
+				},
+				"collapsablePanel": {
+					"expand": "Expand {{label}}",
+					"collapse": "Collapse {{label}}"
+				},
+				"filtersPanel": {
+					"label": "Filter",
+					"resetFilters": "Reset filters"
 				}
 			}
 		}
