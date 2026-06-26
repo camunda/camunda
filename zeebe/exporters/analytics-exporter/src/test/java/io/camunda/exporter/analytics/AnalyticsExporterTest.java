@@ -210,7 +210,8 @@ class AnalyticsExporterTest {
               OtelSdkManager initialize(
                   final AnalyticsExporterConfig cfg,
                   final AnalyticsExporterContext ctx,
-                  final AnalyticsExporterMetadata meta) {
+                  final AnalyticsExporterMetadata meta,
+                  final io.micrometer.core.instrument.MeterRegistry registry) {
                 metadataHolder[0] = meta;
                 return this;
               }
@@ -392,7 +393,8 @@ class AnalyticsExporterTest {
           OtelSdkManager initialize(
               final AnalyticsExporterConfig cfg,
               final AnalyticsExporterContext ctx,
-              final AnalyticsExporterMetadata meta) {
+              final AnalyticsExporterMetadata meta,
+              final io.micrometer.core.instrument.MeterRegistry registry) {
             metadataHolder[0] = meta;
             return this;
           }

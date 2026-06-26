@@ -13,6 +13,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ public class AnalyticsExporter implements Exporter {
   private HandlerRegistry handlers;
   private AnalyticsExporterContext analyticsContext;
   private AnalyticsExporterMetadata metadata;
+  private MeterRegistry meterRegistry;
   private ScheduledTask metricFlushTask;
   private ScheduledTask heartbeatTask;
 
@@ -53,6 +55,7 @@ public class AnalyticsExporter implements Exporter {
             resolveLicenseKey(context), resolveClusterId(context), context.getPartitionId());
 
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
+    meterRegistry = context.getMeterRegistry();
 
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}",
@@ -69,7 +72,7 @@ public class AnalyticsExporter implements Exporter {
             .readMetadata()
             .map(AnalyticsExporterMetadata::deserialize)
             .orElse(new AnalyticsExporterMetadata());
-    otelSdkManager.initialize(config, analyticsContext, metadata);
+    otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
     LOG.info("Analytics exporter opened");
