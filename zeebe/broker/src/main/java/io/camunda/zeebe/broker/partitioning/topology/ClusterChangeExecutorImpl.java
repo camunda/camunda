@@ -33,16 +33,19 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
   private final ExporterRepository exporterRepository;
   private final NodeIdProvider nodeIdProvider;
   private final MeterRegistry meterRegistry;
+  private final PhysicalTenantIds physicalTenantIds;
 
   public ClusterChangeExecutorImpl(
       final ConcurrencyControl concurrencyControl,
       final ExporterRepository exporterRepository,
       final NodeIdProvider nodeIdProvider,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final PhysicalTenantIds physicalTenantIds) {
     this.concurrencyControl = concurrencyControl;
     this.exporterRepository = exporterRepository;
     this.nodeIdProvider = Objects.requireNonNull(nodeIdProvider);
     this.meterRegistry = meterRegistry;
+    this.physicalTenantIds = Objects.requireNonNull(physicalTenantIds);
   }
 
   @Override
@@ -119,6 +122,14 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {
+    // Each physical tenant has its own isolated secondary storage, so the exporter must be purged
+    // once per configured tenant. Without this, only the default tenant's data would be removed and
+    // purged entities would still surface in other tenants' stores.
+    physicalTenantIds.known().forEach(tenantId -> purgeExporter(id, descriptor, tenantId));
+  }
+
+  private void purgeExporter(
+      final String id, final ExporterDescriptor descriptor, final String physicalTenantId) {
     final Exporter exporter = descriptor.newInstance();
 
     final var exporterContext =
@@ -126,7 +137,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
             1,
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            physicalTenantId,
             "",
             exporterRepository.getLicenseKey(),
             meterRegistry,
@@ -135,12 +146,12 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
     try {
       exporter.configure(exporterContext);
       exporter.purge();
-      LOG.info("Purged history for {}", id);
+      LOG.info("Purged history for exporter {} and physical tenant {}", id, physicalTenantId);
       exporter.close();
     } catch (final Exception e) {
       throw new ExporterPurgeException(
-          "Failed to purge C8 data from exporter %s of type %s; operation will be retried."
-              .formatted(id, exporter.getClass()),
+          "Failed to purge C8 data from exporter %s of type %s for physical tenant %s; operation will be retried."
+              .formatted(id, exporter.getClass(), physicalTenantId),
           e);
     }
   }

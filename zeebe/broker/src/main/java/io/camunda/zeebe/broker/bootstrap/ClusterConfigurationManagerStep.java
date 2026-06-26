@@ -35,7 +35,8 @@ public class ClusterConfigurationManagerStep
             brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getNodeIdProvider(),
-            brokerStartupContext.getMeterRegistry());
+            brokerStartupContext.getMeterRegistry(),
+            brokerStartupContext.getPhysicalTenantIds());
     final ClusterConfigurationService clusterConfigurationService =
         new DynamicClusterConfigurationService(clusterChangeExecutor);
     return clusterConfigurationService

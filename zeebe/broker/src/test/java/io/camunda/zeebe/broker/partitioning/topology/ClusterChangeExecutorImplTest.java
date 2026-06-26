@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -38,11 +39,14 @@ public class ClusterChangeExecutorImplTest {
 
   public static class AuditExporter implements Exporter {
     static final List<String> AUDITS = new ArrayList<>();
+    static final List<String> PURGED_TENANTS = new ArrayList<>();
     String exporterId;
+    String physicalTenantId;
 
     @Override
     public void configure(final Context context) throws Exception {
       exporterId = context.getConfiguration().getId();
+      physicalTenantId = context.getPhysicalTenantId();
       audit("configure");
     }
 
@@ -59,6 +63,7 @@ public class ClusterChangeExecutorImplTest {
     @Override
     public void purge() throws Exception {
       audit("purge");
+      PURGED_TENANTS.add(physicalTenantId);
       Exporter.super.purge();
     }
 
@@ -85,7 +90,8 @@ public class ClusterChangeExecutorImplTest {
               new TestConcurrencyControl(),
               repository,
               mock(NodeIdProvider.class),
-              new SimpleMeterRegistry());
+              new SimpleMeterRegistry(),
+              PhysicalTenantIds.DEFAULT);
 
       // when
       final Future<Void> result = executor.deleteHistory();
@@ -97,6 +103,35 @@ public class ClusterChangeExecutorImplTest {
           .containsSubsequence("configure-test-2", "purge-test-2", "close-test-2")
           .doesNotContainAnyElementsOf(
               Arrays.asList("open-test-1", "export-test-1", "open-test-2", "export-test-2"));
+    }
+
+    @Test
+    void shouldRunPurgeForEveryPhysicalTenant() {
+      // given
+      AuditExporter.PURGED_TENANTS.clear();
+      final ExporterRepository repository = new ExporterRepository();
+      try {
+        repository.validateAndAddExporterDescriptor("test-1", AuditExporter.class, null);
+      } catch (final ExporterLoadException e) {
+        Assertions.fail(e);
+      }
+
+      final PhysicalTenantIds physicalTenantIds = () -> Set.of("default", "tenantA", "tenantB");
+      final var executor =
+          new ClusterChangeExecutorImpl(
+              new TestConcurrencyControl(),
+              repository,
+              mock(NodeIdProvider.class),
+              new SimpleMeterRegistry(),
+              physicalTenantIds);
+
+      // when
+      final Future<Void> result = executor.deleteHistory();
+
+      // then
+      Assertions.assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+      Assertions.assertThat(AuditExporter.PURGED_TENANTS)
+          .containsExactlyInAnyOrder("default", "tenantA", "tenantB");
     }
   }
 
@@ -110,7 +145,11 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              PhysicalTenantIds.DEFAULT);
 
       // when
       final var result =
@@ -129,7 +168,11 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              PhysicalTenantIds.DEFAULT);
 
       // when
       final var result = executor.preScaling(3, Set.of(MemberId.from("0"), MemberId.from("1")));
@@ -147,7 +190,11 @@ public class ClusterChangeExecutorImplTest {
           .thenReturn(CompletableFuture.failedFuture(new RuntimeException("scale failed")));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              PhysicalTenantIds.DEFAULT);
 
       // when
       final var result =
@@ -173,7 +220,11 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              PhysicalTenantIds.DEFAULT);
 
       // when
       final var result =
@@ -192,7 +243,11 @@ public class ClusterChangeExecutorImplTest {
           .thenReturn(CompletableFuture.failedFuture(new RuntimeException("scale failed")));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              PhysicalTenantIds.DEFAULT);
 
       // when
       final var result =
