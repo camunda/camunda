@@ -130,6 +130,18 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
     final var healed = new LinkedHashMap<Integer, List<Integer>>();
     committed.forEach(
         (partition, replicas) -> {
+          // Safety: only touch a partition whose surviving replicas still intersect every possible
+          // commit quorum — i.e. at least half are alive (2*alive >= size, = ceil(n/2)). Below
+          // that,
+          // a committed entry could live only on the now-dead members, so replacing them risks
+          // losing data; and with no quorum there is no leader to commit a change anyway. Leave the
+          // partition exactly as-is and wait for an original member to return. (RF2 with one dead
+          // still satisfies this — its sole survivor provably holds every committed entry.)
+          final var aliveInCommitted = (int) replicas.stream().filter(live::contains).count();
+          if (2 * aliveInCommitted < replicas.size()) {
+            healed.put(partition, new ArrayList<>(replicas));
+            return;
+          }
           final var spares = new ArrayList<Integer>();
           for (final var broker : active) {
             if (!replicas.contains(broker)) {

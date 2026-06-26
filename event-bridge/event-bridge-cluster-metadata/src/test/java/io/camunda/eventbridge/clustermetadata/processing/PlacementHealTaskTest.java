@@ -164,6 +164,25 @@ final class PlacementHealTaskTest {
   }
 
   @Test
+  void shouldNotHealPartitionThatLostItsQuorum() {
+    register(0); // only broker 0 of the partition's {0,1,2} is alive — 1 and 2 are dead
+    register(3);
+    register(4); // spares ARE available, but the partition has lost its data-safe majority
+
+    topicState.put(
+        "orders",
+        new TopicMetadata(1, 3, TopicStatus.ACTIVE, Map.of(1, List.of(0, 1, 2)), Map.of()));
+
+    // when
+    final var builder = mock(TaskResultBuilder.class);
+    task.execute(builder);
+
+    // then — 2 of 3 replicas are dead, so a committed entry could survive only on the dead members;
+    // replacing them (even though spares exist) could lose data, so the heal does nothing
+    verify(builder, never()).appendCommandRecord(any(), any());
+  }
+
+  @Test
   void shouldSkipTopicAlreadyReconfiguring() {
     register(0);
     register(1);
