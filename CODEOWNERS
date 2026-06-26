@@ -153,14 +153,22 @@
 # AI Assistant Instructions
 /CLAUDE.md      @camunda/orchestration-cluster
 /AGENTS.md      @camunda/orchestration-cluster
-/.claude/skills/ @camunda/orchestration-cluster
+/.claude/skills/README.md    @camunda/orchestration-cluster
+/.claude/skills/create-issue/ @camunda/orchestration-cluster
+/.claude/skills/grill-me/    @camunda/orchestration-cluster
 /.claude/skills/load-test-ops/ @camunda/reliability-testing
 
 # CI skills
-/.claude/skills/act-testing/**             @camunda/monorepo-devops-team
-/.claude/skills/ci-security-compliance/**  @camunda/monorepo-devops-team
-/.claude/skills/ci-validation/**           @camunda/monorepo-devops-team
-/.claude/skills/ci-workflow-authoring/**   @camunda/monorepo-devops-team
+/.claude/skills/act-testing/**                   @camunda/monorepo-devops-team
+/.claude/skills/agentic-workflows/**             @camunda/monorepo-devops-team
+/.claude/skills/ci-fix-failure/**                @camunda/monorepo-devops-team
+/.claude/skills/ci-incident/**                   @camunda/monorepo-devops-team
+/.claude/skills/ci-push-workflow-health/**       @camunda/monorepo-devops-team
+/.claude/skills/ci-runner-utilization/**         @camunda/monorepo-devops-team
+/.claude/skills/ci-scheduled-workflow-health/**  @camunda/monorepo-devops-team
+/.claude/skills/ci-security-compliance/**        @camunda/monorepo-devops-team
+/.claude/skills/ci-validation/**                 @camunda/monorepo-devops-team
+/.claude/skills/ci-workflow-authoring/**         @camunda/monorepo-devops-team
 
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
@@ -171,6 +179,7 @@
 /.claude/skills/frontend-migrator/         @camunda/core-features
 /.claude/skills/frontend-unit-test/        @camunda/core-features
 /.claude/skills/operate-frontend/          @camunda/core-features
+/.claude/skills/tasklist-frontend/         @camunda/core-features
 
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai
