@@ -583,6 +583,11 @@ jobs:
   helm-deploy:
     name: Helm chart Integration Tests
     needs: [build-and-push, format-identifier]
+    # build-and-push is continue-on-error on merge_group, so this job still runs
+    # if the image build failed. Skip when no image tag was produced — otherwise
+    # the deploy runs with an empty orchestration.image.tag and fails with a
+    # cryptic Helm YAML error instead of surfacing the real build failure.
+    if: needs.build-and-push.outputs.image-tag != ''
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
@@ -694,6 +699,10 @@ jobs:
     name: Trigger SaaS E2E tests
     runs-on: ubuntu-latest
     needs: [build-and-push, format-identifier]
+    # Skip when build-and-push produced no image tag (it is continue-on-error on
+    # merge_group); without a tag the dispatched SaaS run gets an empty
+    # zeebeVersion.
+    if: needs.build-and-push.outputs.image-tag != ''
     timeout-minutes: 35
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
