@@ -159,8 +159,9 @@ class PhysicalTenantDocumentOverlayTest {
   }
 
   @Test
-  void shouldResetDefaultStoreIdWhenDefaultDroppedByAssigned() {
-    // default-store-id points to shared-s3, but assigned only includes other-store
+  void shouldFailWhenDefaultStoreIdExcludedByAssigned() {
+    // default-store-id points to shared-s3 but assigned only includes other-store —
+    // misconfiguration
     environment
         .getPropertySources()
         .addFirst(
@@ -172,12 +173,32 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.document.aws.other-store.bucket-name", "other-docs",
                     "camunda.physical-tenants.tenanta.document.assigned[0]", "other-store")));
 
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () -> PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("shared-s3")
+        .withMessageContaining("assigned");
+  }
+
+  @Test
+  void shouldKeepDefaultStoreIdWhenIncludedInAssigned() {
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.document.default-store-id", "shared-s3",
+                    "camunda.document.aws.shared-s3.bucket-name", "global-docs",
+                    "camunda.document.aws.other-store.bucket-name", "other-docs",
+                    "camunda.physical-tenants.tenanta.document.assigned[0]", "shared-s3")));
+
     final Document doc =
         PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
 
-    assertThat(doc.getAws()).containsKey("other-store");
-    assertThat(doc.getAws()).doesNotContainKey("shared-s3");
-    assertThat(doc.getDefaultStoreId()).isNullOrEmpty();
+    assertThat(doc.getAws()).containsOnlyKeys("shared-s3");
+    assertThat(doc.getDefaultStoreId()).isEqualTo("shared-s3");
   }
 
   @Test

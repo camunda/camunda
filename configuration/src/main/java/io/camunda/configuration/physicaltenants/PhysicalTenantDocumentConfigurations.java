@@ -9,11 +9,11 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Document;
 import io.camunda.configuration.Document.AwsStore;
-import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.Document.AzureStore;
 import io.camunda.configuration.Document.GcpStore;
 import io.camunda.configuration.Document.InMemoryStore;
 import io.camunda.configuration.Document.LocalStore;
+import io.camunda.configuration.UnifiedConfigurationException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -58,7 +58,7 @@ public final class PhysicalTenantDocumentConfigurations {
 
     validateStoreIdUniqueness(tenantId, doc);
 
-    narrowToAssigned(doc, binder, ptPrefix);
+    narrowToAssigned(tenantId, doc, binder, ptPrefix);
 
     return doc;
   }
@@ -114,7 +114,12 @@ public final class PhysicalTenantDocumentConfigurations {
             doc.getAzure().keySet(),
             doc.getLocal().keySet(),
             doc.getInMemory().keySet())) {
-      keys.forEach(id -> { if (!seen.add(id)) duplicates.add(id); });
+      keys.forEach(
+          id -> {
+            if (!seen.add(id)) {
+              duplicates.add(id);
+            }
+          });
     }
     if (!duplicates.isEmpty()) {
       throw new UnifiedConfigurationException(
@@ -127,7 +132,7 @@ public final class PhysicalTenantDocumentConfigurations {
   }
 
   private static void narrowToAssigned(
-      final Document doc, final Binder binder, final String ptPrefix) {
+      final String tenantId, final Document doc, final Binder binder, final String ptPrefix) {
     final List<String> assigned =
         binder.bind(ptPrefix + ".assigned", Bindable.listOf(String.class)).orElse(null);
     if (assigned == null || assigned.isEmpty()) {
@@ -150,7 +155,14 @@ public final class PhysicalTenantDocumentConfigurations {
 
     final String defaultStoreId = doc.getDefaultStoreId();
     if (defaultStoreId != null && !assignedIds.contains(defaultStoreId)) {
-      doc.setDefaultStoreId(null);
+      throw new UnifiedConfigurationException(
+          "Physical tenant '"
+              + tenantId
+              + "' sets 'default-store-id' to '"
+              + defaultStoreId
+              + "' but that store is not in its 'assigned' list "
+              + assignedIds
+              + ". Either include it in 'assigned' or remove 'default-store-id'.");
     }
   }
 }
