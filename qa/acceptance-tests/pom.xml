@@ -859,14 +859,9 @@
               <excludes>
                 <exclude>${identity-packages}</exclude>
                 <exclude>**/*$*.java</exclude>
-                <!-- Audit log entries are not recorded in the per-tenant store. -->
-                <exclude>**/auditlog/*.java</exclude>
                 <!-- Batch / cluster purge operations are not routed to the per-tenant store. -->
                 <exclude>**/ClusterPurgeMultiDbIT.java</exclude>
                 <exclude>**/ClusterMultiplePartitionsBatchOperationIT.java</exclude>
-                <!-- Logical multi-tenancy data import does not surface under a physical tenant. -->
-                <exclude>**/tenancy/AgentInstanceTenancyIT.java</exclude>
-                <exclude>**/tenancy/ProcessInstanceTenancyIT.java</exclude>
                 <!-- MCP server search/audit not yet validated under physical-tenant mode. -->
                 <exclude>**/mcp/authentication/BasicAuthMcpServerIT.java</exclude>
                 <exclude>**/mcp/authentication/OidcMcpServerIT.java</exclude>
