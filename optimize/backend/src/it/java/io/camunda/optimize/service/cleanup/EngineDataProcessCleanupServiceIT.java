@@ -21,6 +21,7 @@ import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurati
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
+import io.github.netmikey.logunit.api.LogCapturer;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -28,10 +29,14 @@ import java.util.UUID;
 import org.apache.commons.text.RandomStringGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCCSMIT {
   private static final RandomStringGenerator KEY_GENERATOR =
       new RandomStringGenerator.Builder().withinRange('a', 'z').get();
+
+  @RegisterExtension
+  LogCapturer cleanupServiceLogs = LogCapturer.create().captureForType(CleanupService.class);
 
   @BeforeEach
   public void enableProcessCleanup() {
@@ -282,6 +287,52 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
 
     // then
     assertVariablesEmptyInProcessInstances(instancesOfDefinitionWithVariableMode);
+  }
+
+  @Test
+  public void testCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionLogsWarning() {
+    // given I have a key specific config
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+    final String configuredKey = "myMistypedKey";
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
+    getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(configuredKey, new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES));
+
+    // and deploy processes with different keys
+    final var now = LocalDateUtil.getCurrentDateTime();
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+
+    final List<ProcessInstanceDto> instancesToGetCleanedUp =
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup));
+    final ProcessInstanceDto unaffectedProcessInstanceForSameDefinition =
+        processInstanceWithEndDate(processDefinitionKey, now);
+
+    final List<ProcessInstanceDto> allInstances =
+        ImmutableList.<ProcessInstanceDto>builder()
+            .addAll(instancesToGetCleanedUp)
+            .add(unaffectedProcessInstanceForSameDefinition)
+            .build();
+
+    persistProcessInstances(allInstances);
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then data clear up has succeeded as expected
+    assertVariablesEmptyInProcessInstances(instancesToGetCleanedUp);
+
+    assertProcessInstanceDataExists(List.of(unaffectedProcessInstanceForSameDefinition));
+    // and the misconfigured process is logged
+    cleanupServiceLogs.assertContains(
+        String.format(
+            "History Cleanup Configuration contains definition keys for which there is no "
+                + "definition imported yet. The keys without a match in the database are: [%s]",
+            configuredKey));
   }
 
   private void assertNoProcessInstanceDataExists(final List<ProcessInstanceDto> instances) {
