@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.clustermetadata.stream;
 
 import io.atomix.cluster.messaging.MessagingService;
+import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.eventbridge.clustermetadata.MetadataManager;
 import io.camunda.eventbridge.clustermetadata.MetadataQueryHandler;
@@ -61,6 +62,9 @@ public final class MetadataPartition
   private MetadataManager metadataManager;
   private MetadataQueryHandler metadataQueryHandler;
   private BrokerHeartbeatHandler brokerHeartbeatHandler;
+  // Kicks the change-coordinator on every committed registry change (target set, leader reported,
+  // step committed), so reconfiguration is event-driven rather than polled.
+  private RaftCommitListener reconcileOnCommit;
   // This partition actor's own off-actor read view, used by the reconcile loop on every role; built
   // lazily once the stream exists so its context/flyweights belong to this actor.
   private TopicQueryService reconcileTopics;
@@ -127,6 +131,14 @@ public final class MetadataPartition
             stream.newBrokerQueryService(),
             reconfigurationExecutor);
     actorScheduler.submitActor(metadataManager);
+    // Drive reconfiguration on every committed registry change instead of polling. The listener
+    // fires on the Raft thread; kickReconcile hops onto the manager's actor.
+    final var manager = metadataManager;
+    reconcileOnCommit = index -> manager.kickReconcile();
+    final var server = raftPartition.getServer();
+    if (server != null) {
+      server.addCommitListener(reconcileOnCommit);
+    }
     metadataQueryHandler = new MetadataQueryHandler(partitionId, stream.newTopicQueryService());
     actorScheduler.submitActor(metadataQueryHandler);
     brokerHeartbeatHandler = new BrokerHeartbeatHandler(partitionId, clock, stream);
@@ -139,6 +151,13 @@ public final class MetadataPartition
 
   @Override
   protected void onManagerTeardown() {
+    if (reconcileOnCommit != null) {
+      final var server = raftPartition.getServer();
+      if (server != null) {
+        server.removeCommitListener(reconcileOnCommit);
+      }
+      reconcileOnCommit = null;
+    }
     if (metadataManager != null) {
       requestHandlerRegistry.unregister(MetadataRequestHandler.topicName(partitionId));
       metadataManager.closeAsync();

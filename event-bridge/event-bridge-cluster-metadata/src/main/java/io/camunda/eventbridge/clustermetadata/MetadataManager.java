@@ -50,8 +50,10 @@ public class MetadataManager extends Actor {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetadataManager.class);
 
-  // Change-coordinator kickoff/retry/anti-entropy tick.
-  private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
+  // Slow anti-entropy backstop for the change-coordinator (the common path is commit-driven, see
+  // kickReconcile); and the short delay before retrying a step that failed (e.g. no leader yet).
+  private static final Duration BACKSTOP_INTERVAL = Duration.ofSeconds(15);
+  private static final Duration RETRY_DELAY = Duration.ofSeconds(2);
 
   // How a dead member is replaced. GROW_FIRST (passive-join the replacement, promote it, then
   // remove the dead member) preserves data copies and survives a false-positive fence.
@@ -155,27 +157,53 @@ public class MetadataManager extends Actor {
   @Override
   protected void onActorStarted() {
     if (partitionId == CoordinatorRouting.TOPIC_REGISTRY_SHARD) {
-      scheduleReconfiguration();
+      // Bootstrap on leader acquisition: pick up any reassignment already in flight, then rely on
+      // commit-driven kicks (see kickReconcile) plus the slow anti-entropy backstop.
+      reconcileInProgress();
+      scheduleBackstop();
     }
   }
 
   /**
-   * Change-coordinator kickoff/retry/anti-entropy tick: starts driving any topic with an in-flight
-   * target (set by a client reassignment or the {@code PlacementHealTask}). After a failover the
-   * new leader picks up here from the persisted committed/target.
+   * Event hook called from the metadata partition's Raft commit listener: the registry may have
+   * changed (a reassignment target set, a leader reported, a step committed), so re-derive and
+   * drive any in-flight reconfiguration. Replaces the old per-second poll — driving is
+   * event-driven, with {@link #scheduleBackstop()} as a slow safety net.
    */
-  protected void scheduleReconfiguration() {
-    if (reconfigurationExecutor != null) {
-      topics
-          .topicsSnapshot()
-          .forEach(
-              (name, meta) -> {
-                if (meta.hasTarget() && reconfiguring.add(name)) {
-                  driveReconfiguration(name);
-                }
-              });
+  public void kickReconcile() {
+    actor.run(this::reconcileInProgress);
+  }
+
+  /**
+   * Slow anti-entropy backstop: catches anything the commit-driven kicks missed (e.g. a commit
+   * observed before its state was applied, or a transient executor error with no follow-up commit).
+   * After a failover the new leader's {@link #onActorStarted()} bootstrap covers resumption; this
+   * is just the periodic re-assert.
+   */
+  private void scheduleBackstop() {
+    reconcileInProgress();
+    schedule(BACKSTOP_INTERVAL, this::scheduleBackstop);
+  }
+
+  /** Drives every topic that has an in-flight target and is not already being reconfigured. */
+  private void reconcileInProgress() {
+    if (reconfigurationExecutor == null) {
+      return;
     }
-    schedule(RECONFIG_INTERVAL, this::scheduleReconfiguration);
+    topics
+        .topicsSnapshot()
+        .forEach(
+            (name, meta) -> {
+              if (meta.hasTarget()) {
+                reconcileTopic(name);
+              }
+            });
+  }
+
+  private void reconcileTopic(final String name) {
+    if (reconfigurationExecutor != null && reconfiguring.add(name)) {
+      driveReconfiguration(name);
+    }
   }
 
   /** Executes the next single step toward a topic's target, chaining until committed == target. */
@@ -263,6 +291,10 @@ public class MetadataManager extends Actor {
                             name,
                             error);
                         reconfiguring.remove(name);
+                        // Targeted retry of just this topic after a short backoff — not a global
+                        // poll. (A leader change or a transient executor error won't produce a
+                        // commit to re-kick us, so we schedule our own re-derive.)
+                        schedule(RETRY_DELAY, () -> reconcileTopic(name));
                         return;
                       }
                       metadataStream.registerTopic(
