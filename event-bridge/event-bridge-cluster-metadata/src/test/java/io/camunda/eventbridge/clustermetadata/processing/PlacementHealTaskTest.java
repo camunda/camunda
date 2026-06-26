@@ -126,6 +126,44 @@ final class PlacementHealTaskTest {
   }
 
   @Test
+  void shouldTopUpUnderReplicatedPartitionTowardReplicationFactor() {
+    register(0);
+    register(1);
+    register(2);
+    // a topic created against a partial cluster: partition placed on only 1 broker, RF=3
+    topicState.put(
+        "orders", new TopicMetadata(1, 3, TopicStatus.ACTIVE, Map.of(1, List.of(2)), Map.of()));
+
+    // when
+    final var builder = mock(TaskResultBuilder.class);
+    task.execute(builder);
+
+    // then — the target tops up to RF 3, keeping the existing replica and adding the two spares
+    final var captor = ArgumentCaptor.forClass(UnifiedRecordValue.class);
+    verify(builder).appendCommandRecord(eq(MetadataIntent.REGISTER_TOPIC), captor.capture());
+    final var event = (TopicRecord) captor.getValue();
+    assertThat(event.getTarget().get(1)).containsExactlyInAnyOrder(0, 1, 2).contains(2);
+  }
+
+  @Test
+  void shouldNotTopUpBeyondAvailableBrokers() {
+    register(0);
+    register(1); // only 2 brokers, but RF=3
+    topicState.put(
+        "orders", new TopicMetadata(1, 3, TopicStatus.ACTIVE, Map.of(1, List.of(0)), Map.of()));
+
+    // when
+    final var builder = mock(TaskResultBuilder.class);
+    task.execute(builder);
+
+    // then — tops up only as far as the available brokers allow (0 -> {0,1}), never inventing nodes
+    final var captor = ArgumentCaptor.forClass(UnifiedRecordValue.class);
+    verify(builder).appendCommandRecord(eq(MetadataIntent.REGISTER_TOPIC), captor.capture());
+    final var event = (TopicRecord) captor.getValue();
+    assertThat(event.getTarget().get(1)).containsExactlyInAnyOrder(0, 1);
+  }
+
+  @Test
   void shouldSkipTopicAlreadyReconfiguring() {
     register(0);
     register(1);

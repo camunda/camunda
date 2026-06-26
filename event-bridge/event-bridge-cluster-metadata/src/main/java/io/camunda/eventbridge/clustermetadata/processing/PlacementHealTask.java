@@ -82,7 +82,7 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
               if (meta.status() != TopicStatus.ACTIVE || meta.hasTarget()) {
                 return;
               }
-              final var target = heal(meta.assignment(), active, live);
+              final var target = heal(meta.assignment(), active, live, meta.replicationFactor());
               if (target.equals(meta.assignment())) {
                 return;
               }
@@ -113,13 +113,20 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
    * dropped: with no broker to take over there is nothing to gain by removing it, and leaving it in
    * the assignment lets it resume when it re-registers, or be taken over once a new broker appears.
    * Spares are picked deterministically, rotated by partition id so replacements spread across
-   * brokers. Equal to {@code committed} when every replica is active, or when the only non-active
-   * replicas have no spare to replace them (the task then does nothing).
+   * brokers. Equal to {@code committed} when every replica is active and the partition is already
+   * at its replication factor, or when the only non-active replicas have no spare to replace them
+   * and no spare is available to top up (the task then does nothing).
+   *
+   * <p>It also <b>tops up an under-replicated partition</b> toward {@code replicationFactor} using
+   * any remaining active spares — e.g. a topic created against a partial cluster (placed on fewer
+   * brokers than RF), or one that lost replicas with no spare available at the time. These are pure
+   * additions the change-coordinator grows in.
    */
   private static Map<Integer, List<Integer>> heal(
       final Map<Integer, List<Integer>> committed,
       final List<Integer> active,
-      final Set<Integer> live) {
+      final Set<Integer> live,
+      final int replicationFactor) {
     final var healed = new LinkedHashMap<Integer, List<Integer>>();
     committed.forEach(
         (partition, replicas) -> {
@@ -141,6 +148,13 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
               result.add(spares.get(nextSpare++)); // fenced/draining — a spare takes over
             } else {
               result.add(replica); // no spare available — keep it in the topology
+            }
+          }
+          // Top up toward the replication factor with any remaining active spares (adds only).
+          while (result.size() < replicationFactor && nextSpare < spares.size()) {
+            final var spare = spares.get(nextSpare++);
+            if (!result.contains(spare)) {
+              result.add(spare);
             }
           }
           healed.put(partition, result);
