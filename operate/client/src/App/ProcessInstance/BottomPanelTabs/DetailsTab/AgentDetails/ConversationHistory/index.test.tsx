@@ -26,7 +26,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {http} from 'msw';
 import {
   endpoints,
-  type QueryAgentInstancesRequestBody,
+  type QueryAgentInstanceHistoryRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 const AGENT_INSTANCE_KEY = '2251799813851828';
@@ -576,7 +576,8 @@ describe('<ConversationHistory />', () => {
           agentInstanceKey: AGENT_INSTANCE_KEY,
         }),
         async ({request}) => {
-          const req = (await request.json()) as QueryAgentInstancesRequestBody;
+          const req =
+            (await request.json()) as QueryAgentInstanceHistoryRequestBody;
           filter = req.filter;
           return Response.json(searchResult([item]));
         },

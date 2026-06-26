@@ -122,7 +122,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   );
 };
 
-type ConersationTogglesProps = {
+type ConversationTogglesProps = {
   sortOrder: QuerySortOrder;
   canBeScoped: boolean;
   isScoped: boolean;
@@ -130,7 +130,7 @@ type ConersationTogglesProps = {
   onToggleScope: () => void;
 };
 
-const ConversationToggles: React.FC<ConersationTogglesProps> = (props) => (
+const ConversationToggles: React.FC<ConversationTogglesProps> = (props) => (
   <ButtonSet>
     <Button
       kind="ghost"
