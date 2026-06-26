@@ -15,10 +15,13 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -163,6 +166,68 @@ public class BrokerHealthCheckServiceTest {
 
     // then the broker is ready: the second tenant started and simply had nothing to install
     assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
+  @Test
+  public void shouldNotLogBrokerReadyWhileAnExpectedPhysicalTenantNeverRegistered() {
+    // given a broker with two physical tenants where only the default tenant registers and fully
+    // installs its partition; "all known partitions installed" is true but the broker is not ready
+    final var recorder = new RecordingAppender();
+    final var logger = (Logger) LogManager.getLogger("io.camunda.zeebe.broker.system");
+    recorder.start();
+    logger.addAppender(recorder);
+    try {
+      final var healthCheckService =
+          newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+      healthCheckService.registerBootstrapPartitions(
+          DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+      scheduler.workUntilDone();
+
+      // when the default tenant's only partition is installed
+      healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+      scheduler.workUntilDone();
+
+      // then the broker must not announce readiness: a configured tenant has not registered yet
+      assertThat(healthCheckService.isBrokerReady()).isFalse();
+      assertThat(recorder.getAppendedEvents())
+          .noneSatisfy(
+              event -> assertThat(event.getMessage().getFormattedMessage()).contains("ready"));
+    } finally {
+      logger.removeAppender(recorder);
+      recorder.stop();
+    }
+  }
+
+  @Test
+  public void shouldLogBrokerReadyOnceWhenEveryPhysicalTenantIsInstalled() {
+    // given a broker with two physical tenants
+    final var recorder = new RecordingAppender();
+    final var logger = (Logger) LogManager.getLogger("io.camunda.zeebe.broker.system");
+    recorder.start();
+    logger.addAppender(recorder);
+    try {
+      final var healthCheckService =
+          newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+      healthCheckService.registerBootstrapPartitions(
+          DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+      healthCheckService.registerBootstrapPartitions(
+          SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
+      scheduler.workUntilDone();
+
+      // when every tenant's partition is installed
+      healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+      healthCheckService.onBecameRaftLeader(new PartitionId(SECOND_PHYSICAL_TENANT, 1), 1);
+      scheduler.workUntilDone();
+
+      // then the broker logs that it is ready exactly once
+      assertThat(healthCheckService.isBrokerReady()).isTrue();
+      assertThat(recorder.getAppendedEvents())
+          .filteredOn(event -> event.getMessage().getFormattedMessage().contains("Broker is ready"))
+          .hasSize(1);
+    } finally {
+      logger.removeAppender(recorder);
+      recorder.stop();
+    }
   }
 
   private BrokerHealthCheckService newHealthCheckService(final String... expectedPhysicalTenants) {

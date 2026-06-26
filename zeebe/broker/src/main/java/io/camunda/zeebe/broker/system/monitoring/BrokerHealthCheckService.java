@@ -136,6 +136,9 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
           partitionInstallStatus.putIfAbsent(metadata.id(), false);
           healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id()));
         });
+    // A late-registering tenant can be the event that completes readiness, so re-check on the actor
+    // thread (where readyLogged is owned).
+    actor.run(this::logBrokerReadyOnce);
   }
 
   public boolean isBrokerReady() {
@@ -177,11 +180,23 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     return actor.call(
         () -> {
           partitionInstallStatus.put(partitionId, true);
-          if (!readyLogged && !partitionInstallStatus.containsValue(false)) {
-            readyLogged = true;
-            LOG.info("All partitions are installed. Broker is ready!");
-          }
+          logBrokerReadyOnce();
         });
+  }
+
+  /**
+   * Logs the "broker is ready" transition exactly once, when the broker first actually becomes
+   * ready. Readiness can flip on any of three events (a partition install, a physical tenant
+   * registering, or the broker startup completing), so this is invoked from all of them. Gated on
+   * the full {@link #isBrokerReady()} criteria rather than just "all known partitions installed",
+   * so it never claims readiness before every expected tenant has registered and the broker has
+   * started. Must run on the actor thread, since {@code readyLogged} is not otherwise synchronized.
+   */
+  private void logBrokerReadyOnce() {
+    if (!readyLogged && isBrokerReady()) {
+      readyLogged = true;
+      LOG.info("All partitions are installed. Broker is ready!");
+    }
   }
 
   @Override
@@ -222,7 +237,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   public void setBrokerStarted() {
-    actor.run(() -> brokerStarted = true);
+    actor.run(
+        () -> {
+          brokerStarted = true;
+          logBrokerReadyOnce();
+        });
   }
 
   public boolean isBrokerStarted() {
