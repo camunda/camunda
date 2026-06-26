@@ -145,6 +145,25 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return server.leave().thenApply(v -> this);
   }
 
+  /**
+   * Removes another member from this partition's Raft group, driven by the current leader. Unlike
+   * {@link #leave()} (which removes the local member), this removes the named member — typically a
+   * dead/fenced member that cannot leave on its own. Committed by the leader as an ordinary
+   * joint-consensus configuration change; never force-reconfigures.
+   */
+  public CompletableFuture<RaftPartition> removeMember(final MemberId memberToRemove) {
+    return server.removeMember(memberToRemove).thenApply(v -> this);
+  }
+
+  /**
+   * Promotes a non-voting (PASSIVE) member of this partition's Raft group to a voting (ACTIVE)
+   * member, driven by the current leader and gated on the member catching up to the leader's commit
+   * index. Use this after {@link #joinAsPassive} once the observer has replicated enough to vote.
+   */
+  public CompletableFuture<RaftPartition> promoteMember(final MemberId memberToPromote) {
+    return server.promoteMember(memberToPromote).thenApply(v -> this);
+  }
+
   private void initServer(
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {

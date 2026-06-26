@@ -473,6 +473,65 @@ final class ReconfigurationTest {
       final var leader = awaitLeader(m1, m2, m3, m4, m5);
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
     }
+
+    @Test
+    void leaderCanPromotePassiveObserverToVoter(@TempDir final Path tmp) {
+      // given - a 3-member cluster with a caught-up passive observer (member 4)
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final var id4 = MemberId.from("4");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      m4.join(List.of(id1, id2, id3), Type.PASSIVE).join();
+      awaitLeader(m1, m2, m3);
+
+      // when - the leader promotes the passive observer to a voting member
+      final var leader = getLeaderServer(List.of(m1, m2, m3)).orElseThrow();
+      leader.promoteMember(id4).join();
+
+      // then - member 4 is an ACTIVE voter on all members
+      Awaitility.await("Member 4 is an active voter on all members")
+          .untilAsserted(
+              () ->
+                  assertThat(List.of(m1, m2, m3, m4))
+                      .allSatisfy(
+                          member ->
+                              assertThat(member.cluster().getMember(id4).getType())
+                                  .isEqualTo(Type.ACTIVE)));
+
+      // and - the cluster still commits with the enlarged voting set
+      assertThat(appendEntry(awaitLeader(m1, m2, m3, m4)).commit())
+          .succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void promotingAnActiveMemberIsIdempotent(@TempDir final Path tmp) {
+      // given - a 3-member cluster (all active voters)
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      awaitLeader(m1, m2, m3);
+
+      // when/then - promoting an already-active member is a no-op that completes
+      final var leader = getLeaderServer(List.of(m1, m2, m3)).orElseThrow();
+      assertThat(leader.promoteMember(id2)).succeedsWithin(Duration.ofSeconds(5));
+    }
   }
 
   @Nested
@@ -540,6 +599,66 @@ final class ReconfigurationTest {
               member ->
                   assertThat(member.cluster().getMembers())
                       .containsExactlyInAnyOrderElementsOf(expected));
+    }
+
+    @Test
+    void leaderCanRemoveDeadMember(@TempDir final Path tmp) {
+      // given - a 3-member cluster
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      awaitLeader(m1, m2, m3);
+
+      // and - a non-leader member is dead (shut down and cannot leave on its own)
+      final var leader = Stream.of(m1, m2, m3).filter(RaftServer::isLeader).findAny().orElseThrow();
+      final var dead = Stream.of(m1, m2, m3).filter(s -> !s.isLeader()).findAny().orElseThrow();
+      final var survivors = Stream.of(m1, m2, m3).filter(s -> s != dead).toList();
+      final var deadId = dead.cluster().getLocalMember().memberId();
+      dead.shutdown().join();
+
+      // when - the leader removes the dead member
+      leader.removeMember(deadId).join();
+
+      // then - survivors show a 2-member configuration without the dead member
+      final var expected =
+          survivors.stream().map(server -> server.cluster().getLocalMember()).toList();
+      Awaitility.await("Survivors dropped the dead member from the configuration")
+          .untilAsserted(
+              () ->
+                  assertThat(survivors)
+                      .allSatisfy(
+                          member ->
+                              assertThat(member.cluster().getMembers())
+                                  .containsExactlyInAnyOrderElementsOf(expected)));
+
+      // and - the survivors still commit (quorum preserved by the joint-consensus removal)
+      assertThat(appendEntry(awaitLeader(survivors.toArray(RaftServer[]::new))).commit())
+          .succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void removingAnUnknownMemberIsIdempotent(@TempDir final Path tmp) {
+      // given - a 2-member cluster
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+      awaitLeader(m1, m2);
+
+      // when/then - removing a member that is not part of the configuration is a no-op
+      final var leader = getLeaderServer(List.of(m1, m2)).orElseThrow();
+      assertThat(leader.removeMember(MemberId.from("9"))).succeedsWithin(Duration.ofSeconds(5));
     }
 
     @Test

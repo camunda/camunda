@@ -114,6 +114,16 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
+  public CompletableFuture<RaftServer> removeMember(final MemberId memberToRemove) {
+    return new ReconfigurationHelper(context).removeMember(memberToRemove).thenApply(v -> this);
+  }
+
+  @Override
+  public CompletableFuture<RaftServer> promoteMember(final MemberId memberToPromote) {
+    return new ReconfigurationHelper(context).promoteMember(memberToPromote).thenApply(v -> this);
+  }
+
+  @Override
   public CompletableFuture<RaftServer> promote() {
     return new ReconfigurationHelper(context).anoint().thenApply(v -> this);
   }

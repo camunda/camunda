@@ -192,6 +192,14 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.leave().thenApply(v -> this);
   }
 
+  public CompletableFuture<RaftPartitionServer> removeMember(final MemberId memberToRemove) {
+    return server.removeMember(memberToRemove).thenApply(v -> this);
+  }
+
+  public CompletableFuture<RaftPartitionServer> promoteMember(final MemberId memberToPromote) {
+    return server.promoteMember(memberToPromote).thenApply(v -> this);
+  }
+
   public CompletableFuture<RaftPartitionServer> forceReconfigure(
       final Map<MemberId, Type> members) {
     return server.forceConfigure(members).thenApply(v -> this);

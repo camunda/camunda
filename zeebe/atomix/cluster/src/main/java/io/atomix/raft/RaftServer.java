@@ -333,6 +333,29 @@ public interface RaftServer {
   CompletableFuture<RaftServer> leave();
 
   /**
+   * Removes another member from the replication group, driven by the current leader. Unlike {@link
+   * #leave()} (which removes the local member), this removes the named member — typically a
+   * dead/fenced member that cannot leave on its own. The removal is committed by the leader as an
+   * ordinary joint-consensus configuration change, preserving quorum safety; it never
+   * force-reconfigures.
+   *
+   * @param memberToRemove the member to remove from the configuration
+   * @return a future completed once the removal is committed
+   */
+  CompletableFuture<RaftServer> removeMember(MemberId memberToRemove);
+
+  /**
+   * Promotes another member from a non-voting (PASSIVE) observer to a voting (ACTIVE) member,
+   * driven by the current leader. The promotion is gated on the member catching up to the leader's
+   * commit index so that, as a new voter, it can immediately contribute to quorum without stalling
+   * the joint-consensus commit.
+   *
+   * @param memberToPromote the member to promote to ACTIVE
+   * @return a future completed once the promotion is committed
+   */
+  CompletableFuture<RaftServer> promoteMember(MemberId memberToPromote);
+
+  /**
    * Promotes the server to leader if possible.
    *
    * @return a future to be completed once the server has been promoted

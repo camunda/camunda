@@ -21,6 +21,7 @@ import io.atomix.raft.protocol.ForceConfigureRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
@@ -45,6 +46,9 @@ import org.slf4j.LoggerFactory;
 
 public final class ReconfigurationHelper {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReconfigurationHelper.class);
+
+  /** Bounded number of election-timeout-spaced retries the promotion catch-up gate waits. */
+  private static final int MAX_PROMOTE_CATCHUP_ATTEMPTS = 10;
 
   private final ThreadContext threadContext;
   private final RaftContext raftContext;
@@ -252,6 +256,162 @@ public final class ReconfigurationHelper {
               } else if (response.status() == Status.OK) {
                 future.complete(null);
                 raftContext.updateState(State.LEFT);
+              } else {
+                future.completeExceptionally(response.error().createException());
+              }
+            },
+            threadContext);
+  }
+
+  /**
+   * Removes another member from the cluster, driven by the current leader. Unlike {@link #leave()},
+   * which removes the local member, this removes the named member — typically a dead/fenced member
+   * that cannot leave on its own. The request is routed to the current leader, which commits the
+   * removal as an ordinary joint-consensus configuration change (the same {@code onLeave} path),
+   * preserving quorum safety. This never force-reconfigures.
+   *
+   * @param memberToRemove the member to remove from the configuration
+   * @return a future completed once the removal is committed, or failed if there is no leader to
+   *     commit the change
+   */
+  public CompletableFuture<Void> removeMember(final MemberId memberToRemove) {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    threadContext.execute(() -> removeMemberInternal(memberToRemove, future));
+    return future;
+  }
+
+  private void removeMemberInternal(
+      final MemberId memberToRemove, final CompletableFuture<Void> future) {
+    final var leaving = raftContext.getCluster().getMember(memberToRemove);
+    if (leaving == null) {
+      // Already not part of the configuration — removal is idempotent.
+      future.complete(null);
+      return;
+    }
+    final var receiver =
+        Optional.ofNullable(raftContext.getLeader()).map(DefaultRaftMember::memberId).orElse(null);
+    if (receiver == null) {
+      future.completeExceptionally(
+          new IllegalStateException(
+              "Cannot remove member "
+                  + memberToRemove
+                  + ": no known leader to commit the configuration change."));
+      return;
+    }
+    raftContext
+        .getProtocol()
+        .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                future.completeExceptionally(error);
+              } else if (response.status() == Status.OK) {
+                future.complete(null);
+              } else {
+                future.completeExceptionally(response.error().createException());
+              }
+            },
+            threadContext);
+  }
+
+  /**
+   * Promotes a non-voting (PASSIVE) member to a voting (ACTIVE) member, driven by the current
+   * leader. The promotion is gated on catch-up: it waits until the member has replicated up to the
+   * leader's commit index, so that as a new voter it can immediately contribute to quorum and the
+   * joint-consensus commit does not stall waiting on a lagging member. The gate is a liveness
+   * concern only — joint consensus keeps the change safe regardless of timing.
+   *
+   * <p>Must be called on the leader (the only member that can commit a configuration change). Fails
+   * with a retryable error if the member has not caught up within {@link
+   * #MAX_PROMOTE_CATCHUP_ATTEMPTS} attempts, so the caller's reconcile loop can try again later.
+   *
+   * @param memberToPromote the member to promote to ACTIVE
+   * @return a future completed once the promotion is committed
+   */
+  public CompletableFuture<Void> promoteMember(final MemberId memberToPromote) {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    threadContext.execute(() -> promoteMemberInternal(memberToPromote, 0, future));
+    return future;
+  }
+
+  private void promoteMemberInternal(
+      final MemberId memberToPromote, final int attempt, final CompletableFuture<Void> future) {
+    if (raftContext.getRaftRole().role() != Role.LEADER) {
+      future.completeExceptionally(
+          new IllegalStateException(
+              "Cannot promote member " + memberToPromote + ": local member is not the leader."));
+      return;
+    }
+    final var member = raftContext.getCluster().getMember(memberToPromote);
+    if (member == null) {
+      future.completeExceptionally(
+          new IllegalStateException(
+              "Cannot promote member " + memberToPromote + ": not part of the configuration."));
+      return;
+    }
+    if (member.getType() == Type.ACTIVE) {
+      // Already a voting member — promotion is idempotent.
+      future.complete(null);
+      return;
+    }
+    final var memberContext = raftContext.getCluster().getMemberContext(memberToPromote);
+    if (memberContext == null) {
+      future.completeExceptionally(
+          new IllegalStateException(
+              "Cannot promote member "
+                  + memberToPromote
+                  + ": no replication state to gate catch-up on."));
+      return;
+    }
+
+    // Catch-up gate: only promote once the member has replicated up to the leader's commit index.
+    final long commitIndex = raftContext.getCommitIndex();
+    if (memberContext.getMatchIndex() < commitIndex) {
+      if (attempt >= MAX_PROMOTE_CATCHUP_ATTEMPTS) {
+        future.completeExceptionally(
+            new IllegalStateException(
+                "Member "
+                    + memberToPromote
+                    + " did not catch up for promotion (matchIndex "
+                    + memberContext.getMatchIndex()
+                    + " < commitIndex "
+                    + commitIndex
+                    + ") within "
+                    + MAX_PROMOTE_CATCHUP_ATTEMPTS
+                    + " attempts; will retry on the next reconcile."));
+        return;
+      }
+      LOGGER.debug(
+          "Member {} not yet caught up for promotion (matchIndex {} < commitIndex {}), retrying (attempt {})",
+          memberToPromote,
+          memberContext.getMatchIndex(),
+          commitIndex,
+          attempt);
+      threadContext.schedule(
+          raftContext.getElectionTimeout(),
+          () -> promoteMemberInternal(memberToPromote, attempt + 1, future));
+      return;
+    }
+
+    // Commit the configuration change overriding the member's type to ACTIVE.
+    final var configuration = raftContext.getCluster().getConfiguration();
+    final var promoted = new DefaultRaftMember(member.memberId(), Type.ACTIVE, Instant.now());
+    raftContext
+        .getRaftRole()
+        .onReconfigure(
+            ReconfigureRequest.builder()
+                .withIndex(configuration.index())
+                .withTerm(configuration.term())
+                .withMembers(configuration.newMembers())
+                .withMember(promoted)
+                .from(raftContext.getCluster().getLocalMember().memberId().id())
+                .build())
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                future.completeExceptionally(error);
+              } else if (response.status() == Status.OK) {
+                future.complete(null);
               } else {
                 future.completeExceptionally(response.error().createException());
               }
