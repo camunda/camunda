@@ -19,6 +19,7 @@ import io.camunda.optimize.ApplicationContextProvider;
 import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.alert.AlertService;
+import io.camunda.optimize.service.cleanup.CleanupScheduler;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -208,6 +209,10 @@ public class EmbeddedOptimizeExtension
 
   public ImportSchedulerManagerService getImportSchedulerManager() {
     return getBean(ImportSchedulerManagerService.class);
+  }
+
+  public CleanupScheduler getCleanupScheduler() {
+    return getBean(CleanupScheduler.class);
   }
 
   public OptimizeRequestExecutor getRequestExecutor() {
