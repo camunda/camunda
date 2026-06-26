@@ -209,7 +209,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final InFlightLongPollingActivateJobsRequestsState<T> state,
       final InflightActivateJobsRequest<T> request) {
 
-    final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
+    final BrokerClusterState topology =
+        brokerClient.getTopologyManager().getTopology(request.getRequest().getPartitionGroup());
     if (topology != null && request.isOpen()) {
       state.addActiveRequest(request);
 
