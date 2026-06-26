@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Selector} from 'testcafe';
+import {Selector, ClientFunction} from 'testcafe';
+import config from './config';
 import {loadUsers} from './users.js';
 import * as Homepage from './sm-tests/Homepage.elements.js';
 import * as Common from './sm-tests/Common.elements.js';
@@ -21,6 +22,41 @@ let instanceCount = {
 
 let users = {};
 
+// Submit the Keycloak login form from inside the page via a same-origin fetch of the form's
+// own `action`, rather than a synthetic button click. Returns 'ok' on success or a short error
+// string. See `login()` for why this is done programmatically instead of through the UI.
+const submitLoginForm = ClientFunction((username, password) => {
+  const form =
+    document.getElementById('kc-form-login') ||
+    (document.querySelector('input[name="username"]') || {}).form ||
+    document.querySelector('form');
+  if (!form) {
+    return Promise.resolve('no-form');
+  }
+
+  // Build the POST body from the form's existing fields (preserving Keycloak hidden inputs such
+  // as `credentialId`) and overlay the credentials.
+  const params = new URLSearchParams();
+  new FormData(form).forEach((value, key) => params.set(key, value));
+  params.set('username', username);
+  params.set('password', password);
+
+  // `redirect: 'manual'` so we never try to read the cross-origin Optimize callback response
+  // (which CORS would block): we only need Keycloak's 302, whose Set-Cookie establishes the SSO
+  // session on the Keycloak origin. A successful authentication answers with that 302 (surfaced as
+  // an opaque redirect); a rejected one re-renders the login form as a readable 200, so only an
+  // opaque redirect counts as success.
+  return fetch(form.getAttribute('action'), {
+    method: 'POST',
+    body: params,
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    redirect: 'manual',
+    credentials: 'include',
+  })
+    .then((res) => (res.type === 'opaqueredirect' ? 'ok' : 'rejected-http-' + res.status))
+    .catch((e) => 'fetch-error:' + e);
+});
+
 export async function login(t, userHandle = 'user1') {
   users = await loadUsers();
 
@@ -31,12 +67,44 @@ export async function login(t, userHandle = 'user1') {
     t.ctx.users.push(user);
   }
 
-  await t
-    .maximizeWindow()
-    .typeText('input[name="username"]', user.username)
-    .typeText('input[name="password"]', user.username)
-    .click('[type="submit"]')
-    .wait(1000);
+  await t.maximizeWindow();
+
+  // Start every login from a clean cookie jar so a lingering Keycloak SSO session from a previous
+  // test (possibly a different user) cannot silently authenticate us as the wrong identity.
+  await t.deleteCookies();
+  await t.navigateTo(config.endpoint);
+
+  const usernameInput = Selector('input[name="username"]');
+
+  // The OIDC redirect chain (Optimize -> Keycloak) means the login form is briefly absent right
+  // after navigation, so wait for it. If a Keycloak SSO cookie survived the deleteCookies above
+  // (cross-origin clearing is best-effort), Optimize logs us straight in and no form renders — in
+  // that case we are already authenticated, so return.
+  if (!(await usernameInput.with({timeout: 20000}).visible)) {
+    return;
+  }
+
+  // We log in by POSTing the Keycloak form programmatically instead of clicking the submit button.
+  //
+  // Root cause this avoids: under TestCafe native automation, the synthetic submit (button click /
+  // Enter) is intermittently not delivered to Chrome in the CI environment, so the credentials are
+  // typed but the form never POSTs and the browser is stranded on the login page (manifesting as
+  // "selector did not match" on the app shell). The Keycloak server itself authenticates reliably
+  // every time (verified directly over HTTP), so we submit the form via a same-origin in-page fetch
+  // of its `action`, which is deterministic and not subject to the input-dispatch race. Keycloak's
+  // response sets the SSO session cookie; navigating to Optimize then completes the OIDC login via
+  // that session (no second form is shown).
+  //
+  // In the self-managed e2e Keycloak realm the test users use password == username.
+  const result = await submitLoginForm(user.username, user.username);
+  if (result !== 'ok') {
+    throw new Error(`Programmatic Keycloak login failed for ${user.username}: ${result}`);
+  }
+
+  // Complete the OIDC flow against the freshly established SSO session and confirm we land in the
+  // authenticated app (the login form is gone).
+  await t.navigateTo(config.endpoint);
+  await t.expect(usernameInput.exists).notOk({timeout: 20000});
 }
 
 export function getUser(t, userHandle) {
