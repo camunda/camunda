@@ -54,6 +54,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
@@ -369,7 +370,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
             .query(constantScoreQuery(boolQ))
             .sort("id", SortOrder.ASC)
             .size(batchSize)
-            .fetchSource(false);
+            .fetchSource(false)
+            .storedField("_routing");
     if (!searchAfter.isEmpty()) {
       searchSource.searchAfter(searchAfter.toArray());
     }
@@ -393,7 +395,13 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                 return ArchiveByIdTaskSupplier.ArchiveDocIdsBatch.empty();
               }
               return ArchiveByIdTaskSupplier.ArchiveDocIdsBatch.from(
-                  Arrays.stream(hits).map(h -> IdWithRouting.of(h.getId())).toList(),
+                  Arrays.stream(hits)
+                      .map(
+                          h -> {
+                            final DocumentField rf = h.field("_routing");
+                            return new IdWithRouting(h.getId(), rf != null ? rf.getValue() : null);
+                          })
+                      .toList(),
                   Arrays.asList(hits[hits.length - 1].getSortValues()));
             });
   }
