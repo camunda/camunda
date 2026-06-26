@@ -245,7 +245,8 @@ done < <(find "$C8RUN_DIR" -name "*.app" -type d -print0)
 while IFS= read -r -d '' candidate; do
   # skip files inside .app bundles (covered by --deep above)
   [[ "$candidate" == *.app/* ]] && continue
-  file -b "$candidate" | grep -q "Mach-O" || continue
+  macho_type="$(file -b "$candidate")"
+  echo "$macho_type" | grep -q "Mach-O" || continue
 
   # 2. Valid signature
   if codesign --verify --strict "$candidate" 2>/dev/null; then
@@ -255,7 +256,12 @@ while IFS= read -r -d '' candidate; do
     verify_errors=$((verify_errors + 1))
   fi
 
-  # 3. JRE path → must carry all three JVM entitlements
+  # 3. JRE executables → assert all three JVM entitlements are present.
+  #    codesign embeds entitlements only into Mach-O executables, not dylibs or
+  #    bundles; the JVM's JIT capability comes from the launching executable
+  #    (jre/bin/java), so the runtime dylibs (libjvm.dylib, ...) neither carry
+  #    nor need them. Skip non-executables to avoid false verification failures.
+  echo "$macho_type" | grep -q "executable" || continue
   for jre_dir in "${JRE_DIR_NAMES[@]}"; do
     if [[ "$candidate" == */"$jre_dir"/* ]]; then
       entitlements_out="$(codesign -d --entitlements - "$candidate" 2>/dev/null)"
