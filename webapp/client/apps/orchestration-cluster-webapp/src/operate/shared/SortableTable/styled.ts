@@ -14,6 +14,14 @@ const TableContainer = styled(CarbonTableContainer)`
 	background-color: var(--cds-layer);
 `;
 
+const ScrollContainer = styled.div`
+	position: relative;
+	height: 100%;
+	background-color: var(--cds-layer);
+	overflow-y: auto;
+	flex: 1 0 0;
+`;
+
 const LoadingOverlay = styled.div`
 	position: absolute;
 	inset: 0;
@@ -30,4 +38,4 @@ const EmptyStateContainer = styled.div`
 	padding: var(--cds-spacing-09) 0;
 `;
 
-export {TableContainer, LoadingOverlay, EmptyStateContainer};
+export {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer};
