@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.AgentHistoryMapper">
+
+  <!-- ===== WRITE operations ===== -->
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
+    INSERT INTO ${prefix}AGENT_HISTORY (
+      AGENT_HISTORY_KEY,
+      AGENT_INSTANCE_KEY,
+      ELEMENT_INSTANCE_KEY,
+      PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      TENANT_ID,
+      PARTITION_ID,
+      JOB_KEY,
+      JOB_LEASE,
+      ITERATION,
+      ROLE,
+      COMMIT_STATUS,
+      PRODUCED_AT,
+      INPUT_TOKENS,
+      OUTPUT_TOKENS,
+      DURATION_MS,
+      CONTENT,
+      TOOL_CALLS
+    )
+    VALUES (
+      #{agentHistoryKey},
+      #{agentInstanceKey},
+      #{elementInstanceKey},
+      #{processInstanceKey},
+      #{rootProcessInstanceKey},
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{tenantId},
+      #{partitionId},
+      #{jobKey},
+      #{jobLease},
+      #{iteration},
+      #{role},
+      #{commitStatus},
+      #{producedAt, jdbcType=TIMESTAMP},
+      #{inputTokens},
+      #{outputTokens},
+      #{durationMs},
+      #{content, jdbcType=CLOB},
+      #{toolCalls, jdbcType=CLOB}
+    )
+  </insert>
+
+  <update id="updateCommitStatus" parameterType="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
+    UPDATE ${prefix}AGENT_HISTORY
+    SET COMMIT_STATUS = #{commitStatus}
+    WHERE AGENT_HISTORY_KEY = #{agentHistoryKey}
+  </update>
+
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'AGENT_HISTORY'"/>
+    <bind name="primaryKeyColumn" value="'AGENT_HISTORY_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'AGENT_HISTORY'"/>
+    <bind name="primaryKeyColumn" value="'AGENT_HISTORY_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+</mapper>

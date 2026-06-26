@@ -55,9 +55,10 @@ class RdbmsDbModelCoverageArchTest {
           "UsageMetricTUStatisticsDbModel", // TU statistics variant; covered by UsageMetricIT
           "UsageMetricTenantStatisticsDbModel", // tenant statistics variant; covered by
           // UsageMetricIT
-          "UsageMetricTUTenantStatisticsDbModel" // TU tenant statistics variant; covered by
+          "UsageMetricTUTenantStatisticsDbModel", // TU tenant statistics variant; covered by
           // UsageMetricIT
-          );
+          // Write-path only; AgentHistoryIT will be added with the read-path (#55271)
+          "AgentHistoryDbModel");
 
   // IT class simple names scanned from test-jars once at class-load time.
   static final Set<String> IT_SIMPLE_NAMES =

@@ -68,8 +68,9 @@ class RdbmsDbModelSortITCoverageArchTest {
           "CorrelatedMessageSubscriptionDbModel", // composite-key lookup, not a browseable list
           "HistoryDeletionDbModel", // transient internal records
           "SequenceFlowDbModel", // graph element, no ordering needed
-          "UsageMetricDbModel" // statistical aggregation
-          );
+          "UsageMetricDbModel", // statistical aggregation
+          // Write-path only; AgentHistorySortIT will be added with the read-path (#55271)
+          "AgentHistoryDbModel");
 
   // SortIT class simple names scanned from test-jars once at class-load time.
   static final Set<String> SORT_IT_SIMPLE_NAMES =
