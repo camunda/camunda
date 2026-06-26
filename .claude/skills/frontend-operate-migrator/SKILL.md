@@ -1,6 +1,6 @@
 ---
 name: frontend-operate-migrator
-description: Operate-specific context for migrating operate/client/ pages into webapp/client/apps/orchestration-cluster-webapp/. Always read frontend-migrator first — this skill adds Operate-specific overrides, the migration loop protocol, and page-by-page context.
+description: Use when migrating any Operate page from operate/client/ to the orchestration cluster webapp. Always read frontend-migrator first — this skill adds Operate-specific overrides, the migration loop protocol, and page-by-page context.
 ---
 
 # Operate Migration — Pod-Specific Context
