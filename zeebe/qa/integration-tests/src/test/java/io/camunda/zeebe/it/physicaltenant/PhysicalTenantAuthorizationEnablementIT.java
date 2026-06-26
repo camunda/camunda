@@ -81,11 +81,19 @@ final class PhysicalTenantAuthorizationEnablementIT {
 
   @BeforeAll
   static void startBroker() {
-    BROKER.start().awaitCompleteTopology();
+    BROKER.start();
     tenantOffAdmin =
         TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_OFF, ADMIN_PASSWORD).build();
     tenantOnAdmin =
         TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_ON, ADMIN_PASSWORD).build();
+    // gate readiness on per-PT API availability instead of cluster topology
+    for (final CamundaClient admin : new CamundaClient[] {tenantOffAdmin, tenantOnAdmin}) {
+      Awaitility.await("per-PT admin can authenticate")
+          .atMost(PROPAGATION_TIMEOUT)
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
+    }
   }
 
   @AfterAll

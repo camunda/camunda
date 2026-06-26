@@ -75,7 +75,7 @@ final class PhysicalTenantLogicalTenantScopingIT {
 
   @BeforeAll
   static void startBroker() {
-    BROKER.start().awaitCompleteTopology();
+    BROKER.start();
     tenantAAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_A, ADMIN_PASSWORD).build();
     tenantBAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_B, ADMIN_PASSWORD).build();
     // wait for per-PT admin users to become ready (avoids transient post-startup 401s)
