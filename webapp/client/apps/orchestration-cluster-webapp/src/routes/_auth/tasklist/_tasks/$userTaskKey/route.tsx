@@ -7,6 +7,7 @@
  */
 
 import {useEffect} from 'react';
+import {t} from 'i18next';
 import {createFileRoute, notFound, Outlet, useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
@@ -54,7 +55,7 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey')({
 			if (task.state === 'CANCELED') {
 				notificationsStore.displayNotification({
 					kind: 'info',
-					title: 'Process instance cancelled',
+					title: t('tasklist.processInstanceCancelledNotification'),
 					subtitle: `${task.processName ?? task.processDefinitionId} (${task.processInstanceKey})`,
 					isDismissable: true,
 				});
