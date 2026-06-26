@@ -255,8 +255,6 @@ public class CamundaProcessTestDefaultConfigurationTest {
   @TestPropertySource(
       properties = {
         "io.camunda.process.test.connectors-enabled=true",
-        "io.camunda.process.test.clock-reset-enabled=false",
-        "io.camunda.process.test.data-deletion-enabled=false",
         "io.camunda.process.test.camunda-docker-image-version=8.8.0-legacy",
         "io.camunda.process.test.camunda-docker-image-name=camunda/camunda-legacy"
       })
@@ -267,8 +265,8 @@ public class CamundaProcessTestDefaultConfigurationTest {
     @Test
     void shouldUseLegacyConfiguration() {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
-      assertThat(configuration.isClockResetEnabled()).isFalse();
-      assertThat(configuration.isDataDeletionEnabled()).isFalse();
+      assertThat(configuration.isClockResetEnabled()).isTrue();
+      assertThat(configuration.isDataDeletionEnabled()).isTrue();
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-legacy");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-legacy");
     }

@@ -250,7 +250,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     if (clockResetEnabled) {
       resetRuntimeClock();
     } else {
-      LOG.debug("Skipping runtime clock reset because it is disabled.");
+      LOG.warn("Skipping runtime clock reset because it is disabled.");
     }
 
     if (dataDeletionEnabled) {
