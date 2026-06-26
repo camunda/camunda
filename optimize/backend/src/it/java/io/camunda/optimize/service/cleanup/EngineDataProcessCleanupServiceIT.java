@@ -15,6 +15,7 @@ import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
@@ -219,10 +220,81 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
     assertProcessInstanceDataExists(instancesOfDefinitionWithHigherTtl);
   }
 
+  @Test
+  public void testCleanupModeVariables() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
+
+    final var now = LocalDateUtil.getCurrentDateTime();
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+
+    final List<ProcessInstanceDto> instancesToGetCleanedUp =
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup));
+    final ProcessInstanceDto unaffectedProcessInstanceForSameDefinition =
+        processInstanceWithEndDate(processDefinitionKey, now);
+
+    final List<ProcessInstanceDto> allInstances =
+        ImmutableList.<ProcessInstanceDto>builder()
+            .addAll(instancesToGetCleanedUp)
+            .add(unaffectedProcessInstanceForSameDefinition)
+            .build();
+
+    persistProcessInstances(allInstances);
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertVariablesEmptyInProcessInstances(instancesToGetCleanedUp);
+
+    assertProcessInstanceDataExists(List.of(unaffectedProcessInstanceForSameDefinition));
+  }
+
+  @Test
+  public void testCleanupModeVariables_specificKeyCleanupMode() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getCleanupConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(
+            processDefinitionKey,
+            ProcessDefinitionCleanupConfiguration.builder()
+                .cleanupMode(CleanupMode.VARIABLES)
+                .build());
+
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+    final List<ProcessInstanceDto> instancesOfDefinitionWithVariableMode =
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(processDefinitionKey, endDateForCleanup));
+
+    persistProcessInstances(instancesOfDefinitionWithVariableMode);
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertVariablesEmptyInProcessInstances(instancesOfDefinitionWithVariableMode);
+  }
+
   private void assertNoProcessInstanceDataExists(final List<ProcessInstanceDto> instances) {
     final var ids = instances.stream().map(ProcessInstanceDto::getProcessInstanceId).toList();
     final var instancesInDb = databaseIntegrationTestExtension.getProcessInstancesById(ids);
     assertThat(instancesInDb).isEmpty();
+  }
+
+  private void assertVariablesEmptyInProcessInstances(final List<ProcessInstanceDto> instances) {
+    final var ids = instances.stream().map(ProcessInstanceDto::getProcessInstanceId).toList();
+    assertThat(databaseIntegrationTestExtension.getProcessInstancesById(ids))
+        .hasSameSizeAs(instances)
+        .allMatch(processInstanceDto -> processInstanceDto.getVariables().isEmpty());
   }
 
   private void assertProcessInstanceDataExists(final List<ProcessInstanceDto> instances) {
@@ -273,6 +345,13 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
         .startDate(startDate)
         .endDate(endDate)
         .duration(duration)
+        .variables(
+            List.of(
+                SimpleProcessVariableDto.builder()
+                    .id("var1")
+                    .name("Variable1")
+                    .value(List.of("one"))
+                    .build()))
         .build();
   }
 }
