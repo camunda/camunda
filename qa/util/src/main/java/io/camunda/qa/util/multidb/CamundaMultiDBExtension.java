@@ -388,6 +388,13 @@ public class CamundaMultiDBExtension
 
     final var databaseType = getDatabaseType(context);
     physicalTenantId = getPhysicalTenant();
+    if (physicalTenantId == null) {
+      physicalTenantId =
+          AnnotationSupport.findAnnotation(testClass, MultiDbTest.class)
+              .map(MultiDbTest::physicalTenantId)
+              .filter(id -> !id.isBlank())
+              .orElse(null);
+    }
     if (physicalTenantId != null && !databaseType.storageType().isRdbms()) {
       throw new IllegalStateException(
           "Physical-tenant mode (%s) is only supported on RDBMS storage; got %s."

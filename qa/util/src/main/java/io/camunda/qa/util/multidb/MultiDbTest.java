@@ -105,4 +105,15 @@ public @interface MultiDbTest {
    *     database type as defined in the test configuration.
    */
   DatabaseType value() default DatabaseType.LOCAL;
+
+  /**
+   * Setting this is only for local testing purposes; setting the property {@link
+   * CamundaMultiDBExtension#TEST_INTEGRATION_PHYSICAL_TENANT} will override this. This is NOT a way
+   * to gate which tests run under a physical tenant; for that, use JUnit's {@code @DisabledIf}
+   * matching on the property.
+   *
+   * @return the physical tenant ID to run the test with. Empty string (default) means no physical
+   *     tenant is used.
+   */
+  String physicalTenantId() default "";
 }

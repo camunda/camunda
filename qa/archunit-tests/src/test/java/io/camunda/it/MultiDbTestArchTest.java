@@ -38,4 +38,24 @@ final class MultiDbTestArchTest {
               """
           @MultiDbTest should not specify explicit databases; that's only for local testing \
           purposes, please remove it before checking the code in""");
+
+  /**
+   * This test ensures that PRs cannot be merged if you have committed a {@link MultiDbTest} with an
+   * explicit physical tenant ID. Specifying a physical tenant ID is only intended for local testing
+   * purposes, but should not be part of the code base.
+   */
+  @ArchTest
+  static final ArchRule FORBID_MULTI_DB_SPECIFIED_PHYSICAL_TENANT =
+      classes()
+          .that()
+          .areAnnotatedWith(MultiDbTest.class)
+          .should()
+          .beAnnotatedWith(
+              DescribedPredicate.describe(
+                  "@MultiDbTest(physicalTenantId = ...)",
+                  annotation -> !annotation.hasExplicitlyDeclaredProperty("physicalTenantId")))
+          .as(
+              """
+          @MultiDbTest should not specify an explicit physicalTenantId; that's only for local \
+          testing purposes, please remove it before checking the code in""");
 }
