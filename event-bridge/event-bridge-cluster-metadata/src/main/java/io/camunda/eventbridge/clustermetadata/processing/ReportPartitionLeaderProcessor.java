@@ -81,7 +81,8 @@ public final class ReportPartitionLeaderProcessor implements TypedRecordProcesso
                   .setReplicationFactor(topic.replicationFactor())
                   .setStatus(TopicStatus.ACTIVE)
                   .setAssignment(topic.assignment())
-                  .setTarget(topic.target()));
+                  .setTarget(topic.target())
+                  .setPassive(topic.passive()));
     }
 
     writers

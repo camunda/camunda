@@ -28,18 +28,23 @@ import java.util.Map;
  * @param target in-flight reassignment goal (empty when none); the change-coordinator drives {@code
  *     assignment} toward this one safe Raft step at a time. Coordinator-internal — brokers ignore
  *     it and act only on {@code assignment}.
+ * @param passive in-flight non-voting members per partition (empty when none): replicas that have
+ *     passive-joined a partition's Raft group during a grow-first heal but have not yet been
+ *     promoted to voting. Coordinator-internal sequencing state (JOIN_PASSIVE → PROMOTE → LEAVE);
+ *     {@code assignment} holds only voting members, so brokers ignore {@code passive} too.
  */
 public record TopicMetadata(
     int partitionCount,
     int replicationFactor,
     TopicStatus status,
     Map<Integer, List<Integer>> assignment,
-    Map<Integer, List<Integer>> target) {
+    Map<Integer, List<Integer>> target,
+    Map<Integer, List<Integer>> passive) {
 
   /** Convenience for callers/tests that don't carry an assignment (defaults to empty). */
   public TopicMetadata(
       final int partitionCount, final int replicationFactor, final TopicStatus status) {
-    this(partitionCount, replicationFactor, status, Map.of(), Map.of());
+    this(partitionCount, replicationFactor, status, Map.of(), Map.of(), Map.of());
   }
 
   /** Convenience for callers that carry a committed assignment but no in-flight target. */
@@ -48,7 +53,17 @@ public record TopicMetadata(
       final int replicationFactor,
       final TopicStatus status,
       final Map<Integer, List<Integer>> assignment) {
-    this(partitionCount, replicationFactor, status, assignment, Map.of());
+    this(partitionCount, replicationFactor, status, assignment, Map.of(), Map.of());
+  }
+
+  /** Convenience for callers that carry an assignment + target but no in-flight passive set. */
+  public TopicMetadata(
+      final int partitionCount,
+      final int replicationFactor,
+      final TopicStatus status,
+      final Map<Integer, List<Integer>> assignment,
+      final Map<Integer, List<Integer>> target) {
+    this(partitionCount, replicationFactor, status, assignment, target, Map.of());
   }
 
   /** Whether a reassignment is in flight. */

@@ -546,20 +546,76 @@ final class PartitionBootstrapper {
       final int partitionId,
       final Set<MemberId> members,
       final TopologyManagerImpl topologyManager) {
-    startDataPartition(groupName, partitionId, members, topologyManager, false);
+    startDataPartition(groupName, partitionId, members, topologyManager, false, false);
   }
 
   /**
-   * Joins an already-running Raft group as a new replica at runtime (reassignment add). Same setup
-   * as {@link #provisionDataPartition} but the Raft server joins the existing cluster (catching up
-   * via the leader) instead of bootstrapping a new one.
+   * Joins an already-running Raft group as a new voting replica at runtime (reassignment add). Same
+   * setup as {@link #provisionDataPartition} but the Raft server joins the existing cluster
+   * (catching up via the leader) instead of bootstrapping a new one.
    */
-  java.util.concurrent.CompletableFuture<Void> joinDataPartition(
+  CompletableFuture<Void> joinDataPartition(
       final String groupName,
       final int partitionId,
       final Set<MemberId> members,
       final TopologyManagerImpl topologyManager) {
-    return startDataPartition(groupName, partitionId, members, topologyManager, true);
+    return startDataPartition(groupName, partitionId, members, topologyManager, true, false);
+  }
+
+  /**
+   * Joins an already-running Raft group as a non-voting PASSIVE observer (grow-first heal step 1):
+   * it replicates and catches up without affecting quorum, to be promoted to voting later by the
+   * partition leader.
+   */
+  CompletableFuture<Void> joinDataPartitionAsPassive(
+      final String groupName,
+      final int partitionId,
+      final Set<MemberId> members,
+      final TopologyManagerImpl topologyManager) {
+    return startDataPartition(groupName, partitionId, members, topologyManager, true, true);
+  }
+
+  /**
+   * Promotes a (caught-up) passive member of a data partition's Raft group to a voting replica,
+   * driven by this broker as the partition leader (grow-first heal step 2). The promotion is
+   * catch-up gated inside Atomix.
+   */
+  CompletableFuture<Void> promoteMemberInDataPartition(
+      final String groupName, final int partitionId, final int memberNodeId) {
+    final var provisioned = dataPartitions.get(key(groupName, partitionId));
+    if (provisioned == null) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException(
+              "Cannot promote member "
+                  + memberNodeId
+                  + " in "
+                  + groupName
+                  + "/"
+                  + partitionId
+                  + ": partition not hosted on this broker"));
+    }
+    return provisioned
+        .created()
+        .raftPartition()
+        .promoteMember(MemberId.from("broker-" + memberNodeId))
+        .whenComplete(
+            (rp, error) -> {
+              if (error != null) {
+                LOG.warn(
+                    "Error promoting member {} in raft partition {}/{}",
+                    memberNodeId,
+                    groupName,
+                    partitionId,
+                    error);
+              } else {
+                LOG.info(
+                    "Promoted member {} in raft partition {}/{}",
+                    memberNodeId,
+                    groupName,
+                    partitionId);
+              }
+            })
+        .thenApply(rp -> null);
   }
 
   /** Whether this broker currently runs a replica of {@code (groupName, partitionId)}. */
@@ -580,11 +636,10 @@ final class PartitionBootstrapper {
   }
 
   /** Leaves and tears down a runtime replica (reassignment remove). Idempotent. */
-  java.util.concurrent.CompletableFuture<Void> leaveDataPartition(
-      final String groupName, final int partitionId) {
+  CompletableFuture<Void> leaveDataPartition(final String groupName, final int partitionId) {
     final var provisioned = dataPartitions.remove(key(groupName, partitionId));
     if (provisioned == null) {
-      return java.util.concurrent.CompletableFuture.completedFuture(null);
+      return CompletableFuture.completedFuture(null);
     }
     lifecycles.remove(provisioned.lifecycle());
     createdPartitions.remove(provisioned.created());
@@ -617,11 +672,11 @@ final class PartitionBootstrapper {
    * used to evict a dead/fenced member that cannot leave on its own. This broker keeps its own
    * replica running; only the named member is removed from the group's configuration.
    */
-  java.util.concurrent.CompletableFuture<Void> removeMemberFromDataPartition(
+  CompletableFuture<Void> removeMemberFromDataPartition(
       final String groupName, final int partitionId, final int memberNodeId) {
     final var provisioned = dataPartitions.get(key(groupName, partitionId));
     if (provisioned == null) {
-      return java.util.concurrent.CompletableFuture.failedFuture(
+      return CompletableFuture.failedFuture(
           new IllegalStateException(
               "Cannot remove member "
                   + memberNodeId
@@ -655,15 +710,16 @@ final class PartitionBootstrapper {
         .thenApply(rp -> null);
   }
 
-  private java.util.concurrent.CompletableFuture<Void> startDataPartition(
+  private CompletableFuture<Void> startDataPartition(
       final String groupName,
       final int partitionId,
       final Set<MemberId> members,
       final TopologyManagerImpl topologyManager,
-      final boolean join) {
+      final boolean join,
+      final boolean passive) {
 
     if (isRunning(groupName, partitionId)) {
-      return java.util.concurrent.CompletableFuture.completedFuture(null); // idempotent
+      return CompletableFuture.completedFuture(null); // idempotent
     }
 
     // 1. Create raft-level components
@@ -723,10 +779,14 @@ final class PartitionBootstrapper {
     // leader-epoch the lifecycle reports to the metadata group on becoming leader.
     created.raftPartition().addRoleChangeListener(lifecycle::onRoleChange);
 
-    // 4. Start raft — bootstrap a new group, or join an existing one for a reassignment add.
+    // 4. Start raft — bootstrap a new group, or join an existing one for a reassignment add. A
+    // grow-first heal joins as a non-voting PASSIVE observer first (it catches up without affecting
+    // quorum) and is promoted to voting later by the partition leader.
     final var started =
         join
-            ? created.raftPartition().join(managementService, created.snapshotStore())
+            ? (passive
+                ? created.raftPartition().joinAsPassive(managementService, created.snapshotStore())
+                : created.raftPartition().join(managementService, created.snapshotStore()))
             : created.raftPartition().bootstrap(managementService, created.snapshotStore());
     final var lifecycleRef = lifecycle;
     final var compactorRef = retentionCompactor;

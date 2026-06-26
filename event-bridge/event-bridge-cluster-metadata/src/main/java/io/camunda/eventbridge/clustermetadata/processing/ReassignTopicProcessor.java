@@ -73,7 +73,8 @@ public final class ReassignTopicProcessor implements TypedRecordProcessor<TopicR
             .setReplicationFactor(cmd.getReplicationFactor())
             .setStatus(meta.status())
             .setAssignment(meta.assignment())
-            .setTarget(target);
+            .setTarget(target)
+            .setPassive(meta.passive());
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_REGISTERED, event);
     writers
         .response()

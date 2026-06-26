@@ -41,6 +41,11 @@ public final class TopicQueryService {
     return state().get(name);
   }
 
+  /** The node id of {@code partition}'s recorded leader, or {@code -1} if none is recorded. */
+  public int leaderNode(final String name, final int partition) {
+    return state().leaderNode(name, partition);
+  }
+
   private TopicState state() {
     if (state == null) {
       state = new DbTopicState(zeebeDb, zeebeDb.createContext());

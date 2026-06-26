@@ -38,7 +38,8 @@ public final class TopicRegisterProcessor implements TypedRecordProcessor<TopicR
             .setReplicationFactor(cmd.getReplicationFactor())
             .setStatus(TopicMetadata.TopicStatus.valueOf(cmd.getStatus()))
             .setAssignment(cmd.getAssignment())
-            .setTarget(cmd.getTarget());
+            .setTarget(cmd.getTarget())
+            .setPassive(cmd.getPassive());
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_REGISTERED, event);
   }
 }

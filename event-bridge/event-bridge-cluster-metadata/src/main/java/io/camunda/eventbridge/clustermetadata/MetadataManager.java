@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.clustermetadata;
 
+import io.camunda.eventbridge.clustermetadata.reconfig.ReassignmentStrategy;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
-import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationOp.Kind;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
 import io.camunda.eventbridge.clustermetadata.state.broker.BrokerQueryService;
@@ -19,6 +19,7 @@ import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.protocol.request.coordination.ReportPartitionLeaderRequest;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,10 @@ public class MetadataManager extends Actor {
 
   // Change-coordinator kickoff/retry/anti-entropy tick.
   private static final Duration RECONFIG_INTERVAL = Duration.ofSeconds(1);
+
+  // How a dead member is replaced. GROW_FIRST (passive-join the replacement, promote it, then
+  // remove the dead member) preserves data copies and survives a false-positive fence.
+  private static final ReassignmentStrategy STRATEGY = ReassignmentStrategy.GROW_FIRST;
 
   private final int partitionId;
   private final MetadataStream metadataStream;
@@ -181,31 +186,70 @@ public class MetadataManager extends Actor {
       return;
     }
     final var committed = meta.assignment();
+    final var passive = meta.passive();
     final var target = meta.target();
     final var liveMembers = Set.copyOf(brokers.activeBrokers());
-    final var op = ReconfigurationPlanner.nextOp(name, committed, target, liveMembers);
+    final var op =
+        ReconfigurationPlanner.nextOp(name, committed, passive, target, liveMembers, STRATEGY);
     if (op.isEmpty()) {
       LOG.info("Reassignment of topic {} complete", name);
       metadataStream.registerTopic(
           name,
           new TopicMetadata(
-              meta.partitionCount(), meta.replicationFactor(), meta.status(), committed, Map.of()));
+              meta.partitionCount(),
+              meta.replicationFactor(),
+              meta.status(),
+              committed,
+              Map.of(),
+              Map.of()));
       reconfiguring.remove(name);
       return;
     }
 
     final var step = op.get();
-    final var advanced = ReconfigurationPlanner.apply(committed, step);
-    final var partitionMembers = advanced.getOrDefault(step.partitionId(), List.of());
-    // Recipient: the joiner for a JOIN; the member itself for a live LEAVE (self-leave); a
-    // surviving
-    // replica for a dead LEAVE — it drives the leader-side removal since the dead member can't act.
+    final var partitionId = step.partitionId();
+    final var advancedCommitted = ReconfigurationPlanner.apply(committed, step);
+    final var advancedPassive = ReconfigurationPlanner.applyPassive(passive, step);
+
+    // Resolve the broker the step is sent to (see ReconfigurationExecutor#execute) and the member
+    // set a joiner configures its Raft partition with.
+    final List<Integer> partitionMembers;
     final int recipient;
-    if (step.kind() == Kind.JOIN || liveMembers.contains(step.member())) {
-      recipient = step.member();
-    } else {
-      recipient = partitionMembers.stream().findFirst().orElse(step.member());
+    switch (step.kind()) {
+      case JOIN, JOIN_PASSIVE -> {
+        // the joiner configures its group with the current voting members plus itself
+        final var members = new ArrayList<>(committed.getOrDefault(partitionId, List.of()));
+        if (!members.contains(step.member())) {
+          members.add(step.member());
+        }
+        partitionMembers = members;
+        recipient = step.member();
+      }
+      case PROMOTE -> {
+        // promotion is leader-driven; route to the partition's current leader
+        final var leader = topics.leaderNode(name, partitionId);
+        if (leader < 0) {
+          LOG.debug(
+              "No known leader for {}/{} to promote member {}; retrying on the next tick",
+              name,
+              partitionId,
+              step.member());
+          reconfiguring.remove(name);
+          return;
+        }
+        partitionMembers = committed.getOrDefault(partitionId, List.of());
+        recipient = leader;
+      }
+      default -> { // LEAVE
+        partitionMembers = advancedCommitted.getOrDefault(partitionId, List.of());
+        // a live member self-leaves; a dead member is removed by a surviving replica
+        recipient =
+            liveMembers.contains(step.member())
+                ? step.member()
+                : partitionMembers.stream().findFirst().orElse(step.member());
+      }
     }
+
     reconfigurationExecutor
         .execute(step, recipient, partitionMembers, meta.partitionCount())
         .whenComplete(
@@ -227,8 +271,9 @@ public class MetadataManager extends Actor {
                               meta.partitionCount(),
                               meta.replicationFactor(),
                               meta.status(),
-                              advanced,
-                              target));
+                              advancedCommitted,
+                              target,
+                              advancedPassive));
                       driveReconfiguration(name);
                     }));
   }

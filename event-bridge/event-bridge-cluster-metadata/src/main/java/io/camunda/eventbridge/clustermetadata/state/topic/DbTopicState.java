@@ -97,6 +97,17 @@ public final class DbTopicState implements MutableTopicState {
   }
 
   @Override
+  public int leaderNode(final String name, final int partition) {
+    topicName.wrapString(name);
+    final var stored = leaderColumnFamily.get(topicName);
+    if (stored == null) {
+      return -1;
+    }
+    final var leader = stored.toMap().get(partition);
+    return leader == null ? -1 : (int) leader[0];
+  }
+
+  @Override
   public void recordPartitionLeader(
       final String name, final int partition, final int node, final long term) {
     topicName.wrapString(name);

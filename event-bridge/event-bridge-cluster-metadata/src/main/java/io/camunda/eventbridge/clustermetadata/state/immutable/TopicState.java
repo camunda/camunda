@@ -31,4 +31,7 @@ public interface TopicState {
 
   /** The Raft term of {@code partition}'s recorded leader, or {@code -1} if none is recorded. */
   long leaderTerm(String topic, int partition);
+
+  /** The node id of {@code partition}'s recorded leader, or {@code -1} if none is recorded. */
+  int leaderNode(String topic, int partition);
 }

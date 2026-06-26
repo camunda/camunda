@@ -44,6 +44,9 @@ public final class TopicRecord extends UnifiedRecordValue {
   // In-flight reassignment target (same shape); empty when no reconfiguration is in progress.
   private final ArrayProperty<PartitionReplicas> targetProp =
       new ArrayProperty<>("target", PartitionReplicas::new);
+  // In-flight non-voting members per partition (grow-first heal sequencing); empty when none.
+  private final ArrayProperty<PartitionReplicas> passiveProp =
+      new ArrayProperty<>("passive", PartitionReplicas::new);
 
   // Leadership report payload (only meaningful for REPORT_PARTITION_LEADER / PARTITION_LEADER_
   // REPORTED): one partition's elected Raft leader node id and term.
@@ -52,7 +55,7 @@ public final class TopicRecord extends UnifiedRecordValue {
   private final LongProperty leaderTermProp = new LongProperty("leaderTerm", -1L);
 
   public TopicRecord() {
-    super(10);
+    super(11);
     declareProperty(nameProp)
         .declareProperty(opProp)
         .declareProperty(partitionCountProp)
@@ -60,6 +63,7 @@ public final class TopicRecord extends UnifiedRecordValue {
         .declareProperty(statusProp)
         .declareProperty(assignmentProp)
         .declareProperty(targetProp)
+        .declareProperty(passiveProp)
         .declareProperty(partitionIdProp)
         .declareProperty(leaderNodeProp)
         .declareProperty(leaderTermProp);
@@ -148,6 +152,16 @@ public final class TopicRecord extends UnifiedRecordValue {
     return this;
   }
 
+  /** The in-flight non-voting members as {@code partition → replica node ids} (empty when none). */
+  public Map<Integer, List<Integer>> getPassive() {
+    return PartitionReplicas.read(passiveProp);
+  }
+
+  public TopicRecord setPassive(final Map<Integer, List<Integer>> passive) {
+    PartitionReplicas.write(passiveProp, passive);
+    return this;
+  }
+
   public int getPartitionId() {
     return partitionIdProp.getValue();
   }
@@ -182,6 +196,7 @@ public final class TopicRecord extends UnifiedRecordValue {
         getReplicationFactor(),
         TopicMetadata.TopicStatus.valueOf(getStatus()),
         getAssignment(),
-        getTarget());
+        getTarget(),
+        getPassive());
   }
 }

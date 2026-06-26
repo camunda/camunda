@@ -31,14 +31,18 @@ public final class PersistedTopic extends UnpackedObject implements DbValue {
       new ArrayProperty<>("assignment", PartitionReplicas::new);
   private final ArrayProperty<PartitionReplicas> targetProp =
       new ArrayProperty<>("target", PartitionReplicas::new);
+  // In-flight non-voting members per partition (grow-first heal sequencing); empty when none.
+  private final ArrayProperty<PartitionReplicas> passiveProp =
+      new ArrayProperty<>("passive", PartitionReplicas::new);
 
   public PersistedTopic() {
-    super(5);
+    super(6);
     declareProperty(partitionCountProp)
         .declareProperty(replicationFactorProp)
         .declareProperty(statusProp)
         .declareProperty(assignmentProp)
-        .declareProperty(targetProp);
+        .declareProperty(targetProp)
+        .declareProperty(passiveProp);
   }
 
   /** Wraps a {@link TopicMetadata} for storage. */
@@ -48,6 +52,7 @@ public final class PersistedTopic extends UnpackedObject implements DbValue {
     statusProp.setValue(metadata.status());
     PartitionReplicas.write(assignmentProp, metadata.assignment());
     PartitionReplicas.write(targetProp, metadata.target());
+    PartitionReplicas.write(passiveProp, metadata.passive());
     return this;
   }
 
@@ -57,6 +62,7 @@ public final class PersistedTopic extends UnpackedObject implements DbValue {
         replicationFactorProp.getValue(),
         statusProp.getValue(),
         PartitionReplicas.read(assignmentProp),
-        PartitionReplicas.read(targetProp));
+        PartitionReplicas.read(targetProp),
+        PartitionReplicas.read(passiveProp));
   }
 }

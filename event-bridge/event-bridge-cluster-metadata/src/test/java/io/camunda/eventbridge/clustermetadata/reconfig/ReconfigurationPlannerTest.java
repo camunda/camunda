@@ -97,6 +97,34 @@ final class ReconfigurationPlannerTest {
   }
 
   @Test
+  void shouldGrowFirstForDeadMemberPassiveJoinThenPromoteThenRemove() {
+    // given partition 1 healing off dead broker 3 with grow-first: {2,1,3} -> {2,1,0}
+    final var target = Map.of(1, List.of(2, 1, 0));
+    var committed = Map.of(1, List.of(2, 1, 3));
+    var passive = Map.<Integer, List<Integer>>of();
+    final var live = Set.of(0, 1, 2); // broker 3 is dead
+
+    // when applying steps until none remain
+    final var kinds = new java.util.ArrayList<Kind>();
+    for (var guard = 0; guard < 100; guard++) {
+      final var op =
+          ReconfigurationPlanner.nextOp(
+              "t", committed, passive, target, live, ReassignmentStrategy.GROW_FIRST);
+      if (op.isEmpty()) {
+        break;
+      }
+      kinds.add(op.get().kind());
+      committed = ReconfigurationPlanner.apply(committed, op.get());
+      passive = ReconfigurationPlanner.applyPassive(passive, op.get());
+    }
+
+    // then it passive-joins the spare, promotes it, then removes the dead member — and converges
+    assertThat(kinds).containsExactly(Kind.JOIN_PASSIVE, Kind.PROMOTE, Kind.LEAVE);
+    assertThat(committed).isEqualTo(target);
+    assertThat(passive).isEmpty();
+  }
+
+  @Test
   void shouldGrowBeforeShrinkWhenRemovedMemberIsLive() {
     // given a live reassignment {0,1} -> {1,2}, all brokers live — grow-before-shrink preserved
     final var committed = Map.of(1, List.of(0, 1));

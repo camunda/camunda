@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -101,23 +102,58 @@ final class TopicReconciler {
   }
 
   /** Adds a single replica of a running topic partition to this broker (a reassignment step). */
-  synchronized java.util.concurrent.CompletableFuture<Void> join(
+  synchronized CompletableFuture<Void> join(
       final String topic,
       final int partitionId,
       final List<Integer> members,
       final int partitionCount) {
     final var groupName = PartitionFactory.topicGroupName(topic);
     if (partitionBootstrapper.isRunning(groupName, partitionId)) {
-      return java.util.concurrent.CompletableFuture.completedFuture(null);
+      return CompletableFuture.completedFuture(null);
     }
     LOG.info("Joining topic {} partition {} as member {}", topic, partitionId, localNodeId);
     return partitionBootstrapper.joinDataPartition(
         groupName, partitionId, memberSet(members), topologyFor(topic, partitionCount));
   }
 
+  /**
+   * Joins a running topic partition as a non-voting PASSIVE observer (grow-first heal step 1): this
+   * broker catches up without affecting the group's quorum, to be promoted later by the leader.
+   */
+  synchronized CompletableFuture<Void> joinPassive(
+      final String topic,
+      final int partitionId,
+      final List<Integer> members,
+      final int partitionCount) {
+    final var groupName = PartitionFactory.topicGroupName(topic);
+    if (partitionBootstrapper.isRunning(groupName, partitionId)) {
+      return CompletableFuture.completedFuture(null);
+    }
+    LOG.info(
+        "Passive-joining topic {} partition {} as observer {}", topic, partitionId, localNodeId);
+    return partitionBootstrapper.joinDataPartitionAsPassive(
+        groupName, partitionId, memberSet(members), topologyFor(topic, partitionCount));
+  }
+
+  /**
+   * Promotes a caught-up passive member of a topic partition to a voting replica, driven by this
+   * broker as the partition leader (grow-first heal step 2).
+   */
+  synchronized CompletableFuture<Void> promote(
+      final String topic, final int partitionId, final int memberToPromote) {
+    final var groupName = PartitionFactory.topicGroupName(topic);
+    LOG.info(
+        "Promoting member {} in topic {} partition {} (driven by {})",
+        memberToPromote,
+        topic,
+        partitionId,
+        localNodeId);
+    return partitionBootstrapper.promoteMemberInDataPartition(
+        groupName, partitionId, memberToPromote);
+  }
+
   /** Removes this broker's replica of a topic partition (a reassignment step). */
-  synchronized java.util.concurrent.CompletableFuture<Void> leave(
-      final String topic, final int partitionId) {
+  synchronized CompletableFuture<Void> leave(final String topic, final int partitionId) {
     final var groupName = PartitionFactory.topicGroupName(topic);
     LOG.info("Leaving topic {} partition {} as member {}", topic, partitionId, localNodeId);
     return partitionBootstrapper.leaveDataPartition(groupName, partitionId);
@@ -128,7 +164,7 @@ final class TopicReconciler {
    * this surviving replica. Used to evict a dead/fenced member that cannot leave on its own: this
    * broker drives the leader-side removal without tearing down its own replica.
    */
-  synchronized java.util.concurrent.CompletableFuture<Void> removeMember(
+  synchronized CompletableFuture<Void> removeMember(
       final String topic, final int partitionId, final int memberToRemove) {
     final var groupName = PartitionFactory.topicGroupName(topic);
     LOG.info(

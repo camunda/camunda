@@ -14,7 +14,6 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
-import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationOp.Kind;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
@@ -28,6 +27,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -218,18 +218,29 @@ public final class BrokerBootstrap {
    *       tearing down its own replica.
    * </ul>
    */
-  private static java.util.concurrent.CompletableFuture<Void> reconfigure(
+  private static CompletableFuture<Void> reconfigure(
       final TopicReconciler topicReconciler,
       final MemberId localMemberId,
       final ReconfigurationCommand cmd) {
-    if (cmd.kind() == Kind.JOIN) {
-      return topicReconciler.join(
-          cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
+    switch (cmd.kind()) {
+      case JOIN -> {
+        return topicReconciler.join(
+            cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
+      }
+      case JOIN_PASSIVE -> {
+        return topicReconciler.joinPassive(
+            cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
+      }
+      case PROMOTE -> {
+        return topicReconciler.promote(cmd.topic(), cmd.partitionId(), cmd.member());
+      }
+      default -> { // LEAVE
+        if (localMemberId.equals(MemberId.from("broker-" + cmd.member()))) {
+          return topicReconciler.leave(cmd.topic(), cmd.partitionId());
+        }
+        return topicReconciler.removeMember(cmd.topic(), cmd.partitionId(), cmd.member());
+      }
     }
-    if (localMemberId.equals(MemberId.from("broker-" + cmd.member()))) {
-      return topicReconciler.leave(cmd.topic(), cmd.partitionId());
-    }
-    return topicReconciler.removeMember(cmd.topic(), cmd.partitionId(), cmd.member());
   }
 
   /**
