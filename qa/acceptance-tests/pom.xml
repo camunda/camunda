@@ -861,7 +861,6 @@
                 <exclude>**/*$*.java</exclude>
                 <!-- Audit log entries are not recorded in the per-tenant store. -->
                 <exclude>**/auditlog/*.java</exclude>
-                <exclude>**/mcp/McpAuditLogIT.java</exclude>
                 <!-- Batch / cluster purge operations are not routed to the per-tenant store. -->
                 <exclude>**/ClusterPurgeMultiDbIT.java</exclude>
                 <exclude>**/ClusterMultiplePartitionsBatchOperationIT.java</exclude>

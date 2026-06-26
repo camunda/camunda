@@ -10,6 +10,7 @@ package io.camunda.it.mcp;
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static io.camunda.it.mcp.McpServerTest.createBasicAuthCustomizer;
 import static io.camunda.it.mcp.McpServerTest.createMcpClient;
+import static io.camunda.it.mcp.McpServerTest.createPhysicalTenantMcpClient;
 import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessage;
 import static io.camunda.it.util.TestHelper.waitForAuditLogEntries;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
@@ -21,6 +22,7 @@ import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.configuration.ExtensionProperties;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -62,12 +64,16 @@ public class McpAuditLogIT {
 
     waitForMessageSubscriptions(client, f -> f.toolName(TOOL_NAME), 1);
 
-    // start one instance via MCP tool call (inboundChannelType=MCP)
+    // start one instance via MCP tool call (inboundChannelType=MCP). Under physical-tenant mode
+    // the process was deployed to the per-tenant store, so the MCP client must target the
+    // tenant-scoped endpoint to discover the tool.
+    final var physicalTenant = CamundaMultiDBExtension.getPhysicalTenant();
+    final var authCustomizer = createBasicAuthCustomizer(DEFAULT_USERNAME, DEFAULT_PASSWORD);
     try (final var mcpClient =
-        createMcpClient(
-            "processes",
-            TEST_INSTANCE,
-            createBasicAuthCustomizer(DEFAULT_USERNAME, DEFAULT_PASSWORD))) {
+        physicalTenant != null
+            ? createPhysicalTenantMcpClient(
+                "physical-tenants/" + physicalTenant + "/processes", TEST_INSTANCE, authCustomizer)
+            : createMcpClient("processes", TEST_INSTANCE, authCustomizer)) {
       final var fullToolName =
           mcpClient.listTools().tools().stream()
               .map(Tool::name)
