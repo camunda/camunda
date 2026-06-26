@@ -89,7 +89,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 									onChange={({selectedItem}) => {
 										void navigate({
 											to: '.',
-											search: (prev) => ({...prev, process: selectedItem?.id, version: undefined, elementId: undefined}),
+											search: (prev) => ({
+												...prev,
+												process: selectedItem?.id,
+												version: undefined,
+												elementId: undefined,
+											}),
 										});
 									}}
 								/>
@@ -114,7 +119,7 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 									titleText="Element"
 									placeholder="Search by Process Element"
 									items={[]}
-									itemToString={(item) => item?.label ?? ''}
+									itemToString={(item: {label?: string} | null) => item?.label ?? ''}
 									selectedItem={null}
 									disabled={!process}
 									size="sm"
