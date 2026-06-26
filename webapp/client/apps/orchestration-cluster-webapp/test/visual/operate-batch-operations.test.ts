@@ -28,9 +28,7 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(
-				createSystemConfiguration({components: {active: ['operate']}}),
-			),
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
