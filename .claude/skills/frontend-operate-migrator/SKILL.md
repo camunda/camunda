@@ -14,8 +14,8 @@ description: Operate-specific context for migrating operate/client/ pages into w
 ## Code conventions
 
 **TypeScript:**
-- Declarative and functional — no `let`, no mutable patterns. Use `const`, `map`/`filter`/`reduce`.
-- One file, one export. The file name must match the exported name exactly (`ProcessesPage.tsx` exports `ProcessesPage`).
+- Prefer declarative and functional — `const`, `map`/`filter`/`reduce` over mutable patterns. Local `let`/`for` is fine for tight data aggregation where it reads clearer (see `useRunningInstancesCount.ts`).
+- One file, one primary export; the file name matches it (`ProcessesPage.tsx` exports `ProcessesPage`). Exception: a colocated query module may export both its `queryOptions` and its `use*` hook (see the shared HTTP layer reference below).
 
 **Components:**
 - Carbon Design System first, custom JSX last resort.
@@ -156,7 +156,7 @@ Run from `webapp/client` unless noted. Gates 1–6 are local; 7–9 gate the PR 
 3. **Typecheck** — `cd apps/orchestration-cluster-webapp && npm run typecheck`
 4. **Unit** — `cd apps/orchestration-cluster-webapp && npm run test:unit`
 5. **Build** — `npm run build -w @camunda/orchestration-cluster-webapp`
-6. **Knip** — `cd apps/orchestration-cluster-webapp && npm run knip`
+6. **Knip** — `cd apps/orchestration-cluster-webapp && npm run lint:knip`
 7. **Integration** — `cd apps/orchestration-cluster-webapp && npx playwright test --project=integration test/integration/`
 8. **a11y** — `cd apps/orchestration-cluster-webapp && npx playwright test --project=a11y-light --project=a11y-dark`
 9. **Visual** — CI is authoritative; never regenerate snapshots locally.
@@ -208,7 +208,7 @@ Every new failure mode becomes a rule, not a one-off fix: encode it in this skil
 
 Run **after the edit tier, scoped to the just-ported component** — not across the whole `operate/` dir, or you flag not-yet-ported features.
 
-**Deterministic (script, always trusted):**
+**Deterministic (script, always trusted):** run from the **repo root** (the script and its default locales path are repo-root relative — not `webapp/client`):
 
 ```bash
 node .claude/skills/frontend-operate-migrator/scripts/fidelity.mjs \
