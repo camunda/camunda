@@ -71,42 +71,32 @@ public final class PhysicalTenantDocumentConfigurations {
 
     rootAws.forEach(
         (storeId, rootStore) -> {
-          if (doc.getAws().containsKey(storeId)) {
-            binder.bind(ptPrefix + ".aws." + storeId, Bindable.ofInstance(rootStore));
-            doc.getAws().put(storeId, rootStore);
-          }
+          binder.bind(ptPrefix + ".aws." + storeId, Bindable.ofInstance(rootStore));
+          doc.getAws().put(storeId, rootStore);
         });
 
     rootGcp.forEach(
         (storeId, rootStore) -> {
-          if (doc.getGcp().containsKey(storeId)) {
-            binder.bind(ptPrefix + ".gcp." + storeId, Bindable.ofInstance(rootStore));
-            doc.getGcp().put(storeId, rootStore);
-          }
+          binder.bind(ptPrefix + ".gcp." + storeId, Bindable.ofInstance(rootStore));
+          doc.getGcp().put(storeId, rootStore);
         });
 
     rootAzure.forEach(
         (storeId, rootStore) -> {
-          if (doc.getAzure().containsKey(storeId)) {
-            binder.bind(ptPrefix + ".azure." + storeId, Bindable.ofInstance(rootStore));
-            doc.getAzure().put(storeId, rootStore);
-          }
+          binder.bind(ptPrefix + ".azure." + storeId, Bindable.ofInstance(rootStore));
+          doc.getAzure().put(storeId, rootStore);
         });
 
     rootLocal.forEach(
         (storeId, rootStore) -> {
-          if (doc.getLocal().containsKey(storeId)) {
-            binder.bind(ptPrefix + ".local." + storeId, Bindable.ofInstance(rootStore));
-            doc.getLocal().put(storeId, rootStore);
-          }
+          binder.bind(ptPrefix + ".local." + storeId, Bindable.ofInstance(rootStore));
+          doc.getLocal().put(storeId, rootStore);
         });
 
     rootInMemory.forEach(
         (storeId, rootStore) -> {
-          if (doc.getInMemory().containsKey(storeId)) {
-            binder.bind(ptPrefix + ".in-memory." + storeId, Bindable.ofInstance(rootStore));
-            doc.getInMemory().put(storeId, rootStore);
-          }
+          binder.bind(ptPrefix + ".in-memory." + storeId, Bindable.ofInstance(rootStore));
+          doc.getInMemory().put(storeId, rootStore);
         });
   }
 
