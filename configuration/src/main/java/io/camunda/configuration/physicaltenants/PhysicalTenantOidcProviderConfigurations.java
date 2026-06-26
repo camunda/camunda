@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.util.LinkedHashMap;
@@ -33,9 +34,9 @@ import org.springframework.core.env.Environment;
 @NullMarked
 public final class PhysicalTenantOidcProviderConfigurations {
 
-  private static final String ROOT_PREFIX = "camunda.security.authentication";
+  private static final String ROOT_PREFIX = Camunda.PREFIX + ".security.authentication";
   private static final String PT_PREFIX_TEMPLATE =
-      "camunda.physical-tenants.%s.security.authentication";
+      Camunda.PREFIX + ".physical-tenants.%s.security.authentication";
 
   private PhysicalTenantOidcProviderConfigurations() {}
 
