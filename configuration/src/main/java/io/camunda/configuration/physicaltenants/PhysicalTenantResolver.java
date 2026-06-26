@@ -72,8 +72,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       List.of(
           new SecondaryStorageIsolationValidation(),
           new SecondaryStorageTypeHomogeneityValidation(),
-          new DocumentStoreIsolationValidation(),
-          new PhysicalTenantDocumentAssignedValidation());
+          new DocumentStoreIsolationValidation());
 
   private final Map<String, Camunda> resolved;
 
@@ -91,6 +90,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantOverridePolicyValidation.validate(environment);
     PhysicalTenantRequiredOverrideValidation.validate(environment);
     PhysicalTenantAssignedProvidersValidation.validate(environment);
+    PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
     for (final String physicalTenantId : physicalTenantIds) {
@@ -113,7 +113,9 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
       resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
-    CROSS_TENANT_VALIDATIONS.forEach(validation -> validation.validate(resolvedPhysicalTenants));
+    CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
+    PhysicalTenantDocumentAssignedValidation.validate(
+        environment, resolvedPhysicalTenants, physicalTenantIds);
     return new PhysicalTenantResolver(resolvedPhysicalTenants);
   }
 

@@ -17,23 +17,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.Environment;
 
 /**
- * Cross-tenant rule: every non-default physical tenant that has document stores in its resolved
- * catalog must declare a non-empty {@code document.assigned} list referencing only known store ids.
- * Without it a tenant would silently inherit the full root catalog, including stores intended for
- * other tenants. The {@code default} tenant and tenants with no stores are exempt.
+ * Validates {@code document.assigned} per physical tenant at startup. {@code assigned} is read from
+ * the environment via {@link Binder} — not a field on the {@link Document} POJO.
+ *
+ * <p>The synthesized {@code default} (absent from {@code camunda.physical-tenants.*}) is exempt; an
+ * explicitly declared {@code default} is validated like any other tenant.
  */
 @NullMarked
-class PhysicalTenantDocumentAssignedValidation implements CrossTenantValidation {
+final class PhysicalTenantDocumentAssignedValidation {
 
-  @Override
-  public void validate(final Map<String, Camunda> resolvedByTenant) {
+  private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
+
+  private PhysicalTenantDocumentAssignedValidation() {}
+
+  static void validate(
+      final Environment environment,
+      final Map<String, Camunda> resolvedByTenant,
+      final Set<String> explicitlyDeclared) {
+    final Binder binder = Binder.get(environment);
     final List<String> errors = new ArrayList<>();
 
     resolvedByTenant.forEach(
         (tenantId, camunda) -> {
-          if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
+          if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+              && !explicitlyDeclared.contains(tenantId)) {
+            // synthesized default is exempt; explicitly declared default is validated like any
+            // other
             return;
           }
 
@@ -47,24 +62,23 @@ class PhysicalTenantDocumentAssignedValidation implements CrossTenantValidation 
           knownStoreIds.addAll(doc.getInMemory().keySet());
 
           if (knownStoreIds.isEmpty()) {
-            // no document stores in catalog — nothing to assign, skip
             return;
           }
 
-          final List<String> assigned = doc.getAssigned();
+          final List<String> assigned = bindAssigned(binder, tenantId);
 
-          if (assigned.isEmpty()) {
+          if (assigned == null || assigned.isEmpty()) {
             errors.add(
                 String.format(
-                    "non-default physical tenant '%s' must declare a non-empty "
+                    "physical tenant '%s' must declare a non-empty "
                         + "'camunda.physical-tenants.%s.document.assigned' selecting which "
                         + "document stores are available to it",
                     tenantId, tenantId));
             return;
           }
 
-          // Blank entries (e.g. `- ""` in yaml) must be caught here — they would otherwise fall
-          // through to the unknown-id check and render as `[]`, giving a confusing message.
+          // blank entries (e.g. `- ""` in yaml) would otherwise fall through to the unknown-id
+          // check and render as `[]`, giving a confusing message
           if (assigned.stream().anyMatch(String::isBlank)) {
             errors.add(
                 String.format(
@@ -94,5 +108,30 @@ class PhysicalTenantDocumentAssignedValidation implements CrossTenantValidation 
       throw new UnifiedConfigurationException(
           "Invalid physical-tenant document store assignment: " + String.join("; ", errors));
     }
+  }
+
+  /**
+   * Rejects {@code camunda.document.assigned} at the root level. Without this check it would be
+   * silently ignored, since narrowing reads only from the tenant prefix.
+   */
+  public static void validateRootAssignedAbsent(final Environment environment) {
+    final boolean rootAssignedPresent =
+        Binder.get(environment)
+            .bind("camunda.document.assigned", Bindable.listOf(String.class))
+            .isBound();
+    if (rootAssignedPresent) {
+      throw new UnifiedConfigurationException(
+          "'camunda.document.assigned' must not be set at the root level. "
+              + "Declare it per physical tenant under "
+              + "'camunda.physical-tenants.<id>.document.assigned'.");
+    }
+  }
+
+  private static @Nullable List<String> bindAssigned(final Binder binder, final String tenantId) {
+    return binder
+        .bind(
+            PHYSICAL_TENANTS_PREFIX + "." + tenantId + ".document.assigned",
+            Bindable.listOf(String.class))
+        .orElse(null);
   }
 }

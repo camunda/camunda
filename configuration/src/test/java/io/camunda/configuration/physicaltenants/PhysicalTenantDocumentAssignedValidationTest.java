@@ -16,10 +16,9 @@ import io.camunda.configuration.Document.AwsStore;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,12 +26,12 @@ import org.springframework.mock.env.MockEnvironment;
 
 class PhysicalTenantDocumentAssignedValidationTest {
 
-  private final PhysicalTenantDocumentAssignedValidation validation =
-      new PhysicalTenantDocumentAssignedValidation();
+  private MockEnvironment environment;
 
   @BeforeEach
   void setUp() {
-    UnifiedConfigurationHelper.setCustomEnvironment(new MockEnvironment());
+    environment = new MockEnvironment();
+    UnifiedConfigurationHelper.setCustomEnvironment(environment);
   }
 
   @AfterEach
@@ -42,114 +41,114 @@ class PhysicalTenantDocumentAssignedValidationTest {
 
   @Test
   void shouldPassWhenNonDefaultTenantHasNoDocumentStores() {
-    // given a non-default tenant with no document stores in its catalog
-    final Camunda camunda = new Camunda();
-    camunda.getDocument().setAssigned(new ArrayList<>());
-    final Map<String, Camunda> resolved = tenants("tenanta", camunda);
-
-    // when / then no stores → nothing to assign → validation is a no-op
-    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+    assertThatCode(() -> validate(tenants("tenanta", new Camunda()), Set.of()))
+        .doesNotThrowAnyException();
   }
 
   @Test
   void shouldPassWhenDefaultTenantOmitsAssigned() {
-    // given
+    // synthesized default (absent from explicitlyDeclared) is exempt
     final Map<String, Camunda> resolved =
-        tenants(
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWithStore("store-a", List.of()));
-
-    // when / then
-    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+        tenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWithStore("store-a"));
+    assertThatCode(() -> validate(resolved, Set.of())).doesNotThrowAnyException();
   }
 
   @Test
   void shouldFailWhenNonDefaultTenantOmitsAssigned() {
-    // given
-    final Map<String, Camunda> resolved =
-        tenants("tenanta", camundaWithStore("store-a", List.of()));
-
-    // when / then
     assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> validation.validate(resolved))
+        .isThrownBy(() -> validate(tenants("tenanta", camundaWithStore("store-a")), Set.of()))
         .withMessageContaining("tenanta")
         .withMessageContaining("must declare a non-empty");
   }
 
   @Test
   void shouldFailWhenAssignedContainsUnknownStoreId() {
-    // given
-    final Map<String, Camunda> resolved =
-        tenants("tenanta", camundaWithStore("store-a", List.of("unknown-id")));
-
-    // when / then
+    environment.setProperty("camunda.physical-tenants.tenanta.document.assigned[0]", "unknown-id");
     assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> validation.validate(resolved))
+        .isThrownBy(() -> validate(tenants("tenanta", camundaWithStore("store-a")), Set.of()))
         .withMessageContaining("tenanta")
         .withMessageContaining("unknown-id");
   }
 
   @Test
   void shouldPassWhenAssignedContainsOnlyKnownIds() {
-    // given
-    final Map<String, Camunda> resolved =
-        tenants("tenanta", camundaWithStore("store-a", List.of("store-a")));
-
-    // when / then
-    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+    environment.setProperty("camunda.physical-tenants.tenanta.document.assigned[0]", "store-a");
+    assertThatCode(() -> validate(tenants("tenanta", camundaWithStore("store-a")), Set.of()))
+        .doesNotThrowAnyException();
   }
 
   @Test
   void shouldAcceptAssignedIdWithDifferentCaseOrWhitespace() {
-    // given assigned contains "Shared-S3" (mixed-case) and " store-a " (whitespace), while the
-    // store keys in the catalog are lowercased by Spring's relaxed binding
-    final Map<String, Camunda> resolved =
-        tenants("tenanta", camundaWithStore("store-a", List.of("Shared-S3", " store-a ")));
-
-    // when / then only truly unknown ids appear in the unknown list; " store-a " normalizes to
-    // "store-a" and is accepted — only "Shared-S3" has no matching store
+    // " store-a " normalizes to "store-a" and passes; "Shared-S3" has no matching store and fails
+    environment.setProperty("camunda.physical-tenants.tenanta.document.assigned[0]", "Shared-S3");
+    environment.setProperty("camunda.physical-tenants.tenanta.document.assigned[1]", " store-a ");
     assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> validation.validate(resolved))
+        .isThrownBy(() -> validate(tenants("tenanta", camundaWithStore("store-a")), Set.of()))
         .withMessageContaining("unknown document store id(s) [Shared-S3]");
   }
 
   @Test
   void shouldFailOnBlankAssignedEntry() {
-    // given blank entry (e.g. `- ""` in yaml) — must be rejected, not treated as unknown id
-    final Map<String, Camunda> resolved =
-        tenants("tenanta", camundaWithStore("store-a", List.of("")));
-
-    // when / then
+    // blank entries must be caught before the unknown-id check; otherwise they render as `[]`
+    environment.setProperty("camunda.physical-tenants.tenanta.document.assigned[0]", "");
     assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> validation.validate(resolved))
+        .isThrownBy(() -> validate(tenants("tenanta", camundaWithStore("store-a")), Set.of()))
         .withMessageContaining("tenanta")
         .withMessageContaining("blank entry");
   }
 
   @Test
   void shouldPassWhenDefaultTenantIsExemptInMultiTenantDeployment() {
-    // given
-    final Camunda defaultTenant = camundaWithStore("store-default", List.of());
-    final Camunda tenantA = camundaWithStore("store-a", List.of("store-a"));
+    environment.setProperty("camunda.physical-tenants.tenanta.document.assigned[0]", "store-a");
     final Map<String, Camunda> resolved =
-        tenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, defaultTenant, "tenanta", tenantA);
+        tenants(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            camundaWithStore("store-default"),
+            "tenanta",
+            camundaWithStore("store-a"));
+    assertThatCode(() -> validate(resolved, Set.of())).doesNotThrowAnyException();
+  }
 
-    // when / then
-    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  @Test
+  void shouldFailWhenExplicitDefaultDeclaresStoresWithoutAssigned() {
+    // explicitly declared default is validated like any other tenant
+    final Map<String, Camunda> resolved =
+        tenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWithStore("store-a"));
+    final Set<String> explicitlyDeclared = Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validate(resolved, explicitlyDeclared))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("must declare a non-empty");
+  }
+
+  @Test
+  void shouldPassWhenExplicitDefaultAssignsKnownStore() {
+    environment.setProperty(
+        "camunda.physical-tenants."
+            + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID
+            + ".document.assigned[0]",
+        "store-a");
+    final Map<String, Camunda> resolved =
+        tenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWithStore("store-a"));
+    final Set<String> explicitlyDeclared = Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThatCode(() -> validate(resolved, explicitlyDeclared)).doesNotThrowAnyException();
   }
 
   // --- helpers ---------------------------------------------------------------------------------
 
-  private static Camunda camundaWithStore(final String storeId, final List<String> assigned) {
+  private void validate(final Map<String, Camunda> resolved, final Set<String> explicitlyDeclared) {
+    PhysicalTenantDocumentAssignedValidation.validate(environment, resolved, explicitlyDeclared);
+  }
+
+  private static Camunda camundaWithStore(final String storeId) {
     final Camunda camunda = new Camunda();
     final Document doc = camunda.getDocument();
-
     final AwsStore store = new AwsStore();
     store.setBucketName("bucket-" + storeId);
     store.setBucketPath("path/" + storeId);
     final Map<String, AwsStore> aws = new LinkedHashMap<>();
     aws.put(storeId, store);
     doc.setAws(aws);
-    doc.setAssigned(new ArrayList<>(assigned));
     return camunda;
   }
 
