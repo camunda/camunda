@@ -112,6 +112,7 @@ import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
+import io.camunda.client.api.command.UpdateJobPriorityCommandStep1;
 import io.camunda.client.api.command.UpdateMappingRuleCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
@@ -264,6 +265,7 @@ import io.camunda.client.impl.command.EvaluateExpressionCommandImpl;
 import io.camunda.client.impl.command.GloballyScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.GloballyScopedDeleteClusterVariableImpl;
 import io.camunda.client.impl.command.GloballyScopedUpdateClusterVariableImpl;
+import io.camunda.client.impl.command.JobUpdatePriorityCommandImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
@@ -856,6 +858,23 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(final ActivatedJob job) {
     return newUpdateTimeoutCommand(job.getKey());
+  }
+
+  @Override
+  public UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(final long jobKey) {
+    return new JobUpdatePriorityCommandImpl(
+        asyncStub,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc(),
+        jsonMapper);
+  }
+
+  @Override
+  public UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(final ActivatedJob job) {
+    return newUpdateJobPriorityCommand(job.getKey());
   }
 
   @Override
