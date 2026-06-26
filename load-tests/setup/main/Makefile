@@ -54,6 +54,9 @@ platform_values := -f camunda-platform-values-defaults.yaml
 helm_chart_load_test_setup := charts/load-test-setup
 load_test_setup_values := -f load-test-setup-values.yaml
 additional_load_test_setup_configuration ?=
+# Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
+# which CI sets on the make command line and would suppress `+=` here.
+_load_test_setup_flags :=
 
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
@@ -91,23 +94,23 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://opensearch:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
 else ifeq ($(enable_optimize),true)
 	# Here, the secondary storage is either none or a RDBMS database.
 	# Elasticsearch is always used in this case as the backend for Optimize.
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else
 	install_es_prom_exporter := false
 endif
 
 ifeq ($(chaos),true)
-	additional_load_test_setup_configuration += --set chaosKiller.enabled=true
+	_load_test_setup_flags += --set chaosKiller.enabled=true
 endif
 
 .PHONY: all
@@ -245,7 +248,9 @@ install-load-test-setup: create-namespace
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		--take-ownership --create-namespace \
-		$(load_test_setup_values) $(additional_load_test_setup_configuration)
+		$(load_test_setup_values) \
+		$(_load_test_setup_flags) \
+		$(additional_load_test_setup_configuration)
 
 # Install/upgrade load test helm chart
 .PHONY: install-load-test
@@ -284,6 +289,7 @@ template-load-test-setup:
 	helm template load-test-setup $(helm_chart_load_test_setup) \
 		--namespace $(namespace) \
 		$(load_test_setup_values) \
+		$(_load_test_setup_flags) \
 		$(additional_load_test_setup_configuration) \
 		--output-dir $(template_output_dir)
 
