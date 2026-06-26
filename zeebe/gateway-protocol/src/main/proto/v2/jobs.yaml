@@ -273,6 +273,50 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
 
+  /jobs/batch-update:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Job
+      operationId: updateJobsBatchOperation
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Update jobs (batch)
+      description: >
+        Creates a batch operation to update jobs matching the given filter.
+        At least one changeset field must be non-null.
+        This is done asynchronously; the progress can be tracked using the batchOperationKey
+        from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobBatchUpdateRequest'
+      responses:
+        "200":
+          description: The batch operation was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          description: >
+            The job batch update operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
 ## Schema definitions
 
 components:
@@ -692,6 +736,46 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
       x-properties-added-in-version:
+        - propertyName: deadline
+          addedInVersion: "8.8"
+        - propertyName: deniedReason
+          addedInVersion: "8.8"
+        - propertyName: elementId
+          addedInVersion: "8.8"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: endTime
+          addedInVersion: "8.8"
+        - propertyName: errorCode
+          addedInVersion: "8.8"
+        - propertyName: errorMessage
+          addedInVersion: "8.8"
+        - propertyName: hasFailedWithRetriesLeft
+          addedInVersion: "8.8"
+        - propertyName: isDenied
+          addedInVersion: "8.8"
+        - propertyName: jobKey
+          addedInVersion: "8.8"
+        - propertyName: kind
+          addedInVersion: "8.8"
+        - propertyName: listenerEventType
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionId
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.8"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: retries
+          addedInVersion: "8.8"
+        - propertyName: state
+          addedInVersion: "8.8"
+        - propertyName: tenantId
+          addedInVersion: "8.8"
+        - propertyName: type
+          addedInVersion: "8.8"
+        - propertyName: worker
+          addedInVersion: "8.8"
         - propertyName: creationTime
           addedInVersion: "8.9"
         - propertyName: lastUpdateTime
@@ -1084,8 +1168,35 @@ components:
           description: The new priority for the job. Higher values indicate higher priority.
           nullable: true
       x-properties-added-in-version:
+        - propertyName: retries
+          addedInVersion: "8.6"
+        - propertyName: timeout
+          addedInVersion: "8.6"
         - propertyName: priority
           addedInVersion: "8.10"
+
+    JobBatchUpdateRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        The filter and changeset for a batch job update operation.
+        The filter defines which jobs are updated; the changeset defines what to update.
+        At least one changeset field must be non-null.
+      properties:
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/JobFilter'
+          description: The job filter. At least one dimension must be set.
+        changeset:
+          allOf:
+            - $ref: '#/components/schemas/JobChangeset'
+          description: The fields to update. At least one field must be non-null.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+        - changeset
+      x-added-in-version: "8.10"
 
     ## Enums
 

@@ -12,7 +12,9 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
+import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobBatchUpdateRequest;
 import io.camunda.gateway.protocol.model.JobChangeset;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
@@ -66,6 +68,26 @@ public final class JobRequestValidator {
               || (changeset.getRetries() == null
                   && changeset.getTimeout() == null
                   && changeset.getPriority() == null)) {
+            violations.add(
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("retries", "timeout", "priority")));
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateJobBatchUpdateRequest(
+      final JobBatchUpdateRequest request) {
+    return validate(
+        violations -> {
+          final var filter = SearchQueryFilterMapper.toRequiredJobFilter(request.getFilter());
+          filter.ifLeft(violations::addAll);
+
+          final JobChangeset changeset = request.getChangeset();
+          if (changeset == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("changeset"));
+          } else if (changeset.getRetries() == null
+              && changeset.getTimeout() == null
+              && changeset.getPriority() == null) {
             violations.add(
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
                     List.of("retries", "timeout", "priority")));

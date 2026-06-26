@@ -29,15 +29,18 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.JobServices.BatchUpdateJobRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -862,6 +865,282 @@ public class JobControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldUpdateJobsBatchOperationWithPriorityOnly() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(42L);
+    record.setBatchOperationType(BatchOperationType.UPDATE_JOB);
+    when(jobServices.updateJobsBatchOperation(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": { "type": "payment-service" },
+              "changeset": { "priority": 80 }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {"batchOperationKey":"42","batchOperationType":"UPDATE_JOB"}
+            """,
+            JsonCompareMode.STRICT);
+
+    final var captor = ArgumentCaptor.forClass(BatchUpdateJobRequest.class);
+    Mockito.verify(jobServices).updateJobsBatchOperation(captor.capture(), any());
+    assertThat(captor.getValue().filter()).isNotNull();
+    assertThat(captor.getValue().changeset()).isEqualTo(new UpdateJobChangeset(null, null, 80));
+  }
+
+  @Test
+  void shouldUpdateJobsBatchOperationWithOnlyRetries() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(42L);
+    record.setBatchOperationType(BatchOperationType.UPDATE_JOB);
+    when(jobServices.updateJobsBatchOperation(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": { "type": "payment-service" },
+              "changeset": { "retries": 3 }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {"batchOperationKey":"42","batchOperationType":"UPDATE_JOB"}
+            """,
+            JsonCompareMode.STRICT);
+
+    final var captor = ArgumentCaptor.forClass(BatchUpdateJobRequest.class);
+    Mockito.verify(jobServices).updateJobsBatchOperation(captor.capture(), any());
+    assertThat(captor.getValue().filter()).isNotNull();
+    assertThat(captor.getValue().changeset()).isEqualTo(new UpdateJobChangeset(3, null, null));
+  }
+
+  @Test
+  void shouldUpdateJobsBatchOperationWithAllChangesetFields() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(42L);
+    record.setBatchOperationType(BatchOperationType.UPDATE_JOB);
+    when(jobServices.updateJobsBatchOperation(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": { "type": "payment-service" },
+              "changeset": { "priority": 80, "retries": 3, "timeout": 5000 }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {"batchOperationKey":"42","batchOperationType":"UPDATE_JOB"}
+            """,
+            JsonCompareMode.STRICT);
+
+    final var captor = ArgumentCaptor.forClass(BatchUpdateJobRequest.class);
+    Mockito.verify(jobServices).updateJobsBatchOperation(captor.capture(), any());
+    assertThat(captor.getValue().changeset()).isEqualTo(new UpdateJobChangeset(3, 5000L, 80));
+  }
+
+  @Test
+  void shouldRejectBatchUpdateWhenChangesetIsNull() {
+    // given
+    final var request =
+        """
+            {
+              "filter": { "type": "payment-service" }
+            }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No changeset provided.",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/batch-update");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectBatchUpdateWhenAllChangesetFieldsAreNull() {
+    // given
+    final var request =
+        """
+            {
+              "filter": { "type": "payment-service" },
+              "changeset": { "retries": null, "timeout": null, "priority": null }
+            }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "At least one of [retries, timeout, priority] is required.",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/batch-update");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectBatchUpdateWhenFilterIsNull() {
+    // given
+    final var request =
+        """
+            {
+              "changeset": { "priority": 80 }
+            }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No filter provided.",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/batch-update");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectBatchUpdateWhenFilterIsEmpty() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {},
+              "changeset": { "priority": 80 }
+            }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "At least one of filter criteria is required.",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/batch-update");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/batch-update")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
   }
 
   @Test
