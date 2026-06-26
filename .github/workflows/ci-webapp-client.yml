@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -65,7 +65,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -98,7 +98,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -131,7 +131,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -164,7 +164,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -204,7 +204,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -254,7 +254,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -305,7 +305,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
@@ -356,7 +356,7 @@ jobs:
       - name: Install dependencies
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
-          timeout_minutes: 5
+          timeout_minutes: 3
           max_attempts: 3
           retry_wait_seconds: 5
           command: npm ci --prefix ${{ env.CLIENT_DIR }}
