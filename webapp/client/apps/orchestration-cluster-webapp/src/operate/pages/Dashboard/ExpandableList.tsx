@@ -8,26 +8,25 @@
 
 import {DataTableSkeleton, InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import type {ReactElement, ReactNode, UIEvent} from 'react';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import {PartiallyExpandableDataTable} from './PartiallyExpandableDataTable/PartiallyExpandableDataTable';
 import {ScrollableList, LoadingRow} from './styled';
 
-type Row = {id: string; [key: string]: ReactNode};
+type Row = {id: string; [key: string]: React.ReactNode};
 
 type Props = {
 	isPending: boolean;
 	isError: boolean;
-	emptyState?: ReactNode;
+	emptyState?: React.ReactNode;
 	listTestId: string;
 	dataTestId: string;
 	header: string;
 	rows: Row[];
-	expandedContents: Record<string, ReactElement<{tabIndex: number}>>;
+	expandedContents: Record<string, React.ReactElement<{tabIndex: number}>>;
 	isFetchingNextPage: boolean;
 	isFetchingPreviousPage: boolean;
-	onScroll: (event: UIEvent<HTMLDivElement>) => void;
+	onScroll: (event: React.UIEvent<HTMLDivElement>) => void;
 };
 
 const ExpandableList: React.FC<Props> = ({

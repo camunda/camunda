@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Suspense, useMemo, type ReactElement} from 'react';
+import {Suspense, useMemo} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
@@ -84,7 +84,7 @@ const InstancesByProcess: React.FC = () => {
 
 	const expandedContents = useMemo(
 		() =>
-			items.reduce<Record<string, ReactElement<{tabIndex: number}>>>((accumulator, item) => {
+			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				if (item.hasMultipleVersions) {
 					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
 						<ErrorBoundary
