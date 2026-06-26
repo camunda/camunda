@@ -243,7 +243,11 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
               indexTimer.stop(
                   metrics.getHistogram(
                       Metrics.TIMER_NAME_ARCHIVER_INDEX_DURATION, "source", sourceIndexName));
-              metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_REINDEXED_DOCS, totalArchived);
+              metrics.recordCounts(
+                  Metrics.COUNTER_NAME_ARCHIVER_INDEX_DOCS,
+                  totalArchived,
+                  "source",
+                  sourceIndexName);
               if (error != null) {
                 LOGGER.warn(
                     "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
@@ -421,7 +425,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
             executor)
         .whenCompleteAsync(
             (total, error) -> {
-              metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_REINDEXED_DOCS, total);
+              if (total != null) {
+                metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_REINDEXED_DOCS, total);
+              }
               timer.stop(
                   metrics.getHistogram(
                       Metrics.TIMER_NAME_ARCHIVER_REQUEST_DURATION,
@@ -465,7 +471,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         .thenApplyAsync(response -> getDeletedDocCount(sourceIndexName, response), executor)
         .whenCompleteAsync(
             (deleted, error) -> {
-              metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_DELETED_DOCS, deleted);
+              if (deleted != null) {
+                metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVER_DELETED_DOCS, deleted);
+              }
               timer.stop(
                   metrics.getHistogram(
                       Metrics.TIMER_NAME_ARCHIVER_REQUEST_DURATION,

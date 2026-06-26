@@ -58,6 +58,9 @@ public class MetricAssert {
      */
     public ValueMatcher(
         final String metricName, final Predicate<Double> valueMatcher, final String... tags) {
+      if (tags.length % 2 != 0) {
+        throw new IllegalArgumentException("tags must be provided as alternating key/value pairs");
+      }
       this.metricName = metricName.toLowerCase();
       this.valueMatcher = valueMatcher;
       this.tags = tags;

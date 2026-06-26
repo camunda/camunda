@@ -62,6 +62,7 @@ public class Metrics {
   public static final String COUNTER_NAME_ARCHIVER_BATCH_RETRIES = "archiver.batch.retries";
   public static final String COUNTER_NAME_ARCHIVER_REINDEXED_DOCS = "archiver.reindexed.docs";
   public static final String COUNTER_NAME_ARCHIVER_DELETED_DOCS = "archiver.deleted.docs";
+  public static final String COUNTER_NAME_ARCHIVER_INDEX_DOCS = "archiver.index.docs";
 
   // Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";

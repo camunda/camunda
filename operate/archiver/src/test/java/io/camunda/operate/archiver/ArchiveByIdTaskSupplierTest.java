@@ -382,7 +382,7 @@ class ArchiveByIdTaskSupplierTest {
                     ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
-            java.util.concurrent.Executors.newSingleThreadScheduledExecutor(),
+            DIRECT_EXECUTOR,
             archiverProperties,
             metrics,
             LOGGER);
