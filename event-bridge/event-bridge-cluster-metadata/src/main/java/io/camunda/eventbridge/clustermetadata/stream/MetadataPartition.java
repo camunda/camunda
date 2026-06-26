@@ -121,7 +121,11 @@ public final class MetadataPartition
   protected void onLeaderReady() {
     metadataManager =
         new MetadataManager(
-            partitionId, stream, stream.newTopicQueryService(), reconfigurationExecutor);
+            partitionId,
+            stream,
+            stream.newTopicQueryService(),
+            stream.newBrokerQueryService(),
+            reconfigurationExecutor);
     actorScheduler.submitActor(metadataManager);
     metadataQueryHandler = new MetadataQueryHandler(partitionId, stream.newTopicQueryService());
     actorScheduler.submitActor(metadataQueryHandler);

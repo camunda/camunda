@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -28,11 +29,44 @@ public final class ReconfigurationPlanner {
 
   private ReconfigurationPlanner() {}
 
-  /** The next single step to move {@code committed} toward {@code target}, or empty if equal. */
+  /**
+   * The next single step to move {@code committed} toward {@code target}, or empty if equal,
+   * assuming all members are live (pure grow-before-shrink). Prefer {@link #nextOp(String, Map,
+   * Map, Set)} where liveness is known.
+   */
   public static Optional<ReconfigurationOp> nextOp(
       final String topic,
       final Map<Integer, List<Integer>> committed,
       final Map<Integer, List<Integer>> target) {
+    return nextOp(topic, committed, target, null);
+  }
+
+  /**
+   * The next single step to move {@code committed} toward {@code target}, or empty if equal.
+   *
+   * <p>Ordering per partition is liveness-aware:
+   *
+   * <ul>
+   *   <li><b>Dead member to remove → shrink first.</b> A replica that is being dropped and is not
+   *       in {@code liveMembers} is removed <em>before</em> the replacement joins. Growing first
+   *       here would add a voter to a group that still counts the dead member, inflating the quorum
+   *       to a size the live members can't reach until the (still-catching-up) joiner acks — which
+   *       stalls the join and can cost the group its leader. Removing the dead member first is safe
+   *       (the removal commit drags any lagging survivor up to the committed prefix) and keeps the
+   *       transition on a config the survivors alone can commit.
+   *   <li><b>Otherwise → grow before shrink.</b> For a live-member reassignment the replacement
+   *       joins before the old replica leaves, so the replica set is never shrunk below target with
+   *       a healthy member still in place.
+   * </ul>
+   *
+   * @param liveMembers the currently live (registered, unfenced) broker ids; {@code null} treats
+   *     all members as live (pure grow-before-shrink)
+   */
+  public static Optional<ReconfigurationOp> nextOp(
+      final String topic,
+      final Map<Integer, List<Integer>> committed,
+      final Map<Integer, List<Integer>> target,
+      final Set<Integer> liveMembers) {
     // Deterministic order so a re-derivation after failover picks the same next step.
     final var partitions = new TreeSet<Integer>();
     partitions.addAll(committed.keySet());
@@ -41,13 +75,19 @@ public final class ReconfigurationPlanner {
     for (final var partitionId : partitions) {
       final var current = committed.getOrDefault(partitionId, List.of());
       final var wanted = target.getOrDefault(partitionId, List.of());
-      // Add a missing replica first (grow before shrink).
+      // Remove a dead extra replica first (shrink before grow for a dead member).
+      for (final var member : current) {
+        if (!wanted.contains(member) && liveMembers != null && !liveMembers.contains(member)) {
+          return Optional.of(new ReconfigurationOp(Kind.LEAVE, topic, partitionId, member));
+        }
+      }
+      // Add a missing replica (grow before shrink for a live reassignment).
       for (final var member : wanted) {
         if (!current.contains(member)) {
           return Optional.of(new ReconfigurationOp(Kind.JOIN, topic, partitionId, member));
         }
       }
-      // Then remove an extra replica.
+      // Then remove an extra (live) replica.
       for (final var member : current) {
         if (!wanted.contains(member)) {
           return Optional.of(new ReconfigurationOp(Kind.LEAVE, topic, partitionId, member));

@@ -26,11 +26,17 @@ public interface ReconfigurationExecutor {
 
   /**
    * @param op the membership change to apply
+   * @param recipientNodeId the broker the step is sent to and that must act on it: the joiner for a
+   *     JOIN, the leaving member itself for a live LEAVE (self-leave), or a surviving replica for a
+   *     dead LEAVE (it drives the leader-side removal of the dead member)
    * @param partitionMembers the partition's replica node ids after this op (for a join, the set the
    *     joining broker must configure its Raft partition with)
    * @param partitionCount the topic's partition count (the joining broker needs it to set up the
    *     topic's routing topology)
    */
   CompletableFuture<Void> execute(
-      ReconfigurationOp op, List<Integer> partitionMembers, int partitionCount);
+      ReconfigurationOp op,
+      int recipientNodeId,
+      List<Integer> partitionMembers,
+      int partitionCount);
 }

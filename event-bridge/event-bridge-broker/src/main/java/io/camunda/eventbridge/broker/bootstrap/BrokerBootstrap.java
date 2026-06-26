@@ -14,6 +14,7 @@ import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
+import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationOp.Kind;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
@@ -171,29 +172,24 @@ public final class BrokerBootstrap {
     comm.replyToAsync(
         ReconfigurationCommand.SUBJECT,
         ReconfigurationCommand::decode,
-        cmd ->
-            (cmd.kind()
-                        == io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationOp.Kind
-                            .JOIN
-                    ? topicReconciler.join(
-                        cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount())
-                    : topicReconciler.leave(cmd.topic(), cmd.partitionId()))
-                .thenApply(done -> new byte[0]),
+        cmd -> reconfigure(topicReconciler, localMemberId, cmd).thenApply(done -> new byte[0]),
         Function.identity(),
         executorService);
 
-    // The executor sends each step to the broker that must act (op.member()) and completes when
-    // that
-    // broker confirms; the change-coordinator advances committed only then, and retries on failure.
+    // The executor sends each step to the broker that must act (the recipient resolved by the
+    // change-coordinator: the joiner for a JOIN, the leaving member for a live LEAVE, or a
+    // surviving
+    // replica for a dead LEAVE) and completes when that broker confirms; the change-coordinator
+    // advances committed only then, and retries on failure.
     final ReconfigurationExecutor reconfigurationExecutor =
-        (op, members, partitionCount) ->
+        (op, recipientNodeId, members, partitionCount) ->
             comm.send(
                 ReconfigurationCommand.SUBJECT,
                 new ReconfigurationCommand(
                     op.kind(), op.topic(), op.partitionId(), op.member(), partitionCount, members),
                 ReconfigurationCommand::encode,
                 reply -> (Void) null,
-                MemberId.from("broker-" + op.member()),
+                MemberId.from("broker-" + recipientNodeId),
                 java.time.Duration.ofSeconds(30));
 
     // 5. Start partitions — raft + lifecycle actors (uses broker messaging service)
@@ -208,6 +204,32 @@ public final class BrokerBootstrap {
         reconfigurationExecutor);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
+  }
+
+  /**
+   * Applies one change-coordinator step on this broker:
+   *
+   * <ul>
+   *   <li><b>JOIN</b> — add this broker as a replica of the partition (the joiner acts).
+   *   <li><b>LEAVE of self</b> — this broker is the departing replica, so it leaves and tears down
+   *       its local partition.
+   *   <li><b>LEAVE of another</b> — this broker is a surviving replica asked to remove a (typically
+   *       dead) member that cannot leave on its own; it drives the leader-side removal without
+   *       tearing down its own replica.
+   * </ul>
+   */
+  private static java.util.concurrent.CompletableFuture<Void> reconfigure(
+      final TopicReconciler topicReconciler,
+      final MemberId localMemberId,
+      final ReconfigurationCommand cmd) {
+    if (cmd.kind() == Kind.JOIN) {
+      return topicReconciler.join(
+          cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
+    }
+    if (localMemberId.equals(MemberId.from("broker-" + cmd.member()))) {
+      return topicReconciler.leave(cmd.topic(), cmd.partitionId());
+    }
+    return topicReconciler.removeMember(cmd.topic(), cmd.partitionId(), cmd.member());
   }
 
   /**

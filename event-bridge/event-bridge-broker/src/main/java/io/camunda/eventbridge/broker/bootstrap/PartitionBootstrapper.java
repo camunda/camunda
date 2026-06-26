@@ -612,6 +612,49 @@ final class PartitionBootstrapper {
         .thenApply(rp -> null);
   }
 
+  /**
+   * Removes another member from a data partition's Raft group, driven by this (surviving) replica —
+   * used to evict a dead/fenced member that cannot leave on its own. This broker keeps its own
+   * replica running; only the named member is removed from the group's configuration.
+   */
+  java.util.concurrent.CompletableFuture<Void> removeMemberFromDataPartition(
+      final String groupName, final int partitionId, final int memberNodeId) {
+    final var provisioned = dataPartitions.get(key(groupName, partitionId));
+    if (provisioned == null) {
+      return java.util.concurrent.CompletableFuture.failedFuture(
+          new IllegalStateException(
+              "Cannot remove member "
+                  + memberNodeId
+                  + " from "
+                  + groupName
+                  + "/"
+                  + partitionId
+                  + ": partition not hosted on this broker"));
+    }
+    return provisioned
+        .created()
+        .raftPartition()
+        .removeMember(MemberId.from("broker-" + memberNodeId))
+        .whenComplete(
+            (rp, error) -> {
+              if (error != null) {
+                LOG.warn(
+                    "Error removing member {} from raft partition {}/{}",
+                    memberNodeId,
+                    groupName,
+                    partitionId,
+                    error);
+              } else {
+                LOG.info(
+                    "Removed member {} from raft partition {}/{}",
+                    memberNodeId,
+                    groupName,
+                    partitionId);
+              }
+            })
+        .thenApply(rp -> null);
+  }
+
   private java.util.concurrent.CompletableFuture<Void> startDataPartition(
       final String groupName,
       final int partitionId,

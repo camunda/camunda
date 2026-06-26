@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationOp.Kind;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class ReconfigurationPlannerTest {
@@ -74,5 +75,36 @@ final class ReconfigurationPlannerTest {
                 .orElseThrow()
                 .kind())
         .isEqualTo(Kind.LEAVE);
+  }
+
+  @Test
+  void shouldRemoveDeadMemberBeforeAddingReplacement() {
+    // given partition 1 healing off a dead broker 3, replaced by spare 0: {2,1,3} -> {2,1,0}
+    final var committed = Map.of(1, List.of(2, 1, 3));
+    final var target = Map.of(1, List.of(2, 1, 0));
+    final var live = Set.of(0, 1, 2); // broker 3 is dead
+
+    // when/then — the dead member's LEAVE comes first (shrink before grow)
+    final var first = ReconfigurationPlanner.nextOp("t", committed, target, live).orElseThrow();
+    assertThat(first.kind()).isEqualTo(Kind.LEAVE);
+    assertThat(first.member()).isEqualTo(3);
+
+    // and after removing it, the spare joins
+    final var afterLeave = ReconfigurationPlanner.apply(committed, first);
+    final var second = ReconfigurationPlanner.nextOp("t", afterLeave, target, live).orElseThrow();
+    assertThat(second.kind()).isEqualTo(Kind.JOIN);
+    assertThat(second.member()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldGrowBeforeShrinkWhenRemovedMemberIsLive() {
+    // given a live reassignment {0,1} -> {1,2}, all brokers live — grow-before-shrink preserved
+    final var committed = Map.of(1, List.of(0, 1));
+    final var target = Map.of(1, List.of(1, 2));
+    final var live = Set.of(0, 1, 2);
+
+    final var first = ReconfigurationPlanner.nextOp("t", committed, target, live).orElseThrow();
+    assertThat(first.kind()).isEqualTo(Kind.JOIN);
+    assertThat(first.member()).isEqualTo(2);
   }
 }

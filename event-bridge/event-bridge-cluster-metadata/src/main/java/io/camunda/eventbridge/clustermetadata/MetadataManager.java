@@ -8,8 +8,10 @@
 package io.camunda.eventbridge.clustermetadata;
 
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
+import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationOp.Kind;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationPlanner;
 import io.camunda.eventbridge.clustermetadata.record.TopicRecord;
+import io.camunda.eventbridge.clustermetadata.state.broker.BrokerQueryService;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
@@ -53,6 +55,7 @@ public class MetadataManager extends Actor {
   private final int partitionId;
   private final MetadataStream metadataStream;
   private final TopicQueryService topics;
+  private final BrokerQueryService brokers;
 
   // Change-coordinator: drives committed -> target one safe Raft step at a time.
   private final ReconfigurationExecutor reconfigurationExecutor;
@@ -62,10 +65,12 @@ public class MetadataManager extends Actor {
       final int partitionId,
       final MetadataStream metadataStream,
       final TopicQueryService topics,
+      final BrokerQueryService brokers,
       final ReconfigurationExecutor reconfigurationExecutor) {
     this.partitionId = partitionId;
     this.metadataStream = metadataStream;
     this.topics = topics;
+    this.brokers = brokers;
     this.reconfigurationExecutor = reconfigurationExecutor;
   }
 
@@ -177,7 +182,8 @@ public class MetadataManager extends Actor {
     }
     final var committed = meta.assignment();
     final var target = meta.target();
-    final var op = ReconfigurationPlanner.nextOp(name, committed, target);
+    final var liveMembers = Set.copyOf(brokers.activeBrokers());
+    final var op = ReconfigurationPlanner.nextOp(name, committed, target, liveMembers);
     if (op.isEmpty()) {
       LOG.info("Reassignment of topic {} complete", name);
       metadataStream.registerTopic(
@@ -191,8 +197,17 @@ public class MetadataManager extends Actor {
     final var step = op.get();
     final var advanced = ReconfigurationPlanner.apply(committed, step);
     final var partitionMembers = advanced.getOrDefault(step.partitionId(), List.of());
+    // Recipient: the joiner for a JOIN; the member itself for a live LEAVE (self-leave); a
+    // surviving
+    // replica for a dead LEAVE — it drives the leader-side removal since the dead member can't act.
+    final int recipient;
+    if (step.kind() == Kind.JOIN || liveMembers.contains(step.member())) {
+      recipient = step.member();
+    } else {
+      recipient = partitionMembers.stream().findFirst().orElse(step.member());
+    }
     reconfigurationExecutor
-        .execute(step, partitionMembers, meta.partitionCount())
+        .execute(step, recipient, partitionMembers, meta.partitionCount())
         .whenComplete(
             (ok, error) ->
                 actor.run(

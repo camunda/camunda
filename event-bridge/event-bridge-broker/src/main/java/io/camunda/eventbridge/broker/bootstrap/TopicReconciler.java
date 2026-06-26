@@ -123,6 +123,24 @@ final class TopicReconciler {
     return partitionBootstrapper.leaveDataPartition(groupName, partitionId);
   }
 
+  /**
+   * Removes another member ({@code memberToRemove}) from a topic partition's Raft group, driven by
+   * this surviving replica. Used to evict a dead/fenced member that cannot leave on its own: this
+   * broker drives the leader-side removal without tearing down its own replica.
+   */
+  synchronized java.util.concurrent.CompletableFuture<Void> removeMember(
+      final String topic, final int partitionId, final int memberToRemove) {
+    final var groupName = PartitionFactory.topicGroupName(topic);
+    LOG.info(
+        "Removing member {} from topic {} partition {} (driven by {})",
+        memberToRemove,
+        topic,
+        partitionId,
+        localNodeId);
+    return partitionBootstrapper.removeMemberFromDataPartition(
+        groupName, partitionId, memberToRemove);
+  }
+
   private TopologyManagerImpl topologyFor(final String topic, final int partitionCount) {
     return topologyManagers.computeIfAbsent(
         topic,
