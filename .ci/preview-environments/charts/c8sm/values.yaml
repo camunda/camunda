@@ -78,6 +78,15 @@ camunda-platform:
 
   fullnameOverride: camunda
 
+  # The Bitnami-based subchart images (Elasticsearch, PostgreSQL and the os-shell
+  # init image) are repointed below from docker.io/bitnami/* to
+  # docker.io/bitnamilegacy/* (same tags) because Bitnami removed the original
+  # tags from Docker Hub in its Aug 2025 catalog change. allowInsecureImages lets
+  # the Bitnami charts accept the non-default (legacy) image repositories.
+  global:
+    security:
+      allowInsecureImages: true
+
   # Out-of-the-box Connectors
   connectors:
     enabled: true
@@ -105,9 +114,10 @@ camunda-platform:
   elasticsearch:
     enabled: true
     fullnameOverride: elasticsearch
-    # image:
-    #   repository: bitnami/elasticsearch
-    #   tag: latest
+    image:
+      repository: bitnamilegacy/elasticsearch
+    sysctlImage:
+      repository: bitnamilegacy/os-shell
     master:
       fullnameOverride: elasticsearch-master
       replicaCount: 1
@@ -177,6 +187,8 @@ camunda-platform:
       effect: "NoSchedule"
     postgresql:
       fullnameOverride: identity-keycloak-postgresql
+      image:
+        repository: bitnamilegacy/postgresql
       auth:
         # fixed secret, to avoid generating a random password each time
         password: postgresql
@@ -337,6 +349,8 @@ camunda-platform:
   postgresql:
     enabled: true
     fullnameOverride: web-modeler-postgresql
+    image:
+      repository: bitnamilegacy/postgresql
     auth:
       password: postgresql
     primary:
