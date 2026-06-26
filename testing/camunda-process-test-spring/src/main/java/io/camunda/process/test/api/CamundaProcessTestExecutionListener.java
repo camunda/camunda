@@ -99,6 +99,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
+  private boolean clockResetEnabled = true;
+  private boolean dataDeletionEnabled = true;
 
   private CamundaClient client;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
@@ -123,6 +125,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   public void beforeTestClass(final TestContext testContext) {
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+    clockResetEnabled = runtimeConfiguration.isClockResetEnabled();
+    dataDeletionEnabled = runtimeConfiguration.isDataDeletionEnabled();
 
     final JsonMapper jsonMapper = testContext.getApplicationContext().getBean(JsonMapper.class);
 
@@ -243,8 +247,17 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it
     // the other way around leads to race conditions and inconsistencies in the tests
-    resetRuntimeClock();
-    deleteRuntimeData();
+    if (clockResetEnabled) {
+      resetRuntimeClock();
+    } else {
+      LOG.debug("Skipping runtime clock reset because it is disabled.");
+    }
+
+    if (dataDeletionEnabled) {
+      deleteRuntimeData();
+    } else {
+      LOG.warn("Runtime data deletion is disabled. Tests could be unreliable.");
+    }
   }
 
   @Override

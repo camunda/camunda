@@ -481,6 +481,44 @@ public class JunitExtensionTest {
       verify(camundaManagementClient).resetTime();
     }
 
+    @Test
+    void shouldSkipClockResetIfDisabled() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+              .withClockResetEnabled(false);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(camundaManagementClient, never()).resetTime();
+    }
+
+    @Test
+    void shouldSkipDataDeletionIfDisabled() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+              .withDataDeletionEnabled(false);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(camundaManagementClient, never()).purgeCluster();
+    }
+
     private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
       try {
         final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");

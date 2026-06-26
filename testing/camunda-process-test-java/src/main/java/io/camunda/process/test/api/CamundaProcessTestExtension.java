@@ -126,6 +126,8 @@ public class CamundaProcessTestExtension
   private JsonMapper jsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+  private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
+  private boolean dataDeletionEnabled = CamundaProcessTestRuntimeDefaults.DATA_DELETION_ENABLED;
 
   private CamundaProcessTestContext camundaProcessTestContext;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
@@ -398,8 +400,17 @@ public class CamundaProcessTestExtension
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it
     // the other way around leads to race conditions and inconsistencies in the tests
-    resetRuntimeClock();
-    deleteRuntimeData();
+    if (clockResetEnabled) {
+      resetRuntimeClock();
+    } else {
+      LOG.debug("Skipping runtime clock reset because it is disabled.");
+    }
+
+    if (dataDeletionEnabled) {
+      deleteRuntimeData();
+    } else {
+      LOG.warn("Runtime data deletion is disabled. Tests could be unreliable.");
+    }
   }
 
   private String getCoverageTestName(final ExtensionContext context) {
@@ -750,6 +761,28 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
     runtimeBuilder.withMultiTenancyEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Enable or disable runtime clock reset after each test. By default, clock reset is enabled.
+   *
+   * @param enabled set {@code true} to enable runtime clock reset
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withClockResetEnabled(final boolean enabled) {
+    clockResetEnabled = enabled;
+    return this;
+  }
+
+  /**
+   * Enable or disable runtime data deletion after each test. By default, data deletion is enabled.
+   *
+   * @param enabled set {@code true} to enable runtime data deletion
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withDataDeletionEnabled(final boolean enabled) {
+    dataDeletionEnabled = enabled;
     return this;
   }
 
