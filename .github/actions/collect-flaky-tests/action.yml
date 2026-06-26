@@ -52,6 +52,12 @@ inputs:
     integration-matrix-output-result:
         description: 'Matrix output for integration tests'
         required: true
+    physical-tenant-acceptance-tests-result:
+        description: 'Result of the physical-tenant acceptance tests job'
+        required: true
+    physical-tenant-acceptance-matrix-output-result:
+        description: 'Matrix output for physical-tenant acceptance tests'
+        required: true
 
 
 outputs:
@@ -85,6 +91,7 @@ runs:
         collect_from_matrix_job "identity-tests" "${{ inputs.identity-tests-result }}" '${{ inputs.identity-matrix-output-result }}'
         collect_from_matrix_job "zeebe-unit-tests" "${{ inputs.zeebe-tests-result }}" '${{ inputs.zeebe-matrix-output-result }}'
         collect_from_matrix_job "integration-tests" "${{ inputs.integration-tests-result }}" '${{ inputs.integration-matrix-output-result }}'
+        collect_from_matrix_job "physical-tenant-acceptance-tests" "${{ inputs.physical-tenant-acceptance-tests-result }}" '${{ inputs.physical-tenant-acceptance-matrix-output-result }}'
 
         # Output the collected data
         {

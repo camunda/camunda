@@ -29,6 +29,11 @@ on:
         required: true
         type: string
         description: The display name of the database, used in test artifact names and notifications.
+      physical-tenant:
+        required: false
+        type: string
+        default: ""
+        description: When set, runs the acceptance suite under this physical tenant by passing -Dtest.integration.camunda.physical-tenant=<value>. Only supported with RDBMS database types.
       maven-profiles:
         required: false
         type: string
@@ -122,6 +127,7 @@ jobs:
           -D flaky.test.reportDir=failsafe-reports
           -D test.integration.camunda.database.type=${{inputs.it-database-type}}
           -D test.integration.camunda.database.fast-init=true
+          ${{ inputs.physical-tenant != '' && format('-D test.integration.camunda.physical-tenant={0}', inputs.physical-tenant) || '' }}
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
           -pl 'qa/acceptance-tests'
           verify
