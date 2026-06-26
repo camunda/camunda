@@ -60,9 +60,11 @@ public class WebSessionRepositoryConfiguration {
     this.connectConfiguration = connectConfiguration;
   }
 
-  // No @ConditionalOnMissingBean: the migration must always be active for this deployment.
-  // A duplicate WebSessionAttributeConverter bean would mean two configurations are fighting
-  // over session handling, which is a bug — failing loudly at startup is the correct behaviour.
+  // CSL's default webSessionAttributeConverter is @ConditionalOnMissingBean, so this
+  // unconditional host-side bean takes precedence — the migration is always active for
+  // this deployment. Omitting @ConditionalOnMissingBean here is intentional: a stale
+  // second WebSessionAttributeConverter definition would fail loudly at startup rather
+  // than silently winning the race.
   @Bean
   public WebSessionAttributeConverter webSessionAttributeConverter() {
     return new MigratingWebSessionAttributeConverter();
