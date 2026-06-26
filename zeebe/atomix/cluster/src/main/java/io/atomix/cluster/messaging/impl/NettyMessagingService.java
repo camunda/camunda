@@ -433,6 +433,17 @@ public final class NettyMessagingService implements ManagedMessagingService {
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,
                                   new LoggingDnsQueryLifeCycleObserverFactory()))
+                          // The addresses we resolve (initial contact points, advertised hosts) are
+                          // fully-qualified names. With the default ndots taken from resolv.conf
+                          // (typically ndots:5 in Kubernetes), a name with fewer dots is tried with
+                          // every search domain appended *before* the bare name. A single slow or
+                          // unresponsive search-domain query can then exceed the caller's timeout
+                          // (e.g. the 2s SWIM probe timeout) so the resolvable bare name is never
+                          // queried, and a broker can hang permanently waiting to discover a peer
+                          // whose name only became resolvable after startup. Forcing ndots=0 makes
+                          // the bare (absolute) name be tried first; search domains remain as a
+                          // fallback for short names. See camunda/camunda#55038.
+                          .ndots(0)
                           .socketChannelType(clientChannelClass)
                           .channelType(clientDataGramChannelClass));
               timeoutExecutor =
