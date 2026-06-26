@@ -3,8 +3,6 @@
 # Use as the control run to establish unaffected throughput numbers.
 global:
   extraEnvVars:
-    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-      value: "false"
     # Disable all wait-state read queries — table is empty, no signal.
     - name: ZEEBE_DISABLED_QUERIES
       value: "wait_state_by_process_instance_key,wait_state_by_element_type,wait_state_all,wait_state_page2"

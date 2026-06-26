@@ -3,10 +3,9 @@
 # The three wait-state queries run every 30 s alongside the standard set.
 # Measures p50/p99 query latency and throughput interference.
 global:
+  performReadBenchmarks: true
   extraEnvVars:
-    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-      value: "true"
-    # All three wait-state queries enabled; standard queries also run.
+    # All wait-state queries enabled; standard queries also run.
     - name: ZEEBE_DISABLED_QUERIES
       value: ""
 

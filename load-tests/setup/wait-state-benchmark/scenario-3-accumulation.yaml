@@ -4,13 +4,14 @@
 # Read benchmarks on to track how query latency evolves as the row count climbs.
 # Key question: does wait_state_all (broad scan) degrade as the table grows?
 global:
+  performReadBenchmarks: true
   extraEnvVars:
-    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-      value: "true"
     - name: ZEEBE_DISABLED_QUERIES
       value: ""
-    - name: LOAD_TESTER_WORKER_COMPLETION_DELAY
-      value: "5000ms"
+
+workers:
+  worker:
+    completionDelay: 5000ms
 
 orchestration:
   extraConfiguration:

@@ -1,13 +1,11 @@
 # Scenario 4 — Write amplification: 4 parallel service tasks
 # 300 PI/s, wait states enabled, four_parallel_tasks.bpmn.
-# 4× more wait-state writes per PI (1 200 INSERTs/s + 1 200 DELETEs/s at 300 PI/s).
+# 8× more wait-state writes per PI (1 200 INSERTs/s + 1 200 DELETEs/s at 300 PI/s).
 # Read queries disabled to isolate the write amplification impact on throughput.
 global:
   extraEnvVars:
-    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-      value: "false"
     - name: ZEEBE_DISABLED_QUERIES
-      value: "wait_state_by_process_instance_key,wait_state_by_element_type,wait_state_all"
+      value: "wait_state_by_process_instance_key,wait_state_by_element_type,wait_state_all,wait_state_page2"
     - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
       value: "bpmn/four_parallel_tasks.bpmn"
 

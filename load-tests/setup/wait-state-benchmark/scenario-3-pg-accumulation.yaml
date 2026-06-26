@@ -12,13 +12,14 @@
 #
 # Trigger via camunda-load-test.yml with secondary-storage-type: postgresql
 global:
+  performReadBenchmarks: true
   extraEnvVars:
-    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
-      value: "true"
     - name: ZEEBE_DISABLED_QUERIES
       value: ""
-    - name: LOAD_TESTER_WORKER_COMPLETION_DELAY
-      value: "5000ms"
+
+workers:
+  worker:
+    completionDelay: 5000ms
 
 orchestration:
   extraConfiguration:
