@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers.waitstate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.exporter.common.waitstate.transformers.UserTaskBasedWaitStateTransformer;
@@ -32,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * End-to-end integration test for the native user task wait-state handler pair produced by {@link
+ * End-to-end integration test for the native user task wait-state handler triple produced by {@link
  * WaitStateHandlerBuilder} with {@link UserTaskBasedWaitStateTransformer}.
  *
  * <p>Validates the full lifecycle: a {@code USER_TASK.CREATED} event writes the wait-state entry,
@@ -48,6 +50,7 @@ class UserTaskWaitStateHandlerTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   private WaitStateAddHandler<UserTaskRecordValue> addHandler;
+  private WaitStateUpdateHandler<UserTaskRecordValue> updateHandler;
   private WaitStateRemoveHandler<UserTaskRecordValue> removeHandler;
 
   @BeforeEach
@@ -64,6 +67,12 @@ class UserTaskWaitStateHandlerTest {
                 .filter(h -> h instanceof WaitStateAddHandler)
                 .findFirst()
                 .orElseThrow();
+    updateHandler =
+        (WaitStateUpdateHandler<UserTaskRecordValue>)
+            handlers.stream()
+                .filter(h -> h instanceof WaitStateUpdateHandler)
+                .findFirst()
+                .orElseThrow();
     removeHandler =
         (WaitStateRemoveHandler<UserTaskRecordValue>)
             handlers.stream()
@@ -73,7 +82,7 @@ class UserTaskWaitStateHandlerTest {
   }
 
   @Test
-  void shouldAddHandlerHandleCreatedAndRemoveHandlerNotHandle() {
+  void shouldAddHandlerAcceptCreatedRecordOnly() {
     // given
     final var created = userTaskRecord(UserTaskIntent.CREATED);
     final var completed = userTaskRecord(UserTaskIntent.COMPLETED);
@@ -86,16 +95,19 @@ class UserTaskWaitStateHandlerTest {
   }
 
   @Test
-  void shouldAddHandlerHandleMigratedAndUpdatedEvents() {
+  void shouldUpdateHandlerAcceptMigratedAndUpdatedNotAddHandler() {
     // given
     final var migrated = userTaskRecord(UserTaskIntent.MIGRATED);
     final var updated = userTaskRecord(UserTaskIntent.UPDATED);
 
-    // when / then — MIGRATED and UPDATED are upserts, handled by the add handler
-    assertThat(addHandler.handlesRecord(migrated)).isTrue();
-    assertThat(addHandler.handlesRecord(updated)).isTrue();
+    // when / then — MIGRATED and UPDATED are update intents, handled by updateHandler, not
+    // addHandler
+    assertThat(addHandler.handlesRecord(migrated)).isFalse();
+    assertThat(addHandler.handlesRecord(updated)).isFalse();
     assertThat(removeHandler.handlesRecord(migrated)).isFalse();
     assertThat(removeHandler.handlesRecord(updated)).isFalse();
+    assertThat(updateHandler.handlesRecord(migrated)).isTrue();
+    assertThat(updateHandler.handlesRecord(updated)).isTrue();
   }
 
   @Test
@@ -141,12 +153,13 @@ class UserTaskWaitStateHandlerTest {
   void shouldUpdateEntityElementIdOnUserTaskMigrated() throws Exception {
     // given — a record with the post-migration elementId
     final var record = userTaskRecordWithDetails(UserTaskIntent.MIGRATED, "task-after-migration");
-    final var entity = addHandler.createNewEntity(String.valueOf(USER_TASK_KEY));
+    final var entity = updateHandler.createNewEntity(String.valueOf(USER_TASK_KEY));
 
     // when
-    addHandler.updateEntity(record, entity);
+    updateHandler.updateEntity(record, entity);
 
-    // then — entity reflects the post-migration element id; all other fields are also updated
+    // then — entity reflects the post-migration element id (update handler sends ELEMENT_ID +
+    // DETAILS only)
     assertThat(entity.getElementId()).isEqualTo("task-after-migration");
     assertThat(entity.getElementType()).isEqualTo(BpmnElementType.USER_TASK.name());
     assertThat(entity.getProcessInstanceKey()).isEqualTo(200L);
@@ -192,14 +205,80 @@ class UserTaskWaitStateHandlerTest {
   }
 
   @Test
-  void shouldBuilderProduceExactlyTwoHandlers() {
+  void shouldUpdateHandlerHandleMigratedAndUpdated() {
+    // given
+    final var migrated = userTaskRecord(UserTaskIntent.MIGRATED);
+    final var updated = userTaskRecord(UserTaskIntent.UPDATED);
+    final var created = userTaskRecord(UserTaskIntent.CREATED);
+
+    // when / then — MIGRATED and UPDATED are update intents; CREATED is not
+    assertThat(updateHandler.handlesRecord(migrated)).isTrue();
+    assertThat(updateHandler.handlesRecord(updated)).isTrue();
+    assertThat(updateHandler.handlesRecord(created)).isFalse();
+  }
+
+  @Test
+  void shouldUpdateHandlerSkipsElementIdWhenNull() throws PersistenceException {
+    // given — elementId null means no migration, only task metadata changed
+    final var id = String.valueOf(USER_TASK_KEY);
+    final var entity = new WaitStateEntity().setId(id).setDetails("{\"taskKey\":999}");
+    final var batchRequest = mock(BatchRequest.class);
+
+    // when
+    updateHandler.flush(entity, batchRequest);
+
+    // then — only DETAILS in the update map; ELEMENT_ID is skipped
+    verify(batchRequest)
+        .upsert(
+            eq(INDEX_NAME),
+            eq(id),
+            eq(entity),
+            argThat(map -> map.containsKey(WaitStateTemplate.DETAILS) && map.size() == 1));
+  }
+
+  @Test
+  void shouldUpdateHandlerIncludesElementIdWhenPresentForMigration() throws PersistenceException {
+    // given — MIGRATED: elementId and bpmnProcessId are populated with values from the target
+    // process definition (bpmnProcessId changes on cross-process migration)
+    final var id = String.valueOf(USER_TASK_KEY);
+    final var entity =
+        new WaitStateEntity()
+            .setId(id)
+            .setElementId("task-after-migration")
+            .setBpmnProcessId("target-process")
+            .setDetails("{\"taskKey\":999}");
+    final var batchRequest = mock(BatchRequest.class);
+
+    // when
+    updateHandler.flush(entity, batchRequest);
+
+    // then — ELEMENT_ID, BPMN_PROCESS_ID and DETAILS are all sent
+    verify(batchRequest)
+        .upsert(
+            eq(INDEX_NAME),
+            eq(id),
+            eq(entity),
+            argThat(
+                map ->
+                    map.containsKey(WaitStateTemplate.ELEMENT_ID)
+                        && map.containsKey(WaitStateTemplate.BPMN_PROCESS_ID)
+                        && map.containsKey(WaitStateTemplate.DETAILS)
+                        && map.size() == 3));
+  }
+
+  @Test
+  void shouldBuilderProduceExactlyThreeHandlers() {
+    // when
     final var handlers =
         WaitStateHandlerBuilder.of(INDEX_NAME, objectMapper)
             .addTransformer(new UserTaskBasedWaitStateTransformer())
             .build();
 
-    assertThat(handlers).hasSize(2);
+    // then — one add + one update + one remove
+    assertThat(handlers).hasSize(3);
     assertThat(handlers.stream().filter(h -> h instanceof WaitStateAddHandler).count())
+        .isEqualTo(1);
+    assertThat(handlers.stream().filter(h -> h instanceof WaitStateUpdateHandler).count())
         .isEqualTo(1);
     assertThat(handlers.stream().filter(h -> h instanceof WaitStateRemoveHandler).count())
         .isEqualTo(1);

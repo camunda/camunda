@@ -28,7 +28,7 @@ public final class WaitStateConfigs {
   public static final WaitStateTransformerConfig JOB_CONFIG =
       WaitStateTransformerConfig.of(ValueType.JOB)
           .withAddIntents(JobIntent.CREATED)
-          .withUpdateIntents(JobIntent.MIGRATED)
+          .withUpdateIntents(JobIntent.MIGRATED, JobIntent.FAILED, JobIntent.RETRIES_UPDATED)
           .withRemoveIntents(JobIntent.COMPLETED, JobIntent.CANCELED)
           .withWaitStateType(WaitStateType.JOB);
 

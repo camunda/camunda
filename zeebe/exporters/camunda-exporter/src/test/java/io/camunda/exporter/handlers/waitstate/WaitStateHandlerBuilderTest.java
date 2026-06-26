@@ -19,21 +19,22 @@ class WaitStateHandlerBuilderTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
-  void shouldProduceAddAndRemoveHandlerForEachTransformer() {
+  void shouldProduceAddUpdateAndRemoveHandlerForEachTransformer() {
     // when
     final var handlers =
         WaitStateHandlerBuilder.of(INDEX_NAME, objectMapper)
             .addTransformer(new JobBasedWaitStateTransformer())
             .build();
 
-    // then — one add + one remove
-    assertThat(handlers).hasSize(2);
+    // then — one add + one update + one remove
+    assertThat(handlers).hasSize(3);
     assertThat(handlers).hasAtLeastOneElementOfType(WaitStateAddHandler.class);
+    assertThat(handlers).hasAtLeastOneElementOfType(WaitStateUpdateHandler.class);
     assertThat(handlers).hasAtLeastOneElementOfType(WaitStateRemoveHandler.class);
   }
 
   @Test
-  void shouldProduceFourHandlersForTwoTransformers() {
+  void shouldProduceSixHandlersForTwoTransformers() {
     // when
     final var handlers =
         WaitStateHandlerBuilder.of(INDEX_NAME, objectMapper)
@@ -41,8 +42,8 @@ class WaitStateHandlerBuilderTest {
             .addTransformer(new JobBasedWaitStateTransformer())
             .build();
 
-    // then — two transformers → four handlers
-    assertThat(handlers).hasSize(4);
+    // then — two transformers → six handlers
+    assertThat(handlers).hasSize(6);
   }
 
   @Test

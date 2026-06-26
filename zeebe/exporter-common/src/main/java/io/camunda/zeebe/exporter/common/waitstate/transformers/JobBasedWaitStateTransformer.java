@@ -13,6 +13,7 @@ import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformer;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformerConfig;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -28,6 +29,7 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
   @Override
   public void extract(final Record<JobRecordValue> record, final WaitStateEntry entry) {
     final JobRecordValue value = record.getValue();
+    clearElementIdIfSentinelRisk(record, entry);
     entry
         .setElementType(value.getElementType())
         .setDetails(
@@ -37,6 +39,18 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
                 value.getJobKind(),
                 listenerEventType(value),
                 value.getRetries()));
+  }
+
+  /**
+   * FAILED and RETRIES_UPDATED records may carry "NO_CATCH_EVENT_FOUND" as elementId when a BPMN
+   * error has no matching catch event. Nulling elementId here prevents update handlers from
+   * overwriting the stored elementId with that sentinel value.
+   */
+  private static void clearElementIdIfSentinelRisk(
+      final Record<JobRecordValue> record, final WaitStateEntry entry) {
+    if (record.getIntent() == JobIntent.FAILED || record.getIntent() == JobIntent.RETRIES_UPDATED) {
+      entry.setElementId(null);
+    }
   }
 
   private static @Nullable JobListenerEventType listenerEventType(final JobRecordValue value) {

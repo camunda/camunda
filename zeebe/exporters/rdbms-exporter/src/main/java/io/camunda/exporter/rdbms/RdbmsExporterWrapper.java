@@ -59,7 +59,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancella
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
-import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddHandler;
+import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddUpdateHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
 import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
@@ -390,7 +390,7 @@ public class RdbmsExporterWrapper implements Exporter {
             transformer -> {
               builder.withHandler(
                   transformer.config().valueType(),
-                  new WaitStateAddHandler<>(waitStateWriter, transformer, objectMapper));
+                  new WaitStateAddUpdateHandler<>(waitStateWriter, transformer, objectMapper));
               builder.withHandler(
                   transformer.config().valueType(),
                   new WaitStateRemoveHandler<>(waitStateWriter, transformer));

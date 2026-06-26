@@ -19,6 +19,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateAddHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateRemoveHandler;
+import io.camunda.exporter.handlers.waitstate.WaitStateUpdateHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -153,6 +154,7 @@ public class DefaultExporterResourceProviderTest {
         provider.getExportHandlers().stream()
             .filter(handler -> !(handler instanceof AuditLogHandler))
             .filter(handler -> !(handler instanceof WaitStateAddHandler))
+            .filter(handler -> !(handler instanceof WaitStateUpdateHandler))
             .filter(handler -> !(handler instanceof WaitStateRemoveHandler))
             .toList();
 
@@ -384,6 +386,10 @@ public class DefaultExporterResourceProviderTest {
     // For WaitState handlers, extract RecordValue from the transformer instance for the same reason
     if (handler instanceof final WaitStateAddHandler<?> waitStateAddHandler) {
       return findRecordValueTypeParameterFromClass(waitStateAddHandler.getTransformer().getClass());
+    }
+    if (handler instanceof final WaitStateUpdateHandler<?> waitStateUpdateHandler) {
+      return findRecordValueTypeParameterFromClass(
+          waitStateUpdateHandler.getTransformer().getClass());
     }
     if (handler instanceof final WaitStateRemoveHandler<?> waitStateRemoveHandler) {
       return findRecordValueTypeParameterFromClass(
