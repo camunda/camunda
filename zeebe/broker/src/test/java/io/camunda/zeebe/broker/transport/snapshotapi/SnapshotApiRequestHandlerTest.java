@@ -70,8 +70,7 @@ public class SnapshotApiRequestHandlerTest {
   @AutoClose MeterRegistry registry = new SimpleMeterRegistry();
   @TempDir Path temporaryFolder;
   final int partitionId = 1;
-  final PartitionId partition =
-      PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, partitionId);
+  final PartitionId partition = new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, partitionId);
   FileBasedSnapshotStore senderSnapshotStore;
   FileBasedSnapshotStore receiverSnapshotStore;
   private AtomixClientTransportAdapter clientTransport;

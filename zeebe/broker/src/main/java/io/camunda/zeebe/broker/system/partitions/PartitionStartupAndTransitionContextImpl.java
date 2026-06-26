@@ -186,7 +186,7 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public int getPartitionId() {
-    return partitionId.id();
+    return partitionId.number();
   }
 
   @Override

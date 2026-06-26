@@ -104,10 +104,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   private List<String> topicNames(final PartitionId partitionId, final RequestType requestType) {
-    final var topic = topicName(partitionId.group(), partitionId.id(), requestType);
+    final var topic = topicName(partitionId.group(), partitionId.number(), requestType);
     if (receiveOnLegacySubject
         && Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(partitionId.group())) {
-      return List.of(topic, legacyTopicName(partitionId.id(), requestType));
+      return List.of(topic, legacyTopicName(partitionId.number(), requestType));
     }
     return List.of(topic);
   }
@@ -144,7 +144,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           try {
             requestHandler.onRequest(
                 this,
-                partitionId.id(),
+                partitionId.number(),
                 requestId,
                 new UnsafeBuffer(requestBytes),
                 0,

@@ -232,7 +232,7 @@ public final class RaftPartitionFactoryTest {
     return new RaftPartitionFactory(brokerCfg)
         .createRaftPartition(
             new PartitionMetadata(
-                PartitionId.from("test", 1),
+                new PartitionId("test", 1),
                 Set.of(MemberId.from("1")),
                 Map.of(),
                 1,

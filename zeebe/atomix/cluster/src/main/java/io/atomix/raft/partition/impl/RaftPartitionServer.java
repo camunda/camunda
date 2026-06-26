@@ -166,7 +166,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServer buildServer(final MeterRegistry meterRegistry) {
-    final var partitionId = partition.id().id();
+    final var partitionId = partition.id().number();
     final var electionConfig =
         config.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
@@ -308,7 +308,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     final RaftStorageConfig storageConfig = config.getStorageConfig();
     return RaftStorage.builder(meterRegistry)
         .withPrefix(partition.name())
-        .withPartitionId(partition.id().id())
+        .withPartitionId(partition.id().number())
         .withDirectory(partition.dataDirectory())
         .withMaxSegmentSize((int) storageConfig.getSegmentSize())
         .withFlusherFactory(storageConfig.flusherFactory())
@@ -320,7 +320,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServerCommunicator createServerProtocol() {
-    final var partitionId = partition.id().id();
+    final var partitionId = partition.id().number();
     final var partitionGroup = partition.id().group();
 
     final var sendingSubject = PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId);

@@ -73,7 +73,7 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
       throw new IllegalStateException(
           String.format(
               "Expected to distribute partition %d, but no members configured for it",
-              partitionId.id()));
+              partitionId.number()));
     }
 
     final var priorities =
@@ -113,7 +113,7 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
           String.format(
               "Expected partition %d to be replicated across a cluster made of members %s, but the "
                   + "following configured members %s are not part of the cluster",
-              partitionId.id(), clusterMembers, unknownMembers));
+              partitionId.number(), clusterMembers, unknownMembers));
     }
   }
 
@@ -124,7 +124,7 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
           String.format(
               "Expected each partition to be replicated across exactly %d members, but partition %d"
                   + " is replicated across members %s",
-              replicationFactor, partitionId.id(), members));
+              replicationFactor, partitionId.number(), members));
     }
   }
 }

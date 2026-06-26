@@ -73,7 +73,7 @@ class StaticConfigurationGeneratorTest {
     return partitionDistribution.stream()
         .collect(
             Collectors.toMap(
-                p -> p.id().id(),
+                p -> p.id().number(),
                 p ->
                     p.members().stream()
                         .map(m -> Integer.valueOf(m.id()))

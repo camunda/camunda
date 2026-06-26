@@ -97,8 +97,8 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
 
     final var config = context.getBrokerCfg().getExperimental();
     final var partitionId = context.partitionId();
-    final var legacyReceivingSubject = LEGACY_TOPIC_PREFIX + partitionId.id();
-    final var receivingSubject = TOPIC_PREFIX.formatted(partitionId.group()) + partitionId.id();
+    final var legacyReceivingSubject = LEGACY_TOPIC_PREFIX + partitionId.number();
+    final var receivingSubject = TOPIC_PREFIX.formatted(partitionId.group()) + partitionId.number();
 
     final var receivingSubjects =
         config.isReceiveOnLegacySubject()

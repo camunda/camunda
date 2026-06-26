@@ -147,7 +147,7 @@ public final class RaftRolesTest {
 
     final List<PartitionId> partitionIds =
         IntStream.rangeClosed(1, partitionCount)
-            .mapToObj(id -> PartitionId.from("test", id))
+            .mapToObj(id -> new PartitionId("test", id))
             .sorted()
             .toList();
     final var partitionDistribution =

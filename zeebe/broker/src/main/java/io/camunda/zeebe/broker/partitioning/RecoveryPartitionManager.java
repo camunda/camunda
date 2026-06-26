@@ -151,7 +151,7 @@ public final class RecoveryPartitionManager
           recoveryPartitions.addAll(starting);
           final var deactivateFutures =
               localPartitions.stream()
-                  .map(p -> topologyManager.setInactive(p.id().id()))
+                  .map(p -> topologyManager.setInactive(p.id().number()))
                   .collect(new ActorFutureCollector<>(concurrencyControl));
           concurrencyControl.runOnCompletion(
               deactivateFutures,

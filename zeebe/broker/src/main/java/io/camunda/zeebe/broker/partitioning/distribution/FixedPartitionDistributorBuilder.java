@@ -49,7 +49,7 @@ public final class FixedPartitionDistributorBuilder {
   public FixedPartitionDistributorBuilder assignMember(
       final int partitionId, final int nodeId, final int priority) {
     return assignMember(
-        PartitionId.from(partitionGroupName, partitionId),
+        new PartitionId(partitionGroupName, partitionId),
         MemberId.from(String.valueOf(nodeId)),
         priority);
   }

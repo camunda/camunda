@@ -245,7 +245,7 @@ final class Partition {
     return new IllegalStateException(
         String.format(
             "Expected to %s partition %s, but raft partition is not available",
-            operation, context.partitionMetadata().id().id()));
+            operation, context.partitionMetadata().id().number()));
   }
 
   ZeebePartition zeebePartition() {
@@ -254,9 +254,5 @@ final class Partition {
 
   RaftPartition raftPartition() {
     return context.raftPartition();
-  }
-
-  int id() {
-    return context.partitionMetadata().id().id();
   }
 }

@@ -156,7 +156,7 @@ final class FixedPartitionDistributorTest {
   }
 
   private PartitionId partition(final int id) {
-    return PartitionId.from(PARTITION_GROUP_NAME, id);
+    return new PartitionId(PARTITION_GROUP_NAME, id);
   }
 
   private MemberId node(final int id) {

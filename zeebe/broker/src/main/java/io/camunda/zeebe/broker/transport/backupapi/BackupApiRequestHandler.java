@@ -79,7 +79,7 @@ public final class BackupApiRequestHandler
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
     this.partition = partition;
-    partitionId = partition.id();
+    partitionId = partition.number();
     this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partition, RequestType.BACKUP);
     transport.subscribe(partition, RequestType.BACKUP, this);

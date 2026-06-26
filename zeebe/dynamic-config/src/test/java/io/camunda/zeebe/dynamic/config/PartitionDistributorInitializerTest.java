@@ -28,7 +28,7 @@ final class PartitionDistributorInitializerTest {
         distributor,
         Set.of(MemberId.from("0")),
         MemberId.from("0"),
-        List.of(PartitionId.from("test", 1)),
+        List.of(new PartitionId("test", 1)),
         1,
         DynamicPartitionConfig.init(),
         null);

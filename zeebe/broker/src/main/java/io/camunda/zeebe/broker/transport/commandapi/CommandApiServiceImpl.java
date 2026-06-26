@@ -55,7 +55,7 @@ public final class CommandApiServiceImpl extends Actor
 
   @Override
   protected void onActorClosing() {
-    unregisterHandlersActorless(partitionId.id());
+    unregisterHandlersActorless(partitionId.number());
     actor.runOnCompletion(
         commandHandler.closeAsync(),
         (ok, error) -> {

@@ -36,7 +36,7 @@ public final class PartitionDirectoryStep implements StartupStep<PartitionStartu
         dataDirectory
             .resolve(partitionId.group())
             .resolve("partitions")
-            .resolve(partitionId.id().toString());
+            .resolve(String.valueOf(partitionId.number()));
 
     try {
       FileUtil.ensureDirectoryExists(partitionDirectory);

@@ -55,7 +55,7 @@ public class RaftServerReceiverSubjectsTest {
       final String group, final RaftPartitionConfig raftPartitionConfig, final Path tempDir) {
     final var metadata =
         new PartitionMetadata(
-            new PartitionId(group, PARTITION_ID.id()), Set.of(), Map.of(), 1, MEMBER_ID);
+            new PartitionId(group, PARTITION_ID.number()), Set.of(), Map.of(), 1, MEMBER_ID);
     final var raftPartition =
         new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), meterRegistry);
     return new RaftPartitionServer(
@@ -105,7 +105,8 @@ public class RaftServerReceiverSubjectsTest {
   }
 
   void assertSubjectsRegistered(final String prefix, final int expected) {
-    final var subjectPrefix = PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.id()) + "-%s";
+    final var subjectPrefix =
+        PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.number()) + "-%s";
     final var expectedNumberOfInvocations = expected > 0 ? times(expected) : never();
 
     verify(clusterCommunicationService, expectedNumberOfInvocations)
@@ -133,7 +134,8 @@ public class RaftServerReceiverSubjectsTest {
   }
 
   void assertSubjectsUnregistered(final String prefix, final int expected) {
-    final var partitionName = PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.id()) + "-%s";
+    final var partitionName =
+        PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.number()) + "-%s";
     final var expectedNumberOfInvocations = expected > 0 ? times(expected) : never();
 
     verify(clusterCommunicationService, expectedNumberOfInvocations)

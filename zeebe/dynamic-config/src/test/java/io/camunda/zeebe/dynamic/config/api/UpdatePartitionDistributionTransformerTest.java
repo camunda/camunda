@@ -47,7 +47,7 @@ class UpdatePartitionDistributionTransformerTest {
   private static final Set<MemberId> MEMBERS = Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0);
 
   private static final List<PartitionId> PARTITION_IDS =
-      IntStream.rangeClosed(1, 3).mapToObj(i -> PartitionId.from("temp", i)).toList();
+      IntStream.rangeClosed(1, 3).mapToObj(i -> new PartitionId("temp", i)).toList();
 
   /** Builds a topology whose partitions are placed by ZoneAwarePartitionDistributor. */
   private static ClusterConfiguration buildTopology(

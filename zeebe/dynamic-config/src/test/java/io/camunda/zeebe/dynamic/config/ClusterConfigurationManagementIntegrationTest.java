@@ -335,13 +335,13 @@ class ClusterConfigurationManagementIntegrationTest {
   private Set<PartitionMetadata> getExpectedPartitionDistribution() {
     return Set.of(
         new PartitionMetadata(
-            PartitionId.from("test", 1),
+            new PartitionId("test", 1),
             Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
             Map.of(MemberId.from("0"), 1, MemberId.from("1"), 2, MemberId.from("2"), 3),
             3,
             MemberId.from("2")),
         new PartitionMetadata(
-            PartitionId.from("test", 2),
+            new PartitionId("test", 2),
             Set.of(MemberId.from("2")),
             Map.of(MemberId.from("2"), 1),
             1,
@@ -351,7 +351,7 @@ class ClusterConfigurationManagementIntegrationTest {
   private Set<PartitionMetadata> getIncorrectPartitionDistribution() {
     return Set.of(
         new PartitionMetadata(
-            PartitionId.from("test", 1),
+            new PartitionId("test", 1),
             Set.of(MemberId.from("10"), MemberId.from("11"), MemberId.from("12")),
             Map.of(MemberId.from("10"), 1, MemberId.from("11"), 2, MemberId.from("12"), 3),
             3,

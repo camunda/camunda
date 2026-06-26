@@ -276,7 +276,7 @@ final class ClusterPatchRequestTransformerTest {
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(id -> PartitionId.from("temp", id))
+        .mapToObj(id -> new PartitionId("temp", id))
         .collect(Collectors.toList());
   }
 

@@ -40,7 +40,7 @@ final class RoundRobinPartitionDistributorTest {
     assertThat(partitionMetadata).isNotEmpty();
     partitionMetadata.forEach(
         metadata -> {
-          final int partitionId = metadata.id().id();
+          final int partitionId = metadata.id().number();
           metadata
               .members()
               .forEach(
@@ -124,7 +124,7 @@ final class RoundRobinPartitionDistributorTest {
                     assertThat(metadata.getPriority(member))
                         .describedAs(
                             "Priority should be set for nodeId %d in partition %d",
-                            nodeId, metadata.id().id())
+                            nodeId, metadata.id().number())
                         .isPositive();
                   });
         });
@@ -141,7 +141,7 @@ final class RoundRobinPartitionDistributorTest {
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     final List<PartitionId> partitionIds = new ArrayList<>(partitionCount);
     for (int i = 1; i <= partitionCount; i++) {
-      partitionIds.add(PartitionId.from("test", i));
+      partitionIds.add(new PartitionId("test", i));
     }
     return partitionIds;
   }
