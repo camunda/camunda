@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,7 +50,6 @@ import org.testcontainers.utility.DockerImageName;
  * even when the {@link Profile#CONSOLIDATED_AUTH} profile is active. In other words, users must be
  * able to override the security configuration with env vars.
  */
-@Disabled("Flaky in CI; see https://github.com/camunda/camunda/issues/56057")
 @Testcontainers
 @ZeebeIntegration
 public class GatewayAuthenticationNoneIT {
