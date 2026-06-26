@@ -465,9 +465,7 @@ jobs:
         with:
           ref: main
           sparse-checkout: |
-            load-tests/setup/stable-89
-            load-tests/setup/newLoadTest.sh
-            load-tests/setup/utils.sh
+            load-tests/
             .github/actions
       # camunda-platform-8.10 requires Helm CLI v4; runners ship v3.x.
       - name: Set up Helm
