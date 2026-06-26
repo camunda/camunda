@@ -11,6 +11,7 @@ import type {
 	GetSystemConfigurationResponseBody,
 	CurrentUser,
 	License,
+	UserTask,
 	QueryUserTasksRequestBody,
 	QueryUserTasksResponseBody,
 	QueryProcessDefinitionsRequestBody,
@@ -30,6 +31,8 @@ const queryKeys = {
 	systemConfiguration: () => ['systemConfiguration'] as const,
 	license: () => ['license'] as const,
 	userTasks: (body: QueryUserTasksRequestBody) => ['userTasks', body] as const,
+	userTask: (userTaskKey: string) => ['userTask', userTaskKey] as const,
+	processDefinitionXml: (processDefinitionKey: string) => ['processDefinitionXml', processDefinitionKey] as const,
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
@@ -126,6 +129,18 @@ const queries = {
 			},
 		});
 	},
+
+	getUserTask: (userTaskKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.userTask(userTaskKey),
+			queryFn: async (): Promise<UserTask> => {
+				const {response, error} = await request(endpoints.getUserTask({userTaskKey}));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
 
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		queryOptions({

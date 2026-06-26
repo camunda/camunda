@@ -40,7 +40,7 @@ describe('<AvailableTasks />', () => {
 					onScrollUp={noop}
 				/>
 			),
-			{path: '/tasklist/$id', initialEntry: '/tasklist/1'},
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
 		);
 
 		await expect.element(screen.getByText('First Task')).toBeVisible();
@@ -83,7 +83,7 @@ describe('<AvailableTasks />', () => {
 					/>
 				</div>
 			),
-			{path: '/tasklist/$id', initialEntry: '/tasklist/1'},
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
 		);
 
 		await userEvent.wheel(screen.getByTestId('scrollable-list'), {delta: {y: 10000}});
@@ -110,7 +110,7 @@ describe('<AvailableTasks />', () => {
 					/>
 				</div>
 			),
-			{path: '/tasklist/$id', initialEntry: '/tasklist/1'},
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
 		);
 
 		await userEvent.wheel(screen.getByTestId('scrollable-list'), {delta: {y: 10000}});
@@ -136,7 +136,7 @@ describe('<AvailableTasks />', () => {
 					/>
 				</div>
 			),
-			{path: '/tasklist/$id', initialEntry: '/tasklist/1'},
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
 		);
 
 		const scrollableList = screen.getByTestId('scrollable-list');
@@ -166,7 +166,7 @@ describe('<AvailableTasks />', () => {
 					/>
 				</div>
 			),
-			{path: '/tasklist/$id', initialEntry: '/tasklist/1'},
+			{path: '/tasklist/$userTaskKey', initialEntry: '/tasklist/1'},
 		);
 
 		const scrollableList = screen.getByTestId('scrollable-list');
