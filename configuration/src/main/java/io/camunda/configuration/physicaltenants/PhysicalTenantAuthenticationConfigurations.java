@@ -32,13 +32,13 @@ import org.springframework.core.env.Environment;
  * provider id so that Binder applies the PT delta on top of a fully-populated root object.
  */
 @NullMarked
-public final class PhysicalTenantOidcProviderConfigurations {
+public final class PhysicalTenantAuthenticationConfigurations {
 
   private static final String ROOT_PREFIX = Camunda.PREFIX + ".security.authentication";
   private static final String PT_PREFIX_TEMPLATE =
       Camunda.PREFIX + ".physical-tenants.%s.security.authentication";
 
-  private PhysicalTenantOidcProviderConfigurations() {}
+  private PhysicalTenantAuthenticationConfigurations() {}
 
   public static AuthenticationConfiguration forPhysicalTenant(
       final String tenantId, final Environment environment) {

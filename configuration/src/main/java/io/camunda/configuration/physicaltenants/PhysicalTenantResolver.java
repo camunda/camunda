@@ -102,7 +102,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       physicalTenant
           .getSecurity()
           .setAuthentication(
-              PhysicalTenantOidcProviderConfigurations.forPhysicalTenant(
+              PhysicalTenantAuthenticationConfigurations.forPhysicalTenant(
                   physicalTenantId, environment));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }

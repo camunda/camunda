@@ -51,7 +51,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final AuthenticationConfiguration auth =
-        PhysicalTenantOidcProviderConfigurations.forPhysicalTenant("tenanta", environment);
+        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
 
     // then all root fields survive unchanged
     final var provider = auth.getProviders().getOidc().get("tenanta");
@@ -90,7 +90,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final AuthenticationConfiguration auth =
-        PhysicalTenantOidcProviderConfigurations.forPhysicalTenant("tenanta", environment);
+        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
 
     // then root fields are preserved despite the PT overlay
     final var provider = auth.getProviders().getOidc().get("tenanta");
@@ -123,7 +123,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final AuthenticationConfiguration auth =
-        PhysicalTenantOidcProviderConfigurations.forPhysicalTenant("tenanta", environment);
+        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
 
     // then both root and PT-private providers are present
     assertThat(auth.getProviders().getOidc()).containsKey("sharedprovider");
@@ -148,7 +148,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final AuthenticationConfiguration auth =
-        PhysicalTenantOidcProviderConfigurations.forPhysicalTenant("tenanta", environment);
+        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
 
     // then the flat slot survives
     assertThat(auth.getOidc().getIssuerUri()).isEqualTo("http://localhost:8081/realms/default");
