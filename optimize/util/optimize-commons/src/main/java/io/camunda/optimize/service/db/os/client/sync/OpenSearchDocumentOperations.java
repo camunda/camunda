@@ -36,7 +36,7 @@ import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch._types.ShardFailure;
+import org.opensearch.client.opensearch._types.ShardSearchFailure;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -111,14 +111,10 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     }
   }
 
-  private String formatShardFailure(final ShardFailure failure) {
+  private String formatShardFailure(final ShardSearchFailure failure) {
     return String.format(
-        "ShardFailure[index=%s, shard=%s, status=%s, node=%s, reason=%s]",
-        failure.index(),
-        failure.shard(),
-        failure.status(),
-        failure.node(),
-        formatErrorCause(failure.reason()));
+        "ShardSearchFailure[index=%s, shard=%s, node=%s, reason=%s]",
+        failure.index(), failure.shard(), failure.node(), formatErrorCause(failure.reason()));
   }
 
   private String formatErrorCause(final ErrorCause errorCause) {

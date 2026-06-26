@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.ShardFailure;
+import org.opensearch.client.opensearch._types.ShardSearchFailure;
 import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
@@ -120,7 +120,7 @@ public class BackupReaderOS extends AbstractBackupReader {
   private static SnapshotInfoDto toSnapshotInfoDto(final SnapshotInfo snapshotInfo) {
     final long startTimeMillis = snapshotInfo.startTimeInMillis();
     final List<String> shardFailures =
-        snapshotInfo.shards().failures().stream().map(ShardFailure::toString).toList();
+        snapshotInfo.shards().failures().stream().map(ShardSearchFailure::toString).toList();
     return new SnapshotInfoDto(
         snapshotInfo.snapshot(),
         SnapshotState.valueOf(snapshotInfo.state()),

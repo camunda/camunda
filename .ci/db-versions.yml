@@ -30,6 +30,7 @@ opensearch:
   os3:
     - "3.5.0"
     - "3.6.0"
+    - "3.7.0"
 
 # ── RDBMS databases ─────────────────────────────────────────────────────────────
 # Each entry is a Docker image tag representing one supported major version.
