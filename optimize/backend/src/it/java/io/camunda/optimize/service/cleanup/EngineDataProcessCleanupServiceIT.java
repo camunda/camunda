@@ -48,7 +48,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupModeAll() {
+  public void shouldDeleteProcessInstanceWhenCleanupModeAll() {
     // given
     final var processDefinitionKey = KEY_GENERATOR.generate(10);
 
@@ -84,7 +84,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupModeAllMultipleDefinitions() {
+  public void shouldDeleteProcessInstanceWhenCleanupModeAllWithMultipleDefinitions() {
     // given
     final var processDefinitionKey1 = KEY_GENERATOR.generate(10);
     final var processDefinitionKey2 = KEY_GENERATOR.generate(10);
@@ -128,7 +128,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupModeAll_disabled() {
+  public void shouldNotDeleteProcessInstanceWhenCleanupModeAllDisabled() {
     // given
     final var processDefinitionKey = KEY_GENERATOR.generate(10);
 
@@ -152,7 +152,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupModeAll_customBatchSize() {
+  public void shouldDeleteProcessInstanceWhenCleanupModeAllWithCustomBatchSize() {
     // given
     final var processDefinitionKey = KEY_GENERATOR.generate(10);
 
@@ -189,7 +189,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupModeAll_specificKeyTtl() {
+  public void shouldNotDeleteProcessInstanceWhenCleanupModeAllAndSpecificKeyTtl() {
     // given
     final var processDefinitionKey1 = KEY_GENERATOR.generate(10);
     final var processDefinitionKey2 = KEY_GENERATOR.generate(10);
@@ -226,7 +226,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupModeVariables() {
+  public void shouldRemoveVariablesWhenCleanupModeVariables() {
     // given
     final var processDefinitionKey = KEY_GENERATOR.generate(10);
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
@@ -260,7 +260,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupModeVariables_specificKeyCleanupMode() {
+  public void shouldRemoveVariablesForSpecificKeyCleanupMode() {
     // given
     final var processDefinitionKey = KEY_GENERATOR.generate(10);
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
@@ -290,7 +290,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
   }
 
   @Test
-  public void testCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionLogsWarning() {
+  public void shouldLogNoMatchingProcessDefinitionWarning() {
     // given I have a key specific config
     final var processDefinitionKey = KEY_GENERATOR.generate(10);
     final String configuredKey = "myMistypedKey";
