@@ -96,6 +96,9 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
+      // The two binds above leave security.authentication with the MapBinder defect for named OIDC
+      // providers (a partial PT override drops the entry's root fields). Recompute it with the
+      // merge-aware resolver, which binds an isolated per-tenant copy and overlays the PT delta.
       physicalTenant
           .getSecurity()
           .setAuthentication(

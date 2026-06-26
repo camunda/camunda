@@ -71,12 +71,16 @@ public final class PhysicalTenantOidcProviderConfigurations {
       final Map<String, OidcConfiguration> rootOidc,
       final Binder binder,
       final String ptPrefix) {
+    final Map<String, OidcConfiguration> resolvedOidc = auth.getProviders().getOidc();
     rootOidc.forEach(
         (providerId, rootProvider) -> {
-          if (auth.getProviders().getOidc().containsKey(providerId)) {
+          if (resolvedOidc.containsKey(providerId)) {
+            // Apply the PT delta onto the pristine root POJO, then swap it back in for the
+            // Binder-created entry that holds only the PT-specified fields. Both steps are
+            // required: the bind layers the override, the put restores the merged result.
             binder.bind(
                 ptPrefix + ".providers.oidc." + providerId, Bindable.ofInstance(rootProvider));
-            auth.getProviders().getOidc().put(providerId, rootProvider);
+            resolvedOidc.put(providerId, rootProvider);
           }
         });
   }
