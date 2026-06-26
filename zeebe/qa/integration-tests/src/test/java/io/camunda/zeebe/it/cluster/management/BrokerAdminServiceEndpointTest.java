@@ -44,7 +44,7 @@ public class BrokerAdminServiceEndpointTest {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
   private static final Duration ENDPOINT_TIMEOUT = Duration.ofSeconds(60);
-  private static final String PARTITION_HEALTH_ID = "Partition-1";
+  private static final String PARTITION_HEALTH_ID = "Partition-default-1";
   private static final List<String> EXPECTED_HEALTH_CHILDREN =
       List.of(
           "SnapshotDirector-1",

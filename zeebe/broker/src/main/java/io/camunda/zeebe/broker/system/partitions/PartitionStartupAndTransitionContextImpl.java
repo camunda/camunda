@@ -201,12 +201,12 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public void notifyListenersOfBecameRaftLeader(final long newTerm) {
-    partitionRaftListeners.forEach(l -> l.onBecameRaftLeader(getPartitionId(), newTerm));
+    partitionRaftListeners.forEach(l -> l.onBecameRaftLeader(partitionId(), newTerm));
   }
 
   @Override
   public void notifyListenersOfBecameRaftFollower(final long newTerm) {
-    partitionRaftListeners.forEach(l -> l.onBecameRaftFollower(getPartitionId(), newTerm));
+    partitionRaftListeners.forEach(l -> l.onBecameRaftFollower(partitionId(), newTerm));
   }
 
   @Override

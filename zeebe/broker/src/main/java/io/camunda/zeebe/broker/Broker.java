@@ -71,7 +71,8 @@ public final class Broker implements AutoCloseable {
     healthCheckService =
         new BrokerHealthCheckService(
             nodeId.memberId(),
-            new HealthTreeMetrics(systemContext.getMeterRegistry(), Tag.of("partition", "none")));
+            new HealthTreeMetrics(systemContext.getMeterRegistry(), Tag.of("partition", "none")),
+            systemContext.getPhysicalTenantIds().known());
 
     final var startupContext =
         new BrokerStartupContextImpl(

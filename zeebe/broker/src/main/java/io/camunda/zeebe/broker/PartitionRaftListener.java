@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.atomix.primitive.partition.PartitionId;
+
 /**
  * Can be implemented and used to react on partition role changes, like on Leader on Actor should be
  * started and on Follower one should be removed.
@@ -20,7 +22,7 @@ public interface PartitionRaftListener {
    * @param partitionId the corresponding partition id
    * @param term the current term
    */
-  void onBecameRaftFollower(final int partitionId, final long term);
+  void onBecameRaftFollower(final PartitionId partitionId, final long term);
 
   /**
    * Is called by the {@link io.camunda.zeebe.broker.system.partitions.ZeebePartition} on starting
@@ -30,5 +32,5 @@ public interface PartitionRaftListener {
    * @param partitionId the corresponding partition id
    * @param term the current term
    */
-  void onBecameRaftLeader(final int partitionId, final long term);
+  void onBecameRaftLeader(final PartitionId partitionId, final long term);
 }
