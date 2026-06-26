@@ -18,18 +18,15 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
-import static io.camunda.it.util.TestHelper.waitForJobs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstance;
-import io.camunda.client.api.search.response.Job;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -39,9 +36,11 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -117,6 +116,17 @@ class AgentInstanceAuthorizationIT {
     elementInstanceKey1 = result1.elementInstanceKey();
     jobKey1 = result1.jobKey();
 
+    // Create history item immediately while jobKey1 is still active, before waiting for
+    // other agents to be indexed (which can take long enough for the job to expire).
+    adminClient
+        .newCreateAgentHistoryItemCommand(agentInstanceKey1)
+        .elementInstanceKey(elementInstanceKey1)
+        .jobKey(jobKey1)
+        .role(AgentInstanceHistoryRole.USER)
+        .content(List.of(AgentInstanceHistoryContent.text("hello")))
+        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+        .execute();
+
     agentInstanceKey2 = createAgentInstance(adminClient, PROCESS_ID_2).agentInstanceKey();
     final var result3 = createAgentInstance(adminClient, PROCESS_ID_3);
 
@@ -126,6 +136,13 @@ class AgentInstanceAuthorizationIT {
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey1);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey2);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey3);
+    // Agent history search is not supported on RDBMS; searchHistory tests are already
+    // individually disabled via @DisabledIfSystemProperty for rdbms.* backends.
+    if (!System.getProperty("test.integration.camunda.database.type", "")
+        .toLowerCase()
+        .startsWith("rdbms")) {
+      waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKey1, 1);
+    }
   }
 
   // ── search ────────────────────────────────────────────────────────────────
@@ -292,8 +309,8 @@ class AgentInstanceAuthorizationIT {
                 .newCreateAgentHistoryItemCommand(agentInstanceKey1)
                 .elementInstanceKey(elementInstanceKey1)
                 .jobKey(jobKey1)
-                .role(AgentHistoryRole.USER)
-                .content(List.of(AgentHistoryContent.text("hello")))
+                .role(AgentInstanceHistoryRole.USER)
+                .content(List.of(AgentInstanceHistoryContent.text("hello")))
                 .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
                 .execute();
 
@@ -307,23 +324,61 @@ class AgentInstanceAuthorizationIT {
   @Test
   void createHistoryItemShouldPassAuthorizationForAuthorizedUser(
       @Authenticated(USER3) final CamundaClient camundaClient) {
-    // given — user3 has UPDATE_PROCESS_INSTANCE on PROCESS_ID_3; there is no active job, so the
-    // engine rejects with 404 after authorization, not 403
-    assertThatThrownBy(
+    // user3 has UPDATE_PROCESS_INSTANCE on PROCESS_ID_3 and jobKey3 is activated in setUp,
+    // so the command should succeed without any exception
+    assertThatNoException()
+        .isThrownBy(
             () ->
                 camundaClient
                     .newCreateAgentHistoryItemCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
                     .jobKey(jobKey3)
-                    .role(AgentHistoryRole.USER)
-                    .content(List.of(AgentHistoryContent.text("hello")))
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(List.of(AgentInstanceHistoryContent.text("hello")))
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
-                    .execute())
-        .isInstanceOf(ProblemException.class)
-        .satisfies(ex -> assertThat(((ProblemException) ex).code()).isNotEqualTo(403));
+                    .execute());
+  }
+
+  // ── searchHistory ─────────────────────────────────────────────────────────
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void searchHistoryShouldReturnHistoryForAuthorizedUser(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // user1 has READ_PROCESS_INSTANCE on PROCESS_ID_1
+    final var result =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKey1).execute();
+
+    assertThat(result.items()).isNotEmpty();
+    assertThat(result.items())
+        .allSatisfy(item -> assertThat(item.getAgentInstanceKey()).isEqualTo(agentInstanceKey1));
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void searchHistoryShouldReturnEmptyForUnauthorizedUser(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // user1 has no READ_PROCESS_INSTANCE on PROCESS_ID_2
+    final var result =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKey2).execute();
+
+    assertThat(result.items()).isEmpty();
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────
+
+  private static void waitForHistoryItemsToBeIndexed(
+      final CamundaClient client, final long agentInstanceKey, final int expectedCount) {
+    Awaitility.await("agent history indexed for key " + agentInstanceKey)
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var response =
+                  client.newAgentInstanceHistorySearchRequest(agentInstanceKey).execute();
+              assertThat(response.items()).hasSizeGreaterThanOrEqualTo(expectedCount);
+            });
+  }
 
   private static AgentInstanceCreationResult createAgentInstance(
       final CamundaClient adminClient, final String processId) {
@@ -362,15 +417,19 @@ class AgentInstanceAuthorizationIT {
             .execute()
             .getAgentInstanceKey();
 
-    final long jobKey =
-        waitForJobs(adminClient, List.of(processInstanceKey)).stream()
-            .filter(j -> JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX.equals(j.getType()))
-            .findFirst()
-            .map(Job::getJobKey)
-            .orElseThrow(
-                () ->
-                    new AssertionError(
-                        "No agent job found for process instance " + processInstanceKey));
+    final var activatedJobs =
+        adminClient
+            .newActivateJobsCommand()
+            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs();
+    assertThat(activatedJobs)
+        .as("expected to activate one agent job for process instance %d", processInstanceKey)
+        .isNotEmpty();
+    final long jobKey = activatedJobs.get(0).getKey();
 
     return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
   }

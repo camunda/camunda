@@ -10,15 +10,13 @@ package io.camunda.it.tenancy;
 import static io.camunda.it.util.TestHelper.deployProcessForTenantAndWaitForIt;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
-import static io.camunda.it.util.TestHelper.waitForJobs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.search.response.Job;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -28,8 +26,10 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -66,7 +66,9 @@ public class AgentInstanceTenancyIT {
 
   private static long agentInstanceKeyA;
   private static long agentInstanceKeyB;
+  private static long elementInstanceKeyA;
   private static long elementInstanceKeyB;
+  private static long jobKeyA;
   private static long jobKeyB;
 
   @BeforeAll
@@ -89,14 +91,47 @@ public class AgentInstanceTenancyIT {
     deployProcessForTenant(adminClient, processModel, TENANT_A);
     deployProcessForTenant(adminClient, processModel, TENANT_B);
 
-    agentInstanceKeyA = createAgentInstance(adminClient, TENANT_A);
+    final var resultA = createAgentInstanceWithResult(adminClient, TENANT_A);
+    agentInstanceKeyA = resultA.agentInstanceKey();
+    elementInstanceKeyA = resultA.elementInstanceKey();
+    jobKeyA = resultA.jobKey();
+
+    // Create history item immediately while jobKeyA is still active, before waiting for
+    // agent B to be indexed (which can take long enough for the job to expire).
+    adminClient
+        .newCreateAgentHistoryItemCommand(agentInstanceKeyA)
+        .elementInstanceKey(elementInstanceKeyA)
+        .jobKey(jobKeyA)
+        .role(AgentInstanceHistoryRole.USER)
+        .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_A)))
+        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+        .execute();
+
     final var resultB = createAgentInstanceWithResult(adminClient, TENANT_B);
     agentInstanceKeyB = resultB.agentInstanceKey();
     elementInstanceKeyB = resultB.elementInstanceKey();
     jobKeyB = resultB.jobKey();
 
+    // Create history item immediately while jobKeyB is still active.
+    adminClient
+        .newCreateAgentHistoryItemCommand(agentInstanceKeyB)
+        .elementInstanceKey(elementInstanceKeyB)
+        .jobKey(jobKeyB)
+        .role(AgentInstanceHistoryRole.USER)
+        .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_B)))
+        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+        .execute();
+
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyA);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyB);
+    // Agent history search is not supported on RDBMS; searchHistory tests are already
+    // individually disabled via @DisabledIfSystemProperty for rdbms.* backends.
+    if (!System.getProperty("test.integration.camunda.database.type", "")
+        .toLowerCase()
+        .startsWith("rdbms")) {
+      waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKeyA, 1);
+      waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKeyB, 1);
+    }
   }
 
   // ── search ────────────────────────────────────────────────────────────────
@@ -218,6 +253,48 @@ public class AgentInstanceTenancyIT {
     assertThat(exception.details().getStatus()).isEqualTo(404);
   }
 
+  // ── searchHistory ─────────────────────────────────────────────────────────
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void searchHistoryShouldReturnOnlyTenantAHistoryForUser1(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // user1 belongs to TENANT_A only
+    final var resultA =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKeyA).execute();
+    final var resultB =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKeyB).execute();
+
+    assertThat(resultA.items()).isNotEmpty();
+    assertThat(resultB.items()).isEmpty();
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void searchHistoryShouldReturnAllHistoryForAdmin(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    final var resultA =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKeyA).execute();
+    final var resultB =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKeyB).execute();
+
+    assertThat(resultA.items()).isNotEmpty();
+    assertThat(resultB.items()).isNotEmpty();
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void searchHistoryShouldReturnEmptyForUserWithNoTenant(
+      @Authenticated(USER2) final CamundaClient camundaClient) {
+    final var resultA =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKeyA).execute();
+    final var resultB =
+        camundaClient.newAgentInstanceHistorySearchRequest(agentInstanceKeyB).execute();
+
+    assertThat(resultA.items()).isEmpty();
+    assertThat(resultB.items()).isEmpty();
+  }
+
   // ── createHistoryItem ─────────────────────────────────────────────────────
 
   @Test
@@ -232,8 +309,8 @@ public class AgentInstanceTenancyIT {
                         .newCreateAgentHistoryItemCommand(agentInstanceKeyB)
                         .elementInstanceKey(elementInstanceKeyB)
                         .jobKey(jobKeyB)
-                        .role(AgentHistoryRole.USER)
-                        .content(List.of(AgentHistoryContent.text("hello")))
+                        .role(AgentInstanceHistoryRole.USER)
+                        .content(List.of(AgentInstanceHistoryContent.text("hello")))
                         .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
                         .execute())
             .actual();
@@ -246,6 +323,19 @@ public class AgentInstanceTenancyIT {
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────
+
+  private static void waitForHistoryItemsToBeIndexed(
+      final CamundaClient client, final long agentInstanceKey, final int expectedCount) {
+    Awaitility.await("agent history indexed for key " + agentInstanceKey)
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var response =
+                  client.newAgentInstanceHistorySearchRequest(agentInstanceKey).execute();
+              assertThat(response.items()).hasSizeGreaterThanOrEqualTo(expectedCount);
+            });
+  }
 
   private static void createTenant(final CamundaClient client, final String tenantId) {
     client.newCreateTenantCommand().tenantId(tenantId).name(tenantId).send().join();
@@ -260,10 +350,6 @@ public class AgentInstanceTenancyIT {
       final CamundaClient client, final BpmnModelInstance model, final String tenantId) {
     final String filename = PROCESS_ID + "-" + tenantId + ".bpmn";
     deployProcessForTenantAndWaitForIt(client, model, filename, tenantId);
-  }
-
-  private static long createAgentInstance(final CamundaClient client, final String tenantId) {
-    return createAgentInstanceWithResult(client, tenantId).agentInstanceKey();
   }
 
   private static AgentInstanceCreationResult createAgentInstanceWithResult(
@@ -300,15 +386,20 @@ public class AgentInstanceTenancyIT {
             .execute()
             .getAgentInstanceKey();
 
-    final long jobKey =
-        waitForJobs(client, List.of(processInstanceKey)).stream()
-            .filter(j -> JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX.equals(j.getType()))
-            .findFirst()
-            .map(Job::getJobKey)
-            .orElseThrow(
-                () ->
-                    new AssertionError(
-                        "No agent job found for process instance " + processInstanceKey));
+    final var activatedJobs =
+        client
+            .newActivateJobsCommand()
+            .jobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .maxJobsToActivate(1)
+            .tenantIds(tenantId)
+            .timeout(Duration.ofMinutes(5))
+            .send()
+            .join()
+            .getJobs();
+    assertThat(activatedJobs)
+        .as("expected to activate one agent job for process instance %d", processInstanceKey)
+        .isNotEmpty();
+    final long jobKey = activatedJobs.get(0).getKey();
 
     return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
   }
