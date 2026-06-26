@@ -384,6 +384,7 @@ optimize.Dockerfile         @camunda/core-features
 # Note: trailing /* (wildcard) not trailing / (globstar) — ensures these override the broad
 # /qa/ rule regardless of codeowners-plus sort order. Add new subdirs explicitly as they appear.
 /qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/*              @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/*/*            @camunda/data-layer
 /qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/exporter/*        @camunda/data-layer
 /qa/acceptance-tests/src/test/java/io/camunda/it/schema/*                @camunda/data-layer
 /qa/acceptance-tests/src/test/java/io/camunda/it/schema/strategy/*       @camunda/data-layer

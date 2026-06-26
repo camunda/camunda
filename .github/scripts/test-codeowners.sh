@@ -30,10 +30,10 @@ assert_owner() {
   shift 2
   local expected=("$@")
 
-  local json stderr_out
-  json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>/tmp/_co_stderr) || true
+  local json stderr_out exit_code=0
+  json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>/tmp/_co_stderr) || exit_code=$?
   stderr_out=$(cat /tmp/_co_stderr 2>/dev/null || true)
-  if echo "${stderr_out}" | grep -q "^Error:"; then
+  if [[ $exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
     echo -e "  ${RED}ERROR${NC}: ${description} (${file}): CLI error: ${stderr_out}"
     (( FAIL++ )) || true
     return
@@ -70,10 +70,10 @@ assert_owner_bug() {
   shift 2
   local expected=("$@")
 
-  local json stderr_out
-  json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>/tmp/_co_stderr) || true
+  local json stderr_out exit_code=0
+  json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>/tmp/_co_stderr) || exit_code=$?
   stderr_out=$(cat /tmp/_co_stderr 2>/dev/null || true)
-  if echo "${stderr_out}" | grep -q "^Error:"; then
+  if [[ $exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
     echo -e "  ${RED}ERROR${NC} [BUG]: ${description}: CLI error"
     (( BUGS++ )) || true
     return
@@ -206,8 +206,13 @@ echo ""
 echo "── /qa/acceptance-tests → data-layer ──"
 
 assert_owner \
-  "acceptance-tests rdbms/db/ → data-layer" \
+  "acceptance-tests rdbms/db/ → data-layer (direct file)" \
   "qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/RdbmsFlushRollbackIT.java" \
+  "@camunda/data-layer"
+
+assert_owner \
+  "acceptance-tests rdbms/db/subdir/ → data-layer (nested file)" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/agentinstance/AgentInstanceSortIT.java" \
   "@camunda/data-layer"
 
 assert_owner \
