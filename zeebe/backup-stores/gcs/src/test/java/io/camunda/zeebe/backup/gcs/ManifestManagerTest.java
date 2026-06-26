@@ -255,8 +255,7 @@ final class ManifestManagerTest {
     Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
         .thenThrow(
             new StorageException(
-                new IOException(
-                    "universe domain metadata request failed while listing manifests")))
+                new IOException("universe domain metadata request failed while listing manifests")))
         .thenReturn(page);
     final var wildcard =
         new BackupIdentifierWildcardImpl(
