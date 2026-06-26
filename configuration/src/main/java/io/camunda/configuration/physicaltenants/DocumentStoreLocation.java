@@ -67,10 +67,6 @@ record DocumentStoreLocation(String provider, List<String> coordinates) {
     if (value == null) {
       return "";
     }
-    String normalized = value.trim().toLowerCase();
-    while (normalized.endsWith("/")) {
-      normalized = normalized.substring(0, normalized.length() - 1);
-    }
-    return normalized;
+    return value.trim().toLowerCase().replaceAll("/+$", "");
   }
 }
