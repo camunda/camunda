@@ -73,8 +73,12 @@ public class CamundaAssertJsonMapper {
   }
 
   private JsonNode write(final Object value) {
+    // Serialize to a JSON string and parse it back to normalize numeric node types (e.g. int vs
+    // long, float vs double, decimal handling). This ensures the expected value uses the same
+    // JsonNode types that Jackson produces when reading a variable value from its JSON
+    // representation.
     if (jsonMapper != null) {
-      return jsonMapper.transform(value, JsonNode.class);
+      return jsonMapper.fromJson(jsonMapper.toJson(value), JsonNode.class);
     } else {
       return zeebeJsonMapper.fromJson(zeebeJsonMapper.toJson(value), JsonNode.class);
     }
