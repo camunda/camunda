@@ -21,6 +21,7 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.AgentInstance;
+import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -82,6 +83,14 @@ public final class SearchResponseMapper {
     final List<AgentInstance> instances =
         toSearchResponseInstances(response.getItems(), AgentInstanceImpl::new);
     return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<AgentInstanceHistory> toAgentInstanceHistorySearchResponse(
+      final AgentInstanceHistorySearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AgentInstanceHistory> items =
+        toSearchResponseInstances(response.getItems(), AgentInstanceHistoryImpl::new);
+    return new SearchResponseImpl<>(items, page);
   }
 
   public static SearchResponse<ProcessDefinition> toProcessDefinitionSearchResponse(

@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.AgentInstanceFilter;
+import io.camunda.client.api.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
@@ -48,6 +49,7 @@ import io.camunda.client.api.search.page.CursorBackwardPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.search.page.LimitPage;
 import io.camunda.client.api.search.page.OffsetPage;
+import io.camunda.client.api.search.sort.AgentInstanceHistorySort;
 import io.camunda.client.api.search.sort.AgentInstanceSort;
 import io.camunda.client.api.search.sort.AuditLogSort;
 import io.camunda.client.api.search.sort.AuthorizationSort;
@@ -84,6 +86,7 @@ import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
 import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.impl.search.filter.AgentInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.AgentInstanceHistoryFilterImpl;
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
@@ -116,6 +119,7 @@ import io.camunda.client.impl.search.page.CursorForwardPageImpl;
 import io.camunda.client.impl.search.page.LimitPageImpl;
 import io.camunda.client.impl.search.page.OffsetPageImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
+import io.camunda.client.impl.search.sort.AgentInstanceHistorySortImpl;
 import io.camunda.client.impl.search.sort.AgentInstanceSortImpl;
 import io.camunda.client.impl.search.sort.AuditLogSortImpl;
 import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
@@ -608,6 +612,20 @@ public final class SearchRequestBuilders {
 
   public static ResourceSort resourceSort(final Consumer<ResourceSort> fn) {
     final ResourceSort sort = new ResourceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AgentInstanceHistoryFilter agentInstanceHistoryFilter(
+      final Consumer<AgentInstanceHistoryFilter> fn) {
+    final AgentInstanceHistoryFilter filter = new AgentInstanceHistoryFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AgentInstanceHistorySort agentInstanceHistorySort(
+      final Consumer<AgentInstanceHistorySort> fn) {
+    final AgentInstanceHistorySort sort = new AgentInstanceHistorySortImpl();
     fn.accept(sort);
     return sort;
   }
