@@ -149,16 +149,16 @@ it('should display process instances', async ({worker}) => {
 
 ## Definition of Done (9 gates)
 
-Run from `webapp/client` unless noted. Gates 1–6 are local; 7–9 gate the PR (9 is CI-authoritative — verify locally, never push regenerated snapshots).
+Run from `webapp/client`. Gates 1–6 are local; 7–9 gate the PR (9 is CI-authoritative — verify locally, never push regenerated snapshots). Use the existing package scripts — gates 1, 2, 6 also run together via `npm run lint`.
 
-1. **Prettier** — `npx prettier --check "apps/orchestration-cluster-webapp/src/**/*.{ts,tsx}" "apps/orchestration-cluster-webapp/test/**/*.ts"`
-2. **ESLint** — `npm run lint`
-3. **Typecheck** — `cd apps/orchestration-cluster-webapp && npm run typecheck`
-4. **Unit** — `cd apps/orchestration-cluster-webapp && npm run test:unit`
+1. **Prettier** — `npm run lint:prettier`
+2. **ESLint** — `npm run lint:eslint`
+3. **Typecheck** — `npm run typecheck -w @camunda/orchestration-cluster-webapp`
+4. **Unit** — `npm run test:unit -w @camunda/orchestration-cluster-webapp`
 5. **Build** — `npm run build -w @camunda/orchestration-cluster-webapp`
-6. **Knip** — `cd apps/orchestration-cluster-webapp && npm run lint:knip`
-7. **Integration** — `cd apps/orchestration-cluster-webapp && npx playwright test --project=integration test/integration/`
-8. **a11y** — `cd apps/orchestration-cluster-webapp && npx playwright test --project=a11y-light --project=a11y-dark`
+6. **Knip** — `npm run lint:knip`
+7. **Integration** — `npm run test:integration -w @camunda/orchestration-cluster-webapp`
+8. **a11y** — `npm run test:a11y -w @camunda/orchestration-cluster-webapp`
 9. **Visual** — CI is authoritative; never regenerate snapshots locally.
 
 ## Migration loop
