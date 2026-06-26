@@ -243,6 +243,7 @@ runs:
         java-code-change:
           - '**/src/main/**'
           - '**/src/test/**'
+          - '**/src/it/**'
 
         maven-change:
           - 'bom/**'
