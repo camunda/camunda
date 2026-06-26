@@ -555,6 +555,303 @@ func TestStripRocksDbNativeLibsIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestZstdNativePrefix(t *testing.T) {
+	tests := []struct {
+		osType   string
+		arch     string
+		expected string
+	}{
+		{"linux", "x86_64", "linux/amd64/"},
+		{"linux", "aarch64", "linux/aarch64/"},
+		{"darwin", "x86_64", "darwin/x86_64/"},
+		{"darwin", "aarch64", "darwin/aarch64/"},
+		{"windows", "x86_64", "win/amd64/"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.osType+"/"+tt.arch, func(t *testing.T) {
+			got, err := zstdNativePrefix(tt.osType, tt.arch)
+			if err != nil {
+				t.Fatalf("zstdNativePrefix(%q, %q) error: %v", tt.osType, tt.arch, err)
+			}
+			if got != tt.expected {
+				t.Fatalf("zstdNativePrefix(%q, %q) = %q, want %q", tt.osType, tt.arch, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestZstdNativePrefixUnknownPlatformErrors(t *testing.T) {
+	tests := []struct {
+		osType string
+		arch   string
+	}{
+		{"freebsd", "x86_64"},
+		{"windows", "aarch64"},
+		{"linux", "i386"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.osType+"/"+tt.arch, func(t *testing.T) {
+			_, err := zstdNativePrefix(tt.osType, tt.arch)
+			if err == nil {
+				t.Fatalf("expected error for unsupported os/arch %s/%s, got nil", tt.osType, tt.arch)
+			}
+		})
+	}
+}
+
+func TestIsZstdNativeEntry(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected bool
+	}{
+		{"linux/amd64/libzstd-jni-1.5.7-9.so", true},
+		{"darwin/aarch64/libzstd-jni-1.5.7-9.dylib", true},
+		{"win/amd64/libzstd-jni-1.5.7-9.dll", true},
+		{"aix/ppc64/libzstd-jni-1.5.7-9.so", true},
+		{"freebsd/amd64/libzstd-jni-1.5.7-9.so", true},
+		{"META-INF/MANIFEST.MF", false},
+		{"com/github/luben/zstd/Zstd.class", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isZstdNativeEntry(tt.name)
+			if got != tt.expected {
+				t.Fatalf("isZstdNativeEntry(%q) = %v, want %v", tt.name, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestStripZstdJniNativeLibsStripsJar(t *testing.T) {
+	// given
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "zstd-jni-1.5.7-9.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	entries := []string{
+		"META-INF/MANIFEST.MF",
+		"com/github/luben/zstd/Zstd.class",
+		"linux/amd64/libzstd-jni-1.5.7-9.so",
+		"linux/aarch64/libzstd-jni-1.5.7-9.so",
+		"darwin/x86_64/libzstd-jni-1.5.7-9.dylib",
+		"darwin/aarch64/libzstd-jni-1.5.7-9.dylib",
+		"win/amd64/libzstd-jni-1.5.7-9.dll",
+		"aix/ppc64/libzstd-jni-1.5.7-9.so",
+		"freebsd/amd64/libzstd-jni-1.5.7-9.so",
+	}
+	for _, name := range entries {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary-" + name)); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64 (keeps linux/amd64/)
+	err = stripZstdJniNativeLibs(version, "linux", "x86_64")
+
+	// then
+	if err != nil {
+		t.Fatalf("stripZstdJniNativeLibs returned error: %v", err)
+	}
+
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		t.Fatalf("failed to open stripped jar: %v", err)
+	}
+	defer func() {
+		if err := r.Close(); err != nil {
+			t.Errorf("failed to close stripped jar: %v", err)
+		}
+	}()
+
+	kept := make(map[string]bool)
+	for _, entry := range r.File {
+		kept[entry.Name] = true
+	}
+
+	// Should keep: non-native entries + linux/amd64/
+	for _, mustKeep := range []string{
+		"META-INF/MANIFEST.MF",
+		"com/github/luben/zstd/Zstd.class",
+		"linux/amd64/libzstd-jni-1.5.7-9.so",
+	} {
+		if !kept[mustKeep] {
+			t.Fatalf("expected entry %q to be preserved, got entries: %v", mustKeep, kept)
+		}
+	}
+
+	// Should drop: all other native entries
+	for _, mustDrop := range []string{
+		"linux/aarch64/libzstd-jni-1.5.7-9.so",
+		"darwin/x86_64/libzstd-jni-1.5.7-9.dylib",
+		"darwin/aarch64/libzstd-jni-1.5.7-9.dylib",
+		"win/amd64/libzstd-jni-1.5.7-9.dll",
+		"aix/ppc64/libzstd-jni-1.5.7-9.so",
+		"freebsd/amd64/libzstd-jni-1.5.7-9.so",
+	} {
+		if kept[mustDrop] {
+			t.Fatalf("expected entry %q to be dropped, but it was kept", mustDrop)
+		}
+	}
+}
+
+func TestStripZstdJniNativeLibsIsIdempotent(t *testing.T) {
+	// given: JAR already stripped — only the target platform remains
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "zstd-jni-1.5.7-9.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	fw, err := w.Create("darwin/aarch64/libzstd-jni-1.5.7-9.dylib")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := fw.Write([]byte("binary")); err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: first call
+	if err := stripZstdJniNativeLibs(version, "darwin", "aarch64"); err != nil {
+		t.Fatalf("first call failed: %v", err)
+	}
+	// when: second call on already-stripped JAR
+	if err := stripZstdJniNativeLibs(version, "darwin", "aarch64"); err != nil {
+		t.Fatalf("second call (idempotency) failed: %v", err)
+	}
+}
+
+func TestStripZstdJniNativeLibsSkipsWhenJarMissing(t *testing.T) {
+	// given: empty temp dir — no zstd-jni jar
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	// when: no jar exists — should warn and return nil (not error)
+	err = stripZstdJniNativeLibs("8.10.0-test", "linux", "x86_64")
+
+	// then
+	if err != nil {
+		t.Fatalf("expected nil error when jar is missing (graceful skip), got: %v", err)
+	}
+}
+
+func TestStripZstdJniNativeLibsErrorsWhenKeepPrefixAbsent(t *testing.T) {
+	// given: JAR contains only foreign-platform native libs — the target prefix is absent.
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "zstd-jni-1.5.7-9.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	// Only linux/aarch64 — no linux/amd64/ entry for the target linux/x86_64.
+	fw, err := w.Create("linux/aarch64/libzstd-jni-1.5.7-9.so")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := fw.Write([]byte("binary")); err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: strip for linux/x86_64 — keepPrefix "linux/amd64/" is absent.
+	err = stripZstdJniNativeLibs(version, "linux", "x86_64")
+
+	// then: should return an error, not silently strip all native libs.
+	if err == nil {
+		t.Fatal("expected error when target prefix is absent in JAR, got nil")
+	}
+}
+
 func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
 	// given — minimal class file header with major version matching helperJavaRelease
 	dir := t.TempDir()
