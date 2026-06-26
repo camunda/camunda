@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -22,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.awaitility.Awaitility;
 
 /**
  * Reusable helper for booting a single {@link TestStandaloneBroker} that serves several physical
@@ -56,6 +61,8 @@ import java.util.UUID;
 public final class PhysicalTenantsITHelper {
 
   public static final String DEFAULT_TENANT_ID = "default";
+
+  private static final Duration ADMIN_READY_TIMEOUT = Duration.ofSeconds(30);
 
   private final Map<String, Storage> tenants;
 
@@ -110,6 +117,20 @@ public final class PhysicalTenantsITHelper {
   /** The conventional admin username for a physical tenant: {@code <tenantId>-admin}. */
   public String adminUsername(final String tenantId) {
     return tenantId + "-admin";
+  }
+
+  /**
+   * Waits until the given physical-tenant admin client can authenticate, tolerating the transient
+   * 401s that occur immediately after startup until the PT's admin user is initialized in its
+   * schema. Prefer this over cluster-topology readiness checks for a multi-PT broker, whose
+   * partition-id-keyed topology cannot represent the per-PT raft groups.
+   */
+  public void awaitAdminReady(final CamundaClient admin) {
+    Awaitility.await("per-PT admin can authenticate")
+        .atMost(ADMIN_READY_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
   }
 
   /**

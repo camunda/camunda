@@ -115,17 +115,6 @@ abstract class MultiPhysicalTenantAuthorizationTestBase {
   }
 
   /**
-   * Waits until the given PT admin client can authenticate (avoids transient post-startup 401s).
-   */
-  protected static void awaitAdminReady(final CamundaClient admin, final String label) {
-    Awaitility.await(label)
-        .atMost(PROPAGATION_TIMEOUT)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
-  }
-
-  /**
    * Creates a restricted (no-permissions) user with an exact username in the given PT. Useful for
    * mirroring the same identity into multiple PTs (each PT has its own schema), e.g. to prove a
    * cross-PT denial is a true 403 (identity exists, no grant) rather than a 401 (unknown identity).
@@ -134,7 +123,7 @@ abstract class MultiPhysicalTenantAuthorizationTestBase {
       final CamundaClient admin, final String username) {
     // immediately after startup the per-PT admin user may not yet be initialized in its RDBMS
     // schema, so the admin's own request can transiently 401 — wait until it can authenticate
-    awaitAdminReady(admin, "per-PT admin can authenticate");
+    TENANTS.awaitAdminReady(admin);
     admin
         .newCreateUserCommand()
         .username(username)
