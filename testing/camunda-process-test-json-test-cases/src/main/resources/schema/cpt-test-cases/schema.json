@@ -988,7 +988,6 @@
         },
         "variables": {
           "description": "The variables to set as the decision output. Optional. Deprecated, use decisionOutput.",
-          "deprecated": true,
           "type": "object",
           "additionalProperties": true
         },
