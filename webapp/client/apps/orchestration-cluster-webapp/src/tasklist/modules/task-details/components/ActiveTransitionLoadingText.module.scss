@@ -6,9 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TaskDetailPage} from '#/tasklist/pages/TaskDetailPage';
-import {createFileRoute} from '@tanstack/react-router';
+@use '@carbon/type';
 
-export const Route = createFileRoute('/_auth/tasklist/_tasks/$id')({
-	component: TaskDetailPage,
-});
+.container {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: end;
+	gap: var(--cds-spacing-03);
+}
+
+.message {
+	@include type.type-style('label-02');
+	color: var(--cds-text-secondary);
+}

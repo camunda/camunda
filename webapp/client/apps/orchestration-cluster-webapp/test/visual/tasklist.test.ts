@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -50,7 +51,12 @@ test('should match the tasklist processes page snapshot', async ({tasklistProces
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the tasklist 404 page snapshot', async ({notFoundPage, page}) => {
+test('should match the tasklist 404 page snapshot', async ({notFoundPage, page, network}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json({}, {status: 404}),
+		}),
+	);
 	await page.goto('/tasklist/nonexistent/page');
 	await expect(notFoundPage.heading).toBeVisible();
 

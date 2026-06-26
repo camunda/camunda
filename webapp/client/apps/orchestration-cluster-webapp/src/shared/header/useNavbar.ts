@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
+import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {useCallback} from 'react';
 
 type NavbarConfig = {
@@ -37,12 +38,9 @@ const tabRoutes = {
 function useNavbar(currentUser: CurrentUser): NavbarConfig {
 	const {t} = useTranslation();
 	const matchRoute = useMatchRoute();
+	const hasRouteMatch = useHasRouteMatch();
 	const {authorizedComponents} = currentUser;
 
-	const hasRouteMatch = useCallback(
-		(...routes: FileRouteTypes['to'][]) => routes.some((to) => matchRoute({to}) !== false),
-		[matchRoute],
-	);
 	const hasComponentRouteMatch = useCallback(
 		(component: 'tasklist' | 'admin' | 'operate') => matchRoute({to: `/${component}`, fuzzy: true}) !== false,
 		[matchRoute],
@@ -67,7 +65,14 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						{
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
-							isCurrentPage: !hasRouteMatch('/tasklist/processes') && hasRouteMatch('/tasklist', '/tasklist/$id'),
+							isCurrentPage:
+								!hasRouteMatch('/tasklist/processes') &&
+								hasRouteMatch(
+									'/tasklist',
+									'/tasklist/$userTaskKey',
+									'/tasklist/$userTaskKey/process',
+									'/tasklist/$userTaskKey/history',
+								),
 							routeProps: {
 								to: tabRoutes['tasklistIndex'],
 								onClick: () => {

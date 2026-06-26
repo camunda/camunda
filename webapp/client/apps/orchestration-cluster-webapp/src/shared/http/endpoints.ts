@@ -15,6 +15,8 @@ import {
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryBatchOperationsRequestBody,
+	type UserTask,
+	type ProcessDefinition,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -142,6 +144,20 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getBatchOperation.getUrl({batchOperationKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getBatchOperation.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getUserTask: ({userTaskKey}: Pick<UserTask, 'userTaskKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getUserTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getUserTask.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionXml: ({processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionXml.getUrl({processDefinitionKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionXml.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };
