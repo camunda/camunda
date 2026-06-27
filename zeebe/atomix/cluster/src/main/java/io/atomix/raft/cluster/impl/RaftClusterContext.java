@@ -383,10 +383,23 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
                     this,
                     raft.getMaxAppendsPerFollower()));
 
-    // If the member type has changed, update the member type and reset its state.
+    // If the member type has changed, update the member type and reset its replication state.
     if (context.getMember().getType() != member.getType()) {
+      final var oldType = context.getMember().getType();
       context.getMember().update(member.getType(), time);
+      // A PASSIVE<->ACTIVE transition keeps the member replicating across the change, so the
+      // leader's last-heard-from time stays valid. Preserve responseTime across the reset:
+      // zeroing it would make the quorum-response check fall back to a dead member and spuriously
+      // step the leader down while a grow-first heal promotes the (caught-up) replacement. (The
+      // rest of the state is still reset, so a promotion behaves like the original otherwise.)
+      final boolean betweenPassiveAndActive =
+          (oldType == Type.PASSIVE && member.getType() == Type.ACTIVE)
+              || (oldType == Type.ACTIVE && member.getType() == Type.PASSIVE);
+      final long preservedResponseTime = context.getResponseTime();
       context.resetState(raft.getLog());
+      if (betweenPassiveAndActive) {
+        context.setResponseTime(preservedResponseTime);
+      }
     }
 
     if (member.getType() == Type.ACTIVE) {
