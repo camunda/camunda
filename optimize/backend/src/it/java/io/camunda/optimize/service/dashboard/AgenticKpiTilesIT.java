@@ -77,7 +77,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
-  // Completed agent runs
+  // Total Executions (completed agent runs)
   // ---------------------------------------------------------------------------
 
   @Test

@@ -55,14 +55,14 @@ jobs:
     steps:
       - id: sanitize-author
         name: Sanitize author name
-        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
         with:
           branch: ${{ github.event.pull_request.user.login }}
           max_length: 10
 
       - id: sanitize-db-type
         name: Sanitize db type
-        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
         with:
           branch: ${{ inputs.secondary-storage-type }}
           max_length: 15
@@ -70,15 +70,20 @@ jobs:
       - id: compute-namespace
         name: Compute safe namespace from PR author, number and the database type
         run: |
-          author="${{ steps.sanitize-author.outputs.branch_name }}"
-          db_type="${{ steps.sanitize-db-type.outputs.branch_name }}"
-          pr_number="${{ github.event.pull_request.number }}"
+          author="${AUTHOR}"
+          db_type="${DB_TYPE}"
+          pr_number="${PR_NUMBER}"
           echo "namespace=c8-${author}-pr-${pr_number}-${db_type}" >> "$GITHUB_OUTPUT"
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ steps.sanitize-author.outputs.branch_name }}
+          DB_TYPE: ${{ steps.sanitize-db-type.outputs.branch_name }}
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -112,6 +117,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Wait for load test to stabilize
         run: sleep 1800  # 30 minutes
       - name: Observe build status
@@ -147,6 +154,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set up Teleport
         uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
@@ -232,6 +241,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Convert queries.yaml to JSON for render step
         run: yq -o=json '.' load-tests/docs/scripts/queries.yaml > /tmp/queries.json
       - name: Build comparison markdown
@@ -266,6 +277,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Post comparison comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -322,15 +335,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: artifacts
       - name: Comment PR with profiling results
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          STORAGE_TYPE: ${{ needs.sanitize-branch-name.outputs.storage-type }}
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
+
+            const repo = process.env.REPO;
+            const runID = process.env.RUN_ID;
+            const storageType = process.env.STORAGE_TYPE;
+
+            const runURL = `https://github.com/${repo}/actions/runs/${runID}`;
 
             // List all downloaded artifacts
             const artifactPath = 'artifacts';
@@ -343,12 +368,12 @@ jobs:
               run_id: context.runId,
             });
 
-            let comment = '## Profiling Results - ${{ needs.sanitize-branch-name.outputs.storage-type }}\n\n';
+            let comment = `## Profiling Results - ${storageType}\n\n`;
             comment += 'The benchmark has been profiled with the following events:\n\n';
             comment += '| Event | Pod | Artifact |\n';
             comment += '|-------|-----|----------|\n';
 
-            const artifactPrefix = 'flamegraph-${{ needs.sanitize-branch-name.outputs.storage-type }}';
+            const artifactPrefix = `flamegraph-${storageType}`;
             const regex = new RegExp(artifactPrefix + '-(\\w+)-(\\w+-\\d+)');
             artifacts.forEach(artifact => {
               const match = artifact.match(regex);
@@ -359,7 +384,7 @@ jobs:
                 // Find the artifact ID for this artifact name
                 const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
                 if (artifactInfo) {
-                  const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${artifactInfo.id}`;
+                  const downloadUrl = `${runURL}/artifacts/${artifactInfo.id}`;
                   comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
                 } else {
                   comment += `| ${event} | ${pod} | N/A |\n`;
@@ -367,7 +392,7 @@ jobs:
               }
             });
 
-            comment += '\n📊 [View all artifacts and workflow summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+            comment += `\n📊 [View all artifacts and workflow summary](${runURL})\n`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

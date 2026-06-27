@@ -103,7 +103,7 @@ public final class StubBroker implements AutoCloseable {
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(
-        PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, partitionId),
+        new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, partitionId),
         RequestType.COMMAND,
         channelHandler);
 

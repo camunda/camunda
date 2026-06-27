@@ -100,6 +100,12 @@ it('should call the provided updateReport property function when a setting chang
   expect(spy).toHaveBeenCalled();
 });
 
+it('should render the variable export filter hint in the report setup section', () => {
+  const node = shallow(<ReportControlPanel {...props} />);
+
+  expect(node.find('.exportFilterHint').find('ExportFilterHint')).toExist();
+});
+
 it('should load the variables of the process', () => {
   shallow(<ReportControlPanel {...props} />);
 

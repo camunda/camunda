@@ -207,11 +207,11 @@ final class ClusterConfigurationInitializerTest {
 
   private StaticConfiguration getStaticConfiguration(
       final MemberId member, final Set<MemberId> members) {
-    final var partitionId = PartitionId.from("test", 1);
+    final var partitionId = new PartitionId("test", 1);
     final Set<PartitionMetadata> partitions =
         Set.of(
             new PartitionMetadata(
-                PartitionId.from("test", 1),
+                new PartitionId("test", 1),
                 members,
                 members.stream().collect(Collectors.toMap(Function.identity(), ignored -> 1)),
                 1,

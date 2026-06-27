@@ -58,7 +58,6 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 
 public final class BrokerClientTest {
 
@@ -131,14 +130,14 @@ public final class BrokerClientTest {
     registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
 
     // when
-    final Future<?> result = client.sendRequestWithRetry(new TestCommand());
+    final var result = client.sendRequestWithRetry(new TestCommand());
 
     // then
     final var receivedCommandRequests = broker.getReceivedCommandRequests();
     assertThat(result)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getError)
+        .isEqualTo(new BrokerError(ErrorCode.INTERNAL_ERROR, "test"));
     assertThat(receivedCommandRequests).hasSize(1);
     receivedCommandRequests.forEach(
         request -> {
@@ -199,14 +198,13 @@ public final class BrokerClientTest {
     registerError(broker, ErrorCode.PARTITION_LEADER_MISMATCH, "");
 
     // when
-    final Future<?> response = client.sendRequest(new TestCommand());
+    final var response = client.sendRequest(new TestCommand());
 
     // then
     assertThat(response)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(
-            new BrokerErrorException(new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getError)
+        .isEqualTo(new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, ""));
   }
 
   @Test
@@ -255,27 +253,26 @@ public final class BrokerClientTest {
   }
 
   @Test
-  void shouldIncludeCallingFrameInExceptionStacktraceOnAsyncRootCause(final TestInfo testInfo) {
+  void shouldRouteBrokerRejectionToCallbackThrowableConsumer() {
     // given
+    final AtomicReference<Throwable> errorRef = new AtomicReference<>();
     broker
         .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
         .respondWith()
-        .rejection();
+        .rejection(RejectionType.INVALID_ARGUMENT, "foo")
+        .value(null)
+        .register();
 
     // when
-    try {
-      client.sendRequestWithRetry(new TestCommand()).join();
-      fail("should throw exception");
-    } catch (final Exception e) {
-      // then
-      assertThat(e.getStackTrace())
-          .anySatisfy(
-              frame -> {
-                assertThat(frame.getClassName()).isEqualTo(getClass().getName());
-                assertThat(frame.getMethodName())
-                    .isEqualTo(testInfo.getTestMethod().orElseThrow().getName());
-              });
-    }
+    client.sendRequestWithRetry(
+        new TestCommand(), (key, response) -> fail("should reject"), errorRef::set);
+
+    // then
+    Awaitility.await("callback throwable received")
+        .untilAsserted(
+            () -> {
+              assertThat(errorRef.get()).isInstanceOf(BrokerRejectionException.class);
+            });
   }
 
   @Test
@@ -299,11 +296,10 @@ public final class BrokerClientTest {
 
     // then
     assertThat(responseFuture)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(
-            new BrokerRejectionException(
-                new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getRejection)
+        .isEqualTo(
+            new BrokerRejection(TestCommand.INTENT, -1, RejectionType.INVALID_ARGUMENT, "foo"));
   }
 
   @Test
@@ -325,11 +321,10 @@ public final class BrokerClientTest {
 
     // then
     assertThat(responseFuture)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(
-            new BrokerRejectionException(
-                new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getRejection)
+        .isEqualTo(
+            new BrokerRejection(TestCommand.INTENT, -1, RejectionType.INVALID_ARGUMENT, "foo"));
   }
 
   @Test

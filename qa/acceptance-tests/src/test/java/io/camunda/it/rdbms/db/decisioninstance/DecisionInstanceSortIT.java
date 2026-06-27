@@ -89,6 +89,22 @@ public class DecisionInstanceSortIT {
   }
 
   @TestTemplate
+  public void shouldSortByBusinessIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.businessId().asc(),
+        Comparator.comparing(DecisionInstanceEntity::businessId));
+  }
+
+  @TestTemplate
+  public void shouldSortByBusinessIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.businessId().desc(),
+        Comparator.comparing(DecisionInstanceEntity::businessId).reversed());
+  }
+
+  @TestTemplate
   public void shouldSortByFlowNodeInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(

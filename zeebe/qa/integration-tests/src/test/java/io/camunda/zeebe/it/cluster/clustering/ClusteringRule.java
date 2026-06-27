@@ -49,6 +49,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
+import io.camunda.zeebe.gateway.api.util.GatewayTestFactory;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -390,7 +392,7 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
             brokerSpringConfig.shutdownTimeout(),
             brokerCfg,
             null,
@@ -541,7 +543,7 @@ public class ClusteringRule extends ExternalResource {
     topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
-        new Gateway(
+        GatewayTestFactory.create(
             gatewayCfg,
             EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,

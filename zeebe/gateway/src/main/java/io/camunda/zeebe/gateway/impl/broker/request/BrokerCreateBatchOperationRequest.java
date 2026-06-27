@@ -13,6 +13,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -50,6 +51,12 @@ public class BrokerCreateBatchOperationRequest
 
   public BrokerCreateBatchOperationRequest setFilter(final FilterBase filter) {
     requestDto.setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)));
+    return this;
+  }
+
+  public BrokerCreateBatchOperationRequest setJobUpdatePlan(
+      final BatchOperationJobUpdatePlan jobUpdatePlan) {
+    requestDto.setJobUpdatePlan(jobUpdatePlan);
     return this;
   }
 

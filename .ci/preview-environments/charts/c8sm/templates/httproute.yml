@@ -1,0 +1,177 @@
+# Gateway API HTTPRoutes for the C8 Self-Managed Camunda preview environment.
+#
+# The infra-managed Gateway, the Vouch (Okta SSO) Middleware, the error-pages
+# Middleware and the wildcard-cert TLS termination are rendered into this
+# namespace by the `infra-preview-environments-gateway-api` dependency; these
+# routes attach to that Gateway, reference the Vouch Middleware on every
+# authenticated rule, and reference the error-pages Middleware on every backend
+# rule so backend 5xx responses render the shared "Preview Environment not
+# available" page. See
+# https://github.com/camunda/infra-preview-environments-gateway-api.
+#
+# The routes are hand-written (the dependency's `route.enabled` is false)
+# because the backend service names, ports and context paths are derived from
+# the camunda-platform subchart templates.
+#
+# Known gap: the `global.preview.ingress.internalAuthBypass.enabled` source-IP
+# Vouch bypass (non-default) has no faithful Traefik Gateway API equivalent —
+# Traefik's ipAllowList rejects non-listed IPs rather than letting them skip
+# auth — and is therefore intentionally not translated here; revisit if a
+# consumer enables it.
+---
+{{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
+{{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
+{{- $gateway := required "infra-preview-environments-gateway-api values block must be set" (index .Values "infra-preview-environments-gateway-api") -}}
+{{- $gatewayName := required "infra-preview-environments-gateway-api.gateway.name must be set so the HTTPRoutes can attach to the infra-managed Gateway" $gateway.gateway.name -}}
+{{- $vouchMiddleware := required "infra-preview-environments-gateway-api.auth.middlewareName must be set so the HTTPRoute filters can reference the Vouch Middleware" $gateway.auth.middlewareName -}}
+{{- $errorPages := $gateway.errorPages | default dict -}}
+{{- $errorsEnabled := $errorPages.enabled | default false -}}
+{{- $errorsMiddleware := "" -}}
+{{- if $errorsEnabled -}}
+{{- $errorsMiddleware = required "infra-preview-environments-gateway-api.errorPages.middlewareName must be set when errorPages.enabled is true so the HTTPRoute filters can reference the error-pages Middleware" $errorPages.middlewareName -}}
+{{- end -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "camundaPlatform.fullname" $camundaPlatform }}
+  labels:
+    {{- include "commonLabels" $ | nindent 4 }}
+  annotations:
+    {{- include "commonAnnotations" $ | nindent 4 }}
+spec:
+  parentRefs:
+  - name: {{ $gatewayName }}
+  hostnames:
+  - {{ include "ingress.domain" $ | quote }}
+  rules:
+  # app-root: redirect "/" to Console.
+  - matches:
+    - path:
+        type: Exact
+        value: /
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        statusCode: 302
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: {{ .Values.camundaPlatform.console.contextPath | quote }}
+  # Console
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.camundaPlatform.console.contextPath | quote }}
+    # Vouch + error-pages filter set, anchored here and reused by every other
+    # authenticated rule below via the *authFilters alias.
+    filters: &authFilters
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $vouchMiddleware }}
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
+    backendRefs:
+    - name: {{ template "console.fullname" $camundaPlatform }}
+      port: {{ .Values.camundaPlatform.console.service.port }}
+  # Orchestration (REST gateway)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.camundaPlatform.orchestration.contextPath | quote }}
+    filters: *authFilters
+    backendRefs:
+    - name: {{ template "orchestration.fullname" $camundaPlatform }}-gateway
+      port: {{ .Values.camundaPlatform.orchestration.service.httpPort }}
+  # Keycloak (Identity auth realm)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ include "identity.keycloak.contextPath" $camundaPlatform | quote }}
+    filters: *authFilters
+    backendRefs:
+    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
+      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+  # OIDC discovery / token endpoints, served WITHOUT Vouch authentication (no
+  # ExtensionRef filter). These are Exact matches, which take precedence over
+  # the `/auth` PathPrefix rule above, so they correctly bypass Vouch while the
+  # rest of `/auth/**` stays authenticated.
+  - matches:
+    # OIDC discovery document
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/.well-known/openid-configuration
+    # JWK set (JWT validation keys)
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/protocol/openid-connect/certs
+    # Token endpoint (OAuth2 flows)
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/protocol/openid-connect/token
+    # UserInfo endpoint
+    - path:
+        type: Exact
+        value: /auth/realms/camunda-platform/protocol/openid-connect/userinfo
+    {{- if $errorsEnabled }}
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
+    backendRefs:
+    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
+      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+  # Identity
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.camundaPlatform.identity.contextPath | quote }}
+    filters: *authFilters
+    backendRefs:
+    - name: {{ template "identity.fullname" $camundaPlatform }}
+      port: {{ .Values.camundaPlatform.identity.service.port }}
+  # Optimize
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.camundaPlatform.optimize.contextPath | quote }}
+    filters: *authFilters
+    backendRefs:
+    - name: {{ template "optimize.fullname" $camundaPlatform }}
+      port: {{ .Values.camundaPlatform.optimize.service.port }}
+  # Web Modeler webapp (restapi)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.camundaPlatform.webModeler.contextPath | quote }}
+    filters: *authFilters
+    backendRefs:
+    - name: {{ template "webModeler.restapi.fullname" $camundaPlatform }}
+      port: {{ .Values.camundaPlatform.webModeler.restapi.service.port }}
+  # Web Modeler websockets
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ include "webModeler.websocketContextPath" $camundaPlatform | quote }}
+    filters: *authFilters
+    backendRefs:
+    - name: {{ template "webModeler.websockets.fullname" $camundaPlatform }}
+      port: {{ .Values.camundaPlatform.webModeler.websockets.service.port }}
+  # Connectors
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.camundaPlatform.connectors.contextPath | quote }}
+    filters: *authFilters
+    backendRefs:
+    - name: {{ template "connectors.fullname" $camundaPlatform }}
+      port: {{ .Values.camundaPlatform.connectors.service.serverPort }}
+

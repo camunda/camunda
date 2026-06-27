@@ -74,6 +74,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           actor={item.role}
           content={item.content}
           toolCalls={item.toolCalls}
+          metrics={item.metrics}
           onToolCallClick={(toolCall) => {
             if (toolCall.elementId !== null) {
               selectElement({elementId: toolCall.elementId});

@@ -46,6 +46,7 @@ import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -106,6 +107,7 @@ public final class PartitionManagerImpl
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final FeatureFlags featureFlags,
       final TopologyManagerImpl topologyManager) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
@@ -119,7 +121,6 @@ public final class PartitionManagerImpl
     this.brokerClient = brokerClient;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
-    final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     brokerMeterRegistry = meterRegistry;
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
@@ -150,7 +151,7 @@ public final class PartitionManagerImpl
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(partitionGroup, brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
     RocksDbSharedCacheMetrics.registerAllocationStrategy(
         brokerMeterRegistry,
         brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
@@ -161,7 +162,7 @@ public final class PartitionManagerImpl
       final DynamicPartitionConfig initialPartitionConfig,
       final boolean initializeFromSnapshot) {
     final var result = concurrencyControl.<Void>createFuture();
-    final var id = partitionMetadata.id().id();
+    final var id = partitionMetadata.id().number();
     final var context =
         new PartitionStartupContext(
             actorSchedulingService,
@@ -182,7 +183,7 @@ public final class PartitionManagerImpl
     final var partition = Partition.bootstrapping(context);
     if (partitions.putIfAbsent(id, partition) != null) {
       result.completeExceptionally(
-          new PartitionAlreadyExistsException(partitionMetadata.id().id()));
+          new PartitionAlreadyExistsException(partitionMetadata.id().number()));
     } else {
       concurrencyControl.runOnCompletion(
           partition.start(), (started, error) -> completePartitionStart(id, error, result));
@@ -195,7 +196,7 @@ public final class PartitionManagerImpl
       final PartitionMetadata partitionMetadata,
       final DynamicPartitionConfig initialPartitionConfig) {
     final var result = concurrencyControl.<Void>createFuture();
-    final var id = partitionMetadata.id().id();
+    final var id = partitionMetadata.id().number();
     final var context =
         new PartitionStartupContext(
             actorSchedulingService,
@@ -291,30 +292,49 @@ public final class PartitionManagerImpl
   }
 
   @Override
-  public void start() {
+  public ActorFuture<Void> start() {
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions();
 
-    // BrokerHealthCheckService tracks a single set of bootstrap partitions. Only the default
-    // physical tenant participates in the broker health check for now; other tenants are invisible.
+    healthCheckService.registerBootstrapPartitions(partitionGroup, memberPartitions);
+
     if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-      healthCheckService.registerBootstrapPartitions(memberPartitions);
       clusterConfigurationService.registerPartitionChangeExecutors(this, this);
     }
-    for (final var partitionMetadata : memberPartitions) {
-      final var initialPartitionConfig =
-          clusterConfigurationService
-              .getInitialClusterConfiguration()
-              .members()
-              .get(localMemberId)
-              .getPartition(partitionMetadata.id().id())
-              .config();
-      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
-    }
+
+    final var result = concurrencyControl.<Void>createFuture();
+    final var started =
+        memberPartitions.stream()
+            .map(
+                partitionMetadata -> {
+                  final var initialPartitionConfig =
+                      clusterConfigurationService
+                          .getInitialClusterConfiguration()
+                          .members()
+                          .get(localMemberId)
+                          .getPartition(partitionMetadata.id().number())
+                          .config();
+                  return bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
+                })
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+    concurrencyControl.runOnCompletion(
+        started,
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
+    return result;
   }
 
   @Override
   public ActorFuture<Void> stop() {
+    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
+      clusterConfigurationService.removePartitionChangeExecutor();
+    }
+
     final var result = concurrencyControl.<Void>createFuture();
     final var stop =
         partitions.values().stream()
@@ -355,7 +375,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(partitionGroup, partitionId),
+            new PartitionId(partitionGroup, partitionId),
             members,
             membersWithPriority,
             targetPriority,
@@ -407,7 +427,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(partitionGroup, partitionId),
+            new PartitionId(partitionGroup, partitionId),
             members,
             Map.of(localMember, targetPriority),
             targetPriority,

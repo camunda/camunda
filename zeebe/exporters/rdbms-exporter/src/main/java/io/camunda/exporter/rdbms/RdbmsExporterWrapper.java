@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.exporter.rdbms.RdbmsExporter.Builder;
 import io.camunda.exporter.rdbms.cache.RdbmsCacheRegistry;
+import io.camunda.exporter.rdbms.handlers.AgentHistoryExportHandler;
 import io.camunda.exporter.rdbms.handlers.AgentInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
 import io.camunda.exporter.rdbms.handlers.ClusterVariableExportHandler;
@@ -59,7 +60,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancella
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
-import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddHandler;
+import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddUpdateHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
 import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
@@ -263,6 +264,9 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.AGENT_INSTANCE,
         new AgentInstanceExportHandler(rdbmsWriters.getAgentInstanceWriter()));
     builder.withHandler(
+        ValueType.AGENT_HISTORY,
+        new AgentHistoryExportHandler(rdbmsWriters.getAgentHistoryWriter()));
+    builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new SequenceFlowExportHandler(rdbmsWriters.getSequenceFlowWriter()));
     builder.withHandler(
@@ -390,7 +394,7 @@ public class RdbmsExporterWrapper implements Exporter {
             transformer -> {
               builder.withHandler(
                   transformer.config().valueType(),
-                  new WaitStateAddHandler<>(waitStateWriter, transformer, objectMapper));
+                  new WaitStateAddUpdateHandler<>(waitStateWriter, transformer, objectMapper));
               builder.withHandler(
                   transformer.config().valueType(),
                   new WaitStateRemoveHandler<>(waitStateWriter, transformer));

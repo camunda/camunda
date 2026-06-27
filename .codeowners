@@ -13,7 +13,9 @@ CODEOWNERS                  @camunda/orchestration-cluster
 
 AGENTS.md                   @camunda/orchestration-cluster
 CLAUDE.md                   @camunda/orchestration-cluster
-/.claude/skills/            @camunda/orchestration-cluster
+/.claude/skills/README.md   @camunda/orchestration-cluster
+/.claude/skills/create-issue/ @camunda/orchestration-cluster
+/.claude/skills/grill-me/   @camunda/orchestration-cluster
 CHANGELOG.md                @camunda/orchestration-cluster
 CODE_OF_CONDUCT.md          @camunda/orchestration-cluster
 CONTRIBUTING.md             @camunda/orchestration-cluster
@@ -56,6 +58,9 @@ buf.yaml                    @camunda/orchestration-cluster
 ################################
 
 /.claude/skills/act-testing/ @camunda/monorepo-devops-team
+/.claude/skills/agentic-workflows/ @camunda/monorepo-devops-team
+/.claude/skills/ci-fix-failure/ @camunda/monorepo-devops-team
+/.claude/skills/ci-incident/ @camunda/monorepo-devops-team
 /.claude/skills/ci-push-workflow-health/ @camunda/monorepo-devops-team
 /.claude/skills/ci-scheduled-workflow-health/ @camunda/monorepo-devops-team
 /.claude/skills/ci-runner-utilization/ @camunda/monorepo-devops-team
@@ -211,8 +216,10 @@ mwnw*                       @camunda/monorepo-devops-team
 /.claude/skills/frontend-feature/          @camunda/core-features
 /.claude/skills/frontend-integration-test/ @camunda/core-features
 /.claude/skills/frontend-migrator/         @camunda/core-features
+/.claude/skills/frontend-operate-migrator/ @camunda/core-features
 /.claude/skills/frontend-unit-test/        @camunda/core-features
 /.claude/skills/operate-frontend/          @camunda/core-features
+/.claude/skills/tasklist-frontend/         @camunda/core-features
 
 # optimize / BI team
 /zeebe/exporter-filter/        @camunda/core-features

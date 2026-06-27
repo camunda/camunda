@@ -15,7 +15,6 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -241,7 +240,7 @@ public class RestoreManager implements CloseableSilently {
       final var partitionsToRestore = collectPartitions();
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
-        final var partitionId = partition.partition().id().id();
+        final var partitionId = partition.partition().id().number();
         final var backupIds = backupIdsByPartition.get(partitionId);
         if (backupIds == null || backupIds.length == 0) {
           throw new IllegalArgumentException("No backup IDs provided for partition " + partitionId);
@@ -315,7 +314,7 @@ public class RestoreManager implements CloseableSilently {
       restoreService.restore(backupIds, validator);
       LOG.info(
           "Successfully restored partition {} from backups {}.",
-          raftPartition.id().id(),
+          raftPartition.id().number(),
           backupIds);
     } finally {
       MicrometerUtil.close(registry);
@@ -329,8 +328,7 @@ public class RestoreManager implements CloseableSilently {
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
                 .generatePartitionDistribution());
-    final var raftPartitionFactory =
-        new RaftPartitionFactory(PartitionManagerImpl.DEFAULT_GROUP_NAME, configuration);
+    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
 
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))
@@ -340,7 +338,7 @@ public class RestoreManager implements CloseableSilently {
 
   private InstrumentedRaftPartition createRaftPartition(
       final PartitionMetadata metadata, final RaftPartitionFactory factory) {
-    final var partitionId = metadata.id().id();
+    final var partitionId = metadata.id().number();
     final var partitionRegistry =
         MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(partitionId));
 

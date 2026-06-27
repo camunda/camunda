@@ -15,7 +15,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -49,6 +50,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -68,15 +70,14 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final EngineSecurityConfig securityConfiguration;
-  private final UserServices userServices;
+  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
+  private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
+  private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
-  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -106,13 +107,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final EngineSecurityConfig securityConfiguration,
-      final UserServices userServices,
+      final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts,
+      final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
 
@@ -127,16 +127,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.securityConfiguration = requireNonNull(securityConfiguration);
-    this.userServices = userServices;
+    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
+    this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider = oidcClaimsProvider;
+    this.jwtDecoderFactory = jwtDecoderFactory;
+    this.oidcClaimsProviderFactory = oidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
-    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
   @Override
@@ -362,12 +361,25 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public EngineSecurityConfig getSecurityConfiguration() {
-    return securityConfiguration;
+    final var ctx = physicalTenantEngineContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (ctx == null) {
+      throw new IllegalStateException(
+          "No security configuration registered for the default physical tenant");
+    }
+    return ctx.securityConfig();
   }
 
   @Override
-  public UserServices getUserServices() {
-    return userServices;
+  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return physicalTenantEngineContexts.get(physicalTenantId);
+  }
+
+  @Override
+  public Function<String, UserServices> getUserServicesForTenant() {
+    return userServicesForTenant;
   }
 
   @Override
@@ -376,13 +388,13 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public JwtDecoder getJwtDecoder() {
-    return jwtDecoder;
+  public Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory() {
+    return jwtDecoderFactory;
   }
 
   @Override
-  public OidcClaimsProvider getOidcClaimsProvider() {
-    return oidcClaimsProvider;
+  public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
+    return oidcClaimsProviderFactory;
   }
 
   @Override
@@ -394,11 +406,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setSnapshotApiRequestHandler(
       final SnapshotApiRequestHandler snapshotApiRequestHandler) {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
-  }
-
-  @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
-    return brokerRequestAuthorizationConverter;
   }
 
   @Override

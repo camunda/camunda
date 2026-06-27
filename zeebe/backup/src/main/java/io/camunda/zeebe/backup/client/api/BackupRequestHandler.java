@@ -169,7 +169,7 @@ public final class BackupRequestHandler implements BackupApi {
                       ignored ->
                           responses.stream()
                               .map(CompletableFuture::join)
-                              .map(BrokerResponse::getResponse)
+                              .map(BrokerResponse::getResponseOrThrow)
                               .collect(Collectors.toSet()));
             });
   }

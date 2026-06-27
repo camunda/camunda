@@ -60,7 +60,7 @@ public class RandomizedRoundRobinDistribution2RegionTest {
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     final List<PartitionId> partitionIds = new ArrayList<>(partitionCount);
     for (int i = 1; i <= partitionCount; i++) {
-      partitionIds.add(PartitionId.from("test", i));
+      partitionIds.add(new PartitionId("test", i));
     }
     return partitionIds;
   }

@@ -45,7 +45,7 @@
     <version.bouncycastle>1.84</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
-    <version.camunda-security-library>0.1.0-alpha34</version.camunda-security-library>
+    <version.camunda-security-library>0.1.0-alpha35</version.camunda-security-library>
     <version.checkstyle>13.5.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.20.0</version.commons-lang>
@@ -462,6 +462,14 @@
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-grpc</artifactId>
         <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-gateway-grpc</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
       </dependency>
 
       <dependency>

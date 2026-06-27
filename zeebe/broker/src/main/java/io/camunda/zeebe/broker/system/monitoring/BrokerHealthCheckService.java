@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -21,7 +22,8 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 
 /*
@@ -94,30 +96,61 @@ import org.slf4j.Logger;
 public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private Map<Integer, Boolean> partitionInstallStatus;
-  /* set to true when all partitions are installed. Once set to true, it is never
-  changed. */
-  private volatile boolean allPartitionsInstalled = false;
+  /* The physical tenants this broker is configured to run. The broker is only ready once every one
+  of them has registered its bootstrap partitions, so that a tenant that never started (and thus
+  never contributed its partitions) cannot be mistaken for "no partitions to wait for". */
+  private final Set<String> expectedPhysicalTenants;
+  private final Set<String> registeredPhysicalTenants = ConcurrentHashMap.newKeySet();
+  /* Tracks the install status of every bootstrap partition the broker is responsible for, keyed by
+  its full PartitionId (partition group + id). Each physical tenant registers its own partitions, so
+  this map accumulates across all tenants. Stays null until the first registration so that an
+  install status update before any partition is known fails fast. */
+  private volatile Map<PartitionId, Boolean> partitionInstallStatus;
+  /* Guards against logging "broker is ready" more than once. Only touched on the actor thread. */
+  private boolean readyLogged = false;
   private volatile boolean brokerStarted = false;
   private final HealthMonitor healthMonitor;
 
   public BrokerHealthCheckService(
-      final MemberId nodeId, final HealthTreeMetrics healthGraphMetrics) {
+      final MemberId nodeId,
+      final HealthTreeMetrics healthGraphMetrics,
+      final Set<String> expectedPhysicalTenants) {
+    this.expectedPhysicalTenants = Set.copyOf(expectedPhysicalTenants);
     healthMonitor =
         new CriticalComponentsHealthMonitor(
             "Broker-" + nodeId, actor, healthGraphMetrics, Optional.empty(), LOG);
   }
 
-  public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
-    partitionInstallStatus =
-        partitions.stream().collect(Collectors.toMap(metadata -> metadata.id().id(), p -> false));
+  public void registerBootstrapPartitions(
+      final String physicalTenantId, final Collection<PartitionMetadata> partitions) {
+    // Called once per physical tenant during startup. Record the tenant even when it has no local
+    // partitions, so readiness can tell "tenant started with nothing to install" apart from "tenant
+    // never started". Accumulate rather than replace so a later tenant's call does not drop the
+    // partitions registered by previous tenants.
+    registeredPhysicalTenants.add(physicalTenantId);
+    if (partitionInstallStatus == null) {
+      partitionInstallStatus = new ConcurrentHashMap<>();
+    }
     partitions.forEach(
-        metadata ->
-            healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().id())));
+        metadata -> {
+          partitionInstallStatus.putIfAbsent(metadata.id(), false);
+          healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id()));
+        });
+    // A late-registering tenant can be the event that completes readiness, so re-check on the actor
+    // thread (where readyLogged is owned).
+    actor.run(this::logBrokerReadyOnce);
   }
 
   public boolean isBrokerReady() {
-    return brokerStarted && allPartitionsInstalled;
+    // Ready once every expected physical tenant has registered and every one of their partitions
+    // has been installed. Both conditions are evaluated live: requiring all tenants prevents a
+    // missing tenant from being silently ignored, and reading the map directly lets partitions
+    // registered by a later tenant still gate readiness even if an earlier tenant already finished.
+    final var status = partitionInstallStatus;
+    return brokerStarted
+        && registeredPhysicalTenants.containsAll(expectedPhysicalTenants)
+        && status != null
+        && !status.containsValue(false);
   }
 
   public String componentName() {
@@ -126,13 +159,13 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   @Override
-  public void onBecameRaftFollower(final int partitionId, final long term) {
+  public void onBecameRaftFollower(final PartitionId partitionId, final long term) {
     checkState();
     updateBrokerReadyStatus(partitionId);
   }
 
   @Override
-  public void onBecameRaftLeader(final int partitionId, final long term) {
+  public void onBecameRaftLeader(final PartitionId partitionId, final long term) {
     checkState();
     updateBrokerReadyStatus(partitionId);
   }
@@ -143,18 +176,27 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     }
   }
 
-  private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {
+  private ActorFuture<Void> updateBrokerReadyStatus(final PartitionId partitionId) {
     return actor.call(
         () -> {
-          if (!allPartitionsInstalled) {
-            partitionInstallStatus.put(partitionId, true);
-            allPartitionsInstalled = !partitionInstallStatus.containsValue(false);
-
-            if (allPartitionsInstalled) {
-              LOG.info("All partitions are installed. Broker is ready!");
-            }
-          }
+          partitionInstallStatus.put(partitionId, true);
+          logBrokerReadyOnce();
         });
+  }
+
+  /**
+   * Logs the "broker is ready" transition exactly once, when the broker first actually becomes
+   * ready. Readiness can flip on any of three events (a partition install, a physical tenant
+   * registering, or the broker startup completing), so this is invoked from all of them. Gated on
+   * the full {@link #isBrokerReady()} criteria rather than just "all known partitions installed",
+   * so it never claims readiness before every expected tenant has registered and the broker has
+   * started. Must run on the actor thread, since {@code readyLogged} is not otherwise synchronized.
+   */
+  private void logBrokerReadyOnce() {
+    if (!readyLogged && isBrokerReady()) {
+      readyLogged = true;
+      LOG.info("All partitions are installed. Broker is ready!");
+    }
   }
 
   @Override
@@ -195,7 +237,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   public void setBrokerStarted() {
-    actor.run(() -> brokerStarted = true);
+    actor.run(
+        () -> {
+          brokerStarted = true;
+          logBrokerReadyOnce();
+        });
   }
 
   public boolean isBrokerStarted() {

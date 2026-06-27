@@ -12,7 +12,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -42,6 +43,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -144,21 +146,27 @@ public interface BrokerStartupContext {
 
   MeterRegistry getMeterRegistry();
 
+  /** Returns the security configuration for the {@code default} physical tenant. */
   EngineSecurityConfig getSecurityConfiguration();
 
-  UserServices getUserServices();
+  /**
+   * Returns the engine context for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  PhysicalTenantEngineContext getPhysicalTenantEngineContext(String physicalTenantId);
+
+  Function<String, UserServices> getUserServicesForTenant();
 
   PasswordEncoder getPasswordEncoder();
 
-  JwtDecoder getJwtDecoder();
+  Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory();
 
-  OidcClaimsProvider getOidcClaimsProvider();
+  Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory();
 
   SnapshotApiRequestHandler getSnapshotApiRequestHandler();
 
   void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
-
-  BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter();
 
   CheckpointSchedulingService getCheckpointSchedulingService();
 

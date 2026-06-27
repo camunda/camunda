@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_KEY_AGGREGATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,7 +75,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
 
     final Map<String, Aggregation.Builder.ContainerBuilder> result =
         underTest.createAggregation(mock(BoolQuery.class), context);
-    final Aggregation aggregation = result.get("processDefinitionKeyAgg").build();
+    final Aggregation aggregation = result.get(PROCESS_DEFINITION_KEY_AGGREGATION).build();
 
     assertThat(aggregation._kind()).isEqualTo(Aggregation.Kind.Terms);
     assertThat(aggregation.terms().field()).isEqualTo(PROCESS_DEFINITION_KEY);
@@ -81,7 +83,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
         .singleElement()
         .satisfies(
             order -> {
-              assertThat(order.name()).isEqualTo("_key");
+              assertThat(order.name()).isEqualTo(AGGREGATION_FIELD_KEY);
               assertThat(order.value()).isEqualTo(SortOrder.Asc);
             });
   }
@@ -93,7 +95,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
     when(response.aggregations())
         .thenReturn(
             Map.of(
-                "processDefinitionKeyAgg",
+                PROCESS_DEFINITION_KEY_AGGREGATION,
                 stringTermsAggregate("invoice-process", "order-process", "payment-process")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
@@ -112,7 +114,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
   void shouldReturnEmptyGroupsWhenNoBuckets() {
     final ResponseBody<?> response = mock(ResponseBody.class);
     when(response.aggregations())
-        .thenReturn(Map.of("processDefinitionKeyAgg", stringTermsAggregate()));
+        .thenReturn(Map.of(PROCESS_DEFINITION_KEY_AGGREGATION, stringTermsAggregate()));
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
     final CompositeCommandResult result =
@@ -127,7 +129,8 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
   void shouldReturnSingleGroupResultForOneBucket() {
     final ResponseBody<?> response = mock(ResponseBody.class);
     when(response.aggregations())
-        .thenReturn(Map.of("processDefinitionKeyAgg", stringTermsAggregate("single-process")));
+        .thenReturn(
+            Map.of(PROCESS_DEFINITION_KEY_AGGREGATION, stringTermsAggregate("single-process")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 

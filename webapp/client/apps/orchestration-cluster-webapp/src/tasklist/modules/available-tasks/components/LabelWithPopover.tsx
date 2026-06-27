@@ -7,14 +7,14 @@
  */
 
 import {Popover, PopoverContent} from '@carbon/react';
-import {type ReactNode, useCallback, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {cn} from '#/shared/cn';
 import styles from './LabelWithPopover.module.scss';
 
 const LabelWithPopover: React.FC<{
 	title: string;
-	popoverContent: ReactNode;
-	children: ReactNode;
+	popoverContent: React.ReactNode;
+	children: React.ReactNode;
 	align: React.ComponentProps<typeof Popover>['align'];
 }> = ({title, popoverContent, children, align}) => {
 	const [popOverOpen, setPopOverOpen] = useState(false);

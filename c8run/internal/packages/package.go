@@ -223,10 +223,13 @@ func copyZipEntry(w *zip.Writer, f *zip.File) error {
 	return nil
 }
 
-func rewriteZipKeepingNativeLib(jarPath, libName string) error {
+// rewriteJarDroppingEntries rewrites a JAR (ZIP) in-place, dropping any entry
+// for which shouldDrop returns true. It returns the number of entries that were
+// dropped so callers can validate expected outcomes.
+func rewriteJarDroppingEntries(jarPath string, shouldDrop func(name string) bool) (int, error) {
 	r, err := zip.OpenReader(jarPath)
 	if err != nil {
-		return fmt.Errorf("failed to open jar %s: %w", jarPath, err)
+		return 0, fmt.Errorf("failed to open jar %s: %w", jarPath, err)
 	}
 	// r is closed explicitly before os.Rename — Windows cannot rename over an open file.
 
@@ -234,7 +237,7 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	tmpFile, err := os.Create(tmpPath)
 	if err != nil {
 		_ = r.Close()
-		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
+		return 0, fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
 	}
 
 	removeTmp := func() {
@@ -244,16 +247,13 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	}
 
 	w := zip.NewWriter(tmpFile)
-	var nativeLibCount int
+	var dropped int
 	var copyErr error
 
 	for _, f := range r.File {
-		isNativeEntry := isRocksdbNativeLib(f.Name)
-		if isNativeEntry {
-			if f.Name != libName {
-				continue
-			}
-			nativeLibCount++
+		if shouldDrop(f.Name) {
+			dropped++
+			continue
 		}
 		if err := copyZipEntry(w, f); err != nil {
 			copyErr = err
@@ -266,33 +266,28 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 		_ = tmpFile.Close()
 		_ = r.Close()
 		removeTmp()
-		return copyErr
+		return 0, copyErr
 	}
 	if err := w.Close(); err != nil {
 		_ = tmpFile.Close()
 		_ = r.Close()
 		removeTmp()
-		return fmt.Errorf("failed to finalize temp jar: %w", err)
+		return 0, fmt.Errorf("failed to finalize temp jar: %w", err)
 	}
 	if err := tmpFile.Close(); err != nil {
 		_ = r.Close()
 		removeTmp()
-		return fmt.Errorf("failed to close temp file: %w", err)
-	}
-	if nativeLibCount != 1 {
-		_ = r.Close()
-		removeTmp()
-		return fmt.Errorf("expected exactly 1 native lib %q in jar, got %d: verify rocksdbNativeLibName mapping", libName, nativeLibCount)
+		return 0, fmt.Errorf("failed to close temp file: %w", err)
 	}
 	if err := r.Close(); err != nil {
 		removeTmp()
-		return fmt.Errorf("failed to close source jar before rename: %w", err)
+		return 0, fmt.Errorf("failed to close source jar before rename: %w", err)
 	}
 	if err := os.Rename(tmpPath, jarPath); err != nil {
 		removeTmp()
-		return fmt.Errorf("failed to replace jar with slimmed version: %w", err)
+		return 0, fmt.Errorf("failed to replace jar with slimmed version: %w", err)
 	}
-	return nil
+	return dropped, nil
 }
 
 // stripRocksDbNativeLibs must be called from the c8run working directory:
@@ -315,8 +310,151 @@ func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
 		log.Warn().Strs("jars", jars).Msg("multiple rocksdbjni jars found; stripping only the first")
 	}
 
-	log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("stripping unused RocksDB native libs")
-	return rewriteZipKeepingNativeLib(jars[0], libName)
+	// Pre-scan: verify libName exists and count entries to drop before rewriting.
+	// This makes stripping idempotent (already-stripped JARs return early) and
+	// catches wrong libName mappings before any data is modified.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: open %s: %w", jars[0], err)
+	}
+	var libFound bool
+	var toDrop int
+	for _, f := range r.File {
+		if f.Name == libName {
+			libFound = true
+		}
+		if isRocksdbNativeLib(f.Name) && f.Name != libName {
+			toDrop++
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if !libFound {
+		return fmt.Errorf("stripRocksDbNativeLibs: expected lib %s not found in %s: verify rocksdbNativeLibName mapping", libName, jars[0])
+	}
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("no unused RocksDB native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", libName).Int("dropping", toDrop).Msg("stripping unused RocksDB native libs")
+
+	shouldDrop := func(name string) bool {
+		return isRocksdbNativeLib(name) && name != libName
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
+// zstdNativePrefix returns the directory prefix used by zstd-jni to store
+// native libs for the given platform. zstd-jni uses "<os>/<arch>/" paths where
+// os is "darwin", "linux", or "win" and arch may differ from c8run's convention
+// (e.g., "amd64" instead of "x86_64").
+func zstdNativePrefix(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "linux/amd64/", nil
+		case "aarch64":
+			return "linux/aarch64/", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "darwin/x86_64/", nil
+		case "aarch64":
+			return "darwin/aarch64/", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "win/amd64/", nil
+		}
+	}
+	return "", fmt.Errorf("no zstd-jni native prefix for os=%s arch=%s", osType, arch)
+}
+
+// zstdNativeOsPrefixes lists all top-level OS directory prefixes used by zstd-jni.
+// Entries starting with any of these (but not matching the target prefix) are foreign.
+var zstdNativeOsPrefixes = []string{
+	"linux/", "darwin/", "win/", "aix/", "freebsd/",
+}
+
+// isZstdNativeEntry reports whether a ZIP entry belongs to zstd-jni's
+// platform-specific native directory trees (e.g. linux/amd64/, darwin/x86_64/, win/amd64/).
+func isZstdNativeEntry(name string) bool {
+	for _, prefix := range zstdNativeOsPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// stripZstdJniNativeLibs strips unused platform native libs from zstd-jni JAR(s).
+func stripZstdJniNativeLibs(camundaVersion, osType, arch string) error {
+	keepPrefix, err := zstdNativePrefix(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "zstd-jni-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no zstd-jni jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple zstd-jni jars found; stripping only the first")
+	}
+
+	// Pre-scan: count entries to drop, verify idempotency, and confirm the
+	// target platform's prefix is actually present — guards against a wrong
+	// mapping silently producing a JAR with no usable native lib.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	var keepFound bool
+	for _, f := range r.File {
+		if strings.HasPrefix(f.Name, keepPrefix) {
+			keepFound = true
+		}
+		if isZstdNativeEntry(f.Name) && !strings.HasPrefix(f.Name, keepPrefix) {
+			toDrop++
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if toDrop > 0 && !keepFound {
+		return fmt.Errorf("stripZstdJniNativeLibs: no entries matching prefix %q found in %s: verify zstdNativePrefix mapping", keepPrefix, jars[0])
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Msg("no unused zstd-jni native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Int("dropping", toDrop).Msg("stripping unused zstd-jni native libs")
+
+	shouldDrop := func(name string) bool {
+		return isZstdNativeEntry(name) && !strings.HasPrefix(name, keepPrefix)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getJavaArtifactsToken() (string, error) {
@@ -752,6 +890,10 @@ func New(camundaVersion, connectorsVersion string) error {
 
 	if err := stripRocksDbNativeLibs(camundaVersion, osType, architecture); err != nil {
 		return fmt.Errorf("package %s: failed to strip RocksDB native libs: %w", osType, err)
+	}
+
+	if err := stripZstdJniNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip zstd-jni native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })

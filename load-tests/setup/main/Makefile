@@ -3,6 +3,9 @@ secondary_storage ?= __STORAGE_TYPE__
 template_output_dir ?= .
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
+# Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
+# Use named targets (make install-chaos) or pass directly: make install chaos=true
+chaos ?= false
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
@@ -47,10 +50,15 @@ endif
 # set ups. The other values files are focused and only contain the necessary overrides for each storage type.
 platform_values := -f camunda-platform-values-defaults.yaml
 
+# The configuration for the "load test setup" local Helm Chart
 helm_chart_load_test_setup := charts/load-test-setup
 load_test_setup_values := -f load-test-setup-values.yaml
 additional_load_test_setup_configuration ?=
+# Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
+# which CI sets on the make command line and would suppress `+=` here.
+_load_test_setup_flags :=
 
+# The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
 
 # Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
@@ -86,19 +94,23 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://opensearch:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
 else ifeq ($(enable_optimize),true)
 	# Here, the secondary storage is either none or a RDBMS database.
 	# Elasticsearch is always used in this case as the backend for Optimize.
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else
 	install_es_prom_exporter := false
+endif
+
+ifeq ($(chaos),true)
+	_load_test_setup_flags += --set chaosKiller.enabled=true
 endif
 
 .PHONY: all
@@ -149,7 +161,7 @@ create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
 	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
-# Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, OpenSearch)
+# Install secondary storage based on configuration
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)
@@ -236,7 +248,9 @@ install-load-test-setup: create-namespace
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		--take-ownership --create-namespace \
-		$(load_test_setup_values) $(additional_load_test_setup_configuration)
+		$(load_test_setup_values) \
+		$(_load_test_setup_flags) \
+		$(additional_load_test_setup_configuration)
 
 # Install/upgrade load test helm chart
 .PHONY: install-load-test
@@ -275,8 +289,14 @@ template-load-test-setup:
 	helm template load-test-setup $(helm_chart_load_test_setup) \
 		--namespace $(namespace) \
 		$(load_test_setup_values) \
+		$(_load_test_setup_flags) \
 		$(additional_load_test_setup_configuration) \
 		--output-dir $(template_output_dir)
+
+# Renders the load-test-setup chart with the chaos-killer enabled.
+.PHONY: template-load-test-setup-chaos
+template-load-test-setup-chaos:
+	$(MAKE) template-load-test-setup chaos=true
 
 # Generates templates from the load test helm chart
 .PHONY: template-load-test
@@ -295,6 +315,13 @@ print-scenario:
 	@echo "Scenario:         $(if $(scenario),$(scenario),(none — chart defaults apply))"
 	@echo "Load test flags:  $(if $(_scenario_load_test_flags),$(_scenario_load_test_flags),(none))"
 	@echo "Platform flags:   $(if $(_scenario_platform_flags),$(_scenario_platform_flags),(none))"
+
+# Chaos shortcuts — install (or render) with the chaos-killer CronJob enabled.
+.PHONY: install-chaos install-stable-chaos
+install-chaos:
+	$(MAKE) install chaos=true
+install-stable-chaos:
+	$(MAKE) install-stable chaos=true
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>

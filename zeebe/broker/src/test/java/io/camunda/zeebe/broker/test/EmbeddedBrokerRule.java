@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -240,7 +241,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
     atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
             SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
             null,

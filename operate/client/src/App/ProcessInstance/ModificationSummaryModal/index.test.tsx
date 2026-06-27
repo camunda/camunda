@@ -16,6 +16,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {queryKeys} from 'modules/queries/queryKeys';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -600,6 +601,59 @@ describe('Modification Summary Modal', () => {
     );
     expect(mockOnClose).toHaveBeenCalled();
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
+  });
+
+  it('should invalidate element instance inspection queries when modifications are applied with success', async () => {
+    modificationsStore.enableModificationMode();
+
+    mockModifyProcessInstance().withSuccess(null);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: '123',
+        element: {id: 'element-1', name: 'element 1'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
+    const queryClient = getMockQueryClient();
+    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+      useEffect(() => () => modificationsStore.reset(), []);
+
+      return (
+        <ProcessDefinitionKeyContext.Provider value="123">
+          <QueryClientProvider client={queryClient}>
+            <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+              <Routes>
+                <Route path={Paths.processInstance()} element={children} />
+              </Routes>
+            </MemoryRouter>
+          </QueryClientProvider>
+        </ProcessDefinitionKeyContext.Provider>
+      );
+    };
+
+    const {user} = render(
+      <ModificationSummaryModal open setOpen={() => {}} />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      await screen.findByRole('button', {name: 'Apply'}),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    await waitFor(() =>
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: queryKeys.elementInstanceInspection.base(),
+      }),
+    );
   });
 
   it('should display error notification when modifications are applied with failure', async () => {

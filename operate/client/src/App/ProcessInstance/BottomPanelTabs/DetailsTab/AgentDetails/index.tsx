@@ -11,7 +11,7 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {Accordion, AccordionItem, AccordionSkeleton} from '@carbon/react';
+import {Accordion, AccordionItem, AccordionSkeleton, Tag} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -21,6 +21,7 @@ import {
   Chip,
   DocumentBlank,
   Chat,
+  Tools,
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
@@ -37,10 +38,11 @@ import {SectionTitle} from './SectionTitle';
 import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
-import {IS_CONVERSATION_HISTORY_ENABLED} from 'modules/feature-flags';
+import {AvailableTools} from './AvailableTools';
 import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
+  UNKNOWN: 'Unknown',
   INITIALIZING: 'Initializing',
   THINKING: 'Thinking',
   TOOL_CALLING: 'Calling tools',
@@ -124,24 +126,31 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         <AccordionItem
           data-testid="agent-status-section"
           open
-          disabled={!IS_CONVERSATION_HISTORY_ENABLED}
           title={
             <SectionTitle icon={<StatusIcon status={agentInstance.status} />}>
               Status: {statusLabel}
             </SectionTitle>
           }
         >
-          {IS_CONVERSATION_HISTORY_ENABLED && (
-            <LatestAgentMessage
-              agentInstanceKey={agentInstance.agentInstanceKey}
-              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
-            />
-          )}
+          <LatestAgentMessage
+            agentInstanceKey={agentInstance.agentInstanceKey}
+            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+          />
         </AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
+          aria-label="Usage"
           title={
-            <SectionTitle icon={<MeterAlt size={16} />}>Usage</SectionTitle>
+            <SectionTitle icon={<MeterAlt size={16} />}>
+              Usage
+              <Tag type="gray" size="sm">
+                {metrics.modelCalls.toLocaleString()} model calls
+              </Tag>
+              <Tag type="gray" size="sm">
+                {(metrics.inputTokens + metrics.outputTokens).toLocaleString()}
+                &nbsp;tokens
+              </Tag>
+            </SectionTitle>
           }
         >
           <MetricsRow>
@@ -160,24 +169,22 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             />
           </MetricsRow>
         </AccordionItem>
-        {IS_CONVERSATION_HISTORY_ENABLED && (
-          <AccordionItem
-            data-testid="agent-conversation-history-section"
-            open={isConversationHistoryOpen}
-            onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
-            title={
-              <SectionTitle icon={<Chat size={16} />}>
-                Conversation history
-              </SectionTitle>
-            }
-          >
-            <ConversationHistory
-              agentInstanceKey={agentInstance.agentInstanceKey}
-              isVisible={isConversationHistoryOpen}
-              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
-            />
-          </AccordionItem>
-        )}
+        <AccordionItem
+          data-testid="agent-conversation-history-section"
+          open={isConversationHistoryOpen}
+          onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
+          title={
+            <SectionTitle icon={<Chat size={16} />}>
+              Conversation history
+            </SectionTitle>
+          }
+        >
+          <ConversationHistory
+            agentInstanceKey={agentInstance.agentInstanceKey}
+            isVisible={isConversationHistoryOpen}
+            enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
+          />
+        </AccordionItem>
         <AccordionItem
           data-testid="agent-system-prompt-section"
           title={
@@ -190,6 +197,16 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             actor="SYSTEM"
             content={[{contentType: 'TEXT', text: definition.systemPrompt}]}
           />
+        </AccordionItem>
+        <AccordionItem
+          data-testid="agent-available-tools-section"
+          title={
+            <SectionTitle icon={<Tools size={16} />}>
+              Available tools
+            </SectionTitle>
+          }
+        >
+          <AvailableTools tools={agentInstance.tools} />
         </AccordionItem>
         <AccordionItem
           data-testid="agent-model-section"

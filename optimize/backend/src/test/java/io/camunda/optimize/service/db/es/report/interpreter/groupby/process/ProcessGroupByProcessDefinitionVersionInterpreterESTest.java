@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_VERSION_AGGREGATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,7 +99,7 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
 
     final Map<String, Aggregation.Builder.ContainerBuilder> result =
         underTest.createAggregation(mock(BoolQuery.class), context);
-    final Aggregation aggregation = result.get("processDefinitionVersionAgg").build();
+    final Aggregation aggregation = result.get(PROCESS_DEFINITION_VERSION_AGGREGATION).build();
 
     assertThat(aggregation._kind()).isEqualTo(Aggregation.Kind.Terms);
     assertThat(aggregation.terms().field()).isEqualTo(PROCESS_DEFINITION_VERSION);
@@ -105,7 +107,7 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
         .singleElement()
         .satisfies(
             order -> {
-              assertThat(order.name()).isEqualTo("_key");
+              assertThat(order.name()).isEqualTo(AGGREGATION_FIELD_KEY);
               assertThat(order.value()).isEqualTo(SortOrder.Asc);
             });
   }
@@ -115,7 +117,8 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   void shouldMapMultipleBucketsToGroupByResults() {
     final ResponseBody<?> response = mock(ResponseBody.class);
     when(response.aggregations())
-        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate("1", "2", "3")));
+        .thenReturn(
+            Map.of(PROCESS_DEFINITION_VERSION_AGGREGATION, stringTermsAggregate("1", "2", "3")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
@@ -133,7 +136,7 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   void shouldReturnEmptyGroupsWhenNoBuckets() {
     final ResponseBody<?> response = mock(ResponseBody.class);
     when(response.aggregations())
-        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate()));
+        .thenReturn(Map.of(PROCESS_DEFINITION_VERSION_AGGREGATION, stringTermsAggregate()));
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
     final CompositeCommandResult result =
@@ -148,7 +151,7 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   void shouldReturnSingleGroupResultForOneBucket() {
     final ResponseBody<?> response = mock(ResponseBody.class);
     when(response.aggregations())
-        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate("42")));
+        .thenReturn(Map.of(PROCESS_DEFINITION_VERSION_AGGREGATION, stringTermsAggregate("42")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
@@ -165,7 +168,7 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   void shouldSetGroupByKeyOfNumericTypeToTrue() {
     final ResponseBody<?> response = mock(ResponseBody.class);
     when(response.aggregations())
-        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate()));
+        .thenReturn(Map.of(PROCESS_DEFINITION_VERSION_AGGREGATION, stringTermsAggregate()));
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
     final CompositeCommandResult result =
@@ -180,7 +183,7 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   void shouldRestoreGlobalBaselineCountWhenDistributedByRetrievalFails() {
     final ResponseBody<?> response = mock(ResponseBody.class);
     when(response.aggregations())
-        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate("1")));
+        .thenReturn(Map.of(PROCESS_DEFINITION_VERSION_AGGREGATION, stringTermsAggregate("1")));
     when(context.getUnfilteredTotalInstanceCount()).thenReturn(10L);
     when(context.getUnfilteredInstanceCountsByGroupKey()).thenReturn(Map.of("1", 3L));
     when(distributedByInterpreter.retrieveResult(any(), any(), any()))

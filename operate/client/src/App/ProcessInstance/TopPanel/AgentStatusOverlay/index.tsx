@@ -11,6 +11,7 @@ import type {AgentInstanceStatus} from '@camunda/camunda-api-zod-schemas/8.10';
 import {AgentStatus, AgentStatusContainer} from './styled';
 
 const AGENT_STATUS_LABELS: Record<AgentInstanceStatus, string | null> = {
+  UNKNOWN: null,
   INITIALIZING: 'Starting...',
   TOOL_DISCOVERY: 'Discovering tools...',
   THINKING: 'Thinking...',

@@ -65,7 +65,7 @@ test.describe.serial('component authorizations CRUD', () => {
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
     );
-    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    await expect(page).toHaveURL(/admin\/authorizations/);
   });
 
   test.afterEach(async ({page}, testInfo) => {
@@ -132,7 +132,7 @@ test.describe.serial('component authorizations CRUD', () => {
       await identityRolesDetailsPage.assignUser(NEW_USER);
 
       await identityAuthorizationsPage.navigateToAuthorizations();
-      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      await expect(page).toHaveURL(/admin\/authorizations/);
     });
 
     await test.step(`Assign authorization to new user`, async () => {
@@ -226,7 +226,7 @@ test.describe('authorization scenarios', () => {
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
     );
-    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    await expect(page).toHaveURL(/admin\/authorizations/);
   });
 
   test.afterAll(async ({request}) => {
@@ -263,7 +263,7 @@ test.describe('authorization scenarios', () => {
       await identityUsersPage.createUser(testUser);
 
       await identityAuthorizationsPage.navigateToAuthorizations();
-      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      await expect(page).toHaveURL(/admin\/authorizations/);
     });
 
     await test.step(`Create component authorization for user`, async () => {
@@ -302,7 +302,7 @@ test.describe('create authorization modal — resource type field', () => {
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
     );
-    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    await expect(page).toHaveURL(/admin\/authorizations/);
   });
 
   test.afterEach(async ({page}, testInfo) => {

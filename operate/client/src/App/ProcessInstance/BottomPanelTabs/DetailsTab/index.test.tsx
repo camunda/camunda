@@ -33,6 +33,7 @@ import type {
   MessageSubscription,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
+import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
 
 const PROCESS_INSTANCE_ID = '111222333';
 const PROCESS_DEFINITION_KEY = '444555666';
@@ -937,38 +938,7 @@ describe('<DetailsTab />', () => {
         },
       ]),
     );
-    mockSearchAgentInstances().withSuccess(
-      searchResult([
-        {
-          agentInstanceKey: '2251799813851828',
-          status: 'TOOL_CALLING',
-          definition: {
-            model: 'gpt-4',
-            provider: 'openai',
-            systemPrompt: 'You are a helpful assistant.',
-          },
-          metrics: {
-            inputTokens: 100,
-            outputTokens: 50,
-            modelCalls: 3,
-            toolCalls: 2,
-          },
-          limits: {
-            maxModelCalls: 10,
-            maxToolCalls: 5,
-            maxTokens: 1000,
-          },
-          elementId: 'Task_1',
-          processInstanceKey: '123456789',
-          processDefinitionKey: '444555666',
-          tenantId: '<default>',
-          creationDate: '2025-01-15T10:00:00.000Z',
-          lastUpdatedDate: '2025-01-15T10:05:00.000Z',
-          completionDate: null,
-          elementInstanceKeys: ['123456789'],
-        },
-      ]),
-    );
+    mockSearchAgentInstances().withSuccess(searchResult([mockAgentInstance()]));
 
     render(<DetailsTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),

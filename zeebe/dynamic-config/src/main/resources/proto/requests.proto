@@ -91,6 +91,17 @@ message ExporterEnableRequest {
   bool dryRun = 3;
 }
 
+enum Mode {
+  UNKNOWN = 0;
+  RECOVERING = 1;
+  PROCESSING = 2;
+}
+
+message ModeChangeRequest {
+  Mode mode = 1;
+  bool dryRun = 2;
+}
+
 message CancelTopologyChangeRequest {
   int64 changeId = 1;
 }

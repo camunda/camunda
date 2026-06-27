@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.date;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.ELEMENT_AGGREGATION;
 import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 
@@ -40,7 +41,6 @@ import org.slf4j.Logger;
 public abstract class AbstractProcessGroupByModelElementDateInterpreterES
     extends AbstractProcessGroupByInterpreterES {
 
-  private static final String ELEMENT_AGGREGATION = "elementAggregation";
   private static final String FILTERED_ELEMENTS_AGGREGATION = "filteredElements";
   private static final String MODEL_ELEMENT_TYPE_FILTER_AGGREGATION = "filteredElementsByType";
   private static final Logger LOG =

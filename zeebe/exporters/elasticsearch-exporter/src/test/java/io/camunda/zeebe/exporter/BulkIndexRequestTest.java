@@ -503,6 +503,58 @@ final class BulkIndexRequestTest {
           .containsExactly("order-123");
     }
 
+    @Test
+    void shouldIndexDecisionEvaluationRecordWithoutBusinessIdOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.DECISION_EVALUATION,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new DecisionEvaluationRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs(
+              "Expect that decision evaluation records are NOT serialized with businessId on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexDecisionEvaluationRecordWithBusinessIdOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.DECISION_EVALUATION,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new DecisionEvaluationRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs(
+              "Expect that decision evaluation records are serialized with businessId on current version")
+          .containsExactly("order-123");
+    }
+
     private Record<?> deserializeSource(final IndexOperation operation) {
       try {
         return MAPPER.readValue(operation.source(), new TypeReference<>() {});

@@ -140,7 +140,7 @@ public final class RequestRetryHandler {
         .whenComplete(
             (response, error) -> {
               if (error == null) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
+                acceptBrokerResponse(response, responseConsumer, throwableConsumer);
               } else {
                 throwableConsumer.accept(error);
               }
@@ -173,11 +173,12 @@ public final class RequestRetryHandler {
         .apply(request)
         .whenComplete(
             (response, error) -> {
-              if (error == null) {
+              if (error == null && response.isResponse()) {
                 responseConsumer.accept(response.getKey(), response.getResponse());
-              } else if (shouldRetryWithNextPartition(error)) {
-                LOGGER.trace("Failed to create process on partition {}", partitionId, error);
-                errors.add(error);
+              } else if (shouldRetryWithNextPartition(response, error)) {
+                final var cause = toException(response, error);
+                LOGGER.trace("Failed to create process on partition {}", partitionId, cause);
+                errors.add(cause);
                 sendRequestWithRetry(
                     request,
                     requestSender,
@@ -187,7 +188,7 @@ public final class RequestRetryHandler {
                     throwableConsumer,
                     errors);
               } else {
-                throwableConsumer.accept(error);
+                throwableConsumer.accept(toException(response, error));
               }
             });
   }
@@ -225,5 +226,34 @@ public final class RequestRetryHandler {
       return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
     }
     return false;
+  }
+
+  private boolean shouldRetryWithNextPartition(
+      final BrokerResponse<?> response, final Throwable error) {
+    if (error != null) {
+      return shouldRetryWithNextPartition(error);
+    }
+
+    if (response.isError()) {
+      final ErrorCode code = response.getError().getCode();
+      return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
+    }
+
+    return false;
+  }
+
+  private <BrokerResponseT> void acceptBrokerResponse(
+      final BrokerResponse<BrokerResponseT> response,
+      final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
+    if (response.isResponse()) {
+      responseConsumer.accept(response.getKey(), response.getResponse());
+    } else {
+      throwableConsumer.accept(response.toException());
+    }
+  }
+
+  private Throwable toException(final BrokerResponse<?> response, final Throwable error) {
+    return error == null ? response.toException() : error;
   }
 }

@@ -46,18 +46,6 @@ public class RaftServerForwardCompatibilityIT {
 
     return Stream.of(
         Arguments.of(
-            "8.9 Mode with Embedded Gateway",
-            createTestClusterWithBrokerConfiguration(
-                RaftServerForwardCompatibilityIT::configure89Mode)),
-        Arguments.of(
-            "8.9 to 8.10 Upgrade with Embedded Gateway",
-            createTestClusterWithBrokerConfiguration(
-                RaftServerForwardCompatibilityIT::configure89To810Mode)),
-        Arguments.of(
-            "8.10 Mode with Embedded Gateway",
-            createTestClusterWithBrokerConfiguration(
-                RaftServerForwardCompatibilityIT::configure810Mode)),
-        Arguments.of(
             "8.10 to 8.11 Upgrade with Embedded Gateway",
             createTestClusterWithBrokerConfiguration(
                 RaftServerForwardCompatibilityIT::configure810To811Mode)),
@@ -66,29 +54,9 @@ public class RaftServerForwardCompatibilityIT {
             createTestClusterWithBrokerConfiguration(
                 RaftServerForwardCompatibilityIT::configure811Mode)),
         Arguments.of(
-            "8.9 Mode with Standalone Gateway",
-            createTestClusterWithStandaloneGateway(
-                RaftServerForwardCompatibilityIT::configure89Mode, true)),
-        Arguments.of(
-            "8.9 to 8.10 Upgrade with Standalone Gateway (sendOnLegacySubject = true)",
-            createTestClusterWithStandaloneGateway(
-                RaftServerForwardCompatibilityIT::configure89To810Mode, true)),
-        Arguments.of(
-            "8.9 to 8.10 Upgrade with Standalone Gateway (sendOnLegacySubject = false)",
-            createTestClusterWithStandaloneGateway(
-                RaftServerForwardCompatibilityIT::configure89To810Mode, false)),
-        Arguments.of(
-            "8.10 Mode with Standalone Gateway",
-            createTestClusterWithStandaloneGateway(
-                RaftServerForwardCompatibilityIT::configure810Mode, false)),
-        Arguments.of(
-            "8.10 to 8.11 Upgrade with Standalone Gateway",
-            createTestClusterWithStandaloneGateway(
-                RaftServerForwardCompatibilityIT::configure810To811Mode, false)),
-        Arguments.of(
             "8.11 Mode with Standalone Gateway",
             createTestClusterWithStandaloneGateway(
-                RaftServerForwardCompatibilityIT::configure811Mode, false)));
+                RaftServerForwardCompatibilityIT::configure811Mode)));
   }
 
   static TestCluster createTestClusterWithBrokerConfiguration(
@@ -102,8 +70,7 @@ public class RaftServerForwardCompatibilityIT {
   }
 
   static TestCluster createTestClusterWithStandaloneGateway(
-      final BiConsumer<MemberId, TestStandaloneBroker> brokerConfigurationApplier,
-      final boolean gatewaySendOnLegacySubject) {
+      final BiConsumer<MemberId, TestStandaloneBroker> brokerConfigurationApplier) {
     return TestCluster.builder()
         .withBrokersCount(PARTITION_COUNT)
         .withPartitionsCount(PARTITION_COUNT)
@@ -111,54 +78,7 @@ public class RaftServerForwardCompatibilityIT {
         .withBrokerConfig(brokerConfigurationApplier)
         .withEmbeddedGateway(false)
         .withGatewaysCount(1)
-        .withGatewayConfig(
-            m -> m.withClusterConfig(c -> c.setSendOnLegacySubject(gatewaySendOnLegacySubject)))
         .build();
-  }
-
-  /**
-   * 8.9.x cluster with the following configuration:
-   *
-   * <ul>
-   *   <li>Sending: All nodes send with subject: "raft-partition-partition-*"
-   *   <li>Receiving: All nodes listen to subjects: "default-partition-*" and
-   *       "raft-partition-partition-*"
-   * </ul>
-   */
-  static void configure89Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    broker.withClusterConfig(c -> c.setSendOnLegacySubject(true));
-  }
-
-  /**
-   * Simulating upgrade path from 8.9 to 8.10 cluster with the following configuration:
-   *
-   * <ul>
-   *   <li>Sending (Node "0"): Node sends with subject: "default-partition-*"
-   *   <li>Sending (Node "1" and "2"): Nodes send with subject: "raft-partition-partition-*"
-   *   <li>Receiving: All nodes listen to subjects: "default-partition-*" and
-   *       "raft-partition-partition-*"
-   * </ul>
-   */
-  static void configure89To810Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    if (memberId.id().equals(MEMBER_NODE_ID_0)) {
-      broker.withClusterConfig(c -> c.setSendOnLegacySubject(false));
-    } else {
-      // 8.9 nodes still send on legacy subjects
-      broker.withClusterConfig(c -> c.setSendOnLegacySubject(true));
-    }
-  }
-
-  /**
-   * Simulating future 8.10 cluster with the following configuration:
-   *
-   * <ul>
-   *   <li>Sending: All nodes send with subject: "default-partition-*"
-   *   <li>Receiving: All nodes listen to subjects: "default-partition-*" and
-   *       "raft-partition-partition-*"
-   * </ul>
-   */
-  static void configure810Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    broker.withClusterConfig(c -> c.setSendOnLegacySubject(false));
   }
 
   /**
@@ -172,12 +92,8 @@ public class RaftServerForwardCompatibilityIT {
    * </ul>
    */
   static void configure810To811Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    broker.withClusterConfig(c -> c.setSendOnLegacySubject(false));
     if (memberId.id().equals(MEMBER_NODE_ID_0)) {
-      broker.withClusterConfig(
-          c -> {
-            c.setReceiveOnLegacySubject(false);
-          });
+      broker.withClusterConfig(c -> c.setReceiveOnLegacySubject(false));
     }
   }
 
@@ -190,10 +106,6 @@ public class RaftServerForwardCompatibilityIT {
    * </ul>
    */
   static void configure811Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    broker.withClusterConfig(
-        c -> {
-          c.setSendOnLegacySubject(false);
-          c.setReceiveOnLegacySubject(false);
-        });
+    broker.withClusterConfig(c -> c.setReceiveOnLegacySubject(false));
   }
 }

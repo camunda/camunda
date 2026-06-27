@@ -81,6 +81,8 @@ public final class SearchQueryRequestMapper {
   public static final io.camunda.gateway.protocol.model.DecisionInstanceFilter
       EMPTY_DECISION_INSTANCE_FILTER =
           io.camunda.gateway.protocol.model.DecisionInstanceFilter.Builder.create().build();
+  public static final io.camunda.gateway.protocol.model.JobFilter EMPTY_JOB_FILTER =
+      io.camunda.gateway.protocol.model.JobFilter.Builder.create().build();
 
   private SearchQueryRequestMapper() {}
 

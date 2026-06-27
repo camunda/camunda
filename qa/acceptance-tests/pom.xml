@@ -845,6 +845,36 @@
       </build>
     </profile>
 
+    <profile>
+      <id>physical-tenant</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history</excludedGroups>
+              <excludes>
+                <exclude>${identity-packages}</exclude>
+                <exclude>**/*$*.java</exclude>
+                <!-- Cluster purge is not routed to the per-tenant secondary store, so purged
+                     entities still surface in tenant-scoped search. -->
+                <exclude>**/ClusterPurgeMultiDbIT.java</exclude>
+                <!-- MCP server search/audit not yet validated under physical-tenant mode. -->
+                <exclude>**/mcp/authentication/BasicAuthMcpServerIT.java</exclude>
+                <exclude>**/mcp/authentication/OidcMcpServerIT.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <!--
     This profile will run all tests annotated with @Tag("multiDbTest") for the identity related packages.
     The profile is mainly used to run tests, that can be executed against multiple different

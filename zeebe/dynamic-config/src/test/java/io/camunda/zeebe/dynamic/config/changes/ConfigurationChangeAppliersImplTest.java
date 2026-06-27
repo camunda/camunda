@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -37,7 +38,8 @@ final class ConfigurationChangeAppliersImplTest {
   void shouldReturnExpectedApplier(
       final ClusterConfigurationChangeOperation operation, final Class<?> expectedClass) {
     // given
-    final var topologyChangeAppliers = new ConfigurationChangeAppliersImpl(null, null, null, null);
+    final var topologyChangeAppliers =
+        new ConfigurationChangeAppliersImpl(null, null, null, null, null);
 
     // when
     final var applier = topologyChangeAppliers.getApplier(operation);
@@ -75,6 +77,10 @@ final class ConfigurationChangeAppliersImplTest {
             PreScalingApplier.class),
         Arguments.of(
             new PostScalingOperation(localMemberId, Set.of(localMemberId, MemberId.from("2"))),
-            PostScalingApplier.class));
+            PostScalingApplier.class),
+        Arguments.of(
+            new ModeChangeOperation(localMemberId, Mode.RECOVERING), EnterRecoveryApplier.class),
+        Arguments.of(
+            new ModeChangeOperation(localMemberId, Mode.PROCESSING), ExitRecoveryApplier.class));
   }
 }

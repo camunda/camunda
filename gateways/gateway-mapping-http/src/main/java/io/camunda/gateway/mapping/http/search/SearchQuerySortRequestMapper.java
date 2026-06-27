@@ -366,6 +366,7 @@ public class SearchQuerySortRequestMapper {
         case DECISION_DEFINITION_TYPE -> builder.decisionDefinitionType();
         case ROOT_DECISION_DEFINITION_KEY -> builder.rootDecisionDefinitionKey();
         case TENANT_ID -> builder.tenantId();
+        case BUSINESS_ID -> builder.businessId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

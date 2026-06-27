@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
@@ -79,6 +80,9 @@ public interface ClusterConfigurationManagementApi {
 
   ActorFuture<ClusterConfigurationChangeResponse> enableExporter(
       ExporterEnableRequest enableRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> enterRecovery(
+      ModeChangeRequest recoveryModeRequest);
 
   ActorFuture<ClusterConfiguration> cancelTopologyChange(
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);

@@ -8,6 +8,7 @@
 
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.none;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.FILTERED_INCIDENT_AGGREGATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -41,7 +42,6 @@ public class ProcessIncidentGroupByNoneInterpreterOS extends AbstractProcessGrou
     implements ProcessGroupByInterpreterOS {
 
   private static final String NESTED_INCIDENT_AGGREGATION = "incidentAggregation";
-  private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
   private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;

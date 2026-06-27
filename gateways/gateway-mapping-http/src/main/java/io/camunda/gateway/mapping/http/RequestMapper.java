@@ -17,6 +17,7 @@ import static io.camunda.gateway.mapping.http.validator.DocumentValidator.valida
 import static io.camunda.gateway.mapping.http.validator.ElementRequestValidator.validateVariableRequest;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobActivationRequest;
+import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobBatchUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessageCorrelationRequest;
@@ -57,6 +58,7 @@ import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.DocumentLinkRequest;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobBatchUpdateRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
@@ -96,6 +98,7 @@ import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.JobServices.BatchUpdateJobRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
@@ -310,6 +313,19 @@ public class RequestMapper {
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout(),
                     updateRequest.getChangeset().getPriority())));
+  }
+
+  public static Either<ProblemDetail, BatchUpdateJobRequest> toJobBatchUpdateRequest(
+      final JobBatchUpdateRequest request) {
+    return getResult(
+        validateJobBatchUpdateRequest(request),
+        () ->
+            new BatchUpdateJobRequest(
+                SearchQueryFilterMapper.toRequiredJobFilter(request.getFilter()).get(),
+                new UpdateJobChangeset(
+                    request.getChangeset().getRetries(),
+                    request.getChangeset().getTimeout(),
+                    request.getChangeset().getPriority())));
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(

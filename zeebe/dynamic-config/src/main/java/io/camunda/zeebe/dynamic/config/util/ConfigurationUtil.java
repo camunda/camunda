@@ -34,7 +34,7 @@ public final class ConfigurationUtil {
       @Nullable final String clusterId) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
     for (final var partitionMetadata : partitionDistribution) {
-      final var partitionId = partitionMetadata.id().id();
+      final var partitionId = partitionMetadata.id().number();
       for (final var member : partitionMetadata.members()) {
         final var memberPriority = partitionMetadata.getPriority(member);
         partitionStatesByMember
@@ -97,14 +97,10 @@ public final class ConfigurationUtil {
       throw new IllegalStateException("Found partition with no members");
     }
     return new PartitionMetadata(
-        partitionId(e.getKey(), groupName),
+        new PartitionId(groupName, e.getKey()),
         memberPriorities.keySet(),
         memberPriorities,
         optionalPrimary.get().getValue(),
         optionalPrimary.get().getKey());
-  }
-
-  private static PartitionId partitionId(final Integer key, final String groupName) {
-    return PartitionId.from(groupName, key);
   }
 }

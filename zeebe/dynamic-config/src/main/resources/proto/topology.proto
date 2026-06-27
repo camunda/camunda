@@ -110,6 +110,7 @@ message TopologyChangeOperation {
     PreScalingOperation preScaling = 19;
     PostScalingOperation postScaling = 20;
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
+    ModeChangeOperation modeChange = 24;
   }
 }
 
@@ -217,6 +218,10 @@ message MemberLeaveOperation {}
 
 message MemberRemoveOperation { string memberToRemove = 1; }
 
+message ModeChangeOperation {
+  Mode mode = 1;
+}
+
 enum State {
   UNKNOWN = 0;
   JOINING = 1;
@@ -247,4 +252,10 @@ enum ExportingStateEnum {
   EXPORTING = 1;
   SOFT_PAUSED = 2;
   PAUSED = 3;
+}
+
+enum Mode {
+  MODE_UNKNOWN = 0;
+  MODE_PROCESSING = 1;
+  MODE_RECOVERING = 2;
 }

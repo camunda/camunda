@@ -124,6 +124,10 @@ public class DecisionEvaluationHandler
     if (rootProcessInstanceKey > 0) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
+    final String businessId = decisionEvaluation.getBusinessId();
+    if (!ExporterUtil.isEmpty(businessId)) {
+      entity.setBusinessId(businessId);
+    }
   }
 
   @Override

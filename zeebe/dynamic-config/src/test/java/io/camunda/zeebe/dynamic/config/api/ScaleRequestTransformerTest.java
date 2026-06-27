@@ -262,7 +262,7 @@ class ScaleRequestTransformerTest {
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(id -> PartitionId.from("temp", id))
+        .mapToObj(id -> new PartitionId("temp", id))
         .collect(Collectors.toList());
   }
 
@@ -286,7 +286,7 @@ class ScaleRequestTransformerTest {
                     .mapToObj(id -> MemberId.from(Integer.toString(id)))
                     .collect(Collectors.toSet()),
                 partitionsInRange(1, 1 + currentPartitionCount).stream()
-                    .map(i -> PartitionId.from("temp", i))
+                    .map(i -> new PartitionId("temp", i))
                     .toList(),
                 replicationFactor);
     final var config =

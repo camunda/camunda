@@ -152,6 +152,7 @@ The load-test-setup chart owns all the resources deployed for a single load test
 * the namespace (labels, AZ pinning, TTL annotation)
 * the `camunda-credentials` secret
 * the leader-balancer cronjob
+* the chaos-killer cronjob (optional, disabled by default)
 
 It is parameterized by a values file baked at scaffold time:
 
@@ -254,6 +255,40 @@ make install-load-test-setup
 ```
 
 The load-test-setup chart deploys a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
+
+#### Optional chaos-killer
+
+The load-test-setup chart can optionally deploy a chaos-killer CronJob. When enabled, it lists all
+pods in the namespace, expands a space-separated list of shell glob patterns, and deletes **one
+random matching pod per run**.
+
+- Default schedule: hourly (`0 * * * *`)
+- Default target patterns: `camunda-* elastic-* postgresql-*`
+- Default state: disabled
+
+Enable via the `chaos` variable or the convenience shortcuts:
+
+```sh
+make install chaos=true     # enable chaos with any install target
+make install-chaos          # shorthand for the above
+make install-stable-chaos   # stable VMs + chaos
+```
+
+To override the default schedule or target patterns, pass them via `additional_load_test_setup_configuration`:
+
+```sh
+make install chaos=true \
+  additional_load_test_setup_configuration="--set chaosKiller.schedule='*/15 * * * *' \
+  --set chaosKiller.targetPatterns='camunda-* elastic-* postgresql-* keycloak-*'"
+```
+
+To preview the rendered manifests before installing:
+
+```sh
+make template-load-test-setup-chaos
+```
+
+In the GitHub workflow, set the `enable-chaos` input to `true`.
 
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 

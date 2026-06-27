@@ -13,7 +13,9 @@ import AxeBuilder from '@axe-core/playwright';
 import {LoginPage} from '#/pages/Login.page';
 import {TasklistIndexPage} from '#/pages/TasklistIndex.page';
 import {TasklistProcessesPage} from '#/pages/TasklistProcesses.page';
+import {TaskDetailPage} from '#/pages/TaskDetail.page';
 import {OperateIndexPage} from '#/pages/OperateIndex.page';
+import {OperateBatchOperationsPage} from '#/pages/OperateBatchOperations.page';
 import {AdminIndexPage} from '#/pages/AdminIndex.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
@@ -25,7 +27,9 @@ type Fixtures = {
 	loginPage: LoginPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
+	taskDetailPage: TaskDetailPage;
 	operateIndexPage: OperateIndexPage;
+	operateBatchOperationsPage: OperateBatchOperationsPage;
 	adminIndexPage: AdminIndexPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
@@ -45,8 +49,14 @@ const test = base.extend<Fixtures>({
 	tasklistProcessesPage: async ({page}, use) => {
 		await use(new TasklistProcessesPage(page));
 	},
+	taskDetailPage: async ({page}, use) => {
+		await use(new TaskDetailPage(page));
+	},
 	operateIndexPage: async ({page}, use) => {
 		await use(new OperateIndexPage(page));
+	},
+	operateBatchOperationsPage: async ({page}, use) => {
+		await use(new OperateBatchOperationsPage(page));
 	},
 	adminIndexPage: async ({page}, use) => {
 		await use(new AdminIndexPage(page));

@@ -966,6 +966,12 @@
     "instanceIds": "Instanz IDs",
     "processInstanceIds": "Prozessinstanz IDs",
     "seeDocs": "Siehe Dokumentation",
+    "exportFilterHint": {
+      "iconLabel": "Informationen zur Export-Filterung",
+      "variableText": "Die hier verfügbaren Variablen und Ergebnisse hängen von der Exporter-Konfiguration Ihres Clusters ab. Die Filterung des Variablen-Exports kann beeinflussen, welche Variablen und Prozessdaten angezeigt werden.",
+      "reportSetupLabel": "Ein Prozess oder eine Variable wird nicht angezeigt?",
+      "reportSetupText": "Die hier verfügbaren Prozesse und Variablen hängen von der Exporter-Konfiguration Ihres Clusters ab. Die Filterung des Prozess- oder Variablen-Exports kann beeinflussen, welche Prozesse und Variablen angezeigt werden."
+    },
     "undefined": "nicht definiert",
     "null": "null",
     "nullOrUndefined": "Null oder nicht definiert",
@@ -1573,7 +1579,7 @@
   "agenticControl": {
     "agenticControlPlaneDashboardName": "Agentic Control Dashboard",
     "report": {
-      "agenticKpiExecutionCompletedName": "Abgeschlossene Agenten-Läufe",
+      "agenticKpiExecutionCompletedName": "Abgeschlossene Ausführungen",
       "agenticKpiExecutionCompletedDescription": "Gesamtanzahl der abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
       "agenticKpiExecutionAvgDurationName": "Durchschnittliche Ausführungsdauer",
       "agenticKpiExecutionAvgDurationDescription": "Durchschnittliche Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",

@@ -69,6 +69,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
@@ -119,6 +121,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
     addRequestHandler(
         UpdateJobTimeoutRequest.class, r -> UpdateJobTimeoutResponse.getDefaultInstance());
+    addRequestHandler(
+        UpdateJobPriorityRequest.class, r -> UpdateJobPriorityResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
     addRequestHandler(ThrowErrorRequest.class, r -> ThrowErrorResponse.getDefaultInstance());
     addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
@@ -431,6 +435,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void updateJobTimeout(
       final UpdateJobTimeoutRequest request,
       final StreamObserver<UpdateJobTimeoutResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void updateJobPriority(
+      final UpdateJobPriorityRequest request,
+      final StreamObserver<UpdateJobPriorityResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

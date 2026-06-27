@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.repository.es;
 import static io.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
@@ -691,7 +692,10 @@ public class VariableRepositoryES implements VariableRepository {
                                                     getVariableValueFieldForType(
                                                         variablePath, type))
                                                 .size(MAX_RESPONSE_SIZE_LIMIT)
-                                                .order(NamedValue.of("_key", SortOrder.Asc))))))));
+                                                .order(
+                                                    NamedValue.of(
+                                                        AGGREGATION_FIELD_KEY,
+                                                        SortOrder.Asc))))))));
   }
 
   private Map<String, Aggregation> getProcessVariableValueFilterAggregation(
@@ -715,7 +719,10 @@ public class VariableRepositoryES implements VariableRepository {
                                         t ->
                                             t.field(getVariableValueFieldForType(VARIABLES, type))
                                                 .size(MAX_RESPONSE_SIZE_LIMIT)
-                                                .order(NamedValue.of("_key", SortOrder.Asc))))))));
+                                                .order(
+                                                    NamedValue.of(
+                                                        AGGREGATION_FIELD_KEY,
+                                                        SortOrder.Asc))))))));
   }
 
   private void addValueFilter(

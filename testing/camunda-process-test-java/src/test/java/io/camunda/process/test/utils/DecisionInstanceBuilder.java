@@ -36,6 +36,7 @@ public class DecisionInstanceBuilder implements DecisionInstance {
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
+  private String businessId;
   private Long elementInstanceKey;
   private long decisionDefinitionKey;
   private String decisionDefinitionId;
@@ -86,6 +87,11 @@ public class DecisionInstanceBuilder implements DecisionInstance {
   @Override
   public Long getRootProcessInstanceKey() {
     return rootProcessInstanceKey;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 
   @Override
@@ -208,6 +214,11 @@ public class DecisionInstanceBuilder implements DecisionInstance {
 
   public DecisionInstanceBuilder setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public DecisionInstanceBuilder setBusinessId(final String businessId) {
+    this.businessId = businessId;
     return this;
   }
 

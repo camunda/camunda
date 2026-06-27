@@ -39,6 +39,11 @@ const mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint = createEndpo
 	method: endpoints.getIncidentProcessInstanceStatisticsByDefinition.method as 'POST',
 });
 
+const mockQueryBatchOperationsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryBatchOperations.getUrl(),
+	method: endpoints.queryBatchOperations.method as 'POST',
+});
+
 const mockCurrentUserEndpoint = createEndpointMock({
 	endpoint: endpoints.getCurrentUser.getUrl(),
 	method: endpoints.getCurrentUser.method,
@@ -69,6 +74,11 @@ const mockSaasTokenEndpoint = createEndpointMock({
 	method: 'GET',
 });
 
+const mockGetUserTaskEndpoint = createEndpointMock({
+	endpoint: endpoints.getUserTask.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.getUserTask.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -76,10 +86,12 @@ export {
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
+	mockGetUserTaskEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
+	mockQueryBatchOperationsEndpoint,
 };

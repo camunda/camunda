@@ -28,7 +28,6 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
-import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -108,21 +107,36 @@ public final class StubbedGateway {
         new EndpointManager(
             brokerClient, activateJobsHandler, clientStreamAdapter, securityConfiguration);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
+    final var handlersByTenant =
+        physicalTenantIds.known().stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    tenantId -> tenantId,
+                    tenantId ->
+                        (AuthenticationHandler)
+                            new AuthenticationHandler.Oidc(
+                                new FakeJwtDecoder(),
+                                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+                                securityConfiguration.getAuthentication().getOidc())));
+    final var metricsByTenant =
+        physicalTenantIds.known().stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    tenantId -> tenantId,
+                    tenantId ->
+                        new AuthenticationMetrics(
+                            new SimpleMeterRegistry(), AuthenticationMethod.OIDC)));
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
                     gatewayGrpcService,
-                    // listed inner-to-outer: authentication runs first, then physical tenant
-                    // resolution, mirroring the real Gateway interceptor chain
-                    new PhysicalTenantInterceptor(physicalTenantIds),
                     new AuthenticationInterceptor(
-                        new AuthenticationHandler.Oidc(
-                            new FakeJwtDecoder(),
-                            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
-                            securityConfiguration.getAuthentication().getOidc()),
-                        new AuthenticationMetrics(
-                            new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));
+                        physicalTenantIds.known(),
+                        handlersByTenant,
+                        !securityConfiguration.getAuthentication().isUnprotectedApi(),
+                        metricsByTenant,
+                        new SimpleMeterRegistry())));
     server = serverBuilder.build();
     server.start();
   }

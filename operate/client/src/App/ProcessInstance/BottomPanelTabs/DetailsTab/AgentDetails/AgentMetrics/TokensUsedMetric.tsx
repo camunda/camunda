@@ -28,11 +28,11 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
       <TokenBreakdownContainer>
         <TokenBreakdown $dotColor="var(--cds-interactive)">
           <span>Input</span>
-          <span>{inputTokens}</span>
+          <span>{inputTokens.toLocaleString()}</span>
         </TokenBreakdown>
         <TokenBreakdown $dotColor="var(--cds-support-warning)">
           <span>Output</span>
-          <span>{outputTokens}</span>
+          <span>{outputTokens.toLocaleString()}</span>
         </TokenBreakdown>
       </TokenBreakdownContainer>
     </MetricCard>

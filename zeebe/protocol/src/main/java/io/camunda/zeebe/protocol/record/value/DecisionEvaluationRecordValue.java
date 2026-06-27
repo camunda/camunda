@@ -126,4 +126,14 @@ public interface DecisionEvaluationRecordValue
    *     8.9
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the business ID inherited from the owning process instance, captured when the decision
+   * is evaluated within a process. A decision evaluated standalone (ad-hoc), outside of any process
+   * instance, carries no business ID.
+   *
+   * @return the business ID of the owning process instance, or an empty string if it has none (for
+   *     standalone evaluations or versions prior to 8.10)
+   */
+  String getBusinessId();
 }

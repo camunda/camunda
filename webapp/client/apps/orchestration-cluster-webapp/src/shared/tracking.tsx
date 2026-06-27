@@ -124,6 +124,16 @@ type Events =
 	| {
 			eventName: 'operate:dashboard-link-clicked';
 			link: 'operate-docs' | 'modeler';
+	  }
+	| {
+			eventName: 'operate:batch-operation-details-opened';
+			batchOperationType: string;
+			batchOperationState: string;
+	  }
+	| {
+			eventName: 'operate:batch-operations-sorted';
+			sortBy: string;
+			sortOrder: 'asc' | 'desc';
 	  };
 
 const STAGE_ENV = getStage(window.location.host);

@@ -28,7 +28,7 @@ public final class PartitionRegistrationStep implements StartupStep<PartitionSta
   @Override
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
-    final var partitionId = context.partitionMetadata().id().id();
+    final var partitionId = context.partitionMetadata().id().number();
     final var zeebePartition = context.zeebePartition();
     final var topologyManager = context.topologyManager();
     zeebePartition.addFailureListener(
@@ -43,7 +43,7 @@ public final class PartitionRegistrationStep implements StartupStep<PartitionSta
   public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
 
-    final var partitionId = context.partitionMetadata().id().id();
+    final var partitionId = context.partitionMetadata().id().number();
     context.diskSpaceUsageMonitor().removeDiskUsageListener(context.zeebePartition());
     context.brokerHealthCheckService().removeMonitoredPartition(context.zeebePartition());
     context.topologyManager().removePartition(partitionId);

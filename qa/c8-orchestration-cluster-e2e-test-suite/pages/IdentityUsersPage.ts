@@ -147,10 +147,9 @@ export class IdentityUsersPage {
         exact: true,
       },
     );
-    this.deleteUserModalDeleteButton = this.deleteUserModal.getByRole(
-      'button',
-      {name: 'danger Delete user'},
-    );
+    this.deleteUserModalDeleteButton = this.deleteUserModal
+      .getByRole('button')
+      .filter({hasText: 'Delete user'});
 
     this.emptyState = page.getByText('No users created yet', {exact: true});
     this.userCell = (name) =>
@@ -175,6 +174,12 @@ export class IdentityUsersPage {
     await this.createEmailField.fill(user.email);
     await this.createPasswordField.fill(user.password);
     await this.createRepeatPasswordField.fill(user.password);
+    // The submit button stays disabled until the form's async field
+    // validation settles; under load this can exceed the default action
+    // timeout, so wait for it to become enabled before clicking.
+    await expect(this.createUserModalCreateButton).toBeEnabled({
+      timeout: 30000,
+    });
     await this.createUserModalCreateButton.click();
     await expect(this.createUserModal).toBeHidden();
 

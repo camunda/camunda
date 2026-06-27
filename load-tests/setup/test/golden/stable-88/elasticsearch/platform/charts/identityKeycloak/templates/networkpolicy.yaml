@@ -1,0 +1,29 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/templates/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: keycloak
+  namespace: "c8-golden-stable-88-elasticsearch"
+  labels:
+    app.kubernetes.io/instance: c8-golden-stable-88-elasticsearch
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 26.3.3
+
+    app.kubernetes.io/component: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: c8-golden-stable-88-elasticsearch
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/component: keycloak
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 7800
+        - port: 8080

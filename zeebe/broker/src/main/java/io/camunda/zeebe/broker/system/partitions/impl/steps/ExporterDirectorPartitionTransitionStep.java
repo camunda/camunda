@@ -119,7 +119,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final var exporterFilter = SkipPositionsFilter.of(skipRecords);
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
-    final var tenantName = context.getRaftPartition().getPartitionConfig().getTenantName();
+    final var tenantName = context.partitionId().group();
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)

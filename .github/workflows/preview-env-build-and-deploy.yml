@@ -191,7 +191,7 @@ jobs:
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
       if: inputs.app-name == ''
-      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
       with:
         branch: ${{ github.head_ref }}
         max_length: '15'
@@ -261,7 +261,7 @@ jobs:
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment for c8sm
-      uses: camunda/infra-global-github-actions/preview-env/create@main
+      uses: camunda/infra-global-github-actions/preview-env/create@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
       with:
         revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
@@ -296,7 +296,7 @@ jobs:
     steps:
     - name: Check PR for merge conflicts
       if: github.event_name == 'pull_request'
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@main
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
       with:
         pull-request-id: ${{ github.event.pull_request.number }}
 
@@ -338,7 +338,7 @@ jobs:
     timeout-minutes: 5
     needs: [deploy-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@main
+    - uses: camunda/infra-global-github-actions/preview-env/comment@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
 
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

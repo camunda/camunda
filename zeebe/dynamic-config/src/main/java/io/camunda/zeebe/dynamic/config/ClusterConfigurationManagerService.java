@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
+import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
@@ -42,6 +43,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class ClusterConfigurationManagerService
@@ -60,6 +62,7 @@ public final class ClusterConfigurationManagerService
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final MemberId localMemberId;
+  private ModeChangeExecutor modeChangeExecutor;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -245,16 +248,31 @@ public final class ClusterConfigurationManagerService
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
-    clusterConfigurationManager.registerTopologyChangeAppliers(
-        new ConfigurationChangeAppliersImpl(
-            partitionChangeExecutor,
-            new NoopClusterMembershipChangeExecutor(),
-            partitionScalingChangeExecutor,
-            clusterChangeExecutor));
+    managerActor.run(
+        () -> {
+          Objects.requireNonNull(
+              modeChangeExecutor,
+              "ModeChangeExecutor not set before registering topology appliers.");
+          clusterConfigurationManager.registerTopologyChangeAppliers(
+              new ConfigurationChangeAppliersImpl(
+                  partitionChangeExecutor,
+                  new NoopClusterMembershipChangeExecutor(),
+                  partitionScalingChangeExecutor,
+                  clusterChangeExecutor,
+                  modeChangeExecutor));
+        });
   }
 
   public void removePartitionChangeExecutor() {
     clusterConfigurationManager.removeTopologyChangeAppliers();
+  }
+
+  public void registerModeChangeExecutor(final ModeChangeExecutor modeChangeExecutor) {
+    managerActor.run(() -> this.modeChangeExecutor = modeChangeExecutor);
+  }
+
+  public void removeModeChangeExecutor() {
+    managerActor.run(() -> modeChangeExecutor = null);
   }
 
   public void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {

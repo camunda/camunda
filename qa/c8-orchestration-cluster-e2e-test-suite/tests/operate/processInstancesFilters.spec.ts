@@ -19,6 +19,7 @@ type ProcessInstance = {processInstanceKey: number};
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
+let orderProcessFiltersValue: string;
 
 test.beforeAll(async () => {
   await deploy([
@@ -33,11 +34,12 @@ test.beforeAll(async () => {
   await createInstances('processWithMultipleVersions', 2, 1);
 
   await deploy(['./resources/orderProcess_v_1.bpmn']);
+  orderProcessFiltersValue = Date.now().toString();
   orderProcessInstance = {
     processInstanceKey: Number(
       (
         await createSingleInstance('orderProcess', 1, {
-          filtersTest: 123,
+          filtersTest: Number(orderProcessFiltersValue),
         })
       ).processInstanceKey,
     ),
@@ -166,7 +168,7 @@ test.describe('Process Instances Filters', () => {
 
       await operateFiltersPanelPage.fillSingleConditionInline(
         'filtersTest',
-        '123',
+        orderProcessFiltersValue,
       );
     });
 
@@ -198,7 +200,7 @@ test.describe('Process Instances Filters', () => {
         operateFiltersPanelPage.variableFilterDialog.getByTestId(
           'variable-filter-value-0',
         ),
-      ).toHaveValue('123');
+      ).toHaveValue(orderProcessFiltersValue);
       await operateFiltersPanelPage.variableFilterDialog
         .getByRole('button', {name: 'Cancel'})
         .click();
@@ -230,7 +232,11 @@ test.describe('Process Instances Filters', () => {
     await test.step('Add Variable Filter via modal', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variables');
       await operateFiltersPanelPage.openVariableFilterModal();
-      await operateFiltersPanelPage.fillConditionRow(0, 'filtersTest', '123');
+      await operateFiltersPanelPage.fillConditionRow(
+        0,
+        'filtersTest',
+        orderProcessFiltersValue,
+      );
       await operateFiltersPanelPage.applyVariableFilter();
     });
 
@@ -268,7 +274,9 @@ test.describe('Process Instances Filters', () => {
         ),
       ).toBeVisible();
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByText('123'),
+        operateFiltersPanelPage.variableFilterDialog.getByText(
+          orderProcessFiltersValue,
+        ),
       ).toBeVisible();
       await operateFiltersPanelPage.cancelVariableFilterModal();
       await operateFiltersPanelPage.cancelVariableFilterModal();
@@ -280,7 +288,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.fillConditionRow(
         0,
         'filtersTest',
-        '[123, 456]',
+        `[${orderProcessFiltersValue}, 456]`,
       );
       await operateFiltersPanelPage.applyVariableFilter();
     });

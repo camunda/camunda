@@ -1,0 +1,470 @@
+# type: Release
+# owner: @camunda/distribution
+---
+name: "C8Run: Release Candidate"
+# run-name carries the full version so the release-train BPMN can find this run by name
+# (GET /actions/workflows/{id}/runs then match `name == c8run-rc-<camundaVersion>`). The version
+# is released exactly once, so it is a unique key without a separate correlation id.
+run-name: c8run-rc-${{ inputs.camundaVersion }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Release branch to build from (e.g., main, stable/8.7, stable/8.8)"
+        type: string
+        required: true
+        default: ""
+      camundaVersion:
+        description: "Full Camunda release version = the C8Run version (e.g., 8.8.29, 8.8.0-alpha4.1). The minor (e.g. 8.8) is derived from it."
+        type: string
+        required: true
+        default: ""
+      connectorsVersion:
+        description: "Full Connectors bundle version (e.g., 8.8.15)"
+        type: string
+        required: true
+        default: ""
+      dryRun:
+        description: "Dry run: build for real but stage to an isolated <version>-rc-dryrun Harbor tag and skip the .env bump PR. Nothing public is written; the dryrun tag is deletable residue."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HARBOR_REGISTRY_HOST: registry.camunda.cloud
+  HARBOR_REGISTRY_PROJECT: team-distribution
+  RC_REPOSITORY: c8run
+
+jobs:
+  # Gate: for docker-reliant branches (those whose c8run/.env pins COMPOSE_TAG), the bundled rolling
+  # docker-compose-<minor> release must already pin the target version. This is the automated form of
+  # the manual "ensure the Docker Compose versions were released" precursor in c8run/docs/release.md,
+  # and the same readiness primitive as the release train's check-versions.bpmn. Java-only branches
+  # (main, stable/8.9) have no COMPOSE_TAG and skip the gate.
+  verify-compose:
+    name: Verify Docker Compose is at target
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: ℹ️ Print workflow inputs ℹ️
+        env:
+          WORKFLOW_INPUTS: ${{ toJson(inputs) }}
+        run: |
+          echo "Action Inputs:"
+          echo "${WORKFLOW_INPUTS}"
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Verify rolling docker-compose pins the target version
+        env:
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+        run: |
+          compose_tag="$(grep -E '^COMPOSE_TAG=' c8run/.env | head -1 | cut -d= -f2- || true)"
+          if [ -z "${compose_tag}" ]; then
+            echo "Java-only branch (no COMPOSE_TAG in c8run/.env) — no Docker Compose dependency. Skipping gate."
+            exit 0
+          fi
+
+          url="https://github.com/camunda/camunda-distributions/releases/download/docker-compose-${compose_tag}/docker-compose-${compose_tag}.zip"
+          echo "Fetching released compose bundle: ${url}"
+          if ! curl -fsSL -o docker-compose.zip "${url}"; then
+            echo "::error::Could not download docker-compose-${compose_tag}.zip from camunda-distributions. The minor compose release is missing."
+            exit 1
+          fi
+          unzip -o -q docker-compose.zip -d dc
+          dc_camunda="$(grep -E '^CAMUNDA_VERSION=' dc/.env | head -1 | cut -d= -f2-)"
+          echo "docker-compose-${compose_tag} pins CAMUNDA_VERSION=${dc_camunda}; target is ${CAMUNDA_VERSION}"
+          # sort -V picks the lower version; if that is the compose pin (and the two differ), compose is behind target.
+          lower="$(printf '%s\n%s\n' "${dc_camunda}" "${CAMUNDA_VERSION}" | sort -V | head -1)"
+          if [ "${dc_camunda}" != "${CAMUNDA_VERSION}" ] && [ "${lower}" = "${dc_camunda}" ]; then
+            echo "::error::Rolling docker-compose-${compose_tag} pins ${dc_camunda}, which is behind the target ${CAMUNDA_VERSION}. Compose is stale — refresh it upstream (Renovate / release train) before building C8Run."
+            exit 1
+          fi
+          echo "Docker Compose is at or ahead of the target (pins ${dc_camunda}, target ${CAMUNDA_VERSION}). Proceeding."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build:
+    name: C8Run - ${{ matrix.os.name }}
+    needs: verify-compose
+    runs-on: ${{ matrix.os.id }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-latest is ARM, macos-15-intel will execute on x86 runner.
+        os:
+          - name: Ubuntu (AMD64)
+            id: ubuntu-latest
+            artifactFileSuffix: linux-x86_64.tar.gz
+            workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
+            command: ./c8run
+            packagingCmd: ./packager
+          - name: MacOS (ARM64)
+            id: macos-latest
+            artifactFileSuffix: darwin-aarch64.zip
+            workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
+            command: ./c8run
+            packagingCmd: ./packager
+          - name: MacOS (AMD64)
+            id: macos-15-intel
+            artifactFileSuffix: darwin-x86_64.zip
+            workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
+            command: ./c8run
+            packagingCmd: ./packager
+          - name: Windows (AMD64)
+            id: windows-latest
+            artifactFileSuffix: windows-x86_64.zip
+            workingDir: ./c8run
+            c8runArtifactName: c8run.exe
+            packagerArtifactName: packager.exe
+            command: ./c8run.exe
+            packagingCmd: ./packager.exe
+    env:
+      # Final artifact name; matches the packager output (camunda8-run-<CAMUNDA_VERSION>-<suffix>).
+      C8RUN_NAME_ARTIFACT: >-
+        camunda8-run-${{ inputs.camundaVersion }}-${{ matrix.os.artifactFileSuffix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
+            secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE_PASSWORD;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_ID;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_PASSWORD;
+            secret/data/products/distribution/ci APPLE_TEAM_ID;
+            secret/data/products/distribution/ci APPLE_COMMON_NAME;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: ">=1.23.1"
+          cache: false # disabling since not working anyways without a cache-dependency-path specified
+
+      - name: Setup Java 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: "temurin"
+          java-version: "25"
+
+      # Inject the build versions into c8run/.env in place, preserving every other key and comment
+      # (ELASTICSEARCH_VERSION, CAMUNDA_DOCKER_VERSION, COMPOSE_TAG, COMPOSE_EXTRACTED_FOLDER, etc.).
+      # This replaces the manual pre-merged ".env bump PR" runbook step and works on every branch
+      # regardless of whether the packager has a syncEnvFile (8.7/8.8 do not).
+      - name: Update c8run/.env with build versions
+        working-directory: ${{ matrix.os.workingDir }}
+        env:
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+        run: |
+          awk -v cv="${CAMUNDA_VERSION}" -v cnv="${CONNECTORS_VERSION}" '
+            /^CAMUNDA_VERSION=/    { print "CAMUNDA_VERSION=" cv; seen_cv=1; next }
+            /^CONNECTORS_VERSION=/ { print "CONNECTORS_VERSION=" cnv; seen_cnv=1; next }
+            { print }
+            END {
+              if (!seen_cv)  print "CAMUNDA_VERSION=" cv
+              if (!seen_cnv) print "CONNECTORS_VERSION=" cnv
+            }
+          ' .env > .env.tmp && mv .env.tmp .env
+
+      - name: ℹ️ Print resolved c8run/.env ℹ️
+        working-directory: ${{ matrix.os.workingDir }}
+        run: |
+          echo "Resolved c8run/.env to be bundled:"
+          cat .env
+
+      - name: Build artifact runtime distro
+        working-directory: ${{ matrix.os.workingDir }}
+        run: go build -o ${{ matrix.os.c8runArtifactName }} ./cmd/c8run
+
+      - name: Build artifact packaging distro
+        working-directory: ${{ matrix.os.workingDir }}
+        run: go build -o ${{ matrix.os.packagerArtifactName }} ./cmd/packager
+
+      - name: Create artifact package
+        working-directory: ${{ matrix.os.workingDir }}
+        run: ${{ matrix.os.packagingCmd }} package
+        env:
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: MacOS - Extract package
+        id: macos-extract
+        if: startsWith(matrix.os.name, 'MacOS')
+        run: |
+          mkdir -p tmp
+          mv "$C8RUN_NAME_ARTIFACT" tmp
+          cd tmp
+          unzip "$C8RUN_NAME_ARTIFACT"
+          extracted_dir="$(find . -mindepth 1 -maxdepth 1 -type d ! -name '__MACOSX' -print -quit)"
+          if [ -z "$extracted_dir" ]; then
+            echo "Unable to locate extracted directory"
+            exit 1
+          fi
+          extracted_dir="${extracted_dir#./}"
+          echo "Extracted directory: $extracted_dir"
+          echo "extracted_dir=./c8run/tmp/$extracted_dir" >> "$GITHUB_OUTPUT"
+        shell: bash
+        working-directory: ./c8run
+
+      - name: MacOS - Sign and notarize
+        if: startsWith(matrix.os.name, 'MacOS')
+        uses: ./.github/actions/sign-and-notarize
+        with:
+          p12-base64: ${{ steps.secrets.outputs.APPLE_CERTIFICATE }}
+          p12-password: ${{ steps.secrets.outputs.APPLE_CERTIFICATE_PASSWORD }}
+          developer-id-cert-name: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
+          apple-id: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
+          app-password: ${{ steps.secrets.outputs.APPLE_DEVELOPER_PASSWORD }}
+          team-id: ${{ steps.secrets.outputs.APPLE_TEAM_ID }}
+          path: ${{ steps.macos-extract.outputs.extracted_dir }}
+
+      - name: MacOS - Replace old artifact with codesigned artifact
+        if: startsWith(matrix.os.name, 'MacOS')
+        run: |
+          mv ./c8run/tmp/c8run_complete.zip ./c8run/"$C8RUN_NAME_ARTIFACT"
+
+      - name: Install regctl CLI
+        env:
+          REGCTL_VERSION: "0.11.5"
+          REGCTL_SHA_LINUX_AMD64: "c93aa7638749f5aaac1a8e01787321889c78f0101809bb2880343478d0ba0467"
+          REGCTL_SHA_DARWIN_ARM64: "f4d536d64d0c3cc1db7400902175a1c314675991d22e87e15c319501a2676d3f"
+          REGCTL_SHA_DARWIN_AMD64: "c132fdddda68b9c7584ac19f3b40cd17f71916c2bca8182270ebe65b55198a12"
+          REGCTL_SHA_WINDOWS_AMD64: "9b83975d464e4ee5a9f899a3ead26072ed67e9a8ed0f582897bfad8141b45938"
+        run: |
+          case "${RUNNER_OS}_${RUNNER_ARCH}" in
+            Linux_X64)   asset="regctl-linux-amd64";       sha="${REGCTL_SHA_LINUX_AMD64}" ;;
+            macOS_ARM64) asset="regctl-darwin-arm64";      sha="${REGCTL_SHA_DARWIN_ARM64}" ;;
+            macOS_X64)   asset="regctl-darwin-amd64";      sha="${REGCTL_SHA_DARWIN_AMD64}" ;;
+            Windows_X64) asset="regctl-windows-amd64.exe"; sha="${REGCTL_SHA_WINDOWS_AMD64}" ;;
+            *) echo "::error::unsupported runner ${RUNNER_OS}_${RUNNER_ARCH}"; exit 1 ;;
+          esac
+          dir="${HOME}/regctl-bin"; mkdir -p "${dir}"
+          out="${dir}/regctl"; [ "${RUNNER_OS}" = "Windows" ] && out="${dir}/regctl.exe"
+          curl -fsSL -o "${out}" "https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/${asset}"
+          actual="$(openssl dgst -sha256 "${out}" | awk '{print $NF}')"
+          if [ "${actual}" != "${sha}" ]; then
+            echo "::error::regctl checksum mismatch: got ${actual}, want ${sha}"; exit 1
+          fi
+          chmod +x "${out}"
+          echo "REGCTL=${out}" >> "$GITHUB_ENV"
+          "${out}" version
+
+      # Push this OS's artifact straight to its own per-OS Harbor tag (no GHA staging hop, no gather):
+      # the four runners stage concurrently, each uploading once.
+      - name: Push RC artifact to Harbor
+        working-directory: ${{ matrix.os.workingDir }}
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
+          ARTIFACT: ${{ env.C8RUN_NAME_ARTIFACT }}
+          ARTIFACT_SUFFIX: ${{ matrix.os.artifactFileSuffix }}
+          RC_BASE: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
+        run: |
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::Built artifact ${ARTIFACT} not found in $(pwd)."
+            exit 1
+          fi
+          os_tag="${ARTIFACT_SUFFIX%%.*}"
+          case "${ARTIFACT_SUFFIX}" in
+            *.tar.gz) media_type="application/gzip" ;;
+            *.zip)    media_type="application/zip" ;;
+            *)        media_type="application/octet-stream" ;;
+          esac
+          rc_ref="${RC_BASE}-${os_tag}"
+          echo "Staging ${ARTIFACT} -> ${rc_ref}"
+          echo "Checksum (pre-push; compare against the public promote):"
+          openssl dgst -sha256 "${ARTIFACT}"
+
+          echo "${HARBOR_REGISTRY_PASSWORD}" | \
+            "${REGCTL}" registry login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --pass-stdin
+          # Upload in 320 MiB chunks (a monolithic PUT of the ~780 MB artifact overruns Harbor's
+          # ~60s per-request gateway timeout; 320 MiB measured ~33s/chunk at peak throughput).
+          "${REGCTL}" registry set "${HARBOR_REGISTRY_HOST}" --blob-chunk 335544320
+
+          attempt=1
+          until "${REGCTL}" artifact put --artifact-type application/vnd.camunda.c8run.v1 --file-title \
+            -f "${ARTIFACT}" -m "${media_type}" "${rc_ref}"; do
+            if [ "${attempt}" -ge 3 ]; then
+              echo "::error::regctl artifact put failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "::warning::regctl artifact put failed (attempt ${attempt}); re-authenticating and retrying..."
+            echo "${HARBOR_REGISTRY_PASSWORD}" | \
+              "${REGCTL}" registry login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --pass-stdin || true
+            attempt=$((attempt + 1))
+            sleep 30
+          done
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8run-rc-build/${{ matrix.os.name }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  rc-summary:
+    name: RC summary
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Release summary
+        env:
+          DRY_RUN: ${{ inputs.dryRun }}
+          BRANCH: ${{ inputs.branch }}
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+          RC_PREFIX: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
+        run: |
+          {
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "🧪 C8Run RC staged to Harbor (DRY RUN) 🧪"
+              echo "- The .env bump PR was skipped."
+              echo "- Delete the dryrun tags when done: \`regctl tag rm ${RC_PREFIX}-<os>\` for each OS."
+            else
+              echo "⭐ C8Run RC staged to Harbor ⭐"
+            fi
+            echo "- Branch: \`${BRANCH}\`"
+            echo "- Version: \`${CAMUNDA_VERSION}\`"
+            echo "- Connectors: \`${CONNECTORS_VERSION}\`"
+            echo "- RC artifacts (one tag per OS):"
+            for os in linux-x86_64 darwin-aarch64 darwin-x86_64 windows-x86_64; do
+              echo "  - \`${RC_PREFIX}-${os}\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Persist exactly what was built: open (do not merge) a c8run/.env bump PR against the release
+  # branch. This replaces the manual "Version Bump" runbook step. The PR is merged after QA sign-off
+  # by the release train (this workflow only opens it), so a QA-rejected RC rebuilt with other
+  # versions never leaves a wrong .env merged. Uses the Monorepo DevOps Automation app token (same as
+  # backport.yml) so the PR triggers CI and can clear the main ruleset + merge queue.
+  open-env-pr:
+    name: Open c8run/.env bump PR
+    needs: build
+    if: ${{ !inputs.dryRun }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        with:
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+          token: ${{ steps.github-token.outputs.token }}
+
+      - name: Open .env bump PR
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          pr_branch="c8run-release-${CAMUNDA_VERSION}"
+          git config user.name "monorepo-devops-automation[bot]"
+          git config user.email "248077375+monorepo-devops-automation[bot]@users.noreply.github.com"
+          git checkout -b "${pr_branch}"
+
+          awk -v cv="${CAMUNDA_VERSION}" -v cnv="${CONNECTORS_VERSION}" '
+            /^CAMUNDA_VERSION=/    { print "CAMUNDA_VERSION=" cv; seen_cv=1; next }
+            /^CONNECTORS_VERSION=/ { print "CONNECTORS_VERSION=" cnv; seen_cnv=1; next }
+            { print }
+            END {
+              if (!seen_cv)  print "CAMUNDA_VERSION=" cv
+              if (!seen_cnv) print "CONNECTORS_VERSION=" cnv
+            }
+          ' c8run/.env > c8run/.env.tmp && mv c8run/.env.tmp c8run/.env
+
+          if git diff --quiet -- c8run/.env; then
+            echo "c8run/.env already at target versions; nothing to persist."
+            exit 0
+          fi
+
+          git add c8run/.env
+          git commit -m "deps: update c8run versions to ${CAMUNDA_VERSION}"
+          git push --force-with-lease origin "${pr_branch}"
+
+          if gh pr view "${pr_branch}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "PR for ${pr_branch} already exists; updated its branch."
+            exit 0
+          fi
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base "${BRANCH}" \
+            --head "${pr_branch}" \
+            --title "deps: update c8run versions to ${CAMUNDA_VERSION}" \
+            --body "Persists the versions built for the C8Run \`${CAMUNDA_VERSION}\` release candidate (CAMUNDA_VERSION=\`${CAMUNDA_VERSION}\`, CONNECTORS_VERSION=\`${CONNECTORS_VERSION}\`). Merged after QA sign-off by the release train."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

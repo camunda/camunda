@@ -500,6 +500,13 @@ public class PojoCompatibilityTest {
                     .putVariables("approved", true)
                     .putVariables("score", 750)
                     .build())),
+        Arguments.of(
+            "mock dmn decision: with decision output",
+            singleTestCase(
+                ImmutableMockDmnDecisionInstruction.builder()
+                    .decisionDefinitionId("credit-check-decision")
+                    .decisionOutput(15)
+                    .build())),
         // ===== ASSERT_VARIABLES =====
         Arguments.of(
             "assert variables: minimal",
@@ -539,7 +546,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .build())),
         Arguments.of(
-            "assert variable: satisfies judge with expectation, threshold, prompt",
+            "assert variable: satisfies judge with expectation, threshold, prompt, attachDocuments",
             singleTestCase(
                 ImmutableAssertVariableInstruction.builder()
                     .processInstanceSelector(
@@ -554,6 +561,7 @@ public class PojoCompatibilityTest {
                             .expectation("should be a properly formatted JSON response")
                             .threshold(0.8)
                             .customPrompt("You are evaluating data accuracy")
+                            .attachDocuments(true)
                             .build())
                     .build())),
         Arguments.of(

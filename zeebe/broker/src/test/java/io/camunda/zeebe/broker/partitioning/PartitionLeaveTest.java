@@ -17,6 +17,7 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
@@ -230,7 +231,7 @@ final class PartitionLeaveTest {
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
             SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
             null,

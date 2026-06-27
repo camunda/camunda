@@ -18,12 +18,15 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
@@ -35,6 +38,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
@@ -211,6 +215,46 @@ class PartitionManagerStepTest {
     }
 
     @Test
+    void shouldPassDistinctFeatureFlagsToEachPhysicalTenant() throws Exception {
+      // given — two tenants each with a distinct FeatureFlags instance
+      final var flagsA = new FeatureFlags(true, false, false, false, false, false);
+      final var flagsB = new FeatureFlags(false, false, true, false, false, false);
+      final var secondTenantId = "second";
+
+      final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+      final var conv = new BrokerRequestAuthorizationConverter(secCfg);
+      testBrokerStartupContext.setPhysicalTenantEngineContext(
+          PHYSICAL_TENANT_ID, new PhysicalTenantEngineContext(secCfg, conv, flagsA));
+      testBrokerStartupContext.setPhysicalTenantEngineContext(
+          secondTenantId, new PhysicalTenantEngineContext(secCfg, conv, flagsB));
+
+      final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
+      final var secondStep = new PartitionManagerStep(secondTenantId);
+
+      // when — start both steps
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      secondStep.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, secondFuture);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      assertThat(secondFuture).succeedsWithin(TIME_OUT);
+
+      // then — each tenant's ZeebePartitionFactory holds its own flags, not the other's
+      final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
+      factoryField.setAccessible(true);
+      final var flagsField = ZeebePartitionFactory.class.getDeclaredField("featureFlags");
+      flagsField.setAccessible(true);
+
+      final var managerA =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var managerB =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(secondTenantId);
+
+      assertThat(flagsField.get(factoryField.get(managerA))).isSameAs(flagsA);
+      assertThat(flagsField.get(factoryField.get(managerB))).isSameAs(flagsB);
+    }
+
+    @Test
     void shouldNotFailWhenSearchClientProxyIsNull() {
       // given
       testBrokerStartupContext.setSearchClientsProxy(null);
@@ -239,6 +283,7 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
       testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
+      testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
 
       testBrokerStartupContext.setClusterConfigurationService(
           mock(ClusterConfigurationService.class));

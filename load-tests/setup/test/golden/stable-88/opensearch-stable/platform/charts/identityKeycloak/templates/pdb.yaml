@@ -1,0 +1,21 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: keycloak
+  namespace: "c8-golden-stable-88-opensearch-stable"
+  labels:
+    app.kubernetes.io/instance: c8-golden-stable-88-opensearch-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 26.3.3
+
+    app.kubernetes.io/component: keycloak
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: c8-golden-stable-88-opensearch-stable
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/component: keycloak

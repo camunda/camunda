@@ -431,6 +431,29 @@
 			},
 			"batchOperations": {
 				"title": "Operaciones en lote"
+			},
+			"shared": {
+				"errorMessage": {
+					"message": "No se pudieron recuperar los datos",
+					"additionalInfo": "Actualice la página para intentarlo de nuevo"
+				},
+				"panelHeader": {
+					"resultCount_one": "{{count}} resultado",
+					"resultCount_other": "{{count}} resultados",
+					"resultCountMore": "{{count}}+ resultados"
+				},
+				"diagramShell": {
+					"forbiddenMessage": "Permisos insuficientes para ver la definición",
+					"forbiddenAdditionalInfo": "Póngase en contacto con el propietario o administrador de su organización para obtener los permisos necesarios"
+				},
+				"collapsablePanel": {
+					"expand": "Expandir {{label}}",
+					"collapse": "Contraer {{label}}"
+				},
+				"filtersPanel": {
+					"label": "Filtro",
+					"resetFilters": "Restablecer filtros"
+				}
 			}
 		}
 	}

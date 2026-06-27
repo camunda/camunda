@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.AgentHistoryMapper;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
@@ -32,6 +33,7 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.service.AgentHistoryWriter;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
@@ -109,6 +111,7 @@ public class RdbmsWriters {
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
       final HistoryDeletionMapper historyDeletionMapper,
+      final AgentHistoryMapper agentHistoryMapper,
       final AgentInstanceMapper agentInstanceMapper,
       final WaitStateMapper waitStateMapper) {
     this.executionQueue = executionQueue;
@@ -184,6 +187,9 @@ public class RdbmsWriters {
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
     writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
     writers.put(DeployedResourceWriter.class, new DeployedResourceWriter(executionQueue));
+    writers.put(
+        AgentHistoryWriter.class,
+        new AgentHistoryWriter(executionQueue, agentHistoryMapper, vendorDatabaseProperties));
     writers.put(
         AgentInstanceWriter.class,
         new AgentInstanceWriter(executionQueue, agentInstanceMapper, vendorDatabaseProperties));
@@ -308,6 +314,10 @@ public class RdbmsWriters {
 
   public DeployedResourceWriter getResourceWriter() {
     return getWriter(DeployedResourceWriter.class);
+  }
+
+  public AgentHistoryWriter getAgentHistoryWriter() {
+    return getWriter(AgentHistoryWriter.class);
   }
 
   public AgentInstanceWriter getAgentInstanceWriter() {

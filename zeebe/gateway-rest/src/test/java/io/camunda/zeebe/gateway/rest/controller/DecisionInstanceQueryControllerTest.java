@@ -61,6 +61,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "processDefinitionKey": "2251799813688736",
                        "processInstanceKey": "6755399441058457",
                        "rootProcessInstanceKey": "3755399441058437",
+                       "businessId": "business-1",
                        "elementInstanceKey": "6755399441058465",
                        "decisionDefinitionKey": "123456",
                        "decisionDefinitionId": "ddi",
@@ -96,6 +97,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       2251799813688736L,
                       6755399441058457L,
                       3755399441058437L,
+                      "business-1",
                       6755399441058465L,
                       "tenantId",
                       "ddi",
@@ -199,7 +201,18 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 }
           ]
       }""",
-            q -> q.sort(s -> s.rootDecisionDefinitionKey().asc())));
+            q -> q.sort(s -> s.rootDecisionDefinitionKey().asc())),
+        new TestArguments(
+            """
+      {
+          "sort": [
+                {
+                    "field": "businessId",
+                    "order": "DESC"
+                }
+          ]
+      }""",
+            q -> q.sort(s -> s.businessId().desc())));
   }
 
   @ParameterizedTest
@@ -258,6 +271,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             2251799813688736L,
             6755399441058457L,
             3755399441058437L,
+            "business-1",
             6755399441058465L,
             "tenantId",
             "ddi",
@@ -292,6 +306,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                      "processDefinitionKey": "2251799813688736",
                      "processInstanceKey": "6755399441058457",
                      "rootProcessInstanceKey": "3755399441058437",
+                     "businessId": "business-1",
                      "elementInstanceKey": "6755399441058465",
                      "decisionDefinitionKey": "123456",
                      "decisionDefinitionId": "ddi",
@@ -493,6 +508,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionEvaluationInstanceKey",
         ops -> new DecisionInstanceFilter.Builder().decisionInstanceIdOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "businessId",
+        ops -> new DecisionInstanceFilter.Builder().businessIdOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",

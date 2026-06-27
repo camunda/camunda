@@ -1,7 +1,7 @@
 ---
 
 name: frontend-unit-test
-description: Use when writing, modifying, or debugging unit tests in the orchestration cluster webapp at webapp/client/apps/orchestration-cluster-webapp/. Use when working with Vitest browser mode, MSW mocking, vitest-browser-react rendering, or any *.test.tsx file in the OC webapp's src/ directory. Trigger whenever someone needs to create, fix, or understand a frontend unit test in webapp/client/.
+description: Use when writing, modifying, or debugging unit tests (*.test.tsx) in the orchestration cluster webapp (webapp/client/apps/orchestration-cluster-webapp/src/). Covers Vitest browser mode, MSW mocking, and vitest-browser-react rendering.
 
 ---
 

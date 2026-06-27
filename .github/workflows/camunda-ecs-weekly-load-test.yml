@@ -57,8 +57,9 @@ defaults:
 
 env:
   AWS_REGION: eu-west-1
-  ENVIRONMENT: ${{ inputs.environment || 'prod' }}
+  ENV: ${{ inputs.environment || 'prod' }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+  IMAGE_TAG: ${{ inputs.image_tag }}
 
 jobs:
   prepare:
@@ -76,6 +77,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Import secrets from Vault
         id: secrets
@@ -99,7 +102,6 @@ jobs:
 
       - name: Validate environment input
         run: |
-          ENV="${{ env.ENVIRONMENT }}"
           if [ "$ENV" != "prod" ] && [ "$ENV" != "dev" ]; then
             echo "::error::Invalid environment '${ENV}'. Must be 'prod' or 'dev'."
             exit 1
@@ -119,7 +121,6 @@ jobs:
 
           # Previous benchmark: find from currently running ECS services.
           # Note: This calculation does not allow two weekly benchmarks to run, but this is an acceptable for now.
-          ENV="${{ env.ENVIRONMENT }}"
           if [ "$ENV" = "dev" ]; then
             ECS_CLUSTER="camunda-dev-cluster"
             SERVICE_PREFIX="dev-weekly-"
@@ -161,32 +162,36 @@ jobs:
       - name: Resolve docker images
         id: resolve_images
         run: |
-          IMAGE_TAG="${{ inputs.image_tag }}"
           {
-            echo "camunda_image=${{ env.IMAGE_REPOSITORY }}/camunda:${IMAGE_TAG}"
-            echo "starter_image=${{ env.IMAGE_REPOSITORY }}/starter:${IMAGE_TAG}"
-            echo "worker_image=${{ env.IMAGE_REPOSITORY }}/worker:${IMAGE_TAG}"
+            echo "camunda_image=${IMAGE_REPOSITORY}/camunda:${IMAGE_TAG}"
+            echo "starter_image=${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}"
+            echo "worker_image=${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}"
           } >> "$GITHUB_OUTPUT"
           echo "✅ Using images with tag: ${IMAGE_TAG}"
 
       - name: Summary
         run: |
-          PREV="${{ steps.names.outputs.previous }}"
           {
             echo "## 📋 ECS Weekly Benchmark Plan"
             echo "| Item | Value |"
             echo "|------|-------|"
-            echo "| Current benchmark | \`${{ steps.names.outputs.current }}\` |"
+            echo "| Current benchmark | \`${NAMES_CURRENT}\` |"
             if [ -n "$PREV" ]; then
               echo "| Previous benchmark | \`${PREV}\` |"
             else
               echo "| Previous benchmark | _(none found)_ |"
             fi
-            echo "| Image tag | \`${{ inputs.image_tag }}\` |"
-            echo "| Camunda image | \`${{ steps.resolve_images.outputs.camunda_image }}\` |"
-            echo "| Starter image | \`${{ steps.resolve_images.outputs.starter_image }}\` |"
-            echo "| Worker image | \`${{ steps.resolve_images.outputs.worker_image }}\` |"
+            echo "| Image tag | \`${IMAGE_TAG}\` |"
+            echo "| Camunda image | \`${RESOLVE_IMAGES_CAMUNDA_IMAGE}\` |"
+            echo "| Starter image | \`${RESOLVE_IMAGES_STARTER_IMAGE}\` |"
+            echo "| Worker image | \`${RESOLVE_IMAGES_WORKER_IMAGE}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          PREV: ${{ steps.names.outputs.previous }}
+          NAMES_CURRENT: ${{ steps.names.outputs.current }}
+          RESOLVE_IMAGES_CAMUNDA_IMAGE: ${{ steps.resolve_images.outputs.camunda_image }}
+          RESOLVE_IMAGES_STARTER_IMAGE: ${{ steps.resolve_images.outputs.starter_image }}
+          RESOLVE_IMAGES_WORKER_IMAGE: ${{ steps.resolve_images.outputs.worker_image }}
 
       - name: Observe build status
         if: always()
@@ -210,6 +215,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Checkout camunda-load-tests-ecs
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -217,6 +224,7 @@ jobs:
           repository: camunda/camunda-load-tests-ecs
           ref: main
           path: camunda-load-tests-ecs
+          persist-credentials: false
 
       - name: Import secrets from Vault
         id: secrets
@@ -242,12 +250,16 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Destroy previous load test
-        working-directory: camunda-load-tests-ecs/aws/load_test/${{ env.ENVIRONMENT }}
-        run: make destroy BENCHMARK_NAME="${{ needs.prepare.outputs.previous_benchmark_name }}"
+        working-directory: camunda-load-tests-ecs/aws/load_test/${{ env.ENV }}
+        run: make destroy BENCHMARK_NAME="${PREPARE_PREVIOUS_BENCHMARK_NAME}"
+        env:
+          PREPARE_PREVIOUS_BENCHMARK_NAME: ${{ needs.prepare.outputs.previous_benchmark_name }}
 
       - name: Destroy previous benchmark
-        working-directory: camunda-load-tests-ecs/aws/benchmark/${{ env.ENVIRONMENT }}
-        run: make destroy-with-bucket BENCHMARK_NAME="${{ needs.prepare.outputs.previous_benchmark_name }}"
+        working-directory: camunda-load-tests-ecs/aws/benchmark/${{ env.ENV }}
+        run: make destroy-with-bucket BENCHMARK_NAME="${PREPARE_PREVIOUS_BENCHMARK_NAME}"
+        env:
+          PREPARE_PREVIOUS_BENCHMARK_NAME: ${{ needs.prepare.outputs.previous_benchmark_name }}
 
       - name: Observe build status
         if: always()
@@ -271,6 +283,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Checkout camunda-load-tests-ecs
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -278,6 +292,7 @@ jobs:
           repository: camunda/camunda-load-tests-ecs
           ref: main
           path: camunda-load-tests-ecs
+          persist-credentials: false
 
       - name: Import secrets from Vault
         id: secrets
@@ -304,9 +319,8 @@ jobs:
 
       - name: Validate benchmark name length
         run: |
-          NAME="${{ needs.prepare.outputs.current_benchmark_name }}"
           MAX_PREFIX_LEN=20
-          if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
+          if [ "${ENV}" = "dev" ]; then
             PREFIX="dev-${NAME}"
           else
             PREFIX="${NAME}"
@@ -316,22 +330,23 @@ jobs:
             exit 1
           fi
           echo "✅ PREFIX '${PREFIX}' (${#PREFIX} chars) is within the ${MAX_PREFIX_LEN} char limit"
+        env:
+          NAME: ${{ needs.prepare.outputs.current_benchmark_name }}
 
       - name: Deploy benchmark infrastructure
-        working-directory: camunda-load-tests-ecs/aws/benchmark/${{ env.ENVIRONMENT }}
-        run: >
-          make deploy
-          BENCHMARK_NAME="${{ needs.prepare.outputs.current_benchmark_name }}"
-          CAMUNDA_IMAGE="${{ needs.prepare.outputs.camunda_image }}"
+        working-directory: camunda-load-tests-ecs/aws/benchmark/${{ env.ENV }}
+        run: make deploy BENCHMARK_NAME="${BENCHMARK_NAME}" CAMUNDA_IMAGE="${CAMUNDA_IMAGE}"
+        env:
+          BENCHMARK_NAME: ${{ needs.prepare.outputs.current_benchmark_name }}
+          CAMUNDA_IMAGE: ${{ needs.prepare.outputs.camunda_image }}
 
       - name: Deploy load test
-        working-directory: camunda-load-tests-ecs/aws/load_test/${{ env.ENVIRONMENT }}
-        run: >
-          make deploy
-          BENCHMARK_NAME="${{ needs.prepare.outputs.current_benchmark_name }}"
-          FORCE_NEW_DEPLOYMENT=false
-          STARTER_IMAGE="${{ needs.prepare.outputs.starter_image }}"
-          WORKER_IMAGE="${{ needs.prepare.outputs.worker_image }}"
+        working-directory: camunda-load-tests-ecs/aws/load_test/${{ env.ENV }}
+        run: make deploy BENCHMARK_NAME="${BENCHMARK_NAME}" FORCE_NEW_DEPLOYMENT=false STARTER_IMAGE="${STARTER_IMAGE}" WORKER_IMAGE="${WORKER_IMAGE}"
+        env:
+          BENCHMARK_NAME: ${{ needs.prepare.outputs.current_benchmark_name }}
+          STARTER_IMAGE: ${{ needs.prepare.outputs.starter_image }}
+          WORKER_IMAGE: ${{ needs.prepare.outputs.worker_image }}
 
       - name: Output deployment info
         run: |
@@ -339,11 +354,16 @@ jobs:
             echo "## 🚀 ECS Benchmark Deployed"
             echo "| Item | Value |"
             echo "|------|-------|"
-            echo "| Benchmark | \`${{ needs.prepare.outputs.current_benchmark_name }}\` |"
-            echo "| Camunda image | \`${{ needs.prepare.outputs.camunda_image }}\` |"
-            echo "| Starter image | \`${{ needs.prepare.outputs.starter_image }}\` |"
-            echo "| Worker image | \`${{ needs.prepare.outputs.worker_image }}\` |"
+            echo "| Benchmark | \`${PREPARE_CURRENT_BENCHMARK_NAME}\` |"
+            echo "| Camunda image | \`${PREPARE_CAMUNDA_IMAGE}\` |"
+            echo "| Starter image | \`${PREPARE_STARTER_IMAGE}\` |"
+            echo "| Worker image | \`${PREPARE_WORKER_IMAGE}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          PREPARE_CURRENT_BENCHMARK_NAME: ${{ needs.prepare.outputs.current_benchmark_name }}
+          PREPARE_CAMUNDA_IMAGE: ${{ needs.prepare.outputs.camunda_image }}
+          PREPARE_STARTER_IMAGE: ${{ needs.prepare.outputs.starter_image }}
+          PREPARE_WORKER_IMAGE: ${{ needs.prepare.outputs.worker_image }}
 
       - name: Observe build status
         if: always()

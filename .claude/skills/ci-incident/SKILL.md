@@ -1,6 +1,6 @@
 ---
 name: ci-incident
-description: Drive response for a CI incident in camunda/camunda by combining incident.io state, Slack channel history, and the repo CI runbooks and incident process docs. Use when asked to resolve a CI incident, respond to an incident, or drive an incident by ID. Full incidents only, not alerts.
+description: Drive CI incident response in camunda/camunda. Use when asked to resolve, respond to, or drive a CI incident by ID. Full incidents only, not alerts.
 ---
 
 # CI Incident Response

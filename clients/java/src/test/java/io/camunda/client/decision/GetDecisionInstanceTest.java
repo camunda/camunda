@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
@@ -50,5 +51,30 @@ public final class GetDecisionInstanceTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/decision-instances/" + decisionInstanceId);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldGetDecisionInstanceWithBusinessId() {
+    // given
+    final String decisionInstanceId = "1-1";
+    gatewayService.onDecisionInstanceRequest(
+        decisionInstanceId,
+        Instancio.create(DecisionInstanceResult.class)
+            .decisionEvaluationKey("1")
+            .decisionDefinitionKey("2")
+            .elementInstanceKey("3")
+            .processDefinitionKey("4")
+            .processInstanceKey("5")
+            .rootDecisionDefinitionKey("6")
+            .rootProcessInstanceKey("7")
+            .businessId("order-42")
+            .evaluationDate(OffsetDateTime.now().toString()));
+
+    // when
+    final DecisionInstance decisionInstance =
+        client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+
+    // then
+    assertThat(decisionInstance.getBusinessId()).isEqualTo("order-42");
   }
 }

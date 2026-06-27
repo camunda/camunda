@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class JobBasedWaitStateTransformerTest {
 
@@ -226,5 +228,80 @@ class JobBasedWaitStateTransformerTest {
     assertThat(transformer.triggersRemoval(canceled)).isTrue();
     assertThat(transformer.triggersAdd(completed)).isFalse();
     assertThat(transformer.triggersAdd(canceled)).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = JobIntent.class,
+      names = {"FAILED", "RETRIES_UPDATED"})
+  @SuppressWarnings("unchecked")
+  void shouldTriggerUpdateForSentinelRiskIntents(final JobIntent intent) {
+    // given
+    final Record<JobRecordValue> record =
+        (Record<JobRecordValue>)
+            (Record<?>)
+                factory.generateRecord(
+                    ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(intent));
+
+    // when / then
+    assertThat(transformer.triggersUpdate(record)).isTrue();
+    assertThat(transformer.triggersAdd(record)).isFalse();
+    assertThat(transformer.triggersRemoval(record)).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = JobIntent.class,
+      names = {"FAILED", "RETRIES_UPDATED"})
+  @SuppressWarnings("unchecked")
+  void shouldClearElementIdForSentinelRiskIntents(final JobIntent intent) {
+    // given
+    final Record<JobRecordValue> record =
+        (Record<JobRecordValue>)
+            (Record<?>)
+                factory.generateRecord(
+                    ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(intent));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then — elementId is null so update handlers preserve the stored value
+    assertThat(entry.getElementId()).isNull();
+  }
+
+  @Test
+  void shouldExtractRemainingRetriesFromJobFailedRecord() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("retry-service")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withJobListenerEventType(JobListenerEventType.UNSPECIFIED)
+            .withRetries(1)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("retry-task")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withKey(888L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(JobIntent.FAILED)
+                    .withValue(value));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then
+    assertThat(entry.getDetails()).isInstanceOf(JobWaitStateDetails.class);
+    final var details = (JobWaitStateDetails) entry.getDetails();
+    assertThat(details.retries()).isEqualTo(1);
   }
 }

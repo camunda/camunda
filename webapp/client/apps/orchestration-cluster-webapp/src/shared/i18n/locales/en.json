@@ -445,6 +445,29 @@
 			},
 			"batchOperations": {
 				"title": "Batch Operations"
+			},
+			"shared": {
+				"errorMessage": {
+					"message": "Data could not be fetched",
+					"additionalInfo": "Refresh the page to try again"
+				},
+				"panelHeader": {
+					"resultCount_one": "{{count}} result",
+					"resultCount_other": "{{count}} results",
+					"resultCountMore": "{{count}}+ results"
+				},
+				"diagramShell": {
+					"forbiddenMessage": "Missing permissions to view the Definition",
+					"forbiddenAdditionalInfo": "Please contact your organization owner or admin to give you the necessary permissions to read this definition"
+				},
+				"collapsablePanel": {
+					"expand": "Expand {{label}}",
+					"collapse": "Collapse {{label}}"
+				},
+				"filtersPanel": {
+					"label": "Filter",
+					"resetFilters": "Reset filters"
+				}
 			}
 		}
 	}

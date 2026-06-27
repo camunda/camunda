@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
 
@@ -34,22 +37,31 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             scheduler,
             clusterServices.getCommunicationService(),
             brokerStartupContext.getMeterRegistry());
-    final var userService = brokerStartupContext.getUserServices();
     final var passwordEncoder = brokerStartupContext.getPasswordEncoder();
+
+    final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant =
+        brokerStartupContext.getPhysicalTenantIds().known().stream()
+            .collect(
+                Collectors.toUnmodifiableMap(
+                    physicalTenantId -> physicalTenantId,
+                    physicalTenantId ->
+                        brokerStartupContext
+                            .getPhysicalTenantEngineContext(physicalTenantId)
+                            .securityConfig()));
 
     final var embeddedGatewayService =
         new EmbeddedGatewayService(
             brokerStartupContext.getShutdownTimeout(),
             brokerStartupContext.getBrokerConfiguration(),
-            brokerStartupContext.getSecurityConfiguration(),
+            securityConfigurationsByPhysicalTenant,
             scheduler,
             concurrencyControl,
             jobStreamClient,
             brokerClient,
-            userService,
+            brokerStartupContext.getUserServicesForTenant(),
             passwordEncoder,
-            brokerStartupContext.getJwtDecoder(),
-            brokerStartupContext.getOidcClaimsProvider(),
+            brokerStartupContext.getJwtDecoderFactory(),
+            brokerStartupContext.getOidcClaimsProviderFactory(),
             brokerStartupContext.getMeterRegistry(),
             brokerStartupContext.getPhysicalTenantIds());
 

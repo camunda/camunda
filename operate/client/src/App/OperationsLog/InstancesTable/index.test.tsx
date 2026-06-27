@@ -195,6 +195,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          inboundChannelType: null,
+          inboundChannelToolName: null,
         },
         {
           auditLogKey: '456',
@@ -228,6 +230,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          inboundChannelType: null,
+          inboundChannelToolName: null,
         },
       ]),
     );
@@ -246,6 +250,55 @@ describe('OperationsLog InstancesTable', () => {
     expect(screen.getAllByText('user2').at(0)).toBeInTheDocument();
     expect(screen.getByText('variableName')).toBeInTheDocument();
     expect(screen.getByText('ERROR_CODE')).toBeInTheDocument();
+  });
+
+  it('should render MCP inbound channel icon and tooltip', async () => {
+    mockQueryAuditLogs().withSuccess(
+      searchResult([
+        {
+          auditLogKey: '123',
+          entityKey: '1',
+          operationType: 'UPDATE',
+          entityType: 'VARIABLE',
+          result: 'SUCCESS',
+          actorId: 'user1',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          actorType: 'USER',
+          category: 'USER_TASKS',
+          entityDescription: 'variableName',
+          batchOperationKey: null,
+          batchOperationType: null,
+          tenantId: null,
+          processDefinitionId: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
+          inboundChannelType: 'MCP',
+          inboundChannelToolName: 'someTool',
+        },
+      ]),
+    );
+
+    render(<InstancesTable />, {
+      wrapper: Wrapper,
+    });
+
+    expect(await screen.findByText('MCP tool call')).toBeInTheDocument();
+    expect(screen.getByText('someTool')).toBeInTheDocument();
   });
 
   it('should render batch operation information', async () => {
@@ -282,6 +335,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          inboundChannelType: null,
+          inboundChannelToolName: null,
           entityDescription: null,
         },
       ]),
@@ -335,6 +390,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          inboundChannelType: null,
+          inboundChannelToolName: null,
           entityDescription: null,
         },
       ]),
@@ -403,6 +460,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          inboundChannelType: null,
+          inboundChannelToolName: null,
           entityDescription: null,
         },
       ]),
@@ -449,6 +508,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          inboundChannelType: null,
+          inboundChannelToolName: null,
           entityDescription: null,
         },
       ]),
@@ -501,6 +562,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          inboundChannelType: null,
+          inboundChannelToolName: null,
           entityDescription: null,
         },
       ]),

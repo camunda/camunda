@@ -121,10 +121,12 @@ public final class BrokerClientImpl implements BrokerClient {
         .sendRequestWithRetry(request)
         .whenComplete(
             (response, error) -> {
-              if (error == null) {
+              if (error != null) {
+                throwableConsumer.accept(error);
+              } else if (response.isResponse()) {
                 responseConsumer.accept(response.getKey(), response.getResponse());
               } else {
-                throwableConsumer.accept(error);
+                throwableConsumer.accept(response.toException());
               }
             });
   }

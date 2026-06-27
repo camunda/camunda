@@ -8,7 +8,7 @@
 
 import {mockPostRequest} from '../../mockRequest';
 import {
-  type SearchAgentInstanceHistoryResponseBody,
+  type QueryAgentInstanceHistoryResponseBody,
   endpoints,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
@@ -16,8 +16,8 @@ const mockSearchAgentInstanceHistory = (
   agentInstanceKey: string = ':agentInstanceKey',
   contextPath = '',
 ) =>
-  mockPostRequest<SearchAgentInstanceHistoryResponseBody>(
-    `${contextPath}${endpoints.searchAgentInstanceHistory.getUrl({agentInstanceKey})}`,
+  mockPostRequest<QueryAgentInstanceHistoryResponseBody>(
+    `${contextPath}${endpoints.queryAgentInstanceHistory.getUrl({agentInstanceKey})}`,
   );
 
 export {mockSearchAgentInstanceHistory};

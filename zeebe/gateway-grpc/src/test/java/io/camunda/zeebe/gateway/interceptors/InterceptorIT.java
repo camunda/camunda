@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.api.util.GatewayTestFactory;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -97,7 +98,7 @@ final class InterceptorIT {
     jobStreamClient =
         new JobStreamClientImpl(scheduler, cluster.getCommunicationService(), meterRegistry);
     gateway =
-        new Gateway(
+        GatewayTestFactory.create(
             config,
             EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,

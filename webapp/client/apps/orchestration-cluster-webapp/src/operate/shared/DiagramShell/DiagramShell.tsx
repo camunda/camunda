@@ -1,0 +1,72 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useTranslation} from 'react-i18next';
+import {Loading} from '@carbon/react';
+import {Container, LoadingContainer, EmptyMessage, ErrorMessage} from './styled';
+import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage/EmptyMessage';
+
+type DefaultProps = {
+	children: React.ReactNode;
+	status: 'error' | 'loading' | 'content' | 'forbidden';
+};
+
+type WithEmptyMessageProps = {
+	children: React.ReactNode;
+	status: 'error' | 'empty' | 'loading' | 'content';
+	emptyMessage: React.ComponentProps<typeof BaseEmptyMessage>;
+	messagePosition?: 'top' | 'center';
+};
+
+const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children, status, ...props}) => {
+	const {t} = useTranslation();
+	return (
+		<Container data-testid="diagram-body" tabIndex={0}>
+			{(() => {
+				if (status === 'content') {
+					return children;
+				}
+
+				if (status === 'loading') {
+					return (
+						<>
+							<LoadingContainer>
+								<Loading data-testid="diagram-spinner" withOverlay={false} />
+							</LoadingContainer>
+							{children}
+						</>
+					);
+				}
+
+				if (status === 'empty' && 'emptyMessage' in props) {
+					return <EmptyMessage $position={props.messagePosition} {...props.emptyMessage} />;
+				}
+
+				if (status === 'forbidden') {
+					const position = 'messagePosition' in props ? props.messagePosition : 'top';
+					return (
+						<ErrorMessage
+							$position={position}
+							message={t('operate.shared.diagramShell.forbiddenMessage')}
+							additionalInfo={t('operate.shared.diagramShell.forbiddenAdditionalInfo')}
+						/>
+					);
+				}
+
+				if (status === 'error') {
+					const position = 'messagePosition' in props ? props.messagePosition : 'top';
+					return <ErrorMessage $position={position} />;
+				}
+
+				return null;
+			})()}
+		</Container>
+	);
+};
+
+export {DiagramShell};

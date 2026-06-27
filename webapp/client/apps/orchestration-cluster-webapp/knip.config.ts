@@ -14,13 +14,23 @@ const config: KnipConfig = {
 		'src/shared/feature-flags.ts',
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',
-		'src/shared/http/request.ts',
-		'shared-test-modules/api-mocks/process-definitions.ts',
-		'shared-test-modules/api-mocks/user-tasks.ts',
 		'shared-test-modules/api-mocks/process-definition-statistics.ts',
 		'shared-test-modules/api-mocks/incident-statistics.ts',
+		// TODO(#55735): remove when consumer migration is complete
+		'src/operate/shared/utils/**',
+		'src/operate/shared/PanelTitle/**',
+		'src/operate/shared/EmptyMessage/**',
+		'src/operate/shared/ErrorMessage/**',
+		'src/operate/shared/StateIcon/**',
+		'src/operate/shared/PanelHeader/**',
+		'src/operate/shared/DiagramShell/**',
+		'src/operate/shared/Frame/**',
+		'src/operate/shared/CollapsablePanel/**',
+		'src/operate/shared/FiltersPanel/**',
+		// TODO(#55642): remove when BatchOperation detail page is migrated
+		'src/operate/shared/PaginatedSortableTable/**',
 	],
-	ignoreDependencies: ['@vitest/browser'],
+	ignoreDependencies: ['@vitest/browser', '@devbookhq/splitter'],
 };
 
 export default config;

@@ -1,0 +1,28 @@
+---
+# Source: camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: keycloak-postgresql
+  namespace: "c8-golden-stable-89-rdbms-stable"
+  labels:
+    app.kubernetes.io/instance: c8-golden-stable-89-rdbms-stable
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 17.4.0
+
+    app.kubernetes.io/component: primary
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: c8-golden-stable-89-rdbms-stable
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/component: primary
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 5432

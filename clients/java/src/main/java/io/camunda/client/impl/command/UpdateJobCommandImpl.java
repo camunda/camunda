@@ -70,7 +70,10 @@ public class UpdateJobCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
     final io.camunda.client.protocol.rest.JobChangeset changeset =
         new io.camunda.client.protocol.rest.JobChangeset();
     if (jobChangeset != null) {
-      changeset.retries(jobChangeset.getRetries()).timeout(jobChangeset.getTimeout());
+      changeset
+          .retries(jobChangeset.getRetries())
+          .timeout(jobChangeset.getTimeout())
+          .priority(jobChangeset.getPriority());
     }
     httpRequestObject.setChangeset(changeset);
     return this;
@@ -97,6 +100,12 @@ public class UpdateJobCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   @Override
   public UpdateJobCommandStep2 updateTimeout(final Duration timeout) {
     return updateTimeout(timeout.toMillis());
+  }
+
+  @Override
+  public UpdateJobCommandStep2 updatePriority(final int priority) {
+    getChangesetEnsureInitialized().priority(priority);
+    return this;
   }
 
   private io.camunda.client.protocol.rest.JobChangeset getChangesetEnsureInitialized() {

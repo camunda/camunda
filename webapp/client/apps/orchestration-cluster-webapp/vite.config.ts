@@ -99,6 +99,10 @@ const config = defineConfig(({mode}) => ({
 			enabled: true,
 			screenshotFailures: false,
 			headless: true,
+			viewport: {
+				width: 1280,
+				height: 720,
+			},
 			provider: playwright(),
 			instances: [
 				{

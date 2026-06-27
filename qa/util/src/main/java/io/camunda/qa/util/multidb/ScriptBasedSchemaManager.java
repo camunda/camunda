@@ -8,11 +8,12 @@
 package io.camunda.qa.util.multidb;
 
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.LiquibaseScriptGenerator;
 import io.camunda.db.rdbms.LiquibaseScriptGenerator.DatabaseVersion;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import liquibase.exception.LiquibaseException;
@@ -20,12 +21,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Bypasses Liquibase by pre-generating DDL SQL once per JVM (cached by databaseId) and executing it
  * directly. Significantly faster than Liquibase for databases with expensive precondition checks
  * (e.g. Oracle).
+ *
+ * <p>Runs the DDL against every physical tenant's datasource (with that tenant's table prefix), so
+ * the fast init also works under physical-tenant mode where the application is configured with a
+ * dedicated per-tenant secondary store.
  */
 public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, InitializingBean {
   private static final Logger LOGGER = LoggerFactory.getLogger(ScriptBasedSchemaManager.class);
@@ -35,25 +39,33 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, Ini
   private static final String CHANGELOG = "db/changelog/rdbms-exporter/changelog-master.xml";
   private static final String PREFIX_PLACEHOLDER = "__PREFIX__";
 
-  private final DataSource dataSource;
-  private final VendorDatabaseProperties vendorDatabaseProperties;
-  private final String prefix;
+  private final RdbmsDataSources rdbmsDataSources;
+  private final PhysicalTenantResolver physicalTenantResolver;
 
-  private volatile boolean initialized = false;
+  private final Set<String> initializedTenants = ConcurrentHashMap.newKeySet();
 
   public ScriptBasedSchemaManager(
       final RdbmsDataSources rdbmsDataSources,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
-    LOGGER.info(
-        "Using 'default' physical tenant DataSource and VendorDatabaseProperties for ScriptBasedSchemaManager");
-    dataSource = rdbmsDataSources.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    vendorDatabaseProperties =
-        rdbmsDataSources.vendorPropertiesFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    this.prefix = prefix;
+      final PhysicalTenantResolver physicalTenantResolver) {
+    this.rdbmsDataSources = rdbmsDataSources;
+    this.physicalTenantResolver = physicalTenantResolver;
   }
 
   @Override
   public void afterPropertiesSet() throws Exception {
+    for (final String physicalTenantId : rdbmsDataSources.physicalTenantIds()) {
+      initializeTenant(physicalTenantId);
+    }
+  }
+
+  private void initializeTenant(final String physicalTenantId) throws Exception {
+    final VendorDatabaseProperties vendorDatabaseProperties =
+        rdbmsDataSources.vendorPropertiesFor(physicalTenantId);
+    final DataSource dataSource = rdbmsDataSources.dataSourceFor(physicalTenantId);
+    final String prefix = prefixFor(physicalTenantId);
+    LOGGER.info(
+        "Initializing schema for physical tenant '{}' with prefix '{}'", physicalTenantId, prefix);
+
     final String databaseId = vendorDatabaseProperties.databaseId();
     final String template =
         SCRIPT_CACHE.computeIfAbsent(
@@ -93,13 +105,20 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, Ini
       }
     }
 
-    initialized = true;
+    initializedTenants.add(physicalTenantId);
+  }
+
+  private String prefixFor(final String physicalTenantId) {
+    return physicalTenantResolver
+        .forPhysicalTenant(physicalTenantId)
+        .getData()
+        .getSecondaryStorage()
+        .getRdbms()
+        .getPrefix();
   }
 
   @Override
   public boolean isInitialized(final String physicalTenantId) {
-    // ScriptBasedSchemaManager is a test fixture that runs a single migration for the default
-    // physical tenant; #51921 will plumb real per-tenant routing when needed.
-    return initialized;
+    return initializedTenants.contains(physicalTenantId);
   }
 }

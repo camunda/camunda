@@ -20,6 +20,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -40,10 +41,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class RaftServerReceiverSubjectsTest {
 
   private static final String PARTITION_GROUP = "group";
+  private static final String DEFAULT_GROUP = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+  private static final String LEGACY_GROUP = "raft-partition";
   private static final MemberId MEMBER_ID = new MemberId("0");
   private static final PartitionId PARTITION_ID = new PartitionId(PARTITION_GROUP, 1);
-  private static final PartitionMetadata METADATA =
-      new PartitionMetadata(PARTITION_ID, Set.of(), Map.of(), 1, MEMBER_ID);
 
   @Mock private ClusterMembershipService clusterMembershipService;
   @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -51,9 +52,12 @@ public class RaftServerReceiverSubjectsTest {
   @Mock private ReceivableSnapshotStore receivableSnapshotStore;
 
   private RaftPartitionServer createRaftPartitionServer(
-      final RaftPartitionConfig raftPartitionConfig, final Path tempDir) {
+      final String group, final RaftPartitionConfig raftPartitionConfig, final Path tempDir) {
+    final var metadata =
+        new PartitionMetadata(
+            new PartitionId(group, PARTITION_ID.number()), Set.of(), Map.of(), 1, MEMBER_ID);
     final var raftPartition =
-        new RaftPartition(METADATA, raftPartitionConfig, tempDir.toFile(), meterRegistry);
+        new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), meterRegistry);
     return new RaftPartitionServer(
         raftPartition,
         raftPartitionConfig,
@@ -61,51 +65,48 @@ public class RaftServerReceiverSubjectsTest {
         clusterMembershipService,
         clusterCommunicationService,
         receivableSnapshotStore,
-        METADATA,
+        metadata,
         meterRegistry);
   }
 
   @ParameterizedTest
-  @MethodSource("provideConfigurations")
-  void shouldRegisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
+  @MethodSource("provideScenarios")
+  void shouldRegisterSubjects(
+      final String group,
+      final boolean receiveOnLegacySubject,
+      final Map<String, Integer> expectedHandlersByGroup,
+      @TempDir final Path tempDir) {
     // given
-    final var legacyReceiverSubjectsDisabled = config.isReceiveOnLegacySubject();
-    final var engineName = config.getTenantName();
+    final var config = createConfig(receiveOnLegacySubject);
 
     // when
-    createRaftPartitionServer(config, tempDir);
+    createRaftPartitionServer(group, config, tempDir);
 
     // then
-    assertLegacySubjectsRegistered(legacyReceiverSubjectsDisabled);
-    assertEngineAwareSubjectsRegistered(engineName);
+    expectedHandlersByGroup.forEach(this::assertSubjectsRegistered);
   }
 
   @ParameterizedTest
-  @MethodSource("provideConfigurations")
-  void shouldUnregisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
+  @MethodSource("provideScenarios")
+  void shouldUnregisterSubjects(
+      final String group,
+      final boolean receiveOnLegacySubject,
+      final Map<String, Integer> expectedHandlersByGroup,
+      @TempDir final Path tempDir) {
     // given
-    final var server = createRaftPartitionServer(config, tempDir);
-    final var receiveOnLegacySubject = config.isReceiveOnLegacySubject();
-    final var engineName = config.getTenantName();
+    final var config = createConfig(receiveOnLegacySubject);
+    final var server = createRaftPartitionServer(group, config, tempDir);
 
     // when
     server.stop().join();
 
     // then
-    assertLegacySubjectsUnregistered(receiveOnLegacySubject);
-    assertEngineAwareSubjectsUnregistered(engineName);
-  }
-
-  void assertLegacySubjectsRegistered(final boolean receiveOnLegacySubject) {
-    assertSubjectsRegistered(PARTITION_GROUP, receiveOnLegacySubject ? 1 : 0);
-  }
-
-  void assertEngineAwareSubjectsRegistered(final String engineName) {
-    assertSubjectsRegistered(engineName, 1);
+    expectedHandlersByGroup.forEach(this::assertSubjectsUnregistered);
   }
 
   void assertSubjectsRegistered(final String prefix, final int expected) {
-    final var subjectPrefix = PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.id()) + "-%s";
+    final var subjectPrefix =
+        PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.number()) + "-%s";
     final var expectedNumberOfInvocations = expected > 0 ? times(expected) : never();
 
     verify(clusterCommunicationService, expectedNumberOfInvocations)
@@ -132,16 +133,9 @@ public class RaftServerReceiverSubjectsTest {
         .replyTo(eq(subjectPrefix.formatted("transfer")), any(), any(), any());
   }
 
-  void assertLegacySubjectsUnregistered(final boolean receiveOnLegacySubject) {
-    assertSubjectsUnregistered(PARTITION_GROUP, receiveOnLegacySubject ? 1 : 0);
-  }
-
-  void assertEngineAwareSubjectsUnregistered(final String engineName) {
-    assertSubjectsUnregistered(engineName, 1);
-  }
-
   void assertSubjectsUnregistered(final String prefix, final int expected) {
-    final var partitionName = PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.id()) + "-%s";
+    final var partitionName =
+        PARTITION_NAME_FORMAT.formatted(prefix, PARTITION_ID.number()) + "-%s";
     final var expectedNumberOfInvocations = expected > 0 ? times(expected) : never();
 
     verify(clusterCommunicationService, expectedNumberOfInvocations)
@@ -168,47 +162,20 @@ public class RaftServerReceiverSubjectsTest {
         .unsubscribe(eq(partitionName.formatted("transfer")));
   }
 
-  static Stream<Arguments> provideConfigurations() {
+  static Stream<Arguments> provideScenarios() {
     return Stream.of(
-        Arguments.of(createDefaultConfig()),
-        Arguments.of(createConfigAndDisableReceiveOnLegacySubject()),
-        Arguments.of(createConfigWithEngineName()),
-        Arguments.of(createConfigWithEngineNameAndDisableReceiveOnLegacySubject()));
+        // the default group receives on both the legacy and the default subject
+        Arguments.of(DEFAULT_GROUP, true, Map.of(LEGACY_GROUP, 1, DEFAULT_GROUP, 1)),
+        // with legacy receive disabled, the default group receives only on its own subject
+        Arguments.of(DEFAULT_GROUP, false, Map.of(LEGACY_GROUP, 0, DEFAULT_GROUP, 1)),
+        // a non-default group never receives on the legacy subject, regardless of the flag
+        Arguments.of(PARTITION_GROUP, true, Map.of(LEGACY_GROUP, 0, PARTITION_GROUP, 1)));
   }
 
-  static RaftPartitionConfig createDefaultConfig() {
+  static RaftPartitionConfig createConfig(final boolean receiveOnLegacySubject) {
     final var raftPartitionConfig = new RaftPartitionConfig();
-    final var raftStorageConfig = new RaftStorageConfig();
-    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
-    raftPartitionConfig.setStorageConfig(raftStorageConfig);
-    return raftPartitionConfig;
-  }
-
-  static RaftPartitionConfig createConfigAndDisableReceiveOnLegacySubject() {
-    final var raftPartitionConfig = new RaftPartitionConfig();
-    final var raftStorageConfig = new RaftStorageConfig();
-    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
-    raftPartitionConfig.setReceiveOnLegacySubject(false);
-    raftPartitionConfig.setStorageConfig(raftStorageConfig);
-    return raftPartitionConfig;
-  }
-
-  static RaftPartitionConfig createConfigWithEngineName() {
-    final var raftPartitionConfig = new RaftPartitionConfig();
-    final var raftStorageConfig = new RaftStorageConfig();
-    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
-    raftPartitionConfig.setTenantName("foo");
-    raftPartitionConfig.setStorageConfig(raftStorageConfig);
-    return raftPartitionConfig;
-  }
-
-  static RaftPartitionConfig createConfigWithEngineNameAndDisableReceiveOnLegacySubject() {
-    final var raftPartitionConfig = new RaftPartitionConfig();
-    final var raftStorageConfig = new RaftStorageConfig();
-    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
-    raftPartitionConfig.setTenantName("foo");
-    raftPartitionConfig.setReceiveOnLegacySubject(false);
-    raftPartitionConfig.setStorageConfig(raftStorageConfig);
+    raftPartitionConfig.setStorageConfig(new RaftStorageConfig());
+    raftPartitionConfig.setReceiveOnLegacySubject(receiveOnLegacySubject);
     return raftPartitionConfig;
   }
 }

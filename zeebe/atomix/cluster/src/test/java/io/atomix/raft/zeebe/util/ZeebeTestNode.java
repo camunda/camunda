@@ -65,7 +65,7 @@ public class ZeebeTestNode {
   }
 
   RaftPartition getPartition(final int id) {
-    return partitions.stream().filter(p -> p.id().id() == id).findFirst().orElse(null);
+    return partitions.stream().filter(p -> p.id().number() == id).findFirst().orElse(null);
   }
 
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
@@ -74,7 +74,7 @@ public class ZeebeTestNode {
         nodes.stream().map(ZeebeTestNode::getMember).map(Member::id).collect(Collectors.toSet());
     members.add(member.id());
 
-    final PartitionId partitionId = PartitionId.from("test", 1);
+    final PartitionId partitionId = new PartitionId("test", 1);
     final var priorityMap =
         members.stream()
             .collect(

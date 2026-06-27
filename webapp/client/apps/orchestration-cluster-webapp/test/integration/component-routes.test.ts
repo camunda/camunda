@@ -12,6 +12,7 @@ import {
 	mockCurrentUserEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -168,6 +169,9 @@ test.describe('component routes', () => {
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 			mockQueryUserTasksEndpoint({
 				successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json({}, {status: 404}),
 			}),
 		);
 

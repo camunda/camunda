@@ -15,6 +15,7 @@ import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -42,6 +44,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -49,6 +52,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -91,6 +95,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
       mock(SnapshotApiRequestHandler.class);
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
+  private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
+  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts =
+      new LinkedHashMap<>();
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
@@ -365,13 +372,27 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     return securityConfiguration;
   }
 
+  @Override
+  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+    return physicalTenantEngineContexts.computeIfAbsent(
+        physicalTenantId,
+        id ->
+            new PhysicalTenantEngineContext(
+                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags));
+  }
+
+  public void setPhysicalTenantEngineContext(
+      final String physicalTenantId, final PhysicalTenantEngineContext context) {
+    physicalTenantEngineContexts.put(physicalTenantId, context);
+  }
+
   public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
     this.securityConfiguration = securityConfiguration;
   }
 
   @Override
-  public UserServices getUserServices() {
-    return userServices;
+  public Function<String, UserServices> getUserServicesForTenant() {
+    return tenantId -> userServices;
   }
 
   public void setUserServices(final UserServices userServices) {
@@ -388,8 +409,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public JwtDecoder getJwtDecoder() {
-    return jwtDecoder;
+  public Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory() {
+    return authConfig -> jwtDecoder;
   }
 
   public void setJwtDecoder(final JwtDecoder jwtDecoder) {
@@ -397,8 +418,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public OidcClaimsProvider getOidcClaimsProvider() {
-    return oidcClaimsProvider;
+  public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
+    return authConfig -> oidcClaimsProvider;
   }
 
   public void setOidcClaimsProvider(final OidcClaimsProvider oidcClaimsProvider) {
@@ -416,14 +437,13 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
   }
 
-  @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
-    return brokerRequestAuthorizationConverter;
-  }
-
   public void setBrokerRequestAuthorizationConverter(
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+  }
+
+  public void setFeatureFlags(final FeatureFlags featureFlags) {
+    this.featureFlags = featureFlags;
   }
 
   @Override

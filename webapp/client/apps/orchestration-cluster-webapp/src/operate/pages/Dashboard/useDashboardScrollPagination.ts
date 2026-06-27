@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, type UIEvent} from 'react';
+import {useCallback} from 'react';
 
 const ROW_HEIGHT = 64;
 
@@ -30,7 +30,7 @@ function useDashboardScrollPagination({
 	fetchPreviousPage,
 }: Params) {
 	return useCallback(
-		async (event: UIEvent<HTMLDivElement>) => {
+		async (event: React.UIEvent<HTMLDivElement>) => {
 			const target = event.currentTarget;
 			const atBottom = Math.floor(target.scrollHeight - target.clientHeight - target.scrollTop) <= 0;
 			const atTop = target.scrollTop === 0;

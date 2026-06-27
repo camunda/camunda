@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
@@ -37,6 +38,7 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "evaluationFailureMessage" -> EVALUATION_FAILURE_MESSAGE;
       case "processDefinitionKey" -> PROCESS_DEFINITION_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
+      case "businessId" -> BUSINESS_ID;
       case "flowNodeInstanceKey" -> ELEMENT_INSTANCE_KEY;
       case "decisionDefinitionKey" -> DECISION_DEFINITION_ID; // yes, this is correct
       case "decisionDefinitionId" -> DECISION_ID;

@@ -14,7 +14,7 @@ import {
 
 const mockSearchAgentInstances = (contextPath = '') =>
   mockPostRequest<QueryAgentInstancesResponseBody>(
-    `${contextPath}${endpoints.searchAgentInstances.getUrl()}`,
+    `${contextPath}${endpoints.queryAgentInstances.getUrl()}`,
   );
 
 export {mockSearchAgentInstances};

@@ -50,13 +50,13 @@ public class SnapshotApiRequestHandler
   public void addTransferService(
       final PartitionId partitionId, final SnapshotSenderService transferService) {
     serverTransport.subscribe(partitionId, RequestType.SNAPSHOT, this);
-    transferServices.put(partitionId.id(), new Registration(partitionId, transferService));
+    transferServices.put(partitionId.number(), new Registration(partitionId, transferService));
     LOG.debug("Added SnapshotTransferService for partition {}.", partitionId);
   }
 
   public void removeTransferService(final PartitionId partitionId) {
     serverTransport.unsubscribe(partitionId, RequestType.SNAPSHOT);
-    final var registration = transferServices.remove(partitionId.id());
+    final var registration = transferServices.remove(partitionId.number());
     LOG.debug("Removed SnapshotTransferService for partition {}.", partitionId);
     if (registration != null) {
       AsyncClosable.closeHelper(registration.service());
@@ -176,10 +176,12 @@ public class SnapshotApiRequestHandler
         .sendRequestWithRetry(new GetScaleUpProgress())
         .thenApplyAsync(
             r -> {
+              final var response = r.getResponseOrThrow();
+
               LOG.atLevel(Level.DEBUG)
                   .addKeyValue("transferId", transferId)
-                  .log("Received response from broker {}", r.getResponse());
-              return r.getResponse().getScalingPosition();
+                  .log("Received response from broker {}", response);
+              return response.getScalingPosition();
             },
             actor)
         .whenCompleteAsync(lastProcessedPosition, actor);

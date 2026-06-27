@@ -19,7 +19,6 @@ import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -30,19 +29,11 @@ import java.time.Duration;
 import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
-  public static final String GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
-  private static final String LEGACY_GROUP_NAME = "raft-partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private final String partitionGroup;
   private final BrokerCfg brokerCfg;
 
-  public RaftPartitionFactory(final String partitionGroup, final BrokerCfg brokerCfg) {
-    this.partitionGroup = partitionGroup;
+  public RaftPartitionFactory(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;
-  }
-
-  public String partitionGroup() {
-    return partitionGroup;
   }
 
   public RaftPartition createRaftPartition(
@@ -67,9 +58,9 @@ public final class RaftPartitionFactory {
   public static Path getPartitionDirectory(
       final PartitionId partitionId, final String dataDirectory) {
     return Paths.get(dataDirectory)
-        .resolve(GROUP_NAME)
+        .resolve(partitionId.group())
         .resolve("partitions")
-        .resolve(partitionId.id().toString());
+        .resolve(String.valueOf(partitionId.number()));
   }
 
   public RaftPartition createRaftPartition(
@@ -122,17 +113,8 @@ public final class RaftPartitionFactory {
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
-    final var tenantName = partitionMetadata.id().group();
-    partitionConfig.setTenantName(tenantName);
-    partitionConfig.setSendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject());
     partitionConfig.setReceiveOnLegacySubject(
         brokerCfg.getExperimental().isReceiveOnLegacySubject());
-    // Only the default partition group needs legacy subject support for backward compatibility with
-    // brokers that still use the old "raft-partition" group name. Non-default partition groups have
-    // no legacy subjects to listen on.
-    if (GROUP_NAME.equals(tenantName)) {
-      partitionConfig.setLegacyGroupName(LEGACY_GROUP_NAME);
-    }
 
     return new RaftPartition(
         partitionMetadata, partitionConfig, partitionDirectory.toFile(), partitionMeterRegistry);

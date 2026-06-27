@@ -33,8 +33,9 @@ public interface BrokerClient extends AutoCloseable {
    * send it to it.
    *
    * @param request request to send
-   * @return future which will be completed when a successful response from the broker is received.
-   *     The future will be completed exceptionally on error or on receiving BrokerRejection.
+   * @return future which will be completed when a response, rejection, or error from the broker is
+   *     received. The future will be completed exceptionally on request dispatch, transport, or
+   *     response parsing errors.
    */
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request);
 
@@ -44,8 +45,9 @@ public interface BrokerClient extends AutoCloseable {
    *
    * @param request request to send
    * @param requestTimeout timeout for the request
-   * @return future which will be completed when a successful response from the broker is received.
-   *     The future will be completed exceptionally on error or on receiving BrokerRejection.
+   * @return future which will be completed when a response, rejection, or error from the broker is
+   *     received. The future will be completed exceptionally on request dispatch, transport, or
+   *     response parsing errors.
    */
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(
       BrokerRequest<T> request, Duration requestTimeout);
@@ -56,9 +58,9 @@ public interface BrokerClient extends AutoCloseable {
    * timeout.
    *
    * @param request request to send
-   * @return future which will be completed when a successful response from the broker is
-   *     received.The future will be completed exceptionally on error or on receiving
-   *     BrokerRejection.
+   * @return future which will be completed when a response, rejection, or error from the broker is
+   *     received. The future will be completed exceptionally on request dispatch, transport, or
+   *     response parsing errors.
    */
   <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(BrokerRequest<T> request);
 
@@ -69,9 +71,9 @@ public interface BrokerClient extends AutoCloseable {
    *
    * @param request request to send
    * @param requestTimeout timeout for the request
-   * @return future which will be completed when a successful response from the broker is
-   *     received.The future will be completed exceptionally on error or on receiving
-   *     BrokerRejection.
+   * @return future which will be completed when a response, rejection, or error from the broker is
+   *     received. The future will be completed exceptionally on request dispatch, transport, or
+   *     response parsing errors.
    */
   <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       BrokerRequest<T> request, Duration requestTimeout);

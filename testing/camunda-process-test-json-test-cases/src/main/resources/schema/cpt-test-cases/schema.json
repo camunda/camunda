@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
+  "$id": "https://camunda.com/json-schema/cpt-test-cases/8.10/schema.json",
   "title": "CPT JSON test cases",
   "description": "A collection of test cases to validate the business process in a JSON format compatible with Camunda Process Test (CPT).",
   "type": "object",
@@ -993,9 +993,12 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to set as the decision output. Optional.",
+          "description": "The variables to set as the decision output. Optional. Deprecated, use decisionOutput.",
           "type": "object",
           "additionalProperties": true
+        },
+        "decisionOutput": {
+          "description": "The decision output to mock. Can be any JSON type. Optional."
         }
       },
       "required": [
@@ -1355,6 +1358,10 @@
         "customPrompt": {
           "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
           "type": "string"
+        },
+        "attachDocuments": {
+          "description": "Whether to download and attach Camunda document references found in the variable to the judge call as structured content blocks. Overrides the preconfigured attach-documents toggle. Optional; defaults to the preconfigured value when omitted.",
+          "type": "boolean"
         }
       },
       "required": [

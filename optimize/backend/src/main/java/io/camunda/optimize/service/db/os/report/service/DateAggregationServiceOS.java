@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.os.report.service;
 
 import static io.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
+import static io.camunda.optimize.service.db.DatabaseConstants.DATE_AGGREGATION;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.fieldDateMath;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.filtersAggregation;
@@ -70,8 +71,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class DateAggregationServiceOS extends DateAggregationService {
-
-  private static final String DATE_AGGREGATION = "dateAggregation";
 
   private final DateTimeFormatter dateTimeFormatter;
 

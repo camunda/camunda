@@ -30,7 +30,7 @@ const baseProps = {
 describe('<Task />', () => {
 	it('should render the task display name and process name', async () => {
 		const screen = await renderWithRouter(() => <Task {...baseProps} />, {
-			path: '/tasklist/$id',
+			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
@@ -40,7 +40,7 @@ describe('<Task />', () => {
 
 	it('should render a link with an accessible label for an unassigned task', async () => {
 		const screen = await renderWithRouter(() => <Task {...baseProps} assignee={null} />, {
-			path: '/tasklist/$id',
+			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
@@ -49,7 +49,7 @@ describe('<Task />', () => {
 
 	it('should render an "assigned to me" label', async () => {
 		const screen = await renderWithRouter(() => <Task {...baseProps} assignee={currentUser.username} />, {
-			path: '/tasklist/$id',
+			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
@@ -58,7 +58,7 @@ describe('<Task />', () => {
 
 	it('should render an "assigned task" label', async () => {
 		const screen = await renderWithRouter(() => <Task {...baseProps} assignee="john.doe" />, {
-			path: '/tasklist/$id',
+			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
@@ -67,7 +67,7 @@ describe('<Task />', () => {
 
 	it('should render the priority label', async () => {
 		const screen = await renderWithRouter(() => <Task {...baseProps} priority={80} />, {
-			path: '/tasklist/$id',
+			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 
@@ -76,7 +76,7 @@ describe('<Task />', () => {
 
 	it('should not render the priority label', async () => {
 		const screen = await renderWithRouter(() => <Task {...baseProps} priority={null} />, {
-			path: '/tasklist/$id',
+			path: '/tasklist/$userTaskKey',
 			initialEntry: '/tasklist/other-task',
 		});
 

@@ -31,7 +31,9 @@ public class MockDmnDecisionInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    context.mockDmnDecision(instruction.getDecisionDefinitionId(), instruction.getVariables());
+    final Object decisionOutput =
+        instruction.getDecisionOutput().orElse(instruction.getVariables());
+    context.mockDmnDecision(instruction.getDecisionDefinitionId(), decisionOutput);
   }
 
   @Override

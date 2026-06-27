@@ -103,9 +103,9 @@ public class CamundaServicesConfiguration {
    * <p>Cluster-wide services ({@code TopologyServices}, {@code ManagementServices}) are shared
    * singletons injected from their own configuration classes.
    *
-   * <p>For v1 the authorization converter and executor are cloned per-tenant from the global config
-   * (no isolation yet); the process cache uses a tenant-scoped search view. See ADR {@code
-   * 0001-physical-tenant-service-serviceRegistry}.
+   * <p>The authorization converter is derived per-tenant from that tenant's security config; the
+   * executor is still shared from the global config (no isolation yet). The process cache uses a
+   * tenant-scoped search view. See ADR {@code 0001-physical-tenant-service-serviceRegistry}.
    */
   @Bean
   public ServiceRegistry serviceRegistry(
@@ -138,17 +138,16 @@ public class CamundaServicesConfiguration {
               final var search = searchClients.withPhysicalTenant(tenantId);
 
               // -- per-tenant BrokerRequestAuthorizationConverter --
-              // TODO: derive one converter per tenant from per-tenant
-              // CamundaSecurityLibraryProperties once available.
+              final var tenantSecurity = tenantConfig.getSecurity();
               final var converter =
                   new BrokerRequestAuthorizationConverter(
                       new EngineSecurityConfig(
-                          cslProperties.getAuthentication(),
-                          cslProperties.getAuthorizations().isEnabled(),
-                          cslProperties.getMultiTenancy().isChecksEnabled(),
-                          cslProperties.getInitialization(),
-                          cslProperties.getCompiledIdValidationPattern(),
-                          cslProperties.getCompiledGroupIdValidationPattern()));
+                          tenantSecurity.getAuthentication(),
+                          tenantSecurity.getAuthorizations().isEnabled(),
+                          tenantSecurity.getMultiTenancy().isChecksEnabled(),
+                          tenantSecurity.getInitialization(),
+                          tenantSecurity.getCompiledIdValidationPattern(),
+                          tenantSecurity.getCompiledGroupIdValidationPattern()));
 
               // -- per-tenant process cache --
               final var processCacheConfig = tenantConfig.getApi().getRest().getProcessCache();

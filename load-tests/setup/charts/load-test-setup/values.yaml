@@ -29,3 +29,14 @@ metricsExporter:
   database:
     # -- The URL to the database (Elasticsearch or OpenSearch) endpoint to fetch metrics from.
     url: http://elastic:9200
+
+# -- Configuration for the optional chaos-killer CronJob.
+# When enabled, one randomly-selected matching pod is deleted per run to simulate
+# unscheduled restarts (e.g. PostgreSQL, Zeebe broker, Elasticsearch).
+chaosKiller:
+  # -- Set to true to deploy the chaos-killer CronJob.
+  enabled: false
+  # -- Cron schedule for the chaos-killer (default: once per hour).
+  schedule: "0 * * * *"
+  # -- Space-separated shell glob patterns. One pod matching any pattern is deleted per run.
+  targetPatterns: "camunda-* elastic-* postgresql-*"

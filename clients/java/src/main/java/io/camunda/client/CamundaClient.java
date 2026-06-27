@@ -101,6 +101,7 @@ import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
+import io.camunda.client.api.command.UpdateJobPriorityCommandStep1;
 import io.camunda.client.api.command.UpdateMappingRuleCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
@@ -638,6 +639,40 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(ActivatedJob job);
+
+  /**
+   * Command to update the priority of a job.
+   *
+   * <pre>
+   * long jobKey = ..;
+   *
+   * camundaClient
+   *  .newUpdateJobPriorityCommand(jobKey)
+   *  .priority(5)
+   *  .send();
+   * </pre>
+   *
+   * @param jobKey the key of the job to update
+   * @return a builder for the command
+   */
+  UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(long jobKey);
+
+  /**
+   * Command to update the priority of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   *
+   * camundaClient
+   *  .newUpdateJobPriorityCommand(job)
+   *  .priority(5)
+   *  .send();
+   * </pre>
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(ActivatedJob job);
 
   /**
    * Registers a new job worker for jobs of a given type.

@@ -166,12 +166,16 @@ class ResourceDeployIT {
 
   @Test
   void shouldReturnBinaryContentBytesExactlyForPngResource() throws Exception {
-    // given
+    // given - append to the (possibly tenant-scoped) base address rather than resolving an absolute
+    // path, which would discard any /physical-tenants/<id> prefix and bypass the tenant-scoped
+    // client
+    final var restAddress = camundaClient.getConfiguration().getRestAddress().toString();
     final URI restUri =
-        camundaClient
-            .getConfiguration()
-            .getRestAddress()
-            .resolve("/v2/resources/" + pngResourceKey + "/content/binary");
+        URI.create(
+            restAddress.replaceAll("/+$", "")
+                + "/v2/resources/"
+                + pngResourceKey
+                + "/content/binary");
 
     // when - fetch raw bytes via JDK HTTP client to bypass the String-returning Java client
     final var httpClient = java.net.http.HttpClient.newHttpClient();

@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "b6c554e8c28541536356bc055f5afab2e55dcb90",
-    "generatedAt": "2026-06-24T12:45:55.700Z",
+    "commit": "0defdd4464b6a4e4f89639c7d2904d6390188a39",
+    "generatedAt": "2026-06-26T12:44:03.655Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "be3216f639867ce0f5838436fd67052f792816ad9d0dfb9484df86b2473ed949"
+    "specSha256": "28d509e1ed725540cbd22690efd0e87a7f668e0e69c5bfef59c2f67aa426ec02"
   },
   "responses": [
     {
@@ -1311,6 +1311,7 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ],
                   "underlyingPrimitive": "string",
@@ -1416,6 +1417,7 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ],
                   "underlyingPrimitive": "string",
@@ -1550,6 +1552,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ],
             "underlyingPrimitive": "string",
@@ -2328,6 +2331,11 @@
             "children": {
               "required": [
                 {
+                  "name": "businessId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "decisionDefinitionId",
                   "type": "string"
                 },
@@ -2456,6 +2464,11 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "businessId",
+            "type": "string",
+            "nullable": true
+          },
           {
             "name": "decisionDefinitionId",
             "type": "string"
@@ -2640,6 +2653,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
           }
@@ -5064,6 +5078,37 @@
       }
     },
     {
+      "path": "/jobs/batch-update",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "ADD_VARIABLE",
+              "CANCEL_PROCESS_INSTANCE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_DECISION_INSTANCE",
+              "DELETE_PROCESS_DEFINITION",
+              "DELETE_PROCESS_INSTANCE",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
+              "UPDATE_VARIABLE"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/jobs/statistics/global",
       "method": "GET",
       "status": "200",
@@ -6340,6 +6385,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
           }
@@ -6370,6 +6416,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
           }
@@ -6400,6 +6447,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
           }
@@ -6430,6 +6478,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
           }
@@ -6460,6 +6509,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
           }
@@ -6715,6 +6765,7 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
           }
@@ -7081,6 +7132,7 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ]
                 }

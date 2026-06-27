@@ -14,11 +14,11 @@ usage() {
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
-  namespace                       Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage                Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
-  ttl_days                        Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize                 Optional. true|false to enable Optimize. Default: true.
-  enable_single_zone              Optional. true|false to deploy the cluster on a single zone. Default: true.
+  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
+  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
+  enable_optimize    Optional. true|false to enable Optimize. Default: true.
+  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true.
 
 Options:
   -h, --help         Show this help message.
@@ -144,7 +144,7 @@ cp -v  "values/values-stable.yaml"                               "$TARGET_DIRECT
 cp -v  "values/camunda-platform-values-defaults.yaml"            "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$TARGET_DIRECTORY/"
 
-# Storage-specific copies. databases/ is created only for mssql/oracle.
+# Storage-specific copies.
 case "$secondaryStorage" in
   elasticsearch|opensearch)
     cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$TARGET_DIRECTORY/"
@@ -203,6 +203,7 @@ CHARTS_DIR="charts"
 # embedded Bitnami Helm Chart.
 # We should remove the checkout of this specific revision once we have a solution to replace these
 # removed dependencies.
+
 git clone --depth 1 --revision 347642d30179479f8ab8a2f00b2d979be05f5a8c --single-branch https://github.com/camunda/camunda-platform-helm.git "$CHARTS_DIR/camunda-platform-helm"
 
 # Make deps

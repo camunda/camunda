@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.gateway;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import com.google.rpc.Code;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -30,12 +33,11 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
-import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantInterceptor;
+import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantHandlerFactory;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
-import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -44,7 +46,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.TlsConfigUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.BindableService;
@@ -65,7 +66,9 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -92,7 +95,7 @@ public final class Gateway implements CloseableSilently {
   private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
-  private final EngineSecurityConfig securityConfiguration;
+  private final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -101,65 +104,42 @@ public final class Gateway implements CloseableSilently {
   private Server server;
   private ExecutorService grpcExecutor;
   private final BrokerClient brokerClient;
-  private final UserServices userServices;
+  private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
+  private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
+  private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
   private final PhysicalTenantIds physicalTenantIds;
 
-  @VisibleForTesting
-  public Gateway(
-      final GatewayCfg gatewayCfg,
-      final EngineSecurityConfig securityConfiguration,
-      final BrokerClient brokerClient,
-      final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices,
-      final PasswordEncoder passwordEncoder,
-      final MeterRegistry meterRegistry,
-      final JwtDecoder jwtDecoder) {
-    this(
-        DEFAULT_SHUTDOWN_TIMEOUT,
-        gatewayCfg,
-        securityConfiguration,
-        brokerClient,
-        actorSchedulingService,
-        jobStreamer,
-        userServices,
-        passwordEncoder,
-        jwtDecoder,
-        (jwtClaims, tokenValue) -> jwtClaims,
-        meterRegistry,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH,
-        PhysicalTenantIds.DEFAULT);
-  }
-
   public Gateway(
       final Duration shutdownDuration,
       final GatewayCfg gatewayCfg,
-      final EngineSecurityConfig securityConfiguration,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
+      final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry,
       final int maxVariableNameLength,
       final PhysicalTenantIds physicalTenantIds) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
-    this.securityConfiguration = securityConfiguration;
+    this.securityConfigurationsByPhysicalTenant =
+        Map.copyOf(securityConfigurationsByPhysicalTenant);
+    Objects.requireNonNull(
+        this.securityConfigurationsByPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID),
+        "No security configuration registered for the default physical tenant");
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
-    this.userServices = userServices;
+    this.jwtDecoderFactory = Objects.requireNonNull(jwtDecoderFactory);
+    this.oidcClaimsProviderFactory = Objects.requireNonNull(oidcClaimsProviderFactory);
+    this.userServicesForTenant = Objects.requireNonNull(userServicesForTenant);
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider = Objects.requireNonNull(oidcClaimsProvider);
     this.meterRegistry = meterRegistry;
     this.maxVariableNameLength = maxVariableNameLength;
     this.physicalTenantIds = physicalTenantIds;
@@ -237,7 +217,7 @@ public final class Gateway implements CloseableSilently {
             brokerClient,
             activateJobsHandler,
             streamJobsHandler,
-            securityConfiguration,
+            securityConfigurationsByPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID),
             maxVariableNameLength);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
@@ -431,33 +411,42 @@ public final class Gateway implements CloseableSilently {
     // chain
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
-    interceptors.add(new PhysicalTenantInterceptor(physicalTenantIds));
 
-    if (!securityConfiguration.getAuthentication().isUnprotectedApi()) {
-      final var authMethod = securityConfiguration.getAuthentication().getMethod();
-      final var handler =
-          switch (authMethod) {
-            case BASIC -> basicAuth();
-            case OIDC ->
-                new AuthenticationHandler.Oidc(
-                    jwtDecoder,
-                    oidcClaimsProvider,
-                    securityConfiguration.getAuthentication().getOidc());
-          };
-      interceptors.add(
-          new AuthenticationInterceptor(
-              handler, new AuthenticationMetrics(meterRegistry, authMethod)));
+    final var defaultSecurityConfig =
+        securityConfigurationsByPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID);
+    final var authEnabled = !defaultSecurityConfig.getAuthentication().isUnprotectedApi();
+
+    // Build one AuthenticationHandler per physical tenant (incl. default); the merged interceptor
+    // stamps the resolved tenant id into the gRPC Context (for partition-group routing) and
+    // authenticates against the per-tenant handler when the API is protected.
+    final Map<String, AuthenticationHandler> handlersByTenant =
+        PhysicalTenantHandlerFactory.build(
+            securityConfigurationsByPhysicalTenant,
+            authEnabled,
+            jwtDecoderFactory,
+            oidcClaimsProviderFactory,
+            userServicesForTenant,
+            passwordEncoder);
+
+    // One metrics instance per tenant so the auth-method dimension reflects each tenant's method.
+    final Map<String, AuthenticationMetrics> metricsByTenant = new LinkedHashMap<>();
+    if (authEnabled) {
+      securityConfigurationsByPhysicalTenant.forEach(
+          (tenantId, config) ->
+              metricsByTenant.put(
+                  tenantId,
+                  new AuthenticationMetrics(
+                      meterRegistry, config.getAuthentication().getMethod())));
     }
+
+    interceptors.add(
+        new AuthenticationInterceptor(
+            physicalTenantIds.known(),
+            handlersByTenant,
+            authEnabled,
+            metricsByTenant,
+            meterRegistry));
     return ServerInterceptors.intercept(service, interceptors);
-  }
-
-  private AuthenticationHandler.BasicAuth basicAuth() {
-    LOG.atWarn()
-        .log(
-            "Basic Authentication only supports a very small number of API requests per second. Please refer to the documentation "
-                + "https://docs.camunda.io/docs/next/self-managed/operational-guides/troubleshooting/#basic-authentication-performance");
-
-    return new AuthenticationHandler.BasicAuth(userServices, passwordEncoder);
   }
 
   private static StatusException grpcStatusException(final int code, final String msg) {

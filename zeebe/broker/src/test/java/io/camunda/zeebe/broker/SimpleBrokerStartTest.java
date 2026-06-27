@@ -21,6 +21,7 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
@@ -70,7 +71,7 @@ public final class SimpleBrokerStartTest {
         assertThatThrownBy(
             () -> {
               final var systemContext =
-                  new SystemContext(
+                  SystemContextTestFactory.singleTenant(
                       SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
                       brokerCfg,
                       null,
@@ -107,7 +108,7 @@ public final class SimpleBrokerStartTest {
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
 
     final var systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
             SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
             null,

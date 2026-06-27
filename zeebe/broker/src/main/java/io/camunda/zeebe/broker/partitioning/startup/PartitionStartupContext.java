@@ -89,11 +89,11 @@ public class PartitionStartupContext {
 
   @Override
   public String toString() {
-    return "PartitionStartupContext{" + "partition=" + partitionMetadata.id().id() + '}';
+    return "PartitionStartupContext{" + "partition=" + partitionMetadata.id().number() + '}';
   }
 
   public Integer partitionId() {
-    return partitionMetadata.id().id();
+    return partitionMetadata.id().number();
   }
 
   public ActorSchedulingService schedulingService() {

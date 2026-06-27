@@ -38,6 +38,7 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
         new TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
         new TestArguments("processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()),
+        new TestArguments("businessId", SortOrder.ASC, s -> s.businessId().asc()),
         new TestArguments(
             "elementInstanceKey", SortOrder.DESC, s -> s.flowNodeInstanceKey().desc()));
   }
