@@ -85,9 +85,7 @@ public class WaitStateIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final var processInstanceKey = nextKey();
-    createAndSaveRandomWaitStates(
-        rdbmsWriters,
-        b -> b.processInstanceKey(processInstanceKey).rootProcessInstanceKey(nextKey()));
+    createAndSaveRandomWaitStates(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
 
     final WaitStateDbReader reader = rdbmsService.getWaitStateReader();
     final var sort = WaitStateSort.of(s -> s.elementInstanceKey().asc());
@@ -122,8 +120,9 @@ public class WaitStateIT {
     assertThat(page2.items()).hasSize(10);
     assertThat(page1.items()).isEqualTo(allItems.subList(0, 10));
     assertThat(page2.items()).isEqualTo(allItems.subList(10, 20));
-    // total() must be 20 on page 2 — not the post-cursor remainder.
+    // total() must be 20 on both pages — not the post-cursor remainder.
     // Guards against the keyset predicate leaking into the COUNT query.
+    assertThat(page1.total()).isEqualTo(20);
     assertThat(page2.total()).isEqualTo(20);
   }
 
