@@ -46,7 +46,6 @@
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.WaitStateDbQuery"
     resultMap="io.camunda.db.rdbms.sql.WaitStateMapper.waitStateResultMap">
-    SELECT * FROM (
     SELECT
       WAIT_STATE_KEY,
       ROOT_PROCESS_INSTANCE_KEY,
@@ -60,63 +59,70 @@
       TENANT_ID,
       PARTITION_ID
     FROM ${prefix}WAIT_STATE
-    <include refid="io.camunda.db.rdbms.sql.WaitStateMapper.searchFilter"/>
-    ) t
-    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.WaitStateMapper.searchFilterConditions"/>
+      <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageCondition"/>
+    </where>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
+  <!-- Bare conditions, no <where> tag — shared by count and search -->
+  <sql id="searchFilterConditions">
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND PROCESS_DEFINITION_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
+    <if test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+        AND ELEMENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.rootProcessInstanceKeyOperations != null and !filter.rootProcessInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.rootProcessInstanceKeyOperations" item="operation">
+        AND ROOT_PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.elementIdOperations != null and !filter.elementIdOperations.isEmpty()">
+      <foreach collection="filter.elementIdOperations" item="operation">
+        AND ELEMENT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.elementTypeOperations != null and !filter.elementTypeOperations.isEmpty()">
+      <foreach collection="filter.elementTypeOperations" item="operation">
+        AND ELEMENT_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.waitStateTypeOperations != null and !filter.waitStateTypeOperations.isEmpty()">
+      <foreach collection="filter.waitStateTypeOperations" item="operation">
+        AND WAIT_STATE_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+  <!-- Full WHERE clause for count — does NOT include keyset predicate -->
   <sql id="searchFilter">
     <where>
-      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        AND PROCESS_DEFINITION_ID IN
-        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
-          #{resourceId}
-        </foreach>
-      </if>
-      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND TENANT_ID IN
-        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
-          #{tenantId}
-        </foreach>
-      </if>
-      <if test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.elementInstanceKeyOperations" item="operation">
-          AND ELEMENT_INSTANCE_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.processInstanceKeyOperations" item="operation">
-          AND PROCESS_INSTANCE_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.rootProcessInstanceKeyOperations != null and !filter.rootProcessInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.rootProcessInstanceKeyOperations" item="operation">
-          AND ROOT_PROCESS_INSTANCE_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.elementIdOperations != null and !filter.elementIdOperations.isEmpty()">
-        <foreach collection="filter.elementIdOperations" item="operation">
-          AND ELEMENT_ID
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.elementTypeOperations != null and !filter.elementTypeOperations.isEmpty()">
-        <foreach collection="filter.elementTypeOperations" item="operation">
-          AND ELEMENT_TYPE
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.waitStateTypeOperations != null and !filter.waitStateTypeOperations.isEmpty()">
-        <foreach collection="filter.waitStateTypeOperations" item="operation">
-          AND WAIT_STATE_TYPE
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
+      <include refid="io.camunda.db.rdbms.sql.WaitStateMapper.searchFilterConditions"/>
     </where>
   </sql>
 

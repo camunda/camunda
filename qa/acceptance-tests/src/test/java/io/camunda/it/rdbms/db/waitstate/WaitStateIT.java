@@ -8,13 +8,20 @@
 package io.camunda.it.rdbms.db.waitstate;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
+import static io.camunda.it.rdbms.db.fixtures.WaitStateFixtures.createAndSaveRandomWaitStates;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.read.service.WaitStateDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.filter.ElementInstanceWaitStateFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
+import io.camunda.search.sort.WaitStateSort;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.jupiter.api.Tag;
@@ -69,6 +76,55 @@ public class WaitStateIT {
 
     // then
     assertThat(rdbmsService.getWaitStateReader().findOne(model.waitStateKey())).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldReturnCorrectResultsWithKeysetPagination(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final var processInstanceKey = nextKey();
+    createAndSaveRandomWaitStates(
+        rdbmsWriters,
+        b -> b.processInstanceKey(processInstanceKey).rootProcessInstanceKey(nextKey()));
+
+    final WaitStateDbReader reader = rdbmsService.getWaitStateReader();
+    final var sort = WaitStateSort.of(s -> s.elementInstanceKey().asc());
+    final var filter =
+        new ElementInstanceWaitStateFilter.Builder()
+            .processInstanceKeys(processInstanceKey)
+            .build();
+
+    // when
+    final var allItems =
+        reader
+            .search(
+                new ElementInstanceWaitStateQuery(
+                    filter, sort, SearchQueryPage.of(b -> b.from(0).size(20))),
+                ResourceAccessChecks.disabled())
+            .items();
+
+    final var page1 =
+        reader.search(
+            new ElementInstanceWaitStateQuery(filter, sort, SearchQueryPage.of(b -> b.size(10))),
+            ResourceAccessChecks.disabled());
+
+    final var page2 =
+        reader.search(
+            new ElementInstanceWaitStateQuery(
+                filter, sort, SearchQueryPage.of(b -> b.size(10).after(page1.endCursor()))),
+            ResourceAccessChecks.disabled());
+
+    // then
+    assertThat(allItems).hasSize(20);
+    assertThat(page1.items()).hasSize(10);
+    assertThat(page2.items()).hasSize(10);
+    assertThat(page1.items()).isEqualTo(allItems.subList(0, 10));
+    assertThat(page2.items()).isEqualTo(allItems.subList(10, 20));
+    // total() must be 20 on page 2 — not the post-cursor remainder.
+    // Guards against the keyset predicate leaking into the COUNT query.
+    assertThat(page2.total()).isEqualTo(20);
   }
 
   private static WaitStateDbModel createRandomized(final long waitStateKey) {

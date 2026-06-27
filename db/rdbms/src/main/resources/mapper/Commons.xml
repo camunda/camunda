@@ -126,6 +126,33 @@
     </if>
   </sql>
 
+  <!--
+    Keyset pagination as an AND-condition for use inside a <where> block.
+    Same logic as keySetPageFilter but without the leading WHERE keyword, so
+    the keyset predicate can be merged into the base-table WHERE clause. This
+    lets the database planner use the index for the keyset boundary without
+    materialising a derived table first.
+  -->
+  <sql id="keySetPageCondition">
+    <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">
+      AND
+      <foreach collection="page.keySetPagination" item="keySet" open="(" separator=" OR "
+        close=")">
+        <foreach collection="keySet.entries" item="entry" open="(" separator=" AND "
+          close=")">
+          <choose>
+            <when test="entry.fieldValue != null">
+              ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+            </when>
+            <otherwise>
+              ${entry.fieldName} ${entry.operator.symbol}
+            </otherwise>
+          </choose>
+        </foreach>
+      </foreach>
+    </if>
+  </sql>
+
   <sql id="orderBy">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
