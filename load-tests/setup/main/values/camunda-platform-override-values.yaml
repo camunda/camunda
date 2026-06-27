@@ -6,6 +6,6 @@ zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
 # Raft election-timeout experiment overrides for #3096 (DO NOT MERGE).
 # requestTimeout set explicitly to simulate the #56043 fix, isolating the
 # election-timeout question from the requestTimeout-inversion footgun.
-zeebe.broker.cluster.electionTimeout: "200ms"
-zeebe.broker.cluster.heartbeatInterval: "20ms"
-zeebe.broker.experimental.raft.requestTimeout: "150ms"
+zeebe.broker.cluster.electionTimeout: "1000ms"
+zeebe.broker.cluster.heartbeatInterval: "100ms"
+zeebe.broker.experimental.raft.requestTimeout: "750ms"
