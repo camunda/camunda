@@ -27,7 +27,7 @@ This plan implements **Approach A** from the POC: a dual-provider, restart-based
 configuration model.
 
 - The customer's IdP is registered as an *additional* OIDC provider on the cluster alongside
-  Auth0. Auth0 remains trusted so Controller M2M, Web Modeler M2M, Connectors, support engineers,
+  Auth0. Auth0 remains trusted so Controller machine-to-machine (M2M), Web Modeler M2M, Connectors, support engineers,
   and other SaaS-internal flows keep working unchanged.
 - Configuration lives **per cluster** (org-wide IdP configuration is out of scope of this epic).
 - Configuration is propagated through the existing Console → `ZeebeCluster` CRD → Operator
@@ -92,11 +92,9 @@ Customer admin → Console UI → Console DB + AWS SM/GCP SM → ZeebeCluster CR
 | Phase                                                              | Theme                                                                                                                                                                                 |
 |--------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Phase 1**                                                        | BYOIDP user-facing MVP: customer can configure a custom IdP, log in via it, log out, and the Web Modeler knows BYOIDP is on. Auth0 remains active. Lockout safeguards in UX and docs. |
-| **Phase 2**                                                        | Connectors authenticate to the cluster via the customer's IdP. External client authorization management in Console.                                                                   |
-| **Phase 3**                                                        | Groups-claim productization. Camunda Support BYO-IdP onboarding. Auth0-disable toggle for user login. Closure of the PoC validation items.                                            |
-| **Phase 4** *(may be split out as its own epic — see action item)* | Session idle timeout (cluster default + per-IdP override) with audit logging.                                                                                                         |
-
-TODO: move the groups claim to phase 2, move connectors to phase 3
+| **Phase 2**                                                        | Groups-claim productization. External client authorization management in Console.                                                                                                     |
+| **Phase 3**                                                        | Connectors authenticate to the cluster via the customer's IdP. Camunda Support BYO-IdP onboarding. Auth0-disable toggle for user login. Closure of the PoC validation items.         |
+| **Phase 4** *(may be split out as its own epic — see action item 11)* | Session idle timeout. Pre-save IdP validation (requires new CSL capability). Audit events / observability expansion (open question, tied to CSL work).                           |
 
 Each phase is intended to be shippable on its own.
 
@@ -124,21 +122,20 @@ path that replaces it), Story 7 (documentation clarity).
   in their IdP app registration as part of the documented setup. If real-world adoption needs
   configurable Redirect URIs, a follow-up adds the field — open question Q10.
 - **Pre-save configuration validation** (OIDC discovery fetch, claim-presence checks,
-  client-credentials test) is **explicitly out of scope for Phase 1**. The historic doc defers
-  it; the AC's "real-time feedback on errors" is achieved through cluster startup failure
-  surfacing instead. Productizing validation is a follow-on item — action item 12.
-TODO move to a later phase, phase 4
+  `client_credentials` test) is out of scope for Phase 1. Cluster startup failure surfacing
+  provides the near-term feedback path. Productized validation is deferred to Phase 4 and
+  requires a CSL-side validation API — see action item 12.
 - The form **surfaces a lockout-risk warning before commit** (per the updated product brief).
   Final copy is an action item with Design.
 - The friendly display name is also configurable for the existing Auth0 entry, so the login picker
   can show both providers with sensible labels. Today Auth0 has no friendly name in the picker.
-- Visibility/edit gated to organization admins, matching the Authorizations toggle gating.
-TODO Camundi only plus specific customer by email domain can access the feature
-- **Number of custom IdPs per cluster in the Phase 1 UI is unresolved** (see action items). The
-  POC, the CSL config layer, and the Operator CRD (array shape) all support multiple custom IdPs
-  per cluster. Whether the Phase 1 UI exposes a single-form (simpler) or a list/CRUD shape from
-  day one depends on Design effort and customer demand. The CRD and CSL stay multi-capable either
-  way so the backend does not change when the UI expands.
+- Feature access is gated by the existing Console feature-flag email-domain mechanism. The toggle
+  is visible only to Camunda employees (`@camunda.com`) and specific partner customers whose
+  domains are added to a configurable allowlist in Console. Within those allowed domains,
+  visibility and edit rights are restricted to organization admins.
+- **Phase 1 UI supports exactly one custom IdP per cluster.** The POC, the CSL config layer, and
+  the Operator CRD (array shape) remain multi-capable so the UI can be extended to a list/CRUD
+  shape in a follow-on without backend changes.
 
 **Backend** (`apps/console-backend/src/`)
 
@@ -177,37 +174,18 @@ TODO Camundi only plus specific customer by email domain can access the feature
 
 ### `camunda-security-library` (CSL)
 
-Phase 1 is mostly *already done*. Verification work, plus closing the gap noted in the POC and
-adding observability:
+Phase 1 is mostly *already done*. Verification work to close the gap noted in the POC:
 
 - Confirm that providers configured under `camunda.security.authentication.providers.oidc.<name>.*`
   reach the Spring login picker with their `clientName` rendered.
 - Verify the per-provider `idpLogoutEnabled` behavior. The POC flagged this as a gap (the flag
   was read from the top-level `camunda.security.authentication.oidc` config only); recent CSL
   work may have closed it. If it remains a gap, close it so customer IdP and Auth0 can choose
-  RP-initiated logout independently. Tracked as open question Q2.
-- **Observability**: emit per-provider metrics for login success, login failure (by reason
-  bucket), token-rejection by issuer, and JWKS refresh failure. A customer-IdP misconfiguration
-  otherwise silently lands customers on a failing cluster with no operator-visible signal.
-- Add a CSL ADR documenting BYOIDP support.
+  relying-party (RP)-initiated logout independently. Tracked as open question Q2.
 
 ### `camunda/camunda` (Orchestration Cluster)
 
 - No new auth code in this repo for the primary login flow — CSL covers it.
-- Extend the existing multi-provider integration tests in
-  `authentication/src/test/java/io/camunda/authentication/MultipleOidcProviderFlowTest.java` (and
-  related) to cover Auth0 + a customer-IdP shape end-to-end.
-- **User-profile IdP indicator** (epic Details: *"Cluster should show … in user profile which
-  IdP was used to login"*). Add the issuer / friendly name of the IdP that authenticated the
-  current session to the user-profile pane in the OC webapp. Small frontend change in
-  `webapp/client/`. Open question Q11 if Console renders this instead — see open questions.
-TODO move to phase 4, stretch goal
-- **Authentication-event audit scoping** (epic AC: *"Tokens, sessions, and audit events reflect
-  correct scoping"*). Authentication and session events must carry which IdP issued the
-  underlying token so audit consumers can attribute access. Scope of change depends on the
-  current audit-event schema — Phase 1 adds the IdP attribution to login/logout/session-create
-  audit records.
-TODO add IdP name to the login screen, re-do the login screen in phase 4
 
 ### Out of repo (Phase 1)
 
@@ -223,10 +201,44 @@ TODO add IdP name to the login screen, re-do the login screen in phase 4
 
 ---
 
-## Phase 2 — Connectors via customer IdP + external client authorization
+## Phase 2 — Groups-claim productization + external client authorization
 
-**User stories addressed:** Story 2 (Connectors via customer IdP), Story 5 (external client
+**User stories addressed:** Story 4 (optional groups import), Story 5 (external client
 authorization management).
+
+### `camunda-cloud-management-apps` (Console)
+
+**Frontend**
+
+- **Groups-claim productization.** Phase 1 already provides the groups-claim input on the IdP
+  configuration form. Phase 2 surfaces helper text and examples for common IdPs (Entra `groups`,
+  Okta `groups`, Ping `memberOf`), inline validation that the claim is present in a test token,
+  and links to OC mapping-rule docs so admins can map IdP group names to Camunda groups.
+- **External client authorization screen**: a new screen in Console that lets admins assign
+  permissions to client IDs created in the customer's IdP. The UI is in Console; the underlying
+  authorization model is the OC's existing client/mapping-rule infrastructure (no new OC screen).
+
+### `camunda-security-library` (CSL)
+
+- The CSL filter chain for **gRPC** is separate from REST. Phase 2 must include multi-provider
+  gRPC validation so that external clients using the Camunda 8 (C8) REST/gRPC API (Story 5) can authenticate
+  with tokens issued by the customer's IdP. Add gRPC-side tests for multi-provider token
+  acceptance and authorization; fix any gaps surfaced.
+- The OC already trusts the customer IdP from Phase 1 on the REST path; the gRPC path is the
+  scope of this Phase 2 deliverable.
+
+### `camunda/camunda` (Orchestration Cluster)
+
+- No new authorization screen. The Console UI for Story 5 calls into existing OC APIs and reuses
+  the current authorization model.
+
+---
+
+## Phase 3 — Connectors via customer IdP, Camunda Support BYO-IdP onboarding, Auth0-disable, PoC closure
+
+**User stories addressed:** Story 2 (Connectors via customer IdP), Story 6 (Camunda Support
+read-only, second user story regarding customer-onboarded identities), and the remaining PoC
+validation items from the product brief.
 
 ### `camunda-cloud-management-apps` (Console)
 
@@ -236,10 +248,14 @@ authorization management).
   authentication via my IdP," with inputs for Connectors-specific Client ID, Client Secret, and
   Audience. Distinct from the user-login OIDC client.
 - A status indicator showing whether Connectors are currently authenticating successfully (data
-  source mechanism is an open question — see action items).
-- **External client authorization screen**: a new screen in Console that lets admins assign
-  permissions to client IDs created in the customer's IdP. The UI is in Console; the underlying
-  authorization model is the OC's existing client/mapping-rule infrastructure (no new OC screen).
+  source mechanism is an open question — see open question Q5).
+- **Auth0-disable toggle.** New element: "Disable Camunda SaaS login (Auth0) on this cluster."
+  Visible only when at least one custom IdP is configured. Default off. Warning copy explains the
+  recovery path (the support-ticket break-glass).
+- **Camunda Support onboarding (provisional).** A docs-led deliverable: customers add a designated
+  Camunda Support identity to their IdP and grant it read-only privileges. A Console status card
+  indicating whether the Auth0 fallback is active and/or a customer-onboarded support identity is
+  configured is a candidate ride-along. The precise scope depends on resolution of action item 9.
 
 **Backend**
 
@@ -249,10 +265,10 @@ authorization management).
 - `k8s-spec.utils.ts` extended to emit the Connectors-OIDC fields onto the CR when the toggle is
   on.
 
-**Out of scope for Phase 2:** changes to the `proxy-token-issuer` app for the customer-IdP path.
+**Out of scope for Phase 3:** changes to the `proxy-token-issuer` app for the customer-IdP path.
 Customer-IdP tokens are obtained by the Connectors directly from the customer's IdP, so the
 proxy is bypassed for those clusters. The proxy's permission-verification role needs separate
-discussion — see action items.
+discussion — see action item 8.
 
 ### `camunda-operator` (Operator)
 
@@ -264,58 +280,12 @@ discussion — see action items.
   token URL, and `CAMUNDA_CLIENT_AUTH_CLIENT_ID`, `CAMUNDA_CLIENT_AUTH_CLIENT_SECRET` (via
   `secretKeyRef`), and `CAMUNDA_CLIENT_AUTH_AUDIENCE` are added. When unset, current behavior
   (proxy-token-issuer) is preserved.
-- Tests and golden files for both branches.
-
-### `camunda-security-library` (CSL)
-
-- The CSL filter chain for **gRPC** is separate from REST. Phase 2 must include multi-provider
-  gRPC validation, because both Story 2 (Connectors communicate via REST/gRPC) and Story 5 (the
-  C8 REST/gRPC API) explicitly require it. Add gRPC-side tests for multi-provider token
-  acceptance and authorization; fix any gaps surfaced.
-- The OC already trusts the customer IdP from Phase 1 on the REST path; the gRPC path is the
-  scope of this Phase 2 deliverable.
-
-### `camunda/camunda` (Orchestration Cluster)
-
-- No new authorization screen. The Console UI for Story 5 calls into existing OC APIs and reuses
-  the current authorization model.
-
-### Out of repo (Phase 2)
-
-- Documentation: connector-cutover migration guide (the manual process the customer follows in
-  their IdP to set up a Connectors client).
-
----
-
-## Phase 3 — Groups-claim, Camunda Support BYO-IdP onboarding, Auth0-disable, PoC closure
-
-**User stories addressed:** Story 4 (optional groups import), Story 6 (Camunda Support read-only,
-second user story regarding customer-onboarded identities), and the remaining PoC validation
-items from the product brief.
-
-### `camunda-cloud-management-apps` (Console)
-
-- **Groups-claim productization.** Phase 1 already provides the input. Phase 3 surfaces helper
-  text and examples for common IdPs (Entra `groups`, Okta `groups`, Ping `memberOf`), inline
-  validation that the claim is present in a test token, and links to OC mapping-rule docs so
-  admins can map IdP group names to Camunda groups.
-- **Auth0-disable toggle.** New element: "Disable Camunda SaaS login (Auth0) on this cluster."
-  Visible only when at least one custom IdP is configured. Default off. Warning copy explains the
-  recovery path (the support-ticket break-glass).
-- **Camunda Support onboarding (provisional).** A docs-led deliverable: customers add a designated
-  Camunda Support identity to their IdP and grant it read-only privileges. A Console status card
-  indicating whether the Auth0 fallback is active and/or a customer-onboarded support identity is
-  configured is a candidate ride-along. The precise scope depends on resolution of the
-  Camunda Support onboarding process action item.
-
-### `camunda-operator` (Operator)
-
 - Add a `UserLoginEnabled *bool` field on the existing `OidcProviderSpec` entry (from Phase 1).
   The Console-side Auth0-disable toggle writes `userLoginEnabled=false` on the Auth0 provider
   entry, rather than a separate cluster-wide `DisableAuth0UserLogin` field. This keeps a single
   per-provider data model and avoids a duplicate, Auth0-specific shape. Operator renders the
   field into the corresponding CSL env var.
-- Regenerate manifests, deepcopy, golden tests.
+- Tests and golden files for all new fields; regenerate manifests, deepcopy, golden tests.
 
 ### `camunda-security-library` (CSL)
 
@@ -341,21 +311,25 @@ items from the product brief.
 
 ### Out of repo (Phase 3)
 
-- Documentation: Auth0-disable operational guide, BYO IdP support-identity onboarding procedure,
-  reinforced break-glass recovery instructions.
+- Documentation: connector-cutover migration guide (the manual process the customer follows in
+  their IdP to set up a Connectors client), Auth0-disable operational guide, BYO IdP
+  support-identity onboarding procedure, reinforced break-glass recovery instructions.
 
 ---
 
-## Phase 4 — Session idle timeout + audit logging *(may be split out as a separate epic)*
+## Phase 4 — Session idle timeout, pre-save validation, login UX polish *(may be split out as a separate epic)*
 
-**Status:** the product brief marks this as a stretch. It is included here for completeness but
-its inclusion in this epic is an open question.
+**Status:** the product brief marks session idle timeout as a stretch. This phase is included for
+completeness but its inclusion in this epic is an open question.
 
 ### `camunda-cloud-management-apps` (Console)
 
 - New element under the BYOIDP card for session idle timeout: a cluster-level default plus per-IdP
   overrides. Range 5 minutes – 24 hours. Range validation client- and server-side.
 - Audit log entries on every change to either the cluster default or any per-IdP override.
+- **Pre-save configuration validation** (OIDC discovery fetch, claim-presence checks,
+  `client_credentials` test). Deferred from Phase 1. Requires a CSL-side validation API; scope
+  to be confirmed with the CSL team before design — see action item 12.
 
 ### `camunda-operator` (Operator)
 
@@ -369,11 +343,23 @@ its inclusion in this epic is an open question.
   `camunda.security.authentication.providers.oidc.<name>.session-idle-timeout` override. At session
   creation, resolve based on which provider authenticated the user. Enforce the 5 min – 24 h
   bounds. CSL ADR for the resolution rule and bounds.
+- Validation API to support pre-save configuration checks (OIDC discovery fetch, claim-presence
+  inspection, `client_credentials` test). Exposed to Console backend so configuration can be
+  validated before it is committed to the CR.
 
 ### `camunda/camunda` (Orchestration Cluster)
 
 - Audit-log entries for changes to the new fields flow through the existing settings audit
   pipeline.
+- **Login screen redesign** *(stretch)*. Replace the Spring Security default login picker with a
+  Camunda-designed page that shows the IdP friendly name next to each provider button, controls
+  branding and copy, and defines provider display order. Open question Q15 must be resolved
+  before this work is scoped.
+- **User-profile IdP indicator** *(stretch)* (epic Details: *"Cluster should show … in user
+  profile which IdP was used to login"*). Add the issuer / friendly name of the IdP that
+  authenticated the current session to the user-profile pane in the OC webapp. Small frontend
+  change in `webapp/client/`. Open question Q11 if Console renders this instead — see open
+  questions.
 
 ---
 
@@ -387,8 +373,11 @@ its inclusion in this epic is an open question.
 - Per-tenant or Physical Tenant identity binding (called out as out of scope in the product
   brief).
 - Web Modeler internal implementation. Only the Console-side `externalIdpEnabled` signal and the
-  WM feature ticket are tracked here.
-TODO add PKJWT note, the auth method would require that a keystore is uploaded and stored; this needs a secure solution for storage and injection of the keystore into the pods, a way to remove/rotate the keystore, and a UI for uploading and managing the keystore. This is a non-trivial amount of work that may be better scoped as a separate epic.
+  Web Modeler feature ticket are tracked here.
+- Private Key JWT (`private_key_jwt`) client authentication method. This auth method requires a
+  keystore to be uploaded and stored, a secure solution for keystore injection into pods, a
+  key-rotation and removal workflow, and a Console UI for keystore management. The scope is
+  non-trivial and would be better addressed as a separate epic.
 
 ---
 
@@ -414,26 +403,23 @@ Each item below needs an owner and a resolution; many gate scope refinement in t
 5. **Confirm route placement with the Console team** — new `IdpConfigRouter.ts` vs. extension of
    `ClusterRouter.ts`. Owner: Console engineering.
 6. **Lockout-warning UX copy** finalized for the pre-commit warning. Owner: Product Design + PM.
-7. **Decide whether the Phase 1 UI exposes one or many custom IdPs per cluster.** The POC, CSL,
-   and Operator CRD all support multiple custom IdPs; the question is whether the Console UI
-   ships a single-form shape or a list/CRUD shape in Phase 1. Heavier FE work for the latter.
-   Owner: Product Design + Console FE engineering.
-TODO stick with 1 IdP per cluster for Phase 1
-12. **Pre-save configuration validation** (OIDC discovery fetch, claim-presence checks,
-    `client_credentials` test) — confirm Phase 1 deferral with PM, and either file a follow-on
-    ticket for productized validation or document the indefinite deferral. Owner: PM.
-TODO discuss how to do proper validation for a later phase, will need CSL work
+7. **Phase 1 UI supports exactly one custom IdP per cluster.** Resolved. The Phase 1 UI ships as
+   a single-form shape. The POC, CSL, and Operator CRD remain multi-capable so the UI can expand
+   in a follow-on without backend changes.
+12. **Pre-save configuration validation (Phase 4).** Validation of OIDC discovery, claim
+    presence, and `client_credentials` test is deferred to Phase 4 and will require a CSL-side
+    validation API. File a Phase 4 design task covering the CSL API shape and Console integration.
+    Owner: PM + CSL engineering.
 13. **Security review.** This is a security-critical feature (two trusted issuers, SaaS
     validators tolerating missing org/clusterId claims). Schedule an explicit security review of
     the Phase 1 design before code lands. Owner: Security team + breakdown author.
-14. **Cluster generation / minimum-version gate.** The sibling multi-tenancy epic gated the UI
-    on Zeebe 8.8.0-alpha7+. Decide which cluster generations expose the BYOIDP toggle, and gate
-    the Console UI accordingly. Owner: PM + Console engineering.
-TODO figure out if we need to backport to earlier minors due to customer demand, otherwise keep gated on 8.10.0-alpha3
+14. **Cluster generation / minimum-version gate.** Default: gate the BYOIDP toggle on Zeebe
+    8.10.0-alpha3+. Backport to earlier minors only if specific customer demand requires it.
+    Owner: PM + Console engineering.
 15. **Feature rollout.** Decide whether BYOIDP is exposed behind a Console feature flag, and what
     the rollout plan looks like. Owner: PM.
 
-### Phase 2
+### Phase 3
 
 8. **Discuss `proxy-token-issuer` rearchitecture.** The proxy's permission-verification job is
    independent of token issuance and does not apply to customer-IdP clients (those tokens are
@@ -441,10 +427,7 @@ TODO figure out if we need to backport to earlier minors due to customer demand,
    cache them). Two design options to evaluate: extract a validation middleware that any service
    can call before issuing/accepting tokens, or expose a standalone introspection endpoint
    downstream services consume directly. Decision is out of scope for this breakdown; resolution
-   shapes Phase 2 design. Owner: Console / `proxy-token-issuer` engineering.
-
-### Phase 3
-
+   shapes Phase 3 design. Owner: Console / `proxy-token-issuer` engineering.
 9. **Clarify the Camunda Support BYO-IdP onboarding process.** Concrete mechanism: well-known
    identity name, who creates it (customer or Camunda), lifecycle, revocation, audit trail. Phase
    3's Camunda Support scope refines after this is resolved. Owner: PM + Security + Support.
@@ -486,36 +469,46 @@ These do not block scoping but need answers during execution.
   `sub` claim from the customer IdP differs from their Auth0 `sub`. Per-user authorizations
   bound to Auth0 `sub` are orphaned. Groups-claim helps for group-scoped permissions but not for
   per-user grants. Document the expected admin workflow, or define a migration deliverable.
-- **Q15.** Login picker: is the Spring Security default login picker (one button per configured
-  provider) sufficient for general availability, or does the product require a Camunda-designed
-  login page? A custom page gives control over branding, copy, and provider order but is a
-  non-trivial frontend investment. Resolve before Phase 1 design.
-
-### Phase 2
+### Phase 3
 
 - **Q4.** What does "access tokens are cached and refreshed in accordance with the IdP's token
   lifetime and refresh token policies" mean concretely with the direct-to-IdP Connectors flow?
-  The Camunda Spring client handles caching/refresh by default; the AC may already be satisfied,
+  The Camunda Spring client handles caching/refresh by default; the acceptance criterion may already be satisfied,
   or it may require additional UX/observability.
 - **Q5.** What mechanism does Console use to detect Connectors-side authentication failures so it
-  can render the "Connector cannot authenticate to cluster" error from the AC? A healthcheck
+  can render the "Connector cannot authenticate to cluster" error from the user story? A healthcheck
   signal, a deployment status, or something else?
 - **Q14.** Existing-flows breaking-change risk on BYOIDP-enabled clusters. On a cluster with
   BYOIDP enabled where Auth0 is still trusted, hybrid clients currently routing through
   `proxy-token-issuer` (and any other indirect Auth0-token flow) must be characterized:
   do they continue to function unchanged, are they explicitly out of scope, or do they need a
-  migration path? Resolve during Phase 2 design — closely related to action item 8.
+  migration path? Resolve during Phase 3 design — closely related to action item 8.
+
+### Phase 4
+
+- **Q11.** User-profile IdP indicator: should the display of which IdP authenticated the current
+  session live in the OC webapp (`webapp/client/`), or is Console the more appropriate surface?
+  Resolve during Phase 4 design before the OC frontend work is scoped.
+- **Q15.** Login screen: is the Spring Security default login picker (one button per configured
+  provider) sufficient for general availability, or does the product require a Camunda-designed
+  page with controlled branding, copy, and provider order? A custom page is a non-trivial frontend
+  investment. Resolve before Phase 4 login-screen redesign is scoped.
+- **Q16.** Audit events and structured observability for authentication: the product brief requires
+  audit events to reflect IdP scoping at login/logout, but neither the OC nor CSL has
+  authentication-event audit infrastructure today. Decide whether Phase 4 should include new CSL
+  capability to emit structured authentication audit events alongside the pre-save validation API
+  work, or whether standard application logs satisfy the compliance intent.
 
 ### PoC validation items (gate on closure before claiming the affected phases done)
 
-- **Q6.** Logout — RP-initiated logout where supported; verify cross-provider behavior with at
-  least one customer IdP and Auth0 in coexistence.
-- **Q7.** Multi-IdP claim mapping — groups/username/clientid resolve consistently across IdPs.
-  Groups is the highest-risk seam.
-- **Q8.** AuthZ enforcement across IdPs — same authorization decision regardless of issuer for
-  equivalent resolved identity.
-- **Q9.** gRPC auth — separate filter chain from REST; needs its own multi-provider validation.
-  Possibly the heaviest PoC item.
+- **Q6.** *(Phase 3)* Logout — relying-party (RP)-initiated logout where supported; verify
+  cross-provider behavior with at least one customer IdP and Auth0 in coexistence.
+- **Q7.** *(Phase 3)* Multi-IdP claim mapping — groups/username/clientid resolve consistently
+  across IdPs. Groups is the highest-risk seam.
+- **Q8.** *(Phase 3)* AuthZ enforcement across IdPs — same authorization decision regardless of
+  issuer for equivalent resolved identity.
+- **Q9.** *(Phase 2)* gRPC auth — separate filter chain from REST; needs its own multi-provider
+  validation. Possibly the heaviest PoC item.
 
 ---
 

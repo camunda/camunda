@@ -50,11 +50,11 @@ the dash in `TOKEN-URL` — Spring relaxed binding handles it):
 ```
 CAMUNDA_CLIENT_AUTH_TOKEN-URL
 CAMUNDA_CLIENT_AUTH_AUDIENCE
-CAMUNDA_CLIENT_AUTH_CLIENT_ID     # Phase 2, when customer-IdP Connector auth is enabled
-CAMUNDA_CLIENT_AUTH_CLIENT_SECRET # Phase 2, via secretKeyRef
+CAMUNDA_CLIENT_AUTH_CLIENT_ID     # Phase 3, when customer-IdP Connector auth is enabled
+CAMUNDA_CLIENT_AUTH_CLIENT_SECRET # Phase 3, via secretKeyRef
 ```
 
-### Spring multi-OIDC behaviors that affect AC interpretation
+### Spring multi-OIDC behaviors that affect acceptance criteria interpretation
 
 - Spring's default multi-provider login picker renders all configured providers automatically,
   using each provider's `clientName`. No new login-picker page needed for Phase 1.
@@ -139,7 +139,7 @@ Largest share of work; Console owns the UI, secret storage, and the `ZeebeCluste
   `clientCredentials` for cluster API clients — relevant prior art for Story 5 (external client
   authorization management).
 
-**Proxy-token-issuer** (Phase 2 rearchitecture topic — action item 8):
+**Proxy-token-issuer** (Phase 3 rearchitecture topic — action item 8):
 - Located at `apps/token-issuer/` in the Console repo.
 - Auth0 token controller: `apps/token-issuer/src/auth0/auth0.token.controller.ts` — uses
   `grant_type: client_credentials` against Auth0.
@@ -153,9 +153,9 @@ Largest share of work; Console owns the UI, secret storage, and the `ZeebeCluste
 
 - CRD types: `api/cloud/v1alpha1/zeebecluster_types.go`. `IdentitySpec` currently has
   `ResourcePermissions`, `MultiTenancy`, `MultiTenancyApiEnabled`, `ResourceAuthorizations`.
-  Phase 1 adds `OidcProviders []OidcProviderSpec`. Phase 2 adds `ConnectorOidcClient
-  *ConnectorOidcClientSpec`. Phase 3 adds a `UserLoginEnabled *bool` field on each
-  `OidcProviderSpec` entry (not a separate cluster-wide bool — see breakdown F-2 fix).
+  Phase 1 adds `OidcProviders []OidcProviderSpec`. Phase 3 adds both `ConnectorOidcClient
+  *ConnectorOidcClientSpec` and a `UserLoginEnabled *bool` field on each `OidcProviderSpec`
+  entry (not a separate cluster-wide bool).
 - App env-var rendering: `pkg/apps/camunda/camunda.go` (`IdentityTogglesEnvVars` is the
   reference function for how identity-related env vars are built).
 - Gateway configmap (separate from the app's env): `pkg/apps/camunda/gateway/resources/config.go`
@@ -163,7 +163,7 @@ Largest share of work; Console owns the UI, secret storage, and the `ZeebeCluste
   need similar mirroring so gRPC paths trust the same set of issuers.
 - Connectors deployment: `pkg/apps/connectors/resources/connectors_deployment.go`.
   `setCamundaClientEnvVars` (~line 198) sets `CAMUNDA_CLIENT_AUTH_TOKEN-URL` and
-  `CAMUNDA_CLIENT_AUTH_AUDIENCE` today. Phase 2 adds `CAMUNDA_CLIENT_AUTH_CLIENT_ID` and
+  `CAMUNDA_CLIENT_AUTH_AUDIENCE` today. Phase 3 adds `CAMUNDA_CLIENT_AUTH_CLIENT_ID` and
   `CAMUNDA_CLIENT_AUTH_CLIENT_SECRET` when the customer-IdP Connector flag is set.
 - After CRD/template changes, regenerate:
   `make all-manifests && make update-golden-tests && make test`. Golden files are extensive — any
@@ -197,7 +197,7 @@ Largest share of work; Console owns the UI, secret storage, and the `ZeebeCluste
   `api/src/main/java/io/camunda/security/api/model/config/oidc/OidcConfiguration.java` as a
   single top-level field — Phase 1 verifies whether per-provider semantics have already landed
   (Q2).
-- ADR location: `docs/adr/` *in the CSL repo* (not in `camunda/camunda/docs/adr/`).
+- If a CSL ADR is needed in later phases, the location is `docs/adr/` *in the CSL repo* (not in `camunda/camunda/docs/adr/`).
 - Test prior art:
   - `OidcWebappLoginPickerTest.java`
   - `OidcWebappMultiIdpRedirectLoopTest.java`
@@ -207,26 +207,25 @@ Largest share of work; Console owns the UI, secret storage, and the `ZeebeCluste
 
 ### `camunda/camunda` (Orchestration Cluster — this repo)
 
-Phase 1 work is small here because CSL does the heavy lifting:
+Phase 1 has no new OC code — CSL does the heavy lifting. Useful landmarks for later phases:
 
 - Existing integration tests in `authentication/src/test/java/io/camunda/authentication/`
   (`MultipleOidcProviderFlowTest.java`, `OidcFlowTest.java`,
   `OidcClientSecretBasicKeycloakTest.java`, `OidcPrivateKeyJwtKeycloakTest.java`,
-  `SessionAuthenticationRefreshTest.java`) already cover the dual-provider path. Extend these
-  with an Auth0-shaped + customer-IdP-shaped scenario for Phase 1.
-- Keycloak test realm fixtures available: `authentication/src/test/resources/camunda-foo-realm.json`,
+  `SessionAuthenticationRefreshTest.java`) already cover the dual-provider path. Keycloak test
+  realm fixtures: `authentication/src/test/resources/camunda-foo-realm.json`,
   `camunda-bar-realm.json`.
 - `authentication/` already imports CSL classes (`io.camunda.security.spring.oidc.*`) — confirms
   CSL is the right home for new auth code.
-- User-profile IdP indicator (Phase 1 OC frontend deliverable, per breakdown F-6): location is
-  the OC webapp at `webapp/client/` — specific path TBD during design.
+- User-profile IdP indicator (Phase 4 stretch, open question Q11): location is the OC webapp at
+  `webapp/client/` — specific path TBD during Phase 4 design.
 - Doc home: `docs/` in this repo holds both
   [`evaluate-byoidp-saas.md`](./evaluate-byoidp-saas.md) (historic POC) and
   [`byoidp-saas-breakdown.md`](./byoidp-saas-breakdown.md) (this plan).
 
 ## Open-question quick lookup
 
-When you encounter an unresolved decision, the breakdown's Open Questions section (`Q1`–`Q14`)
+When you encounter an unresolved decision, the breakdown's Open Questions section (`Q1`–`Q16`)
 and Action Items section (1–15) are authoritative. The breakdown intentionally uses
 non-sequential numbering to preserve traceability across edits — do not renumber when adding new
 items in follow-up work.
