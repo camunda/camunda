@@ -124,6 +124,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
+  // Notified (on the leader) when a non-voting PASSIVE member catches up to the commit index, i.e.
+  // becomes promotable to a voting member.
+  private final Set<Consumer<MemberId>> memberPromotableListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftApplicationEntryCommittedPositionListener> committedEntryListeners =
       new CopyOnWriteArraySet<>();
@@ -493,6 +496,29 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void removeCommitListener(final RaftCommitListener commitListener) {
     commitListeners.remove(commitListener);
+  }
+
+  /**
+   * Adds a listener notified (on the leader) when a non-voting PASSIVE member catches up to the
+   * commit index — i.e. becomes promotable to a voting member. Called on the Raft thread, so it
+   * must not perform heavy computation.
+   *
+   * @param listener consumes the member id that just became promotable
+   */
+  public void addMemberPromotableListener(final Consumer<MemberId> listener) {
+    memberPromotableListeners.add(listener);
+  }
+
+  /** Removes a registered member-promotable listener. */
+  public void removeMemberPromotableListener(final Consumer<MemberId> listener) {
+    memberPromotableListeners.remove(listener);
+  }
+
+  /**
+   * Notifies listeners that {@code memberId} (a passive member) has caught up and is promotable.
+   */
+  public void notifyMemberPromotable(final MemberId memberId) {
+    memberPromotableListeners.forEach(listener -> listener.accept(memberId));
   }
 
   /**

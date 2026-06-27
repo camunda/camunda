@@ -260,8 +260,18 @@ final class LeaderAppender {
   /** Updates the match index when a response is received. */
   private void updateMatchIndex(final RaftMemberContext member, final AppendResponse response) {
     // If the replica returned a valid match index then update the existing match index.
+    final long previousMatchIndex = member.getMatchIndex();
     member.setMatchIndex(response.lastLogIndex());
     observeRemainingMemberEntries(member);
+
+    // A non-voting PASSIVE member that has just replicated up to the commit index is now promotable
+    // to a voting member; notify so the promotion can be driven (leader-push) without polling.
+    final long commitIndex = raft.getCommitIndex();
+    if (member.getMember().getType() == RaftMember.Type.PASSIVE
+        && previousMatchIndex < commitIndex
+        && member.getMatchIndex() >= commitIndex) {
+      raft.notifyMemberPromotable(member.getMember().memberId());
+    }
   }
 
   /** Resets the match index when a response fails. */

@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.partitioning;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +47,11 @@ public final class PartitionLifecycle extends Actor {
   private final String topic;
   private final int localNodeId;
   private final PartitionLeaderReporter leaderReporter;
+
+  // Registered on the leader: fires when a passive member of this partition catches up. We then
+  // re-report leadership, whose commit kicks the metadata change-coordinator to promote it
+  // (leader-push) — instead of the coordinator holding a promote request open while it waits.
+  private final Consumer<MemberId> promotableListener = this::onMemberPromotable;
 
   private PartitionStartupSequence leaderSequence;
   private boolean isLeader;
@@ -165,6 +172,10 @@ public final class PartitionLifecycle extends Actor {
     // default data group). Retried until acked by the reporter; the term is the leader-epoch guard.
     if (topic != null) {
       leaderReporter.reportLeadership(topic, context.getPartitionId(), localNodeId, currentTerm);
+      final var server = context.getRaftPartition().getServer();
+      if (server != null) {
+        server.addMemberPromotableListener(promotableListener);
+      }
     }
 
     leaderSequence =
@@ -181,6 +192,13 @@ public final class PartitionLifecycle extends Actor {
     LOG.info("Partition {} — stepping down", context.getPartitionId());
     isLeader = false;
 
+    if (topic != null) {
+      final var server = context.getRaftPartition().getServer();
+      if (server != null) {
+        server.removeMemberPromotableListener(promotableListener);
+      }
+    }
+
     if (leaderSequence != null) {
       transitioning = true;
       leaderSequence.closeAll();
@@ -189,6 +207,24 @@ public final class PartitionLifecycle extends Actor {
 
   private void submitToActor(final Runnable task) {
     actor.submit(task);
+  }
+
+  /**
+   * A passive member of this partition caught up (fired on the Raft thread). Re-report leadership
+   * so its commit kicks the metadata change-coordinator to promote the now-caught-up member.
+   */
+  private void onMemberPromotable(final MemberId member) {
+    actor.run(
+        () -> {
+          if (isLeader && topic != null) {
+            LOG.info(
+                "Partition {} — passive member {} caught up; re-reporting leadership to drive its promotion",
+                context.getPartitionId(),
+                member);
+            leaderReporter.reportLeadership(
+                topic, context.getPartitionId(), localNodeId, currentTerm);
+          }
+        });
   }
 
   public int getPartitionId() {

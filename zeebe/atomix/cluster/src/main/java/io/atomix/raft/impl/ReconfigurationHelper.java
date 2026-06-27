@@ -47,9 +47,6 @@ import org.slf4j.LoggerFactory;
 public final class ReconfigurationHelper {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReconfigurationHelper.class);
 
-  /** Bounded number of election-timeout-spaced retries the promotion catch-up gate waits. */
-  private static final int MAX_PROMOTE_CATCHUP_ATTEMPTS = 10;
-
   private final ThreadContext threadContext;
   private final RaftContext raftContext;
 
@@ -316,26 +313,27 @@ public final class ReconfigurationHelper {
 
   /**
    * Promotes a non-voting (PASSIVE) member to a voting (ACTIVE) member, driven by the current
-   * leader. The promotion is gated on catch-up: it waits until the member has replicated up to the
-   * leader's commit index, so that as a new voter it can immediately contribute to quorum and the
-   * joint-consensus commit does not stall waiting on a lagging member. The gate is a liveness
-   * concern only — joint consensus keeps the change safe regardless of timing.
+   * leader. Gated on catch-up: the member must have replicated up to the leader's commit index so
+   * that, as a new voter, it can immediately contribute to quorum and the joint-consensus commit
+   * does not stall waiting on a lagging member. The gate is a liveness concern only — joint
+   * consensus keeps the change safe regardless of timing.
    *
-   * <p>Must be called on the leader (the only member that can commit a configuration change). Fails
-   * with a retryable error if the member has not caught up within {@link
-   * #MAX_PROMOTE_CATCHUP_ATTEMPTS} attempts, so the caller's reconcile loop can try again later.
+   * <p>Must be called on the leader (the only member that can commit a configuration change).
+   * <b>Fails fast</b> (does not block) if the member is not yet caught up; the caller re-issues
+   * once the leader signals the member is promotable (see the member-promotable listener) — so the
+   * promotion is leader-driven rather than holding a request open while it waits.
    *
    * @param memberToPromote the member to promote to ACTIVE
    * @return a future completed once the promotion is committed
    */
   public CompletableFuture<Void> promoteMember(final MemberId memberToPromote) {
     final CompletableFuture<Void> future = new CompletableFuture<>();
-    threadContext.execute(() -> promoteMemberInternal(memberToPromote, 0, future));
+    threadContext.execute(() -> promoteMemberInternal(memberToPromote, future));
     return future;
   }
 
   private void promoteMemberInternal(
-      final MemberId memberToPromote, final int attempt, final CompletableFuture<Void> future) {
+      final MemberId memberToPromote, final CompletableFuture<Void> future) {
     if (raftContext.getRaftRole().role() != Role.LEADER) {
       future.completeExceptionally(
           new IllegalStateException(
@@ -365,31 +363,19 @@ public final class ReconfigurationHelper {
     }
 
     // Catch-up gate: only promote once the member has replicated up to the leader's commit index.
+    // Fail fast if not — the leader's member-promotable listener will re-trigger the promotion the
+    // moment the member catches up, so there is no need to hold this request open.
     final long commitIndex = raftContext.getCommitIndex();
     if (memberContext.getMatchIndex() < commitIndex) {
-      if (attempt >= MAX_PROMOTE_CATCHUP_ATTEMPTS) {
-        future.completeExceptionally(
-            new IllegalStateException(
-                "Member "
-                    + memberToPromote
-                    + " did not catch up for promotion (matchIndex "
-                    + memberContext.getMatchIndex()
-                    + " < commitIndex "
-                    + commitIndex
-                    + ") within "
-                    + MAX_PROMOTE_CATCHUP_ATTEMPTS
-                    + " attempts; will retry on the next reconcile."));
-        return;
-      }
-      LOGGER.debug(
-          "Member {} not yet caught up for promotion (matchIndex {} < commitIndex {}), retrying (attempt {})",
-          memberToPromote,
-          memberContext.getMatchIndex(),
-          commitIndex,
-          attempt);
-      threadContext.schedule(
-          raftContext.getElectionTimeout(),
-          () -> promoteMemberInternal(memberToPromote, attempt + 1, future));
+      future.completeExceptionally(
+          new IllegalStateException(
+              "Member "
+                  + memberToPromote
+                  + " not caught up for promotion (matchIndex "
+                  + memberContext.getMatchIndex()
+                  + " < commitIndex "
+                  + commitIndex
+                  + "); will be retried when it catches up."));
       return;
     }
 

@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -282,6 +283,21 @@ public class RaftPartitionServer implements HealthMonitorable {
    */
   public void removeCommitListener(final RaftCommitListener commitListener) {
     server.getContext().removeCommitListener(commitListener);
+  }
+
+  /**
+   * Registers a listener notified (on the leader) when a non-voting PASSIVE member catches up to
+   * the commit index — i.e. becomes promotable to a voting member.
+   *
+   * @see io.atomix.raft.impl.RaftContext#addMemberPromotableListener(java.util.function.Consumer)
+   */
+  public void addMemberPromotableListener(final Consumer<MemberId> listener) {
+    server.getContext().addMemberPromotableListener(listener);
+  }
+
+  /** Removes a registered member-promotable listener. */
+  public void removeMemberPromotableListener(final Consumer<MemberId> listener) {
+    server.getContext().removeMemberPromotableListener(listener);
   }
 
   /**
