@@ -53,6 +53,12 @@
       <artifactId>opensearch-java</artifactId>
     </dependency>
 
+    <!-- used to read formatted fields from OpenSearch hits (JsonData) -->
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+    </dependency>
+
     <!-- SPRING -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -138,6 +144,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- IT test dependencies -->
     <dependency>
       <groupId>org.testcontainers</groupId>
@@ -207,12 +219,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
 

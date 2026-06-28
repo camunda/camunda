@@ -33,6 +33,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
+import io.camunda.operate.archiver.util.DateOfArchivedDocumentsUtil;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -132,6 +133,14 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   private CompletableFuture<ArchiveBatch> search(
       final SearchRequest.Builder searchRequestBuilder,
       final Function<Throwable, String> errorMessage) {
+    return search(
+        searchRequestBuilder, errorMessage, r -> createArchiveBatch(r, DATES_AGG, INSTANCES_AGG));
+  }
+
+  private CompletableFuture<ArchiveBatch> search(
+      final SearchRequest.Builder searchRequestBuilder,
+      final Function<Throwable, String> errorMessage,
+      final Function<SearchResponse, ArchiveBatch> batchExtractor) {
     final var batchFuture = new CompletableFuture<ArchiveBatch>();
 
     final var startTimer = Timer.start();
@@ -141,7 +150,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
               final var timer = metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
               startTimer.stop(timer);
 
-              final var result = handleSearchResponse(response, e, errorMessage);
+              final var result = handleSearchResponse(response, e, errorMessage, batchExtractor);
               result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
             });
 
@@ -208,15 +217,16 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
                 intTerms(ListViewTemplate.PARTITION_ID, partitionIds)));
 
     final var searchRequestBuilder =
-        nextBatchSearchRequestBuilder(
-            processInstanceTemplate.getFullQualifiedName(),
-            ListViewTemplate.ID,
-            ListViewTemplate.END_DATE,
-            query);
+        finishedInstancesSearchRequestBuilder(
+            processInstanceTemplate.getFullQualifiedName(), ListViewTemplate.END_DATE, query);
 
+    final var interval = operateProperties.getArchiver().getRolloverInterval();
+    final var dateFormat = operateProperties.getArchiver().getElsRolloverDateFormat();
     return search(
         searchRequestBuilder,
-        e -> "Failed to search in " + processInstanceTemplate.getFullQualifiedName());
+        e -> "Failed to search in " + processInstanceTemplate.getFullQualifiedName(),
+        response ->
+            createArchiveBatchFromHits(response, ListViewTemplate.END_DATE, interval, dateFormat));
   }
 
   @Override
@@ -560,15 +570,55 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     return operateProperties.getOpensearch().getNumberOfShards();
   }
 
+  private SearchRequest.Builder finishedInstancesSearchRequestBuilder(
+      final String index, final String endDateField, final Query query) {
+    final var format = operateProperties.getArchiver().getElsRolloverDateFormat();
+    final var batchSize = operateProperties.getArchiver().getRolloverBatchSize();
+    return searchRequestBuilder(index)
+        .query(query)
+        .source(SourceConfig.of(b -> b.fetch(false)))
+        .fields(f -> f.field(endDateField).format(format))
+        .size(batchSize)
+        .sort(sortOptions(endDateField, Asc))
+        .requestCache(false); // we don't need to cache this, as each time we need new data
+  }
+
+  private ArchiveBatch createArchiveBatchFromHits(
+      final SearchResponse<?> searchResponse,
+      final String dateField,
+      final String rolloverInterval,
+      final String dateFormat) {
+    final var hits = searchResponse.hits().hits();
+    if (hits.isEmpty()) {
+      return null;
+    }
+    final String firstEndDate = endDateOf(hits.get(0), dateField);
+    final String bucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(firstEndDate, rolloverInterval, dateFormat);
+    final String nextBucketStart =
+        DateOfArchivedDocumentsUtil.getNextBucketStart(firstEndDate, rolloverInterval, dateFormat);
+    // hits are sorted by endDate ASC, so the first hit is the earliest and defines the bucket.
+    // Lower bound is satisfied automatically; only the exclusive upper bound is checked.
+    final List<Object> ids =
+        hits.stream()
+            .takeWhile(hit -> endDateOf(hit, dateField).compareTo(nextBucketStart) < 0)
+            .map(hit -> (Object) hit.id())
+            .toList();
+    return new ArchiveBatch(bucketStart, ids);
+  }
+
+  private static String endDateOf(final Hit<?> hit, final String dateField) {
+    return hit.fields().get(dateField).toJson().asJsonArray().getString(0);
+  }
+
   private Either<Throwable, ArchiveBatch> handleSearchResponse(
       final SearchResponse searchResponse,
       final Throwable error,
-      final Function<Throwable, String> errorMessage) {
+      final Function<Throwable, String> errorMessage,
+      final Function<SearchResponse, ArchiveBatch> batchExtractor) {
     if (error != null) {
       return Either.left(new OperateRuntimeException(errorMessage.apply(error), error));
     }
-
-    final var batch = createArchiveBatch(searchResponse, DATES_AGG, INSTANCES_AGG);
-    return Either.right(batch);
+    return Either.right(batchExtractor.apply(searchResponse));
   }
 }

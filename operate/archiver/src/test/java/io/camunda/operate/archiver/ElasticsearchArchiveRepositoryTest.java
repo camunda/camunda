@@ -45,8 +45,11 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -233,31 +236,6 @@ public class ElasticsearchArchiveRepositoryTest {
   }
 
   @Test
-  public void testGetProcessInstancesNextBatchEmptyBucket() {
-    setProcessInstancesMocks();
-
-    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
-        mockStatic(ElasticsearchUtil.class)) {
-      elasticsearchUtilMockedStatic
-          .when(
-              () ->
-                  ElasticsearchUtil.joinWithAnd(
-                      any(),
-                      eq(
-                          QueryBuilders.termQuery(
-                              ListViewTemplate.JOIN_RELATION,
-                              ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
-                      eq(QueryBuilders.termsQuery(ListViewTemplate.PARTITION_ID, PARTITION_IDS))))
-          .thenCallRealMethod();
-
-      testGetNextBatchEmptyBucket(
-          () -> underTest.getProcessInstancesNextBatch(PARTITION_IDS),
-          "endDate",
-          elasticsearchUtilMockedStatic);
-    }
-  }
-
-  @Test
   public void testGetBatchOperationsNextBatchEmptyBucket() {
     setBatchOperationMocks();
 
@@ -408,10 +386,125 @@ public class ElasticsearchArchiveRepositoryTest {
     verify(histogram).getBuckets();
   }
 
+  @Test
+  public void testGetProcessInstancesNextBatchEmptyHits() {
+    setProcessInstancesMocks();
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      elasticsearchUtilMockedStatic
+          .when(
+              () ->
+                  ElasticsearchUtil.joinWithAnd(
+                      any(),
+                      eq(
+                          QueryBuilders.termQuery(
+                              ListViewTemplate.JOIN_RELATION,
+                              ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
+                      eq(QueryBuilders.termsQuery(ListViewTemplate.PARTITION_ID, PARTITION_IDS))))
+          .thenCallRealMethod();
+
+      final SearchResponse searchResponse = mock(SearchResponse.class);
+      final SearchHits searchHits = mock(SearchHits.class);
+      when(searchResponse.getHits()).thenReturn(searchHits);
+      when(searchHits.getHits()).thenReturn(new SearchHit[0]);
+
+      try (final MockedConstruction<SearchRequest> mockedConstruction =
+          mockConstruction(
+              SearchRequest.class,
+              (mock, context) -> {
+                when(mock.source(any())).thenReturn(mock);
+                when(mock.requestCache(false)).thenReturn(mock);
+              })) {
+        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+          final Timer.Sample timer = mock(Timer.Sample.class);
+          when(timer.stop(any())).thenReturn(1000L);
+          mockedTimer.when(Timer::start).thenReturn(timer);
+          elasticsearchUtilMockedStatic
+              .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+          final CompletableFuture<ArchiveBatch> res =
+              underTest.getProcessInstancesNextBatch(PARTITION_IDS);
+          res.join();
+          assertThat(res).isCompleted();
+          assertThat(res.join()).isNull();
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testGetProcessInstancesNextBatchPacksEarliestBucketOnly() {
+    setProcessInstancesMocks();
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      elasticsearchUtilMockedStatic
+          .when(
+              () ->
+                  ElasticsearchUtil.joinWithAnd(
+                      any(),
+                      eq(
+                          QueryBuilders.termQuery(
+                              ListViewTemplate.JOIN_RELATION,
+                              ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
+                      eq(QueryBuilders.termsQuery(ListViewTemplate.PARTITION_ID, PARTITION_IDS))))
+          .thenCallRealMethod();
+
+      final SearchResponse searchResponse = mock(SearchResponse.class);
+      final SearchHits searchHits = mock(SearchHits.class);
+      when(searchResponse.getHits()).thenReturn(searchHits);
+
+      final SearchHit hitA = mock(SearchHit.class);
+      final SearchHit hitB = mock(SearchHit.class);
+      final SearchHit hitC = mock(SearchHit.class);
+      when(hitA.getId()).thenReturn("a");
+      when(hitB.getId()).thenReturn("b");
+      // hitC.getId() is NOT stubbed — takeWhile stops before hitC so getId() is never called
+      final DocumentField fieldA = mock(DocumentField.class);
+      final DocumentField fieldB = mock(DocumentField.class);
+      final DocumentField fieldC = mock(DocumentField.class);
+      when(fieldA.getValue()).thenReturn("2024-01-01");
+      when(fieldB.getValue()).thenReturn("2024-01-01");
+      when(fieldC.getValue()).thenReturn("2024-01-02");
+      when(hitA.field(ListViewTemplate.END_DATE)).thenReturn(fieldA);
+      when(hitB.field(ListViewTemplate.END_DATE)).thenReturn(fieldB);
+      when(hitC.field(ListViewTemplate.END_DATE)).thenReturn(fieldC);
+      when(searchHits.getHits()).thenReturn(new SearchHit[] {hitA, hitB, hitC});
+
+      try (final MockedConstruction<SearchRequest> mockedConstruction =
+          mockConstruction(
+              SearchRequest.class,
+              (mock, context) -> {
+                when(mock.source(any())).thenReturn(mock);
+                when(mock.requestCache(false)).thenReturn(mock);
+              })) {
+        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+          final Timer.Sample timer = mock(Timer.Sample.class);
+          when(timer.stop(any())).thenReturn(1000L);
+          mockedTimer.when(Timer::start).thenReturn(timer);
+          elasticsearchUtilMockedStatic
+              .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+          final CompletableFuture<ArchiveBatch> res =
+              underTest.getProcessInstancesNextBatch(PARTITION_IDS);
+          final ArchiveBatch batch = res.join();
+          assertThat(batch).isNotNull();
+          assertThat(batch.getFinishDate()).isEqualTo("2024-01-01");
+          assertThat(batch.getIds()).isEqualTo(List.of("a", "b"));
+        }
+      }
+    }
+  }
+
   private void setProcessInstancesMocks() {
     when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
-    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    when(archiverProperties.getRolloverInterval()).thenReturn("1d");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("date");
+    when(archiverProperties.getRolloverBatchSize()).thenReturn(100);
+    when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
     when(listViewTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
   }
 

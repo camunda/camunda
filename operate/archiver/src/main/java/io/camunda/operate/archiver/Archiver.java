@@ -8,6 +8,7 @@
 package io.camunda.operate.archiver;
 
 import io.camunda.operate.Metrics;
+import io.camunda.operate.archiver.util.DateOfArchivedDocumentsUtil;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -71,6 +72,11 @@ public class Archiver {
   @PostConstruct
   public void startArchiving() {
     if (operateProperties.getArchiver().isRolloverEnabled()) {
+      // fail fast on a date-format/interval mismatch that would silently stall archiving
+      DateOfArchivedDocumentsUtil.validateRolloverConfiguration(
+          operateProperties.getArchiver().getRolloverInterval(),
+          operateProperties.getArchiver().getElsRolloverDateFormat());
+
       LOGGER.info("INIT: Start archiving data...");
 
       // split the list of partitionIds to parallelize
