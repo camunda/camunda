@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useReducer, useState, lazy, Suspense} from 'react';
-import {Button, Modal, Switch, Tag, Tooltip} from '@carbon/react';
+import {useReducer} from 'react';
+import {Button, Tag, Tooltip} from '@carbon/react';
 import {Document, Maximize} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
@@ -26,11 +26,9 @@ import {
   AttachmentButton,
   MessageHeader,
   MetricsContainer,
-  ModalContent,
-  ModalToolbar,
-  ViewSwitcher,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
+import {MessageDetailsModal} from './MessageDetailsModal';
 
 type Actor = AgentInstanceHistoryRole | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
@@ -64,17 +62,6 @@ type ConversationMessageProps = {
   onToolCallClick?: (toolCall: ToolCall) => void;
 };
 
-const RichTextEditor = lazy(async () => {
-  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
-    import('modules/loadMonaco'),
-    import('modules/components/RichTextEditor'),
-  ]);
-
-  loadMonaco();
-
-  return {default: RichTextEditor};
-});
-
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
   actor,
   content,
@@ -87,7 +74,6 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     messageDetailsReducer,
     initialMessageDetailsState,
   );
-  const [modalView, setModalView] = useState<'preview' | 'source'>('preview');
 
   const documentEntries = content.filter(
     (entry) => entry.contentType === 'DOCUMENT',
@@ -187,55 +173,12 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
         </AttachmentsContainer>
       )}
       {messageDetails.state === 'visible' && (
-        <Modal
-          open
-          modalHeading={messageDetails.title}
-          onRequestClose={() => {
-            dispatch({type: 'hide'});
-            setModalView('preview');
-          }}
-          size="lg"
-          passiveModal
-        >
-          {messageDetails.language === 'markdown' ? (
-            <>
-              <ModalToolbar>
-                <ViewSwitcher
-                  size="sm"
-                  onChange={({name}) =>
-                    setModalView(name as 'preview' | 'source')
-                  }
-                  selectedIndex={modalView === 'preview' ? 0 : 1}
-                >
-                  <Switch name="preview" text="Preview" />
-                  <Switch name="source" text="Source" />
-                </ViewSwitcher>
-                <CopyButton value={messageDetails.content} />
-              </ModalToolbar>
-              {modalView === 'preview' ? (
-                <ModalContent>
-                  <MarkdownMessage content={messageDetails.content} />
-                </ModalContent>
-              ) : (
-                <Suspense>
-                  <RichTextEditor
-                    value={messageDetails.content}
-                    readOnly
-                    language="markdown"
-                  />
-                </Suspense>
-              )}
-            </>
-          ) : (
-            <Suspense>
-              <RichTextEditor
-                value={messageDetails.content}
-                readOnly
-                language={messageDetails.language}
-              />
-            </Suspense>
-          )}
-        </Modal>
+        <MessageDetailsModal
+          title={messageDetails.title}
+          language={messageDetails.language}
+          content={messageDetails.content}
+          onClose={() => dispatch({type: 'hide'})}
+        />
       )}
     </Container>
   );
