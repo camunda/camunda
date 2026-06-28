@@ -31,7 +31,6 @@ import {
   ViewSwitcher,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
-import {containsMarkdown} from './containsMarkdown';
 
 type Actor = AgentInstanceHistoryRole | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
@@ -198,8 +197,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           size="lg"
           passiveModal
         >
-          {messageDetails.language === 'markdown' &&
-          containsMarkdown(messageDetails.content) ? (
+          {messageDetails.language === 'markdown' ? (
             <>
               <ModalToolbar>
                 <ViewSwitcher

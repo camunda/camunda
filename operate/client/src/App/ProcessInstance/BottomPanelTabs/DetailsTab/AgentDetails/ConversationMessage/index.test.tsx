@@ -141,7 +141,7 @@ describe('<ConversationMessage />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show only source view for plain text without markdown', async () => {
+  it('should show Preview and Source tabs for plain text messages too', async () => {
     const {user} = render(
       <ConversationMessage
         actor="ASSISTANT"
@@ -152,6 +152,11 @@ describe('<ConversationMessage />', () => {
     await user.click(screen.getByRole('button', {name: 'Expand'}));
 
     const modal = screen.getByRole('dialog');
-    expect(within(modal).queryByRole('tab')).not.toBeInTheDocument();
+    expect(
+      within(modal).getByRole('tab', {name: 'Preview'}),
+    ).toBeInTheDocument();
+    expect(
+      within(modal).getByRole('tab', {name: 'Source'}),
+    ).toBeInTheDocument();
   });
 });

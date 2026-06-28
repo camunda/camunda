@@ -140,6 +140,7 @@ const AttachmentButton = styled.button`
 `;
 
 const ModalContent = styled(TextContent)`
+  min-height: 60vh;
   max-height: 70vh;
 `;
 

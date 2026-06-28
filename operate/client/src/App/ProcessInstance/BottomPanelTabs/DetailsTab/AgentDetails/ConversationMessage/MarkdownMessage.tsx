@@ -36,25 +36,25 @@ const ALLOWED_ELEMENTS = [
   'td',
 ];
 
-const MarkdownContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--cds-spacing-03);
-`;
-
-const Heading1 = styled.div`
+const Heading1 = styled.h3`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-02-font-weight);
 `;
 
-const Heading2 = styled.div`
+const Heading2 = styled.h4`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-02-font-weight);
 `;
 
-const Heading3 = styled.div`
+const Heading3 = styled.h5`
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--cds-heading-compact-01-font-weight);
+`;
+
+const Heading4 = styled.h6`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-01-font-weight);
@@ -99,6 +99,7 @@ const OrderedList = styled.ol`
 `;
 
 const Paragraph = styled.p`
+  /* Double "&&" raises specificity to outrank Carbon's ".cds--modal p" rule. */
   && {
     white-space: pre-line;
     margin: 0;
@@ -136,6 +137,12 @@ const Table = styled.table`
   }
 `;
 
+const MarkdownContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-03);
+`;
+
 type MarkdownMessageProps = {
   content: string;
 };
@@ -151,9 +158,9 @@ const MarkdownMessage: React.FC<MarkdownMessageProps> = ({content}) => {
           h1: ({children}) => <Heading1>{children}</Heading1>,
           h2: ({children}) => <Heading2>{children}</Heading2>,
           h3: ({children}) => <Heading3>{children}</Heading3>,
-          h4: ({children}) => <Heading3>{children}</Heading3>,
-          h5: ({children}) => <Heading3>{children}</Heading3>,
-          h6: ({children}) => <Heading3>{children}</Heading3>,
+          h4: ({children}) => <Heading4>{children}</Heading4>,
+          h5: ({children}) => <Heading4>{children}</Heading4>,
+          h6: ({children}) => <Heading4>{children}</Heading4>,
           p: ({children}) => <Paragraph>{children}</Paragraph>,
           code: ({children, className}) => {
             // Fenced code blocks get wrapped in <pre> by react-markdown,

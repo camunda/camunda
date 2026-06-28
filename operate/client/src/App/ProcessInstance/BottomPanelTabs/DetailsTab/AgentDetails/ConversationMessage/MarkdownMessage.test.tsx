@@ -53,4 +53,20 @@ describe('<MarkdownMessage />', () => {
     const del = screen.getByText('deleted');
     expect(del.tagName).toBe('DEL');
   });
+
+  it('should shift heading levels down to keep the page outline intact', () => {
+    render(<MarkdownMessage content={'# Title\n## Subtitle\n### Section'} />);
+    expect(screen.getByText('Title').tagName).toBe('H3');
+    expect(screen.getByText('Subtitle').tagName).toBe('H4');
+    expect(screen.getByText('Section').tagName).toBe('H5');
+  });
+
+  it('should cap shifted heading levels at h6', () => {
+    render(
+      <MarkdownMessage content={'#### Deep\n##### Deeper\n###### Deepest'} />,
+    );
+    expect(screen.getByText('Deep').tagName).toBe('H6');
+    expect(screen.getByText('Deeper').tagName).toBe('H6');
+    expect(screen.getByText('Deepest').tagName).toBe('H6');
+  });
 });
