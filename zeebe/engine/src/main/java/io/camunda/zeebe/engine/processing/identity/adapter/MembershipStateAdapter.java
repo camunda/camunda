@@ -100,6 +100,12 @@ public final class MembershipStateAdapter implements MembershipPort {
         .forEach(
             groupId ->
                 getMemberships(EntityType.GROUP, groupId, RelationType.ROLE).forEach(result::add));
+    query
+        .resolvedMappingRuleIds()
+        .forEach(
+            ruleId ->
+                getMemberships(EntityType.MAPPING_RULE, ruleId, RelationType.ROLE)
+                    .forEach(result::add));
     return new ArrayList<>(result);
   }
 
@@ -126,6 +132,12 @@ public final class MembershipStateAdapter implements MembershipPort {
                           getMemberships(EntityType.ROLE, roleId, RelationType.TENANT).stream())
                   .forEach(result::add);
             });
+    query
+        .resolvedMappingRuleIds()
+        .forEach(
+            mrId ->
+                getMemberships(EntityType.MAPPING_RULE, mrId, RelationType.TENANT)
+                    .forEach(result::add));
     return new ArrayList<>(result);
   }
 

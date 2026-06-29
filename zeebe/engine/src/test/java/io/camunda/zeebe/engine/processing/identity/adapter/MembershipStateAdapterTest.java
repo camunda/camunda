@@ -226,6 +226,39 @@ final class MembershipStateAdapterTest {
         .containsExactlyInAnyOrder(directTenantId, roleTenantId, groupTenantId, groupRoleTenantId);
   }
 
+  @Test
+  void shouldReturnRoleIdsFromMappingRuleDirectRoleMembership() {
+    // given — mapping rule assigned directly to a role
+    final var mappingRuleId = UUID.randomUUID().toString();
+    final var roleId =
+        createRoleAndAssignEntity(mappingRuleId, EntityType.MAPPING_RULE).getRoleId();
+    final var query =
+        new MembershipQuery(Map.of(), "userId", PrincipalType.USER)
+            .withMappingRuleIds(List.of(mappingRuleId));
+
+    // when
+    final var result = adapter.roleIds(query);
+
+    // then
+    assertThat(result).containsExactly(roleId);
+  }
+
+  @Test
+  void shouldReturnTenantIdsFromMappingRuleDirectTenantMembership() {
+    // given — mapping rule assigned directly to a tenant
+    final var mappingRuleId = UUID.randomUUID().toString();
+    final var tenantId = createAndAssignTenant(mappingRuleId, EntityType.MAPPING_RULE);
+    final var query =
+        new MembershipQuery(Map.of(), "userId", PrincipalType.USER)
+            .withMappingRuleIds(List.of(mappingRuleId));
+
+    // when
+    final var result = adapter.tenantIds(query);
+
+    // then
+    assertThat(result).containsExactly(tenantId);
+  }
+
   // --- helpers ---
 
   private GroupRecord createGroupAndAssignEntity(
