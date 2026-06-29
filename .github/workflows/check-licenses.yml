@@ -5,6 +5,10 @@
 ---
 name: Check Licenses
 
+defaults:
+  run:
+    shell: bash
+
 on:
   push:
     branches:
@@ -23,6 +27,8 @@ env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
   GHA_BEST_PRACTICES_LINTER: enabled
 
+permissions: {}
+
 jobs:
   analyze:
     name: "Analyze ${{ matrix.project.name }} dependencies"
@@ -30,7 +36,7 @@ jobs:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
-    runs-on: ${{ matrix.project.runner }}
+    runs-on: ${{ fromJson(matrix.project.runner_definition) }}
     # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
     if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
@@ -43,15 +49,16 @@ jobs:
         project:
         - name: c8run
           path: ./c8run
-          runner: gcp-core-4-longrunning
+          runner_definition: '"gcp-core-4-longrunning"'
         - name: optimize
           path: ./optimize
-          runner: gcp-core-16-longrunning
+          runner_definition: '"gcp-core-16-longrunning"'
           maven-config: |
             -DskipQaBuild=true
         - name: single-app
           path: ./
-          runner: linux_16_core_arm
+          runner_definition: >-
+            {"group":"camunda-self-hosted-runners","labels":"github_linux_16_core_arm"}
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
