@@ -353,7 +353,7 @@ public class TestContainerUtil {
             .withExtraHost("host.testcontainers.internal", "host-gateway")
             .withCopyFileToContainer(
                 MountableFile.forHostPath(createConfigurationFile(testContext), 0775),
-                "/usr/local/operate/config/application.properties")
+                "/usr/local/camunda/config/application.properties")
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(9600)
