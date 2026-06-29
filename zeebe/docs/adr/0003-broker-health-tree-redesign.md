@@ -218,16 +218,28 @@ small refinements made while building it.
   per-gauge tenant/partition tags, so the per-partition `HealthTreeMetrics` instance and the
   registry-wide common-tag mechanism for these nodes are gone (D3's two-exporters/two-registries
   split).
-- **`ZeebePartition` keeps `getHealthReport()` for the admin API.** Per D4 the partition is no longer
-  a tree node — its own monitor is registered under the tenant node instead — but `ZeebePartition`
-  still exposes `getHealthReport()` (delegating to that monitor) because the broker admin REST
-  endpoint (`BrokerAdminServiceImpl#getPartitionHealth`) reports per-partition health. The delegation
-  hop is removed from the *tree*, not from the admin API.
+- **`ZeebePartition` is no longer a `HealthMonitorable`.** Per D4 the partition is not a tree node —
+  its own monitor is registered under the tenant node instead — so `ZeebePartition` stops implementing
+  `HealthMonitorable` and the `getHealthReport()` delegation hop is gone. The broker admin REST
+  endpoint (`BrokerAdminServiceImpl#getPartitionHealth`) reads health straight from the partition
+  monitor (`getHealthMonitor().getHealthReport()`). `ZeebePartition` keeps `addFailureListener` /
+  `removeFailureListener` as plain methods (and remains a `FailureListener` on its monitor) so the
+  topology health broadcaster can still observe the partition and is pushed the current state on
+  registration.
 - **Grafana.** The `zeebe_broker_health_nodes` tag keys (`id`, `path`, `physicalTenant`, `partition`)
   are unchanged; only their values change (nested `path`, no tenant prefix in the partition `id`,
   `DiskSpace`/`PartitionTransition` instead of `ZeebePartitionHealth-<n>`). The single panel that uses
   the metric ("Health status timeline", legend `{{path}}`) keeps working without a query change, so
   `monitor/grafana/zeebe.json` needs no edit.
+- **Aggregation is deterministic.** `HealthReport.fromChildrenStatus` now surfaces, among
+  equally-bad children, one that carries an issue (then breaks ties by name), so a partition with both
+  its `DiskSpace` and `PartitionTransition` leaves unhealthy reports a stable, diagnostic aggregate
+  instead of an arbitrary one.
+- **Deferred.** Making `PartitionTransitionHealth.getHealthReport()` a pure read (so it is not
+  recomputed on the metric scrape thread) is left as a follow-up: the "transition appears blocked"
+  signal is time-based (computed on read, discovered by the periodic probe), so removing the
+  recompute would require giving the transition a timer that pushes the issue — a behavioural change,
+  not a cleanup. The leaf is instead made thread-safe (synchronized).
 
 ## Source
 
