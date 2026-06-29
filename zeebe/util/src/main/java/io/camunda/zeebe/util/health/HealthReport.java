@@ -53,7 +53,15 @@ public record HealthReport(
     // Create a defensive copy to avoid ConcurrentModificationException when
     // the original map is modified while iterating over the HealthReport
     final var childrenSnapshot = ImmutableMap.copyOf(children);
-    final var worstReport = childrenSnapshot.values().stream().max(COMPARATOR);
+    // Surface the worst child. Among children sharing the worst status, prefer one that carries an
+    // issue (so the aggregate keeps a diagnostic), then break ties by component name so the result
+    // is deterministic rather than dependent on map iteration order.
+    final var worstReport =
+        childrenSnapshot.values().stream()
+            .max(
+                Comparator.comparing(HealthReport::status, HealthStatus.COMPARATOR)
+                    .thenComparingInt(report -> report.issue() != null ? 1 : 0)
+                    .thenComparing(HealthReport::getComponentName));
     return worstReport.map(
         report ->
             new HealthReport(componentName, report.status(), report.issue(), childrenSnapshot));
