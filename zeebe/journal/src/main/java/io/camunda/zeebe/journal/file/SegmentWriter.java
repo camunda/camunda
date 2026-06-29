@@ -181,6 +181,13 @@ final class SegmentWriter {
 
     final var record =
         finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
+    // Index this entry too. This is the replication path a follower (or passive member) uses for
+    // entries received from the leader; without this only entries a node appends *as leader* land
+    // in the segment index, so after a leadership change the new leader is missing index entries
+    // for records it replicated as a follower — making committed, present records unreadable via
+    // fetch (OFFSET_OUT_OF_RANGE). The call is a no-op for journals without an application-entry
+    // cursor (non-event-bridge partitions), so Zeebe partitions are unaffected.
+    tryUpdateIndex(record, startPosition, frameLength, metadataLength);
     return Either.right(record);
   }
 
