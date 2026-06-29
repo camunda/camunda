@@ -58,12 +58,14 @@ class DateOfArchivedDocumentsUtilTest {
         Arguments.of("2026-03-16", "3d", "date", "2026-03-14", "2026-03-17"),
         // 3d: exactly on a bucket boundary
         Arguments.of("2026-03-14", "3d", "date", "2026-03-14", "2026-03-17"),
-        // 7d: weekly-equivalent via days
+        // 7d: a FIXED 7-day interval is epoch-aligned (epoch 1970-01-01 is a Thursday), distinct
+        // from a calendar week
         Arguments.of("2026-03-18", "7d", "date", "2026-03-12", "2026-03-19"),
 
-        // -- WEEKS interval (converted to days internally) --
-        Arguments.of("2026-03-18", "1w", "date", "2026-03-12", "2026-03-19"),
-        Arguments.of("2026-03-18", "2w", "date", "2026-03-12", "2026-03-26"),
+        // -- WEEKS interval: ISO calendar weeks start on Monday (matches date_histogram). --
+        // 2026-03-18 is a Wednesday; the Monday of that week is 2026-03-16.
+        Arguments.of("2026-03-18", "1w", "date", "2026-03-16", "2026-03-23"),
+        Arguments.of("2026-03-18", "2w", "date", "2026-03-16", "2026-03-30"),
 
         // -- Sub-day intervals with a day-only format: bucket start AND next both collapse to the
         //    day, so next == start. This is the documented limitation (use a date-time format for

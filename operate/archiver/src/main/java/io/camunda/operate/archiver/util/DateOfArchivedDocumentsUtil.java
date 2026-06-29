@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.archiver.util;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,9 +51,11 @@ public final class DateOfArchivedDocumentsUtil {
     final Temp rollover = parseTemporalAmount(rolloverInterval);
     final LocalDateTime bucketStart = bucketStartDateTime(endDate, rolloverInterval, dateFormat);
     final LocalDateTime nextBucketStart =
-        rollover.chronoUnit() == ChronoUnit.MONTHS
-            ? bucketStart.plusMonths(rollover.amount())
-            : bucketStart.plus(Duration.of(rollover.amount(), rollover.chronoUnit()));
+        switch (rollover.chronoUnit()) {
+          case MONTHS -> bucketStart.plusMonths(rollover.amount());
+          case WEEKS -> bucketStart.plusWeeks(rollover.amount());
+          default -> bucketStart.plus(Duration.of(rollover.amount(), rollover.chronoUnit()));
+        };
     return format(nextBucketStart, dateFormat);
   }
 
@@ -99,7 +103,6 @@ public final class DateOfArchivedDocumentsUtil {
     final LocalDateTime bucketStart;
     switch (rollover.chronoUnit()) {
       // NOTES:
-      //  WEEKS is already handled by parseTemporalAmount as 7 days
       //  SECONDS is the smallest unit
       //  Floor integer division gives us the bucket that contains endDate
       case DAYS, HOURS, MINUTES, SECONDS -> {
@@ -109,6 +112,14 @@ public final class DateOfArchivedDocumentsUtil {
         final long bucketStartSeconds = (secondsSinceEpoch / rolloverSeconds) * rolloverSeconds;
         bucketStart = Instant.ofEpochSecond(bucketStartSeconds).atZone(utc).toLocalDateTime();
       }
+      case WEEKS ->
+          // ES calendar weeks are ISO-8601: they start on Monday (matches the prior
+          // date_histogram.calendarInterval behaviour). Align to the Monday of endDate's week.
+          bucketStart =
+              archiveDate
+                  .toLocalDate()
+                  .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                  .atStartOfDay();
       case MONTHS -> {
         final int totalMonthsSinceEpoch =
             (archiveDate.getYear() - LocalDate.EPOCH.getYear()) * 12
@@ -144,7 +155,7 @@ public final class DateOfArchivedDocumentsUtil {
       case "m" -> new Temp(amount, ChronoUnit.MINUTES);
       case "h" -> new Temp(amount, ChronoUnit.HOURS);
       case "d" -> new Temp(amount, ChronoUnit.DAYS);
-      case "w" -> new Temp(amount * 7, ChronoUnit.DAYS);
+      case "w" -> new Temp(amount, ChronoUnit.WEEKS);
       case "M" -> new Temp(amount, ChronoUnit.MONTHS);
       default -> throw new IllegalArgumentException("Unsupported time amount: " + unit);
     };
@@ -175,8 +186,9 @@ public final class DateOfArchivedDocumentsUtil {
       case MINUTES -> 2;
       case HOURS -> 3;
       case DAYS -> 4;
-      case MONTHS -> 5;
-      default -> 6;
+      case WEEKS -> 5;
+      case MONTHS -> 6;
+      default -> 7;
     };
   }
 
