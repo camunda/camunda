@@ -9,6 +9,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
@@ -23,7 +24,10 @@ import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHisto
 import {Paths} from 'modules/Routes';
 import {mockServer} from 'modules/mock-server/node';
 import {http} from 'msw';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+  endpoints,
+  type QueryAgentInstanceHistoryRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const AGENT_INSTANCE_KEY = '2251799813851828';
 
@@ -51,6 +55,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -68,6 +74,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -89,6 +97,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -128,6 +138,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -178,6 +190,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -222,6 +236,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -239,15 +255,14 @@ describe('<ConversationHistory />', () => {
     );
 
     await user.click(sortButton);
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('conversation-history-skeleton'),
-    );
 
     expect(screen.getByRole('button', {name: 'Oldest first'})).toBeVisible();
-    expect(query).toEqual(
-      expect.objectContaining({
-        sort: [{field: 'producedAt', order: 'asc'}],
-      }),
+    await waitFor(() =>
+      expect(query).toEqual(
+        expect.objectContaining({
+          sort: [{field: 'producedAt', order: 'asc'}],
+        }),
+      ),
     );
   });
 
@@ -282,6 +297,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -359,6 +376,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -407,6 +426,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -451,6 +472,8 @@ describe('<ConversationHistory />', () => {
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
         isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
       />,
       {wrapper: createWrapper()},
     );
@@ -477,5 +500,122 @@ describe('<ConversationHistory />', () => {
     expect(
       messageNoMetrics.queryByTestId('message-duration-metric'),
     ).not.toBeInTheDocument();
+  });
+
+  it('should only show a scope toggle when the agent was activated multiple times', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({role: 'ASSISTANT'})]),
+    );
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([mockAgentInstanceHistoryItem({role: 'ASSISTANT'})]),
+    );
+
+    const {rerender} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey="111"
+        agentsElementInstanceKeys={['111']}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Scoped conversation'}),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey="111"
+        agentsElementInstanceKeys={['111', '222']}
+      />,
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Scoped conversation'}),
+    ).toBeVisible();
+  });
+
+  it('should show a scoped empty hint when the agent was activated multiple times', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey="111"
+        agentsElementInstanceKeys={['111', '222']}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(
+      screen.getByText('No scoped conversation with the agent instance found.'),
+    ).toBeVisible();
+  });
+
+  it('should toggle between scoped and whole conversation history', async () => {
+    let filter: unknown;
+    const item = mockAgentInstanceHistoryItem();
+    mockServer.use(
+      http.post(
+        endpoints.queryAgentInstanceHistory.getUrl({
+          agentInstanceKey: AGENT_INSTANCE_KEY,
+        }),
+        async ({request}) => {
+          const req =
+            (await request.json()) as QueryAgentInstanceHistoryRequestBody;
+          filter = req.filter;
+          return Response.json(searchResult([item]));
+        },
+      ),
+    );
+
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey="111"
+        agentsElementInstanceKeys={['111', '222']}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const scopeButton = screen.getByRole('button', {
+      name: 'Scoped conversation',
+    });
+    expect(scopeButton).toBeVisible();
+    expect(filter).toEqual(
+      expect.objectContaining({elementInstanceKey: '111'}),
+    );
+
+    await user.click(scopeButton);
+
+    expect(
+      screen.getByRole('button', {name: 'Whole conversation'}),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(filter).not.toEqual(
+        expect.objectContaining({elementInstanceKey: '111'}),
+      ),
+    );
   });
 });

@@ -7,35 +7,57 @@
  */
 
 import {useState} from 'react';
-import {Button, SkeletonText} from '@carbon/react';
-import {SortAscending, SortDescending} from '@carbon/react/icons';
+import {SkeletonText} from '@carbon/react';
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
 import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
-import {ConversationContainer, StatusHint, ShowMoreButton} from './styled';
+import {ConversationToggles} from './ConversationToggles';
+import {
+  ConversationContainer,
+  Messages,
+  StatusHint,
+  ShowMoreButton,
+} from './styled';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
 type ConversationHistoryProps = {
   agentInstanceKey: string;
   isVisible: boolean;
   enablePeriodicRefetch: boolean;
+  selectedElementInstanceKey: string | null;
+  agentsElementInstanceKeys: string[];
 };
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   agentInstanceKey,
   isVisible,
   enablePeriodicRefetch,
+  selectedElementInstanceKey,
+  agentsElementInstanceKeys,
 }) => {
+  const canBeScoped =
+    agentsElementInstanceKeys.length > 1 && selectedElementInstanceKey !== null;
+
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
+  const [isScoped, setIsScoped] = useState(true);
+
   const {selectElement} = useProcessInstanceElementSelectActions();
-  const {data, status, hasNextPage, fetchNextPage, isFetchingNextPage} =
-    useAgentInstanceHistory(agentInstanceKey, {
-      enabled: isVisible,
-      enablePeriodicRefetch,
-      sortOrder,
-      select: flattenPaginatedPages,
-    });
+  const {
+    data,
+    status,
+    isPlaceholderData,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useAgentInstanceHistory(agentInstanceKey, {
+    enabled: isVisible,
+    enablePeriodicRefetch,
+    sortOrder,
+    elementInstanceKey:
+      canBeScoped && isScoped ? selectedElementInstanceKey : null,
+    select: flattenPaginatedPages,
+  });
 
   if (status === 'pending') {
     return (
@@ -49,39 +71,42 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     return <StatusHint>Failed to load conversation history.</StatusHint>;
   }
 
-  if (data.items.length === 0) {
-    return (
-      <StatusHint>No conversation with this agent instance found.</StatusHint>
-    );
-  }
-
   return (
     <ConversationContainer>
-      <Button
-        kind="ghost"
-        size="xs"
-        renderIcon={sortOrder === 'desc' ? SortDescending : SortAscending}
-        onClick={() =>
+      <ConversationToggles
+        sortOrder={sortOrder}
+        canBeScoped={canBeScoped}
+        isScoped={isScoped}
+        onToggleSortOrder={() =>
           setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
         }
-      >
-        {sortOrder === 'desc' ? 'Most recent first' : 'Oldest first'}
-      </Button>
-      {data.items.map((item) => (
-        <ConversationMessage
-          key={item.historyItemKey}
-          historyItemKey={item.historyItemKey}
-          actor={item.role}
-          content={item.content}
-          toolCalls={item.toolCalls}
-          metrics={item.metrics}
-          onToolCallClick={(toolCall) => {
-            if (toolCall.elementId !== null) {
-              selectElement({elementId: toolCall.elementId});
-            }
-          }}
-        />
-      ))}
+        onToggleScope={() => setIsScoped((prev) => !prev)}
+      />
+      <Messages data-dimmed={isPlaceholderData}>
+        {data.items.length === 0 ? (
+          <StatusHint>
+            {canBeScoped && isScoped
+              ? 'No scoped conversation with the agent instance found.'
+              : 'No conversation with this agent instance found.'}
+          </StatusHint>
+        ) : (
+          data.items.map((item) => (
+            <ConversationMessage
+              key={item.historyItemKey}
+              historyItemKey={item.historyItemKey}
+              actor={item.role}
+              content={item.content}
+              toolCalls={item.toolCalls}
+              metrics={item.metrics}
+              onToolCallClick={(toolCall) => {
+                if (toolCall.elementId !== null) {
+                  selectElement({elementId: toolCall.elementId});
+                }
+              }}
+            />
+          ))
+        )}
+      </Messages>
       {isFetchingNextPage && <SkeletonText paragraph lineCount={2} />}
       {!isFetchingNextPage && hasNextPage && (
         <ShowMoreButton kind="ghost" size="sm" onClick={() => fetchNextPage()}>
