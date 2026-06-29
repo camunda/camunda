@@ -13,9 +13,10 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from '../../../utils/waitForAssertion';
+import {clearAllProcessInstances} from '@requestHelpers';
 
-test.beforeAll(async ({resetData}) => {
-  await resetData();
+test.beforeAll(async ({request}) => {
+  await clearAllProcessInstances(request);
   await deploy([
     './resources/usertask_to_be_assigned.bpmn',
     './resources/usertask_for_scrolling_1.bpmn',
