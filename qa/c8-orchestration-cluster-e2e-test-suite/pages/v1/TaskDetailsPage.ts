@@ -331,7 +331,14 @@ class TaskDetailsPageV1 {
   }
 
   async addDynamicListRow(): Promise<void> {
+    // The new dynamic-list row is appended asynchronously after the click.
+    // Wait for the row to actually render before returning, otherwise a
+    // subsequent fillDynamicList() may snapshot its locators before the new
+    // row exists and only fill the pre-existing row(s).
+    const rows = this.page.locator('.fjs-repeat-row-container');
+    const rowsBefore = await rows.count();
     await this.addDynamicListRowButton.click();
+    await expect(rows).toHaveCount(rowsBefore + 1);
   }
 
   async assertFieldValue(
