@@ -55,7 +55,8 @@ public final class ZeebePartition extends Actor
   private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
   private final RoleMetrics roleMetrics;
-  private final ZeebePartitionHealth zeebePartitionHealth;
+  private final DiskSpaceHealth diskSpaceHealth;
+  private final PartitionTransitionHealth partitionTransitionHealth;
   private PartitionContext context;
   private PartitionStartupContext startupContext;
   private final PartitionAdminAccess adminAccess;
@@ -95,7 +96,8 @@ public final class ZeebePartition extends Actor
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
             actor, brokerHealthCheckService.getHealthTreeListener(), partitionPosition, LOG));
-    zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId(), transition);
+    diskSpaceHealth = new DiskSpaceHealth();
+    partitionTransitionHealth = new PartitionTransitionHealth(transition);
     healthMetrics = new HealthMetrics(transitionContext.getPartitionStartupMeterRegistry());
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
@@ -168,10 +170,10 @@ public final class ZeebePartition extends Actor
   protected void onActorStarted() {
     context.getComponentHealthMonitor().startMonitoring();
     context.getComponentHealthMonitor().registerComponent(context.getRaftPartition());
-    // Add a component that keep track of health of ZeebePartition. This way
-    // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
-    // components.
-    context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
+    // A partition's own health factors are explicit leaf nodes, not a bundled component: disk space
+    // and the role-transition lifecycle (services installed, transition issue, sticky dead).
+    context.getComponentHealthMonitor().registerComponent(diskSpaceHealth);
+    context.getComponentHealthMonitor().registerComponent(partitionTransitionHealth);
   }
 
   @Override
@@ -203,7 +205,8 @@ public final class ZeebePartition extends Actor
           closing = true;
 
           removeListeners();
-          context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth);
+          context.getComponentHealthMonitor().removeComponent(diskSpaceHealth);
+          context.getComponentHealthMonitor().removeComponent(partitionTransitionHealth);
           context.getComponentHealthMonitor().removeComponent(context.getRaftPartition());
 
           final var inactiveTransitionFuture = transitionToInactive();
@@ -340,7 +343,7 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> transitionToInactive() {
-    zeebePartitionHealth.setServicesInstalled(false);
+    partitionTransitionHealth.setServicesInstalled(false);
     final var transitionFuture = transition.toInactive(context.getCurrentTerm());
     transitionFuture.onComplete(
         (success, error) -> {
@@ -411,7 +414,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void handleRecoverableFailure() {
-    zeebePartitionHealth.setServicesInstalled(false);
+    partitionTransitionHealth.setServicesInstalled(false);
     context.notifyListenersOfBecomingInactive();
 
     // If RaftPartition has already transition to a new role in a new term, we can ignore this
@@ -440,7 +443,7 @@ public final class ZeebePartition extends Actor
 
     final var report = HealthReport.dead(this).withIssue(error, instant);
     healthMetrics.setDead();
-    zeebePartitionHealth.onUnrecoverableFailure(error);
+    partitionTransitionHealth.onUnrecoverableFailure(error);
     stopPartitionOnError();
     failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
   }
@@ -459,7 +462,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRecoveredInternal() {
-    zeebePartitionHealth.setServicesInstalled(true);
+    partitionTransitionHealth.setServicesInstalled(true);
   }
 
   @Override
@@ -469,7 +472,7 @@ public final class ZeebePartition extends Actor
     actor.call(
         () -> {
           context.setDiskSpaceAvailable(false);
-          zeebePartitionHealth.setDiskSpaceAvailable(false);
+          diskSpaceHealth.setDiskSpaceAvailable(false);
           if (context.getStreamProcessor() != null) {
             LOG.warn("Disk space usage is above threshold. Pausing stream processor.");
             context.getStreamProcessor().pauseProcessing();
@@ -484,7 +487,7 @@ public final class ZeebePartition extends Actor
     actor.call(
         () -> {
           context.setDiskSpaceAvailable(true);
-          zeebePartitionHealth.setDiskSpaceAvailable(true);
+          diskSpaceHealth.setDiskSpaceAvailable(true);
           if (context.getStreamProcessor() != null && context.shouldProcess()) {
             LOG.info("Disk space usage is below threshold. Resuming stream processor.");
             context.getStreamProcessor().resumeProcessing();

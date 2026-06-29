@@ -424,7 +424,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(PartitionTransitionHealth.class);
     verify(healthMonitor).registerComponent(captor.capture());
     final var healthReport = captor.getValue().getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
@@ -435,7 +435,7 @@ public class ZeebePartitionTest {
   @Test
   public void shouldReportUnhealthyPerDefault() {
     // given
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(PartitionTransitionHealth.class);
     schedulerRule.submitActor(partition);
 
     // when
@@ -444,8 +444,8 @@ public class ZeebePartitionTest {
     // then
     verify(healthMonitor).registerComponent(captor.capture());
 
-    final var zeebePartitionHealth = captor.getValue();
-    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    final var health = captor.getValue();
+    final HealthReport healthReport = health.getHealthReport();
 
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message()).contains("Services not installed");
@@ -460,19 +460,19 @@ public class ZeebePartitionTest {
     final FailureListener failureListener = mock(FailureListener.class);
     doNothing().when(failureListener).onFailure(any());
 
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(PartitionTransitionHealth.class);
     verify(healthMonitor).registerComponent(captor.capture());
-    final var zeebePartitionHealth = captor.getValue();
-    zeebePartitionHealth.addFailureListener(failureListener);
+    final var health = captor.getValue();
+    health.addFailureListener(failureListener);
 
     when(transition.getHealthIssue())
         .thenReturn(HealthIssue.of("it's over", Instant.ofEpochMilli(1029381923L)));
 
     // when
-    final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
+    final HealthReport healthReport1 = health.getHealthReport();
     assertThat(healthReport1.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 
-    final HealthReport healthReport2 = zeebePartitionHealth.getHealthReport();
+    final HealthReport healthReport2 = health.getHealthReport();
 
     // then
     assertThat(healthReport1).isEqualTo(healthReport2);
@@ -488,21 +488,21 @@ public class ZeebePartitionTest {
     final FailureListener failureListener = mock(FailureListener.class);
     doNothing().when(failureListener).onFailure(any());
 
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(PartitionTransitionHealth.class);
     verify(healthMonitor).registerComponent(captor.capture());
-    final var zeebePartitionHealth = captor.getValue();
-    zeebePartitionHealth.addFailureListener(failureListener);
+    final var health = captor.getValue();
+    health.addFailureListener(failureListener);
 
     when(transition.getHealthIssue())
         .thenReturn(HealthIssue.of("it's over", Instant.ofEpochMilli(1029381923L)));
 
     // when
-    final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
+    final HealthReport healthReport1 = health.getHealthReport();
     assertThat(healthReport1.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 
     when(transition.getHealthIssue())
         .thenReturn(HealthIssue.of("it's something else", Instant.ofEpochMilli(1029381923L)));
-    final HealthReport healthReport2 = zeebePartitionHealth.getHealthReport();
+    final HealthReport healthReport2 = health.getHealthReport();
     assertThat(healthReport2.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 
     // then
@@ -520,19 +520,19 @@ public class ZeebePartitionTest {
     doNothing().when(failureListener).onFailure(any());
     doNothing().when(failureListener).onRecovered(any());
 
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(PartitionTransitionHealth.class);
     verify(healthMonitor).registerComponent(captor.capture());
-    final var zeebePartitionHealth = captor.getValue();
-    zeebePartitionHealth.addFailureListener(failureListener);
+    final var health = captor.getValue();
+    health.addFailureListener(failureListener);
 
     // when
     partition.onNewRole(Role.LEADER, 1);
     schedulerRule.workUntilDone();
 
-    final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
+    final HealthReport healthReport1 = health.getHealthReport();
     assertThat(healthReport1.getStatus()).isEqualTo(HealthStatus.HEALTHY);
 
-    final HealthReport healthReport2 = zeebePartitionHealth.getHealthReport();
+    final HealthReport healthReport2 = health.getHealthReport();
     assertThat(healthReport2.getStatus()).isEqualTo(HealthStatus.HEALTHY);
     // then
     assertThat(healthReport1).isEqualTo(healthReport2);
@@ -542,7 +542,7 @@ public class ZeebePartitionTest {
   @Test
   public void shouldReportHealthyAfterTransition() {
     // given
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(PartitionTransitionHealth.class);
     schedulerRule.submitActor(partition);
 
     // when
@@ -552,15 +552,15 @@ public class ZeebePartitionTest {
     // then
     verify(healthMonitor).registerComponent(captor.capture());
 
-    final var zeebePartitionHealth = captor.getValue();
-    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    final var health = captor.getValue();
+    final HealthReport healthReport = health.getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   @Test
   public void shouldReportUnhealthyWhenNoDiskAvailable() {
     // given
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(DiskSpaceHealth.class);
     schedulerRule.submitActor(partition);
     partition.onNewRole(Role.LEADER, 1);
     schedulerRule.workUntilDone();
@@ -572,8 +572,8 @@ public class ZeebePartitionTest {
     // then
     verify(healthMonitor).registerComponent(captor.capture());
 
-    final var zeebePartitionHealth = captor.getValue();
-    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    final var health = captor.getValue();
+    final HealthReport healthReport = health.getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message()).contains("Not enough disk space available");
   }
@@ -581,7 +581,7 @@ public class ZeebePartitionTest {
   @Test
   public void shouldReportHealthyWhenDiskIsAvailableAgain() {
     // given
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    final var captor = ArgumentCaptor.forClass(DiskSpaceHealth.class);
     schedulerRule.submitActor(partition);
     partition.onNewRole(Role.LEADER, 1);
     partition.onDiskSpaceNotAvailable();
@@ -594,8 +594,8 @@ public class ZeebePartitionTest {
     // then
     verify(healthMonitor).registerComponent(captor.capture());
 
-    final var zeebePartitionHealth = captor.getValue();
-    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    final var health = captor.getValue();
+    final HealthReport healthReport = health.getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.HEALTHY);
     assertThat(healthReport.getIssue()).isNull();
   }

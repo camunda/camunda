@@ -48,7 +48,8 @@ public class BrokerAdminServiceEndpointTest {
   private static final List<String> EXPECTED_HEALTH_CHILDREN =
       List.of(
           "SnapshotDirector-1",
-          "ZeebePartitionHealth-1",
+          "DiskSpace",
+          "PartitionTransition",
           "StreamProcessor-1",
           "Exporter-1",
           "MigrationSnapshotDirector",
