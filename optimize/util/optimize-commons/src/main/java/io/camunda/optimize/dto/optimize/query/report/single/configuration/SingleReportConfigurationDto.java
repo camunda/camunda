@@ -48,6 +48,12 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonProperty("xLabel")
   private String xLabel = "";
 
+  // Optional subtitle override for single-value (Number) visualizations. When set, it replaces the
+  // auto-derived subtitle. For system-generated reports it holds a localization key that is
+  // resolved server-side (see ReportRestMapper#localizeReportData), mirroring xLabel/yLabel.
+  @JsonProperty("subtitle")
+  private String subtitle = "";
+
   private Boolean alwaysShowRelative = false;
   private Boolean alwaysShowAbsolute = false;
   private Boolean showGradientBars = true;
@@ -78,6 +84,7 @@ public class SingleReportConfigurationDto implements Combinable {
       final Boolean hideAbsoluteValue,
       final String yLabel,
       final String xLabel,
+      final String subtitle,
       final Boolean alwaysShowRelative,
       final Boolean alwaysShowAbsolute,
       final Boolean showGradientBars,
@@ -114,6 +121,7 @@ public class SingleReportConfigurationDto implements Combinable {
     this.hideAbsoluteValue = hideAbsoluteValue;
     this.yLabel = yLabel;
     this.xLabel = xLabel;
+    this.subtitle = subtitle;
     this.alwaysShowRelative = alwaysShowRelative;
     this.alwaysShowAbsolute = alwaysShowAbsolute;
     this.showGradientBars = showGradientBars;
@@ -253,6 +261,15 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonProperty("xLabel")
   public void setXLabel(final String xLabel) {
     this.xLabel = xLabel;
+  }
+
+  public String getSubtitle() {
+    return subtitle;
+  }
+
+  @JsonProperty("subtitle")
+  public void setSubtitle(final String subtitle) {
+    this.subtitle = subtitle;
   }
 
   public Boolean getAlwaysShowRelative() {
@@ -412,6 +429,7 @@ public class SingleReportConfigurationDto implements Combinable {
         && Objects.equals(hideAbsoluteValue, that.hideAbsoluteValue)
         && Objects.equals(yLabel, that.yLabel)
         && Objects.equals(xLabel, that.xLabel)
+        && Objects.equals(subtitle, that.subtitle)
         && Objects.equals(alwaysShowRelative, that.alwaysShowRelative)
         && Objects.equals(alwaysShowAbsolute, that.alwaysShowAbsolute)
         && Objects.equals(showGradientBars, that.showGradientBars)
@@ -445,6 +463,7 @@ public class SingleReportConfigurationDto implements Combinable {
         hideAbsoluteValue,
         yLabel,
         xLabel,
+        subtitle,
         alwaysShowRelative,
         alwaysShowAbsolute,
         showGradientBars,
@@ -487,6 +506,8 @@ public class SingleReportConfigurationDto implements Combinable {
         + getYLabel()
         + ", xLabel="
         + getXLabel()
+        + ", subtitle="
+        + getSubtitle()
         + ", alwaysShowRelative="
         + getAlwaysShowRelative()
         + ", alwaysShowAbsolute="
@@ -564,6 +585,10 @@ public class SingleReportConfigurationDto implements Combinable {
   }
 
   private static String defaultXLabel() {
+    return "";
+  }
+
+  private static String defaultSubtitle() {
     return "";
   }
 
@@ -656,6 +681,7 @@ public class SingleReportConfigurationDto implements Combinable {
     public static final String hideAbsoluteValue = "hideAbsoluteValue";
     public static final String yLabel = "yLabel";
     public static final String xLabel = "xLabel";
+    public static final String subtitle = "subtitle";
     public static final String alwaysShowRelative = "alwaysShowRelative";
     public static final String alwaysShowAbsolute = "alwaysShowAbsolute";
     public static final String showGradientBars = "showGradientBars";
@@ -698,6 +724,8 @@ public class SingleReportConfigurationDto implements Combinable {
     private boolean yLabelSet;
     private String xLabelValue;
     private boolean xLabelSet;
+    private String subtitleValue;
+    private boolean subtitleSet;
     private Boolean alwaysShowRelativeValue;
     private boolean alwaysShowRelativeSet;
     private Boolean alwaysShowAbsoluteValue;
@@ -798,6 +826,13 @@ public class SingleReportConfigurationDto implements Combinable {
     public SingleReportConfigurationDtoBuilder xLabel(final String xLabel) {
       xLabelValue = xLabel;
       xLabelSet = true;
+      return this;
+    }
+
+    @JsonProperty("subtitle")
+    public SingleReportConfigurationDtoBuilder subtitle(final String subtitle) {
+      subtitleValue = subtitle;
+      subtitleSet = true;
       return this;
     }
 
@@ -966,6 +1001,10 @@ public class SingleReportConfigurationDto implements Combinable {
       if (!xLabelSet) {
         xLabelValue = SingleReportConfigurationDto.defaultXLabel();
       }
+      String subtitleValue = this.subtitleValue;
+      if (!subtitleSet) {
+        subtitleValue = SingleReportConfigurationDto.defaultSubtitle();
+      }
       Boolean alwaysShowRelativeValue = this.alwaysShowRelativeValue;
       if (!alwaysShowRelativeSet) {
         alwaysShowRelativeValue = SingleReportConfigurationDto.defaultAlwaysShowRelative();
@@ -1053,6 +1092,7 @@ public class SingleReportConfigurationDto implements Combinable {
           hideAbsoluteValueValue,
           yLabelValue,
           xLabelValue,
+          subtitleValue,
           alwaysShowRelativeValue,
           alwaysShowAbsoluteValue,
           showGradientBarsValue,
@@ -1095,6 +1135,8 @@ public class SingleReportConfigurationDto implements Combinable {
           + yLabelValue
           + ", xLabelValue="
           + xLabelValue
+          + ", subtitleValue="
+          + subtitleValue
           + ", alwaysShowRelativeValue="
           + alwaysShowRelativeValue
           + ", alwaysShowAbsoluteValue="
