@@ -95,7 +95,17 @@ public class TokenClaimsConverter {
       return;
     }
 
-    LOG.error(
+    // Logged at WARN, not ERROR: this is a client/configuration fault (a bad incoming token) that
+    // is per-request and fully caller-controllable, so a client replaying a v1 token must not be
+    // able to flood ERROR logs or trip alerting. No stacktrace is logged for the same reason.
+    //
+    // This log mainly serves the bearer/API flow, whose entry point
+    // (AuthenticationEntryPointFailureHandler + BearerTokenAuthenticationEntryPoint) returns 401
+    // silently, leaving the actionable guidance otherwise invisible. On the webapp/login chain it
+    // is somewhat redundant with the container log of the bubbled OAuth2AuthenticationException;
+    // the
+    // guidance also lives in the exception message below.
+    LOG.warn(
         "Rejected a Microsoft Entra access token from issuer '{}' with an unsupported access token version (ver='{}'). "
             + "Camunda requires v2.0 access tokens. Set 'api.requestedAccessTokenVersion' to 2 in the Entra app registration "
             + "manifest (Azure portal: App registrations > your app > Manifest) so the identity platform issues v2.0 tokens, "
