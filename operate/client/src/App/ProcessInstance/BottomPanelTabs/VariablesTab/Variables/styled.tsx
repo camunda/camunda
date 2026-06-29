@@ -44,7 +44,10 @@ const EmptyMessageWrapper = styled.div`
 `;
 
 const DimmableResults = styled.div<{$dimmed: boolean}>`
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   transition: opacity 150ms ease;
   opacity: ${({$dimmed}) => ($dimmed ? 0.5 : 1)};
   pointer-events: ${({$dimmed}) => ($dimmed ? 'none' : 'auto')};
