@@ -111,6 +111,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -149,7 +150,9 @@ class RdbmsExporterIT {
 
   @BeforeEach
   void setUp() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     exporterPositionMapper =
         rdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
     exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);

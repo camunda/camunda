@@ -41,7 +41,7 @@ public class RawTransactionalColumnFamilyTest {
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new AccessMetricsConfiguration(Kind.NONE),
             SimpleMeterRegistry::new);
     db = factory.createDb(path.toFile());
     context = db.createContext();

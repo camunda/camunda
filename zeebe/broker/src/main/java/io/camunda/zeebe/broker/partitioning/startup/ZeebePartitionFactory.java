@@ -74,7 +74,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -161,15 +161,18 @@ public final class ZeebePartitionFactory {
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
-    final var partitionId = raftPartition.id().number();
+    final var partitionId = raftPartition.id();
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
 
     final var zeebeFactory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             rocksDbConfiguration,
             consistencyChecks.getSettings(),
-            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
-            () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
+            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
+            () ->
+                MicrometerUtil.wrap(
+                    partitionMeterRegistry,
+                    PartitionKeyNames.tags(partitionId.group(), partitionId.number())),
             rocksDbResources);
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);

@@ -13,7 +13,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.TopologyKeyNames;
 import io.camunda.zeebe.util.collection.Table;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;

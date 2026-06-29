@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 

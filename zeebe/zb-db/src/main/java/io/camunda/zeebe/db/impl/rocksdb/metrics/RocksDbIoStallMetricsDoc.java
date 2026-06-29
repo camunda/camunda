@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.metrics;
 
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
@@ -94,14 +94,14 @@ public enum RocksDbIoStallMetricsDoc implements RocksDbMeterDoc {
     return PartitionKeyNames.values();
   }
 
-  @Override
-  public String namespace() {
-    return IO_STALLS_NAMESPACE;
-  }
-
   /** The key under which this counter appears in the {@code rocksdb.cfstats} map. */
   @Override
   public String propertyName() {
     return mapKey;
+  }
+
+  @Override
+  public String namespace() {
+    return IO_STALLS_NAMESPACE;
   }
 }

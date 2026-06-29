@@ -31,6 +31,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +55,9 @@ public class UserSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
     userReader = rdbmsService.getUserReader();
   }

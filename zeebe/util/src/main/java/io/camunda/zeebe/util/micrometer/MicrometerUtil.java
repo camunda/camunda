@@ -8,7 +8,6 @@
 package io.camunda.zeebe.util.micrometer;
 
 import io.camunda.zeebe.util.CloseableSilently;
-import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -187,21 +186,6 @@ public final class MicrometerUtil {
     @Override
     public void close() {
       setter.accept(unit.convert(clock.monotonicTime() - startNanos, TimeUnit.NANOSECONDS));
-    }
-  }
-
-  @SuppressWarnings("NullableProblems")
-  public enum PartitionKeyNames implements KeyName {
-    /** The ID of the partition associated to the metric */
-    PARTITION {
-      @Override
-      public String asString() {
-        return "partition";
-      }
-    };
-
-    public static Tags tags(final int partitionId) {
-      return Tags.of(PARTITION.asString(), String.valueOf(partitionId));
     }
   }
 }

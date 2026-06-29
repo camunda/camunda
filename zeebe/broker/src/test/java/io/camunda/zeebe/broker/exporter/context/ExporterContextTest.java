@@ -93,7 +93,14 @@ public class ExporterContextTest {
     final var timer = meterRegistry.timer("test");
     timer.record(11, TimeUnit.MILLISECONDS);
 
-    final var expectedTags = Tags.of("partition", "1", "exporterId", exporterId);
+    final var expectedTags =
+        Tags.of(
+            "physicalTenant",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            "partition",
+            "1",
+            "exporterId",
+            exporterId);
 
     // then
     allRegistries.forEach(

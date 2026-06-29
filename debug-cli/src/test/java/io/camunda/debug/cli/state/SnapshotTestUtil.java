@@ -30,7 +30,7 @@ final class SnapshotTestUtil {
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration().setWalDisabled(false),
         new ConsistencyChecksSettings(true, true),
-        new AccessMetricsConfiguration(Kind.NONE, 1),
+        new AccessMetricsConfiguration(Kind.NONE),
         SimpleMeterRegistry::new);
   }
 

@@ -25,10 +25,11 @@ class RdbmsServiceFactoryTest {
     // given
     final Map<String, RdbmsMapperBundle> mapperBundle = Map.of("a", mock(RdbmsMapperBundle.class));
     final Map<String, RdbmsTenantReaders> readers = Map.of("b", mock(RdbmsTenantReaders.class));
-    final var factory = new RdbmsServiceFactory(mapperBundle, readers, new SimpleMeterRegistry());
+    final var factory = new RdbmsServiceFactory(mapperBundle, readers);
 
     // when / then
-    assertThatThrownBy(() -> factory.createRdbmsService(physicalTenantId))
+    assertThatThrownBy(
+            () -> factory.createRdbmsService(physicalTenantId, new SimpleMeterRegistry()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Missing RDBMS")
         .hasMessageContaining("physical tenant '%s'".formatted(physicalTenantId));

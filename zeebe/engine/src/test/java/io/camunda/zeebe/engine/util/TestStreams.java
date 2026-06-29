@@ -55,7 +55,7 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

@@ -102,7 +102,7 @@ final class ZeebeRocksDbFactoryTest {
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new AccessMetricsConfiguration(Kind.NONE),
             SimpleMeterRegistry::new);
 
     // when
@@ -211,7 +211,7 @@ final class ZeebeRocksDbFactoryTest {
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new AccessMetricsConfiguration(Kind.NONE),
             SimpleMeterRegistry::new);
 
     // expect
@@ -304,7 +304,7 @@ final class ZeebeRocksDbFactoryTest {
         new ZeebeRocksDbFactory<DefaultColumnFamily>(
             rocksDbConfiguration,
             new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new AccessMetricsConfiguration(Kind.NONE),
             SimpleMeterRegistry::new);
 
     // when - the DB opens and closes successfully without a shared cache/WBM
@@ -326,7 +326,7 @@ final class ZeebeRocksDbFactoryTest {
         new ZeebeRocksDbFactory<>(
             rocksDbConfiguration,
             new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new AccessMetricsConfiguration(Kind.NONE),
             SimpleMeterRegistry::new,
             rocksDbResources);
     return rocksDbFactory.createColumnFamilyOptions(closeable);

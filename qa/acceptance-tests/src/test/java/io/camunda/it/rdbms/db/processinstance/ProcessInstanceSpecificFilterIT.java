@@ -25,6 +25,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -55,7 +56,9 @@ public class ProcessInstanceSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
     processInstanceReader = rdbmsService.getProcessInstanceReader();
   }

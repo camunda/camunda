@@ -50,7 +50,7 @@ public class RocksDBSnapshotCopyTest {
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new AccessMetricsConfiguration(Kind.NONE),
             SimpleMeterRegistry::new);
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);

@@ -20,6 +20,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,9 @@ public class ProcessDefinitionSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
     processDefinitionReader = rdbmsService.getProcessDefinitionReader();
   }

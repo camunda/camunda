@@ -105,7 +105,10 @@ public class RdbmsExporterWrapper implements Exporter {
     final var physicalTenantId = context.getPhysicalTenantId();
     final var rdbmsWriterConfig =
         config.createRdbmsWriterConfig(partitionId, physicalTenantId, context.clock());
-    final var rdbmsService = rdbmsServiceFactory.createRdbmsService(physicalTenantId);
+    // Use the partition-scoped meter registry so the writer metrics inherit the partition and
+    // physicalTenant common tags, consistent with the other exporter metrics.
+    final var rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(physicalTenantId, context.getMeterRegistry());
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =

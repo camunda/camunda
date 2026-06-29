@@ -22,6 +22,7 @@ import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.sort.DecisionRequirementsSort;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,7 +44,9 @@ public class DecisionRequirementsSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
     decisionRequirementsReader = rdbmsService.getDecisionRequirementsReader();
   }

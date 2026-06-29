@@ -25,6 +25,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ThreadLocalRandom;
@@ -51,7 +52,9 @@ public class HistoryCleanupIT {
 
   @BeforeEach
   void setUp() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     rdbmsWriters = rdbmsService.createWriter(config);
     historyCleanupService =

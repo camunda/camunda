@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
@@ -55,7 +55,8 @@ public final class ExporterContext implements Context, AutoCloseable {
         MicrometerUtil.wrap(
             meterRegistry,
             Tags.concat(
-                PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
+                PartitionKeyNames.tags(physicalTenantId, partitionId),
+                Tags.of("exporterId", configuration.getId())));
     this.clock = clock;
   }
 

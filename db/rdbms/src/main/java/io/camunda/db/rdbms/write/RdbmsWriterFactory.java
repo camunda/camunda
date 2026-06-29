@@ -23,7 +23,7 @@ public class RdbmsWriterFactory {
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
-    final var metrics = new RdbmsWriterMetrics(meterRegistry, config.partitionId());
+    final var metrics = new RdbmsWriterMetrics(meterRegistry);
     final var executionQueue =
         new DefaultExecutionQueue(
             mapperBundle.sqlSessionFactory(),

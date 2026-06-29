@@ -42,7 +42,7 @@ final class DbCheckpointStateTest {
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
-                new AccessMetricsConfiguration(Kind.NONE, 1),
+                new AccessMetricsConfiguration(Kind.NONE),
                 SimpleMeterRegistry::new)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());

@@ -34,7 +34,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.io.IOException;
@@ -338,9 +338,10 @@ public class RestoreManager implements CloseableSilently {
 
   private InstrumentedRaftPartition createRaftPartition(
       final PartitionMetadata metadata, final RaftPartitionFactory factory) {
-    final var partitionId = metadata.id().number();
+    final var partitionId = metadata.id();
     final var partitionRegistry =
-        MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(partitionId));
+        MicrometerUtil.wrap(
+            meterRegistry, PartitionKeyNames.tags(partitionId.group(), partitionId.number()));
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);

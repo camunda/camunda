@@ -40,7 +40,7 @@ public final class DefaultZeebeDbFactory {
     return new ZeebeRocksDbFactory<>(
         rocksDbConfiguration,
         consistencyChecks,
-        new AccessMetricsConfiguration(Kind.NONE, 1),
+        new AccessMetricsConfiguration(Kind.NONE),
         meterRegistry);
   }
 }

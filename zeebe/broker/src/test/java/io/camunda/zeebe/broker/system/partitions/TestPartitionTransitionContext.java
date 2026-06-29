@@ -53,7 +53,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
@@ -98,7 +98,9 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ClusterConfigurationService clusterConfigurationService;
 
   public TestPartitionTransitionContext() {
-    transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
+    transitionMeterRegistry =
+        MicrometerUtil.wrap(
+            startupMeterRegistry, PartitionKeyNames.tags(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1));
     healthMetrics = new HealthTreeMetrics(transitionMeterRegistry);
   }
 
