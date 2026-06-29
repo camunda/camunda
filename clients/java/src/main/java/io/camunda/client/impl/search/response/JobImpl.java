@@ -47,6 +47,7 @@ public class JobImpl implements Job {
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long rootProcessInstanceKey;
+  private final String businessId;
   private final String elementId;
   private final Long elementInstanceKey;
   private final String tenantId;
@@ -74,6 +75,7 @@ public class JobImpl implements Job {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
+    businessId = item.getBusinessId();
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     tenantId = item.getTenantId();
@@ -179,6 +181,11 @@ public class JobImpl implements Job {
   @Override
   public Long getRootProcessInstanceKey() {
     return rootProcessInstanceKey;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 
   @Override

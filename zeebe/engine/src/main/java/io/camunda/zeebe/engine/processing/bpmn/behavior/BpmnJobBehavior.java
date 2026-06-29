@@ -597,7 +597,8 @@ public final class BpmnJobBehavior {
         .setTenantId(context.getTenantId())
         .setTags(getTagsFromProcessInstance(context))
         .setPriority(props.getPriority())
-        .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setBusinessId(getBusinessIdFromProcessInstance(context));
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
@@ -619,6 +620,14 @@ public final class BpmnJobBehavior {
         stateBehavior.getElementInstance(context.getProcessInstanceKey()).getValue();
 
     return processInstance != null ? processInstance.getTags() : Collections.emptySet();
+  }
+
+  private String getBusinessIdFromProcessInstance(final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (elementInstance == null) {
+      return "";
+    }
+    return elementInstance.getValue().getBusinessId();
   }
 
   private DirectBuffer encodeHeaders(

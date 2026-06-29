@@ -233,6 +233,7 @@ public final class ResponseMapper {
             EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
         .rootProcessInstanceKey(
             rootProcessInstanceKey > 0 ? keyToString(rootProcessInstanceKey) : null)
+        .businessId(emptyToNull(job.getBusinessId()))
         .tags(job.getTags())
         .userTask(toUserTaskProperties(job))
         .priority(job.getPriority())

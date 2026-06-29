@@ -188,6 +188,20 @@ class ResponseMapperTest {
       assertThat(result.getPriority()).isEqualTo(80);
     }
 
+    @Test
+    void shouldMapBusinessIdToActivatedJob() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      when(jobRecord.getBusinessId()).thenReturn("order-123");
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.getBusinessId()).isEqualTo("order-123");
+    }
+
     @ParameterizedTest
     @EnumSource(JobListenerEventType.class)
     void shouldMapActivatedJobWithListenerEventType(final JobListenerEventType listenerEventType) {
@@ -225,6 +239,7 @@ class ResponseMapperTest {
       when(jobRecord.getVariables()).thenReturn(Map.of());
       when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       when(jobRecord.getLength()).thenReturn(1);
+      when(jobRecord.getBusinessId()).thenReturn("");
       return jobRecord;
     }
 

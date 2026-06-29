@@ -72,6 +72,16 @@ public interface Job {
    */
   Long getRootProcessInstanceKey();
 
+  /**
+   * Returns the business ID of the owning process instance, inherited when the job was created.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for jobs created before version 8.10 and
+   * when the owning process instance has no business ID.
+   *
+   * @return the business ID, or {@code null} when not set
+   */
+  String getBusinessId();
+
   String getElementId();
 
   Long getElementInstanceKey();

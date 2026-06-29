@@ -151,6 +151,7 @@ final class JobHandlerTest {
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
     final String tenantId = "tenantId";
+    final String businessId = "businessId";
     final String jobType = "jobType";
     final int retries = 3;
     final int priority = 77;
@@ -175,6 +176,7 @@ final class JobHandlerTest {
             .withWorker(jobWorker)
             .withCustomHeaders(Map.of("key", "val"))
             .withTenantId(tenantId)
+            .withBusinessId(businessId)
             .withErrorMessage(errorMessage)
             .withJobKind(jobKind)
             .withJobListenerEventType(jobListenerEventType)
@@ -227,6 +229,7 @@ final class JobHandlerTest {
     assertThat(entity.isDenied()).isEqualTo(null);
     assertThat(entity.getDeniedReason()).isEqualTo(null);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(entity.getBusinessId()).isEqualTo(businessId);
   }
 
   @Test
@@ -254,6 +257,60 @@ final class JobHandlerTest {
 
     // then
     assertThat(entity.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldNotSetBusinessIdWhenEmpty() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withBusinessId("")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
+  }
+
+  @Test
+  void shouldNotSetBusinessIdForNonCreatedIntent() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withBusinessId("order-123")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.RETRIES_UPDATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then - businessId is immutable and only set on CREATED
+    assertThat(entity.getBusinessId()).isNull();
   }
 
   @Test

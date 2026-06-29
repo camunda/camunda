@@ -43,6 +43,9 @@ public class JobEntity
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String businessId;
+
   @BeforeVersion880 private String tenantId;
   @BeforeVersion880 private String type;
   @BeforeVersion880 private String worker;
@@ -315,6 +318,15 @@ public class JobEntity
     return this;
   }
 
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public JobEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
+  }
+
   public Boolean isDenied() {
     return denied;
   }
@@ -363,7 +375,8 @@ public class JobEntity
         deniedReason,
         creationTime,
         lastUpdateTime,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        businessId);
   }
 
   @Override
@@ -402,7 +415,8 @@ public class JobEntity
         && Objects.equals(deniedReason, jobEntity.deniedReason)
         && Objects.equals(creationTime, jobEntity.creationTime)
         && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime)
-        && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey)
+        && Objects.equals(businessId, jobEntity.businessId);
   }
 
   @Override
@@ -468,6 +482,9 @@ public class JobEntity
         + lastUpdateTime
         + ", rootProcessInstanceKey="
         + rootProcessInstanceKey
+        + ", businessId='"
+        + businessId
+        + '\''
         + "} "
         + super.toString();
   }

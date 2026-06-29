@@ -207,4 +207,52 @@ class JobExportHandlerTest {
     verify(jobWriter).update(jobDbModelCaptor.capture());
     assertThat(jobDbModelCaptor.getValue().priority()).isEqualTo(99);
   }
+
+  @Test
+  void shouldSetBusinessId() {
+    // given
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withBusinessId("order-123")
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(jobWriter).create(jobDbModelCaptor.capture());
+    assertThat(jobDbModelCaptor.getValue().businessId()).isEqualTo("order-123");
+  }
+
+  @Test
+  void shouldNotSetBusinessIdWhenEmpty() {
+    // given
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withBusinessId("")
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then - an empty business ID is stored as null rather than an empty string
+    verify(jobWriter).create(jobDbModelCaptor.capture());
+    assertThat(jobDbModelCaptor.getValue().businessId()).isNull();
+  }
 }

@@ -458,6 +458,75 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapBusinessIdForJob() {
+    // given
+    final var entity =
+        new JobEntity.Builder()
+            .jobKey(123L)
+            .type("test-type")
+            .worker("test-worker")
+            .state(JobState.CREATED)
+            .kind(JobKind.BPMN_ELEMENT)
+            .listenerEventType(ListenerEventType.UNSPECIFIED)
+            .retries(3)
+            .isDenied(false)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
+            .processInstanceKey(789L)
+            .rootProcessInstanceKey(999L)
+            .businessId("business-1")
+            .elementId("serviceTask1")
+            .elementInstanceKey(111L)
+            .tenantId("tenant")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
+            .build();
+
+    // when
+    final var jobs =
+        SearchQueryResponseMapper.toJobSearchQueryResponse(
+            new SearchQueryResult<JobEntity>(1, false, List.of(entity), null, null));
+
+    // then
+    assertThat(jobs.getItems().getFirst().getBusinessId()).isEqualTo("business-1");
+  }
+
+  @Test
+  void shouldMapNullBusinessIdForJob() {
+    // given
+    final var entity =
+        new JobEntity.Builder()
+            .jobKey(123L)
+            .type("test-type")
+            .worker("test-worker")
+            .state(JobState.CREATED)
+            .kind(JobKind.BPMN_ELEMENT)
+            .listenerEventType(ListenerEventType.UNSPECIFIED)
+            .retries(1)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
+            .processInstanceKey(789L)
+            .rootProcessInstanceKey(999L)
+            .businessId(null)
+            .elementId("serviceTask1")
+            .elementInstanceKey(111L)
+            .tenantId("tenant")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
+            .build();
+
+    // when
+    final var jobs =
+        SearchQueryResponseMapper.toJobSearchQueryResponse(
+            new SearchQueryResult<JobEntity>(1, false, List.of(entity), null, null));
+
+    // then
+    assertThat(jobs.getItems().getFirst().getBusinessId()).isNull();
+  }
+
+  @Test
   void shouldMapRootProcessInstanceKeyForMessageSubscription() {
     // given
     final var entity =

@@ -39,6 +39,7 @@ public class JobEntityMapper {
         .processDefinitionKey(jobDbModel.processDefinitionKey())
         .processInstanceKey(jobDbModel.processInstanceKey())
         .rootProcessInstanceKey(jobDbModel.rootProcessInstanceKey())
+        .businessId(jobDbModel.businessId())
         .elementId(nullToEmpty(jobDbModel.elementId()))
         .elementInstanceKey(jobDbModel.elementInstanceKey())
         .tenantId(nullToEmpty(jobDbModel.tenantId()))
