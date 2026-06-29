@@ -46,12 +46,6 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
             .build(new ScopeCacheLoader(authorizationState));
   }
 
-  private record ScopeCacheKey(
-      AuthorizationOwnerType ownerType,
-      String ownerId,
-      io.camunda.zeebe.protocol.record.value.AuthorizationResourceType resourceType,
-      io.camunda.zeebe.protocol.record.value.PermissionType permissionType) {}
-
   /** Returns all authorized scopes for the given owners, resource type, and permission type. */
   @Override
   public List<AuthorizationScope> findAuthorizedScopes(
@@ -178,6 +172,12 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       case PROPERTY, UNSPECIFIED -> false;
     };
   }
+
+  private record ScopeCacheKey(
+      AuthorizationOwnerType ownerType,
+      String ownerId,
+      io.camunda.zeebe.protocol.record.value.AuthorizationResourceType resourceType,
+      io.camunda.zeebe.protocol.record.value.PermissionType permissionType) {}
 
   /** Loads authorization scopes from {@link AuthorizationState}, bypassing the cache. */
   private static final class ScopeCacheLoader

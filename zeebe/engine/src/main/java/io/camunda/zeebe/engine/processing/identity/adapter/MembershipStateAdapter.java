@@ -46,9 +46,6 @@ public final class MembershipStateAdapter implements MembershipPort {
             .build(new MembershipCacheLoader(membershipState));
   }
 
-  private record MembershipCacheKey(
-      EntityType entityType, String entityId, RelationType relationType) {}
-
   /** Returns mapping rule IDs whose conditions match the token claims in the query. */
   @Override
   public List<String> mappingRuleIds(final MembershipQuery query) {
@@ -154,6 +151,9 @@ public final class MembershipStateAdapter implements MembershipPort {
       case CLIENT -> EntityType.CLIENT;
     };
   }
+
+  private record MembershipCacheKey(
+      EntityType entityType, String entityId, RelationType relationType) {}
 
   /** Loads memberships from {@link MembershipState}, bypassing the cache. */
   private static final class MembershipCacheLoader
