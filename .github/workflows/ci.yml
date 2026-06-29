@@ -1676,7 +1676,7 @@ jobs:
             -pl bom,clients/java,clients/camunda-spring-boot-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
-          correlator: ${{ github.job }}-maven
+          correlator: submit-maven-snapshot-maven
       - name: Observe build status
         if: always()
         continue-on-error: true
