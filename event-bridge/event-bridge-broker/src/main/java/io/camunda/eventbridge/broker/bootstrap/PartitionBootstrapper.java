@@ -12,9 +12,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.atomix.raft.RaftRoleChangeListener;
 import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
+import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
@@ -157,15 +159,10 @@ final class PartitionBootstrapper {
       final MessagingService brokerMessagingService,
       final TopologyManagerImpl coordinatorTopologyManager) {
 
-    final var clusterSize = properties.cluster().clusterSize();
-    final var members = BrokerMembers.all(clusterSize);
     final var partitionCount = Math.max(1, properties.coordinator().partitionCount());
-    final var replicationFactor = Math.min(properties.raft().replicationFactor(), clusterSize);
-
     // Reuse the same round-robin distribution as the data partitions, but in the coordinator group.
     final var distribution =
-        new RoundRobinPartitionDistributor(PartitionFactory.COORDINATOR_GROUP_NAME)
-            .distributePartitions(members, partitionCount, replicationFactor);
+        groupDistribution(PartitionFactory.COORDINATOR_GROUP_NAME, partitionCount);
 
     distribution.stream()
         .filter(p -> p.members().contains(localMemberId))
@@ -211,28 +208,8 @@ final class PartitionBootstrapper {
     registry.addAuxiliary(created, coordinatorPartition);
     actorScheduler.submitActor(coordinatorPartition);
 
-    // Bootstrap the Raft partition FIRST, then register the role-change listener — mirroring
-    // Zeebe's
-    // partition startup (RaftBootstrapStep before ZeebePartitionStep). The listener replays the
-    // current role on registration, so we don't miss the initial transition. If we registered
-    // before bootstrap, the StreamProcessor (and its committed log reader) would be created while
-    // the journal is still being initialized/reset, pinning the reader to a segment that bootstrap
-    // then closes — so followers would never replay (their reader stays SEGMENT-NOT-OPEN).
-    created
-        .raftPartition()
-        .bootstrap(managementService, created.snapshotStore())
-        .whenComplete(
-            (rp, error) -> {
-              if (error != null) {
-                LOG.error("Failed to bootstrap coordinator raft partition {}", partitionId, error);
-              } else {
-                LOG.info("Coordinator raft partition {} bootstrapped", partitionId);
-                created
-                    .raftPartition()
-                    .addRoleChangeListener(
-                        (role, term) -> coordinatorPartition.onRoleChange(role, term));
-              }
-            });
+    bootstrapAndWireRole(
+        "Coordinator", partitionId, created, managementService, coordinatorPartition::onRoleChange);
   }
 
   /**
@@ -249,14 +226,8 @@ final class PartitionBootstrapper {
       final MessagingService brokerMessagingService,
       final TopologyManagerImpl metadataTopologyManager) {
 
-    final var clusterSize = properties.cluster().clusterSize();
-    final var members = BrokerMembers.all(clusterSize);
-    final var replicationFactor = Math.min(properties.raft().replicationFactor(), clusterSize);
-
     // Single partition: the topic registry is a cluster-wide namespace, not sharded.
-    final var distribution =
-        new RoundRobinPartitionDistributor(PartitionFactory.METADATA_GROUP_NAME)
-            .distributePartitions(members, 1, replicationFactor);
+    final var distribution = groupDistribution(PartitionFactory.METADATA_GROUP_NAME, 1);
 
     // Every broker observes the metadata group so it can reconcile its topic groups from the
     // group's replicated registry: the RF chosen brokers are voting members (bootstrap), all others
@@ -311,8 +282,8 @@ final class PartitionBootstrapper {
 
     // Voting members bootstrap the group; everyone else joins as a non-voting passive observer.
     // In both cases register the role-change listener only AFTER the Raft partition is started
-    // (replays the current role) — see the note in bootstrapCoordinatorPartition: registering
-    // before would pin the StreamProcessor's committed reader to a segment that startup resets.
+    // (replays the current role) — see the note in bootstrapAndWireRole: registering before would
+    // pin the StreamProcessor's committed reader to a segment that startup resets.
     if (observe) {
       new MetadataPassiveJoiner(
               partitionId,
@@ -321,29 +292,56 @@ final class PartitionBootstrapper {
               managementService,
               executorService,
               () -> closing,
-              () ->
-                  created
-                      .raftPartition()
-                      .addRoleChangeListener(
-                          (role, term) -> metadataPartition.onRoleChange(role, term)))
+              () -> created.raftPartition().addRoleChangeListener(metadataPartition::onRoleChange))
           .start();
     } else {
-      created
-          .raftPartition()
-          .bootstrap(managementService, created.snapshotStore())
-          .whenComplete(
-              (rp, error) -> {
-                if (error != null) {
-                  LOG.error("Failed to bootstrap metadata raft partition {}", partitionId, error);
-                } else {
-                  LOG.info("Metadata raft partition {} bootstrapped", partitionId);
-                  created
-                      .raftPartition()
-                      .addRoleChangeListener(
-                          (role, term) -> metadataPartition.onRoleChange(role, term));
-                }
-              });
+      bootstrapAndWireRole(
+          "Metadata", partitionId, created, managementService, metadataPartition::onRoleChange);
     }
+  }
+
+  /**
+   * The round-robin partition distribution for an auxiliary Raft group (coordinator or metadata)
+   * over the configured cluster, replicated at the cluster-capped replication factor. The same
+   * shape the data partitions use, just in the named group.
+   */
+  private Set<PartitionMetadata> groupDistribution(
+      final String groupName, final int partitionCount) {
+    final var clusterSize = properties.cluster().clusterSize();
+    final var members = BrokerMembers.all(clusterSize);
+    final var replicationFactor = Math.min(properties.raft().replicationFactor(), clusterSize);
+    return new RoundRobinPartitionDistributor(groupName)
+        .distributePartitions(members, partitionCount, replicationFactor);
+  }
+
+  /**
+   * Bootstraps a voting member's Raft partition FIRST, then registers the role-change listener —
+   * mirroring Zeebe's partition startup (RaftBootstrapStep before ZeebePartitionStep). The listener
+   * replays the current role on registration, so we don't miss the initial transition. If we
+   * registered before bootstrap, the StreamProcessor (and its committed log reader) would be
+   * created while the journal is still being initialized/reset, pinning the reader to a segment
+   * that bootstrap then closes — so followers would never replay (their reader stays
+   * SEGMENT-NOT-OPEN).
+   */
+  private void bootstrapAndWireRole(
+      final String groupLabel,
+      final int partitionId,
+      final CreatedPartition created,
+      final DefaultPartitionManagementService managementService,
+      final RaftRoleChangeListener roleListener) {
+    created
+        .raftPartition()
+        .bootstrap(managementService, created.snapshotStore())
+        .whenComplete(
+            (rp, error) -> {
+              if (error != null) {
+                LOG.error(
+                    "Failed to bootstrap {} raft partition {}", groupLabel, partitionId, error);
+              } else {
+                LOG.info("{} raft partition {} bootstrapped", groupLabel, partitionId);
+                created.raftPartition().addRoleChangeListener(roleListener);
+              }
+            });
   }
 
   void stop() {
