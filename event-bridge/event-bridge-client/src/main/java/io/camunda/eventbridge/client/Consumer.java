@@ -7,7 +7,6 @@
  */
 package io.camunda.eventbridge.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -110,32 +109,9 @@ public final class Consumer {
 
   public CompletableFuture<Void> joinGroup() {
     final var future = new CompletableFuture<Void>();
-
-    final String requestBody;
-    try {
-      final var hbBody = new LinkedHashMap<String, Object>();
-      hbBody.put("topics", topics);
-      hbBody.put("instanceId", instanceId);
-      requestBody = client.getObjectMapper().writeValueAsString(hbBody);
-    } catch (final JsonProcessingException e) {
-      throw new EventBridgeException("Failed to serialize heartbeat request", e);
-    }
-
-    final var httpRequest =
-        HttpRequest.newBuilder()
-            .uri(
-                URI.create(
-                    client.getGatewayUrl()
-                        + "/v1/groups/"
-                        + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
-                        + "/join"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-            .build();
-
     client
         .getHttpClient()
-        .sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
+        .sendAsync(joinRequest(), HttpResponse.BodyHandlers.ofString())
         .handleAsync(
             (response, error) -> {
               if (error != null || response == null) {
@@ -144,48 +120,46 @@ public final class Consumer {
                         "Join group request failed: "
                             + (error != null ? error.getMessage() : "no response")));
               }
-
-              Map<String, Object> body;
-              try {
-                //noinspection unchecked
-                body = client.getObjectMapper().readValue(response.body(), Map.class);
-              } catch (final IOException e) {
-                LOG.warn("Failed to parse join response body; skipping state update", e);
-                body = Map.of();
+              if (response.statusCode() != 200) {
+                return future.completeExceptionally(new RuntimeException("Failed to Join Group"));
               }
 
-              if (response.statusCode() == 200) {
-                final var errorCode = (String) body.get("errorCode");
-                memberId = (String) body.get("memberId");
-                final var epochVal = body.get("memberEpoch");
-                memberEpoch = epochVal instanceof final Number n ? n.longValue() : 0L;
-
-                LOG.info(
-                    "[JoinGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d; start send heartbeat"
-                        .formatted(instanceId, groupId, errorCode, memberId, memberEpoch));
-                scheduleSendHeartbeat();
-                return future.complete(null);
-              }
-
-              return future.completeExceptionally(new RuntimeException("Failed to Join Group"));
+              final var body = client.readBody(response.body(), JoinResponse.class, "join");
+              applyJoinResponse(body);
+              LOG.info(
+                  "[JoinGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d; start send heartbeat"
+                      .formatted(instanceId, groupId, body.errorCode(), memberId, memberEpoch));
+              scheduleSendHeartbeat();
+              return future.complete(null);
             },
             executor);
-
     return future;
+  }
+
+  /** Builds the {@code POST /v1/groups/{group}/join} request (shared by join and rejoin). */
+  private HttpRequest joinRequest() {
+    return HttpRequest.newBuilder()
+        .uri(
+            URI.create(
+                client.getGatewayUrl()
+                    + "/v1/groups/"
+                    + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
+                    + "/join"))
+        .header("Content-Type", "application/json")
+        .POST(
+            HttpRequest.BodyPublishers.ofString(
+                client.writeBody(new JoinRequest(topics, instanceId), "join")))
+        .build();
+  }
+
+  /** Adopts the member id/epoch the coordinator assigned in a join/rejoin response. */
+  private void applyJoinResponse(final JoinResponse body) {
+    memberId = body.memberId();
+    memberEpoch = body.memberEpoch() != null ? body.memberEpoch() : 0L;
   }
 
   public CompletableFuture<Void> leaveGroup() {
     final var future = new CompletableFuture<Void>();
-
-    final String requestBody;
-    try {
-      final var hbBody = new LinkedHashMap<String, Object>();
-      hbBody.put("memberId", memberId);
-      hbBody.put("memberEpoch", memberEpoch);
-      requestBody = client.getObjectMapper().writeValueAsString(hbBody);
-    } catch (final JsonProcessingException e) {
-      throw new EventBridgeException("Failed to serialize heartbeat request", e);
-    }
 
     final var httpRequest =
         HttpRequest.newBuilder()
@@ -198,7 +172,9 @@ public final class Consumer {
                         + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
                         + "/leave"))
             .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    client.writeBody(new LeaveRequest(memberId, memberEpoch), "leave")))
             .build();
 
     client
@@ -212,36 +188,24 @@ public final class Consumer {
                         "Leave group request failed: "
                             + (error != null ? error.getMessage() : "no response")));
               }
-
-              Map<String, Object> body;
-              try {
-                //noinspection unchecked
-                body = client.getObjectMapper().readValue(response.body(), Map.class);
-              } catch (final IOException e) {
-                LOG.warn("Failed to parse leave response body; skipping state update", e);
-                body = Map.of();
+              if (response.statusCode() != 200) {
+                return future.completeExceptionally(new RuntimeException("Failed to Leave Group"));
               }
 
-              if (response.statusCode() == 200) {
-                final var errorCode = (String) body.get("errorCode");
+              final var body = client.readBody(response.body(), LeaveResponse.class, "leave");
+              LOG.info(
+                  "[LeaveGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d"
+                      .formatted(instanceId, groupId, body.errorCode(), memberId, memberEpoch));
 
-                LOG.info(
-                    "[LeaveGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d"
-                        .formatted(instanceId, groupId, errorCode, memberId, memberEpoch));
+              memberId = null;
+              memberEpoch = -1;
+              ownedPartitions = Collections.emptyList();
 
-                memberId = null;
-                memberEpoch = -1;
-                ownedPartitions = Collections.emptyList();
-
-                final var hb = scheduledHeartbeat;
-                if (hb != null) {
-                  hb.cancel(false);
-                }
-
-                return future.complete(null);
+              final var hb = scheduledHeartbeat;
+              if (hb != null) {
+                hb.cancel(false);
               }
-
-              return future.completeExceptionally(new RuntimeException("Failed to Leave Group"));
+              return future.complete(null);
             },
             executor);
 
@@ -283,31 +247,9 @@ public final class Consumer {
    * so resumption is at-least-once.
    */
   private void rejoinSync() {
-    final String requestBody;
-    try {
-      final var body = new LinkedHashMap<String, Object>();
-      body.put("topics", topics);
-      body.put("instanceId", instanceId);
-      requestBody = client.getObjectMapper().writeValueAsString(body);
-    } catch (final JsonProcessingException e) {
-      throw new EventBridgeException("Failed to serialize rejoin request", e);
-    }
-
-    final var httpRequest =
-        HttpRequest.newBuilder()
-            .uri(
-                URI.create(
-                    client.getGatewayUrl()
-                        + "/v1/groups/"
-                        + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
-                        + "/join"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-            .build();
-
     final HttpResponse<String> response;
     try {
-      response = client.getHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+      response = client.getHttpClient().send(joinRequest(), HttpResponse.BodyHandlers.ofString());
     } catch (final IOException | InterruptedException e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt();
@@ -320,17 +262,7 @@ public final class Consumer {
           "Rejoin failed: HTTP " + response.statusCode() + " — " + response.body());
     }
 
-    final Map<String, Object> body;
-    try {
-      //noinspection unchecked
-      body = client.getObjectMapper().readValue(response.body(), Map.class);
-    } catch (final IOException e) {
-      throw new EventBridgeException("Failed to parse rejoin response", e);
-    }
-
-    memberId = (String) body.get("memberId");
-    final var epochVal = body.get("memberEpoch");
-    memberEpoch = epochVal instanceof final Number n ? n.longValue() : 0L;
+    applyJoinResponse(client.readBody(response.body(), JoinResponse.class, "rejoin"));
     applyOwnedPartitions(List.of());
 
     LOG.info(
@@ -350,15 +282,9 @@ public final class Consumer {
           final long snapshotEpoch = memberEpoch;
           final List<TopicPartition> snapshotOwned = ownedPartitions;
 
-          final String requestBody;
-          try {
-            final var hbBody = new LinkedHashMap<String, Object>();
-            hbBody.put("epoch", memberEpoch);
-            hbBody.put("ownedPartitions", groupByTopic(snapshotOwned));
-            requestBody = client.getObjectMapper().writeValueAsString(hbBody);
-          } catch (final JsonProcessingException e) {
-            throw new EventBridgeException("Failed to serialize heartbeat request", e);
-          }
+          final var requestBody =
+              client.writeBody(
+                  new HeartbeatRequest(memberEpoch, groupByTopic(snapshotOwned)), "heartbeat");
 
           final var httpRequest =
               HttpRequest.newBuilder()
@@ -411,17 +337,8 @@ public final class Consumer {
                     + httpResponse.body());
           }
 
-          final Map<String, Object> body;
-          try {
-            //noinspection unchecked
-            body = client.getObjectMapper().readValue(httpResponse.body(), Map.class);
-          } catch (final IOException e) {
-            LOG.warn("Failed to parse heartbeat response body; skipping state update", e);
-            return;
-          }
-
-          final long serverEpoch =
-              ((Number) body.getOrDefault("memberEpoch", snapshotEpoch)).longValue();
+          final var hb = client.readBody(httpResponse.body(), HeartbeatResponse.class, "heartbeat");
+          final long serverEpoch = hb.memberEpoch();
 
           if (serverEpoch < snapshotEpoch) {
             LOG.debug(
@@ -436,13 +353,13 @@ public final class Consumer {
           // GroupReconciliation); applying the change here and reporting it next beat is the
           // acknowledgement.
           if (serverEpoch > snapshotEpoch) {
-            // Full reconciliation: replace owned partitions wholesale from fullAssignment.
-            applyOwnedPartitions(extractPartitions(body, "assignment"));
+            // Full reconciliation: replace owned partitions wholesale from the full assignment.
+            applyOwnedPartitions(flatten(hb.assignment()));
             memberEpoch = serverEpoch;
           } else {
             // Delta path (serverEpoch == snapshotEpoch).
-            final var revoke = extractPartitions(body, "revoke");
-            final var assign = extractPartitions(body, "assign");
+            final var revoke = flatten(hb.revoke());
+            final var assign = flatten(hb.assign());
 
             if (!revoke.isEmpty() || !assign.isEmpty()) {
               final var newOwned = new ArrayList<>(snapshotOwned);
@@ -452,9 +369,9 @@ public final class Consumer {
             }
           }
 
-          seedCommittedOffsets(body);
+          seedCommittedOffsets(hb.committedOffsets());
 
-          final var state = (String) body.get("errorCode");
+          final var state = hb.errorCode();
 
           LOG.info(
               "[Heartbeat][Consumer=%s] Consumer Group %s (state %s): memberId %s, memberEpoch: %d, ownedPartitions: %s"
@@ -600,17 +517,9 @@ public final class Consumer {
             + "/consumers/"
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8)
             + "/commit";
-    final String jsonBody;
-    try {
-      final var bodyMap = new LinkedHashMap<String, Object>();
-      bodyMap.put("topic", topic);
-      bodyMap.put("partitionId", partitionId);
-      bodyMap.put("position", position);
-      bodyMap.put("memberEpoch", memberEpoch);
-      jsonBody = client.getObjectMapper().writeValueAsString(bodyMap);
-    } catch (final JsonProcessingException e) {
-      throw new EventBridgeException("Failed to serialize commitOffset request", e);
-    }
+    final var jsonBody =
+        client.writeBody(
+            new CommitRequest(topic, partitionId, position, memberEpoch), "commitOffset");
     final var request =
         HttpRequest.newBuilder()
             .uri(URI.create(url))
@@ -670,26 +579,24 @@ public final class Consumer {
    * response, so a (re)assigned consumer resumes from the committed position. Uses {@code max} so
    * an in-flight local position is never rewound to an older committed one.
    */
-  private void seedCommittedOffsets(final Map<String, Object> body) {
+  private void seedCommittedOffsets(final Map<String, Map<Integer, Long>> committed) {
     // committedOffsets is grouped {topic -> {partition -> offset}}.
-    if (!(body.get("committedOffsets") instanceof final Map<?, ?> committed)) {
+    if (committed == null) {
       return;
     }
     committed.forEach(
-        (topic, partitionOffsets) -> {
-          if (!(partitionOffsets instanceof final Map<?, ?> offsets)) {
+        (topic, offsets) -> {
+          if (offsets == null) {
             return;
           }
           offsets.forEach(
-              (partition, offset) -> {
-                if (!(offset instanceof final Number position)) {
+              (partition, position) -> {
+                if (position == null) {
                   return;
                 }
-                final var tp =
-                    new TopicPartition(
-                        String.valueOf(topic), Integer.parseInt(partition.toString()));
+                final var tp = new TopicPartition(topic, partition);
                 if (ownedPartitions.contains(tp)) {
-                  nextPositions.merge(tp, position.longValue(), Math::max);
+                  nextPositions.merge(tp, position, Math::max);
                 }
               });
         });
@@ -721,32 +628,17 @@ public final class Consumer {
   }
 
   /**
-   * Flattens a {@code topic -> [partition,...]} response field into a {@link TopicPartition} list.
+   * Flattens a {@code topic -> [partition,...]} assignment map into a {@link TopicPartition} list.
    */
-  private static List<TopicPartition> extractPartitions(
-      final Map<String, Object> body, final String key) {
-    if (!(body.get(key) instanceof final Map<?, ?> byTopic)) {
+  private static List<TopicPartition> flatten(final Map<String, List<Integer>> byTopic) {
+    if (byTopic == null || byTopic.isEmpty()) {
       return List.of();
     }
     final List<TopicPartition> result = new ArrayList<>();
     byTopic.forEach(
         (topic, partitions) -> {
-          if (!(partitions instanceof final List<?> list)) {
-            throw new EventBridgeException(
-                "Invalid payload: expected topic -> [partition] in '"
-                    + key
-                    + "', got "
-                    + partitions);
-          }
-          for (final var partition : list) {
-            if (!(partition instanceof final Number n)) {
-              throw new EventBridgeException(
-                  "Invalid payload: expected integer partitions in '"
-                      + key
-                      + "', got "
-                      + partition);
-            }
-            result.add(new TopicPartition(String.valueOf(topic), n.intValue()));
+          if (partitions != null) {
+            partitions.forEach(p -> result.add(new TopicPartition(topic, p)));
           }
         });
     return Collections.unmodifiableList(result);
@@ -758,4 +650,29 @@ public final class Consumer {
           "Consumer " + memberId + " in group " + groupId + " is closed");
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Coordination wire shapes (gateway JSON). Field names must match the gateway DTOs.
+
+  private record JoinRequest(List<String> topics, String instanceId) {}
+
+  private record JoinResponse(String errorCode, String memberId, Long memberEpoch) {}
+
+  private record LeaveRequest(String memberId, long memberEpoch) {}
+
+  private record LeaveResponse(String errorCode) {}
+
+  private record CommitRequest(String topic, int partitionId, long position, long memberEpoch) {}
+
+  private record HeartbeatRequest(long epoch, Map<String, List<Integer>> ownedPartitions) {}
+
+  private record HeartbeatResponse(
+      String errorCode,
+      String memberId,
+      long memberEpoch,
+      Map<String, List<Integer>> revoke,
+      Map<String, List<Integer>> assign,
+      long assignmentEpoch,
+      Map<String, List<Integer>> assignment,
+      Map<String, Map<Integer, Long>> committedOffsets) {}
 }

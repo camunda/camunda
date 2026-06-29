@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.eventbridge.batch.BatchBuilder;
 import java.io.IOException;
@@ -17,9 +18,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -94,7 +93,8 @@ public final class EventBridgeClient implements AutoCloseable {
     return new EventBridgeClient(
         gatewayUrl,
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build(),
-        new ObjectMapper(),
+        // Tolerate fields the gateway may add to responses — the client only reads what it needs.
+        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false),
         offsetResetPolicy);
   }
 
@@ -234,31 +234,19 @@ public final class EventBridgeClient implements AutoCloseable {
    */
   public CompletableFuture<Void> createTopic(
       final String name, final int partitionCount, final int replicationFactor) {
-    final String body;
-    try {
-      body =
-          objectMapper.writeValueAsString(
-              Map.<String, Object>of(
-                  "name", name,
-                  "partitionCount", partitionCount,
-                  "replicationFactor", replicationFactor));
-    } catch (final IOException e) {
-      throw new EventBridgeException("Failed to serialize createTopic request", e);
-    }
     final var request =
-        HttpRequest.newBuilder()
-            .uri(URI.create(gatewayUrl + "/v1/topics"))
+        requestTo("/v1/topics")
             .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    writeBody(
+                        new CreateTopicRequest(name, partitionCount, replicationFactor),
+                        "createTopic")))
             .build();
-    return httpClient
-        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    return send(request)
         .thenApply(
             response -> {
-              if (response.statusCode() != 201) {
-                throw new EventBridgeException(
-                    "createTopic failed: HTTP " + response.statusCode() + " — " + response.body());
-              }
+              expectStatus(response, 201, "createTopic");
               return null;
             });
   }
@@ -266,58 +254,34 @@ public final class EventBridgeClient implements AutoCloseable {
   /** Deletes a topic. Completes when the coordinator has accepted the request. */
   public CompletableFuture<Void> deleteTopic(final String name) {
     final var request =
-        HttpRequest.newBuilder()
-            .uri(
-                URI.create(
-                    gatewayUrl + "/v1/topics/" + URLEncoder.encode(name, StandardCharsets.UTF_8)))
-            .DELETE()
-            .build();
-    return httpClient
-        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        requestTo("/v1/topics/" + URLEncoder.encode(name, StandardCharsets.UTF_8)).DELETE().build();
+    return send(request)
         .thenApply(
             response -> {
-              if (response.statusCode() != 204) {
-                throw new EventBridgeException(
-                    "deleteTopic failed: HTTP " + response.statusCode() + " — " + response.body());
-              }
+              expectStatus(response, 204, "deleteTopic");
               return null;
             });
   }
 
   /** Lists the registered topics. */
   public CompletableFuture<List<TopicInfo>> listTopics() {
-    final var request =
-        HttpRequest.newBuilder().uri(URI.create(gatewayUrl + "/v1/topics")).GET().build();
-    return httpClient
-        .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    final var request = requestTo("/v1/topics").GET().build();
+    return send(request)
         .thenApply(
             response -> {
-              if (response.statusCode() != 200) {
-                throw new EventBridgeException(
-                    "listTopics failed: HTTP " + response.statusCode() + " — " + response.body());
-              }
-              try {
-                @SuppressWarnings("unchecked")
-                final List<Map<String, Object>> raw =
-                    objectMapper.readValue(response.body(), List.class);
-                final List<TopicInfo> topics = new ArrayList<>(raw.size());
-                for (final var t : raw) {
-                  topics.add(
-                      new TopicInfo(
-                          (String) t.get("name"),
-                          ((Number) t.get("partitionCount")).intValue(),
-                          ((Number) t.get("replicationFactor")).intValue(),
-                          (String) t.get("status")));
-                }
-                return topics;
-              } catch (final IOException e) {
-                throw new EventBridgeException("Failed to parse listTopics response", e);
-              }
+              expectStatus(response, 200, "listTopics");
+              return List.of(readBody(response.body(), TopicInfo[].class, "listTopics"));
             });
   }
 
   /** A topic as reported by the registry. */
   public record TopicInfo(String name, int partitionCount, int replicationFactor, String status) {}
+
+  /** Body of {@code POST /v1/topics}. */
+  private record CreateTopicRequest(String name, int partitionCount, int replicationFactor) {}
+
+  /** Body of a publish response ({@code logPositions} assigned by the broker). */
+  private record PublishResponse(List<Long> logPositions) {}
 
   /**
    * Shuts down the client's scheduler and HTTP client. After close, scheduled consumer heartbeats
@@ -337,35 +301,51 @@ public final class EventBridgeClient implements AutoCloseable {
     return httpClient;
   }
 
-  ObjectMapper getObjectMapper() {
-    return objectMapper;
-  }
-
   ScheduledExecutorService getExecutor() {
     return executor;
   }
 
   private List<Long> parsePublishResponse(final HttpResponse<String> response) {
-    if (response.statusCode() != 200) {
+    expectStatus(response, 200, "publish");
+    return readBody(response.body(), PublishResponse.class, "publish").logPositions();
+  }
+
+  // -------------------------------------------------------------------------
+  // HTTP helpers
+
+  /** A request builder pre-pointed at {@code gatewayUrl + path} with the default timeout. */
+  private HttpRequest.Builder requestTo(final String path) {
+    return HttpRequest.newBuilder()
+        .uri(URI.create(gatewayUrl + path))
+        .timeout(Duration.ofSeconds(10));
+  }
+
+  /** Sends a request and returns its string-bodied response. */
+  private CompletableFuture<HttpResponse<String>> send(final HttpRequest request) {
+    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private static void expectStatus(
+      final HttpResponse<String> response, final int expected, final String op) {
+    if (response.statusCode() != expected) {
       throw new EventBridgeException(
-          "Publish failed: HTTP " + response.statusCode() + " — " + response.body());
+          op + " failed: HTTP " + response.statusCode() + " — " + response.body());
     }
+  }
+
+  <T> T readBody(final String body, final Class<T> type, final String op) {
     try {
-      @SuppressWarnings("unchecked")
-      final var result = (Map<String, Object>) objectMapper.readValue(response.body(), Map.class);
-      @SuppressWarnings("unchecked")
-      final List<Number> positions = (List<Number>) result.get("logPositions");
-      if (positions == null) {
-        throw new EventBridgeException(
-            "Publish response missing 'logPositions': " + response.body());
-      }
-      final var longPositions = new ArrayList<Long>(positions.size());
-      for (final Number n : positions) {
-        longPositions.add(n.longValue());
-      }
-      return longPositions;
+      return objectMapper.readValue(body, type);
     } catch (final IOException e) {
-      throw new EventBridgeException("Failed to parse publish response", e);
+      throw new EventBridgeException("Failed to parse " + op + " response", e);
+    }
+  }
+
+  String writeBody(final Object value, final String op) {
+    try {
+      return objectMapper.writeValueAsString(value);
+    } catch (final IOException e) {
+      throw new EventBridgeException("Failed to serialize " + op + " request", e);
     }
   }
 
@@ -407,16 +387,11 @@ public final class EventBridgeClient implements AutoCloseable {
       }
 
       final var request =
-          HttpRequest.newBuilder()
-              .uri(URI.create(gatewayUrl + "/v1/events/" + partitionId))
+          requestTo("/v1/events/" + partitionId)
               .header("Content-Type", "application/octet-stream")
-              .timeout(Duration.ofSeconds(10))
               .POST(HttpRequest.BodyPublishers.ofByteArray(batchBuilder.build()))
               .build();
-
-      return httpClient
-          .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-          .thenApply(EventBridgeClient.this::parsePublishResponse);
+      return send(request).thenApply(EventBridgeClient.this::parsePublishResponse);
     }
 
     /** Publishes the batch to a partition of a topic ({@code POST /v1/topics/{topic}/...}). */
@@ -426,16 +401,11 @@ public final class EventBridgeClient implements AutoCloseable {
       }
 
       final var request =
-          HttpRequest.newBuilder()
-              .uri(URI.create(gatewayUrl + "/v1/topics/" + topic + "/partitions/" + partitionId))
+          requestTo("/v1/topics/" + topic + "/partitions/" + partitionId)
               .header("Content-Type", "application/octet-stream")
-              .timeout(Duration.ofSeconds(10))
               .POST(HttpRequest.BodyPublishers.ofByteArray(batchBuilder.build()))
               .build();
-
-      return httpClient
-          .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-          .thenApply(EventBridgeClient.this::parsePublishResponse);
+      return send(request).thenApply(EventBridgeClient.this::parsePublishResponse);
     }
   }
 }
