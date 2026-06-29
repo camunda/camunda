@@ -68,4 +68,22 @@ final class ZeebeRecordCodecTest {
     assertThat(deserialized.getPartitionId()).isEqualTo(7);
     assertThat(deserialized.getPosition()).isEqualTo(555L);
   }
+
+  @Test
+  void shouldPreserveOriginalEventTimestamp() {
+    // given
+    final JobRecord value = new JobRecord().setType("payment");
+    final RecordMetadata metadata =
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .valueType(ValueType.JOB)
+            .intent(JobIntent.CREATED);
+    final Record<JobRecord> record = new CopiedRecord<>(value, metadata, 42L, 1, 100L, 99L, 1234L);
+
+    // when — reconstructed against a different partition/position than the source
+    final Record<?> deserialized = codec.deserialize(codec.serialize(record), 7, 555L);
+
+    // then — the event timestamp is a property of the event, preserved from the payload
+    assertThat(deserialized.getTimestamp()).isEqualTo(1234L);
+  }
 }

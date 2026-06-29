@@ -24,20 +24,24 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Binary codec for Zeebe records carried as Event Bridge payloads.
  *
  * <p>A payload is the <em>event</em> (the record value, in its native MsgPack form) together with
- * its {@link RecordMetadata} (SBE-encoded). Log-level fields that the source log assigns —
- * position, key, timestamp, source record position, partition — are intentionally not part of the
- * payload; they are re-supplied from the Event Bridge envelope when a record is reconstructed on
- * the consume side (see {@link #deserialize(byte[], int, long)}).
+ * its {@link RecordMetadata} (SBE-encoded) and the original event timestamp. The timestamp is the
+ * engine event time and is part of the payload, since it is a property of the event rather than a
+ * coordinate the carrying log assigns — analytics downstream rely on it (e.g. process execution
+ * time). Pure log coordinates that the source log assigns — position, partition — are re-supplied
+ * from the Event Bridge envelope when a record is reconstructed on the consume side (see {@link
+ * #deserialize(byte[], int, long)}); key and source record position are not carried and default to
+ * {@code -1}.
  *
  * <p>Frame layout (little-endian):
  *
  * <pre>
- *   metadataLength(4) | metadata[metadataLength] | value[...]
+ *   timestamp(8) | metadataLength(4) | metadata[metadataLength] | value[...]
  * </pre>
  */
 public final class ZeebeRecordCodec {
 
   private static final ByteOrder ORDER = ByteOrder.LITTLE_ENDIAN;
+  private static final int TIMESTAMP_FIELD = Long.BYTES;
   private static final int METADATA_LENGTH_FIELD = Integer.BYTES;
 
   /** Serializes a record's metadata and value into a single Event Bridge payload. */
@@ -47,10 +51,13 @@ public final class ZeebeRecordCodec {
 
     final int metadataLength = metadata.getLength();
     final int valueLength = value.getLength();
-    final byte[] payload = new byte[METADATA_LENGTH_FIELD + metadataLength + valueLength];
+    final byte[] payload =
+        new byte[TIMESTAMP_FIELD + METADATA_LENGTH_FIELD + metadataLength + valueLength];
     final MutableDirectBuffer buffer = new UnsafeBuffer(payload);
 
     int offset = 0;
+    buffer.putLong(offset, record.getTimestamp(), ORDER);
+    offset += TIMESTAMP_FIELD;
     buffer.putInt(offset, metadataLength, ORDER);
     offset += METADATA_LENGTH_FIELD;
     metadata.write(buffer, offset);
@@ -61,14 +68,16 @@ public final class ZeebeRecordCodec {
   }
 
   /**
-   * Reconstructs a record from an Event Bridge payload, taking the log-level fields it cannot carry
-   * (position, partition) from the envelope. Key, source record position and timestamp are not
-   * carried and default to {@code -1}.
+   * Reconstructs a record from an Event Bridge payload. The event timestamp is carried in the
+   * payload and preserved; the pure log coordinates position and partition are taken from the
+   * envelope. Key and source record position are not carried and default to {@code -1}.
    */
   public Record<?> deserialize(final byte[] payload, final int partitionId, final long position) {
     final DirectBuffer buffer = new UnsafeBuffer(payload);
 
     int offset = 0;
+    final long timestamp = buffer.getLong(offset, ORDER);
+    offset += TIMESTAMP_FIELD;
     final int metadataLength = buffer.getInt(offset, ORDER);
     offset += METADATA_LENGTH_FIELD;
 
@@ -83,7 +92,7 @@ public final class ZeebeRecordCodec {
     }
     value.wrap(buffer, offset, payload.length - offset);
 
-    return new CopiedRecord<>(value, metadata, -1L, partitionId, position, -1L, -1L);
+    return new CopiedRecord<>(value, metadata, -1L, partitionId, position, -1L, timestamp);
   }
 
   private static RecordMetadata toMetadata(final Record<?> record) {
