@@ -11,11 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.Topology;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.it.util.TestHelper;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -40,14 +44,17 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -73,7 +80,12 @@ public class DynamicNodeIdIT {
           .withEnv("LS_LOG", "trace");
 
   @AutoClose private static S3Client s3Client;
-  private static final String BUCKET_NAME = UUID.randomUUID().toString();
+  private static final List<Optional<String>> ZONES =
+      List.of(Optional.empty(), Optional.of("zoneA"), Optional.of("zoneB"));
+  private static final Map<Optional<String>, String> BUCKET_NAMES =
+      ZONES.stream()
+          .collect(Collectors.toUnmodifiableMap(z -> z, z -> UUID.randomUUID().toString()));
+  private static final String BUCKET_NAME = BUCKET_NAMES.get(Optional.empty());
   private static final int CLUSTER_SIZE = 3;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Duration LEASE_DURATION = Duration.ofSeconds(10);
@@ -97,7 +109,8 @@ public class DynamicNodeIdIT {
                             cfg.getCluster().getNodeIdProvider().setType(Type.S3);
                             final S3 s3 = cfg.getCluster().getNodeIdProvider().s3();
                             s3.setTaskId(UUID.randomUUID().toString());
-                            s3.setBucketName(BUCKET_NAME);
+                            s3.setBucketName(
+                                BUCKET_NAMES.get(Optional.ofNullable(cfg.getCluster().getZone())));
                             s3.setLeaseDuration(LEASE_DURATION);
                             s3.setEndpoint(S3.getEndpoint().toString());
                             s3.setRegion(S3.getRegion());
@@ -108,9 +121,13 @@ public class DynamicNodeIdIT {
 
   @AfterEach
   void setup() {
-    final var objects = s3Client.listObjects(b -> b.bucket(BUCKET_NAME));
-    objects.contents().parallelStream()
-        .forEach(obj -> s3Client.deleteObject(b -> b.bucket(BUCKET_NAME).key(obj.key())));
+    ZONES.forEach(
+        zone -> {
+          final var bucket = BUCKET_NAMES.get(zone);
+          final var objects = s3Client.listObjects(b -> b.bucket(bucket));
+          objects.contents().parallelStream()
+              .forEach(obj -> s3Client.deleteObject(b -> b.bucket(bucket).key(obj.key())));
+        });
   }
 
   @BeforeAll
@@ -123,8 +140,8 @@ public class DynamicNodeIdIT {
                 Optional.of(Region.of(S3.getRegion())),
                 Optional.of(S3.getEndpoint())));
 
-    // bucket must be created before the application is started
-    s3Client.createBucket(b -> b.bucket(BUCKET_NAME));
+    // buckets must be created before the application is started
+    ZONES.forEach(zone -> s3Client.createBucket(b -> b.bucket(BUCKET_NAMES.get(zone))));
   }
 
   @Test
@@ -366,9 +383,14 @@ public class DynamicNodeIdIT {
   }
 
   private List<Lease> readLeases(final List<S3Object> objectsInBucket) throws IOException {
+    return readLeases(objectsInBucket, BUCKET_NAME);
+  }
+
+  private List<Lease> readLeases(final List<S3Object> objectsInBucket, final String bucket)
+      throws IOException {
     final var leases = new ArrayList<Lease>();
     for (final var object : objectsInBucket) {
-      final var lease = s3Client.getObject(b -> b.bucket(BUCKET_NAME).key(object.key()));
+      final var lease = s3Client.getObject(b -> b.bucket(bucket).key(object.key()));
       final var payload = lease.readAllBytes();
       if (payload.length > 0) {
         final var parsed = Lease.fromJsonBytes(OBJECT_MAPPER, payload);
@@ -382,30 +404,127 @@ public class DynamicNodeIdIT {
   }
 
   private byte[] readLeaseObjectBytes(final int nodeId) throws IOException {
+    return readLeaseObjectBytes(nodeId, BUCKET_NAME);
+  }
+
+  private byte[] readLeaseObjectBytes(final int nodeId, final String bucket) throws IOException {
     try (final var stream =
-        s3Client.getObject(b -> b.bucket(BUCKET_NAME).key(S3NodeIdRepository.objectKey(nodeId)))) {
+        s3Client.getObject(b -> b.bucket(bucket).key(S3NodeIdRepository.objectKey(nodeId)))) {
       return stream.readAllBytes();
     }
   }
 
   private Lease awaitValidLease(final int nodeId) {
-    final var lease = awaitLease(nodeId);
+    return awaitValidLease(nodeId, BUCKET_NAME);
+  }
+
+  private Lease awaitValidLease(final int nodeId, final String bucket) {
+    final var lease = awaitLease(nodeId, bucket);
     assertThat(lease.isStillValid(System.currentTimeMillis())).isTrue();
     return lease;
   }
 
   private Lease awaitLease(final int nodeId) {
+    return awaitLease(nodeId, BUCKET_NAME);
+  }
+
+  private Lease awaitLease(final int nodeId, final String bucket) {
     final AtomicReference<Lease> lease = new AtomicReference<>();
     Awaitility.await("Until lease is valid")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              final var bytes = readLeaseObjectBytes(nodeId);
+              final var bytes = readLeaseObjectBytes(nodeId, bucket);
               assertThat(bytes).isNotEmpty();
               final var parsed = Lease.fromJsonBytes(OBJECT_MAPPER, bytes);
               lease.set(parsed);
             });
 
     return lease.get();
+  }
+
+  @Nested
+  class ZoneAwareCluster {
+    private static final int CLUSTER_SIZE = 4;
+    private static final int REPLICA_PER_ZONE = CLUSTER_SIZE / 2;
+    private static final List<Zone> ZONE_CONFIGS =
+        List.of(
+            new Zone("zoneA", REPLICA_PER_ZONE, REPLICA_PER_ZONE, 1000),
+            new Zone("zoneB", REPLICA_PER_ZONE, REPLICA_PER_ZONE, 100));
+
+    @TestZeebe
+    private final TestCluster testCluster =
+        TestCluster.builder()
+            .withName("zone-aware-node-id-provider-test")
+            .withBrokersCount(CLUSTER_SIZE)
+            .withPartitionsCount(1)
+            .withReplicationFactor(CLUSTER_SIZE)
+            .withoutNodeId()
+            .multiZone(ZONE_CONFIGS)
+            .withNodeConfig(
+                app ->
+                    app.withProperty(
+                            "camunda.data.secondary-storage.type", SecondaryStorageType.none.name())
+                        .withUnifiedConfig(
+                            cfg -> {
+                              // override root data directory to avoid collisions between zones
+                              final var rootData = cfg.getData().getPrimaryStorage().getDirectory();
+                              cfg.getData()
+                                  .getPrimaryStorage()
+                                  .setDirectory(
+                                      Path.of(rootData, "zone-" + cfg.getCluster().getZone())
+                                          .toString());
+                              cfg.getData()
+                                  .getSecondaryStorage()
+                                  .setType(SecondaryStorageType.none);
+                              cfg.getCluster().getNodeIdProvider().setType(Type.S3);
+                              final S3 s3 = cfg.getCluster().getNodeIdProvider().s3();
+                              s3.setTaskId(UUID.randomUUID().toString());
+                              s3.setBucketName(
+                                  BUCKET_NAMES.get(
+                                      Optional.ofNullable(cfg.getCluster().getZone())));
+                              s3.setLeaseDuration(LEASE_DURATION);
+                              s3.setEndpoint(S3.getEndpoint().toString());
+                              s3.setRegion(S3.getRegion());
+                              s3.setAccessKey(S3.getAccessKey());
+                              s3.setSecretKey(S3.getSecretKey());
+                            }))
+            .build();
+
+    @Test
+    @Timeout(120)
+    public void shouldStartAppCorrectlyAndAcquireALease() throws IOException {
+      // then - verify each zone bucket has the correct number of leases
+      for (final Zone zone : ZONE_CONFIGS) {
+        final var bucket = BUCKET_NAMES.get(Optional.of(zone.name()));
+        final var objectsInBucket = s3Client.listObjects(b -> b.bucket(bucket)).contents();
+        // 1 lease per broker + 1 marker file per zone
+        assertThat(objectsInBucket).hasSize(zone.numberOfBrokers() + 1);
+
+        final var leases = readLeases(objectsInBucket, bucket);
+        assertThat(leases).hasSize(zone.numberOfBrokers());
+      }
+
+      // health checks pass
+      for (final var broker : testCluster.brokers().values()) {
+        final var actuator = BrokerHealthActuator.of(broker);
+        assertThatNoException().isThrownBy(actuator::ready);
+        assertThatNoException().isThrownBy(actuator::live);
+      }
+
+      try (final CamundaClient client = testCluster.newClientBuilder().build()) {
+        final Topology topology = client.newTopologyRequest().send().join();
+        final var expectedMemberIds =
+            ZONE_CONFIGS.stream()
+                .flatMap(
+                    zone ->
+                        IntStream.range(0, REPLICA_PER_ZONE)
+                            .mapToObj(id -> MemberId.from(zone.name(), id).id()))
+                .collect(Collectors.toSet());
+        final var brokerIdsInTopology =
+            topology.getBrokers().stream().map(BrokerInfo::getMemberId).collect(Collectors.toSet());
+        assertThat(brokerIdsInTopology).containsExactlyInAnyOrderElementsOf(expectedMemberIds);
+      }
+    }
   }
 }
