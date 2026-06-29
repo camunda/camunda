@@ -80,8 +80,9 @@ final class EventBridgePropertiesTest {
         brokerPartitionCount == null
             ? null
             : new BrokerProperties(brokerPartitionCount, null, null, null);
-    final var raft = raftReplicationFactor == null ? null : new RaftProperties(raftReplicationFactor);
+    final var raft =
+        raftReplicationFactor == null ? null : new RaftProperties(raftReplicationFactor);
     return new EventBridgeProperties(
-        null, broker, null, null, null, null, raft, null, topics);
+        null, broker, null, null, null, null, raft, null, topics, null);
   }
 }

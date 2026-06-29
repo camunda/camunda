@@ -17,6 +17,7 @@ import io.camunda.eventbridge.clustermetadata.processing.DrainBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.FenceBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.PlacementHealTask;
 import io.camunda.eventbridge.clustermetadata.processing.ReassignTopicProcessor;
+import io.camunda.eventbridge.clustermetadata.processing.RebalanceTask;
 import io.camunda.eventbridge.clustermetadata.processing.RegisterBrokerProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.ReportPartitionLeaderProcessor;
 import io.camunda.eventbridge.clustermetadata.processing.TopicDeleteProcessor;
@@ -85,6 +86,9 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
   private final InstantSource clock;
   private final Supplier<List<Integer>> raftMembers;
   private final PlacementStrategy placement = new SpreadPlacement();
+  private final boolean rebalanceEnabled;
+  private final Duration rebalanceInterval;
+  private final int rebalanceMinImbalance;
 
   private DbTopicState topicState;
   private DbBrokerState brokerState;
@@ -103,10 +107,16 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
       final ZeebeDb<MetadataColumnFamilies> zeebeDb,
       final InstantSource clock,
       final MeterRegistry meterRegistry,
-      final Supplier<List<Integer>> raftMembers) {
+      final Supplier<List<Integer>> raftMembers,
+      final boolean rebalanceEnabled,
+      final Duration rebalanceInterval,
+      final int rebalanceMinImbalance) {
     super(partitionId, logStorage, actorScheduler, zeebeDb, clock, meterRegistry);
     this.clock = clock;
     this.raftMembers = raftMembers;
+    this.rebalanceEnabled = rebalanceEnabled;
+    this.rebalanceInterval = rebalanceInterval;
+    this.rebalanceMinImbalance = rebalanceMinImbalance;
   }
 
   @Override
@@ -139,70 +149,77 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
           return active.isEmpty() ? raftMembers.get() : active;
         };
     return new RecordProcessingEngine(
-        processors ->
-            processors
-                .onCommand(
-                    MetadataRecordValues.TOPIC_VALUE_TYPE,
-                    MetadataIntent.CREATE_TOPIC,
-                    new CreateTopicProcessor(
-                        processors.writers(), validator, placement, activeBrokers))
-                .onCommand(
-                    MetadataRecordValues.TOPIC_VALUE_TYPE,
-                    MetadataIntent.REASSIGN_TOPIC,
-                    new ReassignTopicProcessor(
-                        processors.writers(), validator, topicState, placement, activeBrokers))
-                .onCommand(
-                    MetadataRecordValues.TOPIC_VALUE_TYPE,
-                    MetadataIntent.DELETE_TOPIC,
-                    new TopicDeleteProcessor(processors.writers(), validator))
-                .onCommand(
-                    MetadataRecordValues.TOPIC_VALUE_TYPE,
-                    MetadataIntent.REGISTER_TOPIC,
-                    new TopicRegisterProcessor(processors.writers()))
-                .onCommand(
-                    MetadataRecordValues.TOPIC_VALUE_TYPE,
-                    MetadataIntent.REPORT_PARTITION_LEADER,
-                    new ReportPartitionLeaderProcessor(processors.writers(), validator, topicState))
-                .onCommand(
-                    MetadataRecordValues.BROKER_VALUE_TYPE,
-                    MetadataIntent.REGISTER_BROKER,
-                    new RegisterBrokerProcessor(processors.writers(), brokerState))
-                .onCommand(
-                    MetadataRecordValues.BROKER_VALUE_TYPE,
-                    MetadataIntent.FENCE_BROKER,
-                    new FenceBrokerProcessor(processors.writers(), brokerState, brokerTransitions))
-                .onCommand(
-                    MetadataRecordValues.BROKER_VALUE_TYPE,
-                    MetadataIntent.DRAIN_BROKER,
-                    new DrainBrokerProcessor(processors.writers(), brokerState, brokerTransitions))
-                .onCommand(
-                    MetadataRecordValues.BROKER_VALUE_TYPE,
-                    MetadataIntent.DEREGISTER_BROKER,
-                    new DeregisterBrokerProcessor(processors.writers(), brokerTransitions))
-                .withEventApplier(
-                    MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState))
-                .withEventApplier(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState))
-                .withEventApplier(
-                    MetadataIntent.PARTITION_LEADER_REPORTED,
-                    new PartitionLeaderReportedApplier(topicState))
-                .withEventApplier(
-                    MetadataIntent.BROKER_REGISTERED, new BrokerRegisteredApplier(brokerState))
-                .withEventApplier(
-                    MetadataIntent.BROKER_FENCED, new BrokerFencedApplier(brokerState))
-                .withEventApplier(
-                    MetadataIntent.BROKER_DRAINING, new BrokerDrainingApplier(brokerState))
-                .withEventApplier(
-                    MetadataIntent.BROKER_DEREGISTERED, new BrokerDeregisteredApplier(brokerState))
-                .withListener(
-                    new BrokerEvictionTask(
-                        BROKER_EVICTION_INTERVAL,
-                        BROKER_SESSION_TIMEOUT,
-                        taskBrokerState(),
-                        brokerLiveness,
-                        clock))
-                .withListener(
-                    new PlacementHealTask(
-                        PLACEMENT_HEAL_INTERVAL, taskTopicState(), taskBrokerState())));
+        processors -> {
+          processors
+              .onCommand(
+                  MetadataRecordValues.TOPIC_VALUE_TYPE,
+                  MetadataIntent.CREATE_TOPIC,
+                  new CreateTopicProcessor(
+                      processors.writers(), validator, placement, activeBrokers))
+              .onCommand(
+                  MetadataRecordValues.TOPIC_VALUE_TYPE,
+                  MetadataIntent.REASSIGN_TOPIC,
+                  new ReassignTopicProcessor(
+                      processors.writers(), validator, topicState, placement, activeBrokers))
+              .onCommand(
+                  MetadataRecordValues.TOPIC_VALUE_TYPE,
+                  MetadataIntent.DELETE_TOPIC,
+                  new TopicDeleteProcessor(processors.writers(), validator))
+              .onCommand(
+                  MetadataRecordValues.TOPIC_VALUE_TYPE,
+                  MetadataIntent.REGISTER_TOPIC,
+                  new TopicRegisterProcessor(processors.writers()))
+              .onCommand(
+                  MetadataRecordValues.TOPIC_VALUE_TYPE,
+                  MetadataIntent.REPORT_PARTITION_LEADER,
+                  new ReportPartitionLeaderProcessor(processors.writers(), validator, topicState))
+              .onCommand(
+                  MetadataRecordValues.BROKER_VALUE_TYPE,
+                  MetadataIntent.REGISTER_BROKER,
+                  new RegisterBrokerProcessor(processors.writers(), brokerState))
+              .onCommand(
+                  MetadataRecordValues.BROKER_VALUE_TYPE,
+                  MetadataIntent.FENCE_BROKER,
+                  new FenceBrokerProcessor(processors.writers(), brokerState, brokerTransitions))
+              .onCommand(
+                  MetadataRecordValues.BROKER_VALUE_TYPE,
+                  MetadataIntent.DRAIN_BROKER,
+                  new DrainBrokerProcessor(processors.writers(), brokerState, brokerTransitions))
+              .onCommand(
+                  MetadataRecordValues.BROKER_VALUE_TYPE,
+                  MetadataIntent.DEREGISTER_BROKER,
+                  new DeregisterBrokerProcessor(processors.writers(), brokerTransitions))
+              .withEventApplier(
+                  MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(topicState))
+              .withEventApplier(MetadataIntent.TOPIC_DELETED, new TopicDeletedApplier(topicState))
+              .withEventApplier(
+                  MetadataIntent.PARTITION_LEADER_REPORTED,
+                  new PartitionLeaderReportedApplier(topicState))
+              .withEventApplier(
+                  MetadataIntent.BROKER_REGISTERED, new BrokerRegisteredApplier(brokerState))
+              .withEventApplier(MetadataIntent.BROKER_FENCED, new BrokerFencedApplier(brokerState))
+              .withEventApplier(
+                  MetadataIntent.BROKER_DRAINING, new BrokerDrainingApplier(brokerState))
+              .withEventApplier(
+                  MetadataIntent.BROKER_DEREGISTERED, new BrokerDeregisteredApplier(brokerState))
+              .withListener(
+                  new BrokerEvictionTask(
+                      BROKER_EVICTION_INTERVAL,
+                      BROKER_SESSION_TIMEOUT,
+                      taskBrokerState(),
+                      brokerLiveness,
+                      clock))
+              .withListener(
+                  new PlacementHealTask(
+                      PLACEMENT_HEAL_INTERVAL, taskTopicState(), taskBrokerState()));
+          // Auto-rebalance: incrementally even out replica placement as the cluster grows, one
+          // minimal-diff move at a time (opt-out via event-bridge.rebalance.enabled=false).
+          if (rebalanceEnabled) {
+            processors.withListener(
+                new RebalanceTask(
+                    rebalanceInterval, taskTopicState(), taskBrokerState(), rebalanceMinImbalance));
+          }
+        });
   }
 
   // Async tasks read state off the processing actor, so each gets its own private ZeebeDb context

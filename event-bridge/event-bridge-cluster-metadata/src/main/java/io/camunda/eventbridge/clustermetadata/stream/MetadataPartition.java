@@ -60,6 +60,9 @@ public final class MetadataPartition
   private final Consumer<Map<String, TopicMetadata>> registryReconciler;
   private final ReconfigurationExecutor reconfigurationExecutor;
   private final List<AutoCreatedTopic> autoCreateTopics;
+  private final boolean rebalanceEnabled;
+  private final Duration rebalanceInterval;
+  private final int rebalanceMinImbalance;
 
   private MetadataManager metadataManager;
   private MetadataQueryHandler metadataQueryHandler;
@@ -82,7 +85,10 @@ public final class MetadataPartition
       final TopologyManagerImpl metadataTopologyManager,
       final Consumer<Map<String, TopicMetadata>> registryReconciler,
       final ReconfigurationExecutor reconfigurationExecutor,
-      final List<AutoCreatedTopic> autoCreateTopics) {
+      final List<AutoCreatedTopic> autoCreateTopics,
+      final boolean rebalanceEnabled,
+      final Duration rebalanceInterval,
+      final int rebalanceMinImbalance) {
     super(
         partitionId,
         raftPartition,
@@ -95,6 +101,9 @@ public final class MetadataPartition
     this.registryReconciler = registryReconciler;
     this.reconfigurationExecutor = reconfigurationExecutor;
     this.autoCreateTopics = List.copyOf(autoCreateTopics);
+    this.rebalanceEnabled = rebalanceEnabled;
+    this.rebalanceInterval = rebalanceInterval;
+    this.rebalanceMinImbalance = rebalanceMinImbalance;
   }
 
   @Override
@@ -117,7 +126,10 @@ public final class MetadataPartition
         zeebeDb,
         clock,
         meterRegistry,
-        this::registeredBrokerIds);
+        this::registeredBrokerIds,
+        rebalanceEnabled,
+        rebalanceInterval,
+        rebalanceMinImbalance);
   }
 
   @Override

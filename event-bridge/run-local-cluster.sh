@@ -20,10 +20,19 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BASE="${EB_CLUSTER_DIR:-/tmp/eb-cluster}"
 CP_FILE="${BASE}/classpath.txt"
-CLUSTER_SIZE=3
-REPLICATION_FACTOR=3
-# All three internal (SWIM) addresses, so discovery works regardless of start order.
-CONTACT_POINTS="localhost:26502,localhost:26512,localhost:26522"
+# Final cluster size every node is configured with (must be consistent across all nodes, so the
+# coordinator/metadata group layouts agree). Default 3. To test scale-up, set EB_CLUSTER_SIZE=6 and
+# start a subset (EB_START_NODES=3), then `add` the rest.
+CLUSTER_SIZE="${EB_CLUSTER_SIZE:-3}"
+# How many nodes `start` brings up (default: all of them). The rest can be added later via `add`.
+START_NODES="${EB_START_NODES:-$CLUSTER_SIZE}"
+REPLICATION_FACTOR="${EB_REPLICATION_FACTOR:-3}"
+# One internal (SWIM) contact address per configured node, so discovery works regardless of start
+# order (bind ports are 26502 + nodeId*10).
+CONTACT_POINTS=""
+for ((i = 0; i < CLUSTER_SIZE; i++)); do
+  CONTACT_POINTS+="${CONTACT_POINTS:+,}localhost:$((26502 + i * 10))"
+done
 
 JVM_FLAGS=(
   --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
@@ -80,30 +89,57 @@ start_node() {
   echo "$!" >"${node_dir}/pid"
 }
 
-start() {
-  [[ "${1:-}" == "--skip-build" ]] || build
-  for n in 0 1 2; do start_node "${n}"; done
+# Waits for each given node id to log "waiting for raft elections" (or die).
+wait_nodes() {
   echo "==> Waiting for nodes to boot…"
-  for n in 0 1 2; do
+  for n in "$@"; do
     for _ in $(seq 1 60); do
       if ! kill -0 "$(cat "${BASE}/node-${n}/pid")" 2>/dev/null; then
-        echo "!! node-${n} died during startup:"; tail -8 "${BASE}/node-${n}/node.log"; exit 1
+        echo "!! node-${n} died during startup:"
+        tail -8 "${BASE}/node-${n}/node.log"
+        exit 1
       fi
       grep -q "waiting for raft elections" "${BASE}/node-${n}/node.log" 2>/dev/null && break
       sleep 1
     done
   done
+}
+
+start() {
+  [[ "${1:-}" == "--skip-build" ]] || build
+  local nodes=()
+  for ((n = 0; n < START_NODES; n++)); do nodes+=("$n"); done
+  for n in "${nodes[@]}"; do start_node "${n}"; done
+  wait_nodes "${nodes[@]}"
   echo "==> Waiting for the coordinator to serve (cluster quorum)…"
   for _ in $(seq 1 60); do
     [[ "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/v1/topics 2>/dev/null)" == "200" ]] && break
     sleep 1
   done
   echo
-  echo "Cluster up. Try:"
+  echo "Cluster up (${START_NODES}/${CLUSTER_SIZE} nodes). Try:"
   echo "  curl -s -XPOST localhost:8080/v1/topics -H 'Content-Type: application/json' \\"
   echo "       -d '{\"name\":\"orders\",\"partitionCount\":6,\"replicationFactor\":3}'"
   echo "  curl -s localhost:8080/v1/topology | jq"
+  [[ "${START_NODES}" -lt "${CLUSTER_SIZE}" ]] &&
+    echo "  $0 add $(seq "${START_NODES}" $((CLUSTER_SIZE - 1)) | tr '\n' ' ')# add the rest"
   echo "  $0 stop"
+}
+
+# Starts additional nodes at runtime (no build; reuses the existing classpath). They join the
+# running cluster via gossip and register with the metadata leader, becoming placement-eligible.
+add() {
+  [[ -f "${CP_FILE}" ]] || {
+    echo "!! no classpath at ${CP_FILE}; run '$0 start' first"
+    exit 1
+  }
+  [[ "$#" -gt 0 ]] || {
+    echo "usage: $0 add <nodeId> [<nodeId>...]"
+    exit 1
+  }
+  for n in "$@"; do start_node "${n}"; done
+  wait_nodes "$@"
+  echo "==> Added nodes $* — they will register with the metadata leader and become placement-eligible"
 }
 
 stop() {
@@ -113,7 +149,8 @@ stop() {
 
 case "${1:-start}" in
   start) shift || true; start "${1:-}" ;;
+  add) shift; add "$@" ;;
   stop) stop ;;
   logs) tail -f "${BASE}/node-${2:-0}/node.log" ;;
-  *) echo "usage: $0 {start [--skip-build]|stop|logs [0|1|2]}"; exit 1 ;;
+  *) echo "usage: $0 {start [--skip-build]|add <nodeId>...|stop|logs [n]}"; exit 1 ;;
 esac

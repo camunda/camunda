@@ -26,7 +26,8 @@ public record EventBridgeProperties(
     RetentionProperties retention,
     RaftProperties raft,
     ClusterProperties cluster,
-    List<TopicProperties> topics) {
+    List<TopicProperties> topics,
+    RebalanceProperties rebalance) {
 
   public EventBridgeProperties {
     if (data == null) {
@@ -34,6 +35,9 @@ public record EventBridgeProperties(
     }
     if (topics == null) {
       topics = List.of();
+    }
+    if (rebalance == null) {
+      rebalance = new RebalanceProperties(true, 5_000, 2);
     }
     if (broker == null) {
       broker =
@@ -94,6 +98,23 @@ public record EventBridgeProperties(
    *     raft.replicationFactor} when unset
    */
   public record TopicProperties(String name, Integer partitionCount, Integer replicationFactor) {}
+
+  /**
+   * Auto-rebalance configuration. When enabled, the metadata leader incrementally spreads each
+   * topic's replicas across the active brokers as the cluster grows — one minimal-diff move at a
+   * time, behind a quiescence gate (never a big-bang whole-topic reassignment).
+   *
+   * @param enabled whether the auto-rebalance controller runs at all (default true)
+   * @param intervalMs how often (ms) the controller evaluates balance and, if quiescent, issues the
+   *     next single move (default 5000)
+   * @param minImbalance the smallest replica-count gap between the most- and least-loaded broker
+   *     worth a move; balance settles within {@code minImbalance - 1} (default 2, i.e. balance to a
+   *     gap of at most 1)
+   */
+  public record RebalanceProperties(
+      @DefaultValue("true") boolean enabled,
+      @DefaultValue("5000") long intervalMs,
+      @DefaultValue("2") int minImbalance) {}
 
   /**
    * Data directory configuration.

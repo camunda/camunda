@@ -28,6 +28,7 @@ import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.core.topic.TopicGroups;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import java.io.IOException;
@@ -109,9 +110,11 @@ final class PartitionBootstrapper {
     this.registryReconciler = registryReconciler;
     this.reconfigurationExecutor = reconfigurationExecutor;
 
-    // No default data group is started here: every data partition belongs to a per-topic Raft group,
+    // No default data group is started here: every data partition belongs to a per-topic Raft
+    // group,
     // provisioned by the TopicReconciler from the replicated registry (config-declared topics are
-    // auto-created by the metadata leader). Only the coordinator and metadata groups bootstrap here.
+    // auto-created by the metadata leader). Only the coordinator and metadata groups bootstrap
+    // here.
     LOG.info("Bootstrapping EventBridge coordinator + metadata groups (local: {})", localMemberId);
 
     factory = new PartitionFactory(properties, actorScheduler);
@@ -261,7 +264,10 @@ final class PartitionBootstrapper {
             metadataTopologyManager,
             registryReconciler,
             reconfigurationExecutor,
-            properties.resolvedTopics());
+            properties.resolvedTopics(),
+            properties.rebalance().enabled(),
+            Duration.ofMillis(properties.rebalance().intervalMs()),
+            properties.rebalance().minImbalance());
     registry.addAuxiliary(created, metadataPartition);
     actorScheduler.submitActor(metadataPartition);
 
@@ -547,28 +553,67 @@ final class PartitionBootstrapper {
                 ? created.raftPartition().joinAsPassive(managementService, created.snapshotStore())
                 : created.raftPartition().join(managementService, created.snapshotStore()))
             : created.raftPartition().bootstrap(managementService, created.snapshotStore());
-    return started
-        .whenComplete(
-            (rp, error) -> {
+
+    final var result = new CompletableFuture<Void>();
+    started.whenComplete(
+        (rp, error) -> {
+          if (error == null) {
+            LOG.info(
+                "Raft partition {}/{} {}",
+                groupName,
+                partitionId,
+                join ? "joined" : "bootstrapped");
+            result.complete(null);
+            return;
+          }
+          // A join/bootstrap can fail transiently — most often the group has no leader yet (an
+          // election in progress when the change-coordinator's step or the reconcile arrives). The
+          // change-coordinator (and the 1s reconcile) retry, but a retry must start clean: roll
+          // back
+          // tracking AND close the half-started Raft server so its Raft message subjects are
+          // unregistered, otherwise the retry's fresh server for the same (group, partition)
+          // collides
+          // on those subjects and can never come up. Mirrors MetadataPassiveJoiner's close-before-
+          // retry; we close here (rather than loop internally) so we don't race the coordinator's
+          // own
+          // retry. The failure is propagated only after the close completes.
+          LOG.warn(
+              "Failed to {} raft partition {}/{}; closing the half-started server so a retry starts"
+                  + " clean",
+              join ? "join" : "bootstrap",
+              groupName,
+              partitionId,
+              error);
+          registry.removeData(groupName, partitionId);
+          closeFailedRaft(created, groupName, partitionId)
+              .whenComplete((ignored, closeError) -> result.completeExceptionally(error));
+        });
+    return result;
+  }
+
+  /**
+   * Closes a half-started Raft server (and its snapshot store) after a failed bootstrap/join, so
+   * its Raft message subjects are unregistered before a retry recreates them. Best-effort: close
+   * errors are logged, never propagated.
+   */
+  private CompletableFuture<Void> closeFailedRaft(
+      final CreatedPartition created, final String groupName, final int partitionId) {
+    return created
+        .raftPartition()
+        .close()
+        .handle(
+            (ignored, error) -> {
               if (error != null) {
-                LOG.error(
-                    "Failed to {} raft partition {}/{}",
-                    join ? "join" : "bootstrap",
+                LOG.warn(
+                    "Error closing half-started raft partition {}/{} after a failed start",
                     groupName,
                     partitionId,
                     error);
-                // Roll back tracking (and close the lifecycle + compactor) so a retry genuinely
-                // re-attempts and committed state is not advanced on a failed join (it would
-                // otherwise look "running" and no-op the retry).
-                registry.removeData(groupName, partitionId);
-              } else {
-                LOG.info(
-                    "Raft partition {}/{} {}",
-                    groupName,
-                    partitionId,
-                    join ? "joined" : "bootstrapped");
               }
-            })
-        .thenApply(rp -> null);
+              if (created.snapshotStore() instanceof final Actor snapshotActor) {
+                snapshotActor.closeAsync();
+              }
+              return null;
+            });
   }
 }
