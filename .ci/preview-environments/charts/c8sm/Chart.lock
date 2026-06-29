@@ -1,9 +1,9 @@
 dependencies:
-- name: infra-preview-environments-ingress
+- name: infra-preview-environments-gateway-api
   repository: oci://registry.camunda.cloud/library
-  version: 1.6.15
+  version: 1.1.0
 - name: camunda-platform
   repository: https://helm.camunda.io
   version: 13.3.2
-digest: sha256:6486c1bb0ee289d692c54987a0c09dd747b10442e2ca45de486f8399f562745f
-generated: "2026-01-09T11:37:33.096528+01:00"
+digest: sha256:2b4afd7f0403a080e39571f13331ff007fba3ae6cd5ffe678a2ea40a7262633e
+generated: "2026-06-25T18:20:11.609361132+02:00"
