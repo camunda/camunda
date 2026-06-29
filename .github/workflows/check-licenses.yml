@@ -51,7 +51,7 @@ jobs:
             -DskipQaBuild=true
         - name: single-app
           path: ./
-          runner: gcp-core-16-longrunning
+          runner: linux_16_core_arm
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
