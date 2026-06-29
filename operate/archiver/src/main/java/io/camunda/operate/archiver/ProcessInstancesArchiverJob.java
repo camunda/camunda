@@ -27,20 +27,26 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstancesArchiverJob.class);
 
   private final List<Integer> partitionIds;
-
   private final Archiver archiver;
+  private final ListViewTemplate processInstanceTemplate;
+  private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
+  private final Metrics metrics;
+  private final ArchiverRepository archiverRepository;
 
-  @Autowired private ListViewTemplate processInstanceTemplate;
-
-  @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
-
-  @Autowired private Metrics metrics;
-
-  @Autowired private ArchiverRepository archiverRepository;
-
-  public ProcessInstancesArchiverJob(final Archiver archiver, final List<Integer> partitionIds) {
-    this.partitionIds = partitionIds;
+  @Autowired
+  public ProcessInstancesArchiverJob(
+      final Archiver archiver,
+      final List<Integer> partitionIds,
+      final ListViewTemplate processInstanceTemplate,
+      final List<ProcessInstanceDependant> processInstanceDependantTemplates,
+      final Metrics metrics,
+      final ArchiverRepository archiverRepository) {
     this.archiver = archiver;
+    this.partitionIds = partitionIds;
+    this.processInstanceTemplate = processInstanceTemplate;
+    this.processInstanceDependantTemplates = processInstanceDependantTemplates;
+    this.metrics = metrics;
+    this.archiverRepository = archiverRepository;
   }
 
   @Override

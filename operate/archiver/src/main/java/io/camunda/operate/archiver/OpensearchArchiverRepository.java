@@ -63,17 +63,31 @@ import org.springframework.stereotype.Component;
 public class OpensearchArchiverRepository implements ArchiverRepository {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchArchiverRepository.class);
-  @Autowired protected RichOpenSearchClient richOpenSearchClient;
+  protected RichOpenSearchClient richOpenSearchClient;
+  protected OpenSearchAsyncClient osAsyncClient;
+  private BatchOperationTemplate batchOperationTemplate;
+  private ListViewTemplate processInstanceTemplate;
+  private DecisionInstanceTemplate decisionInstanceTemplate;
+  private OperateProperties operateProperties;
+  private Metrics metrics;
 
   @Autowired
-  @Qualifier("openSearchAsyncClient")
-  protected OpenSearchAsyncClient osAsyncClient;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-  @Autowired private ListViewTemplate processInstanceTemplate;
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-  @Autowired private OperateProperties operateProperties;
-  @Autowired private Metrics metrics;
+  public OpensearchArchiverRepository(
+      final RichOpenSearchClient richOpenSearchClient,
+      @Qualifier("openSearchAsyncClient") final OpenSearchAsyncClient osAsyncClient,
+      final OperateProperties operateProperties,
+      final Metrics metrics,
+      final ListViewTemplate processInstanceTemplate,
+      final BatchOperationTemplate batchOperationTemplate,
+      final DecisionInstanceTemplate decisionInstanceTemplate) {
+    this.richOpenSearchClient = richOpenSearchClient;
+    this.osAsyncClient = osAsyncClient;
+    this.operateProperties = operateProperties;
+    this.metrics = metrics;
+    this.processInstanceTemplate = processInstanceTemplate;
+    this.batchOperationTemplate = batchOperationTemplate;
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
+  }
 
   private <R> ArchiveBatch createArchiveBatch(
       final SearchResponse<R> searchResponse,

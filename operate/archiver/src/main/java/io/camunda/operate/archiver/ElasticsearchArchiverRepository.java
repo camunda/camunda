@@ -80,20 +80,34 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
   private static final int UPDATE_RETRY_COUNT = 3;
 
-  @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-  @Autowired private ListViewTemplate processInstanceTemplate;
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-  @Autowired private OperateProperties operateProperties;
-  @Autowired private Metrics metrics;
-  @Autowired private RestHighLevelClient esClient;
+  private BatchOperationTemplate batchOperationTemplate;
+  private ListViewTemplate processInstanceTemplate;
+  private DecisionInstanceTemplate decisionInstanceTemplate;
+  private OperateProperties operateProperties;
+  private Metrics metrics;
+  private RestHighLevelClient esClient;
+  private ObjectMapper objectMapper;
 
   @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
+  public ElasticsearchArchiverRepository(
+      @Qualifier("archiverThreadPoolExecutor") final ThreadPoolTaskScheduler archiverExecutor,
+      final OperateProperties operateProperties,
+      final Metrics metrics,
+      final RestHighLevelClient esClient,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
+      final ListViewTemplate processInstanceTemplate,
+      final BatchOperationTemplate batchOperationTemplate,
+      final DecisionInstanceTemplate decisionInstanceTemplate) {
+    this.archiverExecutor = archiverExecutor;
+    this.operateProperties = operateProperties;
+    this.metrics = metrics;
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.processInstanceTemplate = processInstanceTemplate;
+    this.batchOperationTemplate = batchOperationTemplate;
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
+  }
 
   private ArchiveBatch createArchiveBatch(
       final SearchResponse searchResponse,

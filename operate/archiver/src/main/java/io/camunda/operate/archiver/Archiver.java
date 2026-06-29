@@ -28,17 +28,25 @@ public class Archiver {
   protected static final String INDEX_NAME_PATTERN = "%s%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(Archiver.class);
 
-  @Autowired protected BeanFactory beanFactory;
-
-  @Autowired protected OperateProperties operateProperties;
-
-  @Autowired protected PartitionHolder partitionHolder;
+  protected final BeanFactory beanFactory;
+  protected final OperateProperties operateProperties;
+  protected final PartitionHolder partitionHolder;
+  protected final ThreadPoolTaskScheduler archiverExecutor;
+  protected final ArchiverRepository archiverRepository;
 
   @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
-  protected ThreadPoolTaskScheduler archiverExecutor;
-
-  @Autowired protected ArchiverRepository archiverRepository;
+  public Archiver(
+      final BeanFactory beanFactory,
+      final OperateProperties operateProperties,
+      final PartitionHolder partitionHolder,
+      @Qualifier("archiverThreadPoolExecutor") final ThreadPoolTaskScheduler archiverExecutor,
+      final ArchiverRepository archiverRepository) {
+    this.beanFactory = beanFactory;
+    this.operateProperties = operateProperties;
+    this.partitionHolder = partitionHolder;
+    this.archiverExecutor = archiverExecutor;
+    this.archiverRepository = archiverRepository;
+  }
 
   @PostConstruct
   public void startArchiving() {
