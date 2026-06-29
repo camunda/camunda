@@ -558,8 +558,10 @@
          syntax), so a plain index matches their ORDER BY; Oracle emits NULLS FIRST
          too but does not accept NULLS FIRST in CREATE INDEX (ORA-00907), so it
          falls back to the plain composite. WAIT_STATE_KEY (PK, NOT NULL) is the
-         unique keyset tiebreaker. The benchmarked regression (#56068) is
-         PostgreSQL-specific. -->
+         unique keyset tiebreaker; it carries NULLS FIRST so the index matches the
+         full ORDER BY — without it PostgreSQL adds an incremental sort instead of
+         a pure index scan, even though the column is NOT NULL. The benchmarked
+         regression (#56068) is PostgreSQL-specific. -->
     <sql dbms="postgresql">
       CREATE INDEX ${prefix}IDX_WAIT_STATE_EIK_WSK
       ON ${prefix}WAIT_STATE (ELEMENT_INSTANCE_KEY NULLS FIRST, WAIT_STATE_KEY NULLS FIRST)
