@@ -158,7 +158,7 @@ public class AuthorizationUpdateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
+            "Expected to have 'UPDATE' permission on resource type 'AUTHORIZATION' with id '*', but the principal is not authorized.");
   }
 
   private UserRecordValue createUser() {

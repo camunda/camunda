@@ -11,6 +11,11 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.core.authz.AuthorizationChecker;
+import io.camunda.security.core.authz.AuthorizationService;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.authz.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
@@ -51,6 +56,8 @@ import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
 import io.camunda.zeebe.engine.processing.identity.IdentitySetupProcessors;
 import io.camunda.zeebe.engine.processing.identity.MappingRuleProcessors;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -96,6 +103,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.function.Supplier;
 
 public final class EngineProcessors {
@@ -159,6 +167,25 @@ public final class EngineProcessors {
     final var authCheckBehavior =
         new AuthorizationCheckBehavior(
             processingState, securityConfig, config, authorizationCheckMetrics);
+    final var membershipStateAdapter =
+        new MembershipStateAdapter(
+            processingState.getMappingRuleState(), processingState.getMembershipState());
+    final var authorizationScopeStateAdapter =
+        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState());
+    final var authorizationChecker = new AuthorizationChecker(authorizationScopeStateAdapter);
+    final var claimsConverter =
+        new LazyTokenClaimsConverter(
+            Authorization.AUTHORIZED_USERNAME,
+            Authorization.AUTHORIZED_CLIENT_ID,
+            false,
+            membershipStateAdapter);
+    final var propertyEvaluatorRegistry = new PropertyAuthorizationEvaluatorRegistry(List.of());
+    final var authzService =
+        new AuthorizationService(
+            authorizationChecker,
+            propertyEvaluatorRegistry,
+            securityConfig.isAuthorizationsEnabled(),
+            securityConfig.isMultiTenancyChecksEnabled());
     final var asyncRequestBehavior =
         new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
@@ -322,6 +349,8 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
+        authzService,
+        claimsConverter,
         authCheckBehavior,
         securityConfig);
 

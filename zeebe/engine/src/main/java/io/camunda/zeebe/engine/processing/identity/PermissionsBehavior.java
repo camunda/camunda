@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -35,12 +37,16 @@ public class PermissionsBehavior {
       "Expected to delete authorization with key %s, but an authorization with this key does not exist";
 
   private final AuthorizationState authorizationState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final AuthorizationCheckPort authCheckPort;
+  private final LazyTokenClaimsConverter claimsConverter;
 
   public PermissionsBehavior(
-      final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
+      final ProcessingState processingState,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter) {
     authorizationState = processingState.getAuthorizationState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.authCheckPort = authCheckPort;
+    this.claimsConverter = claimsConverter;
   }
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
@@ -50,15 +56,25 @@ public class PermissionsBehavior {
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
       final TypedRecord<AuthorizationRecord> command, final PermissionType permissionType) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.AUTHORIZATION)
-            .permissionType(permissionType)
-            .build();
-    return authCheckBehavior
-        .isAuthorizedOrInternalCommand(authorizationRequest)
-        .map(unused -> command.getValue());
+    if (command.isInternalCommand()) {
+      return Either.right(command.getValue());
+    }
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return Either.right(command.getValue());
+    }
+    final var auth = claimsConverter.convert(authorizations);
+    final var cslPermType =
+        io.camunda.security.api.model.authz.PermissionType.valueOf(permissionType.name());
+    final var result =
+        authCheckPort.check(
+            auth,
+            RequiredAuthorization.of(
+                b -> b.authorization().permissionType(cslPermType).resourceId("*")));
+    if (result.isLeft()) {
+      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
+    }
+    return Either.right(command.getValue());
   }
 
   public Either<Rejection, PersistedAuthorization> authorizationExists(
@@ -78,7 +94,7 @@ public class PermissionsBehavior {
     for (final PermissionType permission : record.getPermissionTypes()) {
       final var addedAuthorizationScope = createAuthorizationScope(record);
       final var currentAuthorizationScopes =
-          authCheckBehavior.getDirectAuthorizedAuthorizationScopes(
+          authorizationState.getAuthorizationScopes(
               record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
 
       if (currentAuthorizationScopes.contains(addedAuthorizationScope)) {

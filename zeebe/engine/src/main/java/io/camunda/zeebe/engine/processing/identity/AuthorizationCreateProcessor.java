@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -33,8 +35,8 @@ public class AuthorizationCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
-  private final PermissionsBehavior permissionsBehavior;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final AuthorizationEntityValidator authorizationEntityChecker;
 
   public AuthorizationCreateProcessor(
@@ -42,6 +44,8 @@ public class AuthorizationCreateProcessor
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CommandDistributionBehavior distributionBehavior,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter,
       final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig) {
     this.keyGenerator = keyGenerator;
@@ -51,7 +55,7 @@ public class AuthorizationCreateProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    permissionsBehavior = new PermissionsBehavior(processingState, authCheckPort, claimsConverter);
     authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
   }
 
