@@ -19,6 +19,9 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.Optional;
 
 /**
@@ -56,9 +59,14 @@ public final class RocksDbBaseProjectionStore implements BaseProjectionStore, Au
             AnalyticsColumnFamilies.CONSUMED_POSITION, context, positionKey, positionValue);
   }
 
-  /** Opens a RocksDB store in {@code directory}. */
+  /** Opens a RocksDB store in {@code directory}, creating it (and parents) if needed. */
   public static RocksDbBaseProjectionStore open(
       final File directory, final MeterRegistry meterRegistry) {
+    try {
+      Files.createDirectories(directory.toPath());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create projection store directory " + directory, e);
+    }
     final ZeebeDbFactory<AnalyticsColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
