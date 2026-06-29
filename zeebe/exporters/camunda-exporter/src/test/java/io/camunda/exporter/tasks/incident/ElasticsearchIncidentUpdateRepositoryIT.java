@@ -52,6 +52,7 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
     return new ElasticsearchIncidentUpdateRepository(
         PARTITION_ID,
         postImporterQueueTemplate.getAlias(),
+        postImporterQueueTemplate.getFullQualifiedName(),
         incidentTemplate.getAlias(),
         listViewTemplate.getAlias(),
         listViewTemplate.getFullQualifiedName(),
