@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +23,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 /**
  * Diagnostic filter that makes OIDC redirect issues visible in the application logs instead of
@@ -150,7 +151,10 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
     try {
       final var params = UriComponentsBuilder.fromUriString(location).build().getQueryParams();
       final String value = params.getFirst("redirect_uri");
-      return value == null ? null : URI.create(value).toString();
+      // getQueryParams() returns the raw, still percent-encoded value (real authorization redirects
+      // encode redirect_uri per the OAuth2 spec). Decode it so it can be compared against — and
+      // logged alongside — the plain expected redirect URI.
+      return value == null ? null : UriUtils.decode(value, StandardCharsets.UTF_8);
     } catch (final RuntimeException e) {
       LOG.debug("Could not parse redirect_uri from Location header '{}'", location, e);
       return null;

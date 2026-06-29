@@ -67,16 +67,32 @@ public class OidcRedirectDiagnosticsFilterTest {
   }
 
   @Test
-  void shouldExtractRedirectUriFromLocationHeader() {
-    // given
+  void shouldExtractAndDecodeRedirectUriFromLocationHeader() {
+    // given - a real authorization redirect Location, where
+    // OAuth2AuthorizationRequestRedirectFilter
+    // percent-encodes the redirect_uri query value per the OAuth2 spec
     final String location =
-        "https://idp.example.com/authorize?client_id=x&redirect_uri=https://app.example.com/sso-callback";
+        "https://idp.example.com/authorize?client_id=x&redirect_uri=https%3A%2F%2Fapp.example.com%2Fsso-callback";
+
+    // when
+    final String redirectUri = OidcRedirectDiagnosticsFilter.extractRedirectUri(location);
+
+    // then - returned decoded so it compares equal to the (plain) expected redirect URI; if it were
+    // left encoded the mismatch WARN would fire on every login
+    assertThat(redirectUri).isEqualTo("https://app.example.com/sso-callback");
+  }
+
+  @Test
+  void shouldExtractAndDecodeRedirectUriWithEncodedPortAndPath() {
+    // given - encoded redirect_uri including a port, as a proxied deployment would produce
+    final String location =
+        "https://idp.example.com/authorize?redirect_uri=https%3A%2F%2Fapp.example.com%3A8443%2Fcamunda%2Fsso-callback&client_id=x";
 
     // when
     final String redirectUri = OidcRedirectDiagnosticsFilter.extractRedirectUri(location);
 
     // then
-    assertThat(redirectUri).isEqualTo("https://app.example.com/sso-callback");
+    assertThat(redirectUri).isEqualTo("https://app.example.com:8443/camunda/sso-callback");
   }
 
   @Test
