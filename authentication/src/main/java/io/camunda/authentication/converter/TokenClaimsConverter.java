@@ -90,12 +90,15 @@ public class TokenClaimsConverter {
   }
 
   /**
-   * Fails authentication hard when a Microsoft Entra (Azure AD) access token is not a v2.0 token.
+   * Fails authentication hard when a Microsoft Entra (Azure AD) token is not a v2.0 token.
    *
-   * <p>Entra app registrations that leave {@code api.requestedAccessTokenVersion} unset emit v1.0
-   * access tokens (issuer {@code sts.windows.net}, {@code ver=1.0}). These fail downstream
-   * validation and typically manifest as a silent redirect loop back to Entra. Detecting the
-   * mismatch here turns that into a clear, actionable failure for operators.
+   * <p>{@code convert()} runs on both access-token claims (API/bearer flow) and ID-token claims
+   * (webapp login flow), so two distinct misconfigurations land here. Access tokens are emitted as
+   * v1.0 when the app registration leaves {@code api.requestedAccessTokenVersion} unset; ID tokens
+   * are v1.0 when the v1.0 authority is used instead of a {@code /v2.0} issuer endpoint. Both
+   * surface as {@code iss=sts.windows.net}, {@code ver=1.0}, fail downstream validation, and
+   * typically manifest as a silent redirect loop back to Entra. Detecting the mismatch here turns
+   * that into a clear, actionable failure for operators.
    */
   private void validateEntraTokenVersion(final Map<String, Object> tokenClaims) {
     final Object issuer = tokenClaims.get(ISSUER_CLAIM);
@@ -119,16 +122,17 @@ public class TokenClaimsConverter {
     // the
     // guidance also lives in the exception message below.
     LOG.warn(
-        "Rejected a Microsoft Entra access token from issuer '{}' with an unsupported access token version (ver='{}'). "
-            + "Camunda requires v2.0 access tokens. Set 'api.requestedAccessTokenVersion' to 2 in the Entra app registration "
-            + "manifest (Azure portal: App registrations > your app > Manifest) so the identity platform issues v2.0 tokens, "
-            + "then retry. v1.0 tokens otherwise fail validation and cause a redirect loop back to Entra.",
+        "Rejected a Microsoft Entra token from issuer '{}' with an unsupported token version (ver='{}'). "
+            + "Camunda requires v2.0 tokens. For access tokens (API/bearer flow), set 'api.requestedAccessTokenVersion' to 2 "
+            + "in the Entra app registration manifest (Azure portal: App registrations > your app > Manifest). For ID tokens "
+            + "(webapp login flow), configure the v2.0 authority by using an issuer-uri that ends in '/v2.0'. Then retry; "
+            + "v1.0 tokens otherwise fail validation and cause a redirect loop back to Entra.",
         issuerUri,
         version);
 
     throw new OAuth2AuthenticationException(
         new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN),
-        "Microsoft Entra access token version '%s' is not supported; v2.0 is required. Set api.requestedAccessTokenVersion = 2 in the Entra app registration manifest."
+        "Microsoft Entra token version '%s' is not supported; v2.0 is required. For access tokens, set api.requestedAccessTokenVersion = 2 in the Entra app registration manifest; for ID tokens (login flow), use a v2.0 issuer-uri ending in /v2.0."
             .formatted(version));
   }
 
