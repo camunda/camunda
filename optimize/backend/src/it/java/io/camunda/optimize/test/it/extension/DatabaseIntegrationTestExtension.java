@@ -114,6 +114,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
   }
 
+  public List<ProcessInstanceDto> getProcessInstancesById(final List<String> instanceIds) {
+    return databaseTestService.getProcessInstancesById(instanceIds);
+  }
+
   public void deleteAllOptimizeData() {
     databaseTestService.deleteAllOptimizeData();
   }

@@ -222,6 +222,12 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
 
   public long startProcessInstanceWithVariables(
       final String bpmnProcessId, final Map<String, Object> variables) {
+    return startProcessInstanceForProcessWithVariables(bpmnProcessId, variables)
+        .getProcessInstanceKey();
+  }
+
+  public ProcessInstanceEvent startProcessInstanceForProcessWithVariables(
+      final String bpmnProcessId, final Map<String, Object> variables) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             camundaClient
@@ -229,9 +235,9 @@ public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
                 .bpmnProcessId(bpmnProcessId)
                 .latestVersion()
                 .variables(variables);
-    final long key = createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
-    startedInstanceKeys.add(key);
-    return key;
+    final ProcessInstanceEvent event = createProcessInstanceCommandStep3.send().join();
+    startedInstanceKeys.add(event.getProcessInstanceKey());
+    return event;
   }
 
   public void startProcessInstanceWithSignal(final String signalName) {
