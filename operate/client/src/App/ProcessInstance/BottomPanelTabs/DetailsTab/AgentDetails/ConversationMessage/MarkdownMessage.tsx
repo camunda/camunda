@@ -36,25 +36,25 @@ const ALLOWED_ELEMENTS = [
   'td',
 ];
 
-const MarkdownContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--cds-spacing-03);
-`;
-
-const Heading1 = styled.p`
+const Heading1 = styled.h3`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-02-font-weight);
 `;
 
-const Heading2 = styled.p`
+const Heading2 = styled.h4`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-02-font-weight);
 `;
 
-const Heading3 = styled.p`
+const Heading3 = styled.h5`
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--cds-heading-compact-01-font-weight);
+`;
+
+const Heading4 = styled.h6`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-01-font-weight);
@@ -63,7 +63,7 @@ const Heading3 = styled.p`
 const InlineCode = styled.code`
   padding: var(--cds-spacing-01) var(--cds-spacing-02);
   border-radius: 4px;
-  background-color: var(--cds-layer-03);
+  background-color: var(--cds-layer-accent-01);
   font-family: var(--cds-code-01-font-family);
   font-size: 0.85em;
 `;
@@ -72,7 +72,7 @@ const CodeBlock = styled.pre`
   margin: 0;
   padding: var(--cds-spacing-03);
   border-radius: 4px;
-  background-color: var(--cds-layer-03);
+  background-color: var(--cds-layer-accent-01);
   font-family: var(--cds-code-01-font-family);
   font-size: 0.85em;
   overflow-x: auto;
@@ -99,9 +99,12 @@ const OrderedList = styled.ol`
 `;
 
 const Paragraph = styled.p`
-  margin: 0;
-  font-size: inherit;
-  white-space: pre-line;
+  /* Double "&&" raises specificity to outrank Carbon's ".cds--modal p" rule. */
+  && {
+    white-space: pre-line;
+    margin: 0;
+    font-size: inherit;
+  }
 `;
 
 const Blockquote = styled.blockquote`
@@ -130,8 +133,14 @@ const Table = styled.table`
 
   th {
     font-weight: var(--cds-heading-compact-01-font-weight);
-    background-color: var(--cds-layer-03);
+    background-color: var(--cds-layer-accent-01);
   }
+`;
+
+const MarkdownContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-03);
 `;
 
 type MarkdownMessageProps = {
@@ -149,9 +158,9 @@ const MarkdownMessage: React.FC<MarkdownMessageProps> = ({content}) => {
           h1: ({children}) => <Heading1>{children}</Heading1>,
           h2: ({children}) => <Heading2>{children}</Heading2>,
           h3: ({children}) => <Heading3>{children}</Heading3>,
-          h4: ({children}) => <Heading3>{children}</Heading3>,
-          h5: ({children}) => <Heading3>{children}</Heading3>,
-          h6: ({children}) => <Heading3>{children}</Heading3>,
+          h4: ({children}) => <Heading4>{children}</Heading4>,
+          h5: ({children}) => <Heading4>{children}</Heading4>,
+          h6: ({children}) => <Heading4>{children}</Heading4>,
           p: ({children}) => <Paragraph>{children}</Paragraph>,
           code: ({children, className}) => {
             // Fenced code blocks get wrapped in <pre> by react-markdown,

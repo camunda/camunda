@@ -28,7 +28,7 @@ import {
   MetricsContainer,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
-import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
+import {MessageDetailsModal} from './MessageDetailsModal';
 
 type Actor = AgentInstanceHistoryRole | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
@@ -172,14 +172,14 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           })}
         </AttachmentsContainer>
       )}
-      <RichTextEditorModal
-        title={messageDetails.title}
-        readOnly
-        language={messageDetails.language}
-        value={messageDetails.content}
-        isVisible={messageDetails.state === 'visible'}
-        onClose={() => dispatch({type: 'hide'})}
-      />
+      {messageDetails.state === 'visible' && (
+        <MessageDetailsModal
+          title={messageDetails.title}
+          language={messageDetails.language}
+          content={messageDetails.content}
+          onClose={() => dispatch({type: 'hide'})}
+        />
+      )}
     </Container>
   );
 };
