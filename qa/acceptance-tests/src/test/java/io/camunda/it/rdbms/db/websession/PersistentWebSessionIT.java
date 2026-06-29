@@ -7,12 +7,13 @@
  */
 package io.camunda.it.rdbms.db.websession;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
-import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
+import io.camunda.application.commons.identity.PhysicalTenantScopedPersistentWebSessionClientFactory;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,10 +28,7 @@ public class PersistentWebSessionIT {
 
   @TestTemplate
   public void shouldSaveAndFindWebSessionById(final CamundaRdbmsTestApplication testApplication) {
-    final PersistentWebSessionDbReader reader =
-        testApplication.bean(PersistentWebSessionDbReader.class);
-    final PersistentWebSessionWriter writer =
-        testApplication.bean(PersistentWebSessionWriter.class);
+    final var persistentWebSessionClient = getPersistentWebSessionClient(testApplication);
 
     // given
     final String sessionId = UUID.randomUUID().toString();
@@ -47,10 +45,11 @@ public class PersistentWebSessionIT {
             sessionId, creationTime, lastAccessedTime, maxInactiveInterval, attributes);
 
     // when
-    writer.upsert(session);
+    persistentWebSessionClient.upsertPersistentWebSession(session);
 
     // then
-    final PersistentWebSessionEntity foundSession = reader.findById(sessionId);
+    final PersistentWebSessionEntity foundSession =
+        persistentWebSessionClient.getPersistentWebSession(sessionId);
     assertThat(foundSession).isNotNull();
     assertThat(foundSession.id()).isEqualTo(sessionId);
     assertThat(foundSession.creationTime()).isEqualTo(creationTime);
@@ -61,12 +60,16 @@ public class PersistentWebSessionIT {
     assertThat(foundSession.attributes().get("role")).isEqualTo("admin".getBytes());
   }
 
+  private PersistentWebSessionClient getPersistentWebSessionClient(
+      final CamundaRdbmsTestApplication testApplication) {
+    return PhysicalTenantScopedPersistentWebSessionClientFactory.fromRdbmsMapperBundles(
+            (testApplication.bean("rdbmsMapperBundles")))
+        .withPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
   @TestTemplate
   public void shouldUpdateExistingWebSession(final CamundaRdbmsTestApplication testApplication) {
-    final PersistentWebSessionDbReader reader =
-        testApplication.bean(PersistentWebSessionDbReader.class);
-    final PersistentWebSessionWriter writer =
-        testApplication.bean(PersistentWebSessionWriter.class);
+    final var persistentWebSessionClient = getPersistentWebSessionClient(testApplication);
 
     // given - create initial session
     final String sessionId = UUID.randomUUID().toString();
@@ -80,7 +83,7 @@ public class PersistentWebSessionIT {
         new PersistentWebSessionEntity(
             sessionId, creationTime, initialAccessTime, 1800L, initialAttributes);
 
-    writer.upsert(initialSession);
+    persistentWebSessionClient.upsertPersistentWebSession(initialSession);
 
     // when - update the session
     final long updatedAccessTime = creationTime + 5000;
@@ -92,10 +95,11 @@ public class PersistentWebSessionIT {
         new PersistentWebSessionEntity(
             sessionId, creationTime, updatedAccessTime, 1800L, updatedAttributes);
 
-    writer.upsert(updatedSession);
+    persistentWebSessionClient.upsertPersistentWebSession(updatedSession);
 
     // then
-    final PersistentWebSessionEntity foundSession = reader.findById(sessionId);
+    final PersistentWebSessionEntity foundSession =
+        persistentWebSessionClient.getPersistentWebSession(sessionId);
     assertThat(foundSession).isNotNull();
     assertThat(foundSession.id()).isEqualTo(sessionId);
     assertThat(foundSession.creationTime()).isEqualTo(creationTime);
@@ -107,10 +111,7 @@ public class PersistentWebSessionIT {
 
   @TestTemplate
   public void shouldDeleteWebSession(final CamundaRdbmsTestApplication testApplication) {
-    final PersistentWebSessionDbReader reader =
-        testApplication.bean(PersistentWebSessionDbReader.class);
-    final PersistentWebSessionWriter writer =
-        testApplication.bean(PersistentWebSessionWriter.class);
+    final var persistentWebSessionClient = getPersistentWebSessionClient(testApplication);
 
     // given - create a session
     final String sessionId = UUID.randomUUID().toString();
@@ -121,24 +122,21 @@ public class PersistentWebSessionIT {
         new PersistentWebSessionEntity(
             sessionId, System.currentTimeMillis(), System.currentTimeMillis(), 1800L, attributes);
 
-    writer.upsert(session);
+    persistentWebSessionClient.upsertPersistentWebSession(session);
 
     // verify it exists
-    assertThat(reader.findById(sessionId)).isNotNull();
+    assertThat(persistentWebSessionClient.getPersistentWebSession(sessionId)).isNotNull();
 
     // when - delete the session
-    writer.deleteById(sessionId);
+    persistentWebSessionClient.deletePersistentWebSession(sessionId);
 
     // then - verify it's gone
-    assertThat(reader.findById(sessionId)).isNull();
+    assertThat(persistentWebSessionClient.getPersistentWebSession(sessionId)).isNull();
   }
 
   @TestTemplate
   public void shouldFindAllWebSessions(final CamundaRdbmsTestApplication testApplication) {
-    final PersistentWebSessionDbReader reader =
-        testApplication.bean(PersistentWebSessionDbReader.class);
-    final PersistentWebSessionWriter writer =
-        testApplication.bean(PersistentWebSessionWriter.class);
+    final var persistentWebSessionClient = getPersistentWebSessionClient(testApplication);
 
     // given - create multiple sessions
     final String sessionId1 = UUID.randomUUID().toString();
@@ -150,14 +148,15 @@ public class PersistentWebSessionIT {
 
     final long now = System.currentTimeMillis();
 
-    writer.upsert(new PersistentWebSessionEntity(sessionId1, now, now, 1800L, attributes));
-    writer.upsert(
+    persistentWebSessionClient.upsertPersistentWebSession(
+        new PersistentWebSessionEntity(sessionId1, now, now, 1800L, attributes));
+    persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(sessionId2, now + 1000, now + 1000, 1800L, attributes));
-    writer.upsert(
+    persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(sessionId3, now + 2000, now + 2000, 1800L, attributes));
 
     // when
-    final var allSessions = reader.findAll();
+    final var allSessions = persistentWebSessionClient.getAllPersistentWebSessions().items();
 
     // then - should contain at least our 3 sessions (may contain more from other tests)
     assertThat(allSessions).isNotNull();
@@ -167,10 +166,7 @@ public class PersistentWebSessionIT {
 
   @TestTemplate
   public void shouldHandleEmptyAttributes(final CamundaRdbmsTestApplication testApplication) {
-    final PersistentWebSessionDbReader reader =
-        testApplication.bean(PersistentWebSessionDbReader.class);
-    final PersistentWebSessionWriter writer =
-        testApplication.bean(PersistentWebSessionWriter.class);
+    final var persistentWebSessionClient = getPersistentWebSessionClient(testApplication);
 
     // given - session with empty attributes
     final String sessionId = UUID.randomUUID().toString();
@@ -185,10 +181,11 @@ public class PersistentWebSessionIT {
             emptyAttributes);
 
     // when
-    writer.upsert(session);
+    persistentWebSessionClient.upsertPersistentWebSession(session);
 
     // then
-    final PersistentWebSessionEntity foundSession = reader.findById(sessionId);
+    final PersistentWebSessionEntity foundSession =
+        persistentWebSessionClient.getPersistentWebSession(sessionId);
     assertThat(foundSession).isNotNull();
     assertThat(foundSession.attributes()).isNotNull();
     assertThat(foundSession.attributes()).isEmpty();
@@ -196,10 +193,7 @@ public class PersistentWebSessionIT {
 
   @TestTemplate
   public void shouldHandleLargeAttributes(final CamundaRdbmsTestApplication testApplication) {
-    final PersistentWebSessionDbReader reader =
-        testApplication.bean(PersistentWebSessionDbReader.class);
-    final PersistentWebSessionWriter writer =
-        testApplication.bean(PersistentWebSessionWriter.class);
+    final var persistentWebSessionClient = getPersistentWebSessionClient(testApplication);
 
     // given - session with large attribute values
     final String sessionId = UUID.randomUUID().toString();
@@ -218,10 +212,11 @@ public class PersistentWebSessionIT {
             sessionId, System.currentTimeMillis(), System.currentTimeMillis(), 1800L, attributes);
 
     // when
-    writer.upsert(session);
+    persistentWebSessionClient.upsertPersistentWebSession(session);
 
     // then
-    final PersistentWebSessionEntity foundSession = reader.findById(sessionId);
+    final PersistentWebSessionEntity foundSession =
+        persistentWebSessionClient.getPersistentWebSession(sessionId);
     assertThat(foundSession).isNotNull();
     assertThat(foundSession.attributes()).hasSize(2);
     assertThat(foundSession.attributes().get("largeAttribute")).isEqualTo(largeData);
