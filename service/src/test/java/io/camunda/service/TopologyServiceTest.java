@@ -60,7 +60,7 @@ public class TopologyServiceTest {
     clusterState = mock(BrokerClusterState.class);
     topologyManager = mock(BrokerTopologyManager.class);
     when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
-    when(topologyManager.getTopology()).thenReturn(clusterState);
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(clusterState);
     services =
         new TopologyServices(
             PHYSICAL_TENANT_ID,
@@ -87,7 +87,7 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.HEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
     verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
@@ -113,7 +113,7 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.UNHEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
     verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
@@ -133,14 +133,14 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.UNHEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
   }
 
   @Test
   void shouldReturnUnhealthyWhenNoTopologyExist() {
     // given
-    when(topologyManager.getTopology()).thenReturn(null);
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(null);
 
     // when
     final var status = services.getStatus().join();
@@ -149,7 +149,7 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.UNHEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verifyNoInteractions(clusterState);
   }
 
@@ -176,7 +176,7 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.HEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
     verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
@@ -197,7 +197,7 @@ public class TopologyServiceTest {
     if (zone.isEmpty()) {
       zone = null;
     }
-    when(topologyManager.getTopology())
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID))
         .thenReturn(new TestBrokerClusterState(zone, version, clusterId));
 
     final var expectedTopology =
@@ -241,7 +241,7 @@ public class TopologyServiceTest {
   @Test
   void shouldFailWithUnavailableWhenClusterStateNotYetReceived() {
     // given
-    Mockito.when(topologyManager.getTopology()).thenReturn(null);
+    Mockito.when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(null);
 
     // when / then
     Assertions.assertThatThrownBy(() -> services.getTopology().join())

@@ -364,7 +364,16 @@ public final class EndpointManager {
 
   public void topology(final ServerStreamObserver<TopologyResponse> responseObserver) {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
-    final BrokerClusterState topology = topologyManager.getTopology();
+    final String physicalTenantId;
+    try {
+      physicalTenantId = getPhysicalTenantId();
+    } catch (final Exception e) {
+      responseObserver.onError(e);
+      return;
+    }
+    final BrokerClusterState topology =
+        topologyManager.getTopology(
+            Objects.requireNonNullElse(physicalTenantId, Protocol.DEFAULT_PARTITION_GROUP_NAME));
 
     final String gatewayVersion = VersionUtil.getVersion();
     if (gatewayVersion != null && !gatewayVersion.isBlank()) {

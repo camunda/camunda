@@ -58,7 +58,7 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
   }
 
   private boolean hasAPartitionWithAHealthyLeader() {
-    final var topology = brokerClient.getTopologyManager().getTopology();
+    final var topology = brokerClient.getTopologyManager().getTopology(getPhysicalTenantId());
 
     if (topology == null) {
       return false;
@@ -78,7 +78,7 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
 
   public CompletableFuture<Topology> getTopology() {
     try {
-      final var clusterState = brokerClient.getTopologyManager().getTopology();
+      final var clusterState = brokerClient.getTopologyManager().getTopology(getPhysicalTenantId());
       if (clusterState == null) {
         return CompletableFuture.failedFuture(
             new ServiceException(

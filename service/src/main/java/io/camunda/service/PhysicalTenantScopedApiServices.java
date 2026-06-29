@@ -35,6 +35,10 @@ public abstract class PhysicalTenantScopedApiServices<T extends PhysicalTenantSc
     this.physicalTenantId = physicalTenantId;
   }
 
+  protected String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
   @Override
   protected final List<BiConsumer<BrokerRequest, CamundaAuthentication>> brokerRequestMutators() {
     return Stream.concat(
