@@ -50,11 +50,13 @@ jobs:
         - name: c8run
           path: ./c8run
           runner_definition: '"gcp-core-4-longrunning"'
+          fossa_commit: fc4fa13813cbc1835129967f10a12f24aa7a393c
         - name: optimize
           path: ./optimize
           runner_definition: '"gcp-core-16-longrunning"'
           maven-config: |
             -DskipQaBuild=true
+          fossa_commit: fc4fa13813cbc1835129967f10a12f24aa7a393c
         - name: single-app
           path: ./
           runner_definition: >-
@@ -62,6 +64,7 @@ jobs:
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
+          fossa_commit: fossa-arm64
     steps:
     - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -99,11 +102,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/setup@${{ matrix.fossa_commit }}
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/info@${{ matrix.fossa_commit }}
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -138,7 +141,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/pr-check@${{ matrix.fossa_commit }}
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
