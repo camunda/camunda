@@ -168,7 +168,7 @@ public final class ZeebePartitionFactory {
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             rocksDbConfiguration,
             consistencyChecks.getSettings(),
-            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
+            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
     final StateController stateController =

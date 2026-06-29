@@ -37,7 +37,7 @@ public class SnapshotUtil {
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setWalDisabled(false),
             new ConsistencyChecksSettings(true, true),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new AccessMetricsConfiguration(Kind.NONE),
             SimpleMeterRegistry::new,
             new RocksDbResources.Shared(DEFAULT_MEMORY_LIMIT, 3));
   }
