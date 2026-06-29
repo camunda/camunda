@@ -7,12 +7,9 @@
  */
 package io.camunda.eventbridge.analytics;
 
-import io.camunda.eventbridge.analytics.aggregate.ExecutionTimeAggregator;
-import io.camunda.eventbridge.analytics.fact.EventBridgeFactPublisher;
-import io.camunda.eventbridge.analytics.fact.FactSink;
+import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
 import io.camunda.eventbridge.analytics.projection.RocksDbBaseProjectionStore;
-import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -23,59 +20,64 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Runs the analytics pipeline as a standalone process against a running Event Bridge: it consumes
- * {@code zeebe-records}, folds them into a RocksDB base projection, publishes execution-time facts
- * to a fact topic, and aggregates them into an H2 dataset.
+ * Runs Phase 1 of the consumer-based analytics library as a standalone process against a running
+ * Event Bridge: consume {@code zeebe-records}, fold into a RocksDB base projection, and aggregate
+ * execution-time facts into a windowed H2 dataset (DB-as-merge — no fact-topic, no shuffle, no
+ * coordinator). The headline metric is "N instances completed per definition per window".
  *
- * <p>This is the runnable validation path for the pipeline. Embedding the same stages into the
- * data-partition lifecycle (so leadership/HA come from the source partition's Raft) is the
- * productionization step tracked in {@code docs/analytics-pipeline-mvp-handover.md}.
+ * <p><b>Multi-instance:</b> start several copies with the same group ({@code analytics-projection})
+ * and distinct {@code -DinstanceId}s — the bridge consumer group assigns source partitions across
+ * them and rebalances on membership change. Each instance keeps its own local RocksDB projection
+ * (per-instance {@code data/} dir) and merges into the shared dataset. For more than one instance
+ * the dataset must be a <em>shared</em> RDBMS — pass {@code -DjdbcUrl} pointing at an H2 server or
+ * other RDBMS (the default file H2 is single-process, fine for one instance / a demo).
  *
  * <p>System properties: {@code gateway} (default {@code http://localhost:8080}), {@code
- * sourceTopic} ({@code zeebe-records}), {@code factTopic} ({@code analytics-facts}), {@code
- * factPartitions} (1).
+ * sourceTopic} ({@code zeebe-records}), {@code instanceId} (default = PID), {@code windowSizeMs}
+ * (default 1h), {@code jdbcUrl} (default file H2).
  */
 public final class StandaloneAnalyticsPipeline {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneAnalyticsPipeline.class);
+  private static final String GROUP = "analytics-projection";
 
   private StandaloneAnalyticsPipeline() {}
 
   public static void main(final String[] args) throws InterruptedException {
     final String gateway = System.getProperty("gateway", "http://localhost:8080");
     final String sourceTopic = System.getProperty("sourceTopic", "zeebe-records");
-    final String factTopic = System.getProperty("factTopic", "analytics-facts");
-    final int factPartitions = Integer.getInteger("factPartitions", 1);
+    final String instanceId =
+        System.getProperty("instanceId", "projector-" + ProcessHandle.current().pid());
+    final long windowSizeMs =
+        Long.getLong("windowSizeMs", WindowedExecutionTimeAggregator.DEFAULT_WINDOW_SIZE_MS);
+    final String jdbcUrl =
+        System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
-    try {
-      client.createTopic(factTopic, factPartitions, 1).join();
-    } catch (final RuntimeException e) {
-      LOG.info("Fact topic '{}' may already exist: {}", factTopic, e.getMessage());
-    }
 
     final RocksDbBaseProjectionStore store =
         RocksDbBaseProjectionStore.open(
-            new File("data/analytics-projection"), new SimpleMeterRegistry());
+            new File("data/analytics-projection-" + instanceId), new SimpleMeterRegistry());
     final ProcessInstanceProjector projector = new ProcessInstanceProjector(store);
-    final FactSink factSink = new EventBridgeFactPublisher(client, factTopic, factPartitions);
 
     final JdbcDataSource dataSource = new JdbcDataSource();
-    dataSource.setURL("jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
-    final ExecutionTimeAggregator aggregator = new ExecutionTimeAggregator(dataSource);
+    dataSource.setURL(jdbcUrl);
+    final WindowedExecutionTimeAggregator aggregator =
+        new WindowedExecutionTimeAggregator(
+            dataSource, windowSizeMs, WindowedExecutionTimeAggregator.DEFAULT_ALLOWED_LATENESS_MS);
     aggregator.initSchema();
 
     final ZeebeRecordConsumer source =
-        ZeebeRecordConsumer.subscribe(
-                client, "analytics-projection", "projector-1", List.of(sourceTopic))
-            .join();
-    final Consumer factConsumer =
-        client.subscribe("analytics-aggregation", "aggregator-1", List.of(factTopic)).join();
+        ZeebeRecordConsumer.subscribe(client, GROUP, instanceId, List.of(sourceTopic)).join();
 
-    final AnalyticsPipeline pipeline =
-        new AnalyticsPipeline(source, projector, factSink, factConsumer, aggregator);
+    final WindowedAnalyticsPipeline pipeline =
+        new WindowedAnalyticsPipeline(source, projector, aggregator);
     pipeline.start();
-    LOG.info("Analytics pipeline started: {} -> {} -> H2 dataset", sourceTopic, factTopic);
+    LOG.info(
+        "Phase-1 analytics instance '{}' started: {} -> windowed H2 dataset (window {} ms)",
+        instanceId,
+        sourceTopic,
+        windowSizeMs);
 
     Runtime.getRuntime()
         .addShutdownHook(
