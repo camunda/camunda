@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.9.5"
+    app.kubernetes.io/version: "8.9.6"
   annotations:
 spec:
   clusterIP: None
