@@ -29,6 +29,7 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
     implements ZeebeCalledElement {
 
   private static Attribute<String> processIdAttribute;
+  private static Attribute<String> businessIdAttribute;
   private static Attribute<Boolean> propagateAllChildVariablesAttribute;
   private static Attribute<Boolean> propagateAllParentVariablesAttribute;
   private static Attribute<ZeebeBindingType> bindingTypeAttribute;
@@ -46,6 +47,27 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
   @Override
   public void setProcessId(final String processId) {
     processIdAttribute.setValue(this, processId);
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessIdAttribute.getValue(this);
+  }
+
+  @Override
+  public void setBusinessId(final String businessId) {
+    businessIdAttribute.setValue(this, businessId);
+  }
+
+  @Override
+  public boolean hasBusinessId() {
+    // The attribute is registered in the Zeebe namespace, but because the calledElement itself is
+    // in that namespace the attribute is serialized unprefixed (i.e. stored under the null/local
+    // namespace).
+    // Check both so presence detection is robust regardless of how it was written.
+    return getDomElement().hasAttribute(ZeebeConstants.ATTRIBUTE_BUSINESS_ID)
+        || getDomElement()
+            .hasAttribute(BpmnModelConstants.ZEEBE_NS, ZeebeConstants.ATTRIBUTE_BUSINESS_ID);
   }
 
   @Override
@@ -100,6 +122,12 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
     processIdAttribute =
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_PROCESS_ID)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    businessIdAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_BUSINESS_ID)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 

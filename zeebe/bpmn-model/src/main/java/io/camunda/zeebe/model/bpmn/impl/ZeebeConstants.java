@@ -38,6 +38,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_OUTPUT_ELEMENT = "outputElement";
 
   public static final String ATTRIBUTE_PROCESS_ID = "processId";
+  public static final String ATTRIBUTE_BUSINESS_ID = "businessId";
   public static final String ATTRIBUTE_PROPAGATE_ALL_CHILD_VARIABLES = "propagateAllChildVariables";
   public static final String ATTRIBUTE_PROPAGATE_ALL_PARENT_VARIABLES =
       "propagateAllParentVariables";
