@@ -133,7 +133,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testArchivingProcessInstances() throws ArchiverException, IOException {
+  public void testArchivingProcessInstances() throws IOException {
 
     final Instant currentTime = pinZeebeTime();
 
@@ -207,7 +207,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldArchiveProcessInstancesById() throws ArchiverException, IOException {
+  public void shouldArchiveProcessInstancesById() throws IOException {
     // given
     final Instant currentTime = pinZeebeTime();
 
@@ -253,6 +253,8 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     assertInstancesInCorrectIndex(count2, ids2, endDate2, true);
     assertInstancesInCorrectIndex(count3, ids3, null, true);
     assertAllInstancesInAlias(count1 + count2 + count3);
+    assertRemovedFromSourceIndices(ids1);
+    assertRemovedFromSourceIndices(ids2);
 
     assertThatMetricsFrom(
         mockMvc,
@@ -318,6 +320,27 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
         new CreateBatchOperationRequestDto(
             query, OperationType.CANCEL_PROCESS_INSTANCE); // the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
+  }
+
+  private void assertRemovedFromSourceIndices(final List<Long> ids) throws IOException {
+    final List<ProcessInstanceForListViewEntity> remaining =
+        testSearchRepository.getProcessInstances(
+            processInstanceTemplate.getFullQualifiedName(), ids);
+    assertThat(remaining).as("archived PIs must be removed from source list-view index").isEmpty();
+
+    for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
+      final List<Long> remainingIds =
+          testSearchRepository.searchIds(
+              template.getFullQualifiedName(),
+              ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+              ids,
+              ids.size() * 100);
+      assertThat(remainingIds)
+          .as(
+              "archived dependants must be removed from source index %s",
+              template.getFullQualifiedName())
+          .isEmpty();
+    }
   }
 
   private void assertAllInstancesInAlias(final int count) {
