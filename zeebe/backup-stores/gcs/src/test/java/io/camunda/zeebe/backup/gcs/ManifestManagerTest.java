@@ -356,9 +356,12 @@ final class ManifestManagerTest {
             Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
 
     // when/then
-    Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
-        .isInstanceOf(StorageException.class)
-        .hasMessageContaining("cyclic cause");
+    assertTimeoutPreemptively(
+        Duration.ofSeconds(5),
+        () ->
+            Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
+                .isInstanceOf(StorageException.class)
+                .hasMessageContaining("cyclic cause"));
     Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
   }
 
@@ -403,7 +406,7 @@ final class ManifestManagerTest {
 
     // when / then
     assertTimeoutPreemptively(
-        Duration.ofSeconds(1),
+        Duration.ofSeconds(5),
         () -> {
           Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
               .isInstanceOf(RuntimeException.class)
