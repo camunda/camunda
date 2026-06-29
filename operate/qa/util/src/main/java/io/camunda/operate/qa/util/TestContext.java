@@ -42,6 +42,7 @@ public class TestContext<T extends TestContext<T>> {
 
   private String externalOperateHost;
   private Integer externalOperatePort;
+  private Integer externalOperateMgmtPort;
   private String externalOperateContextPath = "/";
 
   private List<String> processesToAssert = new ArrayList<>();
@@ -264,6 +265,15 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setExternalOperatePort(final Integer externalOperatePort) {
     this.externalOperatePort = externalOperatePort;
+    return (T) this;
+  }
+
+  public Integer getExternalOperateMgmtPort() {
+    return externalOperateMgmtPort;
+  }
+
+  public T setExternalOperateMgmtPort(final Integer externalOperateMgmtPort) {
+    this.externalOperateMgmtPort = externalOperateMgmtPort;
     return (T) this;
   }
 
