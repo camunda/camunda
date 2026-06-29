@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupEntityAddedApplier;
 import io.camunda.zeebe.engine.state.appliers.MappingRuleCreatedApplier;
@@ -56,7 +57,9 @@ final class MembershipStateAdapterTest {
   void setup() {
     adapter =
         new MembershipStateAdapter(
-            processingState.getMappingRuleState(), processingState.getMembershipState());
+            processingState.getMappingRuleState(),
+            processingState.getMembershipState(),
+            new EngineConfiguration());
     mappingRuleCreatedApplier =
         new MappingRuleCreatedApplier(processingState.getMappingRuleState());
     groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());

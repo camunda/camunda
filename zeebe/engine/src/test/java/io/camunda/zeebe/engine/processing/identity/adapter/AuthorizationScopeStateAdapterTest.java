@@ -13,6 +13,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -40,7 +41,9 @@ final class AuthorizationScopeStateAdapterTest {
 
   @BeforeEach
   void setup() {
-    adapter = new AuthorizationScopeStateAdapter(processingState.getAuthorizationState());
+    adapter =
+        new AuthorizationScopeStateAdapter(
+            processingState.getAuthorizationState(), new EngineConfiguration());
     authorizationCreatedApplier =
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
   }

@@ -15,6 +15,7 @@ import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
@@ -38,11 +39,13 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
           ScopeCacheKey, Set<io.camunda.zeebe.protocol.record.value.AuthorizationScope>>
       scopeCache;
 
-  public AuthorizationScopeStateAdapter(final AuthorizationState authorizationState) {
+  public AuthorizationScopeStateAdapter(
+      final AuthorizationState authorizationState, final EngineConfiguration config) {
     this.authorizationState = authorizationState;
     scopeCache =
         CacheBuilder.newBuilder()
-            .maximumSize(1_000)
+            .expireAfterWrite(config.getAuthorizationsCacheTtl())
+            .maximumSize(config.getAuthorizationsCacheCapacity())
             .build(new ScopeCacheLoader(authorizationState));
   }
 

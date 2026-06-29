@@ -14,6 +14,7 @@ import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
@@ -37,12 +38,15 @@ public final class MembershipStateAdapter implements MembershipPort {
   private final LoadingCache<MembershipCacheKey, List<String>> membershipCache;
 
   public MembershipStateAdapter(
-      final MappingRuleState mappingRuleState, final MembershipState membershipState) {
+      final MappingRuleState mappingRuleState,
+      final MembershipState membershipState,
+      final EngineConfiguration config) {
     this.mappingRuleState = mappingRuleState;
     this.membershipState = membershipState;
     membershipCache =
         CacheBuilder.newBuilder()
-            .maximumSize(1_000)
+            .expireAfterWrite(config.getAuthorizationsCacheTtl())
+            .maximumSize(config.getAuthorizationsCacheCapacity())
             .build(new MembershipCacheLoader(membershipState));
   }
 
