@@ -35,6 +35,7 @@
     <module>event-bridge-client</module>
     <module>event-bridge-zeebe-connector</module>
     <module>event-bridge-zeebe-exporter</module>
+    <module>event-bridge-analytics</module>
     <module>event-bridge-examples</module>
   </modules>
 
