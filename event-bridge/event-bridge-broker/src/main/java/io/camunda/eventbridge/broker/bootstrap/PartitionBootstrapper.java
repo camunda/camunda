@@ -15,7 +15,6 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
-import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
@@ -28,21 +27,16 @@ import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.topic.TopicGroups;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
@@ -57,7 +51,6 @@ import org.slf4j.LoggerFactory;
 final class PartitionBootstrapper {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionBootstrapper.class);
-  private static final int CLOSE_TIMEOUT_SECONDS = 30;
 
   private final AtomixCluster cluster;
   private final ActorSchedulingService actorScheduler;
@@ -70,24 +63,9 @@ final class PartitionBootstrapper {
   // Set by stop() so in-flight metadata passive-join retries bail instead of scheduling more work.
   private volatile boolean closing;
 
-  // CopyOnWrite: boot mutates these on the start thread, runtime topic provisioning on the
-  // reconciler thread, and stop() iterates them — so all access must be thread-safe.
-  private final List<CreatedPartition> createdPartitions = new CopyOnWriteArrayList<>();
-  private final List<PartitionLifecycle> lifecycles = new CopyOnWriteArrayList<>();
-  private final List<LogRetentionCompactor> retentionCompactors = new CopyOnWriteArrayList<>();
-  private final List<CoordinatorPartition> coordinatorPartitions = new CopyOnWriteArrayList<>();
-  private final List<MetadataPartition> metadataPartitions = new CopyOnWriteArrayList<>();
-
-  // Per-(group, partition) lookup for runtime join/leave and the reconciler's "already running?"
-  // check. The lists above remain the stop() inventory; this map is the addressable index.
-  private final Map<String, Provisioned> dataPartitions = new ConcurrentHashMap<>();
-
-  private record Provisioned(
-      CreatedPartition created, PartitionLifecycle lifecycle, LogRetentionCompactor compactor) {}
-
-  private static String key(final String groupName, final int partitionId) {
-    return groupName + "#" + partitionId;
-  }
+  // The inventory of every partition replica this broker hosts (data, coordinator, metadata) and
+  // the owner of their teardown; data replicas are addressable here for runtime reconfiguration.
+  private final PartitionRegistry registry = new PartitionRegistry();
 
   // Initialized in start(); reused by runtime topic-group provisioning after boot.
   private PartitionFactory factory;
@@ -213,7 +191,6 @@ final class PartitionBootstrapper {
       final TopologyManagerImpl coordinatorTopologyManager) {
 
     final var created = factory.createCoordinator(partitionId, members, localMemberId);
-    createdPartitions.add(created);
 
     final var runtimeDirectory =
         factory
@@ -231,7 +208,7 @@ final class PartitionBootstrapper {
             runtimeDirectory,
             (ConstructableSnapshotStore) created.snapshotStore(),
             coordinatorTopologyManager);
-    coordinatorPartitions.add(coordinatorPartition);
+    registry.addAuxiliary(created, coordinatorPartition);
     actorScheduler.submitActor(coordinatorPartition);
 
     // Bootstrap the Raft partition FIRST, then register the role-change listener — mirroring
@@ -311,7 +288,6 @@ final class PartitionBootstrapper {
       final TopologyManagerImpl metadataTopologyManager) {
 
     final var created = factory.createMetadata(partitionId, members, localMemberId);
-    createdPartitions.add(created);
 
     final var runtimeDirectory =
         factory
@@ -330,7 +306,7 @@ final class PartitionBootstrapper {
             metadataTopologyManager,
             registryReconciler,
             reconfigurationExecutor);
-    metadataPartitions.add(metadataPartition);
+    registry.addAuxiliary(created, metadataPartition);
     actorScheduler.submitActor(metadataPartition);
 
     // Voting members bootstrap the group; everyone else joins as a non-voting passive observer.
@@ -372,61 +348,7 @@ final class PartitionBootstrapper {
 
   void stop() {
     closing = true;
-    LOG.info("Stopping {} EventBridge partition(s)", lifecycles.size());
-
-    for (final var lifecycle : lifecycles) {
-      try {
-        lifecycle.closeAsync();
-      } catch (final Exception e) {
-        LOG.warn("Error closing lifecycle for partition {}", lifecycle.getPartitionId(), e);
-      }
-    }
-    lifecycles.clear();
-
-    for (final var compactor : retentionCompactors) {
-      try {
-        compactor.closeAsync();
-      } catch (final Exception e) {
-        LOG.warn("Error closing retention compactor", e);
-      }
-    }
-    retentionCompactors.clear();
-
-    for (final var coordinatorPartition : coordinatorPartitions) {
-      try {
-        coordinatorPartition.closeAsync();
-      } catch (final Exception e) {
-        LOG.warn("Error closing coordinator partition", e);
-      }
-    }
-    coordinatorPartitions.clear();
-
-    for (final var metadataPartition : metadataPartitions) {
-      try {
-        metadataPartition.closeAsync();
-      } catch (final Exception e) {
-        LOG.warn("Error closing metadata partition", e);
-      }
-    }
-    metadataPartitions.clear();
-
-    for (final var partition : createdPartitions) {
-      try {
-        partition.raftPartition().close().get(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-      } catch (final Exception e) {
-        LOG.warn("Error closing raft partition {}", partition.partitionId(), e);
-      }
-
-      try {
-        // The FileBasedSnapshotStore is an actor.
-        if (partition.snapshotStore() instanceof final Actor actor) {
-          actor.closeAsync();
-        }
-      } catch (final Exception e) {
-        LOG.warn("Error closing snapshot store for partition {}", partition.partitionId(), e);
-      }
-    }
-    createdPartitions.clear();
+    registry.closeAll();
   }
 
   /**
@@ -476,7 +398,7 @@ final class PartitionBootstrapper {
    */
   CompletableFuture<Void> promoteMemberInDataPartition(
       final String groupName, final int partitionId, final int memberNodeId) {
-    final var provisioned = dataPartitions.get(key(groupName, partitionId));
+    final var provisioned = registry.data(groupName, partitionId);
     if (provisioned == null) {
       return CompletableFuture.failedFuture(
           new IllegalStateException(
@@ -514,7 +436,7 @@ final class PartitionBootstrapper {
 
   /** Whether this broker currently runs a replica of {@code (groupName, partitionId)}. */
   boolean isRunning(final String groupName, final int partitionId) {
-    return dataPartitions.containsKey(key(groupName, partitionId));
+    return registry.containsData(groupName, partitionId);
   }
 
   /**
@@ -531,20 +453,9 @@ final class PartitionBootstrapper {
 
   /** Leaves and tears down a runtime replica (reassignment remove). Idempotent. */
   CompletableFuture<Void> leaveDataPartition(final String groupName, final int partitionId) {
-    final var provisioned = dataPartitions.remove(key(groupName, partitionId));
+    final var provisioned = registry.removeData(groupName, partitionId);
     if (provisioned == null) {
       return CompletableFuture.completedFuture(null);
-    }
-    lifecycles.remove(provisioned.lifecycle());
-    createdPartitions.remove(provisioned.created());
-    try {
-      provisioned.lifecycle().closeAsync();
-    } catch (final Exception e) {
-      LOG.warn("Error closing lifecycle for {}/{}", groupName, partitionId, e);
-    }
-    if (provisioned.compactor() != null) {
-      retentionCompactors.remove(provisioned.compactor());
-      provisioned.compactor().closeAsync();
     }
     return provisioned
         .created()
@@ -568,7 +479,7 @@ final class PartitionBootstrapper {
    */
   CompletableFuture<Void> removeMemberFromDataPartition(
       final String groupName, final int partitionId, final int memberNodeId) {
-    final var provisioned = dataPartitions.get(key(groupName, partitionId));
+    final var provisioned = registry.data(groupName, partitionId);
     if (provisioned == null) {
       return CompletableFuture.failedFuture(
           new IllegalStateException(
@@ -618,7 +529,6 @@ final class PartitionBootstrapper {
 
     // 1. Create raft-level components
     final var created = factory.createData(groupName, partitionId, members, localMemberId);
-    createdPartitions.add(created);
 
     // The gateway routing group: data partitions use the BrokerClient's default group, topic groups
     // route under their own Raft group name (so handler subjects don't collide across groups).
@@ -646,7 +556,6 @@ final class PartitionBootstrapper {
             idGenerator,
             topologyManager,
             executorService);
-    lifecycles.add(lifecycle);
     actorScheduler.submitActor(lifecycle);
 
     // 2b. Retention compaction runs on every replica (leader and followers), not just the leader:
@@ -662,12 +571,10 @@ final class PartitionBootstrapper {
               (ConstructableSnapshotStore) created.snapshotStore(),
               properties.retention().maxRecordsPerPartition(),
               Duration.ofMillis(properties.retention().compactionIntervalMs()));
-      retentionCompactors.add(retentionCompactor);
       actorScheduler.submitActor(retentionCompactor);
     }
 
-    dataPartitions.put(
-        key(groupName, partitionId), new Provisioned(created, lifecycle, retentionCompactor));
+    registry.addData(groupName, partitionId, created, lifecycle, retentionCompactor);
 
     // 3. Wire raft role changes to lifecycle — before start so no events are lost. The term is the
     // leader-epoch the lifecycle reports to the metadata group on becoming leader.
@@ -682,8 +589,6 @@ final class PartitionBootstrapper {
                 ? created.raftPartition().joinAsPassive(managementService, created.snapshotStore())
                 : created.raftPartition().join(managementService, created.snapshotStore()))
             : created.raftPartition().bootstrap(managementService, created.snapshotStore());
-    final var lifecycleRef = lifecycle;
-    final var compactorRef = retentionCompactor;
     return started
         .whenComplete(
             (rp, error) -> {
@@ -694,17 +599,10 @@ final class PartitionBootstrapper {
                     groupName,
                     partitionId,
                     error);
-                // Roll back tracking so a retry genuinely re-attempts and committed state is not
-                // advanced on a failed join (it would otherwise look "running" and no-op the
-                // retry).
-                dataPartitions.remove(key(groupName, partitionId));
-                createdPartitions.remove(created);
-                lifecycles.remove(lifecycleRef);
-                lifecycleRef.closeAsync();
-                if (compactorRef != null) {
-                  retentionCompactors.remove(compactorRef);
-                  compactorRef.closeAsync();
-                }
+                // Roll back tracking (and close the lifecycle + compactor) so a retry genuinely
+                // re-attempts and committed state is not advanced on a failed join (it would
+                // otherwise look "running" and no-op the retry).
+                registry.removeData(groupName, partitionId);
               } else {
                 LOG.info(
                     "Raft partition {}/{} {}",
