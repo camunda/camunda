@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.enums;
 
+/** The role of the participant who produced an agent instance history item. */
 public enum AgentInstanceHistoryRole {
   USER,
   ASSISTANT,

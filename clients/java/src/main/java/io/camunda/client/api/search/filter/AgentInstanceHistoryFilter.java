@@ -25,6 +25,7 @@ import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
 
+/** Filter criteria for agent instance history search requests. */
 public interface AgentInstanceHistoryFilter extends SearchRequestFilter {
 
   AgentInstanceHistoryFilter historyItemKey(long value);

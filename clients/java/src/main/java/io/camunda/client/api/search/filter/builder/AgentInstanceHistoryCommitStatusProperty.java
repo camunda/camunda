@@ -17,6 +17,9 @@ package io.camunda.client.api.search.filter.builder;
 
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 
+/**
+ * Filter property for {@link io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus}.
+ */
 public interface AgentInstanceHistoryCommitStatusProperty
     extends PropertyBase<
         AgentInstanceHistoryCommitStatus, AgentInstanceHistoryCommitStatusProperty> {}

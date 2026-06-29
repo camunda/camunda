@@ -20,6 +20,7 @@ import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.client.api.search.sort.AgentInstanceHistorySort;
 
+/** Request builder for searching agent instance history items. */
 public interface AgentInstanceHistorySearchRequest
     extends TypedSearchRequest<
             AgentInstanceHistoryFilter,

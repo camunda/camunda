@@ -17,6 +17,7 @@ package io.camunda.client.api.search.sort;
 
 import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
 
+/** Sort criteria for agent instance history search requests. */
 public interface AgentInstanceHistorySort extends SearchRequestSort<AgentInstanceHistorySort> {
   AgentInstanceHistorySort producedAt();
 

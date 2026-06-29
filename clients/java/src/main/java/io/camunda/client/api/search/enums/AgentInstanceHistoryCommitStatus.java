@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.enums;
 
+/** The commit status of an agent instance history item within its job lease. */
 public enum AgentInstanceHistoryCommitStatus {
   COMMITTED,
   PENDING,

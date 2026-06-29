@@ -23,6 +23,7 @@ import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+/** A single history item recorded for an agent instance. */
 public interface AgentInstanceHistory {
 
   long getHistoryItemKey();

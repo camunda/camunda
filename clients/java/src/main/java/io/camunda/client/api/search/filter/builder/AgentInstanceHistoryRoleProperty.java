@@ -17,5 +17,6 @@ package io.camunda.client.api.search.filter.builder;
 
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 
+/** Filter property for {@link io.camunda.client.api.search.enums.AgentInstanceHistoryRole}. */
 public interface AgentInstanceHistoryRoleProperty
     extends PropertyBase<AgentInstanceHistoryRole, AgentInstanceHistoryRoleProperty> {}
