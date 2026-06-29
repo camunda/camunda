@@ -9,9 +9,11 @@ package io.camunda.eventbridge.clustermetadata.placement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class RebalancePlannerTest {
@@ -118,14 +120,76 @@ final class RebalancePlannerTest {
 
     // then it converged to an even spread (every active broker within 1 of the mean)
     assertThat(moves).isPositive();
-    final var load = new java.util.HashMap<Integer, Integer>();
-    brokers.forEach(b -> load.put(b, 0));
-    assignment.values().forEach(rs -> rs.forEach(r -> load.merge(r, 1, Integer::sum)));
+    final var load = loadOf(assignment, brokers);
     final var max = load.values().stream().mapToInt(Integer::intValue).max().orElseThrow();
     final var min = load.values().stream().mapToInt(Integer::intValue).min().orElseThrow();
     assertThat(max - min).isLessThanOrEqualTo(1);
     // 6 partitions * RF3 = 18 replica slots over 6 brokers = exactly 3 each
     assertThat(load.values()).allMatch(l -> l == 3);
+  }
+
+  @Test
+  void shouldExhaustFollowerMovesBeforeMovingALeader() {
+    // given broker 0 leads every partition (1 and 2 follow), and broker 3 is empty
+    final var assignment = Map.of(1, List.of(0, 1, 2), 2, List.of(0, 1, 2), 3, List.of(0, 1, 2));
+
+    // when
+    final var move =
+        RebalancePlanner.nextMove(assignment, List.of(0, 1, 2, 3), MIN_IMBALANCE).orElseThrow();
+
+    // then — a follower (1 or 2) is relocated, never broker 0's leadership
+    final var before = assignment.get(move.partitionId());
+    final var displaced =
+        before.stream().filter(b -> !move.newReplicas().contains(b)).findFirst().orElseThrow();
+    assertThat(displaced).isNotEqualTo(0);
+    assertThat(move.newReplicas().get(0)).isEqualTo(0); // leader unchanged
+  }
+
+  @Test
+  void shouldRebalanceWithoutMovingAnyLeaderWhenLeadershipIsSpread() {
+    // given a SpreadPlacement-style layout: each of 0,1,2 leads two partitions and follows four
+    var assignment = new LinkedHashMap<Integer, List<Integer>>();
+    assignment.put(1, List.of(0, 2, 1));
+    assignment.put(2, List.of(1, 0, 2));
+    assignment.put(3, List.of(2, 1, 0));
+    assignment.put(4, List.of(0, 1, 2));
+    assignment.put(5, List.of(1, 2, 0));
+    assignment.put(6, List.of(2, 0, 1));
+    final var brokers = List.of(0, 1, 2, 3, 4, 5);
+
+    // when rebalancing onto the three new brokers, one move at a time
+    for (var guard = 0; guard < 100; guard++) {
+      final var move = RebalancePlanner.nextMove(assignment, brokers, MIN_IMBALANCE);
+      if (move.isEmpty()) {
+        break;
+      }
+      final var before = assignment.get(move.get().partitionId());
+      final var displaced =
+          before.stream()
+              .filter(b -> !move.get().newReplicas().contains(b))
+              .findFirst()
+              .orElseThrow();
+      // then — no move ever displaces a leader; only followers are relocated
+      assertThat(displaced)
+          .as("move %s must not displace the leader of %s", move.get(), before)
+          .isNotEqualTo(before.get(0));
+      final var next = new LinkedHashMap<>(assignment);
+      next.put(move.get().partitionId(), move.get().newReplicas());
+      assignment = next;
+    }
+
+    // and it still reaches an even spread with leadership untouched on the original brokers
+    assertThat(loadOf(assignment, brokers).values()).allMatch(l -> l == 3);
+    final var leaders = assignment.values().stream().map(r -> r.get(0)).collect(Collectors.toSet());
+    assertThat(leaders).containsExactlyInAnyOrder(0, 1, 2);
+  }
+
+  private static Map<Integer, Integer> loadOf(
+      final Map<Integer, List<Integer>> assignment, final List<Integer> brokers) {
+    final var load = new HashMap<Integer, Integer>();
+    brokers.forEach(b -> load.put(b, 0));
+    assignment.values().forEach(rs -> rs.forEach(r -> load.merge(r, 1, Integer::sum)));
+    return load;
   }
 
   /** 6 partitions / RF3 all on brokers {0,1,2} — the layout right after a 3->6 scale-up. */

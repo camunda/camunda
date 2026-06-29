@@ -30,8 +30,14 @@ import java.util.TreeMap;
  *
  * <p>It only acts when every replica is already on an active broker — a replica on a
  * fenced/draining broker is the placement-heal's concern and takes priority, so rebalancing defers
- * until the topic is healthy. Leadership is left with surviving replicas (a moved replica joins as
- * a follower); even leadership balancing is a later refinement.
+ * until the topic is healthy.
+ *
+ * <p>To avoid interruption it relocates <b>followers before leaders</b>: a follower move never
+ * changes who the leader is (no election), so the planner exhausts every balance-improving follower
+ * move before it will move a leader at all. A moved replica joins as a follower, so leadership
+ * stays with the surviving replicas — rebalancing replica <em>placement</em> does not, on its own,
+ * rebalance <em>leadership</em> onto the new brokers; that is a later refinement (it needs a
+ * targeted leadership transfer, which the Raft layer does not currently expose).
  */
 public final class RebalancePlanner {
 
@@ -87,14 +93,23 @@ public final class RebalancePlanner {
             .sorted(Comparator.comparingInt((Integer b) -> load.get(b)).thenComparingInt(b -> b))
             .toList();
 
-    for (final var from : sources) {
-      for (final var to : targets) {
-        if (load.get(from) - load.get(to) < minImbalance) {
-          continue; // gap too small to be worth a move (would just oscillate)
-        }
-        final var move = relocate(assignment, from, to);
-        if (move.isPresent()) {
-          return move;
+    // Two passes: relocate a follower replica wherever it helps before ever moving a leader. Moving
+    // a follower (passive-join the new replica, promote it, then leave the old follower) never
+    // changes who the leader is, so it causes no election and no interruption; moving a leader
+    // forces
+    // a step-down + re-election. Only if no follower move can improve balance do we fall back to
+    // moving a leader. Each accepted move shrinks the load gap (the minImbalance gate guarantees
+    // load[from] − load[to] ≥ 2), so either pass still converges.
+    for (final var followerOnly : new boolean[] {true, false}) {
+      for (final var from : sources) {
+        for (final var to : targets) {
+          if (load.get(from) - load.get(to) < minImbalance) {
+            continue; // gap too small to be worth a move (would just oscillate)
+          }
+          final var move = relocate(assignment, from, to, followerOnly);
+          if (move.isPresent()) {
+            return move;
+          }
         }
       }
     }
@@ -104,10 +119,15 @@ public final class RebalancePlanner {
   /**
    * Finds a partition whose replica set contains {@code from} but not {@code to} and moves that one
    * replica. Prefers a partition where {@code from} is a follower, so a balance move does not force
-   * a leader election; falls back to a leader-held partition only if no follower move exists.
+   * a leader election. When {@code followerOnly} is set it returns only a follower move (empty if
+   * {@code from} leads every candidate partition); otherwise it falls back to a leader-held
+   * partition when no follower move exists.
    */
   private static Optional<Move> relocate(
-      final Map<Integer, List<Integer>> assignment, final int from, final int to) {
+      final Map<Integer, List<Integer>> assignment,
+      final int from,
+      final int to,
+      final boolean followerOnly) {
     Integer leaderHeldPartition = null;
     // Deterministic partition order.
     for (final var entry : new TreeMap<>(assignment).entrySet()) {
@@ -122,7 +142,7 @@ public final class RebalancePlanner {
         leaderHeldPartition = entry.getKey();
       }
     }
-    return leaderHeldPartition == null
+    return followerOnly || leaderHeldPartition == null
         ? Optional.empty()
         : Optional.of(
             new Move(
