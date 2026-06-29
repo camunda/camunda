@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-
 import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -356,7 +354,7 @@ final class ManifestManagerTest {
             Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
 
     // when/then
-    assertTimeoutPreemptively(
+    org.junit.jupiter.api.Assertions.assertTimeoutPreemptively(
         Duration.ofSeconds(5),
         () ->
             Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
@@ -405,7 +403,7 @@ final class ManifestManagerTest {
         .thenThrow(new RuntimeException("cyclic failure", firstCause));
 
     // when / then
-    assertTimeoutPreemptively(
+    org.junit.jupiter.api.Assertions.assertTimeoutPreemptively(
         Duration.ofSeconds(5),
         () -> {
           Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
