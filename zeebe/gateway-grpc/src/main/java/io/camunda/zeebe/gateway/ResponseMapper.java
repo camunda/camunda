@@ -404,7 +404,8 @@ public final class ResponseMapper {
             .setListenerEventType(
                 EnumUtil.convert(
                     job.getJobListenerEventType(), ActivatedJob.ListenerEventType.class))
-            .addAllTags(job.getTags());
+            .addAllTags(job.getTags())
+            .setBusinessId(job.getBusinessId());
 
     if (job.getJobKind().equals(io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER)
         && !job.getCustomHeaders().isEmpty()) {

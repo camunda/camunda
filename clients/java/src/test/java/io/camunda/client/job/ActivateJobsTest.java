@@ -65,6 +65,7 @@ public final class ActivateJobsTest extends ClientTest {
             .setTenantId("test-tenant-1")
             .setKind(JobKind.BPMN_ELEMENT)
             .setListenerEventType(ListenerEventType.START)
+            .setBusinessId("order-123")
             .build();
 
     final ActivatedJob activatedJob2 =
@@ -132,6 +133,7 @@ public final class ActivateJobsTest extends ClientTest {
             EnumUtil.convert(
                 activatedJob1.getListenerEventType(),
                 io.camunda.client.api.search.enums.ListenerEventType.class));
+    assertThat(job.getBusinessId()).isEqualTo("order-123");
 
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -160,6 +162,7 @@ public final class ActivateJobsTest extends ClientTest {
             EnumUtil.convert(
                 activatedJob2.getListenerEventType(),
                 io.camunda.client.api.search.enums.ListenerEventType.class));
+    assertThat(job.getBusinessId()).isNull();
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getType()).isEqualTo("foo");

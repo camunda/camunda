@@ -92,8 +92,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     tags = Collections.unmodifiableSet(new HashSet<>(job.getTagsList()));
     // gRPC doesn't have rootProcessInstanceKey - return null
     rootProcessInstanceKey = null;
-    // gRPC doesn't have businessId - return null
-    businessId = null;
+    // proto strings default to "" when unset; expose as null like the REST response
+    businessId = job.getBusinessId().isEmpty() ? null : job.getBusinessId();
   }
 
   public ActivatedJobImpl(

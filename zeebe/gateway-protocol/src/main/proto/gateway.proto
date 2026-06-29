@@ -127,6 +127,8 @@ message ActivatedJob {
   repeated string tags = 18;
   // the priority of the job; higher values indicate higher priority
   int32 priority = 19;
+  // the business ID of the owning process instance; null when the instance has none
+  string businessId = 20;
 }
 
 message UserTaskProperties {
