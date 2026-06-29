@@ -227,6 +227,19 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-zeebe-exporter</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <!-- The distribution provides its own SLF4J binding; don't pull in logback. -->
+        <exclusion>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-classic</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
     </dependency>
 

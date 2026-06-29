@@ -33,6 +33,8 @@
     <module>event-bridge-services</module>
     <module>event-bridge-gateway</module>
     <module>event-bridge-client</module>
+    <module>event-bridge-zeebe-connector</module>
+    <module>event-bridge-zeebe-exporter</module>
     <module>event-bridge-examples</module>
   </modules>
 
