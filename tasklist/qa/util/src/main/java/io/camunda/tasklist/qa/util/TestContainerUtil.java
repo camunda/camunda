@@ -419,6 +419,13 @@ public class TestContainerUtil {
       final GenericContainer<?> tasklistContainer, final TestContext testContext) {
     final var indexPrefix =
         testContext.getIndexPrefix() != null ? testContext.getIndexPrefix() : "";
+    // Ensure the management server is bound to the expected port and all actuator
+    // endpoints (including /actuator/backupHistory) are exposed. Without these, the
+    // backup-restore tests fail with 404 on POST /actuator/backupHistory.
+    tasklistContainer
+        .withEnv("MANAGEMENT_SERVER_PORT", String.valueOf(TASKLIST_MGMT_HTTP_PORT))
+        .withEnv("MANAGEMENT_SERVER_BASE_PATH", "/")
+        .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*");
     if (TestUtil.isOpenSearch()) {
       final String osHost = testContext.getInternalOsHost();
       final Integer osPort = testContext.getInternalOsPort();
