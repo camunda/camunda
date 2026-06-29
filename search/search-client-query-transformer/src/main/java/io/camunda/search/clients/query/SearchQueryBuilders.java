@@ -18,6 +18,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.util.ValueTypeUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -571,11 +572,52 @@ public final class SearchQueryBuilders {
     // Handle common operations
     final var res =
         switch (operation.operator()) {
-          case EQUALS -> term(field, TypedValue.toTypedValue(operation.value()));
-          case NOT_EQUALS -> mustNot(term(field, TypedValue.toTypedValue(operation.value())));
+          case EQUALS -> {
+            if (operation.type().equals(ValueTypeEnum.NULL)) {
+              // A JSON null variable is stored as the literal string "null" (not as an absent
+              // field), so match that literal.
+              yield term(field, TypedValue.of(ValueTypeUtil.JSON_NULL));
+            }
+            if (operation.type().equals(ValueTypeEnum.LONG)) {
+              // Zeebe serializes whole numbers as doubles (e.g. "356.0"), so match both the
+              // integer and double string representations on the keyword field.
+              yield or(
+                  term(field, TypedValue.of(String.valueOf(operation.value()))),
+                  term(field, TypedValue.of(operation.value() + ".0")));
+            }
+            yield term(field, TypedValue.toTypedValue(operation.value()));
+          }
+          case NOT_EQUALS -> {
+            if (operation.type().equals(ValueTypeEnum.NULL)) {
+              yield mustNot(term(field, TypedValue.of(ValueTypeUtil.JSON_NULL)));
+            }
+            if (operation.type().equals(ValueTypeEnum.LONG)) {
+              yield mustNot(
+                  or(
+                      term(field, TypedValue.of(String.valueOf(operation.value()))),
+                      term(field, TypedValue.of(operation.value() + ".0"))));
+            }
+            yield mustNot(term(field, TypedValue.toTypedValue(operation.value())));
+          }
           case EXISTS -> exists(field);
           case NOT_EXISTS -> mustNot(exists(field));
-          case IN -> objectTerms(field, operation.values());
+          case IN -> {
+            if (operation.type().equals(ValueTypeEnum.NULL)) {
+              // A JSON null variable is stored as the literal string "null", so match that literal.
+              yield term(field, TypedValue.of(ValueTypeUtil.JSON_NULL));
+            }
+            if (operation.type().equals(ValueTypeEnum.LONG)) {
+              // Zeebe serializes whole numbers as doubles (e.g. "356.0"), so match both the
+              // integer and double string representations on the keyword field.
+              final var expandedValues = new ArrayList<>();
+              for (final var value : operation.values()) {
+                expandedValues.add(String.valueOf(value));
+                expandedValues.add(value + ".0");
+              }
+              yield objectTerms(field, expandedValues);
+            }
+            yield objectTerms(field, operation.values());
+          }
           default -> null;
         };
     if (res != null) {
