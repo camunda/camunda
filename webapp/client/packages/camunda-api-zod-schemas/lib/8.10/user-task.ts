@@ -63,6 +63,7 @@ const userTaskSchema = z.object({
 	externalFormReference: z.string().nullable(),
 	tags: z.array(z.string()),
 	priority: z.number().int().min(0).max(100),
+	businessId: z.string().nullable(),
 });
 type UserTask = z.infer<typeof userTaskSchema>;
 
@@ -72,7 +73,7 @@ const getUserTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
 };
 
 const queryUserTasksRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['creationDate', 'completionDate', 'followUpDate', 'dueDate', 'priority'] as const,
+	sortFields: ['creationDate', 'completionDate', 'followUpDate', 'dueDate', 'priority', 'businessId'] as const,
 	filter: userTaskSchema
 		.pick({
 			state: true,
@@ -86,6 +87,7 @@ const queryUserTasksRequestBodySchema = getQueryRequestBodySchema({
 		})
 		.extend({
 			assignee: advancedStringFilterSchema,
+			businessId: advancedStringFilterSchema,
 			priority: advancedIntegerFilterSchema,
 			candidateGroup: advancedStringFilterSchema,
 			candidateUser: advancedStringFilterSchema,
