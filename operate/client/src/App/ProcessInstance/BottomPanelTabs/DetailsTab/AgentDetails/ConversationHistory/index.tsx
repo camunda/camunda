@@ -7,17 +7,12 @@
  */
 
 import {useState} from 'react';
-import {Button, ButtonSet, SkeletonText} from '@carbon/react';
-import {
-  Filter,
-  FilterRemove,
-  SortAscending,
-  SortDescending,
-} from '@carbon/react/icons';
+import {SkeletonText} from '@carbon/react';
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
 import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
+import {ConversationToggles} from './ConversationToggles';
 import {
   ConversationContainer,
   Messages,
@@ -121,36 +116,5 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     </ConversationContainer>
   );
 };
-
-type ConversationTogglesProps = {
-  sortOrder: QuerySortOrder;
-  canBeScoped: boolean;
-  isScoped: boolean;
-  onToggleSortOrder: () => void;
-  onToggleScope: () => void;
-};
-
-const ConversationToggles: React.FC<ConversationTogglesProps> = (props) => (
-  <ButtonSet>
-    <Button
-      kind="ghost"
-      size="xs"
-      renderIcon={props.sortOrder === 'desc' ? SortDescending : SortAscending}
-      onClick={props.onToggleSortOrder}
-    >
-      {props.sortOrder === 'desc' ? 'Most recent first' : 'Oldest first'}
-    </Button>
-    {props.canBeScoped && (
-      <Button
-        kind="ghost"
-        size="xs"
-        renderIcon={props.isScoped ? Filter : FilterRemove}
-        onClick={props.onToggleScope}
-      >
-        {props.isScoped ? 'Scoped conversation' : 'Whole conversation'}
-      </Button>
-    )}
-  </ButtonSet>
-);
 
 export {ConversationHistory};
