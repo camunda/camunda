@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Guards that the pure (client) batch codec in {@code event-bridge-batch-codec} and the Agrona
  * zero-copy codec here produce and consume byte-identical batches — i.e. the same layout, byte
- * order (little-endian), and CRC. If these drift (e.g. an endianness mismatch), one side would
- * fail to read the other and these assertions break.
+ * order (little-endian), and CRC. If these drift (e.g. an endianness mismatch), one side would fail
+ * to read the other and these assertions break.
  */
 final class BatchCodecCompatibilityTest {
 

@@ -8,7 +8,6 @@
 package io.camunda.eventbridge.client;
 
 import io.camunda.eventbridge.batch.BatchReader;
-import java.util.List;
 
 /**
  * Result of a fetch. Contains zero or more complete batches packed contiguously. Entry-level
