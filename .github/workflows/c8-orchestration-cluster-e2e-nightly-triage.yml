@@ -745,6 +745,34 @@ jobs:
               fi
             fi
 
+            # Drop tests already tracked by an open product bug (per-test fingerprint,
+            # matching what the fix agent embeds in the issue). Suppression is per-test;
+            # the rest of the version's failures still dispatch. Auto-reopens once the
+            # issue is closed (the search misses) and the test is still failing.
+            # Fail-open: any search error keeps the test eligible (agent dedupes at filing).
+            # Skip this for workflow-level dispatches (specs intentionally empty).
+            orig_spec_count=$(echo "$specs" | jq 'length')
+            if [ "$orig_spec_count" -gt 0 ] && [ "${SUPPRESS_PRODUCT_BUGS:-true}" = "true" ]; then
+              kept='[]'
+              while IFS= read -r t; do
+                [ -z "$t" ] && continue
+                tf=$(echo "$t" | jq -r '.file'); tn=$(echo "$t" | jq -r '.test_name')
+                fp=$(printf '%s::%s::%s' "$version" "$tf" "$tn" | sha256sum | cut -c1-8)
+                pb=$(gh search issues "nightly-product-bug fp=${fp}" --owner camunda --state open \
+                       --limit 1 --json url --jq '.[0].url // ""' 2>/dev/null || echo "")
+                if [ -n "$pb" ]; then
+                  echo "  suppressed (open product bug ${pb}): ${tf} > ${tn}"
+                else
+                  kept=$(echo "$kept" | jq -c --argjson t "$t" '. + [$t]')
+                fi
+              done < <(echo "$specs" | jq -c '.[]')
+              specs="$kept"
+              if [ "$(echo "$specs" | jq 'length')" -eq 0 ]; then
+                echo "Version $version: all failing tests tracked by open product bugs — skipping"
+                continue
+              fi
+            fi
+
             echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
             dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
