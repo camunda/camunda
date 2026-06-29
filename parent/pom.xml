@@ -91,7 +91,7 @@
     <version.objenesis>3.5</version.objenesis>
     <version.opentelemetry>1.62.0</version.opentelemetry>
     <version.opensearch.client>2.17.0</version.opensearch.client>
-    <version.opensearch-java>3.5.0</version.opensearch-java>
+    <version.opensearch-java>3.7.0</version.opensearch-java>
     <!-- renovate: datasource=docker depName=opensearchproject/opensearch -->
     <version.opensearch.container>2.19.5</version.opensearch.container>
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
