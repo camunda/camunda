@@ -28,7 +28,6 @@ import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.security.core.authz.ResourceAccessController;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -139,9 +138,8 @@ public class RdbmsConfiguration {
   @Bean
   public RdbmsServiceFactory rdbmsServiceFactory(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders,
-      final MeterRegistry meterRegistry) {
-    return new RdbmsServiceFactory(rdbmsMapperBundles, rdbmsTenantReaders, meterRegistry);
+      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
+    return new RdbmsServiceFactory(rdbmsMapperBundles, rdbmsTenantReaders);
   }
 
   @Bean

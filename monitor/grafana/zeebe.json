@@ -23352,7 +23352,7 @@
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg(rate(zeebe_rdbms_exporter_flush_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partitionId=~\"$partition\"}[$__rate_interval]) > 0)",
+              "expr": "avg(rate(zeebe_rdbms_exporter_flush_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]) > 0)",
               "format": "time_series",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
@@ -23370,7 +23370,7 @@
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg(rate(zeebe_rdbms_exporter_historyCleanup_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partitionId=~\"$partition\"}[$__rate_interval]) > 0)",
+              "expr": "avg(rate(zeebe_rdbms_exporter_historyCleanup_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]) > 0)",
               "format": "time_series",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
@@ -23979,11 +23979,11 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "builder",
-              "expr": "zeebe_rdbms_exporter_historyCleanup_backoffDuration{cluster=~\"$cluster\", namespace=~\"$namespace\", partitionId=~\"$partition\"}",
+              "expr": "zeebe_rdbms_exporter_historyCleanup_backoffDuration{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}",
               "format": "time_series",
               "interval": "30s",
               "intervalFactor": 1,
-              "legendFormat": "{{partitionId}}",
+              "legendFormat": "{{physicalTenant}} {{partition}}",
               "range": true,
               "refId": "A"
             }

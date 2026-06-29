@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
@@ -137,7 +138,8 @@ public final class CamundaRdbmsTestApplication
     if (!isStarted()) {
       throw new IllegalStateException("Application is not started");
     }
-    return super.bean(RdbmsServiceFactory.class).createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    return super.bean(RdbmsServiceFactory.class)
+        .createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
   }
 
   private void setSecondaryStorageToRdbms() {

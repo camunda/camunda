@@ -23,18 +23,22 @@ import java.util.Map;
 public class RdbmsServiceFactory {
   private final Map<String, RdbmsMapperBundle> rdbmsMapperBundles;
   private final Map<String, RdbmsTenantReaders> rdbmsTenantReaders;
-  private final MeterRegistry meterRegistry;
 
   public RdbmsServiceFactory(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders,
-      final MeterRegistry meterRegistry) {
+      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
     this.rdbmsMapperBundles = rdbmsMapperBundles;
     this.rdbmsTenantReaders = rdbmsTenantReaders;
-    this.meterRegistry = meterRegistry;
   }
 
-  public RdbmsService createRdbmsService(final String physicalTenantId) {
+  /**
+   * Creates the tenant's service, registering its writer metrics against the given {@code
+   * meterRegistry}. Callers pass the partition-scoped registry (e.g. the exporter {@code
+   * Context}'s) so the writer metrics inherit its {@code partition} and {@code physicalTenant}
+   * common tags.
+   */
+  public RdbmsService createRdbmsService(
+      final String physicalTenantId, final MeterRegistry meterRegistry) {
     final var rdbmsMapperBundle = rdbmsMapperBundles.get(physicalTenantId);
     if (rdbmsMapperBundle == null) {
       throw new IllegalArgumentException(

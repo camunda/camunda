@@ -36,6 +36,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,9 @@ public class RoleSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
     roleReader = rdbmsService.getRoleReader();
   }

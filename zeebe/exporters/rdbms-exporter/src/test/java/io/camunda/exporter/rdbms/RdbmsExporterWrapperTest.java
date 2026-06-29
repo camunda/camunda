@@ -84,7 +84,8 @@ class RdbmsExporterWrapperTest {
     final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
-    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
@@ -165,7 +166,8 @@ class RdbmsExporterWrapperTest {
     final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
-    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
@@ -231,7 +233,8 @@ class RdbmsExporterWrapperTest {
     final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
-    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
@@ -297,7 +300,8 @@ class RdbmsExporterWrapperTest {
     final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
     final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
-    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString())).thenReturn(rdbmsService);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
 
     when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);

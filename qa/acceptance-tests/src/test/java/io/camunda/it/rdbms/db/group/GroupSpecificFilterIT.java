@@ -28,6 +28,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.security.api.model.authz.EntityType;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +54,9 @@ public class GroupSpecificFilterIT {
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsService = rdbmsServiceFactory.createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID);
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
     groupReader = rdbmsService.getGroupReader();
   }

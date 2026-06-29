@@ -32,7 +32,6 @@ public class RdbmsWriterMetrics {
   private static final String NAMESPACE = "zeebe.rdbms.exporter";
 
   private final MeterRegistry meterRegistry;
-  private final int partitionId;
   private final Timer flushLatency;
   private final Timer recordExportingLatency;
   private final DistributionSummary queueMemoryDistribution;
@@ -43,15 +42,13 @@ public class RdbmsWriterMetrics {
   private final AtomicLong pendingPositionsValue = new AtomicLong(0);
   private final Map<String, StatefulGauge> replicaLagGauges = new HashMap<>();
 
-  public RdbmsWriterMetrics(final MeterRegistry meterRegistry, final int partitionId) {
+  public RdbmsWriterMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
-    this.partitionId = partitionId;
 
     flushLatency =
         Timer.builder(meterName("flush.latency"))
             .description(
                 "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
-            .tag("partitionId", String.valueOf(partitionId))
             .publishPercentileHistogram()
             .register(meterRegistry);
 
@@ -59,7 +56,6 @@ public class RdbmsWriterMetrics {
         Timer.builder(meterName("record.exporting.latency"))
             .description(
                 "Time from record creation to commit/flush to the database (end-to-end export latency)")
-            .tag("partitionId", String.valueOf(partitionId))
             .publishPercentileHistogram()
             .minimumExpectedValue(Duration.ofMillis(1))
             .register(meterRegistry);
@@ -67,7 +63,6 @@ public class RdbmsWriterMetrics {
     queueMemoryDistribution =
         DistributionSummary.builder(meterName("queue.memory.bytes"))
             .description("Estimated memory usage of the execution queue in bytes")
-            .tag("partitionId", String.valueOf(partitionId))
             .baseUnit("bytes")
             .serviceLevelObjectives(
                 1024, // 1KB
@@ -83,27 +78,23 @@ public class RdbmsWriterMetrics {
     Gauge.builder(
             meterName("replication.connected.replicas"), connectedReplicasValue, AtomicInteger::get)
         .description("Number of currently connected read replicas")
-        .tag("partitionId", String.valueOf(partitionId))
         .register(meterRegistry);
 
     Gauge.builder(meterName("replication.paused"), exporterPausedValue, AtomicInteger::get)
         .description(
             "Whether the exporter is currently paused due to replication lag (1 = paused, 0 = running)")
-        .tag("partitionId", String.valueOf(partitionId))
         .register(meterRegistry);
 
     Gauge.builder(
             meterName("replication.pending.positions"), pendingPositionsValue, AtomicLong::get)
         .description(
             "Number of exporter positions that have been flushed but not yet confirmed as replicated")
-        .tag("partitionId", String.valueOf(partitionId))
         .register(meterRegistry);
   }
 
   public ResourceSample measureFlushDuration() {
     return Timer.resource(meterRegistry, meterName("flush.duration.seconds"))
         .description("Flush duration of bulk exporters in seconds")
-        .tag("partitionId", String.valueOf(partitionId))
         .publishPercentileHistogram()
         .minimumExpectedValue(Duration.ofMillis(10));
   }
@@ -111,7 +102,6 @@ public class RdbmsWriterMetrics {
   public void recordBulkSize(final int bulkSize) {
     DistributionSummary.builder(meterName("bulk.size"))
         .description("Exporter bulk size")
-        .tag("partitionId", String.valueOf(partitionId))
         .serviceLevelObjectives(1, 2, 5, 10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000)
         .register(meterRegistry)
         .record(bulkSize);
@@ -120,14 +110,12 @@ public class RdbmsWriterMetrics {
   public void registerCleanupBackoffDurationGauge(final Supplier<Number> supplier) {
     Gauge.builder(meterName("historyCleanup.backoffDuration"), supplier)
         .description("Current backoff duration for cleanup of entity")
-        .tag("partitionId", String.valueOf(partitionId))
         .register(meterRegistry);
   }
 
   public ResourceSample measureHistoryCleanupDuration() {
     return Timer.resource(meterRegistry, meterName("historyCleanup.duration.seconds"))
         .description("History cleanup duration of bulk exporters in seconds")
-        .tag("partitionId", String.valueOf(partitionId))
         .publishPercentileHistogram()
         .minimumExpectedValue(Duration.ofMillis(10));
   }
@@ -135,7 +123,6 @@ public class RdbmsWriterMetrics {
   public ResourceSample measureUsageMetricsHistoryCleanupDuration() {
     return Timer.resource(meterRegistry, meterName("historyCleanup.usageMetrics.duration.seconds"))
         .description("Usage metrics history cleanup duration in seconds")
-        .tag("partitionId", String.valueOf(partitionId))
         .publishPercentileHistogram()
         .minimumExpectedValue(Duration.ofMillis(10));
   }
@@ -144,7 +131,6 @@ public class RdbmsWriterMetrics {
     return Timer.resource(
             meterRegistry, meterName("historyCleanup.jobBatchMetrics.duration.seconds"))
         .description("Job batch metrics history cleanup duration in seconds")
-        .tag("partitionId", String.valueOf(partitionId))
         .publishPercentileHistogram()
         .minimumExpectedValue(Duration.ofMillis(10));
   }
@@ -152,7 +138,6 @@ public class RdbmsWriterMetrics {
   public void recordHistoryCleanupEntities(final int bulkSize, final String entityName) {
     DistributionSummary.builder(meterName("historyCleanup.bulk.size"))
         .description("Exporter bulk size")
-        .tag("partitionId", String.valueOf(partitionId))
         .tag("entity", entityName)
         .serviceLevelObjectives(
             1, 2, 5, 10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000,
@@ -161,7 +146,7 @@ public class RdbmsWriterMetrics {
         .record(bulkSize);
 
     Counter.builder(meterName("historyCleanup.deletedEntities"))
-        .tags("partitionId", String.valueOf(partitionId), "entity", entityName)
+        .tags("entity", entityName)
         .description("Number of removed rows of the given entity")
         .register(meterRegistry)
         .increment(bulkSize);
@@ -170,7 +155,6 @@ public class RdbmsWriterMetrics {
   public void recordFailedFlush() {
     Counter.builder(meterName("failed.flush"))
         .description("Number of failed flush operations")
-        .tag("partitionId", String.valueOf(partitionId))
         .register(meterRegistry)
         .increment();
   }
@@ -178,12 +162,7 @@ public class RdbmsWriterMetrics {
   public void recordMergedQueueItem(final ContextType contextType, final String statementId) {
     Counter.builder(meterName("merged.queue.item"))
         .tags(
-            "partitionId",
-            String.valueOf(partitionId),
-            "contextType",
-            contextType.name(),
-            "statementId",
-            stripDefaultPackageName(statementId))
+            "contextType", contextType.name(), "statementId", stripDefaultPackageName(statementId))
         .description("Queue item merged into another item")
         .register(meterRegistry)
         .increment();
@@ -191,11 +170,7 @@ public class RdbmsWriterMetrics {
 
   public void recordEnqueuedStatement(final String statementId) {
     Counter.builder(meterName("enqueued.statements"))
-        .tags(
-            "partitionId",
-            String.valueOf(partitionId),
-            "statementId",
-            stripDefaultPackageName(statementId))
+        .tags("statementId", stripDefaultPackageName(statementId))
         .description("Number of enqueued statements")
         .register(meterRegistry)
         .increment();
@@ -203,31 +178,19 @@ public class RdbmsWriterMetrics {
 
   public void recordExecutedStatement(final String statementId, final int batchCount) {
     Counter.builder(meterName("executed.statements"))
-        .tags(
-            "partitionId",
-            String.valueOf(partitionId),
-            "statementId",
-            stripDefaultPackageName(statementId))
+        .tags("statementId", stripDefaultPackageName(statementId))
         .description("Number of executed statements")
         .register(meterRegistry)
         .increment();
 
     Counter.builder(meterName("executed.queue.item"))
-        .tags(
-            "partitionId",
-            String.valueOf(partitionId),
-            "statementId",
-            stripDefaultPackageName(statementId))
+        .tags("statementId", stripDefaultPackageName(statementId))
         .description("Number of executed queue items")
         .register(meterRegistry)
         .increment(batchCount);
 
     DistributionSummary.builder(meterName("num.batches"))
-        .tags(
-            "partitionId",
-            String.valueOf(partitionId),
-            "statementId",
-            stripDefaultPackageName(statementId))
+        .tags("statementId", stripDefaultPackageName(statementId))
         .description("Exporter batch count")
         .maximumExpectedValue(100.0)
         .scale(100)
@@ -267,7 +230,7 @@ public class RdbmsWriterMetrics {
    */
   public void recordQueueFlush(final FlushTrigger trigger) {
     Counter.builder(meterName("flush"))
-        .tags("partitionId", String.valueOf(partitionId), "trigger", trigger.name())
+        .tags("trigger", trigger.name())
         .description("Count of queue flushes")
         .register(meterRegistry)
         .increment();
@@ -310,7 +273,6 @@ public class RdbmsWriterMetrics {
     return StatefulGauge.builder(meterName("replication.lag.ms"))
         .description(
             "Currently observed replication lag per read replica in milliseconds as reported by the database")
-        .tag("partitionId", String.valueOf(partitionId))
         .tag("replicaId", replicaId)
         .register(meterRegistry);
   }
