@@ -11,16 +11,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class ClusterEndpointTest {
@@ -111,5 +119,72 @@ final class ClusterEndpointTest {
             MemberId.from("1"),
             MemberState.initializeAsActive(
                 Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+  }
+
+  @Nested
+  class ModeChangeEndpoint {
+    @Test
+    void shouldAllowModeQueryParameter() {
+      // given
+      final var endpoint = createEndpoint();
+      final var request = mock(HttpServletRequest.class);
+      when(request.getParameterMap()).thenReturn(Map.of("mode", new String[] {"RECOVERING"}));
+
+      // when - then
+      assertThatCode(() -> endpoint.validateRequestParameters(request)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRequestModeChangeToRecovering() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      final var changeResponse =
+          new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
+      when(sender.modeChange(new ModeChangeRequest(Mode.RECOVERING, false)))
+          .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
+
+      // when
+      final var response = endpoint.updateMode(Mode.RECOVERING, false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender).modeChange(new ModeChangeRequest(Mode.RECOVERING, false));
+    }
+
+    @Test
+    void shouldRequestModeChangeToProcessing() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      final var changeResponse =
+          new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
+      when(sender.modeChange(new ModeChangeRequest(Mode.PROCESSING, false)))
+          .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
+
+      // when
+      final var response = endpoint.updateMode(Mode.PROCESSING, false);
+
+      // then
+      assertThat(response.getStatusCode().value()).isEqualTo(202);
+      verify(sender).modeChange(new ModeChangeRequest(Mode.PROCESSING, false));
+    }
+
+    @Test
+    void shouldPassDryRunFlagOnModeChange() {
+      // given
+      final var sender = mock(ClusterConfigurationManagementRequestSender.class);
+      final var endpoint = new ClusterEndpoint(sender);
+      final var changeResponse =
+          new ClusterConfigurationChangeResponse(1L, Map.of(), Map.of(), List.of());
+      when(sender.modeChange(new ModeChangeRequest(Mode.RECOVERING, true)))
+          .thenReturn(CompletableFuture.completedFuture(Either.right(changeResponse)));
+
+      // when
+      endpoint.updateMode(Mode.RECOVERING, true);
+
+      // then
+      verify(sender).modeChange(new ModeChangeRequest(Mode.RECOVERING, true));
+    }
   }
 }
