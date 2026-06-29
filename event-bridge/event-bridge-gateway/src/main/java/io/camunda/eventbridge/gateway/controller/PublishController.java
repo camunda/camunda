@@ -11,6 +11,7 @@ import io.camunda.eventbridge.mapper.ResponseMapper;
 import io.camunda.eventbridge.service.FetchService;
 import io.camunda.eventbridge.service.PublishService;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,6 +59,12 @@ public class PublishController {
         .handle(
             (response, error) -> {
               if (error != null) {
+                // Below-earliest / out-of-range offset is a client error (reset + retry), not a
+                // server fault — surface it as 416 rather than a transient 500.
+                if (FetchErrors.isOffsetOutOfRange(error)) {
+                  return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                      .<byte[]>build();
+                }
                 return ResponseEntity.internalServerError().<byte[]>build();
               }
               return ResponseEntity.ok(toClientFetchResponse(response));

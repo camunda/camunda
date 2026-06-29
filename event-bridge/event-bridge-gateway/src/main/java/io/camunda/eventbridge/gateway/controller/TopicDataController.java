@@ -14,6 +14,7 @@ import io.camunda.eventbridge.service.FetchService;
 import io.camunda.eventbridge.service.PublishService;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -84,6 +85,13 @@ public class TopicDataController {
         .handle(
             (response, error) -> {
               if (error != null) {
+                // A from-the-start/below-earliest offset is a client error (reset + retry), not a
+                // server fault — surface it as 416 so the client can reset rather than treat it as
+                // a transient 500.
+                if (FetchErrors.isOffsetOutOfRange(error)) {
+                  return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                      .<byte[]>build();
+                }
                 return ResponseEntity.internalServerError().<byte[]>build();
               }
               return ResponseEntity.ok(toClientFetchResponse(response));

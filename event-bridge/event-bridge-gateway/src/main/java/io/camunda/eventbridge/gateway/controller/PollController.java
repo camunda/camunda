@@ -12,6 +12,7 @@ import io.camunda.eventbridge.service.PollService;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,6 +43,14 @@ public class PollController {
         .handle(
             (res, error) -> {
               if (error != null) {
+                // Below-earliest / out-of-range offset is a client error (reset + retry), not a
+                // server fault — surface it as 416 rather than a transient 500.
+                if (FetchErrors.isOffsetOutOfRange(error)) {
+                  return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                      .body(
+                          EventBridgeDtos.PollResponse.error(
+                              FetchErrors.OFFSET_OUT_OF_RANGE, rootMessage(error)));
+                }
                 return ResponseEntity.internalServerError()
                     .body(EventBridgeDtos.PollResponse.error("POLL_FAILED", rootMessage(error)));
               }
