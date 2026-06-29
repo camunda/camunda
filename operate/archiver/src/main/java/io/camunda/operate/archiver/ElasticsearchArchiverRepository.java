@@ -376,6 +376,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
     final var searchSource =
         new SearchSourceBuilder()
+            .trackTotalHits(false)
             .query(constantScoreQuery(boolQ))
             .sort("id", SortOrder.ASC)
             .size(batchSize)

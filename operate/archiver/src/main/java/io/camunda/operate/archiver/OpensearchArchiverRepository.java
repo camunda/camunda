@@ -415,6 +415,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
     final SearchRequest.Builder requestBuilder =
         searchRequestBuilder(sourceIndexName)
+            .trackTotalHits(t -> t.enabled(false))
             .query(finalQuery)
             .sort(sortOptions("id", Asc))
             .size(batchSize)
