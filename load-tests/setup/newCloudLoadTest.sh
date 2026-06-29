@@ -35,16 +35,15 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-
-namespace=$1
-
-# Add c8- prefix if not present
-if [[ ! "$namespace" =~ ^c8- ]]; then
-  namespace="c8-$namespace"
-  echo "Namespace prefix added: $namespace"
+input_namespace="$1"
+if ! namespace="$(new_namespace_name "$input_namespace")"; then
+  exit 1
+fi
+if [[ "$namespace" != "$input_namespace" ]]; then
+  echo "Namespace name resolved: $namespace"
 fi
 
-kubectl create namespace $namespace
+kubectl create namespace "$namespace"
 
 # Label namespace with registry (required to inject image pull secrets)
 kubectl label namespace "$namespace" registry=harbor --overwrite
@@ -54,8 +53,8 @@ git_author=$(compute_git_author)
 kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
-cp -rv saas-default/ $namespace
-cd $namespace
+cp -rv saas-default/ "$namespace"
+cd "$namespace"
 
 
 # Update Makefile to use the namespace

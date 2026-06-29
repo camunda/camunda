@@ -106,7 +106,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.event.inputs.ref }}
       scenario: realistic
       secondary-storage-type: elasticsearch
       # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
@@ -137,7 +137,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
+      ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.event.inputs.ref }}
       scenario: realistic
       secondary-storage-type: elasticsearch
       # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.

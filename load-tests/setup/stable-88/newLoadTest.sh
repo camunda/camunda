@@ -53,27 +53,12 @@ fi
 
 # renovate: version=camunda-platform-8.8
 camunda_platform_helm_chart_version="13.8.0"
-namespace="$1"
-
-# Add c8- prefix if not present
-if [[ ! "$namespace" =~ ^c8- ]]; then
-  namespace="c8-$namespace"
-  echo "Namespace prefix added: $namespace"
-fi
-
-# Validate against Kubernetes DNS-1123 label rules. Previously this was
-# implicit (`kubectl create namespace` rejected bad names at cluster time);
-# now that namespace creation is deferred to `make install`, validate here so
-# we don't render a folder with random secrets just to discover the name is
-# invalid.
-if [[ ! "$namespace" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
-  echo "Error: namespace '$namespace' is not a valid Kubernetes DNS-1123 label."
-  echo "       Allowed: lowercase letters, digits, '-'. Must start and end with an alphanumeric."
+input_namespace="$1"
+if ! namespace="$(new_namespace_name "$input_namespace")"; then
   exit 1
 fi
-if [ ${#namespace} -gt 63 ]; then
-  echo "Error: namespace '$namespace' is ${#namespace} characters; Kubernetes labels are capped at 63."
-  exit 1
+if [[ "$namespace" != "$input_namespace" ]]; then
+  echo "Namespace name resolved: $namespace"
 fi
 
 # Validate secondaryStorage value
