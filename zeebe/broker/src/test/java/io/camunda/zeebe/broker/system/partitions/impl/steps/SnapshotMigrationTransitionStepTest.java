@@ -29,13 +29,14 @@ import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Optional;
 import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -63,14 +64,15 @@ public class SnapshotMigrationTransitionStepTest {
   private final AsyncSnapshotDirector snapshotDirector =
       mock(AsyncSnapshotDirector.class, Answers.RETURNS_DEEP_STUBS);
 
+  @AutoClose private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final HealthTreeMetrics treeMetrics = new HealthTreeMetrics(meterRegistry);
+  private final HealthNodePosition rootPosition =
+      HealthNodePosition.broker("Broker-0")
+          .tenant(transitionContext.partitionId().group())
+          .partition(transitionContext.getPartitionId());
   private final io.camunda.zeebe.util.health.HealthMonitor healthMonitor =
       new CriticalComponentsHealthMonitor(
-          "health-monitor",
-          actor.control(),
-          transitionContext.getComponentTreeListener(),
-          Optional.empty(),
-          LOG,
-          Duration.ofMillis(100));
+          actor.control(), treeMetrics, rootPosition, LOG, Duration.ofMillis(100));
 
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl(true);
 
@@ -83,6 +85,9 @@ public class SnapshotMigrationTransitionStepTest {
   void setup() {
     actor.setMonitor(healthMonitor);
     SCHEDULER.submitActor(actor).join();
+    // The root node is announced by its creator (here, the test); interior/leaf nodes are announced
+    // by their parent monitor when registered.
+    treeMetrics.onNodeRegistered(healthMonitor, rootPosition);
     transitionContext.setConcurrencyControl(actor);
     transitionContext.setSnapshotDirector(snapshotDirector);
     transitionContext.setConcurrencyControl(concurrencyControl);
@@ -140,9 +145,10 @@ public class SnapshotMigrationTransitionStepTest {
     Awaitility.await("until metric is unregistered")
         .untilAsserted(
             () ->
-                assertThat(transitionContext.getPartitionStartupMeterRegistry().getMeters())
+                assertThat(meterRegistry.getMeters())
                     .singleElement()
-                    .satisfies(m -> m.getId().getTag("id").equals("health-monitor")));
+                    .satisfies(
+                        m -> assertThat(m.getId().getTag("id")).isEqualTo(rootPosition.name())));
     assertThat(concurrencyControl.scheduledTasks()).isZero();
   }
 
@@ -337,19 +343,19 @@ public class SnapshotMigrationTransitionStepTest {
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(
             () -> {
-              final var meters =
-                  transitionContext.getPartitionTransitionMeterRegistry().getMeters();
+              final var meters = meterRegistry.getMeters();
               final var expectedTags =
                   Tags.of(
                           "id",
                           MigrationSnapshotDirector.COMPONENT_NAME,
+                          "physicalTenant",
+                          transitionContext.partitionId().group(),
                           "partition",
                           String.valueOf(transitionContext.getPartitionId()),
                           "path",
                           String.format(
                               "%s/%s",
-                              healthMonitor.componentName(),
-                              MigrationSnapshotDirector.COMPONENT_NAME))
+                              rootPosition.path(), MigrationSnapshotDirector.COMPONENT_NAME))
                       .stream()
                       .toArray(Tag[]::new);
               assertThat(

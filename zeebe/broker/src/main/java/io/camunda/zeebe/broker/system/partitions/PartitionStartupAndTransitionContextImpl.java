@@ -29,7 +29,6 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
@@ -53,7 +52,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
@@ -113,7 +111,6 @@ public class PartitionStartupAndTransitionContextImpl
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
   private ControllableStreamClock clock;
-  private final HealthTreeMetrics healthGraphMetrics;
   private final BrokerHealthCheckService brokerHealthCheckService;
   private final EngineSecurityConfig securityConfig;
   private final MeterRegistry startupMeterRegistry;
@@ -171,7 +168,6 @@ public class PartitionStartupAndTransitionContextImpl
     this.brokerHealthCheckService = brokerHealthCheckService;
     this.securityConfig = securityConfig;
     this.startupMeterRegistry = startupMeterRegistry;
-    healthGraphMetrics = new HealthTreeMetrics(startupMeterRegistry);
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -415,11 +411,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public boolean areMigrationsPerformed() {
     return migrationsPerformed;
-  }
-
-  @Override
-  public ComponentTreeListener getComponentTreeListener() {
-    return healthGraphMetrics;
   }
 
   @Override

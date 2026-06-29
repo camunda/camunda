@@ -37,7 +37,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
@@ -161,8 +160,6 @@ public interface PartitionTransitionContext extends PartitionContext {
   void markMigrationsDone();
 
   boolean areMigrationsPerformed();
-
-  ComponentTreeListener getComponentTreeListener();
 
   ClusterConfigurationService getClusterConfigurationService();
 

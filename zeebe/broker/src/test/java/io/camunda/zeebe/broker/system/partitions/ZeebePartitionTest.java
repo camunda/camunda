@@ -36,11 +36,11 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
-import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthTreeListener;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -87,8 +87,8 @@ public class ZeebePartitionTest {
     when(ctx.createTransitionContext()).thenReturn(ctx);
     final BrokerHealthCheckService brokerCheckMock = mock();
     when(brokerCheckMock.componentName()).thenReturn("Broker-0");
+    when(brokerCheckMock.getHealthTreeListener()).thenReturn(HealthTreeListener.noop());
     when(ctx.brokerHealthCheckService()).thenReturn(brokerCheckMock);
-    when(ctx.getComponentTreeListener()).thenReturn(ComponentTreeListener.noop());
     when(ctx.getPartitionStartupMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));

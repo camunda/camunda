@@ -28,7 +28,9 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
@@ -85,13 +87,14 @@ public final class ZeebePartition extends Actor
 
     final var partitionId = context.getPartitionId();
     actorName = buildActorName("ZeebePartition", partitionId);
+    final var brokerHealthCheckService = transitionContext.brokerHealthCheckService();
+    final var partitionPosition =
+        HealthNodePosition.broker(brokerHealthCheckService.componentName())
+            .tenant(context.partitionId().group())
+            .partition(context.partitionId().number());
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
-            componentName(context.partitionId()),
-            actor,
-            transitionContext.getComponentTreeListener(),
-            Optional.of(transitionContext.brokerHealthCheckService().componentName()),
-            LOG));
+            actor, brokerHealthCheckService.getHealthTreeListener(), partitionPosition, LOG));
     zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId(), transition);
     healthMetrics = new HealthMetrics(transitionContext.getPartitionStartupMeterRegistry());
     healthMetrics.setUnhealthy();
@@ -103,11 +106,23 @@ public final class ZeebePartition extends Actor
   }
 
   public static String componentName(final PartitionId partitionId) {
-    return String.format("Partition-%s-%d", partitionId.group(), partitionId.number());
+    // Partition numbers are unique within a physical tenant; the tenant is a structural level of
+    // the
+    // health tree (Tenant-<group> node), not part of the name. Must match the partition node's name
+    // produced by HealthNodePosition#partition.
+    return String.format("Partition-%d", partitionId.number());
   }
 
   public PartitionAdminAccess getAdminAccess() {
     return adminAccess;
+  }
+
+  /**
+   * The single node this partition contributes to the broker health tree. Registered under the
+   * partition's physical-tenant node; the partition is not itself a tree node.
+   */
+  public HealthMonitor getHealthMonitor() {
+    return context.getComponentHealthMonitor();
   }
 
   @Override

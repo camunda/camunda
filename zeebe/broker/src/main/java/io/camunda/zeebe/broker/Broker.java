@@ -26,7 +26,6 @@ import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
-import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.netty.util.NetUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -71,8 +70,7 @@ public final class Broker implements AutoCloseable {
     healthCheckService =
         new BrokerHealthCheckService(
             nodeId.memberId(),
-            new HealthTreeMetrics(
-                systemContext.getMeterRegistry(), PartitionKeyNames.noPartition()),
+            new HealthTreeMetrics(systemContext.getMeterRegistry()),
             systemContext.getPhysicalTenantIds().known());
 
     final var startupContext =

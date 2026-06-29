@@ -8,21 +8,29 @@
 package io.camunda.zeebe.scheduler.health;
 
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.health.HealthTreeListener;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 
-/** Healthy only if all components are healthy */
+/**
+ * Healthy only if all components are healthy.
+ *
+ * <p>This is a pure aggregator: it computes its own health from its children and propagates changes
+ * to its failure listeners. It owns no metric state. Whenever its set of children changes it tells
+ * a single {@link HealthTreeListener} so that a projection of the tree (e.g. metrics) can stay in
+ * sync without a parallel, hand-maintained graph. Each node carries its {@link HealthNodePosition},
+ * so the listener derives the node's path and tenant/partition attribution from its position alone.
+ */
 public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private static final Duration HEALTH_MONITORING_PERIOD = Duration.ofSeconds(60);
   private final Map<String, MonitoredComponent> monitoredComponents = new HashMap<>();
@@ -35,34 +43,33 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private volatile HealthReport healthReport;
 
   private final String name;
+  private final HealthNodePosition position;
   private final Duration monitoringInterval;
-  private final ComponentTreeListener graphListener;
+  private final HealthTreeListener treeListener;
 
   public CriticalComponentsHealthMonitor(
-      final String name,
       final ActorControl actor,
-      final ComponentTreeListener healthGraphMetrics,
-      final Optional<String> parentComponent,
+      final HealthTreeListener treeListener,
+      final HealthNodePosition position,
       final Logger log) {
-    this(name, actor, healthGraphMetrics, parentComponent, log, HEALTH_MONITORING_PERIOD);
+    this(actor, treeListener, position, log, HEALTH_MONITORING_PERIOD);
   }
 
   public CriticalComponentsHealthMonitor(
-      final String name,
       final ActorControl actor,
-      final ComponentTreeListener graphListener,
-      final Optional<String> parentComponent,
+      final HealthTreeListener treeListener,
+      final HealthNodePosition position,
       final Logger log,
       final Duration monitoringInterval) {
-    this.name = name;
+    name = position.name();
     this.actor = actor;
     this.log = log;
-    this.graphListener = graphListener;
+    this.treeListener = treeListener;
+    this.position = position;
     this.monitoringInterval = monitoringInterval;
     healthReport =
         HealthReport.unhealthy(this)
             .withMessage("Components are not yet initialized", Instant.now());
-    this.graphListener.registerNode(this, parentComponent);
   }
 
   @Override
@@ -88,10 +95,8 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
           component.addFailureListener(monitoredComponent);
           calculateHealth();
-          // register graphs
-          // it's safe to do it more than once
-          graphListener.registerNode(component, this);
-          log.trace("Registered component {}:{}", componentName, component.componentName());
+          treeListener.onNodeRegistered(component, positionOf(component));
+          log.trace("Registered component {}", componentName);
         });
   }
 
@@ -104,9 +109,8 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           if (monitoredComponent != null) {
             componentHealth.remove(componentName);
             monitoredComponent.component.removeFailureListener(monitoredComponent);
-            graphListener.unregisterRelationship(componentName, name);
-            graphListener.unregisterNode(monitoredComponent.component);
-            log.trace("Unregistered edge {}:{}", name, componentName);
+            treeListener.onNodeRemoved(component);
+            log.trace("Unregistered component {}", componentName);
             calculateHealth();
           }
         });
@@ -130,6 +134,22 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   @Override
   public void removeFailureListener(final FailureListener failureListener) {
     actor.run(() -> failureListeners.remove(failureListener));
+  }
+
+  /** The position of this node within the health tree. */
+  public HealthNodePosition position() {
+    return position;
+  }
+
+  /**
+   * Derives the position of a child node. An interior child (another monitor) already carries its
+   * own position; a leaf inherits this node's tenant/partition attribution under this node's path.
+   */
+  private HealthNodePosition positionOf(final HealthMonitorable component) {
+    if (component instanceof final CriticalComponentsHealthMonitor childMonitor) {
+      return childMonitor.position;
+    }
+    return position.child(component.componentName());
   }
 
   private void updateHealth() {

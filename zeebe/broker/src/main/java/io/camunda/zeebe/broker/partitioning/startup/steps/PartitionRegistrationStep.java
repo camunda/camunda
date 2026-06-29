@@ -28,13 +28,15 @@ public final class PartitionRegistrationStep implements StartupStep<PartitionSta
   @Override
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
-    final var partitionId = context.partitionMetadata().id().number();
+    final var partitionId = context.partitionMetadata().id();
     final var zeebePartition = context.zeebePartition();
     final var topologyManager = context.topologyManager();
     zeebePartition.addFailureListener(
-        new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));
+        new PartitionHealthBroadcaster(partitionId.number(), topologyManager::onHealthChanged));
     context.diskSpaceUsageMonitor().addDiskUsageListener(zeebePartition);
-    context.brokerHealthCheckService().registerMonitoredPartition(partitionId, zeebePartition);
+    context
+        .brokerHealthCheckService()
+        .registerMonitoredPartition(partitionId, zeebePartition.getHealthMonitor());
     result.complete(context);
     return result;
   }
@@ -43,10 +45,12 @@ public final class PartitionRegistrationStep implements StartupStep<PartitionSta
   public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
 
-    final var partitionId = context.partitionMetadata().id().number();
+    final var partitionId = context.partitionMetadata().id();
     context.diskSpaceUsageMonitor().removeDiskUsageListener(context.zeebePartition());
-    context.brokerHealthCheckService().removeMonitoredPartition(context.zeebePartition());
-    context.topologyManager().removePartition(partitionId);
+    context
+        .brokerHealthCheckService()
+        .removeMonitoredPartition(partitionId, context.zeebePartition().getHealthMonitor());
+    context.topologyManager().removePartition(partitionId.number());
     // TODO: failure listener added to ZeebePartition is not removed here.
 
     result.complete(context);

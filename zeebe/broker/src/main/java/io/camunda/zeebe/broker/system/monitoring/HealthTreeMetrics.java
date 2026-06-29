@@ -8,35 +8,35 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.camunda.zeebe.broker.system.monitoring.HealthMetricsDoc.NodesKeyNames;
-import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthTreeListener;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.IdentityHashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public final class HealthTreeMetrics implements ComponentTreeListener {
-  private static final Logger LOG = LoggerFactory.getLogger(HealthTreeMetrics.class);
-  private static final int MAX_PATH_ITERATIONS = 8;
+/**
+ * Projects the health tree into the {@code zeebe_broker_health_nodes} metric: exactly one gauge per
+ * node, tagged with the node's {@code id} and {@code path} plus the {@code physicalTenant}/{@code
+ * partition} it is attributed to, all derived from the node's {@link HealthNodePosition}.
+ *
+ * <p>As the single observer of the one tree it cannot drift from the tree, and because there is one
+ * node object per node it cannot emit a node twice. All nodes share a single meter registry; the
+ * tenant/partition attribution is set per gauge from the position rather than via registry-wide
+ * common tags, so no separate per-partition registry is needed.
+ */
+public final class HealthTreeMetrics implements HealthTreeListener {
   private final MeterRegistry meterRegistry;
-  private final Map<String, Meter.Id> meters = new HashMap<>();
-  // Map of child -> parent: a child only has 1 parent
-  private final Map<String, String> relationships = new HashMap<>();
-  private final Tags extraTags;
+  // Keyed by node identity on purpose: a node's display name is unique only among its siblings, so
+  // it is not a valid global key. Health monitorables do not override equals/hashCode.
+  private final Map<HealthMonitorable, Meter.Id> meters = new IdentityHashMap<>();
 
   public HealthTreeMetrics(final MeterRegistry meterRegistry) {
-    this(meterRegistry, null);
-  }
-
-  public HealthTreeMetrics(final MeterRegistry meterRegistry, final Tags extraTags) {
     this.meterRegistry = meterRegistry;
-    this.extraTags = extraTags;
   }
 
   /**
@@ -53,74 +53,37 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
   }
 
   @Override
-  public void registerNode(final HealthMonitorable component) {
-    final var gauge = buildNodeGauge(component);
-    meters.put(component.componentName(), gauge.getId());
+  public synchronized void onNodeRegistered(
+      final HealthMonitorable node, final HealthNodePosition position) {
+    final var gauge = buildNodeGauge(node, position);
+    meters.put(node, gauge.getId());
   }
 
   @Override
-  public void unregisterNode(final HealthMonitorable component) {
-    removeFromRegistry(component.componentName());
-  }
-
-  @Override
-  public void registerRelationship(final String child, final String parent) {
-    relationships.put(child, parent);
-  }
-
-  @Override
-  public void unregisterRelationship(final String child, final String to) {
-    final var parent = relationships.get(child);
-    if (parent == null || !parent.equals(to)) {
-      LOG.warn("Tried to remove invalid relationship: child={}, parent={}", child, to);
-    } else {
-      relationships.remove(child);
-    }
-  }
-
-  @Override
-  public void close() {
-    for (final var id : meters.values()) {
-      meterRegistry.remove(id);
-    }
-    meters.clear();
-  }
-
-  private Gauge buildNodeGauge(final HealthMonitorable component) {
-    final var meterDoc = HealthMetricsDoc.NODES;
-    final var builder =
-        Gauge.builder(
-                meterDoc.getName(),
-                component,
-                // make sure to not close over anything else than `c`
-                c -> c != null ? statusValue(c.getHealthReport().getStatus()) : statusValue(null))
-            .description(meterDoc.getDescription())
-            .tag(NodesKeyNames.ID.asString(), component.componentName())
-            .tag(NodesKeyNames.PATH.asString(), pathOf(component.componentName()));
-
-    if (extraTags != null) {
-      builder.tags(extraTags);
-    }
-
-    return builder.register(meterRegistry);
-  }
-
-  public String pathOf(final String from) {
-    final var pathElements = new LinkedList<String>();
-    pathElements.add(from);
-    var parent = relationships.get(from);
-    var i = 0;
-    while (parent != null && i++ < MAX_PATH_ITERATIONS) {
-      pathElements.addFirst(parent);
-      parent = relationships.get(parent);
-    }
-    return String.join("/", pathElements);
-  }
-
-  private void removeFromRegistry(final String metricName) {
-    final var meterId = meters.remove(metricName);
+  public synchronized void onNodeRemoved(final HealthMonitorable node) {
+    final var meterId = meters.remove(node);
     if (meterId != null) {
       meterRegistry.remove(meterId);
     }
+  }
+
+  public synchronized void close() {
+    meters.values().forEach(meterRegistry::remove);
+    meters.clear();
+  }
+
+  private Gauge buildNodeGauge(final HealthMonitorable node, final HealthNodePosition position) {
+    final var meterDoc = HealthMetricsDoc.NODES;
+    return Gauge.builder(
+            meterDoc.getName(),
+            node,
+            // make sure to not close over anything else than `n`
+            n -> n != null ? statusValue(n.getHealthReport().getStatus()) : statusValue(null))
+        .description(meterDoc.getDescription())
+        .tag(NodesKeyNames.ID.asString(), position.name())
+        .tag(NodesKeyNames.PATH.asString(), position.path())
+        .tag(PartitionKeyNames.PHYSICAL_TENANT.asString(), position.physicalTenant())
+        .tag(PartitionKeyNames.PARTITION.asString(), position.partition())
+        .register(meterRegistry);
   }
 }

@@ -17,81 +17,38 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthTreeListener;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 
 /*
- * There's 2 ways BrokerHealthCheckService can monitor its current healthstatus:
- *
- *  - listening for failures: in which a subcomponent tells its parent component that a failure
- *   occurred, so that the healthstatus can be updated for all ancestor components. All of the
- *   subcomponents in the diagram below do this.
- *  - probing for healthstatus, in which the BrokerHealthCheckService just checks the healthstatus
- *   of its CriticalComponentsHealthMonitor.
- *
- * In turn, the CriticalComponentsHealthMonitors periodically probe their subcomponents for their
- *  healthstatus and update their own healthstatus when one of their subcomponents has become
- *  unhealthy.
- *
- * The ZeebePartition only probes its CriticalComponentsHealthMonitor when its healthstatus is
- *  probed by the CriticalComponentsHealthMonitor that monitors the ZeebePartition.
+ * The broker aggregates health as a tree that mirrors the domain: the broker node aggregates one
+ * node per physical tenant, each tenant node aggregates its partition nodes, and each partition node
+ * aggregates that partition's own components (Raft, stream processor, exporter, disk space, ...).
+ * Every interior node is a CriticalComponentsHealthMonitor (CCHM) and is healthy only if all of its
+ * children are. Health propagates upwards via failure listeners and is re-probed periodically.
  *
  *       +--------------+
- *       | BrokerHealth |-----healthstatus
+ *       | BrokerHealth |
  *       | CheckService |
  *       +--------------+
- *    probes    |
- *    downwards |informs
- *              |upwards
- *    +--------------------+
- *    | CriticalComponents |----healthstatus
- *    | HealthMonitor      |
- *    +--------------------+
- * periodically |
- * monitors     |informs
- * downwards    |upwards   +----------------+
- *              |----------| ZeebePartition |----healthstatus
- *                   probes ----------------+
- *                   downwards     |
- *                   when probed   |informs
- *                                 |upwards
- *                       +--------------------+
- *                       | CriticalComponents |-----healthstatus
- *                       | HealthMonitor      |
- *                       +--------------------+
- *                    periodically |
- *                    monitors     |informs
- *                    downwards    |upwards   +------+
- *                                 |----------| Raft |
- *                                 |          +------+
- *                                 |informs
- *                                 |upwards   +-----------------+
- *                                 |----------| StreamProcessor |
- *                                 |          +-----------------+
- *                                 |informs
- *                                 |upwards   +-----+
- *                                 |----------| Log |
- *                                 |          +-----+
- *                                 |informs
- *                                 |upwards   +------------------+
- *                                 |----------| ExporterDirector |
- *                                 |          +------------------+
- *                                 |informs
- *                                 |upwards   +------------------+
- *                                 |----------| SnapshotDirector |
- *                                            +------------------+
- *                                 |informs
- *                                 |upwards   +---------------------+
- *                                 |----------| ZeebePartitionHealth|
- *                                            +---------------------+
+ *              |
+ *       Broker-<id> CCHM
+ *              |
+ *       Tenant-<tenant> CCHM   (one per expected physical tenant)
+ *              |
+ *       Partition-<n> CCHM
+ *              |
+ *       Raft / StreamProcessor / ExporterDirector / SnapshotDirector /
+ *       MigrationSnapshotDirector / DiskSpace / PartitionTransition (leaves)
  *
- * https://textik.com/#cb084adedb02d970
+ * Readiness (isBrokerReady) is deliberately independent of this tree; see below.
  */
 public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
@@ -109,16 +66,31 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   /* Guards against logging "broker is ready" more than once. Only touched on the actor thread. */
   private boolean readyLogged = false;
   private volatile boolean brokerStarted = false;
+  private final HealthTreeListener healthTreeListener;
   private final HealthMonitor healthMonitor;
+  /* One CCHM per expected physical tenant, created eagerly so the tree is complete and an empty
+  but expected tenant is legitimately not-yet-healthy. Populated in the constructor and only read
+  afterwards. Keyed by physical tenant id (== partition group). */
+  private final Map<String, HealthMonitor> tenantMonitors = new HashMap<>();
 
   public BrokerHealthCheckService(
       final MemberId nodeId,
-      final HealthTreeMetrics healthGraphMetrics,
+      final HealthTreeMetrics healthTreeListener,
       final Set<String> expectedPhysicalTenants) {
     this.expectedPhysicalTenants = Set.copyOf(expectedPhysicalTenants);
+    this.healthTreeListener = healthTreeListener;
+    final var brokerPosition = HealthNodePosition.broker("Broker-" + nodeId);
     healthMonitor =
-        new CriticalComponentsHealthMonitor(
-            "Broker-" + nodeId, actor, healthGraphMetrics, Optional.empty(), LOG);
+        new CriticalComponentsHealthMonitor(actor, healthTreeListener, brokerPosition, LOG);
+    // The broker is the root and has no parent to announce it, so announce it directly.
+    healthTreeListener.onNodeRegistered(healthMonitor, brokerPosition);
+    for (final var physicalTenantId : this.expectedPhysicalTenants) {
+      final var tenantMonitor =
+          new CriticalComponentsHealthMonitor(
+              actor, healthTreeListener, brokerPosition.tenant(physicalTenantId), LOG);
+      tenantMonitors.put(physicalTenantId, tenantMonitor);
+      healthMonitor.registerComponent(tenantMonitor);
+    }
   }
 
   public void registerBootstrapPartitions(
@@ -131,10 +103,15 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     if (partitionInstallStatus == null) {
       partitionInstallStatus = new ConcurrentHashMap<>();
     }
+    final var tenantMonitor = tenantMonitors.get(physicalTenantId);
     partitions.forEach(
         metadata -> {
           partitionInstallStatus.putIfAbsent(metadata.id(), false);
-          healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id()));
+          if (tenantMonitor != null) {
+            // Mark the partition as expected so the tenant node stays unhealthy until the partition
+            // has actually registered and reported healthy.
+            tenantMonitor.monitorComponent(ZeebePartition.componentName(metadata.id()));
+          }
         });
     // A late-registering tenant can be the event that completes readiness, so re-check on the actor
     // thread (where readyLogged is owned).
@@ -156,6 +133,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   public String componentName() {
     // Broker-{id}, different from the actor name
     return healthMonitor.componentName();
+  }
+
+  /** The single projector of the health tree, shared with every node so metrics cannot drift. */
+  public HealthTreeListener getHealthTreeListener() {
+    return healthTreeListener;
   }
 
   @Override
@@ -207,22 +189,38 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   @Override
   protected void onActorStarted() {
     healthMonitor.startMonitoring();
+    tenantMonitors.values().forEach(HealthMonitor::startMonitoring);
   }
 
-  private void registerComponent(final HealthMonitorable component) {
-    actor.run(() -> healthMonitor.registerComponent(component));
+  /**
+   * Registers a partition's node under its physical tenant's node. The partition's own {@link
+   * HealthMonitor} is the single node a partition contributes to the tree.
+   */
+  public void registerMonitoredPartition(
+      final PartitionId partitionId, final HealthMonitor partitionMonitor) {
+    actor.run(
+        () -> {
+          final var tenantMonitor = tenantMonitors.get(partitionId.group());
+          if (tenantMonitor != null) {
+            tenantMonitor.registerComponent(partitionMonitor);
+          } else {
+            LOG.warn(
+                "Cannot register partition {} for monitoring: no node for physical tenant {}",
+                partitionId,
+                partitionId.group());
+          }
+        });
   }
 
-  public void registerMonitoredPartition(final int partitionId, final HealthMonitorable partition) {
-    registerComponent(partition);
-  }
-
-  public void removeMonitoredPartition(final HealthMonitorable partition) {
-    removeComponent(partition);
-  }
-
-  private void removeComponent(final HealthMonitorable component) {
-    actor.run(() -> healthMonitor.removeComponent(component));
+  public void removeMonitoredPartition(
+      final PartitionId partitionId, final HealthMonitor partitionMonitor) {
+    actor.run(
+        () -> {
+          final var tenantMonitor = tenantMonitors.get(partitionId.group());
+          if (tenantMonitor != null) {
+            tenantMonitor.removeComponent(partitionMonitor);
+          }
+        });
   }
 
   public boolean isBrokerHealthy() {

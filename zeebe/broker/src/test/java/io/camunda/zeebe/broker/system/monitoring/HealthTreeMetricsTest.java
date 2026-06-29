@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -40,21 +41,28 @@ public class HealthTreeMetricsTest {
   public void shouldAddNodeMetricWhenComponentRegisters() {
     // given
     final var component = new DummyComponent("test-1");
+    final var position =
+        new HealthNodePosition("test-1", "parent-1/parent-2/test-1", "tenant-a", "1");
 
-    metrics.registerRelationship("test-1", "parent-2");
-    metrics.registerRelationship("parent-2", "parent-1");
     // when
-    metrics.registerNode(component);
+    metrics.onNodeRegistered(component, position);
     final var meter = meterRegistry.get(HealthMetricsDoc.NODES.getName()).gauge();
 
     // then
     assertThat(meter.getId().getTags())
-        .containsAll(Tags.of("id", "test-1", "path", "parent-1/parent-2/test-1"));
+        .containsAll(
+            Tags.of(
+                "id",
+                "test-1",
+                "path",
+                "parent-1/parent-2/test-1",
+                "physicalTenant",
+                "tenant-a",
+                "partition",
+                "1"));
 
     // when
-    metrics.unregisterNode(component);
-    metrics.unregisterRelationship("test-1", "parent-2");
-    metrics.unregisterRelationship("parent-2", "parent-1");
+    metrics.onNodeRemoved(component);
 
     // then
     assertThat(meterRegistry.getMeters()).isEmpty();
@@ -66,7 +74,7 @@ public class HealthTreeMetricsTest {
       final HealthStatus status, final double expected) {
     // given
     final var component = new DummyComponent("test-1");
-    metrics.registerNode(component);
+    metrics.onNodeRegistered(component, HealthNodePosition.broker("test-1"));
     final var meter = meterRegistry.get(HealthMetricsDoc.NODES.getName()).gauge();
 
     // when
@@ -87,8 +95,7 @@ public class HealthTreeMetricsTest {
   public void shouldCloseCorrectly() {
     // given
     final var component = new DummyComponent("test-1");
-    metrics.registerRelationship("test-1", "test-2");
-    metrics.registerNode(component);
+    metrics.onNodeRegistered(component, HealthNodePosition.broker("test-1"));
     assertThat(meterRegistry.getMeters()).isNotEmpty();
 
     // when

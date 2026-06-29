@@ -9,23 +9,23 @@ package io.camunda.zeebe.scheduler.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
-import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthTreeListener;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -41,12 +41,11 @@ public class CriticalComponentsHealthMonitorTest {
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   private CriticalComponentsHealthMonitor monitor;
   private ActorControl actorControl;
-  private ComponentTreeListener graphListener;
-  private final String parentComponent = "parent";
+  private HealthTreeListener treeListener;
 
   @Before
   public void setup() {
-    graphListener = mock();
+    treeListener = mock();
     final Actor testActor =
         new Actor() {
           @Override
@@ -58,10 +57,9 @@ public class CriticalComponentsHealthMonitorTest {
           protected void onActorStarting() {
             monitor =
                 new CriticalComponentsHealthMonitor(
-                    "TestMonitor",
                     actor,
-                    graphListener,
-                    Optional.of(parentComponent),
+                    treeListener,
+                    HealthNodePosition.broker("TestMonitor"),
                     LoggerFactory.getLogger("test"));
             actorControl = actor;
           }
@@ -75,8 +73,16 @@ public class CriticalComponentsHealthMonitorTest {
   }
 
   @Test
-  public void shouldRegisterItselfToTheRegistry() {
-    verify(graphListener, times(1)).registerNode(monitor, Optional.of(parentComponent));
+  public void shouldAnnounceRegisteredComponentToTreeListener() {
+    // given
+    final ControllableComponent component = new ControllableComponent("test");
+
+    // when
+    monitor.registerComponent(component);
+    waitUntilAllDone();
+
+    // then
+    verify(treeListener).onNodeRegistered(eq(component), any());
   }
 
   @Test
@@ -165,14 +171,12 @@ public class CriticalComponentsHealthMonitorTest {
     final ControllableComponent component = new ControllableComponent("test");
     monitor.registerComponent(component);
     Awaitility.await().until(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
-    verify(graphListener).registerNode(monitor, Optional.of(parentComponent));
-    verify(graphListener).registerNode(component, monitor);
+    verify(treeListener).onNodeRegistered(eq(component), any());
 
     // when
     monitor.removeComponent(component);
     waitUntilAllDone();
-    verify(graphListener)
-        .unregisterRelationship(component.componentName(), monitor.componentName());
+    verify(treeListener).onNodeRemoved(component);
     component.setUnhealthy();
     waitUntilAllDone();
 
@@ -216,8 +220,8 @@ public class CriticalComponentsHealthMonitorTest {
 
     setupComponentTree(parentComponents, components);
     waitUntilAllDone();
-    verify(graphListener, atLeast(levels * children))
-        .registerNode(any(), any(HealthMonitorable.class));
+    verify(treeListener, atLeast(levels * children))
+        .onNodeRegistered(any(), any(HealthNodePosition.class));
     final var root = parentComponents[0];
 
     // when
@@ -274,7 +278,7 @@ public class CriticalComponentsHealthMonitorTest {
     for (int i = 0; i < parentComponents.length; i++) {
       final var parentComponent =
           new CriticalComponentsHealthMonitor(
-              "parent-%d".formatted(i), actorControl, graphListener, Optional.empty(), LOG);
+              actorControl, treeListener, HealthNodePosition.broker("parent-%d".formatted(i)), LOG);
 
       parentComponents[i] = parentComponent;
       if (i > 0) {
