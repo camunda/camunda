@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "0defdd4464b6a4e4f89639c7d2904d6390188a39",
-    "generatedAt": "2026-06-26T12:44:03.655Z",
+    "commit": "7e28eeef5fabc1842fbf6e6854699a13b9e37517",
+    "generatedAt": "2026-06-29T13:29:14.708Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "28d509e1ed725540cbd22690efd0e87a7f668e0e69c5bfef59c2f67aa426ec02"
+    "specSha256": "0eaed7462781f2ed6afc8ecb56bf7533646dee4bd22b4f93b434dc28c81b0e3d"
   },
   "responses": [
     {
@@ -4724,6 +4724,11 @@
             "children": {
               "required": [
                 {
+                  "name": "businessId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "customHeaders",
                   "type": "object"
                 },
@@ -4900,6 +4905,11 @@
             "type": "array<object>",
             "children": {
               "required": [
+                {
+                  "name": "businessId",
+                  "type": "string",
+                  "nullable": true
+                },
                 {
                   "name": "creationTime",
                   "type": "string",
