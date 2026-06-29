@@ -14,11 +14,11 @@ import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
-import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
@@ -108,8 +108,12 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   public LazyTokenClaimsConverter tokenClaimsConverter(
       final CamundaSecurityLibraryProperties cslProperties, final MembershipPort membershipPort) {
+    final var oidcConfig = cslProperties.getAuthentication().getOidc();
     return new LazyTokenClaimsConverter(
-        cslProperties.getAuthentication().getOidc(), membershipPort);
+        oidcConfig.getUsernameClaim(),
+        oidcConfig.getClientIdClaim(),
+        oidcConfig.isPreferUsernameClaim(),
+        membershipPort);
   }
 
   @Bean

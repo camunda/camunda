@@ -22,7 +22,7 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import java.time.Instant;
 import java.util.List;
