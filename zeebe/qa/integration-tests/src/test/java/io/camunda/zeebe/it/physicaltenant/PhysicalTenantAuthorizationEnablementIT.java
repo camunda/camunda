@@ -27,7 +27,6 @@ import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -47,7 +46,6 @@ import org.junit.jupiter.api.Test;
  * have no ES/OS indices to authorize against.
  */
 @ZeebeIntegration
-@Disabled
 final class PhysicalTenantAuthorizationEnablementIT {
 
   private static final String TENANT_OFF = "tenantoff";

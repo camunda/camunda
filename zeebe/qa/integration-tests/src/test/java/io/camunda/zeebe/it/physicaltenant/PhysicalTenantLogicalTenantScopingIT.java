@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.Test;
  * have no ES/OS indices to read from.
  */
 @ZeebeIntegration
-@Disabled
 final class PhysicalTenantLogicalTenantScopingIT {
 
   private static final String TENANT_A = "tenanta";
