@@ -344,6 +344,29 @@ final class PartitionBootstrapper {
             });
   }
 
+  /**
+   * Logs the outcome of a runtime Raft reconfiguration ({@code action} on {@code
+   * groupName/partitionId}) and adapts it to {@code CompletableFuture<Void>}. Failures are warned
+   * (the change-coordinator retries the step); successes are logged at info.
+   */
+  private static <T> CompletableFuture<Void> logCompletion(
+      final CompletableFuture<T> future,
+      final String action,
+      final String groupName,
+      final int partitionId) {
+    return future
+        .whenComplete(
+            (result, error) -> {
+              if (error != null) {
+                LOG.warn(
+                    "Failed {} for raft partition {}/{}", action, groupName, partitionId, error);
+              } else {
+                LOG.info("Completed {} for raft partition {}/{}", action, groupName, partitionId);
+              }
+            })
+        .thenApply(result -> null);
+  }
+
   void stop() {
     closing = true;
     registry.closeAll();
@@ -408,28 +431,11 @@ final class PartitionBootstrapper {
                   + partitionId
                   + ": partition not hosted on this broker"));
     }
-    return provisioned
-        .created()
-        .raftPartition()
-        .promoteMember(BrokerMembers.memberId(memberNodeId))
-        .whenComplete(
-            (rp, error) -> {
-              if (error != null) {
-                LOG.warn(
-                    "Error promoting member {} in raft partition {}/{}",
-                    memberNodeId,
-                    groupName,
-                    partitionId,
-                    error);
-              } else {
-                LOG.info(
-                    "Promoted member {} in raft partition {}/{}",
-                    memberNodeId,
-                    groupName,
-                    partitionId);
-              }
-            })
-        .thenApply(rp -> null);
+    return logCompletion(
+        provisioned.created().raftPartition().promoteMember(BrokerMembers.memberId(memberNodeId)),
+        "promote of member " + memberNodeId,
+        groupName,
+        partitionId);
   }
 
   /** Whether this broker currently runs a replica of {@code (groupName, partitionId)}. */
@@ -455,19 +461,8 @@ final class PartitionBootstrapper {
     if (provisioned == null) {
       return CompletableFuture.completedFuture(null);
     }
-    return provisioned
-        .created()
-        .raftPartition()
-        .leave()
-        .whenComplete(
-            (rp, error) -> {
-              if (error != null) {
-                LOG.warn("Error leaving raft partition {}/{}", groupName, partitionId, error);
-              } else {
-                LOG.info("Left raft partition {}/{}", groupName, partitionId);
-              }
-            })
-        .thenApply(rp -> null);
+    return logCompletion(
+        provisioned.created().raftPartition().leave(), "leave", groupName, partitionId);
   }
 
   /**
@@ -489,28 +484,11 @@ final class PartitionBootstrapper {
                   + partitionId
                   + ": partition not hosted on this broker"));
     }
-    return provisioned
-        .created()
-        .raftPartition()
-        .removeMember(BrokerMembers.memberId(memberNodeId))
-        .whenComplete(
-            (rp, error) -> {
-              if (error != null) {
-                LOG.warn(
-                    "Error removing member {} from raft partition {}/{}",
-                    memberNodeId,
-                    groupName,
-                    partitionId,
-                    error);
-              } else {
-                LOG.info(
-                    "Removed member {} from raft partition {}/{}",
-                    memberNodeId,
-                    groupName,
-                    partitionId);
-              }
-            })
-        .thenApply(rp -> null);
+    return logCompletion(
+        provisioned.created().raftPartition().removeMember(BrokerMembers.memberId(memberNodeId)),
+        "removal of member " + memberNodeId,
+        groupName,
+        partitionId);
   }
 
   private CompletableFuture<Void> startDataPartition(
