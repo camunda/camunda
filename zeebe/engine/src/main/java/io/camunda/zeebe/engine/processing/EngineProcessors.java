@@ -169,9 +169,9 @@ public final class EngineProcessors {
             processingState, securityConfig, config, authorizationCheckMetrics);
     final var membershipStateAdapter =
         new MembershipStateAdapter(
-            processingState.getMappingRuleState(), processingState.getMembershipState());
+            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
     final var authorizationScopeStateAdapter =
-        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState());
+        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
     final var authorizationChecker = new AuthorizationChecker(authorizationScopeStateAdapter);
     final var claimsConverter =
         new LazyTokenClaimsConverter(
