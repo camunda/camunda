@@ -14,7 +14,6 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -35,9 +34,9 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
     this(meterRegistry, null);
   }
 
-  public HealthTreeMetrics(final MeterRegistry meterRegistry, final Tag extraTags) {
+  public HealthTreeMetrics(final MeterRegistry meterRegistry, final Tags extraTags) {
     this.meterRegistry = meterRegistry;
-    this.extraTags = extraTags != null ? Tags.of(extraTags) : null;
+    this.extraTags = extraTags;
   }
 
   /**

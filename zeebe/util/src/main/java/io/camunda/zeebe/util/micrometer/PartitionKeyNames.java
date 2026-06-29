@@ -37,4 +37,12 @@ public enum PartitionKeyNames implements KeyName {
         PARTITION.asString(),
         String.valueOf(partitionId));
   }
+
+  /**
+   * Returns the usual partition tags but with placeholder values to indicate that this metric is
+   * not associated with any specific partition.
+   */
+  public static Tags noPartition() {
+    return Tags.of(PHYSICAL_TENANT.asString(), "none", PARTITION.asString(), "none");
+  }
 }
