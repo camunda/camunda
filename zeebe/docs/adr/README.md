@@ -8,8 +8,9 @@ process-execution data path). These are module-scoped decisions; see the
 
 ### 8.10
 
-|                                 ADR                                 |                                                   Decision                                                    |
-|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [0001](0001-810-message-correlation-business-id-cross-partition.md) | Business ID message correlation: `P_K` owns messages, `P_B` enforces uniqueness, `P_K` pulls for lock release |
-| [0002](0002-810-message-start-rejection-retry.md)                   | Retry rejected message-starts until they start or their TTL expires                                           |
+|                                 ADR                                 |                                                    Decision                                                    |
+|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| [0001](0001-810-message-correlation-business-id-cross-partition.md) | Business ID message correlation: `P_K` owns messages, `P_B` enforces uniqueness, `P_K` pulls for lock release  |
+| [0002](0002-810-message-start-rejection-retry.md)                   | Retry rejected message-starts until they start or their TTL expires                                            |
+| [0003](0003-broker-health-tree-redesign.md)                         | Nest physical tenants in the broker health tree, project metrics from it, drop intrinsic health for leaf nodes |
 
