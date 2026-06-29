@@ -24,6 +24,9 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHist
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -116,6 +120,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     this.batchOperationTemplate = batchOperationTemplate;
     this.decisionInstanceTemplate = decisionInstanceTemplate;
   }
+
+  private final Cache<String, Boolean> ilmApplied =
+      Caffeine.newBuilder().maximumSize(200).expireAfterWrite(1, TimeUnit.HOURS).build();
 
   private ArchiveBatch createArchiveBatch(
       final SearchResponse searchResponse,
@@ -232,9 +239,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     return AsyncRepeatUntil.repeatUntil(supplier::moveNextBatch, count -> supplier.isComplete())
         .thenComposeAsync(
             ignored -> {
-              if (supplier.getTotalArchived() > 0L) {
-                setIndexLifeCycle(destinationIndexName);
-              }
+              setIndexLifeCycle(destinationIndexName);
               return CompletableFuture.<Void>completedFuture(null);
             },
             executor)
@@ -271,6 +276,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
   @Override
   public void setIndexLifeCycle(final String destinationIndexName) {
+    if (ilmApplied.getIfPresent(destinationIndexName) != null) {
+      return;
+    }
     try {
       if (operateProperties.getArchiver().isIlmEnabled()
           && esClient
@@ -285,6 +293,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                             .put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES)
                             .build()),
                 RequestOptions.DEFAULT);
+        ilmApplied.put(destinationIndexName, Boolean.TRUE);
       }
     } catch (final Exception e) {
       LOGGER.warn(
@@ -370,8 +379,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
             .query(constantScoreQuery(boolQ))
             .sort("id", SortOrder.ASC)
             .size(batchSize)
-            .fetchSource(false)
-            .storedField("_routing");
+            .fetchSource(false);
     if (!searchAfter.isEmpty()) {
       searchSource.searchAfter(searchAfter.toArray());
     }
@@ -398,7 +406,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                   Arrays.stream(hits)
                       .map(
                           h -> {
-                            final DocumentField rf = h.field("_routing");
+                            final DocumentField rf = h.getMetadataFields().get("_routing");
                             return new IdWithRouting(h.getId(), rf != null ? rf.getValue() : null);
                           })
                       .toList(),
@@ -462,7 +470,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     return response.getCreated() + response.getUpdated();
   }
 
-  private CompletableFuture<Long> deleteDocumentsById(
+  CompletableFuture<Long> deleteDocumentsById(
       final String sourceIndexName, final List<IdWithRouting> docs, final Executor executor) {
     final var bulkRequest = new BulkRequest();
     docs.forEach(

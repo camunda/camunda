@@ -29,6 +29,8 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.operate.conditions.OpensearchCondition;
@@ -49,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
@@ -103,6 +106,9 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     this.decisionInstanceTemplate = decisionInstanceTemplate;
     this.archiverExecutor = archiverExecutor;
   }
+
+  private final Cache<String, Boolean> ilmApplied =
+      Caffeine.newBuilder().maximumSize(200).expireAfterWrite(1, TimeUnit.HOURS).build();
 
   private <R> ArchiveBatch createArchiveBatch(
       final SearchResponse<R> searchResponse,
@@ -266,9 +272,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     return AsyncRepeatUntil.repeatUntil(supplier::moveNextBatch, count -> supplier.isComplete())
         .thenComposeAsync(
             ignored -> {
-              if (supplier.getTotalArchived() > 0L) {
-                setIndexLifeCycle(destinationIndexName);
-              }
+              setIndexLifeCycle(destinationIndexName);
               return CompletableFuture.<Void>completedFuture(null);
             },
             executor)
@@ -305,12 +309,16 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
   @Override
   public void setIndexLifeCycle(final String destinationIndexName) {
+    if (ilmApplied.getIfPresent(destinationIndexName) != null) {
+      return;
+    }
     try {
       if (operateProperties.getArchiver().isIlmEnabled()
           && richOpenSearchClient.index().indexExists(destinationIndexName)) {
         richOpenSearchClient
             .ism()
             .addPolicyToIndex(destinationIndexName, OPERATE_DELETE_ARCHIVED_INDICES);
+        ilmApplied.put(destinationIndexName, Boolean.TRUE);
       }
     } catch (final Exception e) {
       LOGGER.warn(
@@ -498,7 +506,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
         Objects.requireNonNullElse(response.updated(), 0L));
   }
 
-  private CompletableFuture<Long> deleteDocumentsById(
+  CompletableFuture<Long> deleteDocumentsById(
       final String sourceIndexName, final List<IdWithRouting> docs, final Executor executor) {
     final var bulkRequestBuilder = new BulkRequest.Builder();
     docs.forEach(
