@@ -104,7 +104,7 @@ jobs:
     - name: Setup fossa-cli
       uses: camunda/infra-global-github-actions/fossa/setup@fossa-arm64
       with:
-        arch: ${{ matrix.fossa_cli_arch }}
+        arch: ${{ matrix.project.fossa_cli_arch }}
 
     - name: Get context info
       id: info
