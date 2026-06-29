@@ -71,7 +71,9 @@ Create `handler/MyEventHandler.java` in the same package as the other handlers:
 ```java
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.*;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_MY_EVENT;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
 
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
@@ -123,8 +125,11 @@ handlers =
         .apply(context);
 ```
 
-The `apply(context)` call installs an `AnalyticsRecordFilter` that only passes records matching
-the registered `(ValueType, Intent)` pairs to the exporter — no other change needed for filtering.
+The `apply(context)` call installs an `AnalyticsRecordFilter`. The filter is an
+over-approximation: it accepts records whose `ValueType` is in the registered set *and* whose
+`Intent` is in the registered set, but those two sets are evaluated independently — a record can
+pass the filter even if its exact `(ValueType, Intent)` pair has no handler. Exact routing and
+no-ops happen in `HandlerRegistry.handle()`. No other change is needed for filtering.
 
 ## Step 5 — Write tests
 
@@ -135,6 +140,7 @@ Create `handler/MyEventHandlerTest.java`:
 ```java
 class MyEventHandlerTest {
 
+  // io.camunda.zeebe.test.broker.protocol.ProtocolFactory
   private static final ProtocolFactory FACTORY = new ProtocolFactory();
 
   private InMemoryLogRecordExporter memoryExporter;
