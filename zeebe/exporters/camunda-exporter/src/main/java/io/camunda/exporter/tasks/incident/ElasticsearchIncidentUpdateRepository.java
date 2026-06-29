@@ -21,6 +21,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -56,6 +57,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
   private final int partitionId;
   private final String pendingUpdateAlias;
+  private final String pendingUpdateFullQualifiedName;
   private final String incidentAlias;
   private final String listViewAlias;
   private final String listViewFullQualifiedName;
@@ -65,6 +67,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   public ElasticsearchIncidentUpdateRepository(
       final int partitionId,
       final String pendingUpdateAlias,
+      final String pendingUpdateFullQualifiedName,
       final String incidentAlias,
       final String listViewAlias,
       final String listViewFullQualifiedName,
@@ -76,6 +79,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     super(client, executor, logger);
     this.partitionId = partitionId;
     this.pendingUpdateAlias = pendingUpdateAlias;
+    this.pendingUpdateFullQualifiedName = pendingUpdateFullQualifiedName;
     this.incidentAlias = incidentAlias;
     this.listViewAlias = listViewAlias;
     this.listViewFullQualifiedName = listViewFullQualifiedName;
@@ -89,8 +93,15 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     final var query = createPendingIncidentsBatchQuery(fromPosition);
     final var request = createPendingIncidentsBatchRequest(size, query);
 
-    return client
-        .search(request, PendingIncidentUpdate.class)
+    // Force a refresh of the post-importer-queue write index before reading the batch so that all
+    // of its shards expose their acknowledged writes. The queue is written without routing, so a
+    // single partition's entries are scattered across all shards, which refresh on independent
+    // timers. Without this, a higher-position entry on an already-refreshed shard can be returned
+    // while a lower-position entry on a not-yet-refreshed shard is still invisible; the cursor
+    // would then advance past the lower entry and, because the lower bound is strict, never revisit
+    // it. See https://github.com/camunda/camunda/issues/56117.
+    return refreshPostImporterQueueIndex()
+        .thenComposeAsync(ignored -> client.search(request, PendingIncidentUpdate.class), executor)
         .thenApplyAsync(this::createPendingIncidentBatch, executor);
   }
 
@@ -250,6 +261,16 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
+  private CompletionStage<RefreshResponse> refreshPostImporterQueueIndex() {
+    return client
+        .indices()
+        .refresh(
+            r ->
+                r.index(pendingUpdateFullQualifiedName)
+                    .ignoreUnavailable(true)
+                    .allowNoIndices(true));
+  }
+
   private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {
     final var piKeyQ =
         QueryBuilders.terms(
@@ -318,6 +339,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         .query(query)
         .ignoreUnavailable(true)
         .allowNoIndices(true)
+        .allowPartialSearchResults(false)
         .source(s -> s.filter(sourceFilter))
         .sort(s -> s.field(f -> f.field(PostImporterQueueTemplate.POSITION).order(SortOrder.Asc)))
         .size(size)
