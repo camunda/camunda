@@ -29,6 +29,7 @@ public class WaitStateEntityMapper {
 
   public static WaitStateEntity toEntity(final WaitStateDbModel dbModel) {
     return new WaitStateEntity(
+        dbModel.waitStateKey(),
         dbModel.processInstanceKey(),
         dbModel.elementInstanceKey(),
         dbModel.elementId(),

@@ -33,6 +33,7 @@ public class WaitStateEntityTransformer
   public WaitStateEntity apply(
       final io.camunda.webapps.schema.entities.waitstate.WaitStateEntity value) {
     return new WaitStateEntity(
+        Long.valueOf(value.getId()),
         value.getProcessInstanceKey(),
         value.getElementInstanceKey(),
         value.getElementId(),

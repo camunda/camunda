@@ -1138,6 +1138,7 @@ class SearchQueryResponseMapperTest {
             3); // retries
     final var entity =
         new WaitStateEntity.Builder()
+            .waitStateKey(111L)
             .processInstanceKey(789L)
             .elementInstanceKey(111L)
             .elementId("serviceTask")
@@ -1165,6 +1166,7 @@ class SearchQueryResponseMapperTest {
         new WaitStateConditionDetails("= x > 5", List.of("create", "update"));
     final var entity =
         new WaitStateEntity.Builder()
+            .waitStateKey(111L)
             .processInstanceKey(789L)
             .elementInstanceKey(111L)
             .elementId("cond-ice")
