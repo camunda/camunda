@@ -15,6 +15,7 @@ import static io.camunda.optimize.service.db.schema.index.report.AbstractReportI
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
 import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
 import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
+import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.AGENTIC_CONTROL_REPORT;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 
@@ -191,6 +192,7 @@ public class ReportReaderOS implements ReportReader {
             .mustNot(QueryDSL.exists(COLLECTION_ID))
             .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
             .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
+            .mustNot(QueryDSL.term(DATA + "." + AGENTIC_CONTROL_REPORT, true))
             .build()
             .toQuery();
 
@@ -249,6 +251,7 @@ public class ReportReaderOS implements ReportReader {
           new BoolQuery.Builder()
               .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
               .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
+              .mustNot(QueryDSL.term(DATA + "." + AGENTIC_CONTROL_REPORT, true))
               .build()
               .toQuery();
       return osClient.count(new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME}, query, errorMessage);
