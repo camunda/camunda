@@ -154,7 +154,9 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private Map<Integer, HealthReport> getPartitionHealth() {
     return partitionManager.getZeebePartitions().stream()
-        .collect(Collectors.toMap(ZeebePartition::getPartitionId, ZeebePartition::getHealthReport));
+        .collect(
+            Collectors.toMap(
+                ZeebePartition::getPartitionId, p -> p.getHealthMonitor().getHealthReport()));
   }
 
   private void getPartitionStatus(

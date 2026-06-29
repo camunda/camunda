@@ -84,6 +84,7 @@ public class ZeebePartitionTest {
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.partitionId()).thenReturn(partitionId);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
+    when(healthMonitor.componentName()).thenReturn(ZeebePartition.componentName(partitionId));
     when(ctx.createTransitionContext()).thenReturn(ctx);
     final BrokerHealthCheckService brokerCheckMock = mock();
     when(brokerCheckMock.componentName()).thenReturn("Broker-0");
@@ -613,7 +614,7 @@ public class ZeebePartitionTest {
 
     // then
     Awaitility.await().until(closeFuture::isDone);
-    assertThat(partition.getHealthReport()).isEqualTo(healthReport);
+    assertThat(partition.getHealthMonitor().getHealthReport()).isEqualTo(healthReport);
   }
 
   private static final class NoopStartupStep implements PartitionStartupStep {

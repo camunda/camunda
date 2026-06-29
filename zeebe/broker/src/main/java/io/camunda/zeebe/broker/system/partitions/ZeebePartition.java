@@ -29,7 +29,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthNodePosition;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -41,7 +40,6 @@ import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
     implements RaftRoleChangeListener,
-        HealthMonitorable,
         FailureListener,
         DiskSpaceUsageListener,
         SnapshotReplicationListener {
@@ -227,30 +225,25 @@ public final class ZeebePartition extends Actor
     onInstallFailure(failure);
   }
 
-  @Override
-  public String componentName() {
-    return componentName(context.partitionId());
-  }
-
-  @Override
-  public HealthReport getHealthReport() {
-    return context.getComponentHealthMonitor().getHealthReport();
-  }
-
-  @Override
+  /**
+   * Lets interested parties (e.g. the topology health broadcaster) observe this partition's health.
+   * ZeebePartition is not a health-tree node — its single node is the partition monitor (see {@link
+   * #getHealthMonitor()}) — so it is not a {@code HealthMonitorable}; these are plain methods that
+   * forward the partition monitor's health, pushing the current state on registration.
+   */
   public void addFailureListener(final FailureListener failureListener) {
     actor.run(
         () -> {
           failureListeners.add(failureListener);
-          if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
-            failureListener.onRecovered(getHealthReport());
+          final var report = context.getComponentHealthMonitor().getHealthReport();
+          if (report.getStatus() == HealthStatus.HEALTHY) {
+            failureListener.onRecovered(report);
           } else {
-            failureListener.onFailure(getHealthReport());
+            failureListener.onFailure(report);
           }
         });
   }
 
-  @Override
   public void removeFailureListener(final FailureListener failureListener) {
     actor.run(() -> failureListeners.remove(failureListener));
   }
@@ -441,7 +434,8 @@ public final class ZeebePartition extends Actor
   private void handleUnrecoverableFailure(final Throwable error) {
     final var instant = ActorClock.current().instant();
 
-    final var report = HealthReport.dead(this).withIssue(error, instant);
+    final var report =
+        HealthReport.dead(context.getComponentHealthMonitor()).withIssue(error, instant);
     healthMetrics.setDead();
     partitionTransitionHealth.onUnrecoverableFailure(error);
     stopPartitionOnError();
