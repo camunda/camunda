@@ -14,13 +14,12 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.management.HealthTree;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.util.health.HealthIssue;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -50,8 +49,7 @@ final class BrokerStatusHealthIndicatorTest {
   @Test
   void shouldReportUpWhenBrokerIsHealthy() {
     when(healthCheckService.isBrokerHealthy()).thenReturn(true);
-    when(healthCheckService.getHealthReport())
-        .thenReturn(new HealthReport("Broker-0", HealthStatus.HEALTHY, null, ImmutableMap.of()));
+    when(healthCheckService.getHealthReport()).thenReturn(healthyReport("Broker-0"));
 
     final Health health = indicator.health();
 
@@ -61,8 +59,7 @@ final class BrokerStatusHealthIndicatorTest {
   @Test
   void shouldReportDownWhenBrokerIsUnhealthy() {
     when(healthCheckService.isBrokerHealthy()).thenReturn(false);
-    when(healthCheckService.getHealthReport())
-        .thenReturn(new HealthReport("Broker-0", HealthStatus.UNHEALTHY, null, ImmutableMap.of()));
+    when(healthCheckService.getHealthReport()).thenReturn(unhealthyReport("Broker-0"));
 
     final Health health = indicator.health();
 
@@ -81,23 +78,14 @@ final class BrokerStatusHealthIndicatorTest {
 
   @Test
   void shouldIncludeComponentTreeInDetails() {
-    final var raftReport =
-        new HealthReport("Raft-1", HealthStatus.HEALTHY, null, ImmutableMap.of());
-    final var streamProcessorReport =
-        new HealthReport("StreamProcessor-1", HealthStatus.HEALTHY, null, ImmutableMap.of());
+    final var raftReport = healthyReport("Raft-1");
+    final var streamProcessorReport = healthyReport("StreamProcessor-1");
     final var partitionReport =
-        new HealthReport(
+        reportFromChildren(
             "Partition-1",
-            HealthStatus.HEALTHY,
-            null,
-            ImmutableMap.of("Raft-1", raftReport, "StreamProcessor-1", streamProcessorReport));
+            Map.of("Raft-1", raftReport, "StreamProcessor-1", streamProcessorReport));
 
-    final var brokerReport =
-        new HealthReport(
-            "Broker-0",
-            HealthStatus.HEALTHY,
-            null,
-            ImmutableMap.of("Partition-1", partitionReport));
+    final var brokerReport = reportFromChildren("Broker-0", Map.of("Partition-1", partitionReport));
 
     when(healthCheckService.isBrokerHealthy()).thenReturn(true);
     when(healthCheckService.getHealthReport()).thenReturn(brokerReport);
@@ -116,18 +104,10 @@ final class BrokerStatusHealthIndicatorTest {
   void shouldIncludeIssueDetailsForUnhealthyComponent() {
     final var since = Instant.parse("2026-04-05T12:00:00Z");
     final var unhealthyChild =
-        new HealthReport(
-            "StreamProcessor-1",
-            HealthStatus.UNHEALTHY,
-            HealthIssue.of("Processing is stuck", since),
-            ImmutableMap.of());
+        unhealthyReport("StreamProcessor-1").withMessage("Processing is stuck", since);
 
     final var brokerReport =
-        new HealthReport(
-            "Broker-0",
-            HealthStatus.UNHEALTHY,
-            null,
-            ImmutableMap.of("StreamProcessor-1", unhealthyChild));
+        reportFromChildren("Broker-0", Map.of("StreamProcessor-1", unhealthyChild));
 
     when(healthCheckService.isBrokerHealthy()).thenReturn(false);
     when(healthCheckService.getHealthReport()).thenReturn(brokerReport);
@@ -147,12 +127,9 @@ final class BrokerStatusHealthIndicatorTest {
   void shouldIncludeThrowableMessageInIssue() {
     final var since = Instant.parse("2026-04-05T12:00:00Z");
     final var exception = new RuntimeException("Disk full");
-    final var deadChild =
-        new HealthReport(
-            "Log-1", HealthStatus.DEAD, HealthIssue.of(exception, since), ImmutableMap.of());
+    final var deadChild = HealthReport.dead(component("Log-1")).withIssue(exception, since);
 
-    final var brokerReport =
-        new HealthReport("Broker-0", HealthStatus.DEAD, null, ImmutableMap.of("Log-1", deadChild));
+    final var brokerReport = reportFromChildren("Broker-0", Map.of("Log-1", deadChild));
 
     when(healthCheckService.isBrokerHealthy()).thenReturn(false);
     when(healthCheckService.getHealthReport()).thenReturn(brokerReport);
@@ -168,12 +145,43 @@ final class BrokerStatusHealthIndicatorTest {
   @Test
   void shouldHandleEmptyComponentTree() {
     when(healthCheckService.isBrokerHealthy()).thenReturn(true);
-    when(healthCheckService.getHealthReport())
-        .thenReturn(new HealthReport("Broker-0", HealthStatus.HEALTHY, null, ImmutableMap.of()));
+    when(healthCheckService.getHealthReport()).thenReturn(healthyReport("Broker-0"));
 
     final Health health = indicator.health();
 
     assertThat(health.getStatus()).isEqualTo(Status.UP);
     assertThat(health.getDetails()).isEmpty();
+  }
+
+  private static HealthReport healthyReport(final String componentName) {
+    return HealthReport.healthy(component(componentName));
+  }
+
+  private static HealthReport unhealthyReport(final String componentName) {
+    return HealthReport.unhealthy(component(componentName));
+  }
+
+  private static HealthReport reportFromChildren(
+      final String componentName, final Map<String, HealthReport> children) {
+    return HealthReport.fromChildrenStatus(componentName, children)
+        .orElseGet(() -> healthyReport(componentName));
+  }
+
+  private static HealthMonitorable component(final String componentName) {
+    return new TestHealthMonitorable(componentName);
+  }
+
+  private record TestHealthMonitorable(String componentName) implements HealthMonitorable {
+
+    @Override
+    public HealthReport getHealthReport() {
+      return HealthReport.healthy(this);
+    }
+
+    @Override
+    public void addFailureListener(final FailureListener failureListener) {}
+
+    @Override
+    public void removeFailureListener(final FailureListener failureListener) {}
   }
 }

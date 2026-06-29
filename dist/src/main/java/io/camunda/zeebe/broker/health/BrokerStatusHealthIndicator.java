@@ -51,9 +51,9 @@ public final class BrokerStatusHealthIndicator implements HealthIndicator {
   }
 
   private void addComponentTreeDetails(final Health.Builder builder, final HealthReport report) {
-    for (final var entry : report.children().entrySet()) {
-      final var tree = HealthTree.fromHealthReport(entry.getKey(), entry.getValue());
-      builder.withDetail(entry.getKey(), objectMapper.convertValue(tree, MAP_TYPE));
+    final var componentTree = HealthTree.fromHealthReport(report);
+    for (final var child : componentTree.children()) {
+      builder.withDetail(child.id(), objectMapper.convertValue(child, MAP_TYPE));
     }
   }
 }
