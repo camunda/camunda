@@ -98,15 +98,10 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/182
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
-          labeled: component/clients, component/spring-boot-starter, component/camunda-process-test, component/c8-api
-
-      - id: add-bug-to-quality-board
-        # Attention: This step uses a custom action maintained by the QA Engineering Team
-        # It adds all issues labeled with "kind/bug" to the Quality Board project,
-        # extracts the labels for component and severity and sets them in the project accordingly.
-        # The action must be triggered for any label change to keep the project data up to date.
-        name: Add issue to Quality Board
-        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@28e9ac0ffb3c71c7a1aaa989d5abdad0738c0436 # add-bug-to-quality-board: v1.0.3
+          labeled: component/clients, component/spring-sdk, component/camunda-process-test, component/c8-api
+      - id: add-to-qualityboard
+        name: Add Bugs to Quality Board project
+        uses: camunda/team-qa-engineering/automation/actions/add-to-quality-board@v1
         with:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
         if: contains(github.event.issue.labels.*.name, 'kind/bug')
