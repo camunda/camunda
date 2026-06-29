@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -34,6 +35,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -52,6 +55,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
   private final JobState jobState;
+  private final AsyncRequestState asyncRequestState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -77,6 +81,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final AuthorizationCheckBehavior authCheckBehavior,
       final IncidentMetrics incidentMetrics) {
     jobState = state.getJobState();
+    asyncRequestState = state.getAsyncRequestState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     stateWriter = writers.state();
@@ -137,9 +142,23 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     responseWriter.writeEventOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
     jobMetrics.countJobEvent(JobAction.FAILED, failedJob.getJobKind(), failedJob.getType());
 
+    final boolean retryImmediately = retries > 0 && retryBackOff <= 0;
+
+    if (failedJob.getJobKind() == JobKind.STANDALONE) {
+      // A standalone job has no process scope to merge variables into and no process instance to
+      // attach an incident to. On terminal failure we only clean up a possibly-awaiting request so
+      // it does not leak; the creator is not notified and times out (best-effort, as for any
+      // with-result call).
+      if (retryImmediately) {
+        jobActivationBehavior.publishWork(jobKey, failedJob);
+      } else if (retries <= 0) {
+        cleanUpAwaitedResult(jobKey);
+      }
+      return;
+    }
+
     setFailedVariables(failedJob);
 
-    final boolean retryImmediately = retries > 0 && retryBackOff <= 0;
     if (retryImmediately) {
       jobActivationBehavior.publishWork(jobKey, failedJob);
     }
@@ -147,6 +166,15 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     if (retries <= 0) {
       raiseIncident(jobKey, failedJob);
     }
+  }
+
+  private void cleanUpAwaitedResult(final long jobKey) {
+    asyncRequestState
+        .findRequest(jobKey, ValueType.JOB, JobIntent.CREATE)
+        .ifPresent(
+            request ->
+                stateWriter.appendFollowUpEvent(
+                    request.key(), AsyncRequestIntent.PROCESSED, request.record()));
   }
 
   private void setFailedVariables(final JobRecord value) {
@@ -204,6 +232,9 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
       case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
       case JobKind.AD_HOC_SUB_PROCESS -> ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES;
+      // Standalone jobs never raise incidents (they have no process instance to attach one to), so
+      // this branch is unreachable; it exists only to keep the switch exhaustive.
+      case JobKind.STANDALONE -> ErrorType.JOB_NO_RETRIES;
     };
   }
 

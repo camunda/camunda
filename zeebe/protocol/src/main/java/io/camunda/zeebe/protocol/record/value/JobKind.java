@@ -42,5 +42,13 @@ public enum JobKind {
    * Represents jobs created for ad-hoc sub-processes. These jobs are associated with the execution
    * of ad-hoc sub-processes within a BPMN workflow.
    */
-  AD_HOC_SUB_PROCESS
+  AD_HOC_SUB_PROCESS,
+
+  /**
+   * Represents standalone jobs that exist outside of any process instance. They are created
+   * directly by a client (e.g. for design-time connector credential validation or metadata lookup),
+   * activated on a worker's existing stream, and completed/failed like any other job, but carry no
+   * process/element context and are not exported to Operate/Tasklist.
+   */
+  STANDALONE
 }

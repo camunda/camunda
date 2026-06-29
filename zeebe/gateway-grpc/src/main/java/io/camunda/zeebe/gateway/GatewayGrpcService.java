@@ -22,6 +22,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateStandaloneJobWithResultRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateStandaloneJobWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
@@ -107,6 +109,14 @@ public class GatewayGrpcService extends GatewayImplBase {
       final CreateProcessInstanceWithResultRequest request,
       final StreamObserver<CreateProcessInstanceWithResultResponse> responseObserver) {
     endpointManager.createProcessInstanceWithResult(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void createStandaloneJobWithResult(
+      final CreateStandaloneJobWithResultRequest request,
+      final StreamObserver<CreateStandaloneJobWithResultResponse> responseObserver) {
+    endpointManager.createStandaloneJobWithResult(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 

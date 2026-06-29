@@ -152,6 +152,24 @@ public final class JobClient {
     return jobKey;
   }
 
+  /** Creates a standalone job (no owning process instance) in fire-and-forget mode. */
+  public Record<JobRecordValue> create() {
+    final long position =
+        writer.writeCommand(
+            JobIntent.CREATE, jobRecord, authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  /**
+   * Creates a standalone job whose result the caller awaits synchronously. The response is
+   * delivered to {@code (requestStreamId, requestId)} when the job is later completed.
+   */
+  public Record<JobRecordValue> createWithResult(final int requestStreamId, final long requestId) {
+    final long position =
+        writer.writeCommand(requestStreamId, requestId, JobIntent.CREATE, jobRecord);
+    return expectation.apply(position);
+  }
+
   public Record<JobRecordValue> complete() {
     final long jobKey = findJobKey();
     final long position =

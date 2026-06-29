@@ -258,6 +258,7 @@ public final class EngineProcessors {
         config,
         clock,
         authCheckBehavior,
+        asyncRequestBehavior,
         incidentMetrics);
 
     final var userTaskProcessor =

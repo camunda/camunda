@@ -70,6 +70,8 @@ message ActivatedJob {
     EXECUTION_LISTENER = 1;
     TASK_LISTENER = 2;
     AD_HOC_SUB_PROCESS = 3;
+    // a standalone job that exists outside of any process instance
+    STANDALONE = 4;
   }
 
   // Describes the listener event type of the job.
@@ -338,6 +340,28 @@ message CreateProcessInstanceWithResultRequest {
   // list of names of variables to be included in `CreateProcessInstanceWithResultResponse.variables`
   // if empty, all visible variables in the root scope will be returned.
   repeated string fetchVariables = 3;
+}
+
+message CreateStandaloneJobWithResultRequest {
+  // the type of the standalone job; workers subscribe to jobs by type
+  string type = 1;
+  // JSON document with the input variables for the job (e.g. the configuration / credentials
+  // to validate)
+  string variables = 2;
+  // the number of times the job can be activated; must be greater than 0
+  int32 retries = 3;
+  // timeout (in ms). the request is closed if the job is not completed before the requestTimeout.
+  // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
+  int64 requestTimeout = 4;
+  // the tenant to which the standalone job belongs
+  string tenantId = 5;
+}
+
+message CreateStandaloneJobWithResultResponse {
+  // the unique key of the created standalone job
+  int64 jobKey = 1;
+  // JSON document with the variables the worker provided when completing the job (the result)
+  string variables = 2;
 }
 
 message CreateProcessInstanceWithResultResponse {
@@ -1073,6 +1097,20 @@ service Gateway {
           for the same process definition and tenant.
   */
   rpc CreateProcessInstanceWithResult (CreateProcessInstanceWithResultRequest) returns (CreateProcessInstanceWithResultResponse) {
+  }
+
+  /*
+    Creates a standalone job (a job with no owning process instance) and waits for its result.
+    The job is activated on a worker's existing stream, and the variables the worker provides on
+    completion are returned synchronously. Intended for design-time use cases such as connector
+    credential validation or metadata lookup.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - the job type is blank
+        - retries is not greater than 0
+  */
+  rpc CreateStandaloneJobWithResult (CreateStandaloneJobWithResultRequest) returns (CreateStandaloneJobWithResultResponse) {
   }
 
   /*

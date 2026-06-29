@@ -70,6 +70,8 @@ import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
@@ -437,6 +439,16 @@ public class CamundaExporter implements Exporter {
     @Override
     public boolean acceptValue(final ValueType valueType) {
       return VALUE_TYPES_2_EXPORT.contains(valueType);
+    }
+
+    @Override
+    public boolean acceptRecord(final Record<?> record) {
+      // Standalone jobs (e.g. design-time connector credential validation / metadata lookup) exist
+      // outside any process instance and must never surface in Operate or Tasklist. This single
+      // override suppresses all JOB record handlers (jobs index, list-view, Tasklist) at once.
+      return !(record.getValueType() == ValueType.JOB
+          && record.getValue() instanceof final JobRecordValue job
+          && job.getJobKind() == JobKind.STANDALONE);
     }
   }
 }

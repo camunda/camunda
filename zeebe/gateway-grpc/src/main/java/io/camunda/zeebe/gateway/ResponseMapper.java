@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateStandaloneJobWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
@@ -218,6 +219,14 @@ public final class ResponseMapper {
         .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
         .addAllTags(brokerResponse.getTags())
         .setBusinessId(brokerResponse.getBusinessId())
+        .build();
+  }
+
+  public static CreateStandaloneJobWithResultResponse toCreateStandaloneJobWithResultResponse(
+      final long key, final JobRecord brokerResponse) {
+    return CreateStandaloneJobWithResultResponse.newBuilder()
+        .setJobKey(key)
+        .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
         .build();
   }
 

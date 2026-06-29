@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -35,6 +36,7 @@ public final class JobEventProcessors {
       final EngineConfiguration config,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final IncidentMetrics incidentMetrics) {
 
     final var keyGenerator = processingState.getKeyGenerator();
@@ -51,6 +53,19 @@ public final class JobEventProcessors {
     final var jobBackoffChecker =
         new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
     typedRecordProcessors
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.CREATE,
+            new JobCreateProcessor(
+                keyGenerator,
+                writers,
+                bpmnBehaviors.jobActivationBehavior(),
+                asyncRequestBehavior,
+                jobMetrics))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.RESOLVE_AWAIT_RESULT,
+            new JobResolveAwaitResultProcessor(processingState, writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.COMPLETE,

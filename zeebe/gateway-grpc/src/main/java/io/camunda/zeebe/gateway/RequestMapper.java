@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateStandaloneJobWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateConditionalRequest;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateStandaloneJobWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
@@ -314,6 +316,15 @@ public final class RequestMapper extends RequestUtil {
       brokerRequest.setOperationReference(request.getOperationReference());
     }
     return brokerRequest;
+  }
+
+  public static BrokerCreateStandaloneJobWithResultRequest toCreateStandaloneJobWithResultRequest(
+      final CreateStandaloneJobWithResultRequest grpcRequest) {
+    return new BrokerCreateStandaloneJobWithResultRequest()
+        .setType(grpcRequest.getType())
+        .setRetries(grpcRequest.getRetries())
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setTenantId(ensureTenantIdSet("CreateStandaloneJobWithResult", grpcRequest.getTenantId()));
   }
 
   public static BrokerEvaluateDecisionRequest toEvaluateDecisionRequest(

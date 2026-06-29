@@ -97,7 +97,14 @@ public class BpmnJobActivationBehavior {
       final var jobBatchKey = keyGenerator.nextKey();
       stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
 
-      jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
+      if (jobKind == JobKind.STANDALONE) {
+        // Standalone jobs carry their input variables directly on the record (there is no process
+        // scope to read them from), so preserve what the creator supplied rather than collecting
+        // from state, which would yield an empty document for a job with no element instance.
+        wrappedJobRecord.setVariables(jobRecord.getVariablesBuffer());
+      } else {
+        jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
+      }
       final var pushableJobRecord = new JobRecord();
       cloneJob(wrappedJobRecord, pushableJobRecord);
       final var activatedJob = new ActivatedJobImpl();
@@ -180,6 +187,12 @@ public class BpmnJobActivationBehavior {
       // don't push jobs to workers that don't request them from the job's tenant
       jobAuthorizationLogger.logUnauthorizedTenantAccess(jobActivationProperties, jobRecord);
       return false;
+    }
+
+    if (jobRecord.getJobKind() == JobKind.STANDALONE) {
+      // Standalone jobs have no process definition to authorize against, so the tenant check above
+      // is the access-control boundary for the POC. A dedicated job permission is a follow-up.
+      return true;
     }
 
     final var claims = jobActivationProperties.claims();

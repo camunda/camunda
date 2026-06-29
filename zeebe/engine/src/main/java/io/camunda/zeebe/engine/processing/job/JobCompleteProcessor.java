@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -119,6 +121,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
   private final UserTaskState userTaskState;
   private final JobState jobState;
+  private final AsyncRequestState asyncRequestState;
   private final ElementInstanceState elementInstanceState;
   private final JobCommandPreconditionValidator preconditionChecker;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -145,6 +148,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     processState = state;
     userTaskState = state.getUserTaskState();
     jobState = state.getJobState();
+    asyncRequestState = state.getAsyncRequestState();
     elementInstanceState = state.getElementInstanceState();
     commandWriter = writers.command();
     stateWriter = writers.state();
@@ -210,7 +214,23 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     if (!includeVariablesInJobCompletedEvent) {
       job.setVariables(command.getValue().getVariablesBuffer());
     }
+
+    if (job.getJobKind() == JobKind.STANDALONE) {
+      completeStandaloneJob(command.getKey(), job);
+      return;
+    }
+
     postCompleteActions(job);
+  }
+
+  private void completeStandaloneJob(final long jobKey, final JobRecord job) {
+    // A standalone job has no process instance to continue. If a caller is awaiting its result,
+    // deliver it in a separate follow-up cycle (RESOLVE_AWAIT_RESULT): the worker's completion
+    // response already occupies this cycle's single response slot, so the creator's result cannot
+    // be written here. Fire-and-forget completions simply have no awaiting request and end here.
+    if (asyncRequestState.findRequest(jobKey, ValueType.JOB, JobIntent.CREATE).isPresent()) {
+      commandWriter.appendFollowUpCommand(jobKey, JobIntent.RESOLVE_AWAIT_RESULT, job);
+    }
   }
 
   private void preCompleteActions(final JobRecord job, final ProcessingSession session) {

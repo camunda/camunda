@@ -611,6 +611,9 @@ public final class BpmnJobBehavior {
       case BPMN_ELEMENT, EXECUTION_LISTENER -> context.getBpmnElementType();
       case TASK_LISTENER -> BpmnElementType.USER_TASK;
       case AD_HOC_SUB_PROCESS -> BpmnElementType.SUB_PROCESS;
+      // Standalone jobs are never created from a BPMN element context, so this is unreachable; it
+      // exists only to keep the switch exhaustive.
+      case STANDALONE -> BpmnElementType.UNSPECIFIED;
     };
   }
 

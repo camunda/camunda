@@ -54,7 +54,19 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   UPDATE((short) 20),
   UPDATED((short) 21),
 
-  PRIORITY_UPDATED((short) 22);
+  PRIORITY_UPDATED((short) 22),
+
+  /**
+   * Client command to create a standalone job (a job with no owning process instance) and await its
+   * result synchronously. Produces the existing {@link #CREATED} event.
+   */
+  CREATE((short) 23, false),
+
+  /**
+   * Engine-internal follow-up command, appended after a standalone job completes, to deliver the
+   * awaited result back to the original creator over the create command's request channel.
+   */
+  RESOLVE_AWAIT_RESULT((short) 24, false);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -120,6 +132,10 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
         return UPDATED;
       case 22:
         return PRIORITY_UPDATED;
+      case 23:
+        return CREATE;
+      case 24:
+        return RESOLVE_AWAIT_RESULT;
       default:
         return UNKNOWN;
     }
