@@ -12,7 +12,17 @@ import io.micrometer.core.instrument.Tags;
 
 @SuppressWarnings("NullableProblems")
 public enum PartitionKeyNames implements KeyName {
-  /** The ID of the partition associated with the metric */
+  /** The ID of the physical tenant associated with the metric. Unique within the cluster. */
+  PHYSICAL_TENANT {
+    @Override
+    public String asString() {
+      return "physicalTenant";
+    }
+  },
+
+  /**
+   * The ID of the partition associated with the metric. Unique within one {@link #PHYSICAL_TENANT}.
+   */
   PARTITION {
     @Override
     public String asString() {
