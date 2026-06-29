@@ -178,6 +178,70 @@ it('should show the variable label if it exists', () => {
   expect(node).toIncludeText('FooLabel - Avg');
 });
 
+it('should override the subtitle with configuration.subtitle when set', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {configuration: {subtitle: {$set: 'My custom subtitle'}}},
+      })}
+    />
+  );
+
+  // the override is rendered outside the fitted container so it does not shrink the number
+  expect(node.find('.container .label').exists()).toBe(false);
+  expect(node.find('.subtitle').text()).toBe('My custom subtitle');
+  expect(node).not.toIncludeText('Process instance Count');
+});
+
+it('should not apply a whitespace-only subtitle override and keep the fallback label', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {configuration: {subtitle: {$set: '   '}}},
+      })}
+    />
+  );
+
+  // a blank override must not suppress the normal label nor render an empty subtitle
+  expect(node.find('.subtitle').exists()).toBe(false);
+  expect(node.find('.container .label').exists()).toBe(true);
+});
+
+it('should trim the subtitle override before rendering', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {configuration: {subtitle: {$set: '  My custom subtitle  '}}},
+      })}
+    />
+  );
+
+  expect(node.find('.subtitle').text()).toBe('My custom subtitle');
+});
+
+it('should not apply the subtitle override for multi-measure reports', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {
+          configuration: {subtitle: {$set: 'My custom subtitle'}},
+          view: {properties: {$set: ['frequency', 'duration']}},
+        },
+        result: {
+          measures: {
+            $set: [
+              {data: 26, property: 'frequency'},
+              {data: 42, property: 'frequency'},
+            ],
+          },
+        },
+      })}
+    />
+  );
+
+  expect(node).not.toIncludeText('My custom subtitle');
+});
+
 it('should call loadVariables for process variable report', () => {
   shallow(<Number report={variableReport} {...props} />);
 

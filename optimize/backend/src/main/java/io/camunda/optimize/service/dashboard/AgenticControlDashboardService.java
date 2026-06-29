@@ -340,6 +340,16 @@ public class AgenticControlDashboardService {
       final PositionDto position,
       final String nameKey,
       final String descriptionKey) {
+    // Surface the human-readable description as the tile subtitle instead of the auto-derived
+    // "Agent instance Total tokens". Reuses the description localization key (single source of
+    // text).
+    final SingleReportConfigurationDto configuration =
+        SingleReportConfigurationDto.builder()
+            .aggregationTypes(new LinkedHashSet<>(Collections.singletonList(aggregation)))
+            .precision(2)
+            .valueFormat("compact")
+            .subtitle(descriptionKey)
+            .build();
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -347,12 +357,7 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
-            .configuration(
-                SingleReportConfigurationDto.builder()
-                    .aggregationTypes(new LinkedHashSet<>(Collections.singletonList(aggregation)))
-                    .precision(2)
-                    .valueFormat("compact")
-                    .build())
+            .configuration(configuration)
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()

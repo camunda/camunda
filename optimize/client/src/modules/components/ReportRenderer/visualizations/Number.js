@@ -7,6 +7,7 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
+import classnames from 'classnames';
 import fitty from 'fitty';
 
 import {formatters, loadVariables, reportConfig} from 'services';
@@ -23,10 +24,16 @@ import './Number.scss';
 
 export function Number({report, formatter, mightFail, overlay}) {
   const {data, result} = report;
-  const {targetValue, precision, valueFormat} = data.configuration;
+  const {targetValue, precision, valueFormat, subtitle} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
   const processVariableReport = data.view.entity === 'variable';
   const isMultiMeasure = result?.measures.length > 1;
+  // Optional per-report subtitle override (single-measure only, so one subtitle can't be
+  // ambiguously applied across several measures). Trimmed and blank-checked so a whitespace-only
+  // value does not suppress the normal label and render an empty subtitle. Rendered outside the
+  // fitted container — see below.
+  const trimmedSubtitle = subtitle?.trim();
+  const subtitleOverride = trimmedSubtitle && !isMultiMeasure ? trimmedSubtitle : null;
 
   useEffect(() => {
     // We need to load the variables in order to resolve the variable label
@@ -96,7 +103,7 @@ export function Number({report, formatter, mightFail, overlay}) {
 
   return (
     <div className="Number">
-      <div className="container" ref={containerRef}>
+      <div className={classnames('container', {withSubtitle: subtitleOverride})} ref={containerRef}>
         {result.measures.map((measure, idx) => {
           let viewString;
 
@@ -131,11 +138,15 @@ export function Number({report, formatter, mightFail, overlay}) {
                 {formatValue(measure.data, valueFormat ?? measure.property, precision)}
                 {idx === 0 && overlay}
               </div>
-              <div className="label">{viewString}</div>
+              {/* The auto-derived subtitle is suppressed when an override is rendered below. */}
+              {!subtitleOverride && <div className="label">{viewString}</div>}
             </React.Fragment>
           );
         })}
       </div>
+      {/* Rendered outside the fitted container so its (potentially long) text does not shrink the
+          number: fitty sizes the number to the container's max-content width. */}
+      {subtitleOverride && <div className="subtitle">{subtitleOverride}</div>}
     </div>
   );
 }
