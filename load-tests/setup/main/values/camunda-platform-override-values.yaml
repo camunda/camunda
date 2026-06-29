@@ -3,3 +3,6 @@
 # when scenario=max, to disable checks that would add overhead during maximum-load tests.
 zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
 zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
+# CONTROL variant: requestTimeout = 0.75x electionTimeout at the stock 2500ms default,
+# to test whether the default's slow storm recovery is a requestTimeout effect (#3096).
+zeebe.broker.experimental.raft.requestTimeout: "1875ms"
