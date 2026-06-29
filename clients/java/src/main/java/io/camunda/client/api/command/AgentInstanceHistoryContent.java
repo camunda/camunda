@@ -116,6 +116,12 @@ public interface AgentInstanceHistoryContent {
       return "DOCUMENT";
     }
 
+    /**
+     * Returns the document reference, or {@code null} if the server omitted it.
+     *
+     * <p>The {@link #document(DocumentReferenceResponse)} factory method rejects null, so null can
+     * only be returned when this instance was deserialized from a server response.
+     */
     public DocumentReferenceResponse getDocumentReference() {
       return documentReference;
     }

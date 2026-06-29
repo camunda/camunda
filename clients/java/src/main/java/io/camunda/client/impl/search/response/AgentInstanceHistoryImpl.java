@@ -155,7 +155,7 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
           (Map<String, Object>) ((AgentInstanceObjectContent) proto).getObject();
       return new ObjectContent(obj);
     }
-    return new TextContent(proto.getContentType());
+    return null;
   }
 
   @SuppressWarnings("unchecked")
