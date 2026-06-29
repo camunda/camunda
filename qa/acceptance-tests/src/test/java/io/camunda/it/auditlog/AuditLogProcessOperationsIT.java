@@ -51,7 +51,6 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * Acceptance tests for audit log entries related to process operations. This test class verifies
@@ -59,7 +58,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * through the audit log search REST API endpoint using the Camunda Client.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogProcessOperationsIT {
 
   @MultiDbTestApplication
