@@ -501,6 +501,14 @@ public class ClusterEndpoint {
     }
   }
 
+  /**
+   * This endpoint is to be used internally and as a testing tool. The complete mode transition
+   * endpoint will be accessible through the Management REST API.
+   *
+   * @param mode The requested {@link Mode} to transition the member to
+   * @param dryRun Whether to perform a dry run of the mode change
+   * @return The operations to transition the member to the requested mode
+   */
   @PatchMapping(path = "/mode")
   public ResponseEntity<?> updateMode(
       @RequestParam final Mode mode, @RequestParam(defaultValue = "false") final boolean dryRun) {
