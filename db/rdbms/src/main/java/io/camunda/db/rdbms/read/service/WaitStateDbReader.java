@@ -40,7 +40,7 @@ public class WaitStateDbReader extends AbstractEntityReader<WaitStateEntity>
   @Override
   public SearchQueryResult<WaitStateEntity> search(
       final ElementInstanceWaitStateQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    final var dbSort = convertSort(query.sort(), WaitStateSearchColumn.ELEMENT_INSTANCE_KEY);
+    final var dbSort = convertSort(query.sort(), WaitStateSearchColumn.WAIT_STATE_KEY);
 
     if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
