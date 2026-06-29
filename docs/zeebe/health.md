@@ -4,24 +4,28 @@ This describes how a Zeebe broker tracks its own health, how that health is aggr
 and how that tree is exported as metrics. It also explains broker *readiness*, which is related but
 deliberately separate from the health tree.
 
-## Two interfaces
+## Three types
 
-Health is built on two interfaces in `io.camunda.zeebe.util.health`:
+Health is built on three small types in `io.camunda.zeebe.util.health`:
 
 - **`HealthMonitorable`** — something that *has* a health report (`getHealthReport()`) and can notify
   listeners when it changes (`addFailureListener` / `removeFailureListener`). Both leaves (e.g. the
   `StreamProcessor`) and aggregators implement this.
 - **`HealthMonitor extends HealthMonitorable`** — something that *aggregates* the health of children
   it monitors. `CriticalComponentsHealthMonitor` (CCHM) is the only implementer.
+- **`HealthTreeListener`** — observes structural changes of the tree (a node added or removed, with
+  the node's `HealthNodePosition`) so that a projection of the tree — the `zeebe_broker_health_nodes`
+  metric — can be derived from it. `HealthTreeMetrics` is the only implementer.
 
-Everything else in the tree — `RaftPartition`, `RaftContext`, `StreamProcessor`, `ExporterDirector`,
-and so on — implements only `HealthMonitorable`. These are the leaves: they report their own health
-but do not aggregate a sub-tree.
+Everything else in the tree — `RaftPartition`, `StreamProcessor`, `ExporterDirector`, and so on —
+implements only `HealthMonitorable`. These are the leaves: they report their own health but do not
+aggregate a sub-tree.
 
 ## CriticalComponentsHealthMonitor
 
 `CriticalComponentsHealthMonitor` (in `zeebe/scheduler`) is the building block of the tree. It is
-**healthy only if all of its registered components are healthy**.
+**healthy only if all of its registered components are healthy**, and it is a *pure aggregator*: it
+owns no metric state.
 
 It tracks health two ways:
 
@@ -34,90 +38,90 @@ A component can also be registered as *expected but not yet present* via `monito
 which records an `unknown` placeholder. This keeps the monitor from reporting healthy before a
 component it is waiting for has actually been registered.
 
+Each monitor carries an immutable `HealthNodePosition` (its `name`, full `path`, and the
+`physicalTenant` / `partition` it is attributed to). When its set of children changes, it *announces*
+the change — `onNodeRegistered(child, position)` / `onNodeRemoved(child)` — to a single
+`HealthTreeListener`. It does not build paths, track relationships, or know anything about metrics;
+that is the listener's job.
+
 ## The health-aggregation tree
 
-The aggregation tree is what actually computes broker health. It is assembled from nested CCHMs:
+The aggregation tree mirrors the domain: it is assembled from nested CCHMs, one interior level per
+structural level of the system (broker, physical tenant, partition), with a partition's own
+components as leaves.
 
 ```
 BrokerHealthCheckService
-  └─ CCHM "Broker-<id>"                              the broker-level aggregator
-       ├─ ZeebePartition (wrapper)                   one per partition, registered flat
-       │    └─ CCHM "Partition-<tenant>-<n>"         the partition's own aggregator
-       │         ├─ RaftPartition                    always present
-       │         ├─ ZeebePartitionHealth             always present
-       │         ├─ StreamProcessor                  registered per role transition
-       │         ├─ ExporterDirector                 registered per role transition
-       │         ├─ SnapshotDirector                 registered per role transition
-       │         └─ MigrationSnapshotDirector        registered per role transition
-       └─ ... one ZeebePartition per partition
+  └─ CCHM  Broker-<id>                          the broker-level aggregator
+       └─ CCHM  Tenant-<tenant>                 one per expected physical tenant
+            └─ CCHM  Partition-<n>              the partition's own aggregator
+                 ├─ RaftPartition               always present
+                 ├─ DiskSpace                   always present (disk-space availability)
+                 ├─ PartitionTransition         always present (transition lifecycle + dead latch)
+                 ├─ StreamProcessor             registered per role transition
+                 ├─ ExporterDirector            registered per role transition
+                 ├─ SnapshotDirector            registered per role transition
+                 └─ MigrationSnapshotDirector   registered per role transition
 ```
 
-The broker-level CCHM (in `BrokerHealthCheckService`) aggregates the `ZeebePartition` actors. Every
-partition the broker runs — across **all physical tenants** — is registered flat on this single
-level via `registerMonitoredPartition`.
+The broker-level CCHM (in `BrokerHealthCheckService`) aggregates one **tenant** CCHM per physical
+tenant the broker is configured to run. Tenant nodes are created eagerly for every expected tenant
+(the set is known from configuration at construction), so the tree is complete and predictable and an
+empty-but-expected tenant is legitimately not-yet-healthy. Tenant CCHMs run on the broker health
+actor.
 
-Each `ZeebePartition` is only a thin wrapper for health purposes: its `getHealthReport()` delegates
-to its **own** CCHM (`componentHealthMonitor`, created in the `ZeebePartition` constructor). That
-inner CCHM aggregates the real partition sub-components. `RaftPartition` and `ZeebePartitionHealth`
-are registered once when the partition actor starts; the remaining components (`StreamProcessor`,
-`ExporterDirector`, `SnapshotDirector`, `MigrationSnapshotDirector`) are registered and removed by
-the partition transition steps as the partition changes Raft role, so the set of leaves changes over
-the partition's lifetime.
+Each tenant CCHM aggregates its **partition** CCHMs. A partition contributes **exactly one** node:
+`ZeebePartition` owns a single partition CCHM and registers it under its tenant node (via
+`BrokerHealthCheckService#registerMonitoredPartition`); `ZeebePartition` is not itself a tree node.
+`RaftPartition`, `DiskSpace` and `PartitionTransition` are registered once when the partition actor
+starts; the remaining components (`StreamProcessor`, `ExporterDirector`, `SnapshotDirector`,
+`MigrationSnapshotDirector`) are registered and removed by the partition transition steps as the
+partition changes Raft role, so the set of leaves changes over the partition's lifetime.
 
-A consequence of this design is that the `ZeebePartition` wrapper and its inner CCHM **share the same
-component name** — both are `Partition-<tenant>-<n>`. They are two different objects occupying the
-same logical position in the tree: the wrapper is what the broker monitor sees, the inner CCHM is
-what aggregates the children.
+Health propagates upwards across actors by the same failure-listener mechanism at every level:
+leaf → partition → tenant → broker.
 
-### Why component names carry the tenant
+### A partition's own health is explicit leaves
 
-The broker CCHM keeps its components in a single flat `Map<String, …>` keyed by component name.
-Partition numbers are **only unique within a physical tenant** — each tenant is its own partition
-group, so `Partition-1` exists once per tenant. To avoid two tenants' partitions colliding on the
-same map key, `ZeebePartition.componentName(PartitionId)` qualifies the name with the tenant
-(partition group): `Partition-<tenant>-<n>`. The tenant prefix is therefore a property of the flat
-map, not a structural level in the tree.
+A partition's own health factors are first-class leaf nodes, not a bundled "intrinsic health"
+component:
+
+- **`DiskSpace`** reflects disk-space availability and starts healthy (available until a disk-usage
+  monitor says otherwise).
+- **`PartitionTransition`** reflects the role-transition lifecycle as a single concern — whether
+  services are installed, the live `partitionTransition.getHealthIssue()`, and the sticky `dead`
+  latch from an unrecoverable failure — and starts unhealthy ("services not installed"). "Once dead,
+  stays dead" is a property of this one leaf; a `DEAD` leaf makes the partition CCHM (and the tree
+  above it) report `DEAD` under the worst-wins aggregation.
+
+### Identity is the object and its position
+
+A node's identity is the object and its position in the tree; its display **name need only be unique
+among its siblings**. `Partition-1` under tenant A and `Partition-1` under tenant B are distinct nodes
+by position, so the name carries no structural information — the partition name is `Partition-<n>`,
+not `Partition-<tenant>-<n>`. Each CCHM keeps its children in a sibling-scoped map keyed by name.
 
 ## How the tree is exported as metrics
 
-Health computation is separate from health *export*. Export is done through the
-`ComponentTreeListener` interface; the implementation is `HealthTreeMetrics`, which emits a
+Health computation is separate from health *export*, and export is a **projection** of the tree, not
+a parallel graph. The single `HealthTreeListener`, `HealthTreeMetrics`, emits one
 `zeebe_broker_health_nodes` gauge per node (`1` healthy, `-1` unhealthy, `-2` dead, `0` unknown).
 
-A CCHM notifies its `ComponentTreeListener` when:
+Whenever a node enters or leaves the tree, the aggregating CCHM calls `onNodeRegistered(node,
+position)` / `onNodeRemoved(node)`, and `HealthTreeMetrics` derives every tag from the supplied
+`HealthNodePosition`:
 
-- it is constructed (it registers *itself* as a node, with its parent), and
-- a component is registered or removed (it registers/unregisters that component as a node).
+- `id` — the node's `name` (e.g. `Broker-0`, `Tenant-default`, `Partition-1`, `StreamProcessor-1`,
+  `DiskSpace`),
+- `path` — the slash-joined chain of names from the root (e.g.
+  `Broker-0/Tenant-default/Partition-1/StreamProcessor-1`),
+- `physicalTenant` and `partition` — the tenant/partition the node is attributed to (or `none` for
+  the broker- and tenant-level nodes).
 
-Each gauge is tagged with `id` (the component name) and `path` (the slash-joined chain of parents,
-e.g. `Broker-0/Partition-default-1`). The path is reconstructed from the child→parent relationships
-the listener has been told about.
-
-There are **two** `HealthTreeMetrics` instances, bound to different meter registries:
-
-|   Instance    |                 Created in                 |      Meter registry       |              Partition tags              |
-|---------------|--------------------------------------------|---------------------------|------------------------------------------|
-| Broker-level  | `Broker`                                   | global system registry    | `physicalTenant=none, partition=none`    |
-| Per-partition | `PartitionStartupAndTransitionContextImpl` | partition-scoped registry | `physicalTenant=<tenant>, partition=<n>` |
-
-The per-partition registry already carries `physicalTenant` and `partition` as common tags (set in
-`MetricsStep`), so nodes registered through the per-partition listener are automatically attributed
-to the right partition and tenant. The broker-level registry has no partition, so its listener uses
-the `none/none` placeholder tags.
-
-### Double emission of the partition node
-
-Because the `ZeebePartition` wrapper and its inner CCHM share a name *and* use different listeners,
-the partition node is emitted **twice**:
-
-- the broker CCHM registers the `ZeebePartition` wrapper through the **broker-level** listener →
-  `zeebe_broker_health_nodes{id="Partition-<tenant>-<n>", physicalTenant="none", partition="none"}`
-- the inner CCHM registers itself through the **per-partition** listener →
-  `zeebe_broker_health_nodes{id="Partition-<tenant>-<n>", physicalTenant="<tenant>", partition="<n>"}`
-
-Both have the same `id` and `path`, differing only in the partition tags. The sub-components below
-the partition are only registered through the per-partition listener, so they are emitted once, with
-the correct tenant and partition tags.
+Because there is exactly one node object per node and the listener is the single owner of the
+projection, the metric cannot drift from the tree and cannot emit a node twice. All gauges share the
+single broker meter registry; the tenant/partition attribution is set per gauge from the position, so
+there is no per-partition registry or registry-wide common-tag mechanism for these nodes.
 
 ## Broker readiness
 

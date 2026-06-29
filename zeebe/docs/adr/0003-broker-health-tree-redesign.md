@@ -194,6 +194,41 @@ must have started" invariant is unchanged.
   contributes exactly one node.
 - Broker readiness behaviour is unchanged, including the all-physical-tenants-started invariant.
 
+## Implementation notes
+
+The implementation follows D1–D6; this section records how the projection (D3) is realised and two
+small refinements made while building it.
+
+- **Nodes carry their position; the projector is fed, it does not walk.** Each node has an immutable
+  `HealthNodePosition` (`name`, `path`, `physicalTenant`, `partition`) composed from its parent's
+  position (`broker(...).tenant(...).partition(...).child(...)`). `CriticalComponentsHealthMonitor`
+  stays a pure aggregator — it owns no metric state, tracks no relationships and builds no
+  paths/tags — but it *announces* structural changes (`onNodeRegistered(node, position)` /
+  `onNodeRemoved(node)`) to a single `HealthTreeListener`. The projector (`HealthTreeMetrics`) holds
+  only a node→meter map and derives every tag from the supplied position. This is the literal D3
+  ("metrics are a projection of the tree, owned by a single projector") with one practical change:
+  the projector is *told* about nodes rather than walking the tree itself, because the tree spans
+  actor boundaries (broker and tenant nodes run on the broker health actor, partition nodes and
+  leaves on each partition actor) and a single walker could not read it thread-safely. Because each
+  node's position is self-contained, emission has no cross-actor ordering dependency and cannot drift
+  or double-count. A leaf's position is composed by its parent monitor (inheriting tenant/partition);
+  an interior node carries its own. The old `ComponentTreeListener` (relationship-tracking 4-method
+  API plus per-instance `extraTags`) is deleted in favour of `HealthTreeListener` + `HealthNodePosition`.
+- **One registry.** All health-node gauges are emitted on the broker (system) meter registry with
+  per-gauge tenant/partition tags, so the per-partition `HealthTreeMetrics` instance and the
+  registry-wide common-tag mechanism for these nodes are gone (D3's two-exporters/two-registries
+  split).
+- **`ZeebePartition` keeps `getHealthReport()` for the admin API.** Per D4 the partition is no longer
+  a tree node — its own monitor is registered under the tenant node instead — but `ZeebePartition`
+  still exposes `getHealthReport()` (delegating to that monitor) because the broker admin REST
+  endpoint (`BrokerAdminServiceImpl#getPartitionHealth`) reports per-partition health. The delegation
+  hop is removed from the *tree*, not from the admin API.
+- **Grafana.** The `zeebe_broker_health_nodes` tag keys (`id`, `path`, `physicalTenant`, `partition`)
+  are unchanged; only their values change (nested `path`, no tenant prefix in the partition `id`,
+  `DiskSpace`/`PartitionTransition` instead of `ZeebePartitionHealth-<n>`). The single panel that uses
+  the metric ("Health status timeline", legend `{{path}}`) keeps working without a query change, so
+  `monitor/grafana/zeebe.json` needs no edit.
+
 ## Source
 
 - [docs/zeebe/health.md](../../../docs/zeebe/health.md) — current-state description this ADR revises.
