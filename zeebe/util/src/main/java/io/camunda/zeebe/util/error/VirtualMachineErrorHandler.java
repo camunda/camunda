@@ -57,7 +57,7 @@ public final class VirtualMachineErrorHandler
 
   private void tryLoggingThenExit(final Throwable cause) {
     tryLogging(cause);
-    System.exit(EXIT_CODE);
+    Runtime.getRuntime().halt(EXIT_CODE);
   }
 
   private void tryLogging(final Throwable e) {
