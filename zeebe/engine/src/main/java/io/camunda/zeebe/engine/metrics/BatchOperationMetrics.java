@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetricsDoc.BatchOperationLa
 import io.camunda.zeebe.engine.metrics.BatchOperationMetricsDoc.QueryStatus;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.util.collection.Tuple;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;

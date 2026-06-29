@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.exporter.metrics;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc.ExporterContainerKeyNames;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import java.time.Duration;

@@ -14,7 +14,7 @@ import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
 import io.camunda.zeebe.logstreams.log.WriteContext.Scheduled;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 

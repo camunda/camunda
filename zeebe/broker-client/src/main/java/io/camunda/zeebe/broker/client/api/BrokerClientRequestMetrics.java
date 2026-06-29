@@ -14,7 +14,7 @@ import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.TOTAL_RE
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.RequestKeyNames;
 import io.camunda.zeebe.util.collection.Map3D;
 import io.camunda.zeebe.util.collection.Table;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
