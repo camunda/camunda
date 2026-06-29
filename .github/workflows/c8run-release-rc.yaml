@@ -25,6 +25,29 @@ on:
         type: string
         required: true
         default: ""
+      # The following are only consumed by the Docker-Compose self-heal on docker-reliant branches
+      # (8.7/8.8). They let the preflight author a correct docker-compose .env when it is stale.
+      # The release train supplies them; ad-hoc runs may omit them (then a stale compose hard-fails).
+      optimizeVersion:
+        description: "Optimize version for the compose self-heal (docker-reliant branches only)."
+        type: string
+        required: false
+        default: ""
+      identityVersion:
+        description: "Standalone (management) Identity version for the compose self-heal (docker-reliant branches only)."
+        type: string
+        required: false
+        default: ""
+      webModelerVersion:
+        description: "Web Modeler version for the compose self-heal (docker-reliant branches only)."
+        type: string
+        required: false
+        default: ""
+      consoleVersion:
+        description: "Console version for the compose self-heal (8.8+ docker-reliant branches; 8.7 has no console)."
+        type: string
+        required: false
+        default: ""
       dryRun:
         description: "Dry run: build for real but stage to an isolated <version>-rc-dryrun Harbor tag and skip the .env bump PR. Nothing public is written; the dryrun tag is deletable residue."
         type: boolean
@@ -44,14 +67,15 @@ env:
 
 jobs:
   # Gate: for docker-reliant branches (those whose c8run/.env pins COMPOSE_TAG), the bundled rolling
-  # docker-compose-<minor> release must already pin the target version. This is the automated form of
-  # the manual "ensure the Docker Compose versions were released" precursor in c8run/docs/release.md,
-  # and the same readiness primitive as the release train's check-versions.bpmn. Java-only branches
-  # (main, stable/8.9) have no COMPOSE_TAG and skip the gate.
+  # docker-compose-<minor> release must already pin the target version. When it is behind (the release
+  # train dispatches C8Run RC before Renovate refreshes the compose), this job SELF-HEALS: it dispatches
+  # the camunda-distributions force-bump workflow with the train's component versions, waits (bounded)
+  # for the rolling release to rebuild, then re-verifies. Java-only branches (main, stable/8.9) have no
+  # COMPOSE_TAG and skip the gate entirely.
   verify-compose:
-    name: Verify Docker Compose is at target
+    name: Verify or remediate Docker Compose
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -66,32 +90,144 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
 
-      - name: Verify rolling docker-compose pins the target version
-        env:
-          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+      - name: Detect Docker Compose dependency
+        id: detect
         run: |
           compose_tag="$(grep -E '^COMPOSE_TAG=' c8run/.env | head -1 | cut -d= -f2- || true)"
           if [ -z "${compose_tag}" ]; then
             echo "Java-only branch (no COMPOSE_TAG in c8run/.env) — no Docker Compose dependency. Skipping gate."
+          else
+            echo "Docker-reliant branch: COMPOSE_TAG=${compose_tag}."
+          fi
+          echo "compose_tag=${compose_tag}" >> "$GITHUB_OUTPUT"
+
+      # Distro CI app token scoped to camunda-distributions: reads the rolling release and dispatches the
+      # force-bump there. Only fetched for docker-reliant branches (Java-only branches skip remediation).
+      - name: Import distro CI app secrets
+        id: distro-secrets
+        if: steps.detect.outputs.compose_tag != ''
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+
+      - name: Generate distro CI app token
+        id: distro-token
+        if: steps.detect.outputs.compose_tag != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ steps.distro-secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ steps.distro-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          owner: camunda
+          repositories: camunda-distributions
+
+      - name: Verify or remediate the rolling docker-compose
+        if: steps.detect.outputs.compose_tag != ''
+        env:
+          COMPOSE_TAG: ${{ steps.detect.outputs.compose_tag }}
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+          OPTIMIZE_VERSION: ${{ inputs.optimizeVersion }}
+          IDENTITY_VERSION: ${{ inputs.identityVersion }}
+          WEB_MODELER_VERSION: ${{ inputs.webModelerVersion }}
+          CONSOLE_VERSION: ${{ inputs.consoleVersion }}
+          DRY_RUN: ${{ inputs.dryRun }}
+          GH_TOKEN: ${{ steps.distro-token.outputs.token }}
+          DISTRIBUTIONS_REPO: camunda/camunda-distributions
+        run: |
+          set -euo pipefail
+
+          # Reads the rolling release BODY (cheap; no zip download) and echoes the monorepo version it
+          # pins. The body's "## Versions" section lists every *_VERSION as `- KEY=value`. 8.7 uses
+          # CAMUNDA_ZEEBE_VERSION, 8.8+ uses CAMUNDA_VERSION — try zeebe first, fall back to camunda.
+          compose_monorepo_version() {
+            local body v
+            body="$(gh release view "docker-compose-${COMPOSE_TAG}" --repo "${DISTRIBUTIONS_REPO}" --json body --jq .body 2>/dev/null || true)"
+            [ -z "${body}" ] && return 0
+            v="$(printf '%s\n' "${body}" | grep -oE '^[-* ]*CAMUNDA_ZEEBE_VERSION=[^[:space:]`]+' | head -1 | cut -d= -f2- || true)"
+            [ -z "${v}" ] && v="$(printf '%s\n' "${body}" | grep -oE '^[-* ]*CAMUNDA_VERSION=[^[:space:]`]+' | head -1 | cut -d= -f2- || true)"
+            printf '%s' "${v}"
+          }
+
+          # Returns 0 (true) when the pinned version is empty/unknown or strictly behind the target.
+          compose_behind() {
+            local pinned="$1" target="$2" lower
+            [ -z "${pinned}" ] && return 0
+            [ "${pinned}" = "${target}" ] && return 1
+            lower="$(printf '%s\n%s\n' "${pinned}" "${target}" | sort -V | head -1)"
+            [ "${lower}" = "${pinned}" ]
+          }
+
+          pinned="$(compose_monorepo_version)"
+          if ! compose_behind "${pinned}" "${CAMUNDA_VERSION}"; then
+            echo "Docker Compose is at or ahead of target (pins '${pinned}', target '${CAMUNDA_VERSION}'). Proceeding."
+            exit 0
+          fi
+          echo "Rolling docker-compose-${COMPOSE_TAG} is behind: pins '${pinned:-<none>}', target '${CAMUNDA_VERSION}'."
+
+          # depName -> version map for the force-bump, empties dropped (only present keys get written).
+          component_versions="$(jq -nc \
+            --arg mono "${CAMUNDA_VERSION}" \
+            --arg conn "${CONNECTORS_VERSION}" \
+            --arg opt "${OPTIMIZE_VERSION}" \
+            --arg ident "${IDENTITY_VERSION}" \
+            --arg wm "${WEB_MODELER_VERSION}" \
+            --arg con "${CONSOLE_VERSION}" \
+            '{
+              "camunda/camunda": $mono,
+              "camunda/zeebe": $mono,
+              "camunda/operate": $mono,
+              "camunda/tasklist": $mono,
+              "camunda/connectors-bundle": $conn,
+              "camunda/optimize": $opt,
+              "camunda/identity": $ident,
+              "camunda/web-modeler-restapi": $wm,
+              "camunda/hub": $wm,
+              "camunda/console": $con
+             } | with_entries(select(.value != ""))')"
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "🧪 DRY RUN: would dispatch docker-compose-force-bump for camunda-${COMPOSE_TAG} with:"
+            echo "${component_versions}" | jq .
+            echo "🧪 DRY RUN: skipping the real cross-repo dispatch/merge; proceeding to build (compose may be stale in the dryrun bundle)."
             exit 0
           fi
 
-          url="https://github.com/camunda/camunda-distributions/releases/download/docker-compose-${compose_tag}/docker-compose-${compose_tag}.zip"
-          echo "Fetching released compose bundle: ${url}"
-          if ! curl -fsSL -o docker-compose.zip "${url}"; then
-            echo "::error::Could not download docker-compose-${compose_tag}.zip from camunda-distributions. The minor compose release is missing."
+          # Self-heal needs the train's independent versions (Optimize/Identity/WebModeler). Without
+          # them a correct compose .env cannot be authored — fall back to the manual precondition.
+          if [ -z "${OPTIMIZE_VERSION}" ] || [ -z "${IDENTITY_VERSION}" ] || [ -z "${WEB_MODELER_VERSION}" ]; then
+            echo "::error::Rolling docker-compose-${COMPOSE_TAG} is behind and the component versions needed to refresh it (optimizeVersion/identityVersion/webModelerVersion) were not supplied. Refresh the compose upstream (Renovate / release train) before building C8Run, or re-run with those inputs."
             exit 1
           fi
-          unzip -o -q docker-compose.zip -d dc
-          dc_camunda="$(grep -E '^CAMUNDA_VERSION=' dc/.env | head -1 | cut -d= -f2-)"
-          echo "docker-compose-${compose_tag} pins CAMUNDA_VERSION=${dc_camunda}; target is ${CAMUNDA_VERSION}"
-          # sort -V picks the lower version; if that is the compose pin (and the two differ), compose is behind target.
-          lower="$(printf '%s\n%s\n' "${dc_camunda}" "${CAMUNDA_VERSION}" | sort -V | head -1)"
-          if [ "${dc_camunda}" != "${CAMUNDA_VERSION}" ] && [ "${lower}" = "${dc_camunda}" ]; then
-            echo "::error::Rolling docker-compose-${compose_tag} pins ${dc_camunda}, which is behind the target ${CAMUNDA_VERSION}. Compose is stale — refresh it upstream (Renovate / release train) before building C8Run."
-            exit 1
-          fi
-          echo "Docker Compose is at or ahead of the target (pins ${dc_camunda}, target ${CAMUNDA_VERSION}). Proceeding."
+
+          echo "Dispatching docker-compose-force-bump in ${DISTRIBUTIONS_REPO} for camunda-${COMPOSE_TAG}..."
+          gh workflow run docker-compose-force-bump.yaml \
+            --repo "${DISTRIBUTIONS_REPO}" \
+            --field "minor=${COMPOSE_TAG}" \
+            --field "componentVersions=${component_versions}" \
+            --field "reason=C8Run RC ${CAMUNDA_VERSION} preflight"
+
+          # Bounded wait for the autorelease to rebuild the rolling release at target. Poll the release
+          # body each round (no zip download); tolerate transient 404 during the delete+recreate window.
+          echo "Waiting for docker-compose-${COMPOSE_TAG} to reach ${CAMUNDA_VERSION}..."
+          attempt=1
+          max_attempts=40   # 40 x 30s = 20 min, within the job's 30 min timeout
+          until pinned="$(compose_monorepo_version)"; ! compose_behind "${pinned}" "${CAMUNDA_VERSION}"; do
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+              echo "::error::Timed out after ${attempt} polls waiting for docker-compose-${COMPOSE_TAG} to reach ${CAMUNDA_VERSION} (last pinned: '${pinned:-<none>}'). The force-bump may have failed — check its run in ${DISTRIBUTIONS_REPO}."
+              exit 1
+            fi
+            echo "  attempt ${attempt}/${max_attempts}: pins '${pinned:-<none>}', want '${CAMUNDA_VERSION}'; waiting 30s..."
+            attempt=$((attempt + 1))
+            sleep 30
+          done
+          echo "Docker Compose reached target (pins '${pinned}'). Proceeding."
 
       - name: Observe build status
         if: always()
