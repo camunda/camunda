@@ -62,7 +62,12 @@ public class Document {
             String.class,
             BackwardsCompatibilityMode.SUPPORTED,
             Set.of("DOCUMENT_DEFAULT_STORE_ID"));
-    return value != null ? value.toLowerCase() : null;
+    return value != null ? normalizeStoreId(value) : null;
+  }
+
+  /** Normalizes a store id to canonical form: trimmed and lowercased. */
+  public static String normalizeStoreId(final String id) {
+    return id.trim().toLowerCase();
   }
 
   public void setDefaultStoreId(final String defaultStoreId) {

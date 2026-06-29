@@ -71,7 +71,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   private static final List<CrossTenantValidation> CROSS_TENANT_VALIDATIONS =
       List.of(
           new SecondaryStorageIsolationValidation(),
-          new SecondaryStorageTypeHomogeneityValidation());
+          new SecondaryStorageTypeHomogeneityValidation(),
+          new DocumentStoreIsolationValidation());
 
   private final Map<String, Camunda> resolved;
 
@@ -89,6 +90,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantOverridePolicyValidation.validate(environment);
     PhysicalTenantRequiredOverrideValidation.validate(environment);
     PhysicalTenantAssignedProvidersValidation.validate(environment);
+    PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
     for (final String physicalTenantId : physicalTenantIds) {
@@ -104,12 +106,16 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
           .setAuthentication(
               PhysicalTenantAuthenticationConfigurations.forPhysicalTenant(
                   physicalTenantId, environment));
+      physicalTenant.setDocument(
+          PhysicalTenantDocumentConfigurations.forPhysicalTenant(physicalTenantId, environment));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
       resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
-    CROSS_TENANT_VALIDATIONS.forEach(validation -> validation.validate(resolvedPhysicalTenants));
+    CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
+    PhysicalTenantDocumentAssignedValidation.validate(
+        environment, resolvedPhysicalTenants, physicalTenantIds);
     return new PhysicalTenantResolver(resolvedPhysicalTenants);
   }
 
