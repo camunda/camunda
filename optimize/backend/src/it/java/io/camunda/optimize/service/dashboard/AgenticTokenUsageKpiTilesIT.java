@@ -1,0 +1,360 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service.dashboard;
+
+import static io.camunda.optimize.AgenticInstanceFixtures.PROC_KEY;
+import static io.camunda.optimize.AgenticInstanceFixtures.agenticInstanceWithTokens;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_OUTLIER_BANDS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_TREND_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticReportFilters.noExtraFilters;
+import static io.camunda.optimize.service.dashboard.AgenticReportFilters.rollingEndDateFilter;
+import static io.camunda.optimize.service.dashboard.AgenticReportFilters.withDefinitions;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
+
+import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
+import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
+import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import io.camunda.optimize.service.db.report.result.MapCommandResult;
+import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
+import io.camunda.optimize.service.report.ReportEvaluationService;
+import java.time.OffsetDateTime;
+import java.util.List;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
+
+  private AgenticReportEvaluator reports;
+
+  @BeforeEach
+  void setUp() {
+    embeddedOptimizeExtension.getBean(AgenticControlDashboardService.class).reconcile();
+    reports =
+        new AgenticReportEvaluator(
+            embeddedOptimizeExtension.getBean(ReportEvaluationService.class));
+  }
+
+  @Test
+  void shouldComputeAverageTokensPerExecution() {
+    // totals: 150, 300, 450  → avg = 300
+    final ProcessInstanceDto inst1 = agenticInstanceWithTokens(PROC_KEY, 100L, 50L).build();
+    final ProcessInstanceDto inst2 = agenticInstanceWithTokens(PROC_KEY, 200L, 100L).build();
+    final ProcessInstanceDto inst3 = agenticInstanceWithTokens(PROC_KEY, 300L, 150L).build();
+
+    persistProcessInstances(List.of(inst1, inst2, inst3));
+
+    final Double result = reports.evaluateNumber(KPI_AVG_TOKENS_REPORT_ID, noExtraFilters());
+    assertThat(result).isCloseTo(300.0, within(1.0));
+  }
+
+  @Test
+  void shouldComputeMedianTokensPerExecution() {
+    // totals: 100, 200, 300, 400, 500 → median = 300
+    final ProcessInstanceDto inst1 = agenticInstanceWithTokens(PROC_KEY, 70L, 30L).build();
+    final ProcessInstanceDto inst2 = agenticInstanceWithTokens(PROC_KEY, 140L, 60L).build();
+    final ProcessInstanceDto inst3 = agenticInstanceWithTokens(PROC_KEY, 210L, 90L).build();
+    final ProcessInstanceDto inst4 = agenticInstanceWithTokens(PROC_KEY, 280L, 120L).build();
+    final ProcessInstanceDto inst5 = agenticInstanceWithTokens(PROC_KEY, 350L, 150L).build();
+
+    persistProcessInstances(List.of(inst1, inst2, inst3, inst4, inst5));
+
+    final Double result = reports.evaluateNumber(KPI_MEDIAN_TOKENS_REPORT_ID, noExtraFilters());
+    // ES percentile approximation — allow small delta
+    assertThat(result).isCloseTo(300.0, within(10.0));
+  }
+
+  @Test
+  void shouldAggregateMetricsWithinRollingDateFilter() {
+    // both within last-1-week: avg tokens should reflect only these two
+    final OffsetDateTime now = OffsetDateTime.now();
+    final ProcessInstanceDto inst1 =
+        agenticInstanceWithTokens(PROC_KEY, 100L, 100L)
+            .startDate(now.minusDays(3))
+            .endDate(now.minusDays(2))
+            .build();
+    final ProcessInstanceDto inst2 =
+        agenticInstanceWithTokens(PROC_KEY, 200L, 200L)
+            .startDate(now.minusDays(2))
+            .endDate(now.minusDays(1))
+            .build();
+    // old instance with very different tokens — outside 1-week window
+    final ProcessInstanceDto oldInst =
+        agenticInstanceWithTokens(PROC_KEY, 10_000L, 10_000L)
+            .startDate(now.minusDays(30))
+            .endDate(now.minusDays(29))
+            .build();
+
+    persistProcessInstances(List.of(inst1, inst2, oldInst));
+
+    // avg of 200 and 400 = 300
+    assertThat(
+            reports.evaluateNumber(
+                KPI_AVG_TOKENS_REPORT_ID, rollingEndDateFilter(1L, DateUnit.WEEKS)))
+        .isCloseTo(300.0, within(1.0));
+  }
+
+  @Test
+  void shouldApplyDateFilterToMedianTokens() {
+    // within window: totals 100, 200, 300 → median 200
+    final ProcessInstanceDto inst1 =
+        agenticInstanceWithTokens(PROC_KEY, 50L, 50L)
+            .startDate(OffsetDateTime.now().minusDays(3))
+            .endDate(OffsetDateTime.now().minusDays(2))
+            .build();
+    final ProcessInstanceDto inst2 =
+        agenticInstanceWithTokens(PROC_KEY, 100L, 100L)
+            .startDate(OffsetDateTime.now().minusDays(2))
+            .endDate(OffsetDateTime.now().minusDays(1))
+            .build();
+    final ProcessInstanceDto inst3 =
+        agenticInstanceWithTokens(PROC_KEY, 150L, 150L)
+            .startDate(OffsetDateTime.now().minusDays(1))
+            .endDate(OffsetDateTime.now().minusHours(1))
+            .build();
+    // outside window — very high total, should not affect median
+    final ProcessInstanceDto old =
+        agenticInstanceWithTokens(PROC_KEY, 10_000L, 10_000L)
+            .startDate(OffsetDateTime.now().minusDays(30))
+            .endDate(OffsetDateTime.now().minusDays(29))
+            .build();
+
+    persistProcessInstances(List.of(inst1, inst2, inst3, old));
+
+    assertThat(
+            reports.evaluateNumber(
+                KPI_MEDIAN_TOKENS_REPORT_ID, rollingEndDateFilter(1L, DateUnit.WEEKS)))
+        .isCloseTo(200.0, within(10.0));
+  }
+
+  @Test
+  void shouldAggregateMetricsForSelectedProcessDefinition() {
+    final String procKeyA = "proc-metrics-a";
+    final String procKeyB = "proc-metrics-b";
+
+    // procKeyA: input+output totals = 300 and 600 → avg = 450
+    // procKeyB: total = 900 — should be excluded
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(procKeyA, 100L, 200L).build(),
+            agenticInstanceWithTokens(procKeyA, 200L, 400L).build(),
+            agenticInstanceWithTokens(procKeyB, 300L, 600L).build()));
+
+    assertThat(
+            reports.evaluateNumber(
+                KPI_AVG_TOKENS_REPORT_ID,
+                withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
+        .isCloseTo(450.0, within(1.0));
+  }
+
+  @Test
+  void shouldApplyDefinitionFilterToMedianTokens() {
+    final String procKeyA = "proc-med-a";
+    final String procKeyB = "proc-med-b";
+
+    // procKeyA: totals 100, 200, 300 → median 200
+    // procKeyB: total 50_000 — should be excluded
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(procKeyA, 50L, 50L).build(),
+            agenticInstanceWithTokens(procKeyA, 100L, 100L).build(),
+            agenticInstanceWithTokens(procKeyA, 150L, 150L).build(),
+            agenticInstanceWithTokens(procKeyB, 25_000L, 25_000L).build()));
+
+    assertThat(
+            reports.evaluateNumber(
+                KPI_MEDIAN_TOKENS_REPORT_ID,
+                withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
+        .isCloseTo(200.0, within(10.0));
+  }
+
+  @Test
+  void shouldComputeWeeklyInputTokensGroupedByWeek() {
+    // given two instances within the same week with known input tokens
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build(),
+            agenticInstanceWithTokens(PROC_KEY, 200L, 80L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build()));
+
+    // when evaluating the first measure (input tokens) of the token-trend report
+    final List<MapResultEntryDto> buckets = reports.evaluateMapMeasure(TOKEN_TREND_REPORT_ID, 0);
+
+    // then total input tokens across all buckets equals 300
+    assertThat(buckets).isNotEmpty();
+    final double totalInput =
+        buckets.stream()
+            .filter(e -> e.getValue() != null)
+            .mapToDouble(MapResultEntryDto::getValue)
+            .sum();
+    assertThat(totalInput).isCloseTo(300.0, within(1.0));
+  }
+
+  @Test
+  void shouldComputeWeeklyOutputTokensGroupedByWeek() {
+    // given two instances within the same week with known output tokens
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(PROC_KEY, 50L, 100L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build(),
+            agenticInstanceWithTokens(PROC_KEY, 80L, 200L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build()));
+
+    // when evaluating the second measure (output tokens) of the token-trend report
+    final List<MapResultEntryDto> buckets = reports.evaluateMapMeasure(TOKEN_TREND_REPORT_ID, 1);
+
+    // then total output tokens across all buckets equals 300
+    assertThat(buckets).isNotEmpty();
+    final double totalOutput =
+        buckets.stream()
+            .filter(e -> e.getValue() != null)
+            .mapToDouble(MapResultEntryDto::getValue)
+            .sum();
+    assertThat(totalOutput).isCloseTo(300.0, within(1.0));
+  }
+
+  @Test
+  void shouldReturnThreePercentileMeasures_forTokenOutlierBands() {
+    // given — 5 instances sharing an end date with total tokens [100, 200, 300, 400, 500]
+    final OffsetDateTime sharedEnd = OffsetDateTime.now().minusDays(2);
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(PROC_KEY, 100L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 200L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 300L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 400L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 500L, 0L).endDate(sharedEnd).build()));
+
+    // when
+    final MapCommandResult result =
+        reports.evaluateMap(TOKEN_OUTLIER_BANDS_REPORT_ID, noExtraFilters());
+
+    // then — exactly three measures, ordered p5, p50, p95
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(3);
+    assertThat(measures.get(0).getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 5.0));
+    assertThat(measures.get(1).getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 50.0));
+    assertThat(measures.get(2).getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 95.0));
+
+    // and the p50 band reflects the median total tokens (300) — ES percentile approximation
+    assertThat(measures.get(1).getData().getFirst().getValue()).isCloseTo(300.0, within(50.0));
+  }
+
+  @Test
+  void shouldRankProcessesByTotalTokensConsumed() {
+    final String heavyProc = "heavy-agent-process";
+    final String lightProc = "light-agent-process";
+
+    // heavyProc consumes 450 tokens total, lightProc consumes 120
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(heavyProc, 200L, 100L).build(),
+            agenticInstanceWithTokens(heavyProc, 100L, 50L).build(),
+            agenticInstanceWithTokens(lightProc, 80L, 40L).build()));
+
+    // when evaluating the top-consumers report grouped by process definition key
+    final List<MapResultEntryDto> buckets =
+        reports.evaluateMapMeasure(TOKEN_CONSUMERS_REPORT_ID, 0);
+
+    // then each process appears with its summed total tokens, ranked with the heaviest first
+    assertThat(buckets)
+        .filteredOn(e -> e.getValue() != null)
+        .extracting(MapResultEntryDto::getKey)
+        .containsExactly(heavyProc, lightProc);
+    assertThat(buckets.stream().filter(e -> heavyProc.equals(e.getKey())).findFirst())
+        .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(450.0, within(1.0)));
+    assertThat(buckets.stream().filter(e -> lightProc.equals(e.getKey())).findFirst())
+        .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(120.0, within(1.0)));
+  }
+
+  @Test
+  void shouldReturnOnlyTopConsumersWithTotalCountWhenPaginated() {
+    // given three processes with distinct total token sums
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens("proc-a", 300L, 0L).build(),
+            agenticInstanceWithTokens("proc-b", 200L, 0L).build(),
+            agenticInstanceWithTokens("proc-c", 100L, 0L).build()));
+
+    // when evaluating the top-consumers report limited to the two heaviest processes
+    // (limit only, no offset — mirroring how the dashboard frontend requests the tile)
+    final CommandEvaluationResult<?> commandResult =
+        reports.evaluatePaginated(
+            TOKEN_CONSUMERS_REPORT_ID, noExtraFilters(), new PaginationDto(2, null));
+    final List<MapResultEntryDto> buckets =
+        ((MapCommandResult) commandResult).getMeasures().getFirst().getData();
+
+    // then only the two heaviest processes are returned, ranked descending
+    assertThat(buckets)
+        .filteredOn(e -> e.getValue() != null)
+        .extracting(MapResultEntryDto::getKey)
+        .containsExactly("proc-a", "proc-b");
+    // and the total distinct process count is surfaced for the "top N of total" label
+    assertThat(commandResult.getPagination().getTotal()).isEqualTo(3L);
+    // and the pagination is valid, so it survives REST mapping and the total reaches the frontend
+    assertThat(commandResult.getPagination().isValid()).isTrue();
+  }
+
+  @Test
+  void shouldRejectNonZeroOffsetForGroupedTopNReport() {
+    // given a top-consumers report (grouped top-N supports a limit but not paging into results)
+    persistProcessInstances(List.of(agenticInstanceWithTokens("proc-a", 300L, 0L).build()));
+
+    // when evaluating it with a non-zero pagination offset
+    final ThrowingCallable evaluation =
+        () ->
+            reports.evaluatePaginated(
+                TOKEN_CONSUMERS_REPORT_ID, noExtraFilters(), new PaginationDto(2, 1));
+
+    // then the request is rejected rather than silently returning a first page
+    assertThatThrownBy(evaluation)
+        .isInstanceOf(ReportEvaluationException.class)
+        .hasMessageContaining("non-zero pagination offset");
+  }
+
+  @Test
+  void shouldRejectNonZeroOffsetWithoutLimitForGroupedTopNReport() {
+    // given a top-consumers report (grouped top-N supports a limit but not paging into results)
+    persistProcessInstances(List.of(agenticInstanceWithTokens("proc-a", 300L, 0L).build()));
+
+    // when evaluating it with a non-zero offset but no limit
+    final ThrowingCallable evaluation =
+        () ->
+            reports.evaluatePaginated(
+                TOKEN_CONSUMERS_REPORT_ID, noExtraFilters(), new PaginationDto(null, 1));
+
+    // then the request is rejected rather than silently ignoring the offset
+    assertThatThrownBy(evaluation)
+        .isInstanceOf(ReportEvaluationException.class)
+        .hasMessageContaining("non-zero pagination offset");
+  }
+}
