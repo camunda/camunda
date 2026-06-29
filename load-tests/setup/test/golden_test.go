@@ -82,7 +82,7 @@ var versions = []string{
 	"main",
 	"stable-89",
 	"stable-88",
-	// "stable-87",
+	"stable-87",
 }
 
 // generateScenarios generates the list of possible scenarios for each
@@ -102,12 +102,12 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 				}
 			}
 
-			//if v == "stable-87" {
-			//    if s.Storage != "elasticsearch" {
-			//        // Only elasticsearch is supported on 8.7
-			//        continue
-			//    }
-			//}
+			if v == "stable-87" {
+				if s.Storage != "elasticsearch" {
+					// Only elasticsearch is supported on 8.7
+					continue
+				}
+			}
 
 			scenario := versionedScenario{
 				Version:  v,

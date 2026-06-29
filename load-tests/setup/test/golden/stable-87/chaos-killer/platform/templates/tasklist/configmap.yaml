@@ -1,0 +1,92 @@
+---
+# Source: camunda-platform/templates/tasklist/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tasklist-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-87-chaos-killer
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: tasklist
+    app.kubernetes.io/version: "8.7.29"
+data:
+  application.yaml: |
+
+    spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+      profiles:
+        active: identity-auth
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: "http://keycloak:80/auth/realms/camunda-platform"
+              jwk-set-uri: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+    camunda:
+      identity:
+        clientId: "tasklist"
+        audience: "tasklist-api"
+
+    # Camunda Database configuration
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: elasticsearch
+      # Elasticsearch full url
+      url: "http://elastic:9200"
+
+    # Tasklist configuration file
+    camunda.tasklist:
+
+      identity:
+        redirectRootUrl: "http://localhost:8082"
+        userAccessRestrictionsEnabled: true
+
+      # Set Tasklist username and password.
+      # If user with <username> does not exists it will be created.
+      # Default: demo/demo
+      #username:
+      #password:
+      # ELS instance to store Tasklist data
+      elasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: elastic
+        # Transport port
+        port: 9200
+        # Elasticsearch full url
+        url: "http://elastic:9200"
+      # ELS instance to export Zeebe data to
+      zeebeElasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: elastic
+        # Transport port
+        port: 9200
+        # Index prefix, configured in Zeebe Elasticsearch exporter
+        prefix: zeebe-record
+        # Elasticsearch full url
+        url: "http://elastic:9200"
+      # Zeebe instance
+      zeebe:
+        # Gateway address
+        gatewayAddress: "zeebe-gateway:26500"
+        restAddress: "http://zeebe-gateway:8080"
+      archiver:
+        ilmEnabled: true
+        ilmMinAgeForDeleteArchivedIndices: 30d
+    #Spring Boot Actuator endpoints to be exposed
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
+    # Enable or disable metrics
+    #management.metrics.export.prometheus.enabled: false

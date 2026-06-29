@@ -1,0 +1,39 @@
+---
+# Source: camunda-platform/templates/connectors/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connectors-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-87-elasticsearch
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.7.20"
+data:
+  application.yml: |
+    server:
+      port: 8080
+    camunda:
+      client:
+        mode: "selfManaged"
+        zeebe:
+          rest-address: "http://zeebe-gateway:8080"
+          grpc-address: "http://zeebe-gateway:26500"
+      identity:
+        audience: "operate-api"
+        client-id: "connectors"
+    operate:
+      client:
+        base-url: "http://operate:80"
+        auth-url: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+        profile: "oidc"
+        audience: "operate-api"
+    logging:
+      level:
+        io.camunda.connector: ERROR

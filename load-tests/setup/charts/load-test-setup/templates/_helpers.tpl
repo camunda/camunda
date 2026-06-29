@@ -22,18 +22,9 @@ The "derivePassword" function is not well documented, by conventions, we use:
 * The "site" is the name of namespace: this is actually the only "random" value seeded into the password generator. It guarantees that:
   1. Different namespaces will produce different passwords
   2. The same namespace will produce the same passwords (as long as the other inputs don't change).
-
 */}}
 {{- define "generate-secret" -}}
 {{- derivePassword 1 "long" "secret" .user .namespace -}}
-{{- end -}}
-
-{{/*
-Constant that defines the orchestration cluster secret key, used by the several
-deployments (Camunda Platform Helm Chart, load tests, etc.)
-*/}}
-{{- define "oc-secret-name" -}}
-orchestration-security-authentication-oidc-secret
 {{- end -}}
 
 {{/* vim: set filetype=gotmpl: */}}
