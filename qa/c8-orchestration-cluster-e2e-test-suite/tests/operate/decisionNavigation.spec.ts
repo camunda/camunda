@@ -10,13 +10,8 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-<<<<<<< HEAD
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
-=======
-import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {jsonHeaders} from 'utils/http';
->>>>>>> 86ee3e19 (test: fix flaky decision E2E tests by replacing sleeps with polling)
 
 type ProcessInstance = {
   processInstanceKey: string;

@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToAppHome} from '@pages/UtilitiesPage';
+import {navigateToApp} from '@pages/UtilitiesPage';
 import {jsonHeaders} from 'utils/http';
 
 // Exposed at module level so tests can scope assertions to instances created by this spec.
@@ -57,8 +57,9 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Decision Filters', () => {
-  test.beforeEach(async ({page, operateHomePage}) => {
-    await navigateToAppHome(page, 'operate');
+  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+    await navigateToApp(page, 'operate');
+    await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickDecisionsTab();
   });
@@ -188,8 +189,9 @@ test.describe('Decision Filters', () => {
 });
 
 test.describe('Decision Filter Reset', () => {
-  test.beforeEach(async ({page, operateHomePage}) => {
-    await navigateToAppHome(page, 'operate');
+  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+    await navigateToApp(page, 'operate');
+    await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickDecisionsTab();
   });
