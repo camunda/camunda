@@ -67,13 +67,15 @@ public final class ReconfigurationPlanner {
    *   <li><b>Promote</b> a passive member that is wanted (finish an in-flight grow) —
    *       leader-driven, catch-up gated.
    *   <li><b>Drop</b> a passive member that is no longer wanted (an abandoned grow).
-   *   <li><b>Grow-first dead replacement</b> (only when a dead voting member is being replaced and
-   *       strategy is {@link ReassignmentStrategy#GROW_FIRST}): passive-join the replacement, so it
-   *       catches up without affecting quorum before it is promoted and the dead member removed.
+   *   <li><b>Grow-first passive add</b> (strategy {@link ReassignmentStrategy#GROW_FIRST}):
+   *       passive-join a missing wanted member, so it catches up without affecting quorum before it
+   *       is promoted (step 1) and any extra removed. Covers live reassignments, top-ups, and
+   *       dead-member replacement alike — a freshly added, empty replica never votes while catching
+   *       up.
    *   <li><b>Remove a dead voting member</b> (shrink-first for a dead member, or the final removal
    *       of a grow-first sequence).
-   *   <li><b>Add a missing voting member</b> (active join — for a live reassignment, a top-up, or
-   *       the post-shrink add of a shrink-first heal).
+   *   <li><b>Add a missing voting member</b> (active join — shrink-first only; grow-first added it
+   *       passively in step 3).
    *   <li><b>Remove a live extra voting member</b> (grow-before-shrink for a live reassignment).
    * </ol>
    *
@@ -110,17 +112,19 @@ public final class ReconfigurationPlanner {
         }
       }
 
-      final var hasDeadVoting =
-          voting.stream().anyMatch(m -> !wanted.contains(m) && !isLive(m, liveMembers));
       final var firstMissing =
           wanted.stream()
               .filter(m -> !voting.contains(m) && !pass.contains(m))
               .findFirst()
               .orElse(null);
 
-      // 3. Grow-first dead replacement: passive-join the replacement before removing the dead
-      // member.
-      if (strategy == ReassignmentStrategy.GROW_FIRST && hasDeadVoting && firstMissing != null) {
+      // 3. Grow-first: passive-join a missing wanted member before changing the voting set. The new
+      // replica is a non-voting observer that catches up from the leader without affecting quorum;
+      // it is enfranchised only by a later (catch-up-gated) PROMOTE. Applies to every grow-first
+      // add
+      // — a live reassignment, a top-up, or a dead-member replacement — so a freshly added, empty
+      // replica never counts toward quorum while it is still catching up.
+      if (strategy == ReassignmentStrategy.GROW_FIRST && firstMissing != null) {
         return Optional.of(
             new ReconfigurationOp(Kind.JOIN_PASSIVE, topic, partitionId, firstMissing));
       }
@@ -130,7 +134,8 @@ public final class ReconfigurationPlanner {
           return Optional.of(new ReconfigurationOp(Kind.LEAVE, topic, partitionId, member));
         }
       }
-      // 5. Add a missing voting member (active join).
+      // 5. Add a missing voting member by an active join (shrink-first only — grow-first added it
+      // passively in step 3 and promotes it in step 1).
       if (firstMissing != null) {
         return Optional.of(new ReconfigurationOp(Kind.JOIN, topic, partitionId, firstMissing));
       }

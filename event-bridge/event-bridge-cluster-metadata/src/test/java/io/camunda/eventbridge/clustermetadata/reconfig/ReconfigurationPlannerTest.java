@@ -24,51 +24,60 @@ final class ReconfigurationPlannerTest {
   }
 
   @Test
-  void shouldAddMissingReplicaBeforeRemovingExtra() {
-    // given a move of partition 1 from {0,1} to {1,2}
+  void shouldPassiveJoinMissingReplicaBeforeRemovingExtra() {
+    // given a grow-first move of partition 1 from {0,1} to {1,2}
     final var committed = Map.of(1, List.of(0, 1));
     final var target = Map.of(1, List.of(1, 2));
 
-    // when/then — the join (grow) comes first
+    // when/then — the new replica passive-joins first (non-voting catch-up), never an active join
+    // that would enfranchise an empty replica into the quorum
     final var first = ReconfigurationPlanner.nextOp("t", committed, target).orElseThrow();
-    assertThat(first.kind()).isEqualTo(Kind.JOIN);
+    assertThat(first.kind()).isEqualTo(Kind.JOIN_PASSIVE);
     assertThat(first.member()).isEqualTo(2);
     assertThat(first.partitionId()).isEqualTo(1);
   }
 
   @Test
   void shouldConvergeCommittedToTargetOneStepAtATime() {
-    // given a 2-partition move
+    // given a 2-partition live move (all brokers live)
     final var target = Map.of(1, List.of(1, 2), 2, List.of(2, 0));
     var committed = Map.of(1, List.of(0, 1), 2, List.of(1, 2));
+    var passive = Map.<Integer, List<Integer>>of();
+    final var live = Set.of(0, 1, 2);
 
-    // when applying steps until none remain
+    // when applying steps until none remain — tracking the passive set, exactly as the
+    // change-coordinator does (a JOIN_PASSIVE only progresses via a later PROMOTE)
     final var steps = new java.util.ArrayList<ReconfigurationOp>();
     for (var guard = 0; guard < 100; guard++) {
-      final var op = ReconfigurationPlanner.nextOp("t", committed, target);
+      final var op =
+          ReconfigurationPlanner.nextOp(
+              "t", committed, passive, target, live, ReassignmentStrategy.GROW_FIRST);
       if (op.isEmpty()) {
         break;
       }
       steps.add(op.get());
       committed = ReconfigurationPlanner.apply(committed, op.get());
+      passive = ReconfigurationPlanner.applyPassive(passive, op.get());
     }
 
-    // then it converges, and never removes before the replacement is added (each partition's
-    // replica set is only ever one member away from both endpoints)
+    // then it converges via passive-join -> promote -> leave per moved partition, never an active
+    // join, and never shrinks a voting set before the replacement has been promoted
     assertThat(committed).isEqualTo(target);
-    assertThat(steps).isNotEmpty();
-    assertThat(steps.stream().filter(o -> o.kind() == Kind.JOIN).count()).isEqualTo(2);
+    assertThat(passive).isEmpty();
+    assertThat(steps.stream().filter(o -> o.kind() == Kind.JOIN_PASSIVE).count()).isEqualTo(2);
+    assertThat(steps.stream().filter(o -> o.kind() == Kind.PROMOTE).count()).isEqualTo(2);
     assertThat(steps.stream().filter(o -> o.kind() == Kind.LEAVE).count()).isEqualTo(2);
+    assertThat(steps.stream().filter(o -> o.kind() == Kind.JOIN).count()).isZero();
   }
 
   @Test
   void shouldGrowAndShrinkReplicationFactor() {
-    // given RF increase 1 -> 2 on partition 1
+    // given RF increase 1 -> 2 on partition 1 — the added replica passive-joins (grow-first)
     assertThat(
             ReconfigurationPlanner.nextOp("t", Map.of(1, List.of(0)), Map.of(1, List.of(0, 1)))
                 .orElseThrow()
                 .kind())
-        .isEqualTo(Kind.JOIN);
+        .isEqualTo(Kind.JOIN_PASSIVE);
     // given RF decrease 2 -> 1 on partition 1
     assertThat(
             ReconfigurationPlanner.nextOp("t", Map.of(1, List.of(0, 1)), Map.of(1, List.of(0)))
