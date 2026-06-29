@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -71,5 +72,57 @@ func TestResolveJavaHomeAndBinaryKeepsCustomPathWhenSymlinkResolutionFails(t *te
 
 	if resolvedBinary != expectedJavaBinary {
 		t.Fatalf("expected java binary %s, got %s", expectedJavaBinary, resolvedBinary)
+	}
+}
+
+func TestConfigureJavaCompatibilityOptionsAddsJava25Options(t *testing.T) {
+	// given
+	t.Setenv(jdkJavaOptionsEnvironment, "-Dexisting=true")
+
+	// when
+	err := configureJavaCompatibilityOptions(25)
+
+	// then
+	if err != nil {
+		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
+	}
+	actualOptions := os.Getenv(jdkJavaOptionsEnvironment)
+	for _, expectedOption := range []string{"-Dexisting=true", "--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"} {
+		if !strings.Contains(actualOptions, expectedOption) {
+			t.Fatalf("expected %s in %s", expectedOption, actualOptions)
+		}
+	}
+}
+
+func TestConfigureJavaCompatibilityOptionsSkipsOlderJavaVersions(t *testing.T) {
+	// given
+	t.Setenv(jdkJavaOptionsEnvironment, "-Dexisting=true")
+
+	// when
+	err := configureJavaCompatibilityOptions(21)
+
+	// then
+	if err != nil {
+		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
+	}
+	if os.Getenv(jdkJavaOptionsEnvironment) != "-Dexisting=true" {
+		t.Fatalf("expected existing options to be unchanged, got %s", os.Getenv(jdkJavaOptionsEnvironment))
+	}
+}
+
+func TestConfigureJavaCompatibilityOptionsDoesNotDuplicateJava25Options(t *testing.T) {
+	// given
+	options := "--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow"
+	t.Setenv(jdkJavaOptionsEnvironment, options)
+
+	// when
+	err := configureJavaCompatibilityOptions(25)
+
+	// then
+	if err != nil {
+		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
+	}
+	if os.Getenv(jdkJavaOptionsEnvironment) != options {
+		t.Fatalf("expected options to be unchanged, got %s", os.Getenv(jdkJavaOptionsEnvironment))
 	}
 }
