@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
@@ -222,6 +223,11 @@ final class BrokerRequestManager extends Actor {
         throw new PartitionNotFoundException(request.getPartitionId());
       }
       throwIfPartitionInactive(partitionGroup, request.getPartitionId());
+      final var recoveringNode = findRecoveringNode(partitionGroup, request.getPartitionId());
+      if (recoveringNode != null) {
+        // Partition is in recovery mode with no leader — route directly to the recovering node.
+        return new BrokerAddressProvider(partitionGroup, state -> recoveringNode);
+      }
       // already know partition id
       return new BrokerAddressProvider(partitionGroup, request.getPartitionId());
     } else if (request.requiresPartitionId()) {
@@ -254,10 +260,38 @@ final class BrokerRequestManager extends Actor {
 
     final var inactiveNodes = topology.getInactiveNodesForPartition(partitionId);
     final var someNodesInactive = !inactiveNodes.isEmpty();
-    final var noPartitionLeader = topology.getLeaderForPartition(partitionId) == null;
-    if (someNodesInactive && noPartitionLeader) {
+    final var leaderNode = topology.getLeaderForPartition(partitionId);
+
+    // If nodes are in recovery, do not throw so that requests can be routed to the
+    // recovering partitions
+    final var clusterConfiguration = topologyManager.getClusterConfiguration();
+    final var nodeInRecovery =
+        inactiveNodes.stream()
+            .anyMatch(
+                node ->
+                    clusterConfiguration.getMember(node.memberId()).state() == State.RECOVERING);
+
+    if (someNodesInactive && leaderNode == null && !nodeInRecovery) {
       throw new PartitionInactiveException(partitionId);
     }
+  }
+
+  /**
+   * Returns the {@link BrokerMemberId} of a recovering inactive node for the given partition, or
+   * {@code null} if no such node exists or a leader is present. Used to route requests directly to
+   * a recovering partition when there is no elected leader.
+   */
+  @Nullable
+  private BrokerMemberId findRecoveringNode(final String partitionGroup, final int partitionId) {
+    final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
+    if (topology == null || topology.getLeaderForPartition(partitionId) != null) {
+      return null;
+    }
+    final var clusterConfiguration = topologyManager.getClusterConfiguration();
+    return topology.getInactiveNodesForPartition(partitionId).stream()
+        .filter(node -> clusterConfiguration.getMember(node.memberId()).state() == State.RECOVERING)
+        .findFirst()
+        .orElse(null);
   }
 
   private static class RequestResult {
