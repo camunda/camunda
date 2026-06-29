@@ -330,6 +330,66 @@ class AgenticDurationKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     result.getMeasures().forEach(m -> assertThat(m.getData()).hasSize(1));
   }
 
+  @Test
+  void shouldApplyDefinitionFilterToDurationStability() {
+    final String procKeyA = "proc-stab-a";
+    final String procKeyB = "proc-stab-b";
+    final OffsetDateTime sharedEnd = OffsetDateTime.now().minusHours(1);
+    final long oneHour = 3_600_000L;
+
+    // procKeyA: durations 1h and 3h (same end date → one bucket) → P50 ≈ 2h
+    // procKeyB: duration 10h — must be excluded by the definition filter
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithDuration(procKeyA, oneHour).endDate(sharedEnd).build(),
+            agenticInstanceWithDuration(procKeyA, 3 * oneHour).endDate(sharedEnd).build(),
+            agenticInstanceWithDuration(procKeyB, 10 * oneHour).endDate(sharedEnd).build()));
+
+    final MapCommandResult result =
+        reports.evaluateMap(
+            DURATION_STABILITY_REPORT_ID,
+            withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA))));
+
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(2);
+    // only procKeyA's two instances are bucketed → a single bucket with P50 ≈ 2h
+    final List<MapResultEntryDto> p50NonNull =
+        measures.get(0).getData().stream().filter(e -> e.getValue() != null).toList();
+    assertThat(p50NonNull).hasSize(1);
+    assertThat(p50NonNull.getFirst().getValue())
+        .isCloseTo(2 * oneHour * 1.0, within((double) oneHour));
+  }
+
+  @Test
+  void shouldApplyDateFilterToDurationStability() {
+    final long oneHour = 3_600_000L;
+    // within the last-1-day window: duration 1h
+    final ProcessInstanceDto recent =
+        agenticInstanceWithDuration(PROC_KEY, oneHour)
+            .startDate(OffsetDateTime.now().minusHours(3))
+            .endDate(OffsetDateTime.now().minusHours(2))
+            .build();
+    // outside the window: duration 10h — must not appear in any bucket
+    final ProcessInstanceDto old =
+        agenticInstanceWithDuration(PROC_KEY, 10 * oneHour)
+            .startDate(OffsetDateTime.now().minusDays(10))
+            .endDate(OffsetDateTime.now().minusDays(9))
+            .build();
+
+    persistProcessInstances(List.of(recent, old));
+
+    final MapCommandResult result =
+        reports.evaluateMap(DURATION_STABILITY_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS));
+
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(2);
+    // only the recent instance survives the filter → one non-null bucket at ~1h, no 10h outlier
+    final List<MapResultEntryDto> p50NonNull =
+        measures.get(0).getData().stream().filter(e -> e.getValue() != null).toList();
+    assertThat(p50NonNull).hasSize(1);
+    assertThat(p50NonNull.getFirst().getValue()).isCloseTo(oneHour * 1.0, within(oneHour * 0.01));
+  }
+
   private static Stream<Arguments> durationPercentileReportIds() {
     return Stream.of(
         Arguments.of(KPI_DURATION_P50_REPORT_ID, 10_800_000.0, 10_000.0),

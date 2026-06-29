@@ -204,11 +204,7 @@ class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     // then total input tokens across all buckets equals 300
     assertThat(buckets).isNotEmpty();
-    final double totalInput =
-        buckets.stream()
-            .filter(e -> e.getValue() != null)
-            .mapToDouble(MapResultEntryDto::getValue)
-            .sum();
+    final double totalInput = sumBuckets(buckets);
     assertThat(totalInput).isCloseTo(300.0, within(1.0));
   }
 
@@ -231,12 +227,62 @@ class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     // then total output tokens across all buckets equals 300
     assertThat(buckets).isNotEmpty();
-    final double totalOutput =
-        buckets.stream()
-            .filter(e -> e.getValue() != null)
-            .mapToDouble(MapResultEntryDto::getValue)
-            .sum();
+    final double totalOutput = sumBuckets(buckets);
     assertThat(totalOutput).isCloseTo(300.0, within(1.0));
+  }
+
+  @Test
+  void shouldApplyDefinitionFilterToTokenTrend() {
+    final String procKeyA = "proc-trend-a";
+    final String procKeyB = "proc-trend-b";
+
+    // procKeyA: input 100 + 200 = 300 in the same week; procKeyB: input 999 — must be excluded
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(procKeyA, 100L, 0L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build(),
+            agenticInstanceWithTokens(procKeyA, 200L, 0L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build(),
+            agenticInstanceWithTokens(procKeyB, 999L, 0L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build()));
+
+    // the first command result of the trend report is the input-tokens series, scoped to procKeyA
+    final double totalInput =
+        sumBuckets(
+            reports.evaluateMapData(
+                TOKEN_TREND_REPORT_ID,
+                withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))));
+    assertThat(totalInput).isCloseTo(300.0, within(1.0));
+  }
+
+  @Test
+  void shouldApplyDateFilterToTokenTrend() {
+    // within the last-1-day window: input 150
+    final ProcessInstanceDto recent =
+        agenticInstanceWithTokens(PROC_KEY, 150L, 0L)
+            .startDate(OffsetDateTime.now().minusHours(3))
+            .endDate(OffsetDateTime.now().minusHours(2))
+            .build();
+    // outside the window: input 999 — must not be summed into any bucket
+    final ProcessInstanceDto old =
+        agenticInstanceWithTokens(PROC_KEY, 999L, 0L)
+            .startDate(OffsetDateTime.now().minusDays(10))
+            .endDate(OffsetDateTime.now().minusDays(9))
+            .build();
+
+    persistProcessInstances(List.of(recent, old));
+
+    final double totalInput =
+        sumBuckets(
+            reports.evaluateMapData(
+                TOKEN_TREND_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)));
+    assertThat(totalInput).isCloseTo(150.0, within(1.0));
   }
 
   @Test
@@ -270,6 +316,33 @@ class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldApplyDefinitionFilterToTokenOutlierBands() {
+    final String procKeyA = "proc-bands-a";
+    final String procKeyB = "proc-bands-b";
+    final OffsetDateTime sharedEnd = OffsetDateTime.now().minusDays(2);
+
+    // procKeyA: total tokens [100, 200, 300]; procKeyB: a 9000-token outlier that would inflate the
+    // p95 band if the definition filter were not applied
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(procKeyA, 100L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(procKeyA, 200L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(procKeyA, 300L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(procKeyB, 9000L, 0L).endDate(sharedEnd).build()));
+
+    final MapCommandResult result =
+        reports.evaluateMap(
+            TOKEN_OUTLIER_BANDS_REPORT_ID,
+            withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA))));
+
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(3);
+    // p50 ≈ 200 (median of A) and p95 stays well below the excluded 9000-token outlier
+    assertThat(measures.get(1).getData().getFirst().getValue()).isCloseTo(200.0, within(50.0));
+    assertThat(measures.get(2).getData().getFirst().getValue()).isLessThan(1000.0);
+  }
+
+  @Test
   void shouldRankProcessesByTotalTokensConsumed() {
     final String heavyProc = "heavy-agent-process";
     final String lightProc = "light-agent-process";
@@ -294,6 +367,34 @@ class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
         .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(450.0, within(1.0)));
     assertThat(buckets.stream().filter(e -> lightProc.equals(e.getKey())).findFirst())
         .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(120.0, within(1.0)));
+  }
+
+  @Test
+  void shouldApplyDateFilterToTopTokenConsumers() {
+    final String recentProc = "recent-agent-process";
+    final String oldProc = "old-agent-process";
+
+    // recentProc (within the last-1-day window) consumes 300 tokens
+    // oldProc (10 days ago) consumes 999 tokens — would top the ranking if not filtered out
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(recentProc, 300L, 0L)
+                .startDate(OffsetDateTime.now().minusHours(3))
+                .endDate(OffsetDateTime.now().minusHours(2))
+                .build(),
+            agenticInstanceWithTokens(oldProc, 999L, 0L)
+                .startDate(OffsetDateTime.now().minusDays(10))
+                .endDate(OffsetDateTime.now().minusDays(9))
+                .build()));
+
+    final List<MapResultEntryDto> buckets =
+        reports.evaluateMapData(TOKEN_CONSUMERS_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS));
+
+    // only the in-window process is ranked; the older heavier consumer is excluded
+    final List<MapResultEntryDto> ranked =
+        buckets.stream().filter(e -> e.getValue() != null).toList();
+    assertThat(ranked).extracting(MapResultEntryDto::getKey).containsExactly(recentProc);
+    assertThat(ranked.getFirst().getValue()).isCloseTo(300.0, within(1.0));
   }
 
   @Test
@@ -356,5 +457,12 @@ class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThatThrownBy(evaluation)
         .isInstanceOf(ReportEvaluationException.class)
         .hasMessageContaining("non-zero pagination offset");
+  }
+
+  private static double sumBuckets(final List<MapResultEntryDto> buckets) {
+    return buckets.stream()
+        .filter(e -> e.getValue() != null)
+        .mapToDouble(MapResultEntryDto::getValue)
+        .sum();
   }
 }
