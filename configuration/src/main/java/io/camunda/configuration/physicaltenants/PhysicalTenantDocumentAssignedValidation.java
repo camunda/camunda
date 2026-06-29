@@ -55,11 +55,13 @@ final class PhysicalTenantDocumentAssignedValidation {
           final Document doc = camunda.getDocument();
 
           final Set<String> knownStoreIds = new LinkedHashSet<>();
-          knownStoreIds.addAll(doc.getAws().keySet());
-          knownStoreIds.addAll(doc.getGcp().keySet());
-          knownStoreIds.addAll(doc.getAzure().keySet());
-          knownStoreIds.addAll(doc.getLocal().keySet());
-          knownStoreIds.addAll(doc.getInMemory().keySet());
+          doc.getAws().keySet().forEach(id -> knownStoreIds.add(Document.normalizeStoreId(id)));
+          doc.getGcp().keySet().forEach(id -> knownStoreIds.add(Document.normalizeStoreId(id)));
+          doc.getAzure().keySet().forEach(id -> knownStoreIds.add(Document.normalizeStoreId(id)));
+          doc.getLocal().keySet().forEach(id -> knownStoreIds.add(Document.normalizeStoreId(id)));
+          doc.getInMemory()
+              .keySet()
+              .forEach(id -> knownStoreIds.add(Document.normalizeStoreId(id)));
 
           if (knownStoreIds.isEmpty()) {
             return;

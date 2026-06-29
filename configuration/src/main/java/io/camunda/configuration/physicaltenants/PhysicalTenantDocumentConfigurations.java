@@ -14,7 +14,6 @@ import io.camunda.configuration.Document.GcpStore;
 import io.camunda.configuration.Document.InMemoryStore;
 import io.camunda.configuration.Document.LocalStore;
 import io.camunda.configuration.UnifiedConfigurationException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -106,7 +105,7 @@ public final class PhysicalTenantDocumentConfigurations {
 
   private static void validateStoreIdUniqueness(final String tenantId, final Document doc) {
     final Set<String> seen = new LinkedHashSet<>();
-    final List<String> duplicates = new ArrayList<>();
+    final Set<String> duplicates = new LinkedHashSet<>();
     for (final Set<String> keys :
         List.of(
             doc.getAws().keySet(),
@@ -116,8 +115,9 @@ public final class PhysicalTenantDocumentConfigurations {
             doc.getInMemory().keySet())) {
       keys.forEach(
           id -> {
-            if (!seen.add(id)) {
-              duplicates.add(id);
+            final String normalizedId = Document.normalizeStoreId(id);
+            if (!seen.add(normalizedId)) {
+              duplicates.add(normalizedId);
             }
           });
     }

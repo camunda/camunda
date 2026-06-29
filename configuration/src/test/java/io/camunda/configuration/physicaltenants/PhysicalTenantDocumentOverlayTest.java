@@ -141,7 +141,7 @@ class PhysicalTenantDocumentOverlayTest {
   }
 
   @Test
-  void shouldNotNarrowCatalogWhenRootAssignedIsSet() {
+  void shouldRejectRootAssignedEvenThoughTenantOverlayWouldIgnoreIt() {
     // narrowing reads only from the tenant prefix, so root assigned has no effect
     environment
         .getPropertySources()
@@ -152,10 +152,10 @@ class PhysicalTenantDocumentOverlayTest {
                     "camunda.document.aws.shared-s3.bucket-name", "root-bucket",
                     "camunda.document.assigned[0]", "shared-s3")));
 
-    final Document doc =
-        PhysicalTenantDocumentConfigurations.forPhysicalTenant("tenanta", environment);
-
-    assertThat(doc.getAws()).containsKey("shared-s3");
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
+            () -> PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment))
+        .withMessageContaining("camunda.document.assigned");
   }
 
   @Test
