@@ -171,6 +171,7 @@ public class AgentInstanceHistorySearchIT {
             item -> {
               assertThat(item.getHistoryItemKey()).isEqualTo(historyItemKey1);
               assertThat(item.getRole()).isEqualTo(AgentInstanceHistoryRole.USER);
+              assertThat(item.getCommitStatus()).isNotNull();
             });
   }
 

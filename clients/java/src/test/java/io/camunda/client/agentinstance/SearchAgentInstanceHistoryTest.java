@@ -22,12 +22,15 @@ import static org.assertj.core.groups.Tuple.tuple;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryContent.DocumentContent;
+import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.TextContent;
 import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
+import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryCommitStatusEnum;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemMetrics;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemResult;
@@ -36,14 +39,17 @@ import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQuery;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQueryResult;
 import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQuerySortRequest;
 import io.camunda.client.protocol.rest.AgentInstanceMessageContent;
+import io.camunda.client.protocol.rest.AgentInstanceObjectContent;
 import io.camunda.client.protocol.rest.AgentInstanceTextContent;
 import io.camunda.client.protocol.rest.AgentInstanceToolCall;
+import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Map;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -252,6 +258,8 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
             .agentInstanceKey("42")
             .elementInstanceKey("200")
             .jobKey("300")
+            .jobLease("lease-abc")
+            .iteration(3)
             .role(AgentInstanceHistoryRoleEnum.USER)
             .commitStatus(AgentInstanceHistoryCommitStatusEnum.COMMITTED)
             .producedAt(now.toString())
@@ -265,7 +273,8 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
                     new AgentInstanceToolCall()
                         .toolCallId("tc1")
                         .toolName("search")
-                        .elementId("searchTask")))
+                        .elementId("searchTask")
+                        .arguments(Collections.<String, Object>singletonMap("query", "camunda"))))
             .content(
                 Collections.singletonList(
                     (AgentInstanceMessageContent)
@@ -295,6 +304,8 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           softly.assertThat(item.getAgentInstanceKey()).as("agentInstanceKey").isEqualTo(42L);
           softly.assertThat(item.getElementInstanceKey()).as("elementInstanceKey").isEqualTo(200L);
           softly.assertThat(item.getJobKey()).as("jobKey").isEqualTo(300L);
+          softly.assertThat(item.getJobLease()).as("jobLease").isEqualTo("lease-abc");
+          softly.assertThat(item.getIteration()).as("iteration").isEqualTo(3);
           softly.assertThat(item.getRole()).as("role").isEqualTo(AgentInstanceHistoryRole.USER);
           softly
               .assertThat(item.getCommitStatus())
@@ -312,6 +323,10 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           softly.assertThat(toolCall.getToolCallId()).as("toolCallId").isEqualTo("tc1");
           softly.assertThat(toolCall.getToolName()).as("toolName").isEqualTo("search");
           softly.assertThat(toolCall.getElementId()).as("elementId").isEqualTo("searchTask");
+          softly
+              .assertThat(toolCall.getArguments())
+              .as("arguments")
+              .containsEntry("query", "camunda");
 
           softly.assertThat(item.getContent()).as("content").hasSize(1);
           final AgentInstanceHistoryContent content = item.getContent().get(0);
@@ -319,5 +334,71 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           softly.assertThat(content).as("content is TextContent").isInstanceOf(TextContent.class);
           softly.assertThat(((TextContent) content).getText()).as("text").isEqualTo("hello");
         });
+  }
+
+  @Test
+  void shouldMapDocumentContent() {
+    // given
+    final DocumentReference ref = new DocumentReference().documentId("doc-1").storeId("store-a");
+    gatewayService.onAgentInstanceHistorySearchRequest(
+        AGENT_INSTANCE_KEY,
+        Instancio.create(AgentInstanceHistorySearchQueryResult.class)
+            .items(
+                Collections.singletonList(
+                    Instancio.create(AgentInstanceHistoryItemResult.class)
+                        .historyItemKey("1")
+                        .agentInstanceKey("1")
+                        .elementInstanceKey("1")
+                        .jobKey("1")
+                        .producedAt(null)
+                        .content(
+                            Collections.singletonList(
+                                (AgentInstanceMessageContent)
+                                    new AgentInstanceDocumentContent()
+                                        .contentType("DOCUMENT")
+                                        .documentReference(ref))))));
+
+    // when
+    final io.camunda.client.api.search.response.SearchResponse<AgentInstanceHistory> result =
+        client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
+
+    // then
+    final AgentInstanceHistoryContent content = result.items().get(0).getContent().get(0);
+    assertThat(content).isInstanceOf(DocumentContent.class);
+    final DocumentContent docContent = (DocumentContent) content;
+    assertThat(docContent.getDocumentReference().getDocumentId()).isEqualTo("doc-1");
+    assertThat(docContent.getDocumentReference().getStoreId()).isEqualTo("store-a");
+  }
+
+  @Test
+  void shouldMapObjectContent() {
+    // given
+    final Map<String, Object> obj = Collections.<String, Object>singletonMap("key", "value");
+    gatewayService.onAgentInstanceHistorySearchRequest(
+        AGENT_INSTANCE_KEY,
+        Instancio.create(AgentInstanceHistorySearchQueryResult.class)
+            .items(
+                Collections.singletonList(
+                    Instancio.create(AgentInstanceHistoryItemResult.class)
+                        .historyItemKey("1")
+                        .agentInstanceKey("1")
+                        .elementInstanceKey("1")
+                        .jobKey("1")
+                        .producedAt(null)
+                        .content(
+                            Collections.singletonList(
+                                (AgentInstanceMessageContent)
+                                    new AgentInstanceObjectContent()
+                                        .contentType("OBJECT")
+                                        ._object(obj))))));
+
+    // when
+    final io.camunda.client.api.search.response.SearchResponse<AgentInstanceHistory> result =
+        client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
+
+    // then
+    final AgentInstanceHistoryContent content = result.items().get(0).getContent().get(0);
+    assertThat(content).isInstanceOf(ObjectContent.class);
+    assertThat(((ObjectContent) content).getObject()).containsEntry("key", "value");
   }
 }
