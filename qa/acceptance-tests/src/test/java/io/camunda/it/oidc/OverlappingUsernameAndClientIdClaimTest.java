@@ -18,6 +18,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.it.util.PhysicalTenantTestUtil;
 import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.TestClient;
@@ -58,7 +59,8 @@ public class OverlappingUsernameAndClientIdClaimTest {
 
   @MultiDbTestApplication
   static final TestCamundaApplication STANDALONE_CAMUNDA =
-      new TestCamundaApplication()
+      PhysicalTenantTestUtil.assignDefaultOidcProviderForPhysicalTenant(
+              new TestCamundaApplication())
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withAuthorizationsEnabled()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))

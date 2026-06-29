@@ -13,6 +13,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.it.util.PhysicalTenantTestUtil;
 import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
@@ -44,7 +45,7 @@ public class InheritedSimpleMappingAuthorizationIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker()
+      PhysicalTenantTestUtil.assignDefaultOidcProviderForPhysicalTenant(new TestStandaloneBroker())
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withAuthorizationsEnabled()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
