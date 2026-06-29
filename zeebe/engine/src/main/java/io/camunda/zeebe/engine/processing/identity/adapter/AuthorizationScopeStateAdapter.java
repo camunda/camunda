@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity.adapter;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.EntityType;
@@ -27,10 +30,35 @@ import org.jspecify.annotations.NullMarked;
 public final class AuthorizationScopeStateAdapter implements AuthorizationScopeRepositoryPort {
 
   private final AuthorizationState authorizationState;
+  private final LoadingCache<
+          ScopeCacheKey, Set<io.camunda.zeebe.protocol.record.value.AuthorizationScope>>
+      scopeCache;
 
   public AuthorizationScopeStateAdapter(final AuthorizationState authorizationState) {
     this.authorizationState = authorizationState;
+    scopeCache =
+        CacheBuilder.newBuilder()
+            .maximumSize(1_000)
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public Set<io.camunda.zeebe.protocol.record.value.AuthorizationScope> load(
+                      final ScopeCacheKey key) {
+                    return AuthorizationScopeStateAdapter.this.authorizationState
+                        .getAuthorizationScopes(
+                            key.ownerType(),
+                            key.ownerId(),
+                            key.resourceType(),
+                            key.permissionType());
+                  }
+                });
   }
+
+  private record ScopeCacheKey(
+      AuthorizationOwnerType ownerType,
+      String ownerId,
+      io.camunda.zeebe.protocol.record.value.AuthorizationResourceType resourceType,
+      io.camunda.zeebe.protocol.record.value.PermissionType permissionType) {}
 
   @Override
   public List<AuthorizationScope> findAuthorizedScopes(
@@ -43,10 +71,8 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
     for (final var entry : ownerIds.entrySet()) {
       final var ownerType = toAuthorizationOwnerType(entry.getKey());
       for (final var ownerId : entry.getValue()) {
-        authorizationState
-            .getAuthorizationScopes(ownerType, ownerId, zeebeResourceType, zeebePermissionType)
-            .stream()
-            .map(this::toCslScope)
+        getAuthorizationScopes(ownerType, ownerId, zeebeResourceType, zeebePermissionType).stream()
+            .map(AuthzModelMapper::fromProtocol)
             .forEach(result::add);
       }
     }
@@ -59,8 +85,20 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final List<String> resourceIds) {
-    return findAuthorizedScopes(ownerIds, resourceType, permissionType).stream()
-        .anyMatch(scope -> matchesCslScopeByResourceId(scope, resourceIds));
+    final var zeebeResourceType = AuthzModelMapper.toProtocol(resourceType);
+    final var zeebePermissionType = AuthzModelMapper.toProtocol(permissionType);
+    for (final var entry : ownerIds.entrySet()) {
+      final var ownerType = toAuthorizationOwnerType(entry.getKey());
+      for (final var ownerId : entry.getValue()) {
+        for (final var scope :
+            getAuthorizationScopes(ownerType, ownerId, zeebeResourceType, zeebePermissionType)) {
+          if (matchesCslScopeByResourceId(AuthzModelMapper.fromProtocol(scope), resourceIds)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   @Override
@@ -87,6 +125,15 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
     return result;
   }
 
+  private Set<io.camunda.zeebe.protocol.record.value.AuthorizationScope> getAuthorizationScopes(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final io.camunda.zeebe.protocol.record.value.AuthorizationResourceType resourceType,
+      final io.camunda.zeebe.protocol.record.value.PermissionType permissionType) {
+    return scopeCache.getUnchecked(
+        new ScopeCacheKey(ownerType, ownerId, resourceType, permissionType));
+  }
+
   private AuthorizationOwnerType toAuthorizationOwnerType(final EntityType cslEntityType) {
     return switch (cslEntityType) {
       case USER -> AuthorizationOwnerType.USER;
@@ -96,11 +143,6 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
       case MAPPING_RULE -> AuthorizationOwnerType.MAPPING_RULE;
       case UNSPECIFIED -> AuthorizationOwnerType.UNSPECIFIED;
     };
-  }
-
-  private AuthorizationScope toCslScope(
-      final io.camunda.zeebe.protocol.record.value.AuthorizationScope zeebeScope) {
-    return AuthzModelMapper.fromProtocol(zeebeScope);
   }
 
   private boolean matchesCslScopeByResourceId(
