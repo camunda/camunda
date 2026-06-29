@@ -16,6 +16,7 @@ import type {
   QueryProcessInstanceIncidentsResponseBody,
   QueryElementInstancesResponseBody,
   QueryAuditLogsResponseBody,
+  QueryElementInstanceInspectionResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 type InstanceMock = {
@@ -27,6 +28,7 @@ type InstanceMock = {
   sequenceFlows: GetProcessInstanceSequenceFlowsResponseBody;
   variables: Variable[];
   incidents?: QueryProcessInstanceIncidentsResponseBody;
+  waitStates?: QueryElementInstanceInspectionResponseBody;
 };
 
 function mockResponses({
@@ -39,6 +41,7 @@ function mockResponses({
   xml,
   incidents,
   auditLogs,
+  waitStates,
 }: {
   processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
@@ -49,6 +52,7 @@ function mockResponses({
   xml?: string;
   incidents?: QueryProcessInstanceIncidentsResponseBody;
   auditLogs?: QueryAuditLogsResponseBody;
+  waitStates?: QueryElementInstanceInspectionResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -61,6 +65,64 @@ function mockResponses({
           salesPlanType: null,
           c8Links: {},
           username: 'demo',
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route.request().url().includes('/v2/element-instances/wait-states/search')
+    ) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(
+          waitStates ?? {
+            items: [],
+            page: {
+              totalItems: 0,
+              startCursor: null,
+              endCursor: null,
+              hasMoreTotalItems: false,
+            },
+          },
+        ),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/agent-instances/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/jobs/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         }),
         headers: {
           'content-type': 'application/json',
@@ -263,6 +325,7 @@ export {eventBasedGatewayProcessInstance} from './eventBasedGatewayProcessInstan
 export {instanceWithIncident} from './instanceWithIncident.mocks';
 export {orderProcessInstance} from './orderProcessInstance.mocks';
 export {runningInstance} from './runningInstance.mocks';
+export {waitStateProcessInstance} from './waitStateProcessInstance.mocks';
 export {runningOrderProcessInstance} from './runningOrderProcessInstance.mocks';
 export {compensationProcessInstance} from './compensationProcessInstance.mocks';
 export {documentReferenceProcessInstance} from './documentReferenceProcessInstance.mocks';
