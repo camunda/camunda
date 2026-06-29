@@ -34,6 +34,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 
 |             Skill              |                                          Description                                          |
 |--------------------------------|-----------------------------------------------------------------------------------------------|
+| `analytics-exporter`           | Add a new event handler or metric to the analytics exporter (`zeebe/exporters/analytics-exporter/`) |
 | `ci-push-workflow-health`      | Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches    |
 | `ci-runner-utilization`        | Detect CI runner underutilization and give downsizing recommendations for cost savings        |
 | `ci-scheduled-workflow-health` | Generate an HTML health report for all scheduled GitHub Actions workflows                     |
