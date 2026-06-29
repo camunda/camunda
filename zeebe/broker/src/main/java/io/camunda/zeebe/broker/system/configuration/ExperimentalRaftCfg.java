@@ -35,6 +35,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private int preferSnapshotReplicationThreshold = DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+  private boolean requestTimeoutConfigured;
 
   private PreAllocationStrategy segmentPreallocationStrategy = DEFAULT_PREALLOCATE_SEGMENT_STRATEGY;
 
@@ -44,6 +45,17 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public void setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    requestTimeoutConfigured = true;
+  }
+
+  /**
+   * Returns whether the request timeout was explicitly configured.
+   *
+   * <p>The default request timeout should follow the cluster election timeout when the operator has
+   * not set an explicit override.
+   */
+  public boolean isRequestTimeoutConfigured() {
+    return requestTimeoutConfigured;
   }
 
   public Duration getSnapshotRequestTimeout() {
