@@ -8,7 +8,6 @@
 package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
@@ -16,8 +15,6 @@ import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
-import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
-import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -29,8 +26,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.agrona.concurrent.IdGenerator;
@@ -159,11 +154,10 @@ public final class BrokerBootstrap {
     // a group's partition count from its subscribed topic, rather than from a static config. Only
     // topics that are servable (not DELETING) are cached; a missing entry resolves to 0, which the
     // join processor rejects as an unknown topic.
-    final ConcurrentHashMap<String, Integer> topicPartitionCounts = new ConcurrentHashMap<>();
-    final TopicRegistry topicRegistry = topic -> topicPartitionCounts.getOrDefault(topic, 0);
+    final var topicPartitionCounts = new TopicPartitionCounts();
     final Consumer<Map<String, TopicMetadata>> registryReconciler =
         desired -> {
-          updateTopicPartitionCounts(topicPartitionCounts, desired);
+          topicPartitionCounts.update(desired);
           executorService.execute(() -> topicReconciler.reconcile(desired));
         };
 
@@ -173,7 +167,7 @@ public final class BrokerBootstrap {
     comm.replyToAsync(
         ReconfigurationCommand.SUBJECT,
         ReconfigurationCommand::decode,
-        cmd -> reconfigure(topicReconciler, localMemberId, cmd).thenApply(done -> new byte[0]),
+        cmd -> topicReconciler.apply(cmd).thenApply(done -> new byte[0]),
         Function.identity(),
         executorService);
 
@@ -200,66 +194,11 @@ public final class BrokerBootstrap {
         topologySetup.getCoordinatorTopologyManager(),
         topologySetup.getMetadataTopologyManager(),
         brokerMessagingService,
-        topicRegistry,
+        topicPartitionCounts,
         registryReconciler,
         reconfigurationExecutor);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
-  }
-
-  /**
-   * Applies one change-coordinator step on this broker:
-   *
-   * <ul>
-   *   <li><b>JOIN</b> — add this broker as a replica of the partition (the joiner acts).
-   *   <li><b>LEAVE of self</b> — this broker is the departing replica, so it leaves and tears down
-   *       its local partition.
-   *   <li><b>LEAVE of another</b> — this broker is a surviving replica asked to remove a (typically
-   *       dead) member that cannot leave on its own; it drives the leader-side removal without
-   *       tearing down its own replica.
-   * </ul>
-   */
-  private static CompletableFuture<Void> reconfigure(
-      final TopicReconciler topicReconciler,
-      final MemberId localMemberId,
-      final ReconfigurationCommand cmd) {
-    switch (cmd.kind()) {
-      case JOIN -> {
-        return topicReconciler.join(
-            cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
-      }
-      case JOIN_PASSIVE -> {
-        return topicReconciler.joinPassive(
-            cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
-      }
-      case PROMOTE -> {
-        return topicReconciler.promote(cmd.topic(), cmd.partitionId(), cmd.member());
-      }
-      default -> { // LEAVE
-        if (localMemberId.equals(BrokerMembers.memberId(cmd.member()))) {
-          return topicReconciler.leave(cmd.topic(), cmd.partitionId());
-        }
-        return topicReconciler.removeMember(cmd.topic(), cmd.partitionId(), cmd.member());
-      }
-    }
-  }
-
-  /**
-   * Refreshes the topic→partitionCount cache from an observed registry snapshot: servable topics
-   * (anything but {@code DELETING}) keep their count, removed/deleting topics drop out. The
-   * coordinator reads this to resolve a group's partition count from its subscribed topic.
-   */
-  private static void updateTopicPartitionCounts(
-      final Map<String, Integer> cache, final Map<String, TopicMetadata> desired) {
-    cache.keySet().removeIf(topic -> !desired.containsKey(topic));
-    desired.forEach(
-        (name, metadata) -> {
-          if (metadata.status() == TopicStatus.DELETING) {
-            cache.remove(name);
-          } else {
-            cache.put(name, metadata.partitionCount());
-          }
-        });
   }
 
   /**

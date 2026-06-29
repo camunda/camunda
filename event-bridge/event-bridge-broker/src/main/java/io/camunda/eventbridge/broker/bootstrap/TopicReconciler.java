@@ -10,6 +10,7 @@ package io.camunda.eventbridge.broker.bootstrap;
 import io.atomix.cluster.MemberId;
 import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
+import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import java.util.ArrayList;
@@ -45,7 +46,6 @@ final class TopicReconciler {
 
   private final PartitionBootstrapper partitionBootstrapper;
   private final TopologySetup topologySetup;
-  private final MemberId localMemberId;
   private final int localNodeId;
 
   // Per-topic routing topology manager, shared by reconcile and join (created on first need).
@@ -57,7 +57,6 @@ final class TopicReconciler {
       final MemberId localMemberId) {
     this.partitionBootstrapper = partitionBootstrapper;
     this.topologySetup = topologySetup;
-    this.localMemberId = localMemberId;
     localNodeId = BrokerMembers.nodeId(localMemberId);
   }
 
@@ -100,6 +99,34 @@ final class TopicReconciler {
     if (!started.isEmpty()) {
       LOG.info("Provisioned topic {} (group {}) local partitions {}", name, groupName, started);
     }
+  }
+
+  /**
+   * Applies one change-coordinator step on this broker:
+   *
+   * <ul>
+   *   <li><b>JOIN</b> / <b>JOIN_PASSIVE</b> — add this broker as a (voting or passive) replica of
+   *       the partition (the joiner acts).
+   *   <li><b>PROMOTE</b> — promote a caught-up passive member to voting (the partition leader
+   *       acts).
+   *   <li><b>LEAVE of self</b> — this broker is the departing replica, so it leaves and tears down
+   *       its local partition.
+   *   <li><b>LEAVE of another</b> — this broker is a surviving replica asked to remove a (typically
+   *       dead) member that cannot leave on its own; it drives the leader-side removal without
+   *       tearing down its own replica.
+   * </ul>
+   */
+  CompletableFuture<Void> apply(final ReconfigurationCommand cmd) {
+    return switch (cmd.kind()) {
+      case JOIN -> join(cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
+      case JOIN_PASSIVE ->
+          joinPassive(cmd.topic(), cmd.partitionId(), cmd.members(), cmd.partitionCount());
+      case PROMOTE -> promote(cmd.topic(), cmd.partitionId(), cmd.member());
+      default -> // LEAVE: of self → leave; of another (dead) member → leader-side removal.
+          cmd.member() == localNodeId
+              ? leave(cmd.topic(), cmd.partitionId())
+              : removeMember(cmd.topic(), cmd.partitionId(), cmd.member());
+    };
   }
 
   /** Adds a single replica of a running topic partition to this broker (a reassignment step). */
