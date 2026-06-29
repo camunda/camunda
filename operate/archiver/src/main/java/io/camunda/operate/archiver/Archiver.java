@@ -7,7 +7,12 @@
  */
 package io.camunda.operate.archiver;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
 import jakarta.annotation.PostConstruct;
@@ -33,6 +38,11 @@ public class Archiver {
   protected final PartitionHolder partitionHolder;
   protected final ThreadPoolTaskScheduler archiverExecutor;
   protected final ArchiverRepository archiverRepository;
+  protected final ListViewTemplate processInstanceTemplate;
+  protected final List<ProcessInstanceDependant> processInstanceDependants;
+  protected final DecisionInstanceTemplate decisionInstanceTemplate;
+  protected final BatchOperationTemplate batchOperationTemplate;
+  protected final Metrics metrics;
 
   @Autowired
   public Archiver(
@@ -40,12 +50,22 @@ public class Archiver {
       final OperateProperties operateProperties,
       final PartitionHolder partitionHolder,
       @Qualifier("archiverThreadPoolExecutor") final ThreadPoolTaskScheduler archiverExecutor,
-      final ArchiverRepository archiverRepository) {
+      final ArchiverRepository archiverRepository,
+      final ListViewTemplate processInstanceTemplate,
+      final List<ProcessInstanceDependant> processInstanceDependants,
+      final DecisionInstanceTemplate decisionInstanceTemplate,
+      final BatchOperationTemplate batchOperationTemplate,
+      final Metrics metrics) {
     this.beanFactory = beanFactory;
     this.operateProperties = operateProperties;
     this.partitionHolder = partitionHolder;
     this.archiverExecutor = archiverExecutor;
     this.archiverRepository = archiverRepository;
+    this.processInstanceTemplate = processInstanceTemplate;
+    this.processInstanceDependants = processInstanceDependants;
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
+    this.batchOperationTemplate = batchOperationTemplate;
+    this.metrics = metrics;
   }
 
   @PostConstruct
@@ -69,16 +89,34 @@ public class Archiver {
             CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
           final var processInstancesArchiverJob =
-              beanFactory.getBean(ProcessInstancesArchiverJob.class, this, partitionIdsSubset);
+              beanFactory.getBean(
+                  ProcessInstancesArchiverJob.class,
+                  this,
+                  partitionIdsSubset,
+                  processInstanceTemplate,
+                  processInstanceDependants,
+                  metrics,
+                  archiverRepository);
           archiverExecutor.execute(processInstancesArchiverJob);
 
           final var standaloneDecisionArchiverJob =
-              beanFactory.getBean(StandaloneDecisionArchiverJob.class, this, partitionIdsSubset);
+              beanFactory.getBean(
+                  StandaloneDecisionArchiverJob.class,
+                  this,
+                  partitionIdsSubset,
+                  decisionInstanceTemplate,
+                  metrics,
+                  archiverRepository);
           archiverExecutor.execute(standaloneDecisionArchiverJob);
         }
         if (partitionIdsSubset.contains(1)) {
           final var batchOperationArchiverJob =
-              beanFactory.getBean(BatchOperationArchiverJob.class, this);
+              beanFactory.getBean(
+                  BatchOperationArchiverJob.class,
+                  this,
+                  batchOperationTemplate,
+                  metrics,
+                  archiverRepository);
           archiverExecutor.execute(batchOperationArchiverJob);
         }
       }
@@ -102,5 +140,9 @@ public class Archiver {
 
   public String getDestinationIndexName(final String sourceIndexName, final String finishDate) {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
+  }
+
+  public ArchiverRepository getArchiverRepository() {
+    return archiverRepository;
   }
 }

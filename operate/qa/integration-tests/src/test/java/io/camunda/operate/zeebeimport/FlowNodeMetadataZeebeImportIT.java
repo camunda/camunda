@@ -14,6 +14,7 @@ import static io.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.ErrorType;
@@ -22,6 +23,8 @@ import io.camunda.operate.entities.EventType;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -57,7 +60,13 @@ public class FlowNodeMetadataZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private ListViewReader listViewReader;
 
+  @Autowired private ListViewTemplate processInstanceTemplate;
+
+  @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
+
   @Autowired private Archiver archiver;
+
+  @Autowired private Metrics metrics;
 
   private ProcessInstancesArchiverJob archiverJob;
 
@@ -68,7 +77,13 @@ public class FlowNodeMetadataZeebeImportIT extends OperateZeebeAbstractIT {
     cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
     archiverJob =
         beanFactory.getBean(
-            ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+            ProcessInstancesArchiverJob.class,
+            archiver,
+            partitionHolder.getPartitionIds(),
+            processInstanceTemplate,
+            processInstanceDependantTemplates,
+            metrics,
+            archiver.getArchiverRepository());
   }
 
   /** Use cases 1.1 and 2.1. */

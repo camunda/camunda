@@ -93,30 +93,33 @@ public abstract class AbstractProcessInstanceArchiverJobIT extends ArchiverJobIT
   @Test
   void shouldOnlyArchiveOneBatchAtATime() throws Exception {
     final int batchSize = 5;
+    final int previousBatchSize = operateProperties.getArchiver().getRolloverBatchSize();
     operateProperties.getArchiver().setRolloverBatchSize(batchSize);
-    withArchiverJob(
-        job -> {
-          final var instances = new ArrayList<ProcessInstanceForListViewEntity>();
-          for (int i = 0; i < batchSize; i++) {
-            instances.add(processInstanceForListViewEntity("2020-01-01T00:00:00+00:00"));
-          }
-          instances.add(processInstanceForListViewEntity("2020-01-01T00:00:10+00:00"));
+    try {
+      withArchiverJob(
+          job -> {
+            final var instances = new ArrayList<ProcessInstanceForListViewEntity>();
+            for (int i = 0; i < batchSize; i++) {
+              instances.add(processInstanceForListViewEntity("2020-01-01T00:00:00+00:00"));
+            }
+            instances.add(processInstanceForListViewEntity("2020-01-01T00:00:10+00:00"));
 
-          for (final var pi : instances) {
-            store(listViewTemplate, pi);
-          }
-          refresh();
+            for (final var pi : instances) {
+              store(listViewTemplate, pi);
+            }
+            refresh();
 
-          final var result = job.archiveNextBatch();
-          assertThat(result).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(5);
+            final var result = job.archiveNextBatch();
+            assertThat(result).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(5);
 
-          for (int i = 0; i < batchSize; i++) {
-            verifyMoved(listViewTemplate, instances.get(i).getId(), "2020-01-01");
-          }
-          verifyNotMoved(listViewTemplate, instances.get(batchSize).getId());
-
-          operateProperties.getArchiver().setRolloverBatchSize(100);
-        });
+            for (int i = 0; i < batchSize; i++) {
+              verifyMoved(listViewTemplate, instances.get(i).getId(), "2020-01-01");
+            }
+            verifyNotMoved(listViewTemplate, instances.get(batchSize).getId());
+          });
+    } finally {
+      operateProperties.getArchiver().setRolloverBatchSize(previousBatchSize);
+    }
   }
 
   @Test

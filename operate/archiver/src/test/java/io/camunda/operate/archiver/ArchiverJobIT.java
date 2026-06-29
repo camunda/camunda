@@ -106,12 +106,24 @@ public abstract class ArchiverJobIT {
       searchClient = osAdapter;
       archiverRepository = buildOpensearchArchiverRepository(osAdapter);
     } else {
+      ReflectionTestUtils.setField(DatabaseInfo.class, "current", DatabaseType.Elasticsearch);
       ELASTICSEARCH.start();
       esAdapter = new ElasticsearchSearchClientAdapter(ELASTICSEARCH, objectMapper);
       searchClient = esAdapter;
       archiverRepository = buildElasticsearchArchiverRepository(esAdapter);
     }
-    archiver = new Archiver(null, operateProperties, null, null, archiverRepository);
+    archiver =
+        new Archiver(
+            null,
+            operateProperties,
+            null,
+            null,
+            archiverRepository,
+            processInstanceTemplate,
+            List.of(),
+            decisionInstanceTemplate,
+            batchOperationTemplate,
+            metrics);
   }
 
   @AfterEach
@@ -232,7 +244,6 @@ public abstract class ArchiverJobIT {
         operateProperties,
         metrics,
         adapter.getClient(),
-        objectMapper,
         processInstanceTemplate,
         batchOperationTemplate,
         decisionInstanceTemplate);
@@ -259,6 +270,7 @@ public abstract class ArchiverJobIT {
     final var scheduler = new ThreadPoolTaskScheduler();
     scheduler.setPoolSize(1);
     scheduler.setThreadNamePrefix("archiver-test-");
+    scheduler.setDaemon(true);
     scheduler.initialize();
     return scheduler;
   }

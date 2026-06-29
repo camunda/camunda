@@ -13,6 +13,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTA
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.archiver.StandaloneDecisionArchiverJob;
@@ -70,7 +71,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private TestSearchRepository testSearchRepository;
 
-  @Autowired private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate processInstanceTemplate;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
@@ -83,6 +84,8 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
   @Autowired private ListViewReader listViewReader;
 
   @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
+
+  @Autowired private Metrics metrics;
 
   private final Random random = new Random();
 
@@ -101,10 +104,21 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
             .withZone(ZoneId.systemDefault());
     processInstancesArchiverJob =
         beanFactory.getBean(
-            ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+            ProcessInstancesArchiverJob.class,
+            archiver,
+            partitionHolder.getPartitionIds(),
+            processInstanceTemplate,
+            processInstanceDependantTemplates,
+            metrics,
+            archiver.getArchiverRepository());
     standaloneDecisionArchiverJob =
         beanFactory.getBean(
-            StandaloneDecisionArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+            StandaloneDecisionArchiverJob.class,
+            archiver,
+            partitionHolder.getPartitionIds(),
+            decisionInstanceTemplate,
+            metrics,
+            archiver.getArchiverRepository());
   }
 
   @Test
@@ -247,7 +261,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
       throws IOException {
     final String destinationIndexName =
         archiver.getDestinationIndexName(
-            listViewTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
+            processInstanceTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     final List<ProcessInstanceForListViewEntity> processInstances =
         testSearchRepository.searchJoinRelation(
             destinationIndexName,

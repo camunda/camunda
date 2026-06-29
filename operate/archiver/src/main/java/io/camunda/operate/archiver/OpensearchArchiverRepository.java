@@ -63,13 +63,14 @@ import org.springframework.stereotype.Component;
 public class OpensearchArchiverRepository implements ArchiverRepository {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchArchiverRepository.class);
-  protected RichOpenSearchClient richOpenSearchClient;
-  protected OpenSearchAsyncClient osAsyncClient;
-  private BatchOperationTemplate batchOperationTemplate;
-  private ListViewTemplate processInstanceTemplate;
-  private DecisionInstanceTemplate decisionInstanceTemplate;
-  private OperateProperties operateProperties;
-  private Metrics metrics;
+
+  private final RichOpenSearchClient richOpenSearchClient;
+  private final OpenSearchAsyncClient osAsyncClient;
+  private final OperateProperties operateProperties;
+  private final Metrics metrics;
+  private final ListViewTemplate processInstanceTemplate;
+  private final BatchOperationTemplate batchOperationTemplate;
+  private final DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
   public OpensearchArchiverRepository(

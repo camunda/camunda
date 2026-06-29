@@ -110,7 +110,8 @@ public class OperateQualifiedBeansArchTest {
                                         field.getAnnotationOfType(Qualifier.class).value())));
                   }
                 }
-              });
+              })
+          .allowEmptyShould(true);
 
   private static final String ZEEBE_OPENSEARCH_CLIENT_QUALIFIER = "zeebeOpensearchClient";
   private static final String OPEN_SEARCH_CLIENT_QUALIFIER = "openSearchClient";

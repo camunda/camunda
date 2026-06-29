@@ -21,7 +21,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHist
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.ArchiverException;
@@ -80,14 +79,13 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
   private static final int UPDATE_RETRY_COUNT = 3;
 
-  protected ThreadPoolTaskScheduler archiverExecutor;
-  private BatchOperationTemplate batchOperationTemplate;
-  private ListViewTemplate processInstanceTemplate;
-  private DecisionInstanceTemplate decisionInstanceTemplate;
-  private OperateProperties operateProperties;
-  private Metrics metrics;
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
+  private final ThreadPoolTaskScheduler archiverExecutor;
+  private final OperateProperties operateProperties;
+  private final Metrics metrics;
+  private final RestHighLevelClient esClient;
+  private final BatchOperationTemplate batchOperationTemplate;
+  private final ListViewTemplate processInstanceTemplate;
+  private final DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
   public ElasticsearchArchiverRepository(
@@ -95,7 +93,6 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       final OperateProperties operateProperties,
       final Metrics metrics,
       final RestHighLevelClient esClient,
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final ListViewTemplate processInstanceTemplate,
       final BatchOperationTemplate batchOperationTemplate,
       final DecisionInstanceTemplate decisionInstanceTemplate) {
@@ -103,7 +100,6 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     this.operateProperties = operateProperties;
     this.metrics = metrics;
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
     this.processInstanceTemplate = processInstanceTemplate;
     this.batchOperationTemplate = batchOperationTemplate;
     this.decisionInstanceTemplate = decisionInstanceTemplate;
