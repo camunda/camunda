@@ -95,10 +95,10 @@ the listener has been told about.
 
 There are **two** `HealthTreeMetrics` instances, bound to different meter registries:
 
-| Instance       | Created in                                  | Meter registry            | Partition tags                          |
-|----------------|---------------------------------------------|---------------------------|-----------------------------------------|
-| Broker-level   | `Broker`                                    | global system registry    | `physicalTenant=none, partition=none`   |
-| Per-partition  | `PartitionStartupAndTransitionContextImpl`  | partition-scoped registry | `physicalTenant=<tenant>, partition=<n>`|
+|   Instance    |                 Created in                 |      Meter registry       |              Partition tags              |
+|---------------|--------------------------------------------|---------------------------|------------------------------------------|
+| Broker-level  | `Broker`                                   | global system registry    | `physicalTenant=none, partition=none`    |
+| Per-partition | `PartitionStartupAndTransitionContextImpl` | partition-scoped registry | `physicalTenant=<tenant>, partition=<n>` |
 
 The per-partition registry already carries `physicalTenant` and `partition` as common tags (set in
 `MetricsStep`), so nodes registered through the per-partition listener are automatically attributed
