@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.appint.dispatch;
 
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,7 @@ public class DispatcherTest {
     // given
     final ArgumentCaptor<Long> positionUpdaterCaptor = ArgumentCaptor.captor();
     final Consumer<Long> positionUpdater = Mockito.mock();
-    final var dispatcher = new DispatcherImpl(1);
+    final var dispatcher = new DispatcherImpl(1, AppIntegrationsExporterMetrics.disabled());
     final var atomicBoolean = new java.util.concurrent.atomic.AtomicBoolean(true);
 
     // when

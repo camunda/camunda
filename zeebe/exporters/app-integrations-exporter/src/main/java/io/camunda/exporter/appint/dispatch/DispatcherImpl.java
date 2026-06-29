@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.appint.dispatch;
 
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -27,9 +28,11 @@ public class DispatcherImpl implements Dispatcher {
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final Semaphore semaphore;
   private final int maxJobsInFlight;
+  private final AppIntegrationsExporterMetrics metrics;
 
-  public DispatcherImpl(final int maxJobsInFlight) {
+  public DispatcherImpl(final int maxJobsInFlight, final AppIntegrationsExporterMetrics metrics) {
     this.maxJobsInFlight = maxJobsInFlight;
+    this.metrics = metrics;
     semaphore = new Semaphore(maxJobsInFlight);
   }
 
@@ -37,10 +40,20 @@ public class DispatcherImpl implements Dispatcher {
   public void dispatch(final Runnable job) {
     try {
       semaphore.acquire();
-      log.trace("Dispatching job {}", job);
-      executorService.execute(() -> executeJob(job));
     } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
+    }
+    metrics.incrementBatchesInFlight();
+    log.trace("Dispatching job {}", job);
+    try {
+      executorService.execute(() -> executeJob(job));
+    } catch (final RuntimeException e) {
+      // Submission failed (e.g. RejectedExecutionException once the executor is shutting down);
+      // release the permit and gauge reserved for this job so they are not leaked.
+      metrics.decrementBatchesInFlight();
+      semaphore.release();
+      throw e;
     }
   }
 
@@ -61,6 +74,7 @@ public class DispatcherImpl implements Dispatcher {
       try {
         job.run();
         success = true;
+        metrics.decrementBatchesInFlight();
         semaphore.release();
       } catch (final Exception e) {
         log.debug("Failed to run the job. Restarting.", e);
@@ -74,6 +88,7 @@ public class DispatcherImpl implements Dispatcher {
       executorService.shutdown();
       executorService.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
     } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
   }
