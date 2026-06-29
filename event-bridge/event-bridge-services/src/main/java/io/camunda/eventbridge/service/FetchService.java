@@ -31,18 +31,9 @@ public class FetchService {
     executor = executorProvider.getExecutor();
   }
 
-  public CompletableFuture<FetchResponse> fetch(
-      final int partitionId,
-      final long offset,
-      final int maxBytes,
-      final int minBytes,
-      final long maxWaitMs) {
-    return fetch(null, partitionId, offset, maxBytes, minBytes, maxWaitMs);
-  }
-
   /**
-   * Fetches from a partition of a specific routing group: a per-topic Raft group ({@code
-   * event-bridge-topic-<name>}) for topic fetches, or {@code null} for the default data partitions.
+   * Fetches from a partition of a per-topic Raft group ({@code event-bridge-topic-<name>}). The
+   * BrokerClient resolves that group's partition leader from the topic's gossiped topology.
    */
   public CompletableFuture<FetchResponse> fetch(
       final String partitionGroup,
@@ -57,9 +48,7 @@ public class FetchService {
     final long readOffset = offset <= 0 ? 1 : offset;
 
     final var request = new BrokerFetchRequest();
-    if (partitionGroup != null) {
-      request.setPartitionGroup(partitionGroup);
-    }
+    request.setPartitionGroup(partitionGroup);
     request.setup(partitionId, readOffset, maxBytes, minBytes, maxWaitMs);
 
     return brokerClient.sendRequest(request).thenApplyAsync(BrokerResponse::getResponse, executor);

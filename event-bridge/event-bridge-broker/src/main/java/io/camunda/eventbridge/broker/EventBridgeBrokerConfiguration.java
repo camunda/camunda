@@ -9,9 +9,6 @@ package io.camunda.eventbridge.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.eventbridge.broker.bootstrap.BrokerBootstrap;
-import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
-import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
-import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
@@ -40,16 +37,10 @@ public class EventBridgeBrokerConfiguration {
   }
 
   @Bean
-  PartitionDistributor partitionDistributor() {
-    return new RoundRobinPartitionDistributor(PartitionFactory.GROUP_NAME);
-  }
-
-  @Bean
   BrokerBootstrap brokerBootstrap(
       final AtomixCluster cluster,
       final ActorScheduler actorScheduler,
       final EventBridgeProperties properties,
-      final PartitionDistributor distributor,
       final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
       final MeterRegistry meterRegistry,
@@ -59,7 +50,6 @@ public class EventBridgeBrokerConfiguration {
         cluster,
         actorScheduler,
         properties,
-        distributor,
         executorServiceFactory,
         idGenerator,
         meterRegistry,

@@ -9,8 +9,6 @@ package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.eventbridge.broker.BrokerMembers;
-import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
-import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
@@ -18,9 +16,6 @@ import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.messaging.threading.ExecutorServiceFactory;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -52,7 +47,6 @@ public final class BrokerBootstrap {
   private final AtomixCluster cluster;
   private final ActorSchedulingService actorScheduler;
   private final EventBridgeProperties properties;
-  private final PartitionDistributor distributor;
   private final ExecutorServiceFactory executorServiceFactory;
   private final IdGenerator idGenerator;
   private final MeterRegistry meterRegistry;
@@ -70,7 +64,6 @@ public final class BrokerBootstrap {
       final AtomixCluster cluster,
       final ActorSchedulingService actorScheduler,
       final EventBridgeProperties properties,
-      final PartitionDistributor distributor,
       final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
       final MeterRegistry meterRegistry,
@@ -79,7 +72,6 @@ public final class BrokerBootstrap {
     this.cluster = cluster;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
-    this.distributor = distributor;
     this.executorServiceFactory = executorServiceFactory;
     this.idGenerator = idGenerator;
     this.meterRegistry = meterRegistry;
@@ -100,28 +92,15 @@ public final class BrokerBootstrap {
     messagingServiceSetup = new MessagingServiceSetup(properties, meterRegistry);
     final var brokerMessagingService = messagingServiceSetup.start();
 
-    // 2. Start topology — BrokerInfo + SWIM gossip
+    // 2. Start topology — coordinator + metadata BrokerInfo + SWIM gossip. There is no default data
+    // group: every data partition belongs to a per-topic Raft group, provisioned by the topic
+    // reconciler from the replicated registry (config-declared topics are auto-created by the
+    // metadata leader). Each topic group publishes its own BrokerInfo, so the gateway resolves a
+    // topic partition's leader from gossip without any seeded cluster configuration.
     topologySetup =
         new TopologySetup(
             cluster.getMembershipService(), actorScheduler, properties, gatewayTopologyManager);
-    final var topologyManager = topologySetup.start();
-
-    // 2b. Build the cluster configuration once — the single source of truth (as in Zeebe) for both
-    // raft partition placement (which partitions this broker starts) and gateway routing (which
-    // partitions exist, via BrokerClusterState.getPartitions()).
-    final var configuration = buildClusterConfiguration();
-
-    // Feed it to the gateway topology so getPartitions() is populated; combined with gossiped
-    // leadership this lets the BrokerClient route partition-addressed requests natively.
-    gatewayTopologyManager.onClusterConfigurationUpdated(configuration);
-    LOG.info(
-        "Seeded gateway cluster configuration with partitions {}",
-        configuration.partitionIds().boxed().toList());
-
-    // Derive the raft partition distribution from the same configuration (mirrors Zeebe's
-    // PartitionManagerImpl, which starts the partitions whose members include the local node).
-    final var distribution =
-        ConfigurationUtil.getPartitionDistributionFrom(configuration, PartitionFactory.GROUP_NAME);
+    topologySetup.start();
 
     // 3. Start Fetch Stream Executor Service
     executorServiceSetup = new ExecutorServiceSetup(executorServiceFactory);
@@ -187,10 +166,10 @@ public final class BrokerBootstrap {
                 BrokerMembers.memberId(recipientNodeId),
                 Duration.ofSeconds(30));
 
-    // 5. Start partitions — raft + lifecycle actors (uses broker messaging service)
+    // 5. Start the auxiliary groups — raft + lifecycle actors (uses broker messaging service).
+    // Topic
+    // data partitions are not started here; the topic reconciler provisions them from the registry.
     partitionBootstrapper.start(
-        distribution,
-        topologyManager,
         topologySetup.getCoordinatorTopologyManager(),
         topologySetup.getMetadataTopologyManager(),
         brokerMessagingService,
@@ -199,22 +178,6 @@ public final class BrokerBootstrap {
         reconfigurationExecutor);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
-  }
-
-  /**
-   * Builds the cluster configuration from the (deterministic) partition distribution over the
-   * configured members. Every node computes the same configuration, so raft placement and gateway
-   * routing agree across the cluster.
-   */
-  private ClusterConfiguration buildClusterConfiguration() {
-    final var clusterSize = properties.cluster().clusterSize();
-    final var members = BrokerMembers.all(clusterSize);
-    final var distribution =
-        distributor.distributePartitions(
-            members, properties.broker().partitionCount(), properties.raft().replicationFactor());
-
-    return ConfigurationUtil.getClusterConfigFrom(
-        distribution, DynamicPartitionConfig.init(), properties.cluster().name());
   }
 
   public void stop() {

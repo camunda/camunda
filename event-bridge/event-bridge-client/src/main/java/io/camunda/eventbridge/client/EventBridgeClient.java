@@ -32,15 +32,15 @@ import java.util.concurrent.ScheduledExecutorService;
  * <pre>{@code
  * var client = EventBridgeClient.create("http://localhost:8080");
  *
- * // Publish a batch
+ * // Publish a batch to a topic partition
  * var positions = client.newBatch()
  *     .add("order-1", jsonBytes)
  *     .add("order-2", jsonBytes2)
- *     .publish(0)
+ *     .publishToTopic("orders", 1)
  *     .join();
  *
- * // Fetch raw batches from a partition
- * var result = client.fetch(0, 1, 64 * 1024).join();
+ * // Fetch raw batches from a topic partition
+ * var result = client.fetchFromTopic("orders", 1, 1, 64 * 1024).join();
  * for (var entry : result.entries(1)) {
  *   System.out.println(entry.getPosition() + ": " + new String(entry.getValueCopy()));
  * }
@@ -110,75 +110,20 @@ public final class EventBridgeClient implements AutoCloseable {
     return new BatchPublisher();
   }
 
-  /** Publishes a single keyed entry to the given partition. */
-  public CompletableFuture<List<Long>> publish(
-      final int partitionId, final String key, final byte[] value) {
-    return newBatch().add(key, value).publish(partitionId);
+  /** Publishes a single keyed entry to a partition of a topic. */
+  public CompletableFuture<List<Long>> publishToTopic(
+      final String topic, final int partitionId, final String key, final byte[] value) {
+    return newBatch().add(key, value).publishToTopic(topic, partitionId);
   }
 
-  /** Publishes a single keyless entry to the given partition. */
-  public CompletableFuture<List<Long>> publish(final int partitionId, final byte[] value) {
-    return newBatch().add(value).publish(partitionId);
+  /** Publishes a single keyless entry to a partition of a topic. */
+  public CompletableFuture<List<Long>> publishToTopic(
+      final String topic, final int partitionId, final byte[] value) {
+    return newBatch().add(value).publishToTopic(topic, partitionId);
   }
 
   // -------------------------------------------------------------------------
   // Fetch
-
-  /**
-   * Fetches complete batches from a partition starting at {@code offset} (inclusive).
-   *
-   * @param partitionId partition to fetch from
-   * @param offset position to start reading from; {@code <= 0} reads from the start
-   * @param maxBytes soft ceiling on returned batch bytes
-   * @return a future resolving to the fetch result
-   */
-  public CompletableFuture<FetchResult> fetch(
-      final int partitionId, final long offset, final int maxBytes) {
-    return fetch(partitionId, offset, maxBytes, 0, 0);
-  }
-
-  /**
-   * Fetches complete batches with long-poll support.
-   *
-   * @param partitionId partition to fetch from
-   * @param offset position to start reading from; {@code <= 0} reads from the start
-   * @param maxBytes soft ceiling on returned batch bytes
-   * @param minBytes minimum bytes before the broker responds (long-poll threshold)
-   * @param maxWaitMs maximum time the broker waits for {@code minBytes} (0 = respond immediately)
-   * @return a future resolving to the fetch result
-   */
-  public CompletableFuture<FetchResult> fetch(
-      final int partitionId,
-      final long offset,
-      final int maxBytes,
-      final int minBytes,
-      final long maxWaitMs) {
-    final var uri =
-        URI.create(
-            gatewayUrl
-                + "/v1/events/"
-                + partitionId
-                + "/fetch?offset="
-                + offset
-                + "&maxBytes="
-                + maxBytes
-                + "&minBytes="
-                + minBytes
-                + "&maxWaitMs="
-                + maxWaitMs);
-
-    final var request =
-        HttpRequest.newBuilder()
-            .uri(uri)
-            .header("Accept", "application/octet-stream")
-            .timeout(Duration.ofMillis(maxWaitMs + 10_000))
-            .GET()
-            .build();
-
-    return httpClient
-        .sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
-        .thenApply(response -> FetchResult.parse(response.statusCode(), response.body()));
-  }
 
   /** Fetches batches from a partition of a topic ({@code GET /v1/topics/{topic}/.../fetch}). */
   public CompletableFuture<FetchResult> fetchFromTopic(
@@ -375,26 +320,12 @@ public final class EventBridgeClient implements AutoCloseable {
     }
 
     /**
-     * Publishes the batch to the given partition.
+     * Publishes the batch to a partition of a topic ({@code POST /v1/topics/{topic}/...}).
      *
      * @return a future resolving to the log positions assigned by the broker. The POC gateway
      *     returns {@code [firstPosition, lastPosition]} for the batch rather than one position per
      *     entry.
      */
-    public CompletableFuture<List<Long>> publish(final int partitionId) {
-      if (batchBuilder.entryCount() == 0) {
-        return CompletableFuture.failedFuture(new IllegalStateException("Batch is empty"));
-      }
-
-      final var request =
-          requestTo("/v1/events/" + partitionId)
-              .header("Content-Type", "application/octet-stream")
-              .POST(HttpRequest.BodyPublishers.ofByteArray(batchBuilder.build()))
-              .build();
-      return send(request).thenApply(EventBridgeClient.this::parsePublishResponse);
-    }
-
-    /** Publishes the batch to a partition of a topic ({@code POST /v1/topics/{topic}/...}). */
     public CompletableFuture<List<Long>> publishToTopic(final String topic, final int partitionId) {
       if (batchBuilder.entryCount() == 0) {
         return CompletableFuture.failedFuture(new IllegalStateException("Batch is empty"));

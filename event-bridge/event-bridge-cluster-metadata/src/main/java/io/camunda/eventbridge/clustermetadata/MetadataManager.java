@@ -16,7 +16,9 @@ import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
+import io.camunda.eventbridge.core.topic.AutoCreatedTopic;
 import io.camunda.eventbridge.protocol.request.coordination.ReportPartitionLeaderRequest;
+import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +57,10 @@ public class MetadataManager extends Actor {
   // kickReconcile); and the short delay before retrying a step that failed (e.g. no leader yet).
   private static final Duration BACKSTOP_INTERVAL = Duration.ofSeconds(15);
   private static final Duration RETRY_DELAY = Duration.ofSeconds(2);
+  // Backoff before re-attempting a configured topic whose creation hit a transient failure (e.g. no
+  // brokers registered yet). A durable rejection (already exists / invalid) is terminal, not
+  // retried.
+  private static final Duration AUTO_CREATE_RETRY_DELAY = Duration.ofSeconds(2);
 
   // How a dead member is replaced. GROW_FIRST (passive-join the replacement, promote it, then
   // remove the dead member) preserves data copies and survives a false-positive fence.
@@ -68,17 +75,22 @@ public class MetadataManager extends Actor {
   private final ReconfigurationExecutor reconfigurationExecutor;
   private final Set<String> reconfiguring = new HashSet<>();
 
+  // Topics to provision on startup (from event-bridge.topics), created idempotently once leader.
+  private final List<AutoCreatedTopic> autoCreateTopics;
+
   public MetadataManager(
       final int partitionId,
       final MetadataStream metadataStream,
       final TopicQueryService topics,
       final BrokerQueryService brokers,
-      final ReconfigurationExecutor reconfigurationExecutor) {
+      final ReconfigurationExecutor reconfigurationExecutor,
+      final List<AutoCreatedTopic> autoCreateTopics) {
     this.partitionId = partitionId;
     this.metadataStream = metadataStream;
     this.topics = topics;
     this.brokers = brokers;
     this.reconfigurationExecutor = reconfigurationExecutor;
+    this.autoCreateTopics = List.copyOf(autoCreateTopics);
   }
 
   @Override
@@ -161,7 +173,56 @@ public class MetadataManager extends Actor {
       // commit-driven kicks (see kickReconcile) plus the slow anti-entropy backstop.
       reconcileInProgress();
       scheduleBackstop();
+      // Provision the configured topics. The registry is already replayed by the time we're leader,
+      // so a topic that survives a restart is rejected as already-existing and left untouched.
+      autoCreateTopics.forEach(this::attemptAutoCreate);
     }
+  }
+
+  /**
+   * Issues the {@code CREATE_TOPIC} command for one configured topic, retrying only transient
+   * failures. A {@link CommandRejectionException} (the topic already exists, or the spec is
+   * invalid) is deterministic and terminal — this is what makes startup provisioning idempotent
+   * across restarts. On a leadership change this manager is torn down and the next leader
+   * re-attempts from its own {@link #onActorStarted()}.
+   */
+  private void attemptAutoCreate(final AutoCreatedTopic topic) {
+    final var command =
+        new TopicRecord()
+            .setName(topic.name())
+            .setPartitionCount(topic.partitionCount())
+            .setReplicationFactor(topic.replicationFactor());
+    handleCreateTopic(command)
+        .whenComplete(
+            (reply, error) ->
+                actor.run(
+                    () -> {
+                      if (error == null) {
+                        LOG.info(
+                            "Auto-created configured topic {} ({} partitions, replication factor {})",
+                            topic.name(),
+                            topic.partitionCount(),
+                            topic.replicationFactor());
+                      } else if (unwrap(error)
+                          instanceof final CommandRejectionException rejected) {
+                        LOG.debug(
+                            "Configured topic {} not provisioned ({}); leaving as-is",
+                            topic.name(),
+                            rejected.getMessage());
+                      } else {
+                        LOG.warn(
+                            "Auto-create of configured topic {} failed; retrying",
+                            topic.name(),
+                            error);
+                        schedule(AUTO_CREATE_RETRY_DELAY, () -> attemptAutoCreate(topic));
+                      }
+                    }));
+  }
+
+  private static Throwable unwrap(final Throwable error) {
+    return error instanceof CompletionException && error.getCause() != null
+        ? error.getCause()
+        : error;
   }
 
   /**

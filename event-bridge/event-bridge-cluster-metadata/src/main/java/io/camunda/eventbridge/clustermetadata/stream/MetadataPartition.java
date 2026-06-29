@@ -18,6 +18,7 @@ import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.transport.MetadataRequestHandler;
+import io.camunda.eventbridge.core.topic.AutoCreatedTopic;
 import io.camunda.eventbridge.stream.RaftPartitionLifecycle;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -58,6 +59,7 @@ public final class MetadataPartition
 
   private final Consumer<Map<String, TopicMetadata>> registryReconciler;
   private final ReconfigurationExecutor reconfigurationExecutor;
+  private final List<AutoCreatedTopic> autoCreateTopics;
 
   private MetadataManager metadataManager;
   private MetadataQueryHandler metadataQueryHandler;
@@ -79,7 +81,8 @@ public final class MetadataPartition
       final ConstructableSnapshotStore snapshotStore,
       final TopologyManagerImpl metadataTopologyManager,
       final Consumer<Map<String, TopicMetadata>> registryReconciler,
-      final ReconfigurationExecutor reconfigurationExecutor) {
+      final ReconfigurationExecutor reconfigurationExecutor,
+      final List<AutoCreatedTopic> autoCreateTopics) {
     super(
         partitionId,
         raftPartition,
@@ -91,6 +94,7 @@ public final class MetadataPartition
         metadataTopologyManager);
     this.registryReconciler = registryReconciler;
     this.reconfigurationExecutor = reconfigurationExecutor;
+    this.autoCreateTopics = List.copyOf(autoCreateTopics);
   }
 
   @Override
@@ -129,7 +133,8 @@ public final class MetadataPartition
             stream,
             stream.newTopicQueryService(),
             stream.newBrokerQueryService(),
-            reconfigurationExecutor);
+            reconfigurationExecutor,
+            autoCreateTopics);
     actorScheduler.submitActor(metadataManager);
     // Drive reconfiguration on every committed registry change instead of polling. The listener
     // fires on the Raft thread; kickReconcile hops onto the manager's actor.

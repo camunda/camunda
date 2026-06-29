@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.core.config;
 
+import io.camunda.eventbridge.core.topic.AutoCreatedTopic;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -24,11 +25,15 @@ public record EventBridgeProperties(
     PublishProperties publish,
     RetentionProperties retention,
     RaftProperties raft,
-    ClusterProperties cluster) {
+    ClusterProperties cluster,
+    List<TopicProperties> topics) {
 
   public EventBridgeProperties {
     if (data == null) {
       data = new DataProperties("data");
+    }
+    if (topics == null) {
+      topics = List.of();
     }
     if (broker == null) {
       broker =
@@ -59,6 +64,36 @@ public record EventBridgeProperties(
               "event-bridge", "broker-0", "0.0.0.0", 26502, 1, null, null, 26501, List.of());
     }
   }
+
+  /**
+   * The configured topics to auto-create on startup, fully resolved: each entry's partition count
+   * and replication factor default to {@code broker.partitionCount} and {@code
+   * raft.replicationFactor} respectively when not set explicitly. The metadata leader creates these
+   * idempotently, so they are provisioned once and survive restarts.
+   */
+  public List<AutoCreatedTopic> resolvedTopics() {
+    return topics.stream()
+        .map(
+            t ->
+                new AutoCreatedTopic(
+                    t.name(),
+                    t.partitionCount() != null ? t.partitionCount() : broker.partitionCount(),
+                    t.replicationFactor() != null
+                        ? t.replicationFactor()
+                        : raft.replicationFactor()))
+        .toList();
+  }
+
+  /**
+   * A topic to auto-create on startup, bound from {@code event-bridge.topics}.
+   *
+   * @param name the topic name (required; must match {@code [a-zA-Z0-9._-]{1,249}})
+   * @param partitionCount number of partitions; defaults to {@code broker.partitionCount} when
+   *     unset
+   * @param replicationFactor number of replicas per partition; defaults to {@code
+   *     raft.replicationFactor} when unset
+   */
+  public record TopicProperties(String name, Integer partitionCount, Integer replicationFactor) {}
 
   /**
    * Data directory configuration.

@@ -34,7 +34,6 @@ final class TopologySetup {
   private final EventBridgeProperties properties;
   private final BrokerTopologyManager gatewayTopologyManager;
 
-  private TopologyManagerImpl topologyManager;
   private TopologyManagerImpl coordinatorTopologyManager;
   private TopologyManagerImpl metadataTopologyManager;
   private final List<TopologyManagerImpl> topicTopologyManagers = new CopyOnWriteArrayList<>();
@@ -50,21 +49,20 @@ final class TopologySetup {
     this.gatewayTopologyManager = gatewayTopologyManager;
   }
 
-  TopologyManagerImpl start() {
+  void start() {
     final var localMemberId = membershipService.getLocalMember().id();
 
-    // The data partitions publish under the default partition group, while the coordinator and
-    // metadata groups each publish a separate BrokerInfo under their own group-specific
-    // member-property key — so the gateway resolves each group's partition leaders independently,
-    // exactly how Zeebe routes per partition group.
-    topologyManager = registerManager(brokerInfo(null, properties.broker().partitionCount()));
+    // The coordinator and metadata groups each publish a separate BrokerInfo under their own
+    // group-specific member-property key — so the gateway resolves each group's partition leaders
+    // independently, exactly how Zeebe routes per partition group. There is no default data group;
+    // per-topic groups publish their own BrokerInfo as they are provisioned (see
+    // createTopicTopologyManager).
     coordinatorTopologyManager =
         registerManager(brokerInfo(CoordinationRequestHandler.COORDINATOR_ROUTING_GROUP, 1));
     metadataTopologyManager =
         registerManager(brokerInfo(MetadataRequestHandler.METADATA_ROUTING_GROUP, 1));
 
     LOG.info("Topology managers started for broker {}", localMemberId);
-    return topologyManager;
   }
 
   /**
@@ -136,22 +134,13 @@ final class TopologySetup {
       }
       coordinatorTopologyManager = null;
     }
-    if (topologyManager != null) {
-      try {
-        topologyManager.closeAsync().join();
-      } catch (final Exception e) {
-        LOG.warn("Error closing topology manager", e);
-      }
-      topologyManager = null;
-    }
   }
 
   /**
    * Builds the BrokerInfo this node gossips for one routing group. {@code partitionGroup} is the
-   * gateway routing-group tag — {@code null} for the default data group, or the coordinator /
-   * metadata / per-topic group name — which keeps each group's per-group topology separate on the
-   * gateway. The command API address is the one other nodes (and the gateway) use to reach this
-   * broker.
+   * gateway routing-group tag — the coordinator / metadata / per-topic group name — which keeps
+   * each group's per-group topology separate on the gateway. The command API address is the one
+   * other nodes (and the gateway) use to reach this broker.
    */
   private BrokerInfo brokerInfo(final String partitionGroup, final int partitionCount) {
     final var nodeId = BrokerMembers.nodeId(membershipService.getLocalMember().id());

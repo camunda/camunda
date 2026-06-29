@@ -27,21 +27,13 @@ public class PublishService {
   }
 
   /**
-   * Publishes a batch of events to the given partition's leader (resolved by the BrokerClient from
-   * cluster topology).
+   * Publishes a batch to a partition of a per-topic Raft group ({@code event-bridge-topic-<name>}).
+   * The BrokerClient resolves that group's partition leader from the topic's gossiped topology.
    *
+   * @param partitionGroup the topic's Raft/routing group name
+   * @param partitionId the partition within the topic
    * @param body the raw client request body (full EventBridgeBatch)
    * @return a future with the decoded response
-   */
-  public CompletableFuture<PublishBatchResponse> publish(final int partitionId, final byte[] body) {
-    return publish(null, partitionId, body);
-  }
-
-  /**
-   * Publishes to a partition of a specific routing group. {@code partitionGroup} is a per-topic
-   * Raft group ({@code event-bridge-topic-<name>}) for topic publishes, or {@code null} for the
-   * default data partitions. The BrokerClient resolves that group's partition leader from gossiped
-   * topology.
    */
   public CompletableFuture<PublishBatchResponse> publish(
       final String partitionGroup, final int partitionId, final byte[] body) {
@@ -51,9 +43,7 @@ public class PublishService {
     }
 
     final var request = new BrokerPublishRequest();
-    if (partitionGroup != null) {
-      request.setPartitionGroup(partitionGroup);
-    }
+    request.setPartitionGroup(partitionGroup);
     request.partitionId(partitionId);
     request.wrapBatch(body);
 

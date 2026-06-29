@@ -42,8 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class PartitionFactory {
 
-  public static final String GROUP_NAME = "event-bridge-partition";
-
   /** Dedicated Raft group for the consumer-group coordinator (separate from data partitions). */
   public static final String COORDINATOR_GROUP_NAME = "event-bridge-coordinator";
 
@@ -66,16 +64,10 @@ public final class PartitionFactory {
     this.actorScheduler = actorScheduler;
   }
 
-  /** Creates a data partition in the default data group. The raft partition is not bootstrapped. */
-  public CreatedPartition create(
-      final int partitionId, final Set<MemberId> members, final MemberId localMemberId) {
-    return createData(GROUP_NAME, partitionId, members, localMemberId);
-  }
-
   /**
-   * Creates a data-style partition (event log + marker snapshot store) in an arbitrary Raft group.
-   * Used both for the default data group at boot and for per-topic groups ({@code
-   * event-bridge-topic-<name>}) provisioned at runtime. The raft partition is not bootstrapped yet.
+   * Creates a data-style partition (event log + marker snapshot store) in a per-topic Raft group
+   * ({@code event-bridge-topic-<name>}), provisioned at runtime. The raft partition is not
+   * bootstrapped yet.
    */
   public CreatedPartition createData(
       final String groupName,
@@ -174,10 +166,6 @@ public final class PartitionFactory {
         METADATA_GROUP_NAME,
         partitionId);
     return new CreatedPartition(partitionId, raftPartition, snapshotStore);
-  }
-
-  public Path getPartitionDirectory(final int partitionId) {
-    return getPartitionDirectory(GROUP_NAME, partitionId);
   }
 
   public Path getPartitionDirectory(final String groupName, final int partitionId) {

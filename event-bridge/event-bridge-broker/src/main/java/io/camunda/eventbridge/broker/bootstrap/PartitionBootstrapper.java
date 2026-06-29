@@ -28,7 +28,6 @@ import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.core.topic.TopicGroups;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import java.io.IOException;
@@ -45,10 +44,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Starts the raft partitions assigned to the local node by the cluster configuration. Mirrors
- * Zeebe's {@code PartitionManagerImpl}: the partition distribution is derived from the (single
- * source of truth) cluster configuration, and the local node starts the partitions whose members
- * include it.
+ * Bootstraps the auxiliary Raft groups (coordinator + metadata) this broker hosts and owns runtime
+ * provisioning of per-topic data partitions. There is no default data group: every data partition
+ * belongs to a per-topic Raft group, started by the {@link TopicReconciler} from the replicated
+ * topic registry rather than from a boot-time cluster configuration.
  */
 final class PartitionBootstrapper {
 
@@ -96,8 +95,6 @@ final class PartitionBootstrapper {
   }
 
   void start(
-      final Set<PartitionMetadata> distribution,
-      final TopologyManagerImpl topologyManager,
       final TopologyManagerImpl coordinatorTopologyManager,
       final TopologyManagerImpl metadataTopologyManager,
       final MessagingService brokerMessagingService,
@@ -112,27 +109,14 @@ final class PartitionBootstrapper {
     this.registryReconciler = registryReconciler;
     this.reconfigurationExecutor = reconfigurationExecutor;
 
-    // Start the partitions assigned to this node (members include the local member), exactly like
-    // Zeebe's PartitionManagerImpl derives placement from the cluster configuration.
-    final var localPartitions =
-        distribution.stream().filter(p -> p.members().contains(localMemberId)).toList();
-
-    LOG.info(
-        "Bootstrapping EventBridge partitions {} (local: {})",
-        localPartitions.stream().map(p -> p.id().id()).sorted().toList(),
-        localMemberId);
+    // No default data group is started here: every data partition belongs to a per-topic Raft group,
+    // provisioned by the TopicReconciler from the replicated registry (config-declared topics are
+    // auto-created by the metadata leader). Only the coordinator and metadata groups bootstrap here.
+    LOG.info("Bootstrapping EventBridge coordinator + metadata groups (local: {})", localMemberId);
 
     factory = new PartitionFactory(properties, actorScheduler);
     managementService =
         new DefaultPartitionManagementService(membershipService, cluster.getCommunicationService());
-
-    for (final var partition : localPartitions) {
-      provisionDataPartition(
-          PartitionFactory.GROUP_NAME,
-          partition.id().id(),
-          Set.copyOf(partition.members()),
-          topologyManager);
-    }
 
     bootstrapCoordinator(
         localMemberId,
@@ -276,7 +260,8 @@ final class PartitionBootstrapper {
             (ConstructableSnapshotStore) created.snapshotStore(),
             metadataTopologyManager,
             registryReconciler,
-            reconfigurationExecutor);
+            reconfigurationExecutor,
+            properties.resolvedTopics());
     registry.addAuxiliary(created, metadataPartition);
     actorScheduler.submitActor(metadataPartition);
 
@@ -373,10 +358,9 @@ final class PartitionBootstrapper {
   }
 
   /**
-   * Provisions a data-style partition (event log) for an arbitrary Raft group and bootstraps it.
-   * Used for the default data group at boot and for per-topic groups provisioned at runtime — the
-   * sequence (create raft components, wire lifecycle + retention + role listener, bootstrap) is
-   * identical; only the group name, members, and topology manager differ.
+   * Provisions a data-style partition (event log) for a per-topic Raft group and bootstraps it.
+   * Driven by the {@link TopicReconciler} from the replicated registry: create raft components,
+   * wire lifecycle + retention + role listener, then bootstrap.
    */
   void provisionDataPartition(
       final String groupName,
@@ -506,16 +490,14 @@ final class PartitionBootstrapper {
     // 1. Create raft-level components
     final var created = factory.createData(groupName, partitionId, members, localMemberId);
 
-    // The gateway routing group: data partitions use the BrokerClient's default group, topic groups
-    // route under their own Raft group name (so handler subjects don't collide across groups).
-    final var routingGroup =
-        PartitionFactory.GROUP_NAME.equals(groupName)
-            ? Protocol.DEFAULT_PARTITION_GROUP_NAME
-            : groupName;
+    // The gateway routing group is the topic's own Raft group name, so the per-group handler
+    // subjects
+    // don't collide across topics and the gateway resolves each topic's partition leaders
+    // separately.
+    final var routingGroup = groupName;
 
-    // 2. Create lifecycle actor. For a topic-registry group, on becoming leader it reports its
-    // leadership to the metadata group (so topic readiness is derived); the default data group does
-    // not (topic == null → no-op reporter).
+    // 2. Create lifecycle actor. On becoming leader it reports its leadership to the metadata group
+    // so topic readiness (CREATING → ACTIVE) is derived from the partition leaders.
     final var topic = TopicGroups.topicFrom(groupName);
     final var lifecycle =
         new PartitionLifecycle(

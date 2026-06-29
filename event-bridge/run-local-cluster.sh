@@ -34,6 +34,23 @@ JVM_FLAGS=(
   -XX:ActiveProcessorCount=2
 )
 
+# Topics to auto-create on startup (the metadata leader provisions these from each node's
+# event-bridge.topics config, idempotently — they survive restarts via the metadata registry).
+# Set EB_TOPICS_ARGS to your own "-Devent-bridge.topics[0].name=… …" flags, or EB_AUTO_TOPICS=1
+# for a demo set. Default: none (cluster starts with no data groups until topics are created).
+TOPICS_ARGS=()
+if [[ -n "${EB_TOPICS_ARGS:-}" ]]; then
+  read -r -a TOPICS_ARGS <<<"${EB_TOPICS_ARGS}"
+elif [[ "${EB_AUTO_TOPICS:-0}" == "1" ]]; then
+  TOPICS_ARGS=(
+    -Devent-bridge.topics[0].name=orders
+    -Devent-bridge.topics[0].partition-count=6
+    -Devent-bridge.topics[0].replication-factor=3
+    -Devent-bridge.topics[1].name=payments
+    -Devent-bridge.topics[1].partition-count=3
+  )
+fi
+
 build() {
   echo "==> Building dist (quickly)…"
   (cd "${REPO_ROOT}" && ./mvnw -q -pl dist -am install -Dquickly -T1C)
@@ -58,6 +75,7 @@ start_node() {
     -Devent-bridge.cluster.initial-contact-points="${CONTACT_POINTS}" \
     -Devent-bridge.raft.replication-factor="${REPLICATION_FACTOR}" \
     -Devent-bridge.data.directory="${node_dir}/data" \
+    ${TOPICS_ARGS[@]+"${TOPICS_ARGS[@]}"} \
     io.camunda.application.StandaloneEventBridge >"${node_dir}/node.log" 2>&1 &
   echo "$!" >"${node_dir}/pid"
 }
