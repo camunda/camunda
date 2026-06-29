@@ -9,6 +9,9 @@ on:
   schedule:
   # Runs hourly, but actions are taken selectively based on PR state and defined strategy, not on every run
   - cron: "53 * * * *"
+  # Monday 06:00 UTC: weekly digest of stuck Renovate PRs (dirty / awaiting rebase
+  # for too long) to #top-monorepo-ci.
+  - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       dry-run:
@@ -34,15 +37,20 @@ jobs:
       checks: read
       contents: read
       pull-requests: write
+    env:
+      # True only on the weekly Monday 06:00 UTC tick — single source of truth for the
+      # stuck-PR digest gate, so the cron match isn't repeated on every digest step.
+      IS_WEEKLY_DIGEST: ${{ github.event_name == 'schedule' && github.event.schedule == '0 6 * * 1' }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    
+
     # Inspects in-scope Renovate PRs and takes action per PR:
     # rebase stale PRs (by adding the Renovate `rebase` label) or re-run their
     # failed required jobs.
     - name: Maintain Renovate PRs
-      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@be5b0496892a83e6b3c5cedb818b771e8ed68121
+      id: run-maintainer
+      uses: camunda/infra-global-github-actions/renovate-pr-maintainer@d17726003bd01bcc7513556cc48005e8c6850938
       with:
         dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -52,6 +60,93 @@ jobs:
         stale-hours: 24
         # Try to rerun the failing required checks up to 2 times to workaround flaky CI jobs
         rerun-budget: 2
+
+    # Weekly digest (Monday 06:00 UTC) of Renovate PRs stuck dirty or awaiting a
+    # rebase for too long — a sign Renovate is not processing the repo. Gated on the
+    # weekly cron so it fires at most once per week; the Slack steps run only when at
+    # least one PR is flagged. The "stuck" policy (which states, how old) lives here,
+    # not in the maintainer action.
+    - name: Flag stuck PRs
+      id: stuck
+      if: env.IS_WEEKLY_DIGEST == 'true'
+      env:
+        PROCESSED_PRS: ${{ steps.run-maintainer.outputs.processed-prs }}
+        REPO: ${{ github.repository }}
+        # A PR dirty or awaiting a rebase with a head older than this is "stuck":
+        # 48h = the maintainer's stale-hours (24) + 24h grace.
+        STUCK_HOURS: "48"
+      run: |
+        # shellcheck disable=SC2016
+        stuck=$(echo "${PROCESSED_PRS:-[]}" | jq -c --argjson min "${STUCK_HOURS}" '
+          [ .[] | select((.state == "dirty" or .state == "rebase-labeled") and .age_hours >= $min) ]')
+        count=$(echo "$stuck" | jq 'length')
+        # Group by base branch: a bold base header, then its PRs as indented sub-bullets.
+        # shellcheck disable=SC2016
+        prs=$(echo "$stuck" | jq -r --arg repo "$REPO" '
+          group_by(.base)[]
+          | "• *\(.[0].base)*",
+            (sort_by(-.age_hours)[]
+              | (if .state == "dirty" then "merge conflict" else "awaiting rebase" end) as $why
+              | (if .age_hours >= 24 then "\((.age_hours / 24) | floor)d" else "\(.age_hours)h" end) as $age
+              | "        ◦ <https://github.com/\($repo)/pull/\(.number)|#\(.number)> stuck \($age) (\($why))")
+        ')
+        # The Slack payload is JSON, so encode the real newlines as literal "\n" — a
+        # raw newline inside the JSON string would collapse the list onto one line.
+        prs="${prs//$'\n'/\\n}"
+        {
+          echo "count=${count}"
+          echo "prs=${prs}"
+        } >> "$GITHUB_OUTPUT"
+        echo "Stuck PRs (dirty or awaiting rebase >=${STUCK_HOURS}h): ${count}"
+
+    - name: Import Secrets
+      id: secrets
+      if: env.IS_WEEKLY_DIGEST == 'true' && steps.stuck.outputs.count != '0'
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        exportEnv: false # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+
+    - name: Send stuck-PR Slack notification
+      if: env.IS_WEEKLY_DIGEST == 'true' && steps.stuck.outputs.count != '0'
+      uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+      with:
+        webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
+        webhook-type: incoming-webhook
+        # For posting a rich message using Block Kit
+        payload: |
+          {
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": ":warning: *${{ steps.stuck.outputs.count }} Renovate PR(s) not rebased in days*, far past the window where they should have caught up to their base branch:\n${{ steps.stuck.outputs.prs }}"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "These are normally kept in sync with their base branch automatically through automatic rebases. Days behind means some PRs are stuck, or Renovate has stopped running for this repo.\n<!subteam^S07D6C6B18T|monorepo-ci-medic> please check the PRs above and confirm Renovate is still processing the repo."
+                }
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "_From the <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|Renovate PR maintainer> run_"
+                  }
+                ]
+              }
+            ]
+          }
 
     - name: Observe build status
       if: always()
