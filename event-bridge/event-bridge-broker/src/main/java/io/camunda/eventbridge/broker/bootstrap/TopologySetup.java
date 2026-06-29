@@ -8,7 +8,6 @@
 package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.clustermetadata.transport.MetadataRequestHandler;
@@ -53,46 +52,37 @@ final class TopologySetup {
 
   TopologyManagerImpl start() {
     final var localMemberId = membershipService.getLocalMember().id();
-    final var brokerInfo = createBrokerInfo(localMemberId);
 
-    topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
-    actorScheduler.submitActor(topologyManager);
-
-    // Bridge local raft leadership into the gateway's topology. The gateway BrokerTopologyManager
-    // learns remote brokers' leadership from SWIM gossip events, but in this single-JVM deployment
-    // it does not get a membership event for the local node's own BrokerInfo update. So whenever a
-    // local partition's leader changes, re-ingest membership (which now includes the freshly
-    // published local BrokerInfo) so getLeaderForPartition resolves local partitions too.
-    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
-      topologyManager.addTopologyPartitionListener(
-          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
-    }
-
-    // Separate topology manager for the coordinator group: it publishes a second BrokerInfo (under
-    // a group-specific member-property key), so the gateway resolves the coordinator partition's
-    // leader independently of the data partitions — exactly how Zeebe routes per partition group.
-    final var coordinatorBrokerInfo = createCoordinatorBrokerInfo(localMemberId);
-    coordinatorTopologyManager = new TopologyManagerImpl(membershipService, coordinatorBrokerInfo);
-    actorScheduler.submitActor(coordinatorTopologyManager);
-    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
-      coordinatorTopologyManager.addTopologyPartitionListener(
-          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
-    }
-
-    // Separate topology manager for the metadata group (single partition holding the topic
-    // registry): publishes a third BrokerInfo under the metadata group's member-property key so the
-    // gateway resolves the metadata partition's leader independently of the data/coordinator
-    // groups.
-    final var metadataBrokerInfo = createMetadataBrokerInfo(localMemberId);
-    metadataTopologyManager = new TopologyManagerImpl(membershipService, metadataBrokerInfo);
-    actorScheduler.submitActor(metadataTopologyManager);
-    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
-      metadataTopologyManager.addTopologyPartitionListener(
-          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
-    }
+    // The data partitions publish under the default partition group, while the coordinator and
+    // metadata groups each publish a separate BrokerInfo under their own group-specific
+    // member-property key — so the gateway resolves each group's partition leaders independently,
+    // exactly how Zeebe routes per partition group.
+    topologyManager = registerManager(brokerInfo(null, properties.broker().partitionCount()));
+    coordinatorTopologyManager =
+        registerManager(brokerInfo(CoordinationRequestHandler.COORDINATOR_ROUTING_GROUP, 1));
+    metadataTopologyManager =
+        registerManager(brokerInfo(MetadataRequestHandler.METADATA_ROUTING_GROUP, 1));
 
     LOG.info("Topology managers started for broker {}", localMemberId);
     return topologyManager;
+  }
+
+  /**
+   * Creates a topology manager for the given BrokerInfo, schedules it, and bridges its local raft
+   * leadership into the gateway's topology. The gateway BrokerTopologyManager learns remote
+   * brokers' leadership from SWIM gossip events, but in this single-JVM deployment it does not get
+   * a membership event for the local node's own BrokerInfo update — so whenever a local partition's
+   * leader changes, re-ingest membership (which now includes the freshly published local
+   * BrokerInfo) so getLeaderForPartition resolves local partitions too.
+   */
+  private TopologyManagerImpl registerManager(final BrokerInfo brokerInfo) {
+    final var manager = new TopologyManagerImpl(membershipService, brokerInfo);
+    actorScheduler.submitActor(manager);
+    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
+      manager.addTopologyPartitionListener(
+          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
+    }
+    return manager;
   }
 
   /**
@@ -114,14 +104,7 @@ final class TopologySetup {
    */
   TopologyManagerImpl createTopicTopologyManager(
       final String topicGroup, final int partitionCount) {
-    final var localMemberId = membershipService.getLocalMember().id();
-    final var brokerInfo = createTopicBrokerInfo(localMemberId, topicGroup, partitionCount);
-    final var manager = new TopologyManagerImpl(membershipService, brokerInfo);
-    actorScheduler.submitActor(manager);
-    if (gatewayTopologyManager instanceof final BrokerTopologyManagerImpl gateway) {
-      manager.addTopologyPartitionListener(
-          (partitionId, leaderId) -> gateway.initializeTopologyFromMembership());
-    }
+    final var manager = registerManager(brokerInfo(topicGroup, partitionCount));
     topicTopologyManagers.add(manager);
     LOG.info(
         "Topic topology manager started for group {} ({} partitions)", topicGroup, partitionCount);
@@ -163,92 +146,24 @@ final class TopologySetup {
     }
   }
 
-  private BrokerInfo createBrokerInfo(final MemberId localMemberId) {
-    final var nodeId = BrokerMembers.nodeId(localMemberId);
-    final var clusterCfg = properties.cluster();
-    // Advertise the command API address other nodes (and the gateway) use to reach this broker.
-    final var address =
-        Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
-
-    final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
-    brokerInfo
-        .setClusterSize(clusterCfg.clusterSize())
-        .setPartitionsCount(properties.broker().partitionCount())
-        .setReplicationFactor(properties.raft().replicationFactor());
-
-    final var version = VersionUtil.getVersion();
-    if (version != null && !version.isBlank()) {
-      brokerInfo.setVersion(version);
-    }
-
-    return brokerInfo;
-  }
-
   /**
-   * BrokerInfo for the coordinator routing group (single partition). Tagged with the coordinator
-   * partition group so the gateway maintains a separate per-group topology for it.
+   * Builds the BrokerInfo this node gossips for one routing group. {@code partitionGroup} is the
+   * gateway routing-group tag — {@code null} for the default data group, or the coordinator /
+   * metadata / per-topic group name — which keeps each group's per-group topology separate on the
+   * gateway. The command API address is the one other nodes (and the gateway) use to reach this
+   * broker.
    */
-  private BrokerInfo createCoordinatorBrokerInfo(final MemberId localMemberId) {
-    final var nodeId = BrokerMembers.nodeId(localMemberId);
+  private BrokerInfo brokerInfo(final String partitionGroup, final int partitionCount) {
+    final var nodeId = BrokerMembers.nodeId(membershipService.getLocalMember().id());
     final var clusterCfg = properties.cluster();
     final var address =
         Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
 
     final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
-    brokerInfo
-        .setPartitionGroup(CoordinationRequestHandler.COORDINATOR_ROUTING_GROUP)
-        .setClusterSize(clusterCfg.clusterSize())
-        .setPartitionsCount(1)
-        .setReplicationFactor(properties.raft().replicationFactor());
-
-    final var version = VersionUtil.getVersion();
-    if (version != null && !version.isBlank()) {
-      brokerInfo.setVersion(version);
+    if (partitionGroup != null) {
+      brokerInfo.setPartitionGroup(partitionGroup);
     }
-
-    return brokerInfo;
-  }
-
-  /**
-   * BrokerInfo for the metadata routing group (single partition holding the topic registry). Tagged
-   * with the metadata partition group so the gateway maintains a separate per-group topology for
-   * it.
-   */
-  private BrokerInfo createMetadataBrokerInfo(final MemberId localMemberId) {
-    final var nodeId = BrokerMembers.nodeId(localMemberId);
-    final var clusterCfg = properties.cluster();
-    final var address =
-        Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
-
-    final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
     brokerInfo
-        .setPartitionGroup(MetadataRequestHandler.METADATA_ROUTING_GROUP)
-        .setClusterSize(clusterCfg.clusterSize())
-        .setPartitionsCount(1)
-        .setReplicationFactor(properties.raft().replicationFactor());
-
-    final var version = VersionUtil.getVersion();
-    if (version != null && !version.isBlank()) {
-      brokerInfo.setVersion(version);
-    }
-
-    return brokerInfo;
-  }
-
-  /**
-   * BrokerInfo for a per-topic routing group. Tagged with the topic's Raft group name so the
-   * gateway maintains a separate per-group topology for the topic's partitions.
-   */
-  private BrokerInfo createTopicBrokerInfo(
-      final MemberId localMemberId, final String topicGroup, final int partitionCount) {
-    final var nodeId = BrokerMembers.nodeId(localMemberId);
-    final var clusterCfg = properties.cluster();
-    final var address =
-        Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
-
-    final var brokerInfo = new BrokerInfo(nodeId, null, address.toString());
-    brokerInfo
-        .setPartitionGroup(topicGroup)
         .setClusterSize(clusterCfg.clusterSize())
         .setPartitionsCount(partitionCount)
         .setReplicationFactor(properties.raft().replicationFactor());
