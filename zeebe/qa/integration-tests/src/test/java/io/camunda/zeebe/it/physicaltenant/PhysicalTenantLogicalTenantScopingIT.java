@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.Test;
  * have no ES/OS indices to read from.
  */
 @ZeebeIntegration
-@Disabled
 final class PhysicalTenantLogicalTenantScopingIT {
 
   private static final String TENANT_A = "tenanta";
@@ -65,7 +63,7 @@ final class PhysicalTenantLogicalTenantScopingIT {
 
   private static TestStandaloneBroker configure() {
     final TestStandaloneBroker broker =
-        TENANTS.configure(
+        TENANTS.configureAdminRoles(
             new TestStandaloneBroker()
                 .withAuthorizationsEnabled()
                 .withAuthenticationMethod(AuthenticationMethod.BASIC)
@@ -77,6 +75,7 @@ final class PhysicalTenantLogicalTenantScopingIT {
 
   @BeforeAll
   static void startBroker() {
+    TENANTS.refreshSecondaryStorage(BROKER);
     BROKER.start();
     tenantAAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_A, ADMIN_PASSWORD).build();
     tenantBAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_B, ADMIN_PASSWORD).build();

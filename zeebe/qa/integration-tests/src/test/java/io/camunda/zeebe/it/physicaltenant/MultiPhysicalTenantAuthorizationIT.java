@@ -33,7 +33,6 @@ import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -50,7 +49,6 @@ import org.junit.jupiter.api.Test;
  * have no ES/OS indices to authorize against.
  */
 @ZeebeIntegration
-@Disabled
 final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthorizationTestBase {
 
   @TestZeebe(autoStart = false)
@@ -62,6 +60,7 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
 
   @BeforeAll
   static void startBroker() {
+    TENANTS.refreshSecondaryStorage(BROKER);
     BROKER.start();
     defaultAdmin = defaultAdminClient(BROKER);
     tenantAAdmin = adminClient(BROKER, TENANT_A);

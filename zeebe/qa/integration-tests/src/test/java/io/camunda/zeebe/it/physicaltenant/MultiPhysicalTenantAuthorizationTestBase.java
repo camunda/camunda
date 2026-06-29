@@ -58,13 +58,15 @@ abstract class MultiPhysicalTenantAuthorizationTestBase {
           .build();
 
   /**
-   * Configures a broker for the multi-PT authorization scenario: storage + per-PT admin role (via
-   * the helper's {@code configure}), basic auth, authorizations enabled, and a seeded per-PT admin
-   * user for {@code tenanta} and {@code tenantb}.
+   * Configures a broker for the multi-PT authorization scenario: per-PT admin role (via the
+   * helper's {@code configureAdminRoles}), basic auth, authorizations enabled, and a seeded per-PT
+   * admin user for {@code tenanta} and {@code tenantb}. Secondary storage is intentionally not
+   * applied here; it is (re-)stamped per run via {@code TENANTS.refreshSecondaryStorage(BROKER)} in
+   * {@code @BeforeAll} so each start gets a fresh database identity.
    */
   protected static TestStandaloneBroker configureBroker() {
     final TestStandaloneBroker broker =
-        TENANTS.configure(
+        TENANTS.configureAdminRoles(
             new TestStandaloneBroker()
                 .withAuthorizationsEnabled()
                 .withAuthenticationMethod(AuthenticationMethod.BASIC));

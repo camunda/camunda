@@ -74,31 +74,62 @@ public final class PhysicalTenantsITHelper {
     return new Builder();
   }
 
+  /**
+   * Fully configures the broker for the physical tenants: assigns the per-PT admin role and applies
+   * the secondary storage. Suitable for instance-scoped brokers configured once per test instance.
+   * Static brokers reused across runs should instead call {@link #configureAdminRoles} once at
+   * setup and {@link #refreshSecondaryStorage} per {@code @BeforeAll}, so storage is applied
+   * exactly once per start with a fresh database identity.
+   */
   public TestStandaloneBroker configure(final TestStandaloneBroker broker) {
-    tenants.forEach(
-        (tenant, storage) -> {
-          storage.applyTo(broker, tenant);
-          if (!DEFAULT_TENANT_ID.equals(tenant)) {
-            broker.withPtConfig(
-                tenant,
-                camunda ->
-                    camunda
-                        .getSecurity()
-                        .getInitialization()
-                        .setDefaultRoles(
-                            Map.of("admin", Map.of("users", List.of(tenant + "-admin")))));
-          }
-        });
+    configureAdminRoles(broker);
+    return refreshSecondaryStorage(broker);
+  }
+
+  /**
+   * Assigns the {@code admin} default role to each non-default physical tenant's {@code
+   * <tenant>-admin} user. Does not touch secondary storage, so it is safe to call once at static
+   * setup while storage is (re-)applied per run via {@link #refreshSecondaryStorage}.
+   */
+  public TestStandaloneBroker configureAdminRoles(final TestStandaloneBroker broker) {
+    tenants
+        .keySet()
+        .forEach(
+            tenant -> {
+              if (!DEFAULT_TENANT_ID.equals(tenant)) {
+                broker.withPtConfig(
+                    tenant,
+                    camunda ->
+                        camunda
+                            .getSecurity()
+                            .getInitialization()
+                            .setDefaultRoles(
+                                Map.of("admin", Map.of("users", List.of(adminUsername(tenant))))));
+              }
+            });
+    return broker;
+  }
+
+  /**
+   * Re-stamps every physical tenant's secondary storage with a fresh database identity. Call in
+   * {@code @BeforeAll} before starting the broker so that a failsafe rerun within the same JVM gets
+   * isolated databases rather than recovering the previous run's exporter position against a
+   * freshly-initialised log. Only the storage is re-applied; default roles and seeded users are
+   * left untouched.
+   */
+  public TestStandaloneBroker refreshSecondaryStorage(final TestStandaloneBroker broker) {
+    tenants.forEach((tenant, storage) -> storage.applyTo(broker, tenant));
     return broker;
   }
 
   /**
    * Seeds a basic-auth per-PT admin {@code <tenantId>-admin} user for a non-{@code default}
-   * physical tenant (matching the {@code defaultRoles.admin} assignment {@link #configure} sets)
-   * into that tenant's {@code security.initialization}, so the user can authenticate via the
-   * tenant-prefixed REST path once authorizations and basic auth are enabled. Basic-auth specific
-   * (an OIDC variant would seed a mapping rule instead). Appends the per-PT admin user to the
-   * tenant's existing initialization users list; call in addition to {@link #configure}.
+   * physical tenant (matching the {@code defaultRoles.admin} assignment {@link
+   * #configureAdminRoles} sets) into that tenant's {@code security.initialization}, so the user can
+   * authenticate via the tenant-prefixed REST path once authorizations and basic auth are enabled.
+   * Basic-auth specific (an OIDC variant would seed a mapping rule instead). Appends the per-PT
+   * admin user to the tenant's existing initialization users list; call in addition to {@link
+   * #configureAdminRoles}.
    */
   public TestStandaloneBroker seedBasicAuthAdminUser(
       final TestStandaloneBroker broker, final String tenantId, final String password) {
@@ -255,10 +286,31 @@ public final class PhysicalTenantsITHelper {
     }
 
     static Storage rdbmsH2(final String dbName) {
-      return rdbms(
-          "jdbc:h2:mem:" + dbName + "-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-          "sa",
-          "");
+      return new RdbmsH2Storage(dbName);
+    }
+  }
+
+  /**
+   * In-memory H2 storage that mints a fresh database identity on every {@link #applyTo} call rather
+   * than baking one URL at construction. An in-memory H2 with {@code DB_CLOSE_DELAY=-1} survives
+   * for the lifetime of the JVM, so a {@code static} broker reusing a single URL across a failsafe
+   * rerun in the same JVM would recover the previous run's exporter position against a
+   * freshly-initialised log and fail to recover the exporter. Re-stamping a fresh database per
+   * broker start (see {@link #refreshSecondaryStorage}) keeps the secondary storage isolated per
+   * run, in lockstep with the per-lifecycle primary storage.
+   */
+  private record RdbmsH2Storage(String dbName) implements Storage {
+    @Override
+    public void applyTo(final TestStandaloneBroker broker, final String tenantId) {
+      new RdbmsStorage(
+              "jdbc:h2:mem:"
+                  + dbName
+                  + "-"
+                  + UUID.randomUUID()
+                  + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+              "sa",
+              "")
+          .applyTo(broker, tenantId);
     }
   }
 }
