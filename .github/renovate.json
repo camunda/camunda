@@ -734,6 +734,20 @@
       ],
       "groupName": "form-js",
       "groupSlug": "form-js"
+    },
+    {
+      "description": "Simplify the commit message when updating the Camunda Platform Helm Chart for load tests",
+      "matchDepNames": ["camunda/camunda-platform-helm"],
+      "matchDatasources": ["github-tags"],
+      "matchFileNames": ["load-tests/**"],
+      "commitMessageTopic": "camunda-platform Helm Chart"
+    },
+    {
+      "description": "Authorize the 'main' load test to deploy alpha version of the Camunda Platform Helm Chart",
+      "matchDepNames": ["camunda/camunda-platform-helm"],
+      "matchDatasources": ["github-tags"],
+      "matchFileNames": ["load-tests/setup/main/**"],
+      "ignoreUnstable": false
     }
   ],
   "dockerfile": {
@@ -755,6 +769,18 @@
         "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "description": "Track camunda-platform-helm chart tags pinned in load test scripts.",
+      "customType": "regex",
+      "managerFilePatterns": ["load-tests/setup/*/newLoadTest.sh"],
+      "matchStrings": [
+        "renovate: version=(?<parentVersion>.*?)\\s+camunda_platform_helm_chart_version=\"(?<currentValue>[^\"]+)\""
+      ],
+      "extractVersionTemplate": "^{{{parentVersion}}}-(?<version>\\S+)$",
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "camunda/camunda-platform-helm",
+      "versioningTemplate": "regex:(?<major>\\d+)(\\.(?<minor>\\d+))?(\\.(?<patch>\\d+))(-alpha(?<prerelease>.*))?$"
     },
     {
       "customType": "regex",

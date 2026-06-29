@@ -32,6 +32,16 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    version; `saas-default/` is SaaS/cloud only and is not version-partitioned.
    See `load-tests/setup/README.md` for the version-dispatcher pattern and layout.
 
+   When **adding a new versioned folder** (e.g. for a new stable branch), include the
+   Renovate annotation immediately above `camunda_platform_helm_chart_version` in the new
+   `newLoadTest.sh`:
+   ```sh
+   # renovate: version=camunda-platform-8.X
+   camunda_platform_helm_chart_version="X.Y.Z"
+   ```
+   This lets Renovate automatically track Helm chart patch updates on that stable branch.
+   See `load-tests/setup/README.md#helm-chart-version-management` for full details.
+
 ## What gets backported
 
 **Never backport** (update the versioned folder on `main` instead):
