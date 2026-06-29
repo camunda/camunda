@@ -139,6 +139,23 @@ final class MembershipStateAdapterTest {
   }
 
   @Test
+  void shouldReturnGroupIdsFromMatchedMappingRules() {
+    // given — mapping rule assigned to a group; no USER_GROUPS_CLAIMS
+    final var mappingRuleId = UUID.randomUUID().toString();
+    final var groupId =
+        createGroupAndAssignEntity(mappingRuleId, EntityType.MAPPING_RULE).getGroupId();
+    final var query =
+        new MembershipQuery(Map.of(), "userId", PrincipalType.USER)
+            .withMappingRuleIds(List.of(mappingRuleId));
+
+    // when
+    final var result = adapter.groupIds(query);
+
+    // then
+    assertThat(result).containsExactly(groupId);
+  }
+
+  @Test
   void shouldReturnRoleIdsForPrincipalAndGroups() {
     // given
     final var userId = Strings.newRandomValidIdentityId();

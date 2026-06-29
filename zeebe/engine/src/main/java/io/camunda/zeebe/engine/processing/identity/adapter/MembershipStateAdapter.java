@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity.adapter;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
@@ -27,12 +30,27 @@ public final class MembershipStateAdapter implements MembershipPort {
 
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
+  private final LoadingCache<MembershipCacheKey, List<String>> membershipCache;
 
   public MembershipStateAdapter(
       final MappingRuleState mappingRuleState, final MembershipState membershipState) {
     this.mappingRuleState = mappingRuleState;
     this.membershipState = membershipState;
+    membershipCache =
+        CacheBuilder.newBuilder()
+            .maximumSize(1_000)
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public List<String> load(final MembershipCacheKey key) {
+                    return MembershipStateAdapter.this.membershipState.getMemberships(
+                        key.entityType(), key.entityId(), key.relationType());
+                  }
+                });
   }
+
+  private record MembershipCacheKey(
+      EntityType entityType, String entityId, RelationType relationType) {}
 
   @Override
   public List<String> mappingRuleIds(final MembershipQuery query) {
@@ -48,30 +66,35 @@ public final class MembershipStateAdapter implements MembershipPort {
   @Override
   public List<String> groupIds(final MembershipQuery query) {
     final var rawGroups = query.tokenClaims().get(Authorization.USER_GROUPS_CLAIMS);
+    final var result = new LinkedHashSet<String>();
     if (rawGroups instanceof List<?> groupsClaims) {
-      return groupsClaims.stream()
+      groupsClaims.stream()
           .filter(String.class::isInstance)
           .map(String.class::cast)
-          .distinct()
-          .toList();
+          .forEach(result::add);
+    } else {
+      getMemberships(toEntityType(query.principalType()), query.principalId(), RelationType.GROUP)
+          .forEach(result::add);
     }
-    return membershipState.getMemberships(
-        toEntityType(query.principalType()), query.principalId(), RelationType.GROUP);
+    query
+        .resolvedMappingRuleIds()
+        .forEach(
+            ruleId ->
+                getMemberships(EntityType.MAPPING_RULE, ruleId, RelationType.GROUP)
+                    .forEach(result::add));
+    return new ArrayList<>(result);
   }
 
   @Override
   public List<String> roleIds(final MembershipQuery query) {
     final var result = new LinkedHashSet<String>();
-    membershipState
-        .getMemberships(toEntityType(query.principalType()), query.principalId(), RelationType.ROLE)
+    getMemberships(toEntityType(query.principalType()), query.principalId(), RelationType.ROLE)
         .forEach(result::add);
     query
         .resolvedGroupIds()
         .forEach(
             groupId ->
-                membershipState
-                    .getMemberships(EntityType.GROUP, groupId, RelationType.ROLE)
-                    .forEach(result::add));
+                getMemberships(EntityType.GROUP, groupId, RelationType.ROLE).forEach(result::add));
     return new ArrayList<>(result);
   }
 
@@ -79,32 +102,29 @@ public final class MembershipStateAdapter implements MembershipPort {
   public List<String> tenantIds(final MembershipQuery query) {
     final var result = new LinkedHashSet<String>();
     final var entityType = toEntityType(query.principalType());
-    membershipState
-        .getMemberships(entityType, query.principalId(), RelationType.TENANT)
-        .forEach(result::add);
+    getMemberships(entityType, query.principalId(), RelationType.TENANT).forEach(result::add);
     query
         .resolvedRoleIds()
         .forEach(
             roleId ->
-                membershipState
-                    .getMemberships(EntityType.ROLE, roleId, RelationType.TENANT)
-                    .forEach(result::add));
+                getMemberships(EntityType.ROLE, roleId, RelationType.TENANT).forEach(result::add));
     query
         .resolvedGroupIds()
         .forEach(
             groupId -> {
-              membershipState
-                  .getMemberships(EntityType.GROUP, groupId, RelationType.TENANT)
-                  .forEach(result::add);
-              membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.ROLE).stream()
+              getMemberships(EntityType.GROUP, groupId, RelationType.TENANT).forEach(result::add);
+              getMemberships(EntityType.GROUP, groupId, RelationType.ROLE).stream()
                   .flatMap(
                       roleId ->
-                          membershipState
-                              .getMemberships(EntityType.ROLE, roleId, RelationType.TENANT)
-                              .stream())
+                          getMemberships(EntityType.ROLE, roleId, RelationType.TENANT).stream())
                   .forEach(result::add);
             });
     return new ArrayList<>(result);
+  }
+
+  private List<String> getMemberships(
+      final EntityType entityType, final String entityId, final RelationType relationType) {
+    return membershipCache.getUnchecked(new MembershipCacheKey(entityType, entityId, relationType));
   }
 
   private EntityType toEntityType(final PrincipalType principalType) {
