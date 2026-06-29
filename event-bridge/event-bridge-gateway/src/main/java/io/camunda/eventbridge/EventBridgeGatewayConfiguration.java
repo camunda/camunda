@@ -7,22 +7,23 @@
  */
 package io.camunda.eventbridge;
 
-import io.camunda.eventbridge.broker.EventBridgeBrokerConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 /**
- * Spring module configuration for the Event Bridge gateway. Activates component scanning for all
- * gateway beans and imports the broker module so that actor beans are available for injection into
- * the REST controller.
+ * Spring module configuration for the Event Bridge gateway. Activates component scanning for the
+ * gateway (REST controllers) and the {@code event-bridge-services} domain layer.
+ *
+ * <p>The gateway has no compile-time dependency on the broker module. In the single-JVM standalone
+ * deployment the broker runs in the same process; its {@code EventBridgeBrokerConfiguration} is
+ * composed by the standalone entry-point ({@code StandaloneEventBridge}) and is also picked up by
+ * the broad component scan below whenever the broker is present on the classpath.
  *
  * <p>This class is intentionally a plain {@link Configuration} rather than a
  * {@code @SpringBootConfiguration}: it is loaded as a <em>source</em> by the standalone entry-point
- * ({@code StandaloneEventBridge}) which carries the {@code @SpringBootConfiguration} annotation and
- * handles {@code @EnableAutoConfiguration}.
+ * which carries the {@code @SpringBootConfiguration} annotation and handles
+ * {@code @EnableAutoConfiguration}.
  */
 @Configuration(proxyBeanMethods = false)
-@Import(EventBridgeBrokerConfiguration.class)
 @ComponentScan(basePackages = "io.camunda.eventbridge")
 public class EventBridgeGatewayConfiguration {}

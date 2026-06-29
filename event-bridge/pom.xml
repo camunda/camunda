@@ -29,6 +29,7 @@
     <module>event-bridge-cluster-metadata</module>
     <module>event-bridge-consumer-groups</module>
     <module>event-bridge-broker</module>
+    <module>event-bridge-services</module>
     <module>event-bridge-gateway</module>
     <module>event-bridge-client</module>
   </modules>

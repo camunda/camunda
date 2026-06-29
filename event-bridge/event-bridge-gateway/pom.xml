@@ -34,10 +34,10 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- Broker (in-process, same JVM for standalone mode) -->
+    <!-- Domain service layer the REST controllers delegate to -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>event-bridge-broker</artifactId>
+      <artifactId>event-bridge-services</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -64,12 +64,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-    </dependency>
-
-    <!-- Agrona direct buffers (for SBE codec) -->
-    <dependency>
-      <groupId>org.agrona</groupId>
-      <artifactId>agrona</artifactId>
     </dependency>
 
     <!-- Logging -->
@@ -107,6 +101,14 @@
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Integration test: in-process broker for end-to-end gateway tests (not a runtime dep — the
+         standalone composes the broker in dist/StandaloneEventBridge) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-broker</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <!-- Integration test: Event Bridge client for end-to-end HTTP testing -->

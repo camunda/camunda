@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.broker.partitioning;
+package io.camunda.eventbridge.core.partition;
 
 /**
  * Reports a topic partition's elected Raft leader to the metadata-group leader, so leadership is
- * recorded in replicated state (from which topic readiness is derived). Called by {@link
- * PartitionLifecycle} when this node becomes the leader of a topic partition.
+ * recorded in replicated state (from which topic readiness is derived). Called by the broker's
+ * {@code PartitionLifecycle} when this node becomes the leader of a topic partition.
  *
  * <p>The implementation routes the report to the metadata leader and retries until it is durably
  * acknowledged. It lives where a routed client is available (the gateway, reusing its {@code

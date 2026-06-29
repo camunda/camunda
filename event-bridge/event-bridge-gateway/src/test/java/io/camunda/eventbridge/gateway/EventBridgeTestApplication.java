@@ -16,6 +16,7 @@ import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.camunda.eventbridge.EventBridgeGatewayConfiguration;
+import io.camunda.eventbridge.broker.EventBridgeBrokerConfiguration;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -33,8 +34,9 @@ import org.springframework.context.annotation.Import;
  * Minimal Spring Boot configuration for {@link StandaloneEventBridgeIT}.
  *
  * <p>Provides the two cross-cutting infrastructure beans — {@link ActorScheduler} and {@link
- * AtomixCluster} — that the broker module requires, plus imports {@link
- * EventBridgeGatewayConfiguration} (which in turn imports the broker module).
+ * AtomixCluster} — that the broker module requires, and composes the gateway ({@link
+ * EventBridgeGatewayConfiguration}) together with the in-process broker ({@link
+ * EventBridgeBrokerConfiguration}) — the same composition the standalone entry-point performs.
  *
  * <p>The {@code event-bridge-gateway} module does not declare Spring Security or Camunda Identity
  * on its classpath, so no authentication filter chain is registered and all HTTP endpoints are
@@ -43,7 +45,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootConfiguration(proxyBeanMethods = false)
 @EnableAutoConfiguration
 @EnableConfigurationProperties(EventBridgeProperties.class)
-@Import(EventBridgeGatewayConfiguration.class)
+@Import({EventBridgeGatewayConfiguration.class, EventBridgeBrokerConfiguration.class})
 public class EventBridgeTestApplication {
 
   @Bean

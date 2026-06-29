@@ -17,7 +17,7 @@ import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
-import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
+import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;

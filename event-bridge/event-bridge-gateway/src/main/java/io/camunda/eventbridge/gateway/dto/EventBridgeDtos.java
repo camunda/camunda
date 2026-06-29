@@ -109,18 +109,8 @@ public final class EventBridgeDtos {
   public record OffsetFetchResponse(
       String errorCode, Map<String, Map<Integer, Long>> committedOffsets) {}
 
-  /**
-   * One consumer group's observable description for {@code GET /v1/groups} — its lifecycle state,
-   * epochs, subscription ({@code topic → partitionCount}), and members ({@code memberId →
-   * assignedEpoch}; a member whose assignedEpoch &lt; groupEpoch is lagging the current rebalance).
-   */
-  public record GroupDescription(
-      String groupId,
-      String state,
-      long groupEpoch,
-      long assignmentEpoch,
-      Map<String, Integer> subscriptions,
-      Map<String, Long> members) {}
+  // GroupDescription is the coordinator's domain result and lives in event-bridge-services
+  // (io.camunda.eventbridge.service.GroupDescription); the gateway serialises it directly.
 
   public record LatestPositionResponse(long position) {}
 

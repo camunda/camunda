@@ -18,7 +18,6 @@ import io.camunda.eventbridge.broker.request.coordination.BrokerListTopicsReques
 import io.camunda.eventbridge.broker.request.coordination.BrokerOffsetFetchRequest;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
@@ -149,12 +148,12 @@ public class CoordinatorService {
    * null}/blank one fans out to every coordinator shard and merges, since groups are distributed
    * across shards by group id.
    */
-  public CompletableFuture<List<EventBridgeDtos.GroupDescription>> describeGroups(
+  public CompletableFuture<List<GroupDescription>> describeGroups(
       final String groupId) {
     if (groupId != null && !groupId.isEmpty()) {
       return describeShard(groupId, shardFor(groupId));
     }
-    final List<CompletableFuture<List<EventBridgeDtos.GroupDescription>>> perShard =
+    final List<CompletableFuture<List<GroupDescription>>> perShard =
         new ArrayList<>();
     for (int shard = 1; shard <= coordinatorPartitionCount; shard++) {
       perShard.add(describeShard("", shard));
@@ -164,7 +163,7 @@ public class CoordinatorService {
             ignored -> perShard.stream().flatMap(f -> f.join().stream()).toList(), executor);
   }
 
-  private CompletableFuture<List<EventBridgeDtos.GroupDescription>> describeShard(
+  private CompletableFuture<List<GroupDescription>> describeShard(
       final String groupId, final int shard) {
     final var brokerRequest =
         new BrokerDescribeGroupsRequest()
@@ -175,12 +174,12 @@ public class CoordinatorService {
         .thenApplyAsync(r -> toDescriptions(r.getResponse()), executor);
   }
 
-  private static List<EventBridgeDtos.GroupDescription> toDescriptions(
+  private static List<GroupDescription> toDescriptions(
       final DescribeGroupsResponse response) {
     // map during iteration — mapGroups reuses one flyweight per element
     return response.mapGroups(
         group ->
-            new EventBridgeDtos.GroupDescription(
+            new GroupDescription(
                 group.getGroupId(),
                 group.getState(),
                 group.getGroupEpoch(),

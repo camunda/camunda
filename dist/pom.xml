@@ -108,6 +108,14 @@
       <version>${project.version}</version>
     </dependency>
 
+    <!-- The standalone composes the broker in-process (StandaloneEventBridge); the gateway no
+         longer depends on the broker, so dist depends on it directly. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-broker</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker-client</artifactId>

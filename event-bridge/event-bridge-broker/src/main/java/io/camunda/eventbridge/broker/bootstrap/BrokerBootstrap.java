@@ -11,7 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
-import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
+import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationCommand;
 import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
