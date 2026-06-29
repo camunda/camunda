@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.protocol;
 
+import io.camunda.eventbridge.batch.BatchFormat;
 import java.nio.ByteBuffer;
 import java.util.zip.CRC32C;
 import org.agrona.DirectBuffer;
@@ -82,29 +83,29 @@ import org.agrona.MutableDirectBuffer;
  */
 public final class EventBridgeBatch {
 
-  public static final int VERSION_1 = 1;
+  // The layout is defined once in BatchFormat (event-bridge-batch-codec). These constants mirror it
+  // for the Agrona/zero-copy accessors below; the values are sourced from BatchFormat so there is a
+  // single source of truth shared with the pure (client) codec.
+  public static final int VERSION_1 = BatchFormat.VERSION_1;
 
-  // -- Current format version --
-  public static final int POSITION_OFFSET = 0; // int64, 0 % 8 = 0 ✓
-
-  // -- Header field offsets (naturally aligned) --
-  public static final int BATCH_LENGTH_OFFSET = 8; // int32, 8 % 4 = 0 ✓
-  public static final int VERSION_OFFSET = 12; // int32, 12 % 4 = 0 ✓
-  public static final int TIMESTAMP_OFFSET = 16; // int64, 16 % 8 = 0 ✓
-  public static final int CRC_OFFSET = 24; // int32, 24 % 4 = 0 ✓
-  public static final int ATTRIBUTES_OFFSET = 28; // int32, 28 % 4 = 0 ✓
-  public static final int ENTRY_COUNT_OFFSET = 32; // int32, 32 % 4 = 0 ✓
-  public static final int RESERVED_OFFSET = 36; // int32, 36 % 4 = 0 ✓
+  public static final int POSITION_OFFSET = BatchFormat.POSITION_OFFSET;
+  public static final int BATCH_LENGTH_OFFSET = BatchFormat.BATCH_LENGTH_OFFSET;
+  public static final int VERSION_OFFSET = BatchFormat.VERSION_OFFSET;
+  public static final int TIMESTAMP_OFFSET = BatchFormat.TIMESTAMP_OFFSET;
+  public static final int CRC_OFFSET = BatchFormat.CRC_OFFSET;
+  public static final int ATTRIBUTES_OFFSET = BatchFormat.ATTRIBUTES_OFFSET;
+  public static final int ENTRY_COUNT_OFFSET = BatchFormat.ENTRY_COUNT_OFFSET;
+  public static final int RESERVED_OFFSET = BatchFormat.RESERVED_OFFSET;
 
   /** Header size in bytes. Records start immediately after. */
-  public static final int HEADER_LENGTH = 40;
+  public static final int HEADER_LENGTH = BatchFormat.HEADER_LENGTH;
 
   // -- Attribute bit masks: compression codec in bits 0-2 --
-  public static final int COMPRESSION_MASK = 0x07; // bits 0-2
-  public static final int COMPRESSION_NONE = 0;
-  public static final int COMPRESSION_LZ4 = 1;
-  public static final int COMPRESSION_ZSTD = 2;
-  public static final int COMPRESSION_SNAPPY = 3;
+  public static final int COMPRESSION_MASK = BatchFormat.COMPRESSION_MASK;
+  public static final int COMPRESSION_NONE = BatchFormat.COMPRESSION_NONE;
+  public static final int COMPRESSION_LZ4 = BatchFormat.COMPRESSION_LZ4;
+  public static final int COMPRESSION_ZSTD = BatchFormat.COMPRESSION_ZSTD;
+  public static final int COMPRESSION_SNAPPY = BatchFormat.COMPRESSION_SNAPPY;
 
   // -- CRC range: from ATTRIBUTES_OFFSET to end of batch --
   //

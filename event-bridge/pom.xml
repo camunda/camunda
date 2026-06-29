@@ -22,6 +22,7 @@
 
   <modules>
     <module>event-bridge-core</module>
+    <module>event-bridge-batch-codec</module>
     <module>event-bridge-protocol</module>
     <module>event-bridge-transport</module>
     <module>event-bridge-messaging</module>

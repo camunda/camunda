@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.protocol;
 
+import io.camunda.eventbridge.batch.BatchFormat;
 import org.agrona.DirectBuffer;
 
 /**
@@ -38,17 +39,19 @@ import org.agrona.DirectBuffer;
  */
 public final class EventBridgeEntry {
 
+  // Entry layout constants are defined once in BatchFormat (event-bridge-batch-codec).
+
   /** Size of the entry length prefix. */
-  public static final int ENTRY_LENGTH_SIZE = Integer.BYTES;
+  public static final int ENTRY_LENGTH_SIZE = BatchFormat.ENTRY_LENGTH_SIZE;
 
   /** Size of the key length field. */
-  public static final int KEY_LENGTH_SIZE = Integer.BYTES;
+  public static final int KEY_LENGTH_SIZE = BatchFormat.KEY_LENGTH_SIZE;
 
   /** Fixed overhead per entry (entryLength + keyLength). */
-  public static final int ENTRY_HEADER_SIZE = ENTRY_LENGTH_SIZE + KEY_LENGTH_SIZE;
+  public static final int ENTRY_HEADER_SIZE = BatchFormat.ENTRY_HEADER_SIZE;
 
   /** Minimum valid entryLength value — must at least contain the keyLength field. */
-  public static final int MIN_ENTRY_LENGTH = KEY_LENGTH_SIZE;
+  public static final int MIN_ENTRY_LENGTH = BatchFormat.MIN_ENTRY_LENGTH;
 
   private DirectBuffer buffer;
   private int offset;

@@ -7,16 +7,13 @@
  */
 package io.camunda.eventbridge.client;
 
-import io.camunda.eventbridge.protocol.EventBridgeBatch;
-import io.camunda.eventbridge.protocol.EventBridgeBatchIterator;
-import io.camunda.eventbridge.protocol.EventBridgeEntry;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.camunda.eventbridge.batch.BatchReader;
+import java.util.List;
 
 /**
- * Result of a fetch. Contains zero or more complete {@link EventBridgeBatch} instances packed
- * contiguously. Entry-level iteration is handled client-side via {@link #entries(long)}.
+ * Result of a fetch. Contains zero or more complete batches packed contiguously. Entry-level
+ * iteration is handled client-side via {@link #entries(long)} using the pure {@link BatchReader}
+ * (no Agrona / broker-protocol dependency).
  *
  * <p>Wire format parsed from the gateway:
  *
@@ -153,18 +150,48 @@ public final class FetchResult {
 
   /**
    * Iterates over individual entries, skipping those before {@code startOffset}. The broker returns
-   * complete batches, so the first batch may contain entries before the requested offset.
-   *
-   * <p>Uses the flyweight pattern — one iterator and one {@link EventBridgeEntry} are reused. Copy
-   * entry data before advancing.
+   * complete batches, so the first batch may contain entries before the requested offset. Each
+   * returned {@link FetchedEntry} owns copies of its key/value bytes.
    */
-  public Iterable<EventBridgeEntry> entries(final long startOffset) {
-    return () -> new EntryIterator(data, dataLength, startOffset);
+  public Iterable<FetchedEntry> entries(final long startOffset) {
+    return BatchReader.read(data, 0, dataLength, startOffset).stream()
+        .map(FetchedEntry::new)
+        .toList();
   }
 
   /** Iterates over all entries without skipping. */
-  public Iterable<EventBridgeEntry> entries() {
-    return () -> new EntryIterator(data, dataLength, Long.MIN_VALUE);
+  public Iterable<FetchedEntry> entries() {
+    return entries(Long.MIN_VALUE);
+  }
+
+  /** A single fetched entry: its log position and copies of its key and value bytes. */
+  public static final class FetchedEntry {
+
+    private final BatchReader.Entry entry;
+
+    FetchedEntry(final BatchReader.Entry entry) {
+      this.entry = entry;
+    }
+
+    public long getPosition() {
+      return entry.position();
+    }
+
+    public int getKeyLength() {
+      return entry.key().length;
+    }
+
+    public byte[] getKeyCopy() {
+      return entry.key();
+    }
+
+    public int getValueLength() {
+      return entry.value().length;
+    }
+
+    public byte[] getValueCopy() {
+      return entry.value();
+    }
   }
 
   private static long readLong(final byte[] data, final int offset) {
@@ -176,82 +203,5 @@ public final class FetchResult {
         | (data[offset + 1] & 0xFF) << 16
         | (data[offset + 2] & 0xFF) << 8
         | (data[offset + 3] & 0xFF);
-  }
-
-  /**
-   * Iterates over individual entries across multiple contiguous batches, handling batch boundaries
-   * transparently. Entry data is only valid until the next {@link #next()} call.
-   */
-  private static final class EntryIterator implements Iterator<EventBridgeEntry> {
-
-    private final UnsafeBuffer buffer;
-    private final int dataLength;
-    private final long startOffset;
-    private final EventBridgeBatchIterator batchIterator;
-
-    private int batchCursor;
-    private boolean started;
-
-    EntryIterator(final byte[] data, final int dataLength, final long startOffset) {
-      buffer = new UnsafeBuffer(data, 0, dataLength);
-      this.dataLength = dataLength;
-      this.startOffset = startOffset;
-      batchIterator = new EventBridgeBatchIterator();
-      batchCursor = 0;
-      started = false;
-    }
-
-    @Override
-    public boolean hasNext() {
-      ensureStarted();
-      if (batchIterator.hasNext()) {
-        return true;
-      }
-      return loadNextBatch();
-    }
-
-    @Override
-    public EventBridgeEntry next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException("No more entries");
-      }
-      return batchIterator.next();
-    }
-
-    private void ensureStarted() {
-      if (!started) {
-        started = true;
-        if (loadNextBatch() && startOffset > Long.MIN_VALUE) {
-          batchIterator.skipTo(startOffset);
-        }
-      }
-    }
-
-    private boolean loadNextBatch() {
-      while (batchCursor + EventBridgeBatch.HEADER_LENGTH <= dataLength) {
-        final int batchLength = EventBridgeBatch.getBatchLength(buffer, batchCursor);
-        final int totalSize = EventBridgeBatch.totalSize(batchLength);
-
-        if (batchLength <= 0 || totalSize <= 0 || batchCursor + totalSize > dataLength) {
-          return false;
-        }
-
-        batchIterator.wrap(buffer, batchCursor, totalSize);
-        batchCursor += totalSize;
-
-        if (startOffset > Long.MIN_VALUE) {
-          final long batchLastPosition =
-              batchIterator.getBatchPosition() + batchIterator.getEntryCount() - 1;
-          if (batchLastPosition < startOffset) {
-            continue;
-          }
-        }
-
-        if (batchIterator.hasNext()) {
-          return true;
-        }
-      }
-      return false;
-    }
   }
 }

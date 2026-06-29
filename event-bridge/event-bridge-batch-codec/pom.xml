@@ -16,37 +16,24 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>event-bridge-client</artifactId>
+  <artifactId>event-bridge-batch-codec</artifactId>
   <packaging>jar</packaging>
-  <name>Event Bridge Client</name>
+  <name>Event Bridge Batch Codec</name>
+  <description>
+    Dependency-free (pure JDK) definition of the EventBridge batch wire format: the layout constants
+    that are the single source of truth, plus a plain byte[] builder and reader. The broker's
+    zero-copy Agrona accessors (event-bridge-protocol) read the same layout from these constants;
+    the client uses the pure builder/reader so it needs neither Agrona nor the broker protocol.
+  </description>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>event-bridge-batch-codec</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <!-- Jackson for JSON HTTP communication -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-
-    <!-- Logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-    </dependency>
-
-    <!-- Test -->
+    <!-- Intentionally no runtime dependencies — pure JDK only. -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -55,16 +42,6 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

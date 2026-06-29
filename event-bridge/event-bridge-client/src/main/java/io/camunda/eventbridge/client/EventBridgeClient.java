@@ -8,8 +8,7 @@
 package io.camunda.eventbridge.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.eventbridge.protocol.EventBridgeBatchBuilder;
-import io.camunda.eventbridge.protocol.EventBridgeEntryBuilder;
+import io.camunda.eventbridge.batch.BatchBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -373,26 +372,25 @@ public final class EventBridgeClient implements AutoCloseable {
   /** Fluent builder for publishing a batch of entries in a single request. */
   public final class BatchPublisher {
 
-    private final EventBridgeBatchBuilder batchBuilder = new EventBridgeBatchBuilder();
-    private final EventBridgeEntryBuilder entryBuilder = new EventBridgeEntryBuilder();
+    private final BatchBuilder batchBuilder = new BatchBuilder();
 
     public BatchPublisher add(final String key, final byte[] value) {
-      batchBuilder.addEntry(entryBuilder.reset().key(key).value(value).build());
+      batchBuilder.add(key, value);
       return this;
     }
 
     public BatchPublisher add(final byte[] key, final byte[] value) {
-      batchBuilder.addEntry(entryBuilder.reset().key(key).value(value).build());
+      batchBuilder.add(key, value);
       return this;
     }
 
     public BatchPublisher add(final byte[] value) {
-      batchBuilder.addEntry(entryBuilder.reset().value(value).build());
+      batchBuilder.add(value);
       return this;
     }
 
     public BatchPublisher add(final String value) {
-      batchBuilder.addEntry(entryBuilder.reset().value(value).build());
+      batchBuilder.add(value.getBytes(StandardCharsets.UTF_8));
       return this;
     }
 
@@ -404,7 +402,7 @@ public final class EventBridgeClient implements AutoCloseable {
      *     entry.
      */
     public CompletableFuture<List<Long>> publish(final int partitionId) {
-      if (batchBuilder.getEntryCount() == 0) {
+      if (batchBuilder.entryCount() == 0) {
         return CompletableFuture.failedFuture(new IllegalStateException("Batch is empty"));
       }
 
@@ -423,7 +421,7 @@ public final class EventBridgeClient implements AutoCloseable {
 
     /** Publishes the batch to a partition of a topic ({@code POST /v1/topics/{topic}/...}). */
     public CompletableFuture<List<Long>> publishToTopic(final String topic, final int partitionId) {
-      if (batchBuilder.getEntryCount() == 0) {
+      if (batchBuilder.entryCount() == 0) {
         return CompletableFuture.failedFuture(new IllegalStateException("Batch is empty"));
       }
 
