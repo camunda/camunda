@@ -7,9 +7,11 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.CreateTopicRequest;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.TopicDto;
+import io.camunda.eventbridge.gateway.dto.CreateTopicRequest;
+import io.camunda.eventbridge.gateway.dto.TopicDto;
+import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
+import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
 import io.camunda.eventbridge.service.CoordinatorService;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -62,8 +65,7 @@ public class TopicController {
 
   @DeleteMapping("/{name}")
   public CompletableFuture<ResponseEntity<Object>> deleteTopic(@PathVariable final String name) {
-    final var request =
-        new io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest().setName(name);
+    final var request = new DeleteTopicRequest().setName(name);
     return coordinatorService
         .deleteTopic(request)
         .handleAsync(
@@ -77,12 +79,9 @@ public class TopicController {
 
   @PostMapping("/{name}/reassign")
   public CompletableFuture<ResponseEntity<Object>> reassignTopic(
-      @PathVariable final String name,
-      @org.springframework.web.bind.annotation.RequestParam final int replicationFactor) {
+      @PathVariable final String name, @RequestParam final int replicationFactor) {
     final var request =
-        new io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest()
-            .setName(name)
-            .setReplicationFactor(replicationFactor);
+        new ReassignTopicRequest().setName(name).setReplicationFactor(replicationFactor);
     return coordinatorService
         .reassignTopic(request)
         .handleAsync(

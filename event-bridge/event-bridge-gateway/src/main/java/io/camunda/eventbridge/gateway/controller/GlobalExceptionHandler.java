@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.ErrorResponse;
+import io.camunda.eventbridge.gateway.dto.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

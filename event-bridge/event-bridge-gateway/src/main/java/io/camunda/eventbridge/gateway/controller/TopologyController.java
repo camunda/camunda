@@ -8,9 +8,9 @@
 package io.camunda.eventbridge.gateway.controller;
 
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.PartitionTopology;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.TopicTopology;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.TopologyResponse;
+import io.camunda.eventbridge.gateway.dto.PartitionTopology;
+import io.camunda.eventbridge.gateway.dto.TopicTopology;
+import io.camunda.eventbridge.gateway.dto.TopologyResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.service.CoordinatorService;
 import java.util.List;

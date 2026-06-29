@@ -7,9 +7,10 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.HeartbeatRequest;
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos.LeaveGroupRequest;
+import io.camunda.eventbridge.gateway.dto.CommitRequest;
+import io.camunda.eventbridge.gateway.dto.HeartbeatRequest;
+import io.camunda.eventbridge.gateway.dto.JoinGroupRequest;
+import io.camunda.eventbridge.gateway.dto.LeaveGroupRequest;
 import io.camunda.eventbridge.mapper.RequestMapper;
 import io.camunda.eventbridge.mapper.ResponseMapper;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -57,8 +58,7 @@ public class CoordinationController {
 
   @PostMapping("/{groupId}/join")
   public CompletableFuture<ResponseEntity<Object>> joinGroup(
-      @PathVariable final String groupId,
-      @RequestBody final EventBridgeDtos.JoinGroupRequest joinGroupRequest) {
+      @PathVariable final String groupId, @RequestBody final JoinGroupRequest joinGroupRequest) {
 
     final var request = requestMapper.toJoinGroupRequest(groupId, joinGroupRequest);
     return coordinatorService
@@ -116,7 +116,7 @@ public class CoordinationController {
   public CompletableFuture<ResponseEntity<Object>> commit(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
-      @RequestBody final EventBridgeDtos.CommitRequest commitRequest) {
+      @RequestBody final CommitRequest commitRequest) {
 
     final var request = requestMapper.toCommitRequest(groupId, memberId, commitRequest);
     return coordinatorService

@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.mapper;
 
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos;
+import io.camunda.eventbridge.gateway.dto.CommitRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class RequestMapper {
 
   public JoinGroupRequest toJoinGroupRequest(
-      final String groupId, final EventBridgeDtos.JoinGroupRequest request) {
+      final String groupId, final io.camunda.eventbridge.gateway.dto.JoinGroupRequest request) {
     return new JoinGroupRequest()
         .setGroupId(groupId)
         .setTopics(request.topics())
@@ -31,7 +31,7 @@ public class RequestMapper {
   public LeaveGroupRequest toLeaveGroupRequest(
       final String groupId,
       final String memberId,
-      final EventBridgeDtos.LeaveGroupRequest request) {
+      final io.camunda.eventbridge.gateway.dto.LeaveGroupRequest request) {
     return new LeaveGroupRequest()
         .setGroupId(groupId)
         .setMemberId(memberId)
@@ -39,7 +39,9 @@ public class RequestMapper {
   }
 
   public HeartbeatRequest toHeartbeatRequest(
-      final String groupId, final String memberId, final EventBridgeDtos.HeartbeatRequest request) {
+      final String groupId,
+      final String memberId,
+      final io.camunda.eventbridge.gateway.dto.HeartbeatRequest request) {
     final List<TopicPartition> owned = new ArrayList<>();
     if (request.ownedPartitions() != null) {
       request
@@ -56,7 +58,7 @@ public class RequestMapper {
   }
 
   public CommitOffsetRequest toCommitRequest(
-      final String groupId, final String memberId, final EventBridgeDtos.CommitRequest request) {
+      final String groupId, final String memberId, final CommitRequest request) {
     return new CommitOffsetRequest()
         .setGroupId(groupId)
         .setTopic(request.topic())

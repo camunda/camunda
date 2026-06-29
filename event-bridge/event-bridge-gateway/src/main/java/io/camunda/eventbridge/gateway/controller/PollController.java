@@ -7,7 +7,8 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
-import io.camunda.eventbridge.gateway.dto.EventBridgeDtos;
+import io.camunda.eventbridge.gateway.dto.PollEvent;
+import io.camunda.eventbridge.gateway.dto.PollResponse;
 import io.camunda.eventbridge.service.PollService;
 import java.util.Base64;
 import java.util.List;
@@ -33,7 +34,7 @@ public class PollController {
   }
 
   @GetMapping("/v1/events/{partitionId}/poll")
-  public CompletableFuture<ResponseEntity<EventBridgeDtos.PollResponse>> poll(
+  public CompletableFuture<ResponseEntity<PollResponse>> poll(
       @PathVariable final int partitionId,
       @RequestParam(defaultValue = "-1") final long fromPosition,
       @RequestParam(defaultValue = "1024") final int maxRecords) {
@@ -48,21 +49,19 @@ public class PollController {
                 if (FetchErrors.isOffsetOutOfRange(error)) {
                   return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
                       .body(
-                          EventBridgeDtos.PollResponse.error(
-                              FetchErrors.OFFSET_OUT_OF_RANGE, rootMessage(error)));
+                          PollResponse.error(FetchErrors.OFFSET_OUT_OF_RANGE, rootMessage(error)));
                 }
                 return ResponseEntity.internalServerError()
-                    .body(EventBridgeDtos.PollResponse.error("POLL_FAILED", rootMessage(error)));
+                    .body(PollResponse.error("POLL_FAILED", rootMessage(error)));
               }
-              final List<EventBridgeDtos.PollEvent> events =
+              final List<PollEvent> events =
                   res.getEvents().stream()
                       .map(
                           e ->
-                              new EventBridgeDtos.PollEvent(
+                              new PollEvent(
                                   e.position(), Base64.getEncoder().encodeToString(e.payload())))
                       .toList();
-              return ResponseEntity.ok(
-                  EventBridgeDtos.PollResponse.ok(events, res.getNextPosition()));
+              return ResponseEntity.ok(PollResponse.ok(events, res.getNextPosition()));
             });
   }
 

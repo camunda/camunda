@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.gateway.controller;
 
 import io.camunda.eventbridge.mapper.ResponseMapper;
+import io.camunda.eventbridge.protocol.request.FetchResponse;
 import io.camunda.eventbridge.service.FetchService;
 import io.camunda.eventbridge.service.PublishService;
 import java.util.concurrent.CompletableFuture;
@@ -78,8 +79,7 @@ public class PublishController {
    *
    * (big-endian, matching the client's {@code FetchResult} parser).
    */
-  private static byte[] toClientFetchResponse(
-      final io.camunda.eventbridge.protocol.request.FetchResponse response) {
+  private static byte[] toClientFetchResponse(final FetchResponse response) {
     final byte[] data = response.getData();
     return java.nio.ByteBuffer.allocate(Long.BYTES * 3 + Integer.BYTES + data.length)
         .putLong(response.getFirstPosition())
