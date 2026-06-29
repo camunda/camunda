@@ -16,12 +16,9 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
-import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
-import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
-import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.AuthorizationReader;
@@ -59,18 +56,6 @@ public class RdbmsConfiguration {
     final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
     return new RdbmsTableRowCountMetrics(
         tableMetricsMapper, metricsConfig.getTableRowCountCacheDuration());
-  }
-
-  @Bean
-  public PersistentWebSessionDbReader persistentWebSessionReader(
-      final PersistentWebSessionMapper persistentWebSessionMapper) {
-    return new PersistentWebSessionDbReader(persistentWebSessionMapper);
-  }
-
-  @Bean
-  public PersistentWebSessionWriter persistentWebSessionWriter(
-      final PersistentWebSessionMapper persistentWebSessionMapper) {
-    return new PersistentWebSessionWriter(persistentWebSessionMapper);
   }
 
   @Bean
