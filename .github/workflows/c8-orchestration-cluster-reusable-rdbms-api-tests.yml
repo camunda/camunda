@@ -114,7 +114,7 @@ jobs:
             jdbc-url: "jdbc:mysql://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          # MariaDB - Supported versions: 10.11, 11.4, 11.8
+          # MariaDB - Supported versions: 10.11, 11.4, 12.3
           - database-name: "MariaDB 10.11"
             database-type: "mariadb"
             database-image-version: "10.11"
@@ -127,9 +127,9 @@ jobs:
             jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          - database-name: "MariaDB 11.8"
+          - database-name: "MariaDB 12.3"
             database-type: "mariadb"
-            database-image-version: "11.8"
+            database-image-version: "12.3"
             jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
@@ -255,7 +255,7 @@ jobs:
             mariadb)
               echo "Installing MariaDB driver"
               curl -L -o dev-dist/lib/mariadb.jar \
-                https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.4.1/mariadb-java-client-3.4.1.jar
+                https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.5.8/mariadb-java-client-3.5.8.jar
               ;;
             mssql)
               echo "Installing SQL Server driver"
