@@ -337,9 +337,11 @@ Orchestration-suite failures almost always trace to a module inside this same re
 
 ### Filing the bug ticket (dedupe FIRST)
 
-> **Token:** the default `GH_TOKEN` is the App token for `camunda/camunda` — fine for in-repo
-> issues. To file/search issues in a DIFFERENT repo (`camunda/camunda-platform-helm`), prefix the
-> command with the broader PAT: `GH_TOKEN="$GH_TOKEN_PAT" gh issue create --repo <owner>/<repo> ...`.
+> **Token:** use the default `GH_TOKEN` (the qa-processes App token) for ALL `gh` calls FIRST —
+> filing/searching issues in `camunda/camunda` and Gate B lookups; qa-processes generally already
+> has the access. ONLY if a call fails (e.g. filing in a different repo such as
+> `camunda/camunda-platform-helm`) retry the SAME command once with the fallback PAT
+> `GH_TOKEN="$GH_TOKEN_PAT" gh ...`. Always qa-processes first; the PAT is a backup.
 
 1. **Compute the fingerprint** — `sha256` of `<version>::<file>::<test_name>`, first 8 chars (MUST
    match the triage dispatcher exactly so it can suppress re-dispatch):
