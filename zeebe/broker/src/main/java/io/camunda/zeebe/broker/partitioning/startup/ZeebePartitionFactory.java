@@ -161,7 +161,7 @@ public final class ZeebePartitionFactory {
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
-    final var partitionId = raftPartition.id().number();
+    final var partitionId = raftPartition.id();
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
 
     final var zeebeFactory =
@@ -169,7 +169,10 @@ public final class ZeebePartitionFactory {
             rocksDbConfiguration,
             consistencyChecks.getSettings(),
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
-            () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
+            () ->
+                MicrometerUtil.wrap(
+                    partitionMeterRegistry,
+                    PartitionKeyNames.tags(partitionId.group(), partitionId.number())),
             rocksDbResources);
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);

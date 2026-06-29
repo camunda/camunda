@@ -32,8 +32,11 @@ public final class MetricsStep implements PartitionTransitionStep {
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var startupMeterRegistry = context.getPartitionStartupMeterRegistry();
+    final var partitionId = context.partitionId();
     final var transitionRegistry =
-        MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(context.getPartitionId()));
+        MicrometerUtil.wrap(
+            startupMeterRegistry,
+            PartitionKeyNames.tags(partitionId.group(), partitionId.number()));
     context.setPartitionTransitionMeterRegistry(transitionRegistry);
 
     return context.getConcurrencyControl().createCompletedFuture();

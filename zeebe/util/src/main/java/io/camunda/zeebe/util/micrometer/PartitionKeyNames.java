@@ -30,7 +30,11 @@ public enum PartitionKeyNames implements KeyName {
     }
   };
 
-  public static Tags tags(final int partitionId) {
-    return Tags.of(PARTITION.asString(), String.valueOf(partitionId));
+  public static Tags tags(final String physicalTenantId, final int partitionId) {
+    return Tags.of(
+        PHYSICAL_TENANT.asString(),
+        physicalTenantId,
+        PARTITION.asString(),
+        String.valueOf(partitionId));
   }
 }

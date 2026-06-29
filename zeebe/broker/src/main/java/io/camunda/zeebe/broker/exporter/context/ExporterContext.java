@@ -55,7 +55,8 @@ public final class ExporterContext implements Context, AutoCloseable {
         MicrometerUtil.wrap(
             meterRegistry,
             Tags.concat(
-                PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
+                PartitionKeyNames.tags(physicalTenantId, partitionId),
+                Tags.of("exporterId", configuration.getId())));
     this.clock = clock;
   }
 

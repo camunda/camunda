@@ -98,7 +98,9 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ClusterConfigurationService clusterConfigurationService;
 
   public TestPartitionTransitionContext() {
-    transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
+    transitionMeterRegistry =
+        MicrometerUtil.wrap(
+            startupMeterRegistry, PartitionKeyNames.tags(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1));
     healthMetrics = new HealthTreeMetrics(transitionMeterRegistry);
   }
 
