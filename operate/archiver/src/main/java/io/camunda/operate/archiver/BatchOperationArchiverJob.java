@@ -25,15 +25,20 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationArchiverJob.class);
 
   private final Archiver archiver;
+  private final BatchOperationTemplate batchOperationTemplate;
+  private final Metrics metrics;
+  private final ArchiverRepository archiverRepository;
 
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private Metrics metrics;
-
-  @Autowired private ArchiverRepository archiverRepository;
-
-  public BatchOperationArchiverJob(final Archiver archiver) {
+  @Autowired
+  public BatchOperationArchiverJob(
+      final Archiver archiver,
+      final BatchOperationTemplate batchOperationTemplate,
+      final Metrics metrics,
+      final ArchiverRepository archiverRepository) {
     this.archiver = archiver;
+    this.batchOperationTemplate = batchOperationTemplate;
+    this.metrics = metrics;
+    this.archiverRepository = archiverRepository;
   }
 
   @Override
