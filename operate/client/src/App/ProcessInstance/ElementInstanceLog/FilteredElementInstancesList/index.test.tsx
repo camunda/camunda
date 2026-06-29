@@ -121,10 +121,8 @@ describe('<FilteredElementInstancesList />', () => {
       {wrapper: Wrapper},
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId('search-result-100')).toBeInTheDocument();
-      expect(screen.getByTestId('search-result-101')).toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('search-result-100')).toBeInTheDocument();
+    expect(screen.getByTestId('search-result-101')).toBeInTheDocument();
   });
 
   it('renders the empty state when there are no results', async () => {
@@ -139,9 +137,7 @@ describe('<FilteredElementInstancesList />', () => {
       {wrapper: Wrapper},
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('No matching elements')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('No matching elements')).toBeInTheDocument();
     expect(screen.getByText('Try a different name or ID')).toBeInTheDocument();
   });
 
@@ -157,11 +153,9 @@ describe('<FilteredElementInstancesList />', () => {
       {wrapper: Wrapper},
     );
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('Search results could not be fetched'),
-      ).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByText('Search results could not be fetched'),
+    ).toBeInTheDocument();
   });
 
   it('renders the permissions error UX on a 403', async () => {
@@ -176,8 +170,8 @@ describe('<FilteredElementInstancesList />', () => {
       {wrapper: Wrapper},
     );
 
-    await waitFor(() => {
-      expect(screen.getAllByText(/permission/i).length).toBeGreaterThan(0);
-    });
+    await waitFor(() =>
+      expect(screen.getAllByText(/permission/i).length).toBeGreaterThan(0),
+    );
   });
 });
