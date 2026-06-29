@@ -960,8 +960,8 @@ public class UserTaskJobBasedHandlerTest {
     underTest.updateEntity(migrationCancelRecord, sharedEntity);
     underTest.flush(sharedEntity, mockRequest);
 
-    // then — the migration-cancel must clear the state so the delete path is taken
-    assertThat(sharedEntity.getState()).isNull();
+    // then — the migration-cancel must mark the entity for deletion so the delete path is taken
+    assertThat(sharedEntity.isMarkedForDeletion()).isTrue();
     verify(mockRequest, times(1))
         .deleteWithRouting(indexName, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
     verify(mockRequest, never())

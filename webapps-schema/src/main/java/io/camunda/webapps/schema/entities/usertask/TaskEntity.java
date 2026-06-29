@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.usertask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
@@ -151,6 +152,9 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
   @SinceVersion(value = "8.10.0", requireDefault = false)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String businessId;
+
+  // transient flag: signals flush() to issue a delete instead of an upsert; never written to index
+  @JsonIgnore private boolean markedForDeletion;
 
   public TaskEntity() {}
 
@@ -459,6 +463,15 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
 
   public TaskEntity setBusinessId(final String businessId) {
     this.businessId = businessId;
+    return this;
+  }
+
+  public boolean isMarkedForDeletion() {
+    return markedForDeletion;
+  }
+
+  public TaskEntity setMarkedForDeletion(final boolean markedForDeletion) {
+    this.markedForDeletion = markedForDeletion;
     return this;
   }
 

@@ -128,7 +128,8 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
                   ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       case JobIntent.CANCELED -> {
         if (record.getValue().isJobToUserTaskMigration()) {
-          entity.setState(null);
+          // stale legacy job-worker task doc; flush() will delete it instead of upserting
+          entity.setMarkedForDeletion(true);
         } else {
           entity
               .setState(TaskState.CANCELED)
@@ -174,7 +175,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
-    if (entity.getState() == null && previousVersionRecord) {
+    if (entity.isMarkedForDeletion() && previousVersionRecord) {
       final var jobKey = String.valueOf(entity.getKey());
       batchRequest.deleteWithRouting(indexName, jobKey, jobKey);
       return;
