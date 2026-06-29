@@ -9,6 +9,7 @@ package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
+import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
@@ -25,13 +26,13 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,8 +190,8 @@ public final class BrokerBootstrap {
                     op.kind(), op.topic(), op.partitionId(), op.member(), partitionCount, members),
                 ReconfigurationCommand::encode,
                 reply -> (Void) null,
-                MemberId.from("broker-" + recipientNodeId),
-                java.time.Duration.ofSeconds(30));
+                BrokerMembers.memberId(recipientNodeId),
+                Duration.ofSeconds(30));
 
     // 5. Start partitions — raft + lifecycle actors (uses broker messaging service)
     partitionBootstrapper.start(
@@ -235,7 +236,7 @@ public final class BrokerBootstrap {
         return topicReconciler.promote(cmd.topic(), cmd.partitionId(), cmd.member());
       }
       default -> { // LEAVE
-        if (localMemberId.equals(MemberId.from("broker-" + cmd.member()))) {
+        if (localMemberId.equals(BrokerMembers.memberId(cmd.member()))) {
           return topicReconciler.leave(cmd.topic(), cmd.partitionId());
         }
         return topicReconciler.removeMember(cmd.topic(), cmd.partitionId(), cmd.member());
@@ -268,11 +269,7 @@ public final class BrokerBootstrap {
    */
   private ClusterConfiguration buildClusterConfiguration() {
     final var clusterSize = properties.cluster().clusterSize();
-    final var members =
-        IntStream.range(0, clusterSize)
-            .mapToObj(i -> MemberId.from("broker-" + i))
-            .sorted()
-            .toList();
+    final var members = BrokerMembers.all(clusterSize);
     final var distribution =
         distributor.distributePartitions(
             members, properties.broker().partitionCount(), properties.raft().replicationFactor());

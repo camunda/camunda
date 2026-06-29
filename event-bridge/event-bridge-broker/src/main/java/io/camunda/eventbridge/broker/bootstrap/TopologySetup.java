@@ -10,6 +10,7 @@ package io.camunda.eventbridge.broker.bootstrap;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
+import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.clustermetadata.transport.MetadataRequestHandler;
 import io.camunda.eventbridge.consumergroups.transport.CoordinationRequestHandler;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
@@ -19,6 +20,8 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.util.VersionUtil;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +38,7 @@ final class TopologySetup {
   private TopologyManagerImpl topologyManager;
   private TopologyManagerImpl coordinatorTopologyManager;
   private TopologyManagerImpl metadataTopologyManager;
-  private final java.util.List<TopologyManagerImpl> topicTopologyManagers =
-      new java.util.concurrent.CopyOnWriteArrayList<>();
+  private final List<TopologyManagerImpl> topicTopologyManagers = new CopyOnWriteArrayList<>();
 
   TopologySetup(
       final ClusterMembershipService membershipService,
@@ -162,7 +164,7 @@ final class TopologySetup {
   }
 
   private BrokerInfo createBrokerInfo(final MemberId localMemberId) {
-    final var nodeId = parseNodeId(localMemberId.id());
+    final var nodeId = BrokerMembers.nodeId(localMemberId);
     final var clusterCfg = properties.cluster();
     // Advertise the command API address other nodes (and the gateway) use to reach this broker.
     final var address =
@@ -187,7 +189,7 @@ final class TopologySetup {
    * partition group so the gateway maintains a separate per-group topology for it.
    */
   private BrokerInfo createCoordinatorBrokerInfo(final MemberId localMemberId) {
-    final var nodeId = parseNodeId(localMemberId.id());
+    final var nodeId = BrokerMembers.nodeId(localMemberId);
     final var clusterCfg = properties.cluster();
     final var address =
         Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
@@ -213,7 +215,7 @@ final class TopologySetup {
    * it.
    */
   private BrokerInfo createMetadataBrokerInfo(final MemberId localMemberId) {
-    final var nodeId = parseNodeId(localMemberId.id());
+    final var nodeId = BrokerMembers.nodeId(localMemberId);
     final var clusterCfg = properties.cluster();
     final var address =
         Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
@@ -239,7 +241,7 @@ final class TopologySetup {
    */
   private BrokerInfo createTopicBrokerInfo(
       final MemberId localMemberId, final String topicGroup, final int partitionCount) {
-    final var nodeId = parseNodeId(localMemberId.id());
+    final var nodeId = BrokerMembers.nodeId(localMemberId);
     final var clusterCfg = properties.cluster();
     final var address =
         Address.from(clusterCfg.effectiveAdvertisedHost(), clusterCfg.commandApiPort());
@@ -257,13 +259,5 @@ final class TopologySetup {
     }
 
     return brokerInfo;
-  }
-
-  private int parseNodeId(final String nodeId) {
-    try {
-      return Integer.parseInt(nodeId.replaceAll("[^0-9]", ""));
-    } catch (final NumberFormatException e) {
-      return 0;
-    }
   }
 }

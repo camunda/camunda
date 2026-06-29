@@ -12,33 +12,39 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLeaderReporter;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
+import io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataPartition;
 import io.camunda.eventbridge.consumergroups.membership.TopicRegistry;
 import io.camunda.eventbridge.consumergroups.stream.CoordinatorPartition;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
+import io.camunda.eventbridge.core.topic.TopicGroups;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,25 +81,13 @@ final class PartitionBootstrapper {
 
   // Per-(group, partition) lookup for runtime join/leave and the reconciler's "already running?"
   // check. The lists above remain the stop() inventory; this map is the addressable index.
-  private final java.util.Map<String, Provisioned> dataPartitions =
-      new java.util.concurrent.ConcurrentHashMap<>();
+  private final Map<String, Provisioned> dataPartitions = new ConcurrentHashMap<>();
 
   private record Provisioned(
       CreatedPartition created, PartitionLifecycle lifecycle, LogRetentionCompactor compactor) {}
 
   private static String key(final String groupName, final int partitionId) {
     return groupName + "#" + partitionId;
-  }
-
-  /**
-   * Numeric node id from a {@code broker-<n>} member id (the leader node id in leadership reports).
-   */
-  private static int parseNodeId(final String memberId) {
-    try {
-      return Integer.parseInt(memberId.replaceAll("[^0-9]", ""));
-    } catch (final NumberFormatException e) {
-      return -1;
-    }
   }
 
   // Initialized in start(); reused by runtime topic-group provisioning after boot.
@@ -103,8 +97,7 @@ final class PartitionBootstrapper {
   private MemberId localMemberId;
   private TopicRegistry topicRegistry;
   private Consumer<Map<String, TopicMetadata>> registryReconciler;
-  private io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor
-      reconfigurationExecutor;
+  private ReconfigurationExecutor reconfigurationExecutor;
 
   PartitionBootstrapper(
       final AtomixCluster cluster,
@@ -131,8 +124,7 @@ final class PartitionBootstrapper {
       final MessagingService brokerMessagingService,
       final TopicRegistry topicRegistry,
       final Consumer<Map<String, TopicMetadata>> registryReconciler,
-      final io.camunda.eventbridge.clustermetadata.reconfig.ReconfigurationExecutor
-          reconfigurationExecutor) {
+      final ReconfigurationExecutor reconfigurationExecutor) {
 
     final var membershipService = cluster.getMembershipService();
     localMemberId = membershipService.getLocalMember().id();
@@ -189,11 +181,7 @@ final class PartitionBootstrapper {
       final TopologyManagerImpl coordinatorTopologyManager) {
 
     final var clusterSize = properties.cluster().clusterSize();
-    final var members =
-        IntStream.range(0, clusterSize)
-            .mapToObj(i -> MemberId.from("broker-" + i))
-            .sorted()
-            .toList();
+    final var members = BrokerMembers.all(clusterSize);
     final var partitionCount = Math.max(1, properties.coordinator().partitionCount());
     final var replicationFactor = Math.min(properties.raft().replicationFactor(), clusterSize);
 
@@ -286,11 +274,7 @@ final class PartitionBootstrapper {
       final TopologyManagerImpl metadataTopologyManager) {
 
     final var clusterSize = properties.cluster().clusterSize();
-    final var members =
-        IntStream.range(0, clusterSize)
-            .mapToObj(i -> MemberId.from("broker-" + i))
-            .sorted()
-            .toList();
+    final var members = BrokerMembers.all(clusterSize);
     final var replicationFactor = Math.min(properties.raft().replicationFactor(), clusterSize);
 
     // Single partition: the topic registry is a cluster-wide namespace, not sharded.
@@ -597,7 +581,7 @@ final class PartitionBootstrapper {
     return provisioned
         .created()
         .raftPartition()
-        .promoteMember(MemberId.from("broker-" + memberNodeId))
+        .promoteMember(BrokerMembers.memberId(memberNodeId))
         .whenComplete(
             (rp, error) -> {
               if (error != null) {
@@ -628,9 +612,9 @@ final class PartitionBootstrapper {
    */
   boolean hasData(final String groupName, final int partitionId) {
     final var dir = factory.getPartitionDirectory(groupName, partitionId);
-    try (final var entries = java.nio.file.Files.list(dir)) {
+    try (final var entries = Files.list(dir)) {
       return entries.findAny().isPresent();
-    } catch (final java.io.IOException e) {
+    } catch (final IOException e) {
       return false;
     }
   }
@@ -689,7 +673,7 @@ final class PartitionBootstrapper {
     return provisioned
         .created()
         .raftPartition()
-        .removeMember(MemberId.from("broker-" + memberNodeId))
+        .removeMember(BrokerMembers.memberId(memberNodeId))
         .whenComplete(
             (rp, error) -> {
               if (error != null) {
@@ -730,20 +714,20 @@ final class PartitionBootstrapper {
     // route under their own Raft group name (so handler subjects don't collide across groups).
     final var routingGroup =
         PartitionFactory.GROUP_NAME.equals(groupName)
-            ? io.camunda.zeebe.protocol.Protocol.DEFAULT_PARTITION_GROUP_NAME
+            ? Protocol.DEFAULT_PARTITION_GROUP_NAME
             : groupName;
 
     // 2. Create lifecycle actor. For a topic-registry group, on becoming leader it reports its
     // leadership to the metadata group (so topic readiness is derived); the default data group does
     // not (topic == null → no-op reporter).
-    final var topic = io.camunda.eventbridge.core.topic.TopicGroups.topicFrom(groupName);
+    final var topic = TopicGroups.topicFrom(groupName);
     final var lifecycle =
         new PartitionLifecycle(
             partitionId,
             properties.broker().partitionCount(),
             routingGroup,
             topic,
-            parseNodeId(localMemberId.id()),
+            BrokerMembers.nodeId(localMemberId),
             leaderReporter,
             created.raftPartition(),
             actorScheduler,

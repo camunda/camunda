@@ -15,6 +15,7 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
+import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.logstreams.ApplicationEntryCursorAdapter;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
@@ -102,7 +103,7 @@ public final class PartitionFactory {
     final CRC32CChecksumProvider noStateChecksums = path -> Map.of();
     final var snapshotStore =
         new FileBasedSnapshotStore(
-            parseNodeId(localMemberId),
+            BrokerMembers.nodeId(localMemberId),
             partitionId,
             partitionDir,
             noStateChecksums,
@@ -130,7 +131,7 @@ public final class PartitionFactory {
 
     final var snapshotStore =
         new FileBasedSnapshotStore(
-            parseNodeId(localMemberId),
+            BrokerMembers.nodeId(localMemberId),
             partitionId,
             partitionDir,
             new ChecksumProviderRocksDBImpl(),
@@ -161,7 +162,7 @@ public final class PartitionFactory {
 
     final var snapshotStore =
         new FileBasedSnapshotStore(
-            parseNodeId(localMemberId),
+            BrokerMembers.nodeId(localMemberId),
             partitionId,
             partitionDir,
             new ChecksumProviderRocksDBImpl(),
@@ -173,14 +174,6 @@ public final class PartitionFactory {
         METADATA_GROUP_NAME,
         partitionId);
     return new CreatedPartition(partitionId, raftPartition, snapshotStore);
-  }
-
-  private static int parseNodeId(final MemberId memberId) {
-    try {
-      return Integer.parseInt(memberId.id().replaceAll("[^0-9]", ""));
-    } catch (final NumberFormatException e) {
-      return 0;
-    }
   }
 
   public Path getPartitionDirectory(final int partitionId) {

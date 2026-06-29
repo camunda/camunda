@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -57,7 +58,7 @@ final class TopicReconciler {
     this.partitionBootstrapper = partitionBootstrapper;
     this.topologySetup = topologySetup;
     this.localMemberId = localMemberId;
-    localNodeId = parseNodeId(localMemberId.id());
+    localNodeId = BrokerMembers.nodeId(localMemberId);
   }
 
   /**
@@ -186,14 +187,6 @@ final class TopicReconciler {
   }
 
   private static Set<MemberId> memberSet(final List<Integer> nodeIds) {
-    return nodeIds.stream().map(id -> MemberId.from("broker-" + id)).collect(Collectors.toSet());
-  }
-
-  private static int parseNodeId(final String memberId) {
-    try {
-      return Integer.parseInt(memberId.replaceAll("[^0-9]", ""));
-    } catch (final NumberFormatException e) {
-      return 0;
-    }
+    return nodeIds.stream().map(BrokerMembers::memberId).collect(Collectors.toSet());
   }
 }
