@@ -42,7 +42,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.agrona.concurrent.IdGenerator;
@@ -339,7 +338,19 @@ final class PartitionBootstrapper {
     // (replays the current role) — see the note in bootstrapCoordinatorPartition: registering
     // before would pin the StreamProcessor's committed reader to a segment that startup resets.
     if (observe) {
-      joinMetadataAsPassiveWithRetry(partitionId, created, metadataPartition, managementService, 0);
+      new MetadataPassiveJoiner(
+              partitionId,
+              created.raftPartition(),
+              created.snapshotStore(),
+              managementService,
+              executorService,
+              () -> closing,
+              () ->
+                  created
+                      .raftPartition()
+                      .addRoleChangeListener(
+                          (role, term) -> metadataPartition.onRoleChange(role, term)))
+          .start();
     } else {
       created
           .raftPartition()
@@ -357,107 +368,6 @@ final class PartitionBootstrapper {
                 }
               });
     }
-  }
-
-  /**
-   * Joins the metadata Raft group as a passive observer, <b>retrying until it succeeds</b>. A
-   * passive join commits a configuration change, which needs the group to already have a leader; at
-   * startup it races the voting members' election (every member answers {@code NO_LEADER} until one
-   * wins) and Atomix's {@code joinWithRetry} gives up after a single pass over the members ("Sent
-   * join request to all known members, but all failed"). We recover the same way the broker's other
-   * startup interactions with the metadata leader do (see {@code BrokerRegistrar}'s
-   * register-until-leader loop, and Zeebe's {@code ClusterConfigurationManager} operation retry):
-   * keep retrying until the leader is reachable.
-   *
-   * <p>Each retry first {@link io.atomix.raft.partition.RaftPartition#close() closes} the
-   * half-started server so its Raft message subjects are unregistered, letting the next attempt's
-   * fresh server re-register them; only the Raft server is rebuilt, while the {@link
-   * MetadataPartition} actor and its state DB (created once above) are reused. The role-change
-   * listener is wired only on the attempt that succeeds.
-   */
-  private void joinMetadataAsPassiveWithRetry(
-      final int partitionId,
-      final CreatedPartition created,
-      final MetadataPartition metadataPartition,
-      final DefaultPartitionManagementService managementService,
-      final int attempt) {
-    if (closing) {
-      return;
-    }
-    created
-        .raftPartition()
-        .joinAsPassive(managementService, created.snapshotStore())
-        .whenComplete(
-            (rp, error) -> {
-              if (error == null) {
-                LOG.info("Metadata raft partition {} observed (passive)", partitionId);
-                created
-                    .raftPartition()
-                    .addRoleChangeListener(
-                        (role, term) -> metadataPartition.onRoleChange(role, term));
-                return;
-              }
-              if (closing) {
-                return;
-              }
-              final var delay = passiveJoinRetryDelay(attempt);
-              LOG.warn(
-                  "Failed to observe (passive join) metadata raft partition {} (attempt {}); the "
-                      + "group may have no leader yet — retrying in {}",
-                  partitionId,
-                  attempt + 1,
-                  delay,
-                  error);
-              // Unregister the half-started server's Raft subjects before the next attempt
-              // re-creates
-              // them; otherwise the rebuilt server collides with the previous registration.
-              created
-                  .raftPartition()
-                  .close()
-                  .whenComplete(
-                      (ignored, closeError) -> {
-                        if (closeError != null) {
-                          LOG.warn(
-                              "Error closing metadata raft partition {} before passive-join retry",
-                              partitionId,
-                              closeError);
-                        }
-                        schedulePassiveJoinRetry(
-                            partitionId,
-                            created,
-                            metadataPartition,
-                            managementService,
-                            attempt + 1,
-                            delay);
-                      });
-            });
-  }
-
-  private void schedulePassiveJoinRetry(
-      final int partitionId,
-      final CreatedPartition created,
-      final MetadataPartition metadataPartition,
-      final DefaultPartitionManagementService managementService,
-      final int attempt,
-      final Duration delay) {
-    if (closing || executorService.isShutdown()) {
-      return;
-    }
-    try {
-      CompletableFuture.runAsync(
-          () ->
-              joinMetadataAsPassiveWithRetry(
-                  partitionId, created, metadataPartition, managementService, attempt),
-          CompletableFuture.delayedExecutor(
-              delay.toMillis(), TimeUnit.MILLISECONDS, executorService));
-    } catch (final RejectedExecutionException e) {
-      LOG.debug("Not scheduling metadata passive-join retry — executor is shutting down");
-    }
-  }
-
-  /** Capped exponential backoff for passive-join retries: 1s, 2s, 4s, then 8s thereafter. */
-  private static Duration passiveJoinRetryDelay(final int attempt) {
-    return Duration.ofSeconds(1L << Math.min(attempt, 3));
   }
 
   void stop() {
