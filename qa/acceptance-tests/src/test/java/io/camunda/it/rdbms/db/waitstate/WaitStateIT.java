@@ -86,8 +86,11 @@ public class WaitStateIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final var processInstanceKey = nextKey();
     final var sharedElementInstanceKey = nextKey();
+    final int total = 20;
+    final int pageSize = total / 2;
     createAndSaveRandomWaitStates(
         rdbmsWriters,
+        total,
         b -> b.processInstanceKey(processInstanceKey).elementInstanceKey(sharedElementInstanceKey));
 
     final WaitStateDbReader reader = rdbmsService.getWaitStateReader();
@@ -102,23 +105,24 @@ public class WaitStateIT {
         reader
             .search(
                 new ElementInstanceWaitStateQuery(
-                    filter, sort, SearchQueryPage.of(b -> b.from(0).size(20))),
+                    filter, sort, SearchQueryPage.of(b -> b.from(0).size(total))),
                 ResourceAccessChecks.disabled())
             .items();
     final var page1 =
         reader.search(
-            new ElementInstanceWaitStateQuery(filter, sort, SearchQueryPage.of(b -> b.size(10))),
+            new ElementInstanceWaitStateQuery(
+                filter, sort, SearchQueryPage.of(b -> b.size(pageSize))),
             ResourceAccessChecks.disabled());
     final var page2 =
         reader.search(
             new ElementInstanceWaitStateQuery(
-                filter, sort, SearchQueryPage.of(b -> b.size(10).after(page1.endCursor()))),
+                filter, sort, SearchQueryPage.of(b -> b.size(pageSize).after(page1.endCursor()))),
             ResourceAccessChecks.disabled());
 
     // then
-    assertThat(allItems).hasSize(20);
-    assertThat(page1.items()).isEqualTo(allItems.subList(0, 10));
-    assertThat(page2.items()).isEqualTo(allItems.subList(10, 20));
+    assertThat(allItems).hasSize(total);
+    assertThat(page1.items()).isEqualTo(allItems.subList(0, pageSize));
+    assertThat(page2.items()).isEqualTo(allItems.subList(pageSize, total));
     assertThat(page1.items()).doesNotContainAnyElementsOf(page2.items());
   }
 
