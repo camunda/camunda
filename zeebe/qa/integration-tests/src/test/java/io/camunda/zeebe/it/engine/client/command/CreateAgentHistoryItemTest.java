@@ -10,9 +10,9 @@ package io.camunda.zeebe.it.engine.client.command;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -54,8 +54,8 @@ public final class CreateAgentHistoryItemTest {
             .newCreateAgentHistoryItemCommand(agentInstanceKey)
             .elementInstanceKey(Protocol.encodePartitionId(999, 2))
             .jobKey(Protocol.encodePartitionId(999, 3))
-            .role(AgentHistoryRole.USER)
-            .content(List.of(AgentHistoryContent.text("hello")))
+            .role(AgentInstanceHistoryRole.USER)
+            .content(List.of(AgentInstanceHistoryContent.text("hello")))
             .producedAt(OffsetDateTime.now())
             .send();
 
@@ -79,8 +79,8 @@ public final class CreateAgentHistoryItemTest {
             .newCreateAgentHistoryItemCommand(nonExistingKey)
             .elementInstanceKey(Protocol.encodePartitionId(partition, 3))
             .jobKey(Protocol.encodePartitionId(partition, 4))
-            .role(AgentHistoryRole.USER)
-            .content(List.of(AgentHistoryContent.text("hello")))
+            .role(AgentInstanceHistoryRole.USER)
+            .content(List.of(AgentInstanceHistoryContent.text("hello")))
             .producedAt(OffsetDateTime.now())
             .send();
 

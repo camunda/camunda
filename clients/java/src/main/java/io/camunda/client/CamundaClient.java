@@ -144,6 +144,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentInstanceHistorySearchRequest;
 import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
@@ -3523,7 +3524,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *       .elementInstanceKey(elementInstanceKey)
    *       .jobKey(jobKey)
    *       .jobLease(jobLease)
-   *       .role(AgentHistoryRole.ASSISTANT)
+   *       .role(AgentInstanceHistoryRole.ASSISTANT)
    *       .content(contentList)
    *       .producedAt(OffsetDateTime.now())
    *       .send()
@@ -3660,4 +3661,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for searching agent instances
    */
   AgentInstanceSearchRequest newAgentInstanceSearchRequest();
+
+  /**
+   * Creates a request to search the conversation history of an agent instance.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+   *       .filter(f -> f.role(AgentInstanceHistoryRole.USER))
+   *       .sort(s -> s.producedAt().asc())
+   *       .send();
+   * </pre>
+   *
+   * @param agentInstanceKey the key of the agent instance whose history to search
+   * @return a builder for searching agent instance history
+   */
+  AgentInstanceHistorySearchRequest newAgentInstanceHistorySearchRequest(long agentInstanceKey);
 }

@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryMetrics;
-import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
+import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.response.CreateAgentHistoryItemResponse;
+import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemCreationResult;
@@ -60,8 +60,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .role(AgentHistoryRole.USER)
-        .content(Collections.singletonList(AgentHistoryContent.text("hello")))
+        .role(AgentInstanceHistoryRole.USER)
+        .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
         .producedAt(PRODUCED_AT)
         .execute();
 
@@ -83,8 +83,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .role(AgentHistoryRole.ASSISTANT)
-        .content(Collections.singletonList(AgentHistoryContent.text("I can help.")))
+        .role(AgentInstanceHistoryRole.ASSISTANT)
+        .content(Collections.singletonList(AgentInstanceHistoryContent.text("I can help.")))
         .producedAt(PRODUCED_AT)
         .execute();
 
@@ -113,12 +113,13 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .role(AgentHistoryRole.USER)
-        .content(Collections.singletonList(AgentHistoryContent.text("hello")))
+        .role(AgentInstanceHistoryRole.USER)
+        .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
         .producedAt(PRODUCED_AT)
         .jobLease("lease-token")
         .iteration(3)
-        .metrics(new AgentHistoryMetrics().inputTokens(100L).outputTokens(50L).durationMs(200L))
+        .metrics(
+            new AgentInstanceHistoryMetrics().inputTokens(100L).outputTokens(50L).durationMs(200L))
         .execute();
 
     // then
@@ -144,8 +145,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
             .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
             .elementInstanceKey(ELEMENT_INSTANCE_KEY)
             .jobKey(JOB_KEY)
-            .role(AgentHistoryRole.USER)
-            .content(Collections.singletonList(AgentHistoryContent.text("hello")))
+            .role(AgentInstanceHistoryRole.USER)
+            .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
             .producedAt(PRODUCED_AT)
             .execute();
 
@@ -215,7 +216,7 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
+                    .role(AgentInstanceHistoryRole.USER)
                     .content(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("content must not be null");
@@ -229,8 +230,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.singletonList(AgentHistoryContent.text("hello")))
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
                     .producedAt(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("producedAt must not be null");
@@ -247,8 +248,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.singletonList(AgentHistoryContent.text("hello")))
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
                     .producedAt(PRODUCED_AT)
                     .jobLease(jobLease))
         .isInstanceOf(IllegalArgumentException.class)
@@ -268,7 +269,7 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .role(AgentHistoryRole.USER)
+        .role(AgentInstanceHistoryRole.USER)
         .content(Collections.emptyList())
         .producedAt(PRODUCED_AT)
         .execute();
@@ -288,8 +289,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.singletonList(AgentHistoryContent.text(text))))
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(Collections.singletonList(AgentInstanceHistoryContent.text(text))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("text content value must not be null or blank");
   }
@@ -305,8 +306,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.singletonList(AgentHistoryContent.text("hello")))
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
                     .producedAt(PRODUCED_AT)
                     .iteration(iteration))
         .isInstanceOf(IllegalArgumentException.class)
@@ -317,21 +318,21 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
 
   @Test
   void shouldRejectNullTextArg() {
-    assertThatThrownBy(() -> AgentHistoryContent.text(null))
+    assertThatThrownBy(() -> AgentInstanceHistoryContent.text(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("text must not be null");
   }
 
   @Test
   void shouldRejectNullObjectArg() {
-    assertThatThrownBy(() -> AgentHistoryContent.object(null))
+    assertThatThrownBy(() -> AgentInstanceHistoryContent.object(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("object must not be null");
   }
 
   @Test
   void shouldRejectNullDocumentReferenceArg() {
-    assertThatThrownBy(() -> AgentHistoryContent.document(null))
+    assertThatThrownBy(() -> AgentInstanceHistoryContent.document(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("documentReference must not be null");
   }
@@ -349,8 +350,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.singletonList(AgentHistoryContent.document(doc))))
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(Collections.singletonList(AgentInstanceHistoryContent.document(doc))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("documentId must not be null or blank");
   }
@@ -365,8 +366,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.singletonList(AgentHistoryContent.text("hello")))
+                    .role(AgentInstanceHistoryRole.USER)
+                    .content(Collections.singletonList(AgentInstanceHistoryContent.text("hello")))
                     .producedAt(PRODUCED_AT)
                     .toolCalls(Collections.singletonList(null)))
         .isInstanceOf(IllegalArgumentException.class)
@@ -392,8 +393,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .role(AgentHistoryRole.USER)
-        .content(Collections.singletonList(AgentHistoryContent.document(doc)))
+        .role(AgentInstanceHistoryRole.USER)
+        .content(Collections.singletonList(AgentInstanceHistoryContent.document(doc)))
         .producedAt(PRODUCED_AT)
         .execute();
 
@@ -438,8 +439,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
         .elementInstanceKey(ELEMENT_INSTANCE_KEY)
         .jobKey(JOB_KEY)
-        .role(AgentHistoryRole.USER)
-        .content(Collections.singletonList(AgentHistoryContent.document(doc)))
+        .role(AgentInstanceHistoryRole.USER)
+        .content(Collections.singletonList(AgentInstanceHistoryContent.document(doc)))
         .producedAt(PRODUCED_AT)
         .execute();
 

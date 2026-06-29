@@ -682,6 +682,21 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<AgentInstanceHistorySearchQuerySortRequest>
+      toAgentInstanceHistorySearchQuerySortRequest(final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final AgentInstanceHistorySearchQuerySortRequest request =
+                  new AgentInstanceHistorySearchQuerySortRequest();
+              request.setField(
+                  AgentInstanceHistorySearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<ResourceSearchQuerySortRequest> toResourceSearchQuerySortRequest(
       final List<SearchRequestSort> requests) {
     return requests.stream()
