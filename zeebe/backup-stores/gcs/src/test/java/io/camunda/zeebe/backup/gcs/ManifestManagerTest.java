@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+
 import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -340,6 +343,26 @@ final class ManifestManagerTest {
   }
 
   @Test
+  void shouldNotLoopWhenListBackupStatusesStorageExceptionCauseChainCycles() {
+    // given
+    final var client = Mockito.mock(Storage.class);
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+        .thenThrow(new StorageException(0, "cyclic cause", new CyclicCauseException()));
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
+
+    // when/then
+    Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
+        .isInstanceOf(StorageException.class)
+        .hasMessageContaining("cyclic cause");
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+  }
+
+  @Test
   void shouldNotRetryListBackupStatusesWhenErrorIsNotTransient() {
     // given
     final var client = Mockito.mock(Storage.class);
@@ -359,11 +382,49 @@ final class ManifestManagerTest {
     Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
   }
 
+  @Test
+  void shouldNotLoopForeverWhenRetryCauseChainIsCyclic() {
+    // given
+    final var client = Mockito.mock(Storage.class);
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
+
+    final var firstCause = new Exception("first cause");
+    final var secondCause = new Exception("second cause");
+    firstCause.initCause(secondCause);
+    secondCause.initCause(firstCause);
+
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+        .thenThrow(new RuntimeException("cyclic failure", firstCause));
+
+    // when / then
+    assertTimeoutPreemptively(
+        Duration.ofSeconds(1),
+        () -> {
+          Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
+              .isInstanceOf(RuntimeException.class)
+              .hasMessageContaining("cyclic failure");
+        });
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+  }
+
   @SuppressWarnings("unchecked")
   private static Page<Blob> mockBlobPage(final Blob blob) {
     final var page = Mockito.mock(Page.class);
     Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
     return page;
+  }
+
+  private static final class CyclicCauseException extends RuntimeException {
+
+    @Override
+    public synchronized Throwable getCause() {
+      return this;
+    }
   }
 
   @Nested

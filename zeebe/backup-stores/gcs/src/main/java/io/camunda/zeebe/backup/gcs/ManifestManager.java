@@ -36,10 +36,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,7 @@ public final class ManifestManager {
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
   private static final int LIST_MAX_RETRIES = 6;
+  private static final int MAX_CAUSE_DEPTH = 20;
   private static final Duration MIN_LIST_RETRY_DELAY = Duration.ofMillis(100);
   private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
   private static final RetryDecorator MANIFEST_LIST_RETRY =
@@ -255,13 +258,11 @@ public final class ManifestManager {
   }
 
   private static boolean shouldRetryListOperation(final Throwable error) {
-    for (var current = error; current != null; current = current.getCause()) {
-      if (current instanceof final StorageException storageException
-          && shouldRetryStorageException(storageException)) {
-        return true;
-      }
-    }
-    return false;
+    return causes(error)
+        .anyMatch(
+            current ->
+                current instanceof final StorageException storageException
+                    && shouldRetryStorageException(storageException));
   }
 
   private static boolean shouldRetryStorageException(final StorageException storageException) {
@@ -281,12 +282,11 @@ public final class ManifestManager {
 
   private static boolean hasCause(
       final Throwable error, final Class<? extends Throwable> causeType) {
-    for (var current = error; current != null; current = current.getCause()) {
-      if (causeType.isInstance(current)) {
-        return true;
-      }
-    }
-    return false;
+    return causes(error).anyMatch(causeType::isInstance);
+  }
+
+  private static Stream<Throwable> causes(final Throwable error) {
+    return Stream.iterate(error, Objects::nonNull, Throwable::getCause).limit(MAX_CAUSE_DEPTH);
   }
 
   private static RetryConfiguration manifestListRetryConfiguration() {
