@@ -104,7 +104,7 @@ public final class PhysicalTenantsITHelper {
                             .getSecurity()
                             .getInitialization()
                             .setDefaultRoles(
-                                Map.of("admin", Map.of("users", List.of(tenant + "-admin")))));
+                                Map.of("admin", Map.of("users", List.of(adminUsername(tenant))))));
               }
             });
     return broker;
