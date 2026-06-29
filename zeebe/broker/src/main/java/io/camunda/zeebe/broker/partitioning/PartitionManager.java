@@ -101,12 +101,14 @@ public interface PartitionManager {
 
     return new RecoveryPartitionManager(
         physicalTenantId,
-        brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
+        brokerStartupContext.getBrokerConfiguration(),
+        brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getClusterConfigurationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getActorSchedulingService(),
         brokerStartupContext.getMeterRegistry(),
+        brokerStartupContext.getGatewayBrokerTransport(),
         topologyManager);
   }
 }

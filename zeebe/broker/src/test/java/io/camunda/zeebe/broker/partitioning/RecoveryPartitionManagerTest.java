@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -22,13 +23,15 @@ import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -37,15 +40,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 final class RecoveryPartitionManagerTest {
 
   private static final String GROUP = PartitionManagerImpl.DEFAULT_GROUP_NAME;
   private static final int PARTITION_ID = 1;
   private static final int PARTITION_ID_2 = 2;
-
-  @TempDir private Path dataDirectory;
 
   private ActorScheduler actorScheduler;
   private Actor controlActor;
@@ -83,15 +83,22 @@ final class RecoveryPartitionManagerTest {
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
     actorScheduler.submitActor(topologyManager).join();
 
+    final var transport = mock(AtomixServerTransport.class);
+    when(transport.subscribe(any(), any(), any()))
+        .thenReturn(CompletableActorFuture.completed(null));
+    when(transport.unsubscribe(any(), any())).thenReturn(CompletableActorFuture.completed(null));
+
     partitionManager =
         new RecoveryPartitionManager(
             GROUP,
-            dataDirectory.toString(),
+            new BrokerCfg(),
+            brokerInfo,
             controlActor,
             clusterConfigurationService,
             clusterServices.getMembershipService(),
             actorScheduler,
             new SimpleMeterRegistry(),
+            transport,
             topologyManager);
   }
 
