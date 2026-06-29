@@ -5,18 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.client;
+package io.camunda.eventbridge.examples;
 
+import io.camunda.eventbridge.client.EventBridgeClient;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Manual POC driver. Talks to a single gateway ({@code http://localhost:8080}) and exercises every
- * partition — in a multi-broker cluster the gateway transparently routes each partition to its
- * leader, so this also validates cross-broker publish + fetch.
+ * Manual example driver. Talks to a single gateway ({@code http://localhost:8080}) and exercises
+ * every partition — in a multi-broker cluster the gateway transparently routes each partition to
+ * its leader, so this also validates cross-broker publish + fetch.
  */
-public final class EventBridgeClientTest {
+public final class PublishFetchExample {
 
-  private EventBridgeClientTest() {}
+  private PublishFetchExample() {}
 
   public static void main(final String[] args) throws Exception {
     final var client = EventBridgeClient.create("http://localhost:8080");

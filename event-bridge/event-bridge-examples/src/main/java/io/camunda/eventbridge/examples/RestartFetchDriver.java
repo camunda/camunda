@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.client;
+package io.camunda.eventbridge.examples;
 
+import io.camunda.eventbridge.client.EventBridgeClient;
 import java.nio.charset.StandardCharsets;
 
 /**
