@@ -68,7 +68,7 @@ final class PhysicalTenantAuthorizationEnablementIT {
 
   private static TestStandaloneBroker configure() {
     final TestStandaloneBroker broker =
-        TENANTS.configure(
+        TENANTS.configureAdminRoles(
             new TestStandaloneBroker()
                 .withAuthorizationsEnabled()
                 .withAuthenticationMethod(AuthenticationMethod.BASIC));
@@ -81,6 +81,7 @@ final class PhysicalTenantAuthorizationEnablementIT {
 
   @BeforeAll
   static void startBroker() {
+    TENANTS.refreshSecondaryStorage(BROKER);
     BROKER.start();
     tenantOffAdmin =
         TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_OFF, ADMIN_PASSWORD).build();

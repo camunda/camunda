@@ -63,7 +63,7 @@ final class PhysicalTenantLogicalTenantScopingIT {
 
   private static TestStandaloneBroker configure() {
     final TestStandaloneBroker broker =
-        TENANTS.configure(
+        TENANTS.configureAdminRoles(
             new TestStandaloneBroker()
                 .withAuthorizationsEnabled()
                 .withAuthenticationMethod(AuthenticationMethod.BASIC)
@@ -75,6 +75,7 @@ final class PhysicalTenantLogicalTenantScopingIT {
 
   @BeforeAll
   static void startBroker() {
+    TENANTS.refreshSecondaryStorage(BROKER);
     BROKER.start();
     tenantAAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_A, ADMIN_PASSWORD).build();
     tenantBAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_B, ADMIN_PASSWORD).build();

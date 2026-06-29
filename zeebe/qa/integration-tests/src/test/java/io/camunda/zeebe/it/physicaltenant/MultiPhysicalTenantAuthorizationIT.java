@@ -60,6 +60,7 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
 
   @BeforeAll
   static void startBroker() {
+    TENANTS.refreshSecondaryStorage(BROKER);
     BROKER.start();
     defaultAdmin = defaultAdminClient(BROKER);
     tenantAAdmin = adminClient(BROKER, TENANT_A);

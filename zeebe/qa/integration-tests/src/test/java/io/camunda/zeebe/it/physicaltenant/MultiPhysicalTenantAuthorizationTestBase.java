@@ -64,7 +64,7 @@ abstract class MultiPhysicalTenantAuthorizationTestBase {
    */
   protected static TestStandaloneBroker configureBroker() {
     final TestStandaloneBroker broker =
-        TENANTS.configure(
+        TENANTS.configureAdminRoles(
             new TestStandaloneBroker()
                 .withAuthorizationsEnabled()
                 .withAuthenticationMethod(AuthenticationMethod.BASIC));
