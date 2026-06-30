@@ -158,9 +158,17 @@ and extracts the Java package path from every changed `.java` file
 → `io/camunda/zeebe/backup/gcs`).
 
 `filter_by_touch_check()` then silences any new-flaky alert whose Java
-package was not touched by the PR (exact match, or the PR touched a parent
-or child package). A test in `io.camunda.zeebe.backup.gcs` cannot have been
-broken by a PR that only changes `io.camunda.zeebe.agent`.
+package was not touched by the PR — either an exact match, or the PR touched
+a parent package (production code above the test). A test in
+`io.camunda.zeebe.backup.gcs` cannot have been broken by a PR that only
+changes `io.camunda.zeebe.agent`.
+
+The reverse "PR changed a strict sub-package of the test's package" match is
+intentionally **not** used: for shallow/root test packages such as
+`io.camunda` virtually every file in the monorepo is a descendant, so that
+rule degenerated to always-true and defeated the filter (it flagged the
+root-package `InvoiceDecisionTest` on unrelated PRs — #55489). A 60-day replay
+of every known true positive confirmed none relied on the descendant match.
 
 A PR that changes only YAML/config files (no `.java` at all) produces an
 empty `changed_pkg_paths` set with `available=True` — that is still a valid
