@@ -34,7 +34,8 @@ jobs:
     # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
     if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
-    timeout-minutes: 31
+    # Budget = one normal run (~25m) + one retry on hang (~30m) + small scheduling margin.
+    timeout-minutes: 65
     strategy:
       fail-fast: false
       # The matrix is necessary to run separate analyses
@@ -117,7 +118,23 @@ jobs:
           'del(.project.modules.module[] | select(. == "qa"))' \
           optimize/pom.xml
 
-    - name: Analyze project
+    # The FOSSA CLI occasionally hangs on a single analyzer call, exhausting the job timeout
+    # (see INC-6263). Run with a per-attempt step timeout that's just above the normal ~25m
+    # completion, and retry once on failure so a hang is killed early and recovered.
+    - name: Analyze project (attempt 1)
+      id: analyze1
+      continue-on-error: true
+      timeout-minutes: 30
+      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        branch: ${{  steps.info.outputs.head-ref }}
+        path: ${{ matrix.project.path }}
+        revision-id: ${{ steps.info.outputs.head-revision }}
+
+    - name: Analyze project (attempt 2)
+      if: steps.analyze1.outcome != 'success'
+      timeout-minutes: 30
       uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
