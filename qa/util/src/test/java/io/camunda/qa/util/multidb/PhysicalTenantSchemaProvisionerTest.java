@@ -173,8 +173,11 @@ class PhysicalTenantSchemaProvisionerTest {
 
   @Test
   void shouldNotThrowWhenDroppingNamespaceFailsForSchemaDialect() {
-    // given an unreachable host so the bootstrap connection cannot be established
-    final String unreachableUrl = "jdbc:postgresql://localhost:1/camunda";
+    // given an unreachable host so the bootstrap connection cannot be established; connectTimeout
+    // and socketTimeout keep the failure fast and deterministic even where the port silently drops
+    // packets instead of refusing the connection
+    final String unreachableUrl =
+        "jdbc:postgresql://localhost:1/camunda?connectTimeout=1&socketTimeout=1";
 
     // when / then — cleanup is best-effort and must swallow the failure
     assertThatNoException()
