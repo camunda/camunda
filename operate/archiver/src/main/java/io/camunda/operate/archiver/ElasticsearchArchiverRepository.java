@@ -102,6 +102,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   private final ListViewTemplate processInstanceTemplate;
   private final DecisionInstanceTemplate decisionInstanceTemplate;
 
+  private final Cache<String, Boolean> ilmApplied =
+      Caffeine.newBuilder().maximumSize(200).expireAfterWrite(1, TimeUnit.HOURS).build();
+
   @Autowired
   public ElasticsearchArchiverRepository(
       @Qualifier("archiverThreadPoolExecutor") final ThreadPoolTaskScheduler archiverExecutor,
@@ -119,9 +122,6 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     this.batchOperationTemplate = batchOperationTemplate;
     this.decisionInstanceTemplate = decisionInstanceTemplate;
   }
-
-  private final Cache<String, Boolean> ilmApplied =
-      Caffeine.newBuilder().maximumSize(200).expireAfterWrite(1, TimeUnit.HOURS).build();
 
   private ArchiveBatch createArchiveBatch(
       final SearchResponse searchResponse,

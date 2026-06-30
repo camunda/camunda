@@ -88,6 +88,9 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   private final DecisionInstanceTemplate decisionInstanceTemplate;
   private final ThreadPoolTaskScheduler archiverExecutor;
 
+  private final Cache<String, Boolean> ilmApplied =
+      Caffeine.newBuilder().maximumSize(200).expireAfterWrite(1, TimeUnit.HOURS).build();
+
   @Autowired
   public OpensearchArchiverRepository(
       final RichOpenSearchClient richOpenSearchClient,
@@ -107,9 +110,6 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     this.decisionInstanceTemplate = decisionInstanceTemplate;
     this.archiverExecutor = archiverExecutor;
   }
-
-  private final Cache<String, Boolean> ilmApplied =
-      Caffeine.newBuilder().maximumSize(200).expireAfterWrite(1, TimeUnit.HOURS).build();
 
   private <R> ArchiveBatch createArchiveBatch(
       final SearchResponse<R> searchResponse,
