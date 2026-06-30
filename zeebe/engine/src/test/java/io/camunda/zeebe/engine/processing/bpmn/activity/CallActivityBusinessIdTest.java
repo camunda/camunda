@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -31,6 +32,7 @@ public final class CallActivityBusinessIdTest {
 
   private static final String PARENT_PROCESS_ID = "parent-process";
   private static final String CHILD_PROCESS_ID = "child-process";
+  private static final String GRANDCHILD_PROCESS_ID = "grandchild-process";
   private static final String PARENT_BUSINESS_ID = "parent-business-id";
 
   @Rule
@@ -47,6 +49,17 @@ public final class CallActivityBusinessIdTest {
 
   private static BpmnModelInstance childProcess() {
     return Bpmn.createExecutableProcess(CHILD_PROCESS_ID).startEvent().endEvent().done();
+  }
+
+  private static BpmnModelInstance childProcessCalling(final String grandchildBusinessId) {
+    final CallActivityBuilder callActivity =
+        Bpmn.createExecutableProcess(CHILD_PROCESS_ID).startEvent().callActivity("call-grandchild");
+    callActivity.zeebeProcessId(GRANDCHILD_PROCESS_ID).zeebeBusinessId(grandchildBusinessId);
+    return callActivity.endEvent().done();
+  }
+
+  private static BpmnModelInstance grandchildProcess() {
+    return Bpmn.createExecutableProcess(GRANDCHILD_PROCESS_ID).startEvent().endEvent().done();
   }
 
   private void deploy(final BpmnModelInstance parent) {
@@ -150,5 +163,64 @@ public final class CallActivityBusinessIdTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBusinessId())
         .containsOnly("child-123");
+  }
+
+  @Test
+  public void shouldResolveBusinessIdIndependentlyForNestedCallActivities() {
+    // given - parent -> child -> grandchild, each call activity sets its own literal
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess(c -> c.zeebeBusinessId("level-1")))
+        .withXmlResource("child.bpmn", childProcessCalling("level-2"))
+        .withXmlResource("grandchild.bpmn", grandchildProcess())
+        .deploy();
+
+    // when
+    final long parentKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PARENT_PROCESS_ID)
+            .withBusinessId(PARENT_BUSINESS_ID)
+            .create();
+
+    // then - each level carries the Business ID configured on its own call activity
+    final Record<ProcessInstanceRecordValue> childInstance = childProcessInstance(parentKey);
+    Assertions.assertThat(childInstance.getValue()).hasBusinessId("level-1");
+
+    final Record<ProcessInstanceRecordValue> grandchildInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(childInstance.getKey())
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    Assertions.assertThat(grandchildInstance.getValue()).hasBusinessId("level-2");
+  }
+
+  @Test
+  public void shouldDeriveBusinessIdPerInstanceForMultiInstanceCallActivity() {
+    // given - a multi-instance call activity deriving the Business ID from each element
+    final CallActivityBuilder callActivity =
+        Bpmn.createExecutableProcess(PARENT_PROCESS_ID).startEvent().callActivity("call");
+    callActivity.zeebeProcessId(CHILD_PROCESS_ID).zeebeBusinessId("=\"businessId-\" + item");
+    callActivity.multiInstance(
+        b -> b.zeebeInputCollectionExpression("items").zeebeInputElement("item"));
+    deploy(callActivity.endEvent().done());
+
+    // when
+    final long parentKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PARENT_PROCESS_ID)
+            .withVariable("items", List.of("1", "2", "3"))
+            .create();
+
+    // then - each child instance derives its own Business ID at its own scope
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withParentProcessInstanceKey(parentKey)
+                .withBpmnProcessId(CHILD_PROCESS_ID)
+                .filterRootScope()
+                .limit(3))
+        .extracting(r -> r.getValue().getBusinessId())
+        .containsExactlyInAnyOrder("businessId-1", "businessId-2", "businessId-3");
   }
 }
