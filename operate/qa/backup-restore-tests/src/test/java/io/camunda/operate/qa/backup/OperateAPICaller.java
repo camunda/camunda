@@ -35,11 +35,15 @@ public class OperateAPICaller {
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
   private StatefulRestTemplate restTemplate;
+  private StatefulRestTemplate mgmtRestTemplate;
 
   public StatefulRestTemplate createRestTemplate(final TestContext testContext) {
     restTemplate =
         statefulRestTemplateFactory.apply(
             testContext.getExternalOperateHost(), testContext.getExternalOperatePort());
+    mgmtRestTemplate =
+        statefulRestTemplateFactory.apply(
+            testContext.getExternalOperateHost(), testContext.getExternalOperateMgmtPort());
     return restTemplate;
   }
 
@@ -80,13 +84,16 @@ public class OperateAPICaller {
 
   public TakeBackupResponseDto backup(final Long backupId) {
     final TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
-    return restTemplate.postForObject(
-        restTemplate.getURL("/actuator/backups"), takeBackupRequest, TakeBackupResponseDto.class);
+    return mgmtRestTemplate.postForObject(
+        mgmtRestTemplate.getURL("/actuator/backupHistory"),
+        takeBackupRequest,
+        TakeBackupResponseDto.class);
   }
 
   public GetBackupStateResponseDto getBackupState(final Long backupId) {
-    return restTemplate.getForObject(
-        restTemplate.getURL("/actuator/backups/" + backupId), GetBackupStateResponseDto.class);
+    return mgmtRestTemplate.getForObject(
+        mgmtRestTemplate.getURL("/actuator/backupHistory/" + backupId),
+        GetBackupStateResponseDto.class);
   }
 
   boolean createOperation(final Long processInstanceKey, final OperationType operationType) {

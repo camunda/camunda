@@ -83,6 +83,7 @@ public class TestContainerUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
   private static final String DOCKER_OPERATE_IMAGE_NAME = "camunda/operate";
   private static final Integer OPERATE_HTTP_PORT = 8080;
+  private static final Integer OPERATE_MGMT_HTTP_PORT = 9600;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
   // There are two cases how we start containers:
@@ -348,15 +349,15 @@ public class TestContainerUtil {
       final String dockerImageName, final String version, final TestContext testContext) {
     operateContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
-            .withExposedPorts(8080)
+            .withExposedPorts(8080, 9600)
             .withNetwork(testContext.getNetwork())
             .withExtraHost("host.testcontainers.internal", "host-gateway")
             .withCopyFileToContainer(
                 MountableFile.forHostPath(createConfigurationFile(testContext), 0775),
-                "/usr/local/operate/config/application.properties")
+                "/usr/local/camunda/config/application.properties")
             .waitingFor(
                 new HttpWaitStrategy()
-                    .forPort(8080)
+                    .forPort(9600)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));
@@ -375,6 +376,7 @@ public class TestContainerUtil {
 
     testContext.setExternalOperateHost(operateContainer.getHost());
     testContext.setExternalOperatePort(operateContainer.getMappedPort(OPERATE_HTTP_PORT));
+    testContext.setExternalOperateMgmtPort(operateContainer.getMappedPort(OPERATE_MGMT_HTTP_PORT));
   }
 
   // for newer versions
@@ -383,7 +385,13 @@ public class TestContainerUtil {
     operateContainer
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", getElasticURL(testContext))
-        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
+        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth, operate")
+        .withEnv("MANAGEMENT_SERVER_PORT", String.valueOf(OPERATE_MGMT_HTTP_PORT))
+        .withEnv("MANAGEMENT_SERVER_BASE_PATH", "/")
+        // The mounted application.properties replaces the dist default which exposes all
+        // actuator endpoints. Without this, only /actuator/health is exposed and
+        // /actuator/backupHistory returns 404.
+        .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")

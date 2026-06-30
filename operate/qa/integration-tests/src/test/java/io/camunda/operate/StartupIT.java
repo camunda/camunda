@@ -61,6 +61,7 @@ public class StartupIT {
 
     final String elasticsearchUrl = String.format("http://%s:%s", elsHost, elsPort);
     operateContainer
+        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth, operate")
         // Unified Configuration: DB URL + compatibility
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl)
