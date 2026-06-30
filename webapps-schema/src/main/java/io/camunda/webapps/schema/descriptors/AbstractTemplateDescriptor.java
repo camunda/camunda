@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.descriptors;
 
 import java.util.List;
+import java.util.OptionalInt;
 
 public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
     implements IndexTemplateDescriptor {
@@ -19,6 +20,11 @@ public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
 
   public AbstractTemplateDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
+  }
+
+  @Override
+  public OptionalInt getDefaultShardCount() {
+    return OptionalInt.empty();
   }
 
   @Override

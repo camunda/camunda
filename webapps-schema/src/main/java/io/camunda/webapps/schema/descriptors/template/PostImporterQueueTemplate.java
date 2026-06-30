@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import java.util.OptionalInt;
 
 public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
@@ -39,6 +40,11 @@ public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
   @Override
   public String getVersion() {
     return "8.3.0";
+  }
+
+  @Override
+  public OptionalInt getDefaultShardCount() {
+    return OptionalInt.of(1);
   }
 
   @Override
