@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.processing.bpmn.behavior.LoopDetectionFilter;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
@@ -317,35 +318,12 @@ final class ProcessInstanceElementActivatingV4Applier
   }
 
   /**
-   * Decides whether to increment the element activation counter for loop detection. Mirrors {@code
-   * BpmnStreamProcessor.shouldCheckLoopDetection}: sequential MI bodies and parallel MI children
-   * are skipped; all other elements are counted.
+   * Decides whether to increment the element activation counter for loop detection. Delegates to
+   * {@link LoopDetectionFilter#shouldCount} so the counter increment and the activation check (in
+   * {@code BpmnStreamProcessor}) are consistent.
    */
   private boolean shouldIncrementActivationCounter(
       final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
-    if (value.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-      // Only count parallel MI bodies; sequential MI bodies share their elementId counter
-      // with sequential children.
-      final var miBody =
-          processState.getFlowElement(
-              value.getProcessDefinitionKey(),
-              value.getTenantId(),
-              value.getElementIdBuffer(),
-              ExecutableMultiInstanceBody.class);
-      return miBody != null && !miBody.getLoopCharacteristics().isSequential();
-    }
-    // Count sequential MI children (activated one-by-one); skip parallel MI children (batch).
-    if (flowScopeInstance != null
-        && flowScopeInstance.getValue().getBpmnElementType()
-            == BpmnElementType.MULTI_INSTANCE_BODY) {
-      final var miBody =
-          processState.getFlowElement(
-              value.getProcessDefinitionKey(),
-              value.getTenantId(),
-              flowScopeInstance.getValue().getElementIdBuffer(),
-              ExecutableMultiInstanceBody.class);
-      return miBody != null && miBody.getLoopCharacteristics().isSequential();
-    }
-    return true;
+    return LoopDetectionFilter.shouldCount(processState, value, flowScopeInstance);
   }
 }

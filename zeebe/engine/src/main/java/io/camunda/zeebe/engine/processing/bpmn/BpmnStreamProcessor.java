@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLoopDetectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.LoopDetectionFilter;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
@@ -174,11 +175,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
-            .flatMap(
-                ok ->
-                    shouldCheckLoopDetection(activatingContext, element)
-                        ? loopDetectionBehavior.checkActivationThreshold(activatingContext)
-                        : BpmnElementProcessor.SUCCESS)
+            .flatMap(ok -> runLoopDetection(activatingContext))
             .flatMap(ok -> beforeActivating(element, processor, activatingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
@@ -439,31 +436,23 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   /**
-   * Decides whether loop-detection counting applies to this element activation. Sequential MI
-   * bodies and parallel MI children are skipped (their counts are tracked elsewhere to avoid firing
-   * early or producing false positives on large collections); all other elements are counted.
+   * Runs the loop-detection activation-threshold check when it applies to this element activation,
+   * otherwise short-circuits to success.
    */
-  private boolean shouldCheckLoopDetection(
-      final BpmnElementContext context, final ExecutableFlowElement element) {
-    if (context.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-      // Only count parallel MI bodies; sequential MI bodies share their elementId counter
-      // with sequential children (the element that actually accumulates the count).
-      return !((ExecutableMultiInstanceBody) element).getLoopCharacteristics().isSequential();
-    }
-    final var flowScope = stateBehavior.getFlowScopeInstance(context);
-    if (flowScope != null
-        && flowScope.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-      // Skip parallel MI children (activated in a batch → use checkBatchActivationThreshold).
-      // Count sequential MI children (activated one-by-one → normal loop detection applies).
-      final var miBody =
-          processState.getFlowElement(
-              context.getProcessDefinitionKey(),
-              context.getTenantId(),
-              flowScope.getValue().getElementIdBuffer(),
-              ExecutableMultiInstanceBody.class);
-      return miBody != null && miBody.getLoopCharacteristics().isSequential();
-    }
-    return true;
+  private Either<Failure, ?> runLoopDetection(final BpmnElementContext context) {
+    return shouldRunLoopDetection(context)
+        ? loopDetectionBehavior.checkActivationThreshold(context)
+        : BpmnElementProcessor.SUCCESS;
+  }
+
+  /**
+   * Decides whether loop-detection counting applies to this element activation. Delegates to {@link
+   * LoopDetectionFilter#shouldCount} so the activation check and the counter increment (in {@code
+   * ProcessInstanceElementActivatingV4Applier}) are consistent.
+   */
+  private boolean shouldRunLoopDetection(final BpmnElementContext context) {
+    return LoopDetectionFilter.shouldCount(
+        processState, context.getRecordValue(), stateBehavior.getFlowScopeInstance(context));
   }
 
   private ExecutableFlowElement getElement(
