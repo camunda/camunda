@@ -8,6 +8,7 @@
 package io.camunda.qa.util.multidb;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -110,6 +111,18 @@ class PhysicalTenantSchemaProvisionerTest {
 
     // then
     assertThat(result).isEqualTo("jdbc:mariadb://localhost:3306/ABCDEFGHIJ_tenanta");
+  }
+
+  @Test
+  void shouldRejectMysqlUrlWithoutDatabaseSegment() {
+    // given a URL with no database segment after the host
+    final String baseUrl = "jdbc:mysql://localhost:3306";
+    final String namespace = "ABCDEFGHIJ_tenanta";
+
+    // when / then — must fail clearly rather than corrupt the host portion
+    assertThatThrownBy(() -> PhysicalTenantSchemaProvisioner.deriveMysqlUrl(baseUrl, namespace))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("expected a database segment");
   }
 
   // --- SQL Server URL rewriting ---

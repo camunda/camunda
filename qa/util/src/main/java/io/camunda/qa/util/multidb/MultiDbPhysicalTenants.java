@@ -17,8 +17,14 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Declares one or more non-default physical tenants that {@link CamundaMultiDBExtension} should
- * provision when the test runs. Each tenant gets its own isolated RDBMS-H2 database, a seeded
+ * provision when the test runs. Each tenant gets its own isolated secondary storage, a seeded
  * {@code <tenantId>-admin} user, and an {@code admin} default role for that user.
+ *
+ * <p>The storage-isolation primitive is dialect-specific: {@code RDBMS_H2} gives each tenant a
+ * fresh dedicated in-memory database, while the other RDBMS dialects give each tenant a dedicated
+ * namespace named {@code <basePrefix>_<tenantId>} — a schema (PostgreSQL/Aurora), database
+ * (MySQL/MariaDB, SQL Server), or user (Oracle). See {@link PhysicalTenantSchemaProvisioner} for
+ * the per-dialect details.
  *
  * <p>Only valid in combination with {@link MultiDbTest} and an RDBMS database type (RDBMS-only,
  * because per-PT secondary-storage schema init is not available for ES/OS yet).

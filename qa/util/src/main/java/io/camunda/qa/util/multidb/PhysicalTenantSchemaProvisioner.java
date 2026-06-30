@@ -76,13 +76,28 @@ final class PhysicalTenantSchemaProvisioner {
    *
    * <p>Example: {@code jdbc:mysql://host:3306/camunda?charset=utf8} → {@code
    * jdbc:mysql://host:3306/<namespace>?charset=utf8}.
+   *
+   * @throws IllegalArgumentException if the URL has no database segment after the host (e.g. {@code
+   *     jdbc:mysql://host:3306}); rewriting such a URL would otherwise corrupt the host portion.
    */
   static String deriveMysqlUrl(final String baseUrl, final String namespace) {
     final int queryStart = baseUrl.indexOf('?');
     final String urlWithoutQuery = queryStart >= 0 ? baseUrl.substring(0, queryStart) : baseUrl;
     final String query = queryStart >= 0 ? baseUrl.substring(queryStart) : "";
-    final int lastSlash = urlWithoutQuery.lastIndexOf('/');
-    return urlWithoutQuery.substring(0, lastSlash + 1) + namespace + query;
+    // The database segment is the first '/' after the authority (the '//host:port' part); using the
+    // last '/' would land on the scheme's '//' for URLs without a database and rewrite the host.
+    final int authorityStart = urlWithoutQuery.indexOf("//");
+    final int dbSlash =
+        authorityStart >= 0
+            ? urlWithoutQuery.indexOf('/', authorityStart + 2)
+            : urlWithoutQuery.indexOf('/');
+    if (dbSlash < 0) {
+      throw new IllegalArgumentException(
+          "Cannot derive a per-physical-tenant MySQL/MariaDB URL from '"
+              + baseUrl
+              + "': expected a database segment after the host (e.g. jdbc:mysql://host:port/db)");
+    }
+    return urlWithoutQuery.substring(0, dbSlash + 1) + namespace + query;
   }
 
   /**
