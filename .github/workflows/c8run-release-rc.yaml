@@ -143,33 +143,70 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Reads the rolling release BODY (cheap; no zip download) and echoes the monorepo version it
-          # pins. The body's "## Versions" section lists every *_VERSION as `- KEY=value`. 8.7 uses
-          # CAMUNDA_ZEEBE_VERSION, 8.8+ uses CAMUNDA_VERSION — try zeebe first, fall back to camunda.
-          compose_monorepo_version() {
-            local body v
-            body="$(gh release view "docker-compose-${COMPOSE_TAG}" --repo "${DISTRIBUTIONS_REPO}" --json body --jq .body 2>/dev/null || true)"
-            [ -z "${body}" ] && return 0
-            v="$(printf '%s\n' "${body}" | grep -oE '^[-* ]*CAMUNDA_ZEEBE_VERSION=[^[:space:]`]+' | head -1 | cut -d= -f2- || true)"
-            [ -z "${v}" ] && v="$(printf '%s\n' "${body}" | grep -oE '^[-* ]*CAMUNDA_VERSION=[^[:space:]`]+' | head -1 | cut -d= -f2- || true)"
-            printf '%s' "${v}"
+          # Reads the rolling release BODY (cheap; no zip download). The body's "## Versions" section
+          # lists every *_VERSION as `- KEY=value`. compose_pin extracts one KEY's pinned version.
+          compose_body() {
+            gh release view "docker-compose-${COMPOSE_TAG}" --repo "${DISTRIBUTIONS_REPO}" --json body --jq .body 2>/dev/null || true
+          }
+          compose_pin() {  # $1=body  $2=KEY
+            printf '%s\n' "$1" | grep -oE "^[-* ]*$2=[^[:space:]\`]+" | head -1 | cut -d= -f2- || true
           }
 
-          # Returns 0 (true) when the pinned version is empty/unknown or strictly behind the target.
+          # Versions the compose must pin, keyed by .env KEY. The monorepo version drives
+          # camunda/zeebe/operate/tasklist (8.7 pins CAMUNDA_ZEEBE_VERSION, 8.8+ CAMUNDA_VERSION — only
+          # the key the minor actually pins is checked); connectors is always supplied; the rest only
+          # when supplied. Checking every supplied component (not just the monorepo) prevents proceeding
+          # while the compose is stale for connectors/console/etc.
+          declare -A TARGET
+          TARGET[CAMUNDA_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_ZEEBE_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_OPERATE_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_TASKLIST_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_CONNECTORS_VERSION]="${CONNECTORS_VERSION}"
+          [ -n "${OPTIMIZE_VERSION}" ]    && TARGET[CAMUNDA_OPTIMIZE_VERSION]="${OPTIMIZE_VERSION}"
+          [ -n "${IDENTITY_VERSION}" ]    && TARGET[CAMUNDA_IDENTITY_VERSION]="${IDENTITY_VERSION}"
+          [ -n "${WEB_MODELER_VERSION}" ] && TARGET[CAMUNDA_WEB_MODELER_VERSION]="${WEB_MODELER_VERSION}"
+          [ -n "${CONSOLE_VERSION}" ]     && TARGET[CAMUNDA_CONSOLE_VERSION]="${CONSOLE_VERSION}"
+
+          # Optional components that, if the compose pins them but no version was supplied here, are
+          # blind spots the self-heal can neither verify nor fix.
+          OPTIONAL_KEYS="CAMUNDA_OPTIMIZE_VERSION CAMUNDA_IDENTITY_VERSION CAMUNDA_WEB_MODELER_VERSION CAMUNDA_CONSOLE_VERSION"
+
+          # Returns 0 (behind) when the release is missing OR any pinned-and-checked component is below
+          # its target; 1 when every present checked component is at/above target. Sets BEHIND_DETAIL.
           compose_behind() {
-            local pinned="$1" target="$2" lower
-            [ -z "${pinned}" ] && return 0
-            [ "${pinned}" = "${target}" ] && return 1
-            lower="$(printf '%s\n%s\n' "${pinned}" "${target}" | sort -V | head -1)"
-            [ "${lower}" = "${pinned}" ]
+            local body key pin tgt lower behind=1; BEHIND_DETAIL=""
+            body="$(compose_body)"
+            [ -z "${body}" ] && { BEHIND_DETAIL=" release docker-compose-${COMPOSE_TAG} not found"; return 0; }
+            for key in "${!TARGET[@]}"; do
+              tgt="${TARGET[$key]}"
+              pin="$(compose_pin "${body}" "${key}")"
+              [ -z "${pin}" ] && continue
+              if [ "${pin}" != "${tgt}" ]; then
+                lower="$(printf '%s\n%s\n' "${pin}" "${tgt}" | sort -V | head -1)"
+                [ "${lower}" = "${pin}" ] && { BEHIND_DETAIL="${BEHIND_DETAIL} ${key}(pins ${pin}, want ${tgt})"; behind=0; }
+              fi
+            done
+            return ${behind}
           }
 
-          pinned="$(compose_monorepo_version)"
-          if ! compose_behind "${pinned}" "${CAMUNDA_VERSION}"; then
-            echo "Docker Compose is at or ahead of target (pins '${pinned}', target '${CAMUNDA_VERSION}'). Proceeding."
+          # Optional components the compose pins but for which no version was supplied.
+          compose_blind_spots() {
+            local body key out=""
+            body="$(compose_body)"
+            for key in ${OPTIONAL_KEYS}; do
+              if [ -n "$(compose_pin "${body}" "${key}")" ] && [ -z "${TARGET[$key]+x}" ]; then
+                out="${out} ${key}"
+              fi
+            done
+            printf '%s' "${out# }"
+          }
+
+          if ! compose_behind; then
+            echo "Docker Compose is at or ahead of target for all checked components. Proceeding."
             exit 0
           fi
-          echo "Rolling docker-compose-${COMPOSE_TAG} is behind: pins '${pinned:-<none>}', target '${CAMUNDA_VERSION}'."
+          echo "Rolling docker-compose-${COMPOSE_TAG} is behind:${BEHIND_DETAIL}"
 
           # depName -> version map for the force-bump, empties dropped (only present keys get written).
           component_versions="$(jq -nc \
@@ -199,10 +236,11 @@ jobs:
             exit 0
           fi
 
-          # Self-heal needs the train's independent versions (Optimize/Identity/WebModeler). Without
-          # them a correct compose .env cannot be authored — fall back to the manual precondition.
-          if [ -z "${OPTIMIZE_VERSION}" ] || [ -z "${IDENTITY_VERSION}" ] || [ -z "${WEB_MODELER_VERSION}" ]; then
-            echo "::error::Rolling docker-compose-${COMPOSE_TAG} is behind and the component versions needed to refresh it (optimizeVersion/identityVersion/webModelerVersion) were not supplied. Refresh the compose upstream (Renovate / release train) before building C8Run, or re-run with those inputs."
+          # Refuse to self-heal with a blind spot: a component the compose pins but no version was
+          # supplied (e.g. consoleVersion omitted on 8.8) would be left stale by the force-bump.
+          blind="$(compose_blind_spots)"
+          if [ -n "${blind}" ]; then
+            echo "::error::Rolling docker-compose-${COMPOSE_TAG} is behind and pins components with no supplied version: ${blind}. Self-heal would leave them stale. Supply the matching *Version inputs, or refresh the compose upstream (Renovate / release train) before building C8Run."
             exit 1
           fi
 
@@ -213,21 +251,21 @@ jobs:
             --field "componentVersions=${component_versions}" \
             --field "reason=C8Run RC ${CAMUNDA_VERSION} preflight"
 
-          # Bounded wait for the autorelease to rebuild the rolling release at target. Poll the release
-          # body each round (no zip download); tolerate transient 404 during the delete+recreate window.
-          echo "Waiting for docker-compose-${COMPOSE_TAG} to reach ${CAMUNDA_VERSION}..."
+          # Bounded wait for the autorelease to rebuild the rolling release at target across ALL checked
+          # components. Poll the release body each round (no zip download); tolerate transient 404.
+          echo "Waiting for docker-compose-${COMPOSE_TAG} to reach the target versions..."
           attempt=1
           max_attempts=40   # 40 x 30s = 20 min, within the job's 30 min timeout
-          until pinned="$(compose_monorepo_version)"; ! compose_behind "${pinned}" "${CAMUNDA_VERSION}"; do
+          until ! compose_behind; do
             if [ "${attempt}" -ge "${max_attempts}" ]; then
-              echo "::error::Timed out after ${attempt} polls waiting for docker-compose-${COMPOSE_TAG} to reach ${CAMUNDA_VERSION} (last pinned: '${pinned:-<none>}'). The force-bump may have failed — check its run in ${DISTRIBUTIONS_REPO}."
+              echo "::error::Timed out after ${attempt} polls waiting for docker-compose-${COMPOSE_TAG} to reach target (still behind:${BEHIND_DETAIL}). The force-bump may have failed — check its run in ${DISTRIBUTIONS_REPO}."
               exit 1
             fi
-            echo "  attempt ${attempt}/${max_attempts}: pins '${pinned:-<none>}', want '${CAMUNDA_VERSION}'; waiting 30s..."
+            echo "  attempt ${attempt}/${max_attempts}: still behind:${BEHIND_DETAIL}; waiting 30s..."
             attempt=$((attempt + 1))
             sleep 30
           done
-          echo "Docker Compose reached target (pins '${pinned}'). Proceeding."
+          echo "Docker Compose reached target for all checked components. Proceeding."
 
       - name: Observe build status
         if: always()
