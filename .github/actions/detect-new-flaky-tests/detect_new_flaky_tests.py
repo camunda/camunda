@@ -573,17 +573,26 @@ def set_output(name: str, value: str) -> None:
 # Baseline matching
 # ---------------------------------------------------------------------------
 
-def load_baseline_keys(path: str) -> set[str]:
+def load_baseline_keys(path: str) -> tuple[set[str], set[str]]:
+    """Return (baseline_keys, blank_class_fqns).
+
+    baseline_keys: full FQN keys for method-level matching.
+    blank_class_fqns: class FQNs with at least one blank test_name entry in BQ
+                      (class/container-level infra failures recorded without a method name).
+    """
     baseline_keys: set[str] = set()
+    blank_class_fqns: set[str] = set()
     if not path or not os.path.isfile(path):
-        return baseline_keys
+        return baseline_keys, blank_class_fqns
     try:
         with open(path, encoding="utf-8") as fh:
             for row in json.load(fh):
                 baseline_keys.add(f"{row['test_class_name']}.{row['test_name']}")
+                if not row.get("test_name"):
+                    blank_class_fqns.add(row["test_class_name"])
     except (OSError, json.JSONDecodeError, KeyError) as exc:
         print(f"{PREFIX} WARN: baseline read failed ({exc}) — treating as empty.")
-    return baseline_keys
+    return baseline_keys, blank_class_fqns
 
 
 def is_in_baseline(normalized_key: str, baseline_keys: set[str]) -> bool:
@@ -595,6 +604,123 @@ def is_in_baseline(normalized_key: str, baseline_keys: set[str]) -> bool:
             if not nxt.isalnum() and nxt != "_":
                 return True
     return False
+
+
+def get_pr_changed_paths(
+    base_ref: str, head_sha: str, repo_root: str,
+    base_sha_input: str = "",
+) -> tuple[set[str], set[str], bool]:
+    """Return (changed_package_paths, changed_java_filenames, available).
+
+    changed_package_paths: Java package paths like "io/camunda/zeebe/backup/gcs"
+    changed_java_filenames: basenames like "GcsBackupStoreIT.java"
+    available: True when the git diff succeeded (even if no .java files changed);
+               False when the diff could not be computed — callers must skip the
+               filter in that case to avoid accidental suppression.
+
+    Distinguishing these two empty-set cases is critical: a PR that changes only
+    YAML/config files (no .java) is a legitimate no-Java-touch signal and should
+    still trigger suppression; a failed diff gives no signal at all.
+
+    Uses get_merge_base() to resolve the diff base, which tries BASE_SHA first so
+    this works in PR merge-ref checkouts where origin/<base_ref> is not present.
+    """
+    if not head_sha:
+        return set(), set(), False
+    merge_base = get_merge_base(head_sha, base_ref, repo_root, base_sha_input or None)
+    if not merge_base:
+        print(f"{PREFIX} WARN: could not resolve merge-base for touch-check — filter disabled.")
+        return set(), set(), False
+    rc, out, _ = _run_git(
+        ["diff", "--name-only", f"{merge_base}...{head_sha}"],
+        repo_root,
+    )
+    if rc != 0:
+        print(f"{PREFIX} WARN: git diff for touch-check failed — filter disabled.")
+        return set(), set(), False
+
+    pkg_paths: set[str] = set()
+    filenames: set[str] = set()
+    for line in out.splitlines():
+        if not line.endswith(".java"):
+            continue
+        filenames.add(line.rsplit("/", 1)[-1])
+        m = re.search(r"/java/(.+)/[^/]+\.java$", line)
+        if m:
+            pkg_paths.add(m.group(1))
+    return pkg_paths, filenames, True
+
+
+def _package_touched(pkg_path: str, changed_pkg_paths: set[str]) -> bool:
+    """Return True if pkg_path is the same as, a parent of, or a child of any changed package.
+
+    Examples (pkg_path → changed_pkg_paths → result):
+      "io/a/b"       {io/a/b}           → True  (exact match)
+      "io/a/b"       {io/a/b/internal}  → True  (changed child of test package)
+      "io/a/b/impl"  {io/a/b}           → True  (test is child of changed package)
+      "io/a/b"       {io/x/y}           → False (unrelated)
+    """
+    for cp in changed_pkg_paths:
+        if cp == pkg_path:
+            return True
+        if cp.startswith(pkg_path + "/"):
+            return True
+        if pkg_path.startswith(cp + "/"):
+            return True
+    return False
+
+
+def filter_by_touch_check(
+    new_flaky_tests: list[dict],
+    changed_pkg_paths: set[str],
+    changed_java_files: set[str],
+    blank_class_fqns: set[str],
+    touch_check_available: bool,
+) -> list[dict]:
+    """Suppress false-positive alerts using a three-stage touch-check filter.
+
+    Stage 1 — package-unrelated: PR does not touch the test's Java package (or any
+      sub/parent package) → suppress. A test flaking in a completely unrelated
+      package cannot be this PR's fault. Note: a YAML-only PR with no .java changes
+      is a valid no-touch signal (changed_pkg_paths is empty, touch_check_available
+      is True). Tests whose package cannot be parsed (empty pkg_path) are kept.
+
+    Stage 2 — blank-class infra failure: package is touched, but the class has
+      blank test_name records in the BQ baseline (class/container-level infra
+      failures) AND the test file itself was not modified → suppress. Infra outage
+      on an untouched test is not the PR author's responsibility.
+
+    Stage 3: keep — the PR owns the flake.
+
+    When touch_check_available is False (git diff failed) the filter is skipped
+    entirely to avoid silently suppressing genuine new flakes.
+    """
+    if not touch_check_available:
+        return new_flaky_tests
+
+    kept: list[dict] = []
+    for test in new_flaky_tests:
+        pkg_path = test.get("packageName", "").replace(".", "/")
+        class_fqn = f"{test.get('packageName', '')}.{test.get('className', '')}"
+        # Use the outer class filename — inner classes (e.g. Outer$Inner) live in Outer.java
+        class_file = f"{test.get('className', '').split('$')[0]}.java"
+
+        if not pkg_path:
+            kept.append(test)
+            continue
+
+        if not _package_touched(pkg_path, changed_pkg_paths):
+            print(f"{PREFIX} TOUCH-CHECK suppress: {get_test_key(test)}"
+                  f" (package '{pkg_path}' not in PR diff)")
+            continue
+
+        if class_fqn in blank_class_fqns and class_file not in changed_java_files:
+            print(f"{PREFIX} BLANK-CLASS suppress: {get_test_key(test)}"
+                  f" (class '{class_fqn}' has infra-failure records, test file not in diff)")
+            continue
+
+        kept.append(test)
+    return kept
 
 
 # ---------------------------------------------------------------------------
@@ -645,9 +771,19 @@ def main() -> None:
     # The baseline filter applies ONLY to deciding what becomes a brand-new entry.
     all_flaky_keys = {get_test_key(t) for t in pr_flaky_tests}
 
-    baseline_keys = load_baseline_keys(known_flaky_file)
+    baseline_keys, blank_class_fqns = load_baseline_keys(known_flaky_file)
     new_flaky_tests = [t for t in pr_flaky_tests
                        if not is_in_baseline(get_test_key(t), baseline_keys)]
+
+    # Fix 5 + Fix 1: suppress tests whose package is unrelated to this PR's changes,
+    # and infra-failure classes whose test file was not directly modified.
+    changed_pkg_paths, changed_java_files, touch_check_available = get_pr_changed_paths(
+        base_ref, head_sha, repo_root, base_sha_input
+    )
+    new_flaky_tests = filter_by_touch_check(
+        new_flaky_tests, changed_pkg_paths, changed_java_files,
+        blank_class_fqns, touch_check_available
+    )
 
     # -- Nothing-to-do short-circuit --------------------------------------
     # No prior tracked entries, no new flakes this run, and no bypass: there is
