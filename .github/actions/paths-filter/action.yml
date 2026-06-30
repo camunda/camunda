@@ -28,7 +28,7 @@ outputs:
   codeowners-check:
     description: Output whether codeowners check should be performed based on GitHub event
     value: >-
-      ${{ github.event_name == 'pull_request' }}
+      ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
   maven-spotless-linter:
     description: Output whether jobs depending on files relevant for Maven spotless should be run, related checks are based on GitHub events and file changes
     value: >-
