@@ -11,10 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.nio.charset.StandardCharsets;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -173,5 +176,83 @@ public class ProcessInstanceExpressionContextTest {
             .getFirst()
             .getValue();
     assertThat(job.getRetries()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInCallActivityProcessIdExpression() {
+    // given
+    final var parentProcessId = "pi-ctx-call-activity";
+    final var childProcessId = "child";
+    final var parent =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessIdExpression(
+                        "if camunda.processInstance.key > 0 then \"child\" else \"x\""))
+            .endEvent()
+            .done();
+    final var child = Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done();
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parent)
+        .withXmlResource("child.bpmn", child)
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(childProcessId)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInBusinessRuleTaskDecisionIdExpression() {
+    // given
+    final var processId = "pi-ctx-brt";
+    final var decisionDmn =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+                     id="pi-ctx-brt-drg" name="pi-ctx-brt-drg"
+                     namespace="http://camunda.org/schema/1.0/dmn">
+          <decision id="decision" name="Decision">
+            <literalExpression>
+              <text>"result"</text>
+            </literalExpression>
+          </decision>
+        </definitions>
+        """;
+    ENGINE
+        .deployment()
+        .withXmlResource(decisionDmn.getBytes(StandardCharsets.UTF_8), "pi-ctx-brt-decision.dmn")
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .businessRuleTask(
+                    "task",
+                    t ->
+                        t.zeebeCalledDecisionIdExpression(
+                                "if camunda.processInstance.key > 0 then \"decision\" else \"x\"")
+                            .zeebeResultVariable("result"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+                .withDecisionId("decision")
+                .exists())
+        .isTrue();
   }
 }
