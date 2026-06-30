@@ -60,6 +60,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ErrorMessages;
@@ -116,6 +117,7 @@ import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.query.WaitStateStatisticsQuery;
 import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.ResourceAccessController;
@@ -818,6 +820,18 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<WaitStateEntity> searchWaitStates(
       final ElementInstanceWaitStateQuery query) {
     return doSearchWithReader(requireScopedReaders().waitStateReader(), query);
+  }
+
+  @Override
+  public List<WaitStateStatisticsEntity> waitStateStatistics(final long processInstanceKey) {
+    return doReadWithResourceAccessController(
+        access ->
+            requireScopedReaders()
+                .waitStateStatisticsReader()
+                .aggregate(
+                    new WaitStateStatisticsQuery(
+                        new ProcessInstanceStatisticsFilter(processInstanceKey)),
+                    access));
   }
 
   private CamundaSearchException entityByIdNotFoundException(

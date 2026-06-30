@@ -54,6 +54,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.exception.NoSecondaryStorageException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
@@ -503,6 +504,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<WaitStateEntity> searchWaitStates(
       final ElementInstanceWaitStateQuery query) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public List<WaitStateStatisticsEntity> waitStateStatistics(final long processInstanceKey) {
     throw new NoSecondaryStorageException();
   }
 }

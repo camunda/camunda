@@ -52,4 +52,5 @@ public record SearchClientReaders(
     IncidentProcessInstanceStatisticsByDefinitionReader
         incidentProcessInstanceStatisticsByDefinitionReader,
     GlobalListenerReader globalListenerReader,
-    WaitStateReader waitStateReader) {}
+    WaitStateReader waitStateReader,
+    WaitStateStatisticsReader waitStateStatisticsReader) {}
