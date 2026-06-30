@@ -13,6 +13,7 @@ import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
@@ -36,10 +37,13 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
 
 @NullMarked
 public class AuthorizationDeleteProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   public static final String AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE =
       "Expected to delete authorization with key %s, but it belongs to default role '%s' "
@@ -79,6 +83,9 @@ public class AuthorizationDeleteProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing DELETE authorization command for key {}",
+        command.getValue().getAuthorizationKey());
     permissionsBehavior
         .isAuthorized(command, PermissionType.DELETE)
         .flatMap(
@@ -90,6 +97,7 @@ public class AuthorizationDeleteProcessor
         .ifRightOrLeft(
             authorizationKey -> writeEventAndDistribute(command, authorizationKey),
             (rejection) -> {
+              LOG.debug("Rejecting DELETE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
             });
@@ -97,6 +105,9 @@ public class AuthorizationDeleteProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing distributed DELETE authorization command for key {}",
+        command.getValue().getAuthorizationKey());
     permissionsBehavior
         .authorizationExists(
             command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION)
@@ -136,6 +147,7 @@ public class AuthorizationDeleteProcessor
 
   private void writeEventAndDistribute(
       final TypedRecord<AuthorizationRecord> command, final long authorizationKey) {
+    LOG.debug("Deleting authorization with key {}", authorizationKey);
     final long key = keyGenerator.nextKey();
     command
         .getValue()

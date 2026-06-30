@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -27,10 +28,13 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
 
 @NullMarked
 public class AuthorizationCreateProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;
@@ -68,6 +72,8 @@ public class AuthorizationCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing CREATE authorization command for owner '{}'", command.getValue().getOwnerId());
     permissionsBehavior
         .isAuthorized(command, PermissionType.CREATE)
         .flatMap(
@@ -83,6 +89,7 @@ public class AuthorizationCreateProcessor
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
+              LOG.debug("Rejecting CREATE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
             });
@@ -90,6 +97,9 @@ public class AuthorizationCreateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing distributed CREATE authorization command for owner '{}'",
+        command.getValue().getOwnerId());
     permissionsBehavior
         .permissionsAlreadyExist(command.getValue())
         .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
@@ -114,6 +124,11 @@ public class AuthorizationCreateProcessor
       final TypedRecord<AuthorizationRecord> command,
       final AuthorizationRecord authorizationRecord) {
     final long key = keyGenerator.nextKey();
+    LOG.debug(
+        "Creating authorization with key {} for owner '{}' on resource type '{}'",
+        key,
+        authorizationRecord.getOwnerId(),
+        authorizationRecord.getResourceType());
     authorizationRecord.setAuthorizationKey(key);
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
     responseWriter.writeEventOnCommand(

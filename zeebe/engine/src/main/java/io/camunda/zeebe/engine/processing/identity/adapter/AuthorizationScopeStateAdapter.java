@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 @NullMarked
 public final class AuthorizationScopeStateAdapter implements AuthorizationScopeRepositoryPort {
 
-  private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final AuthorizationState authorizationState;
   private final LoadingCache<

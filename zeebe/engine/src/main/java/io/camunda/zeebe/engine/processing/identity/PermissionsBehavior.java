@@ -12,6 +12,7 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
@@ -26,9 +27,12 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
 
 @NullMarked
 public class PermissionsBehavior {
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   public static final String PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE =
       "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists.";
@@ -63,16 +67,28 @@ public class PermissionsBehavior {
   public Either<Rejection, AuthorizationRecord> isAuthorized(
       final TypedRecord<AuthorizationRecord> command, final PermissionType permissionType) {
     if (command.isInternalCommand()) {
+      LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
       return Either.right(command.getValue());
     }
     final var authorizations = command.getAuthorizations();
     if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      LOG.trace(
+          "Skipping authorization check for anonymous user on command {}", command.getIntent());
       return Either.right(command.getValue());
     }
     if (!securityConfig.isAuthorizationsEnabled()
         && !securityConfig.isMultiTenancyChecksEnabled()) {
+      LOG.trace(
+          "Skipping authorization check for command {}: security disabled (authz={}, multiTenancy={})",
+          command.getIntent(),
+          securityConfig.isAuthorizationsEnabled(),
+          securityConfig.isMultiTenancyChecksEnabled());
       return Either.right(command.getValue());
     }
+    LOG.trace(
+        "Checking {} permission on AUTHORIZATION resource for command {}",
+        permissionType,
+        command.getIntent());
     final var auth = claimsConverter.convert(authorizations);
     final var cslPermType =
         io.camunda.security.api.model.authz.PermissionType.valueOf(permissionType.name());
@@ -82,6 +98,10 @@ public class PermissionsBehavior {
             RequiredAuthorization.of(
                 b -> b.authorization().permissionType(cslPermType).resourceId("*")));
     if (result.isLeft()) {
+      LOG.debug(
+          "Authorization check rejected for command {}: {}",
+          command.getIntent(),
+          result.leftValue());
       return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
     }
     return Either.right(command.getValue());
