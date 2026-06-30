@@ -7,14 +7,11 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
 
@@ -33,28 +30,34 @@ public class NoDBMembershipService implements MembershipService {
   }
 
   @Override
-  public CamundaAuthentication resolveMemberships(
+  public MembershipResolver newResolver(
       final Map<String, Object> tokenClaims,
       final String principalId,
       final PrincipalType principalType)
       throws OAuth2AuthenticationException {
-    final Set<String> groups =
-        isGroupsClaimConfigured
-            ? new HashSet<>(oidcGroupsLoader.load(tokenClaims))
-            : Collections.emptySet();
+    // No secondary storage means roles/tenants/mappingRules can't be resolved at all, and groups
+    // only come from the OIDC token claim when one is configured. Evaluate the claim eagerly so
+    // malformed input fails fast.
+    final List<String> groups =
+        isGroupsClaimConfigured ? List.copyOf(oidcGroupsLoader.load(tokenClaims)) : List.of();
+    return new StaticResolver(groups);
+  }
 
-    return CamundaAuthentication.of(
-        a -> {
-          if (principalType.equals(PrincipalType.CLIENT)) {
-            a.clientId(principalId);
-          } else {
-            a.user(principalId);
-          }
-          return a.roleIds(Collections.emptyList())
-              .groupIds(groups.stream().toList())
-              .mappingRule(Collections.emptyList())
-              .tenants(Collections.emptyList())
-              .claims(tokenClaims);
-        });
+  private record StaticResolver(List<String> groups) implements MembershipResolver {
+
+    @Override
+    public List<String> roles() {
+      return List.of();
+    }
+
+    @Override
+    public List<String> tenants() {
+      return List.of();
+    }
+
+    @Override
+    public List<String> mappingRules() {
+      return List.of();
+    }
   }
 }

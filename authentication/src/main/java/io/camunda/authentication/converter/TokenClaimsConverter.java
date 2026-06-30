@@ -59,6 +59,19 @@ public class TokenClaimsConverter {
       principalType = PrincipalType.CLIENT;
     }
 
-    return membershipService.resolveMemberships(tokenClaims, principalName, principalType);
+    final var resolver = membershipService.newResolver(tokenClaims, principalName, principalType);
+    return CamundaAuthentication.of(
+        a -> {
+          if (principalType == PrincipalType.CLIENT) {
+            a.clientId(principalName);
+          } else {
+            a.user(principalName);
+          }
+          return a.mappingRulesSupplier(resolver::mappingRules)
+              .groupIdsSupplier(resolver::groups)
+              .roleIdsSupplier(resolver::roles)
+              .tenantsSupplier(resolver::tenants)
+              .claims(tokenClaims);
+        });
   }
 }
