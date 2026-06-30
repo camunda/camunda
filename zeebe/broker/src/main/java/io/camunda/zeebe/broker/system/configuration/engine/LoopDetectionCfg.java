@@ -22,6 +22,15 @@ import java.util.Map;
  * <p>The threshold can be configured per {@link BpmnElementType}: an entry in {@link
  * #maxElementActivationCountByType} overrides {@link #maxElementActivationCount} for that element
  * type, and a per-type value of {@code 0} disables loop detection for that element type.
+ *
+ * <p><b>Multi-instance note:</b> for a multi-instance task the per-type override is keyed by the
+ * inner element type (e.g. {@code SERVICE_TASK}) and applies to each child activation. The
+ * surrounding {@code MULTI_INSTANCE_BODY} is a distinct element type with its own threshold (the
+ * global default unless overridden). The pre-spawn batch check on parallel multi-instance bodies
+ * resolves its threshold from {@code MULTI_INSTANCE_BODY}, so setting only {@code SERVICE_TASK=0}
+ * does not disable that check — a large collection can still be caught via the {@code
+ * MULTI_INSTANCE_BODY} threshold. To fully disable detection for such a task, also set {@code
+ * MULTI_INSTANCE_BODY=0}.
  */
 public class LoopDetectionCfg implements ConfigurationEntry {
 
