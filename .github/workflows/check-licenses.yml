@@ -59,7 +59,7 @@ jobs:
           fossa_cli_arch: linux_amd64
         - name: single-app
           path: ./
-          runner_definition: '"aws-core-32-longrunning"'
+          runner_definition: '"github_linux_16_core_arm"'
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
