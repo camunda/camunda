@@ -747,8 +747,9 @@ jobs:
 
             # Drop tests already tracked by an open product bug (per-test fingerprint,
             # matching what the fix agent embeds in the issue). Suppression is per-test;
-            # the rest of the version's failures still dispatch. Auto-reopens once the
-            # issue is closed (the search misses) and the test is still failing.
+            # the rest of the version's failures still dispatch. Self-resuming: once the
+            # issue is closed the search misses, so the test is dispatched again (if still
+            # failing). This only gates dispatch on issue state — it never reopens the issue.
             # Fail-open: any search error keeps the test eligible (agent dedupes at filing).
             # Skip this for workflow-level dispatches (specs intentionally empty).
             orig_spec_count=$(echo "$specs" | jq 'length')

@@ -359,9 +359,15 @@ Orchestration-suite failures almost always trace to a module inside this same re
      `gh search issues "<key symptom words> is:issue" --owner camunda --state open --json number,title,url,repository`
      and scan titles for the same regression (e.g. #55864 "Variable list is no longer scrollable").
      If you find a clear match, **reuse it** instead of filing a duplicate: comment linking this
-     nightly run, and **append** the `Fingerprint: nightly-product-bug fp=${FP}` line to its body
-     (`gh issue edit <n> --repo <owner>/<repo> --body "<existing body>\n\nFingerprint: nightly-product-bug fp=${FP}"`)
-     so future runs dedupe and the dispatcher suppresses it. Put its URL in `fix-meta.json`.
+     nightly run, then **append** the fingerprint line to its body so future runs dedupe and the
+     dispatcher suppresses it. Preserve the existing body and use real newlines (a literal `\n` in
+     `--body` is written verbatim, not a newline):
+     ```bash
+     body=$(gh issue view <n> --repo <owner>/<repo> --json body --jq .body)
+     printf '%s\n\nFingerprint: nightly-product-bug fp=%s\n' "$body" "${FP}" \
+       | gh issue edit <n> --repo <owner>/<repo> --body-file -
+     ```
+     Put its URL in `fix-meta.json`.
 2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
    component label), but the body MUST contain the fingerprint line below so dedupe works:
    ```bash
