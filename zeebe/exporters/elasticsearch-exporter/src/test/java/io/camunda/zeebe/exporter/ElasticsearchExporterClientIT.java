@@ -246,6 +246,6 @@ final class ElasticsearchExporterClientIT {
   private static void assertIndexSettings(final IndexSettings settings) {
     assertThat(settings).isNotNull();
     assertThat(settings.numberOfShards()).isEqualTo("1");
-    assertThat(settings.numberOfReplicas()).isEqualTo("0");
+    assertThat(settings.numberOfReplicas()).isEqualTo("1");
   }
 }

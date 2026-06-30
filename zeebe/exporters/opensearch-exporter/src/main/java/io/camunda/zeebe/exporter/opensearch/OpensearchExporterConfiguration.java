@@ -295,8 +295,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     public boolean agentHistory = true;
 
     // index settings
-    private Integer numberOfShards = null;
-    private Integer numberOfReplicas = null;
+    private Integer numberOfShards = 1;
+    private Integer numberOfReplicas = 1;
     private int priority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
     // variable name filters
