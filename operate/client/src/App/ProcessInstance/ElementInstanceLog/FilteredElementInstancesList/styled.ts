@@ -7,26 +7,11 @@
  */
 
 import styled from 'styled-components';
-import {TreeNode as BaseTreeNode} from '@carbon/react';
 
 const ScrollContainer = styled.div`
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-`;
-
-/**
- * Styled wrapper for the Carbon TreeNode used in the flat filtered list.
- * Matches the height and layout conventions of the full ElementInstancesTree.
- */
-const SearchResultNode = styled(BaseTreeNode)`
-  .cds--tree-node__label {
-    height: 2rem;
-  }
-
-  .cds--tree-node__label__details {
-    width: 100%;
-  }
 `;
 
 const StatusRegion = styled.output`
@@ -49,4 +34,4 @@ const EmptyStateContainer = styled.div`
   padding: var(--cds-spacing-06);
 `;
 
-export {ScrollContainer, SearchResultNode, StatusRegion, EmptyStateContainer};
+export {ScrollContainer, StatusRegion, EmptyStateContainer};

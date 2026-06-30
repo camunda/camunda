@@ -7,9 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useEffect, useRef} from 'react';
-import {Form, Field, useForm} from 'react-final-form';
-import {useSearchParams, useNavigate} from 'react-router-dom';
+import {useSearchParams} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
 import {Container, PanelHeader, ErrorMessage, PanelBody} from './styled';
 import {TimeStampPill} from './TimeStampPill';
@@ -18,18 +16,13 @@ import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
-import {SearchInput} from './SearchInput';
 import {FilteredElementInstancesList} from './FilteredElementInstancesList';
+import {SearchForm, SEARCH_PARAM_KEY} from './SearchForm';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {getForbiddenPermissionsError} from 'modules/constants/permissions';
-import {AutoSubmit} from 'modules/components/AutoSubmit';
-
-const SEARCH_PARAM_KEY = 'elementSearch';
-
-type SearchFormValues = {search: string};
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -60,23 +53,6 @@ const Layout: React.FC<LayoutProps> = observer(
   },
 );
 
-/**
- * Resets the enclosing RFF form to empty when modification mode is enabled.
- * Must be rendered as a child of the `<Form>` component so it can access the
- * form API via `useForm()`.
- */
-const FormResetter: React.FC<{shouldReset: boolean}> = ({shouldReset}) => {
-  const form = useForm<SearchFormValues>();
-  const prevShouldReset = useRef(false);
-  useEffect(() => {
-    if (shouldReset && !prevShouldReset.current) {
-      form.reset({search: ''});
-    }
-    prevShouldReset.current = shouldReset;
-  }, [shouldReset, form]);
-  return null;
-};
-
 const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
   'Instance History',
   'this instance history',
@@ -96,7 +72,6 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
     } = useBusinessObjects();
 
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
 
     const isModificationModeEnabled =
       modificationsStore.isModificationModeEnabled;
@@ -107,52 +82,9 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
     const submittedSearch = searchParams.get(SEARCH_PARAM_KEY) ?? '';
     const isFiltered = submittedSearch.trim().length > 0;
 
-    const handleSearchSubmit = (values: SearchFormValues) => {
-      const next = new URLSearchParams(searchParams);
-      if ((values.search ?? '').trim()) {
-        next.set(SEARCH_PARAM_KEY, values.search);
-      } else {
-        next.delete(SEARCH_PARAM_KEY);
-      }
-      navigate({search: next.toString()}, {replace: true});
-    };
-
-    const handleClearSearch = () => {
-      const next = new URLSearchParams(searchParams);
-      next.delete(SEARCH_PARAM_KEY);
-      navigate({search: next.toString()}, {replace: true});
-    };
-
-    const searchInputElement = (
-      <Form<SearchFormValues>
-        onSubmit={handleSearchSubmit}
-        initialValues={{search: submittedSearch}}
-        keepDirtyOnReinitialize
-      >
-        {() => (
-          <>
-            <AutoSubmit />
-            <FormResetter shouldReset={isModificationModeEnabled} />
-            <Field<string> name="search" parse={(v) => v ?? ''}>
-              {({input}) => (
-                <SearchInput
-                  value={input.value}
-                  onChange={(value) => input.onChange(value)}
-                  onClear={() => {
-                    input.onChange('');
-                    handleClearSearch();
-                  }}
-                />
-              )}
-            </Field>
-          </>
-        )}
-      </Form>
-    );
-
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
-        <Layout isPanel={isPanel} searchInput={searchInputElement}>
+        <Layout isPanel={isPanel} searchInput={<SearchForm />}>
           <Skeleton />
         </Layout>
       );
@@ -166,7 +98,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
           businessObjectsError?.response?.status === HTTP_STATUS_FORBIDDEN);
 
       return (
-        <Layout isPanel={isPanel} searchInput={searchInputElement}>
+        <Layout isPanel={isPanel} searchInput={<SearchForm />}>
           <ErrorMessage
             message={
               isForbidden
@@ -184,7 +116,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
     }
 
     return (
-      <Layout isPanel={isPanel} searchInput={searchInputElement}>
+      <Layout isPanel={isPanel} searchInput={<SearchForm />}>
         <PanelBody>
           <ErrorBoundary
             fallbackRender={({error}) => (
@@ -204,7 +136,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
               />
             )}
           >
-            {isFiltered ? (
+            {isFiltered && !isModificationModeEnabled ? (
               <FilteredElementInstancesList
                 searchText={submittedSearch.trim()}
                 processInstanceKey={processInstance!.processInstanceKey}
