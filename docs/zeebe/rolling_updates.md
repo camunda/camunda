@@ -59,14 +59,6 @@ This is a transient state during rolling updates and resolves itself once the ol
 When changing command behavior, older brokers can simply continue replaying the new sequence of events produced.
 When the old broker is processing, it will continue to produce the old sequence of events and new brokers will have to replay it.
 
-The `evaluateBoundaryEventCorrelationKeyInActivityScope` feature flag is an example of a
-deliberate next-minor breaking processing change with a kill-switch. When enabled (the default), a
-message boundary event evaluates its correlation key in the attached activity scope instead of the
-flow scope, which aligns it with other boundary-event expressions and fixes incident resolution for
-activity-local variables. If users need the legacy behavior during an upgrade, they can temporarily
-set `zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope: false`
-cluster-wide and restart the brokers.
-
 It is _not allowed_ to change behavior of events because we must ensure that the state of old and new brokers do not diverge.
 If we were to change how an event behaves, old brokers would apply this event differently to new brokers, resulting in a different runtime state.
 This can lead to serious bugs that are difficult to diagnose.
@@ -76,6 +68,31 @@ Both prevent diverging states because old brokers will stop processing or replay
 
 > [!WARNING]
 > We currently have no mechanism to enforce that event behavior is not modified so we rely on developer awareness.
+
+### Feature Flags
+
+Some processing changes use a feature flag as a kill-switch to allow operators to revert the new
+behavior during a rolling update or upgrade. The `evaluateBoundaryEventCorrelationKeyInActivityScope`
+flag is one such example: when enabled (the default), a message boundary event evaluates its
+correlation key in the attached activity scope instead of the flow scope, which aligns it with other
+boundary-event expressions and fixes incident resolution for activity-local variables.
+
+If users need the legacy behavior during an upgrade, they can disable the flag cluster-wide and
+restart the brokers. In `broker.yaml`:
+
+```yaml
+zeebe:
+  broker:
+    experimental:
+      features:
+        evaluateBoundaryEventCorrelationKeyInActivityScope: false
+```
+
+Or via environment variable:
+
+```
+ZEEBE_BROKER_EXPERIMENTAL_FEATURES_EVALUATEBOUNDARYEVENTCORRELATIONKEYINACTIVITYSCOPE=false
+```
 
 ## Data migrations
 
