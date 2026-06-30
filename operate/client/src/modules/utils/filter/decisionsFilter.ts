@@ -15,6 +15,7 @@ import {
 import z from 'zod';
 import {formatToISO} from '../date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '.';
+import {advancedStringFilterCodec} from './advancedStringFilter';
 
 type DecisionInstancesSearchFilter = NonNullable<
   QueryDecisionInstancesRequestBody['filter']
@@ -37,6 +38,7 @@ const DecisionsFilterSchema = z
     evaluationDateTo: z.string().transform(formatToISO).optional(),
     evaluationDateFrom: z.string().transform(formatToISO).optional(),
     tenantId: z.string().optional(),
+    businessId: z.string().optional(),
   })
   .catch({});
 
@@ -66,6 +68,7 @@ function parseDecisionInstancesSearchFilter(
     processInstanceKey: filter.processInstanceKey,
     tenantId: filter.tenantId === 'all' ? undefined : filter.tenantId,
     evaluationDate: mapEvaluationDateFilter(filter),
+    businessId: mapBusinessIdFilter(filter),
   };
 }
 
@@ -125,6 +128,20 @@ function mapStateFilter(
   }
 
   return {$in: states};
+}
+
+function mapBusinessIdFilter(
+  filter: DecisionsFilter,
+): DecisionInstancesSearchFilter['businessId'] {
+  if (filter.businessId) {
+    const advancedFilter = advancedStringFilterCodec.safeDecode(
+      filter.businessId,
+    );
+    if (advancedFilter.success) {
+      return advancedFilter.data;
+    }
+  }
+  return undefined;
 }
 
 function mapEvaluationDateFilter(

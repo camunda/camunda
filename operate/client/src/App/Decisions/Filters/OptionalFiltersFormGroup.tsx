@@ -30,6 +30,7 @@ import {Field, useForm} from 'react-final-form';
 import {IconButton, Stack} from '@carbon/react';
 import {TextInputField} from 'modules/components/TextInputField';
 import {TextAreaField} from 'modules/components/TextAreaField';
+import {AdvancedStringFilter} from 'modules/components/AdvancedStringFilter';
 import {
   ButtonContainer,
   FieldContainer,
@@ -39,11 +40,13 @@ import {Close} from '@carbon/react/icons';
 type OptionalFilter =
   | 'decisionEvaluationInstanceKey'
   | 'processInstanceKey'
+  | 'businessId'
   | 'evaluationDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
   'decisionEvaluationInstanceKey',
   'processInstanceKey',
+  'businessId',
   'evaluationDateRange',
 ];
 
@@ -79,6 +82,10 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validateParentInstanceIdNotTooLong,
       validateParentInstanceIdCharacters,
     ),
+  },
+  businessId: {
+    keys: ['businessId'],
+    label: 'Business ID',
   },
   evaluationDateRange: {
     keys: ['evaluationDateFrom', 'evaluationDateTo'],
@@ -156,53 +163,68 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
         <Stack gap={5}>
           {visibleFilters.map((filter) => (
             <FieldContainer key={filter}>
-              {filter === 'evaluationDateRange' ? (
-                <DateRangeField
-                  isModalOpen={isDateRangeModalOpen}
-                  onModalClose={() => setIsDateRangeModalOpen(false)}
-                  onClick={() => setIsDateRangeModalOpen(true)}
-                  filterName={filter}
-                  popoverTitle="Filter decisions by evaluation date"
-                  label={OPTIONAL_FILTER_FIELDS[filter].label}
-                  fromDateTimeKey="evaluationDateFrom"
-                  toDateTimeKey="evaluationDateTo"
-                />
-              ) : (
-                <Field
-                  name={filter}
-                  validate={OPTIONAL_FILTER_FIELDS[filter].validate}
-                >
-                  {({input}) => {
-                    const field = OPTIONAL_FILTER_FIELDS[filter];
+              {(() => {
+                switch (filter) {
+                  case 'evaluationDateRange':
+                    return (
+                      <DateRangeField
+                        isModalOpen={isDateRangeModalOpen}
+                        onModalClose={() => setIsDateRangeModalOpen(false)}
+                        onClick={() => setIsDateRangeModalOpen(true)}
+                        filterName={filter}
+                        popoverTitle="Filter decisions by evaluation date"
+                        label={OPTIONAL_FILTER_FIELDS[filter].label}
+                        fromDateTimeKey="evaluationDateFrom"
+                        toDateTimeKey="evaluationDateTo"
+                      />
+                    );
+                  case 'businessId':
+                    return (
+                      <AdvancedStringFilter
+                        name={filter}
+                        label={OPTIONAL_FILTER_FIELDS[filter].label}
+                        selectableOperators={['$eq', '$like', '$in']}
+                      />
+                    );
+                  default:
+                    return (
+                      <Field
+                        name={filter}
+                        validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                      >
+                        {({input}) => {
+                          const field = OPTIONAL_FILTER_FIELDS[filter];
 
-                    if (field.type === 'text') {
-                      return (
-                        <TextInputField
-                          {...input}
-                          id={filter}
-                          size="sm"
-                          labelText={field.label}
-                          placeholder={field.placeholder}
-                          autoFocus
-                        />
-                      );
-                    }
-                    if (field.type === 'multiline') {
-                      return (
-                        <TextAreaField
-                          {...input}
-                          id={filter}
-                          labelText={field.label}
-                          placeholder={field.placeholder}
-                          rows={field.rows}
-                          autoFocus
-                        />
-                      );
-                    }
-                    return null;
-                  }}
-                </Field>
-              )}
+                          if (field.type === 'text') {
+                            return (
+                              <TextInputField
+                                {...input}
+                                id={filter}
+                                size="sm"
+                                labelText={field.label}
+                                placeholder={field.placeholder}
+                                autoFocus
+                              />
+                            );
+                          }
+                          if (field.type === 'multiline') {
+                            return (
+                              <TextAreaField
+                                {...input}
+                                id={filter}
+                                labelText={field.label}
+                                placeholder={field.placeholder}
+                                rows={field.rows}
+                                autoFocus
+                              />
+                            );
+                          }
+                          return null;
+                        }}
+                      </Field>
+                    );
+                }
+              })()}
               <ButtonContainer>
                 <IconButton
                   kind="ghost"
