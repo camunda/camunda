@@ -123,8 +123,8 @@ Largest share of work; Console owns the UI, secret storage, and the `ZeebeCluste
 
 **Backend (Phase 1 entry points):**
 - Router: `apps/console-backend/src/routes/ClusterRouter.ts` (`PATCH /:clusterId` handles
-  settings changes today). Open question: whether IdP gets its own router (`IdpConfigRouter.ts`)
-  or extends this one — action item 5.
+  settings changes today). Resolved (action item 5): non-secret IdP config extends this router;
+  the client secret is handled on a separate path. No new `IdpConfigRouter.ts`.
 - Cluster entity: `apps/console-backend/src/entities/Cluster.ts` (TypeORM). Non-secret fields go
   in a JSON column on the existing record.
 - Secret handling for the IdP client secret: Console writes it as a **Kubernetes Secret**

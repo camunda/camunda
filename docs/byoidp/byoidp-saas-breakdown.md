@@ -143,8 +143,9 @@ path that replaces it), Story 7 (documentation clarity).
 
 - `Cluster` entity (TypeORM): non-secret IdP fields stored in a JSON column on the existing
   cluster record.
-- A new route for IdP configuration — placement (new `IdpConfigRouter.ts` vs. extension of
-  `ClusterRouter.ts`) to be confirmed with the Console team.
+- IdP configuration routing (resolved, action item 5): non-secret config extends the existing
+  `ClusterRouter.ts` `PATCH /:clusterId`; the client secret is handled on a separate path (K8s
+  Secret write). No new `IdpConfigRouter.ts`.
 - IdP secret management: Console writes the client secret as a Kubernetes Secret
   (`idp-config-{clusterId}`) into the cluster namespace via the Kubernetes API (`CoreV1Api`),
   keyed per provider (key = the provider registration `name`) so multiple IdPs can share one
@@ -406,8 +407,8 @@ Each item below needs an owner and a resolution; many gate scope refinement in t
 
 4. **Final copy text from Design** for the Console FE BYOIDP element (title, description, link
    text). Owner: Product Design.
-5. **Confirm route placement with the Console team** — new `IdpConfigRouter.ts` vs. extension of
-   `ClusterRouter.ts`. Owner: Console engineering.
+5. **Route placement (resolved).** Non-secret config extends `ClusterRouter.ts`; the client
+   secret is handled on a separate path. No new `IdpConfigRouter.ts`. Owner: Console engineering.
 6. **Lockout-warning UX copy** finalized for the pre-commit warning. Owner: Product Design + PM.
 7. **Phase 1 UI supports exactly one custom IdP per cluster.** Resolved. The Phase 1 UI ships as
    a single-form shape. The POC, CSL, and Operator CRD remain multi-capable so the UI can expand
