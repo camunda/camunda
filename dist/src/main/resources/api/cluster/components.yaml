@@ -384,6 +384,7 @@ schemas:
           - UPDATE_PARTITION_DISTRIBUTOR_CONFIG
           - ENTER_RECOVERY
           - EXIT_RECOVERY
+          - AWAIT_MODE_CHANGE
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:

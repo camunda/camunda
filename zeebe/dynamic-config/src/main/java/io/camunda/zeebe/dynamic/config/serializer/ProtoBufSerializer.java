@@ -42,6 +42,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
@@ -550,6 +551,11 @@ public class ProtoBufSerializer
               Topology.ModeChangeOperation.newBuilder()
                   .setMode(toProtoTopologyMode(modeChangeOperation.mode()))
                   .build());
+      case final AwaitModeChangeOperation awaitModeChangeOperation ->
+          builder.setAwaitModeChange(
+              Topology.AwaitModeChangeOperation.newBuilder()
+                  .setMode(toProtoTopologyMode(awaitModeChangeOperation.mode()))
+                  .build());
     }
     return builder.build();
   }
@@ -875,6 +881,10 @@ public class ProtoBufSerializer
     } else if (topologyChangeOperation.hasModeChange()) {
       final var modeChangeProto = topologyChangeOperation.getModeChange();
       return new ModeChangeOperation(memberId, fromProtoTopologyMode(modeChangeProto.getMode()));
+    } else if (topologyChangeOperation.hasAwaitModeChange()) {
+      final var awaitModeChangeProto = topologyChangeOperation.getAwaitModeChange();
+      return new AwaitModeChangeOperation(
+          memberId, fromProtoTopologyMode(awaitModeChangeProto.getMode()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

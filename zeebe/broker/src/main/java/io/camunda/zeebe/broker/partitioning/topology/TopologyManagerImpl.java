@@ -18,12 +18,14 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -100,6 +102,11 @@ public final class TopologyManagerImpl extends Actor
           localPartitionGroupInfo.setFollowerForPartition(partitionId);
           publishTopologyChanges();
         });
+  }
+
+  /** Returns a snapshot of this broker's local partition roles for this partition group */
+  public ActorFuture<Map<Integer, PartitionRole>> getLocalPartitionRoles() {
+    return actor.call(() -> Map.copyOf(localPartitionGroupInfo.getPartitionRoles()));
   }
 
   public ActorFuture<Void> setInactive(final int partitionId) {
