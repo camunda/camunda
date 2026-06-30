@@ -115,6 +115,8 @@ spec:
               value: INFO
             - name: SPRING_CONFIG_ADDITIONALLOCATION
               value: /usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+              value: "1"
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-87-elasticsearch-stable-camunda-platform-documentstore-env-vars
