@@ -15,16 +15,19 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -945,5 +948,119 @@ public class ProcessInstanceExpressionContextTest {
         ENGINE.jobs().withType("called-scope-job").activate().getValue().getJobs().getFirst();
     assertThat(job.getVariables()).containsEntry("childPiKey", childPi);
     assertThat(childPi).isNotEqualTo(parentPi);
+  }
+
+  @Test
+  public void shouldReturnNullForProcessInstanceKeyInTimerStartEventDurationExpression() {
+    // given
+    final var processId = "pi-ctx-timer-start-duration";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    // no process instance at a timer start event, so the key is null -> PT1S (a
+                    // real key -> PT1H)
+                    .timerWithDurationExpression(
+                        "if camunda.processInstance.key = null then \"PT1S\" else \"PT1H\"")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final long now = ENGINE.getClock().getCurrentTimeInMillis();
+
+    // then
+    final var timer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(timer.getDueDate()).isLessThan(now + 60_000L);
+  }
+
+  @Test
+  public void shouldReturnNullForProcessInstanceKeyInTimerStartEventCycleExpression() {
+    // given
+    final var processId = "pi-ctx-timer-start-cycle";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    // no process instance at a timer start event, so the key is null -> R1/PT1S (a
+                    // real key -> R1/PT1H)
+                    .timerWithCycleExpression(
+                        "if camunda.processInstance.key = null then \"R1/PT1S\" else \"R1/PT1H\"")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final long now = ENGINE.getClock().getCurrentTimeInMillis();
+
+    // then
+    final var timer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(timer.getDueDate()).isLessThan(now + 60_000L);
+  }
+
+  @Test
+  public void shouldReturnNullForProcessInstanceKeyInTimerStartEventDateExpression() {
+    // given
+    final var processId = "pi-ctx-timer-start-date";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .timerWithDateExpression(
+                        "if camunda.processInstance.key = null then \"2040-01-01T00:00:00Z\" else \"2020-01-01T00:00:00Z\"")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then
+    final var timer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(timer.getDueDate()).isEqualTo(Instant.parse("2040-01-01T00:00:00Z").toEpochMilli());
+  }
+
+  @Test
+  public void shouldAcceptProcessInstanceKeyExpressionAtDeploymentTime() {
+    // given / when
+    final var processId = "pi-ctx-validation";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        t -> t.zeebeJobTypeExpression("string(camunda.processInstance.key)"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
   }
 }
