@@ -129,7 +129,7 @@ final class RecoveryModeBackupAccessIT {
     // when — transition the cluster to RECOVERING mode
     final var toRecovering = clusterActuator.updateMode("RECOVERING", false);
     Awaitility.await("cluster transitions to RECOVERING")
-        .timeout(Duration.ofMinutes(2))
+        .timeout(Duration.ofSeconds(60))
         .untilAsserted(
             () ->
                 ClusterActuatorAssert.assertThat(clusterActuator)

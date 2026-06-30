@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.partitioning.RecoveryPartitionStartupContext;
 import io.camunda.zeebe.broker.transport.backupapi.RecoveryBackupApiRequestHandler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
-import io.camunda.zeebe.transport.RequestType;
 
 /**
  * Registers the {@link RecoveryBackupApiRequestHandler} on the gateway-to-broker transport so the
@@ -39,11 +38,8 @@ public record BackupApiRequestHandlerStep(int partitionId)
             context.getBackupStore() != null);
 
     return context
-        .getGatewayBrokerTransport()
-        .subscribe(context.partitionId(), RequestType.BACKUP, handler)
-        .andThen(
-            ignored -> context.schedulingService().submitActor(handler),
-            context.getConcurrencyControl())
+        .schedulingService()
+        .submitActor(handler)
         .thenApply(
             ignored -> context.setBackupApiRequestHandler(handler),
             context.getConcurrencyControl());
@@ -53,10 +49,7 @@ public record BackupApiRequestHandlerStep(int partitionId)
   public ActorFuture<RecoveryPartitionStartupContext> shutdown(
       final RecoveryPartitionStartupContext context) {
 
-    return context
-        .getGatewayBrokerTransport()
-        .unsubscribe(context.partitionId(), RequestType.BACKUP)
-        .thenApply(ignored -> closeHelper(context.getBackupApiRequestHandler()))
+    return closeHelper(context.getBackupApiRequestHandler())
         .thenApply(
             ignored -> context.setBackupApiRequestHandler(null), context.getConcurrencyControl());
   }
