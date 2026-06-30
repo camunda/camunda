@@ -97,7 +97,14 @@ public class Archiver {
           final AbstractArchiverJob processInstancesArchiverJob =
               archiveById
                   ? beanFactory.getBean(
-                      ProcessInstancesByIdArchiverJob.class, this, partitionIdsSubset)
+                      ProcessInstancesByIdArchiverJob.class,
+                      this,
+                      partitionIdsSubset,
+                      processInstanceTemplate,
+                      processInstanceDependants,
+                      metrics,
+                      archiverRepository,
+                      archiverExecutor)
                   : beanFactory.getBean(
                       ProcessInstancesArchiverJob.class,
                       this,

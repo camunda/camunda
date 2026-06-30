@@ -33,20 +33,28 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
 
   private final List<Integer> partitionIds;
   private final Archiver archiver;
+  private final ListViewTemplate processInstanceTemplate;
+  private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
+  private final Metrics metrics;
+  private final ArchiverRepository archiverRepository;
+  private final ThreadPoolTaskScheduler executor;
 
   @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
-  private ThreadPoolTaskScheduler executor;
-
-  @Autowired private ListViewTemplate processInstanceTemplate;
-  @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
-  @Autowired private Metrics metrics;
-  @Autowired private ArchiverRepository archiverRepository;
-
   public ProcessInstancesByIdArchiverJob(
-      final Archiver archiver, final List<Integer> partitionIds) {
+      final Archiver archiver,
+      final List<Integer> partitionIds,
+      final ListViewTemplate processInstanceTemplate,
+      final List<ProcessInstanceDependant> processInstanceDependantTemplates,
+      final Metrics metrics,
+      final ArchiverRepository archiverRepository,
+      @Qualifier("archiverThreadPoolExecutor") final ThreadPoolTaskScheduler executor) {
     this.archiver = archiver;
     this.partitionIds = partitionIds;
+    this.processInstanceTemplate = processInstanceTemplate;
+    this.processInstanceDependantTemplates = processInstanceDependantTemplates;
+    this.metrics = metrics;
+    this.archiverRepository = archiverRepository;
+    this.executor = executor;
   }
 
   @Override
@@ -104,6 +112,11 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
             executor);
   }
 
+  @Override
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    return archiverRepository.getProcessInstancesNextBatch(partitionIds);
+  }
+
   private CompletableFuture<Void> archiveProcessDependants(
       final ArchiveBatch archiveBatch,
       final String listViewDest,
@@ -152,10 +165,5 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
         inclusionFilters,
         exclusionFilters,
         executor);
-  }
-
-  @Override
-  public CompletableFuture<ArchiveBatch> getNextBatch() {
-    return archiverRepository.getProcessInstancesNextBatch(partitionIds);
   }
 }
