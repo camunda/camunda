@@ -21,8 +21,8 @@ import java.util.Map;
 /**
  * The msgpack {@link DbValue} backing a {@link ProcessInstanceProjection} in RocksDB. The {@code
  * processInstanceKey} is the column-family key, so it is not stored here. The instance's variables
- * are stored as an array of name/value entries. Write to a fresh instance per put so the array does
- * not accumulate across reuse.
+ * are stored as an array of name/value entries. {@link #wrap} resets first, so a single instance
+ * can be reused across writes without the variables array accumulating.
  */
 public final class PersistedProjection extends UnpackedObject implements DbValue {
 
@@ -54,6 +54,7 @@ public final class PersistedProjection extends UnpackedObject implements DbValue
   }
 
   public PersistedProjection wrap(final ProcessInstanceProjection projection) {
+    reset(); // clear all properties (incl. the variables array) so a reused instance is safe
     processDefinitionKeyProp.setValue(projection.processDefinitionKey());
     bpmnProcessIdProp.setValue(projection.bpmnProcessId());
     versionProp.setValue(projection.version());

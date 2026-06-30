@@ -10,7 +10,7 @@ package io.camunda.eventbridge.analytics;
 import io.camunda.eventbridge.analytics.aggregate.DatasetRegistry;
 import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
-import io.camunda.eventbridge.analytics.projection.RocksDbBaseProjectionStore;
+import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -57,8 +57,8 @@ public final class StandaloneAnalyticsPipeline {
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
 
-    final RocksDbBaseProjectionStore store =
-        RocksDbBaseProjectionStore.open(
+    final StateBackedProjectionStore store =
+        StateBackedProjectionStore.rocksDb(
             new File("data/analytics-projection-" + instanceId), new SimpleMeterRegistry());
     final ProcessInstanceProjector projector = new ProcessInstanceProjector(store);
 

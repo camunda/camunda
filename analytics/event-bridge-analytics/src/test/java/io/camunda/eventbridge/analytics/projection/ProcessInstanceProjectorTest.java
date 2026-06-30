@@ -31,7 +31,7 @@ final class ProcessInstanceProjectorTest {
 
   private static final long PI_KEY = 123L;
 
-  private final BaseProjectionStore store = new InMemoryBaseProjectionStore();
+  private final BaseProjectionStore store = StateBackedProjectionStore.inMemory();
   private final ProcessInstanceProjector projector = new ProcessInstanceProjector(store);
 
   @Test

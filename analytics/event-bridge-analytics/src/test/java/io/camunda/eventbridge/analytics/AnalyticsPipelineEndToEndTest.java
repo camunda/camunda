@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.eventbridge.analytics.aggregate.ExecutionTimeAggregate;
 import io.camunda.eventbridge.analytics.aggregate.ExecutionTimeAggregator;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFactCodec;
-import io.camunda.eventbridge.analytics.projection.InMemoryBaseProjectionStore;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
+import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -43,7 +43,7 @@ final class AnalyticsPipelineEndToEndTest {
   void shouldFlowRecordsThroughProjectionFactStreamAndAggregate() {
     // given — the three stages, with a list standing in for the fact-topic between them
     final ProcessInstanceProjector projector =
-        new ProcessInstanceProjector(new InMemoryBaseProjectionStore());
+        new ProcessInstanceProjector(StateBackedProjectionStore.inMemory());
     final ProcessInstanceExecutionTimeFactCodec codec = new ProcessInstanceExecutionTimeFactCodec();
     final List<byte[]> factStream = new ArrayList<>();
 

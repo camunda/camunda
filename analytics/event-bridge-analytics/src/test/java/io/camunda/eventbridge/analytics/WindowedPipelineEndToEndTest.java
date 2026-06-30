@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.analytics.aggregate.AggregateDataset;
 import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
-import io.camunda.eventbridge.analytics.projection.InMemoryBaseProjectionStore;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
+import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
@@ -50,7 +50,7 @@ final class WindowedPipelineEndToEndTest {
   void shouldGroupExecutionTimeByRegionFromRecords() {
     // given — the Phase-1 stages: projector + windowed aggregator, no fact-topic
     final ProcessInstanceProjector projector =
-        new ProcessInstanceProjector(new InMemoryBaseProjectionStore());
+        new ProcessInstanceProjector(StateBackedProjectionStore.inMemory());
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:win-e2e-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
     final WindowedExecutionTimeAggregator aggregator =

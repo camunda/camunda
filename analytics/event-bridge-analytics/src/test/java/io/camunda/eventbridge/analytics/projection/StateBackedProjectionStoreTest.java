@@ -16,7 +16,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-final class RocksDbBaseProjectionStoreTest {
+final class StateBackedProjectionStoreTest {
 
   @TempDir private Path dataDir;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -38,8 +38,8 @@ final class RocksDbBaseProjectionStoreTest {
             Map.of("region", "EU", "priority", "high"));
 
     // when / then — variables round-trip through the persisted array
-    try (final RocksDbBaseProjectionStore store =
-        RocksDbBaseProjectionStore.open(dataDir.toFile(), meterRegistry)) {
+    try (final StateBackedProjectionStore store =
+        StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
       store.put(projection);
       assertThat(store.get(123L)).contains(projection);
       assertThat(store.get(123L).orElseThrow().variables())
@@ -51,8 +51,8 @@ final class RocksDbBaseProjectionStoreTest {
 
   @Test
   void shouldTrackConsumedPosition() throws Exception {
-    try (final RocksDbBaseProjectionStore store =
-        RocksDbBaseProjectionStore.open(dataDir.toFile(), meterRegistry)) {
+    try (final StateBackedProjectionStore store =
+        StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
       assertThat(store.getConsumedPosition()).isEqualTo(BaseProjectionStore.NO_POSITION);
       store.setConsumedPosition(42L);
       assertThat(store.getConsumedPosition()).isEqualTo(42L);
@@ -65,15 +65,15 @@ final class RocksDbBaseProjectionStoreTest {
     final ProcessInstanceProjection projection =
         new ProcessInstanceProjection(
             7L, 5L, "payment", 1, "tenant-x", 100L, 300L, false, true, Map.of("region", "US"));
-    try (final RocksDbBaseProjectionStore store =
-        RocksDbBaseProjectionStore.open(dataDir.toFile(), meterRegistry)) {
+    try (final StateBackedProjectionStore store =
+        StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
       store.put(projection);
       store.setConsumedPosition(55L);
     }
 
     // when — reopened from the same directory
-    try (final RocksDbBaseProjectionStore reopened =
-        RocksDbBaseProjectionStore.open(dataDir.toFile(), meterRegistry)) {
+    try (final StateBackedProjectionStore reopened =
+        StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
       // then
       assertThat(reopened.get(7L)).contains(projection);
       assertThat(reopened.getConsumedPosition()).isEqualTo(55L);
