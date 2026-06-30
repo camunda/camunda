@@ -23,6 +23,7 @@ function prepareCustomFiltersParams(
     followUpDateFrom,
     followUpDateTo,
     taskId,
+    businessId,
   } = body;
   const params: Record<string, string> = {};
 
@@ -83,6 +84,10 @@ function prepareCustomFiltersParams(
 
   if (taskId !== undefined) {
     params.elementId = taskId;
+  }
+
+  if (businessId !== undefined) {
+    params.businessId = businessId;
   }
 
   return params;

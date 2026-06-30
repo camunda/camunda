@@ -36,6 +36,7 @@ function getNavLinkSearchParam(options: {
     'assignee',
     'taskDefinitionId',
     'elementId',
+    'businessId',
     'candidateGroup',
     'candidateUser',
     'processDefinitionKey',
