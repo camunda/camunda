@@ -696,7 +696,8 @@ public final class SearchQueryResponseMapper {
         .versionTag(entity.versionTag())
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
-        .hasStartForm(StringUtils.isNotBlank(entity.formId()));
+        .hasStartForm(StringUtils.isNotBlank(entity.formId()))
+        .isDeleted(Boolean.TRUE.equals(entity.isDeleted()));
   }
 
   private static List<ProcessInstanceResult> toProcessInstances(
