@@ -7,11 +7,21 @@
  */
 
 import styled from 'styled-components';
+import {TreeNode as BaseTreeNode} from '../ElementInstancesTree/styled';
 
 const ScrollContainer = styled.div`
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+`;
+
+// Carbon sets padding-inline-start as an inline style based on depth.
+// Use !important to override depth-0 (2rem) so the icon lands at the same
+// absolute x-position as depth-1 leaf nodes in the instance history tree (3.5rem).
+const IndentedTreeNode = styled(BaseTreeNode)`
+  .cds--tree-node__label {
+    padding-inline-start: 3.5rem !important;
+  }
 `;
 
 const StatusRegion = styled.output`
@@ -34,4 +44,4 @@ const EmptyStateContainer = styled.div`
   padding: var(--cds-spacing-06);
 `;
 
-export {ScrollContainer, StatusRegion, EmptyStateContainer};
+export {ScrollContainer, StatusRegion, EmptyStateContainer, IndentedTreeNode};

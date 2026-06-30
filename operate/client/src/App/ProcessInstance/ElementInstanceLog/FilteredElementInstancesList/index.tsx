@@ -20,7 +20,7 @@ import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {Skeleton} from '../Skeleton';
 import {Bar} from '../ElementInstancesTree/Bar';
-import {TreeNode, ElementInstanceIcon} from '../ElementInstancesTree/styled';
+import {ElementInstanceIcon} from '../ElementInstancesTree/styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
@@ -30,7 +30,12 @@ import {useDashboardScrollPagination} from 'App/Dashboard/useDashboardScrollPagi
 import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {ScrollContainer, StatusRegion, EmptyStateContainer} from './styled';
+import {
+  ScrollContainer,
+  StatusRegion,
+  EmptyStateContainer,
+  IndentedTreeNode,
+} from './styled';
 
 const PAGE_LIMIT = 50;
 
@@ -53,7 +58,7 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
   });
 
   return (
-    <TreeNode
+    <IndentedTreeNode
       id={item.elementInstanceKey}
       value={item.elementInstanceKey}
       data-testid={`search-result-${item.elementInstanceKey}`}
