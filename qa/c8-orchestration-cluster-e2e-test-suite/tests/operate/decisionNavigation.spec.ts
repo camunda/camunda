@@ -57,6 +57,42 @@ test.beforeAll(async ({request}) => {
       {timeout: 60_000, intervals: [2_000, 5_000]},
     )
     .toBeGreaterThanOrEqual(1);
+
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post('/v2/decision-instances/search', {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'EVALUATED',
+              processInstanceKey:
+                processInstanceWithSuccessfulDecision.processInstanceKey,
+            },
+          },
+        });
+        if (response.status() !== 200) return 0;
+        const result = await response.json();
+        return result.page?.totalItems ?? 0;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBeGreaterThanOrEqual(1);
+
+  // Wait for the process instance to be indexed in Operate so that navigating
+  // from the decision instances list to the process instance page doesn't show "not found".
+  await expect
+    .poll(
+      async () => {
+        const response = await request.get(
+          `/v2/process-instances/${processInstanceWithSuccessfulDecision.processInstanceKey}`,
+          {headers: jsonHeaders()},
+        );
+        return response.status() === 200;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBe(true);
 });
 
 test.describe('Decision Navigation', () => {

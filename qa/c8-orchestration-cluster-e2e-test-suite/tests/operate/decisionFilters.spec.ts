@@ -14,7 +14,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {jsonHeaders} from 'utils/http';
 
 // Exposed at module level so tests can scope assertions to instances created by this spec.
-let failedInstanceProcessKey: string;
+let failedProcessInstanceKey: string;
 
 test.beforeAll(async ({request}) => {
   await deploy([
@@ -24,7 +24,7 @@ test.beforeAll(async ({request}) => {
 
   // No variables → decision evaluation error → FAILED decision instance
   const failedInstance = await createSingleInstance('invoice', 1);
-  failedInstanceProcessKey = failedInstance.processInstanceKey;
+  failedProcessInstanceKey = failedInstance.processInstanceKey;
 
   // Valid inputs → decision evaluates successfully → EVALUATED decision instance
   await createSingleInstance('invoice', 1, {
@@ -43,7 +43,7 @@ test.beforeAll(async ({request}) => {
           data: {
             filter: {
               state: 'FAILED',
-              processInstanceKey: failedInstanceProcessKey,
+              processInstanceKey: failedProcessInstanceKey,
             },
           },
         });
@@ -106,7 +106,7 @@ test.describe('Decision Filters', () => {
       // reflects the full result set and the subsequent comparison is reliable.
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('link', {
-          name: `View process instance ${failedInstanceProcessKey}`,
+          name: `View process instance ${failedProcessInstanceKey}`,
         }),
       ).toBeVisible({timeout: 30_000});
       totalCount = await operateDecisionsPage.decisionInstancesList
@@ -127,7 +127,7 @@ test.describe('Decision Filters', () => {
         operateDecisionsPage.decisionInstancesList.getByRole('link', {
           name: /View decision instance/,
         }),
-      ).not.toHaveCount(0);
+      ).not.toHaveCount(0, {timeout: 30_000});
       const evaluatedCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
         .count();
@@ -140,7 +140,7 @@ test.describe('Decision Filters', () => {
       // reliable than getByText('Evaluation failed'), which is icon-only in the UI.
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('link', {
-          name: `View process instance ${failedInstanceProcessKey}`,
+          name: `View process instance ${failedProcessInstanceKey}`,
         }),
       ).toHaveCount(0);
     });
@@ -162,7 +162,7 @@ test.describe('Decision Filters', () => {
       // rendered as an icon (no DOM text) in the Operate UI.
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('link', {
-          name: `View process instance ${failedInstanceProcessKey}`,
+          name: `View process instance ${failedProcessInstanceKey}`,
         }),
       ).toBeVisible({timeout: 30_000});
       totalCount = await operateDecisionsPage.decisionInstancesList
@@ -183,7 +183,7 @@ test.describe('Decision Filters', () => {
         operateDecisionsPage.decisionInstancesList.getByRole('link', {
           name: /View decision instance/,
         }),
-      ).not.toHaveCount(0);
+      ).not.toHaveCount(0, {timeout: 30_000});
       const failedCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
         .count();
