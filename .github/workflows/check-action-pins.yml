@@ -70,6 +70,9 @@ jobs:
               v = v (n++ ? "," : "") "{\"path\":\"" path "\",\"line\":" line "}"
               next
             }
+            # secrets-inherit is intentional: workflow callers pass secrets to reusable workflows
+            # for metrics/observability collection. Suppress entirely rather than demote.
+            /^::/ && /title=secrets-inherit/ { next }
             /^::error /  { sub(/^::error /,  "::warning "); print; next }
             /^::notice / { sub(/^::notice /, "::warning "); print; next }
                          { print }
