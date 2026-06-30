@@ -13,6 +13,7 @@ import io.camunda.analytics.streaming.state.api.KeyValueStore;
 import io.camunda.analytics.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -20,28 +21,32 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 /**
- * The element-level fold: tracks each flow-node instance's activation time and, on completion or
- * termination, emits an {@link ElementExecutionFact} with its duration. The root {@code PROCESS}
- * element is skipped — that is the process-instance metric's concern.
+ * The element-level fold: tracks each flow-node's activation time and, on completion or
+ * termination, emits an {@link ElementExecutionFact} with its duration ({@code ELEMENT_ACTIVATED →
+ * COMPLETED} spans the element's execution, including a catch event's wait). The root {@code
+ * PROCESS} element is skipped — that is the process-instance metric's concern.
  *
- * <p>State is the start time keyed by element-instance key; everything else (element id,
- * definition, type) is read off the completion record, so the state is just a {@code long}.
+ * <p>Start times are keyed by {@code (processInstanceKey, elementId)} rather than the record key:
+ * the consumed stream does not carry a per-element-instance key, so the record key cannot
+ * distinguish concurrent element instances. This composite is unique per element execution for
+ * non-repeating elements; loops / multi-instance would need the real element-instance key carried
+ * through the connector.
  */
 public final class ElementExecutionProjector
     implements Projector<ZeebeRecord, ElementExecutionFact> {
 
-  private final KeyValueStore<DbLong, DbLong> startTimes;
-  private final DbLong elementInstanceKey = new DbLong();
+  private final KeyValueStore<DbString, DbLong> startTimes;
+  private final DbString elementKey = new DbString();
   private final DbLong startTime = new DbLong();
 
   /**
    * Uses an in-memory start-time store (in-flight elements are short-lived and replay-rebuildable).
    */
   public ElementExecutionProjector() {
-    this(new InMemoryKeyValueStore<>(new DbLong(), new DbLong()));
+    this(new InMemoryKeyValueStore<>(new DbString(), new DbLong()));
   }
 
-  public ElementExecutionProjector(final KeyValueStore<DbLong, DbLong> startTimes) {
+  public ElementExecutionProjector(final KeyValueStore<DbString, DbLong> startTimes) {
     this.startTimes = startTimes;
   }
 
@@ -55,15 +60,15 @@ public final class ElementExecutionProjector
       return;
     }
 
-    elementInstanceKey.wrapLong(record.getKey());
+    elementKey.wrapString(value.getProcessInstanceKey() + ":" + value.getElementId());
     switch (intent) {
       case ELEMENT_ACTIVATED -> {
         startTime.wrapLong(record.getTimestamp());
-        startTimes.put(elementInstanceKey, startTime);
+        startTimes.put(elementKey, startTime);
       }
       case ELEMENT_COMPLETED, ELEMENT_TERMINATED ->
           startTimes
-              .get(elementInstanceKey)
+              .get(elementKey)
               .ifPresent(
                   start -> {
                     final long duration = record.getTimestamp() - start.getValue();
@@ -77,7 +82,7 @@ public final class ElementExecutionProjector
                             value.getBpmnElementType().name(),
                             duration,
                             record.getTimestamp()));
-                    startTimes.delete(elementInstanceKey);
+                    startTimes.delete(elementKey);
                   });
       default -> {
         // other lifecycle intents do not bound an element's execution time

@@ -50,11 +50,11 @@ import org.slf4j.LoggerFactory;
 public final class StandaloneAnalyticsPipeline {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneAnalyticsPipeline.class);
-  private static final String GROUP = "analytics-projection";
 
   private StandaloneAnalyticsPipeline() {}
 
   public static void main(final String[] args) throws InterruptedException {
+    final String group = System.getProperty("group", "analytics-projection");
     final String gateway = System.getProperty("gateway", "http://localhost:8080");
     final String sourceTopic = System.getProperty("sourceTopic", "zeebe-records");
     final String instanceId =
@@ -105,7 +105,7 @@ public final class StandaloneAnalyticsPipeline {
         new StreamProcessor<ZeebeRecord>().register(new ElementExecutionProjector(), heatmapRollup);
 
     final ZeebeRecordConsumer source =
-        ZeebeRecordConsumer.subscribe(client, GROUP, instanceId, List.of(sourceTopic)).join();
+        ZeebeRecordConsumer.subscribe(client, group, instanceId, List.of(sourceTopic)).join();
 
     final WindowedAnalyticsPipeline pipeline =
         new WindowedAnalyticsPipeline(source, projector, aggregator, datasetRegistry, heatmap);
