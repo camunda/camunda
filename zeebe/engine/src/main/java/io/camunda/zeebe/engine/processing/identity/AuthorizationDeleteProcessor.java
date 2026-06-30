@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.identity;
 import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION;
 
 import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -57,7 +58,8 @@ public class AuthorizationDeleteProcessor
       final CommandDistributionBehavior distributionBehavior,
       final AuthorizationCheckPort authCheckPort,
       final LazyTokenClaimsConverter claimsConverter,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final EngineSecurityConfig securityConfig) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -65,7 +67,8 @@ public class AuthorizationDeleteProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior = new PermissionsBehavior(processingState, authCheckPort, claimsConverter);
+    permissionsBehavior =
+        new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
   }
 
   @Override

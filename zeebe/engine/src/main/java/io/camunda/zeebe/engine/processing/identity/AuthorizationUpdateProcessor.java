@@ -56,7 +56,8 @@ public class AuthorizationUpdateProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior = new PermissionsBehavior(processingState, authCheckPort, claimsConverter);
+    permissionsBehavior =
+        new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
     authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
   }
 

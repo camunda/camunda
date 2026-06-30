@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
@@ -39,14 +40,17 @@ public class PermissionsBehavior {
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckPort authCheckPort;
   private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
 
   public PermissionsBehavior(
       final ProcessingState processingState,
       final AuthorizationCheckPort authCheckPort,
-      final LazyTokenClaimsConverter claimsConverter) {
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig) {
     authorizationState = processingState.getAuthorizationState();
     this.authCheckPort = authCheckPort;
     this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
   }
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
@@ -61,6 +65,10 @@ public class PermissionsBehavior {
     }
     final var authorizations = command.getAuthorizations();
     if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return Either.right(command.getValue());
+    }
+    if (!securityConfig.isAuthorizationsEnabled()
+        && !securityConfig.isMultiTenancyChecksEnabled()) {
       return Either.right(command.getValue());
     }
     final var auth = claimsConverter.convert(authorizations);

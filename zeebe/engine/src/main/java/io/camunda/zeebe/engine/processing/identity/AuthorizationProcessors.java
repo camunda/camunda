@@ -53,7 +53,8 @@ public final class AuthorizationProcessors {
             distributionBehavior,
             authCheckPort,
             claimsConverter,
-            authCheckBehavior));
+            authCheckBehavior,
+            securityConfig));
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
         AuthorizationIntent.UPDATE,
