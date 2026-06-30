@@ -63,7 +63,7 @@ public class ProcessInstanceWaitStateStatisticsImpl implements ProcessInstanceWa
   @Override
   public String toString() {
     return String.format(
-        "ProcessInstanceWaitStateStatisticsImpl{elementId='%s', waitingCount=%d}",
+        "ProcessInstanceWaitStateStatisticsImpl{elementId='%s', waitingCount=%s}",
         elementId, waitingCount);
   }
 }
