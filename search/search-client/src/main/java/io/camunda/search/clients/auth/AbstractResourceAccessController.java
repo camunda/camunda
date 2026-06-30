@@ -105,12 +105,17 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       return AuthorizationCheck.disabled();
     }
 
+    if (resourceAccess.denied()) {
+      throw new ResourceAccessDeniedException(authorization);
+    }
+
     return AuthorizationCheck.enabled(resourceAccess.authorization());
   }
 
   private AuthorizationCheck createAnyOfAuthorizationCheck(
       final CamundaAuthentication authentication, final AnyOfAuthorizationCondition anyOf) {
     final var resolvedAuthorizations = new ArrayList<RequiredAuthorization<?>>();
+    boolean allDenied = true;
     for (final RequiredAuthorization<?> authorization : anyOf.authorizations()) {
       final var resourceAccess = resolveResourceAccess(authentication, authorization);
 
@@ -118,7 +123,15 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
         return AuthorizationCheck.disabled();
       }
 
+      if (!resourceAccess.denied()) {
+        allDenied = false;
+      }
+
       resolvedAuthorizations.add(resourceAccess.authorization());
+    }
+
+    if (allDenied) {
+      throw new ResourceAccessDeniedException(anyOf.authorizations());
     }
 
     return AuthorizationCheck.enabled(AuthorizationConditions.anyOf(resolvedAuthorizations));

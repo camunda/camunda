@@ -204,7 +204,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldEnableResourceAccessCheckOnSearchEvenWhenNoResourceIdsProvided() {
+  void shouldThrowResourceAccessDeniedOnSearchWhenNoResourceIdsProvided() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
@@ -219,23 +219,52 @@ class DocumentResourceAccessControllerTest {
 
     when(resourceAccessProvider.resolveResourceAccess(eq(authentication), eq(authorization)))
         .thenReturn(ResourceAccess.denied(requiredAuthorization));
-    when(tenantAccessProvider.resolveTenantAccess(any())).thenReturn(TenantAccess.wildcard(null));
 
-    final var reference = new AtomicReference<ResourceAccessChecks>();
+    // when - then: denied resource access must immediately throw, not silently produce matchNone
+    assertThatExceptionOfType(ResourceAccessDeniedException.class)
+        .isThrownBy(
+            () ->
+                controller.doSearch(
+                    securityContext,
+                    a -> {
+                      // applier must not be invoked
+                      return null;
+                    }))
+        .withMessageContaining("READ_PROCESS_DEFINITION")
+        .satisfies(err -> assertThat(err.getReason()).isEqualTo(Reason.FORBIDDEN));
+  }
 
-    // when
-    controller.doSearch(
-        securityContext,
-        a -> {
-          reference.set(a);
-          return null;
-        });
+  @Test
+  void shouldThrowResourceAccessDeniedOnSearchWhenAllAnyOfAuthorizationsDenied() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var processDefinitionReadAuth =
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = RequiredAuthorization.of(a -> a.userTask().read());
+    final var securityContext =
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationCondition(
+                        AuthorizationConditions.anyOf(
+                            processDefinitionReadAuth, userTaskReadAuth)));
 
-    // then
-    final var result = reference.get();
-    assertThat(result.authorizationCheck().enabled()).isTrue();
-    assertThat(result.authorizationCheck().authorizationCondition())
-        .isEqualTo(AuthorizationConditions.single(requiredAuthorization));
+    when(resourceAccessProvider.resolveResourceAccess(authentication, processDefinitionReadAuth))
+        .thenReturn(ResourceAccess.denied(processDefinitionReadAuth));
+    when(resourceAccessProvider.resolveResourceAccess(authentication, userTaskReadAuth))
+        .thenReturn(ResourceAccess.denied(userTaskReadAuth));
+
+    // when - then: all anyOf branches denied must throw, not silently produce matchNone
+    assertThatExceptionOfType(ResourceAccessDeniedException.class)
+        .isThrownBy(
+            () ->
+                controller.doSearch(
+                    securityContext,
+                    a -> {
+                      // applier must not be invoked
+                      return null;
+                    }))
+        .satisfies(err -> assertThat(err.getReason()).isEqualTo(Reason.FORBIDDEN));
   }
 
   @Test

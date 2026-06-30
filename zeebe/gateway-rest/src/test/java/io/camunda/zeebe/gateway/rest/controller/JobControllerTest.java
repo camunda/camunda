@@ -2497,6 +2497,96 @@ public class JobControllerTest extends RestControllerTest {
             "/v2/jobs/statistics/time-series"));
   }
 
+  static Stream<Arguments> jobMetricsAuthorizedEndpoints() {
+    return Stream.of(
+        Arguments.of(
+            "/statistics/global?from=2024-07-28T15:51:28.071Z&to=2024-07-29T15:51:28.071Z",
+            "GET",
+            null),
+        Arguments.of(
+            "/statistics/by-types",
+            "POST",
+            """
+                {
+                  "filter": {
+                    "from": "2024-07-28T15:51:28.071Z",
+                    "to": "2024-07-29T15:51:28.071Z"
+                  }
+                }"""),
+        Arguments.of(
+            "/statistics/by-workers",
+            "POST",
+            """
+                {
+                  "filter": {
+                    "from": "2024-07-28T15:51:28.071Z",
+                    "to": "2024-07-29T15:51:28.071Z",
+                    "jobType": "fetch-customer-data"
+                  }
+                }"""),
+        Arguments.of(
+            "/statistics/time-series",
+            "POST",
+            """
+                {
+                  "filter": {
+                    "from": "2024-07-28T15:51:28.071Z",
+                    "to": "2024-07-29T15:51:28.071Z",
+                    "jobType": "fetch-customer-data"
+                  }
+                }"""));
+  }
+
+  @ParameterizedTest(name = "shouldReturn403For {0} statistics when user lacks READ_JOB_METRIC")
+  @MethodSource("jobMetricsAuthorizedEndpoints")
+  void shouldReturn403ForStatisticsWhenUserNotAuthorized(
+      final String uriSuffix, final String httpMethod, final String requestBody) {
+    // given - feature flag is enabled, but the service throws FORBIDDEN (no READ_JOB_METRIC)
+    when(jobServices.getGlobalStatistics(any(), any()))
+        .thenThrow(
+            new io.camunda.service.exception.ServiceException(
+                "Unauthorized to perform operation 'READ_JOB_METRIC' on resource 'SYSTEM'",
+                io.camunda.service.exception.ServiceException.Status.FORBIDDEN));
+    when(jobServices.getJobTypeStatistics(any(), any()))
+        .thenThrow(
+            new io.camunda.service.exception.ServiceException(
+                "Unauthorized to perform operation 'READ_JOB_METRIC' on resource 'SYSTEM'",
+                io.camunda.service.exception.ServiceException.Status.FORBIDDEN));
+    when(jobServices.getJobWorkerStatistics(any(), any()))
+        .thenThrow(
+            new io.camunda.service.exception.ServiceException(
+                "Unauthorized to perform operation 'READ_JOB_METRIC' on resource 'SYSTEM'",
+                io.camunda.service.exception.ServiceException.Status.FORBIDDEN));
+    when(jobServices.getJobTimeSeriesStatistics(any(), any()))
+        .thenThrow(
+            new io.camunda.service.exception.ServiceException(
+                "Unauthorized to perform operation 'READ_JOB_METRIC' on resource 'SYSTEM'",
+                io.camunda.service.exception.ServiceException.Status.FORBIDDEN));
+
+    // when/then
+    final var requestSpec =
+        "GET".equals(httpMethod)
+            ? webClient.get().uri(JOBS_BASE_URL + uriSuffix).accept(MediaType.APPLICATION_JSON)
+            : webClient
+                .post()
+                .uri(JOBS_BASE_URL + uriSuffix)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody);
+
+    requestSpec
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.status")
+        .isEqualTo(403)
+        .jsonPath("$.title")
+        .isEqualTo("FORBIDDEN");
+  }
+
   @ParameterizedTest(name = "shouldReturn403For {0} statistics when job metrics disabled")
   @MethodSource("jobMetricsDisabledEndpoints")
   void shouldReturn403WhenJobMetricsDisabled(
