@@ -61,7 +61,13 @@ jobs:
     env:
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
-      SHARD_TOTAL: 2
+      # IT classes are split across two shards balanced by measured runtime (not class count),
+      # so the slowest shard stays under target. TaskControllerIT alone dominates (~25 min of
+      # method time) so it sits in shard 1 with only light fillers. The "Verify shard coverage"
+      # step fails the build if a new/renamed IT class is missing from both lists, which on this
+      # frozen stable branch is the only maintenance trigger.
+      SHARD1_CLASSES: "TaskControllerIT,UsageMetricIT,MetricIT,ZeebeConnectorIT,ProcessCacheIT,VariableSearchTermsQueryChunkIT,FeatureFlagIT,ElasticsearchConnectorIT,OpensearchConnectorIT,OldRoutesRedirectionControllerConsolidatedAuthIT,OldRoutesRedirectionControllerIT,HealthCheckIT,ClientConfigRestServiceIT"
+      SHARD2_CLASSES: "ProcessInternalControllerIT,FormControllerIT,VariablesControllerIT,TaskStorePerfIT,ZeebeUserTaskIT,ProcessExternalControllerIT,ProbesTestIT,ZeebeMigrateProcessTaskIT,TaskCompletionConcurrencyIT,ZeebeAdHocSubProcessIT,ZeebeMultipleProcessesIT,ElasticsearchConnectorSSLAuthIT,ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT,ElasticsearchConnectorBasicAuthIT,ZeebeConnectorSecureIT,GenerateOpenApiIT,DevUtilExternalControllerIT,ModesWithTasklistUiDisabledIT,OnlyWebappIT,ModesWithTasklistDisabledIT,OpenSearchConnectorBasicAuthIT,StartupIT,OpenSearchConnectorSSLAuthIT,NoWebappIT,IndexControllerIT"
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
@@ -90,19 +96,20 @@ jobs:
         id: build-camunda
         run: ./mvnw -B -T1C -DskipTests -DskipChecks install -pl tasklist/qa/integration-tests -am -PskipFrontendBuild
 
-      # Deterministically split the IT classes for this shard so the test phase stays under target
-      - name: Compute IT shard
+      # Fail fast if the committed shard lists no longer cover every IT class (new/renamed test).
+      - name: Verify shard coverage
         id: shard
         run: |
-          mapfile -t classes < <(find tasklist/qa/integration-tests/src/test/java -name '*IT.java' -printf '%f\n' | sed 's/\.java$//' | sort)
-          selected=()
-          for i in "${!classes[@]}"; do
-            if [ $(( i % SHARD_TOTAL )) -eq $(( ${{ matrix.shardIndex }} - 1 )) ]; then
-              selected+=("${classes[$i]}")
-            fi
-          done
-          tests=$(IFS=,; echo "${selected[*]}")
-          echo "Shard ${{ matrix.shardIndex }}/${SHARD_TOTAL} runs ${#selected[@]} IT classes: ${tests}"
+          mapfile -t found < <(find tasklist/qa/integration-tests/src/test/java -name '*IT.java' -printf '%f\n' | sed 's/\.java$//' | sort)
+          known=$(printf '%s,%s' "$SHARD1_CLASSES" "$SHARD2_CLASSES" | tr ',' '\n' | sort)
+          missing=$(comm -23 <(printf '%s\n' "${found[@]}") <(printf '%s\n' "$known"))
+          if [ -n "$missing" ]; then
+            echo "::error::IT classes not assigned to any shard (update SHARD1_CLASSES/SHARD2_CLASSES):"
+            echo "$missing"
+            exit 1
+          fi
+          if [ "${{ matrix.shardIndex }}" = "1" ]; then tests="$SHARD1_CLASSES"; else tests="$SHARD2_CLASSES"; fi
+          echo "Shard ${{ matrix.shardIndex }} runs: ${tests}"
           echo "tests=${tests}" >> "$GITHUB_OUTPUT"
 
       # Run this shard's integration tests in parallel. Unit tests are covered by the unified
