@@ -25,6 +25,7 @@
 
   <modules>
     <module>state-store</module>
+    <module>streaming</module>
     <module>event-bridge-analytics</module>
     <module>analytics-webapp</module>
   </modules>
