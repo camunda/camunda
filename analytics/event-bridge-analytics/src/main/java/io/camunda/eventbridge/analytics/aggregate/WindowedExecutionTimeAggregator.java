@@ -38,12 +38,19 @@ public final class WindowedExecutionTimeAggregator {
   /** Default grace for out-of-order completions before a window is declared final. */
   public static final long DEFAULT_ALLOWED_LATENESS_MS = 60_000L;
 
+  /** The variable used as the {@code region} grouping dimension. */
+  public static final String REGION_VARIABLE = "region";
+
+  /** Placeholder region for instances that have no {@code region} variable. */
+  public static final String NO_REGION = "<none>";
+
   private static final int WATERMARK_ROW = 0;
 
   private static final String CREATE_WINDOW =
       """
       CREATE TABLE IF NOT EXISTS proc_inst_exec_time_window (
         dataset_id             BIGINT       NOT NULL,
+        region                 VARCHAR(255) NOT NULL,
         process_definition_key BIGINT       NOT NULL,
         bpmn_process_id        VARCHAR(255) NOT NULL,
         version                INT          NOT NULL,
@@ -54,7 +61,7 @@ public final class WindowedExecutionTimeAggregator {
         total_duration_ms      BIGINT       NOT NULL,
         min_duration_ms        BIGINT       NOT NULL,
         max_duration_ms        BIGINT       NOT NULL,
-        PRIMARY KEY (dataset_id, process_definition_key, version, tenant_id, window_start)
+        PRIMARY KEY (dataset_id, region, process_definition_key, version, tenant_id, window_start)
       )""";
 
   private static final String CREATE_FACT_WATERMARK =
@@ -88,23 +95,24 @@ public final class WindowedExecutionTimeAggregator {
         total_duration_ms = total_duration_ms + ?,
         min_duration_ms   = LEAST(min_duration_ms, ?),
         max_duration_ms   = GREATEST(max_duration_ms, ?)
-      WHERE dataset_id = ? AND process_definition_key = ? AND version = ? AND tenant_id = ?
-        AND window_start = ?""";
+      WHERE dataset_id = ? AND region = ? AND process_definition_key = ? AND version = ?
+        AND tenant_id = ? AND window_start = ?""";
 
   private static final String INSERT_WINDOW =
       """
       INSERT INTO proc_inst_exec_time_window
-        (dataset_id, process_definition_key, bpmn_process_id, version, tenant_id, window_start,
-         window_size_ms, completed_count, total_duration_ms, min_duration_ms, max_duration_ms)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)""";
+        (dataset_id, region, process_definition_key, bpmn_process_id, version, tenant_id,
+         window_start, window_size_ms, completed_count, total_duration_ms, min_duration_ms,
+         max_duration_ms)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)""";
 
   private static final String SELECT_WINDOW =
       """
       SELECT bpmn_process_id, window_size_ms, completed_count, total_duration_ms,
              min_duration_ms, max_duration_ms
       FROM proc_inst_exec_time_window
-      WHERE dataset_id = ? AND process_definition_key = ? AND version = ? AND tenant_id = ?
-        AND window_start = ?""";
+      WHERE dataset_id = ? AND region = ? AND process_definition_key = ? AND version = ?
+        AND tenant_id = ? AND window_start = ?""";
 
   private final DataSource dataSource;
   private final long allowedLatenessMs;
@@ -152,11 +160,13 @@ public final class WindowedExecutionTimeAggregator {
           connection.rollback();
           return false;
         }
+        final String region = fact.variables().getOrDefault(REGION_VARIABLE, NO_REGION);
         for (final AggregateDataset dataset : datasets) {
           upsertWindow(
               connection,
               fact,
               dataset.id(),
+              region,
               windowStartFor(fact.endTime(), dataset.windowSizeMs()),
               dataset.windowSizeMs());
         }
@@ -175,6 +185,7 @@ public final class WindowedExecutionTimeAggregator {
 
   public Optional<WindowedExecutionTime> read(
       final long datasetId,
+      final String region,
       final long processDefinitionKey,
       final int version,
       final String tenantId,
@@ -183,10 +194,11 @@ public final class WindowedExecutionTimeAggregator {
     try (final Connection connection = dataSource.getConnection();
         final PreparedStatement statement = connection.prepareStatement(SELECT_WINDOW)) {
       statement.setLong(1, datasetId);
-      statement.setLong(2, processDefinitionKey);
-      statement.setInt(3, version);
-      statement.setString(4, tenantId);
-      statement.setLong(5, windowStart);
+      statement.setString(2, region);
+      statement.setLong(3, processDefinitionKey);
+      statement.setInt(4, version);
+      statement.setString(5, tenantId);
+      statement.setLong(6, windowStart);
       try (final ResultSet rs = statement.executeQuery()) {
         if (!rs.next()) {
           return Optional.empty();
@@ -270,6 +282,7 @@ public final class WindowedExecutionTimeAggregator {
       final Connection connection,
       final ProcessInstanceExecutionTimeFact fact,
       final long datasetId,
+      final String region,
       final long windowStart,
       final long windowSizeMs)
       throws SQLException {
@@ -278,25 +291,27 @@ public final class WindowedExecutionTimeAggregator {
       update.setLong(2, fact.durationMs());
       update.setLong(3, fact.durationMs());
       update.setLong(4, datasetId);
-      update.setLong(5, fact.processDefinitionKey());
-      update.setInt(6, fact.version());
-      update.setString(7, fact.tenantId());
-      update.setLong(8, windowStart);
+      update.setString(5, region);
+      update.setLong(6, fact.processDefinitionKey());
+      update.setInt(7, fact.version());
+      update.setString(8, fact.tenantId());
+      update.setLong(9, windowStart);
       if (update.executeUpdate() > 0) {
         return;
       }
     }
     try (final PreparedStatement insert = connection.prepareStatement(INSERT_WINDOW)) {
       insert.setLong(1, datasetId);
-      insert.setLong(2, fact.processDefinitionKey());
-      insert.setString(3, fact.bpmnProcessId());
-      insert.setInt(4, fact.version());
-      insert.setString(5, fact.tenantId());
-      insert.setLong(6, windowStart);
-      insert.setLong(7, windowSizeMs);
-      insert.setLong(8, fact.durationMs());
+      insert.setString(2, region);
+      insert.setLong(3, fact.processDefinitionKey());
+      insert.setString(4, fact.bpmnProcessId());
+      insert.setInt(5, fact.version());
+      insert.setString(6, fact.tenantId());
+      insert.setLong(7, windowStart);
+      insert.setLong(8, windowSizeMs);
       insert.setLong(9, fact.durationMs());
       insert.setLong(10, fact.durationMs());
+      insert.setLong(11, fact.durationMs());
       insert.executeUpdate();
     }
   }

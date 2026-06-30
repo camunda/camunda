@@ -17,22 +17,33 @@ final class ProcessInstanceExecutionTimeFactCodecTest {
       new ProcessInstanceExecutionTimeFactCodec();
 
   @Test
-  void shouldRoundTripCompletedFact() {
+  void shouldRoundTripCompletedFactWithVariables() {
     // given
     final ProcessInstanceExecutionTimeFact fact =
         new ProcessInstanceExecutionTimeFact(
-            123L, 77L, "order", 3, "<default>", 1000L, 1500L, 500L, true, 1, 11L);
+            123L,
+            77L,
+            "order",
+            3,
+            "<default>",
+            1000L,
+            1500L,
+            500L,
+            true,
+            1,
+            11L,
+            java.util.Map.of("region", "EU", "priority", "high"));
 
-    // when / then
+    // when / then — variables survive the round-trip
     assertThat(codec.deserialize(codec.serialize(fact))).isEqualTo(fact);
   }
 
   @Test
-  void shouldRoundTripTerminatedFact() {
+  void shouldRoundTripTerminatedFactWithNoVariables() {
     // given
     final ProcessInstanceExecutionTimeFact fact =
         new ProcessInstanceExecutionTimeFact(
-            9L, 5L, "payment", 1, "tenant-x", 0L, 200L, 200L, false, 2, 99L);
+            9L, 5L, "payment", 1, "tenant-x", 0L, 200L, 200L, false, 2, 99L, java.util.Map.of());
 
     // when / then
     assertThat(codec.deserialize(codec.serialize(fact))).isEqualTo(fact);

@@ -9,15 +9,20 @@ package io.camunda.eventbridge.analytics.projection;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * The msgpack {@link DbValue} backing a {@link ProcessInstanceProjection} in RocksDB. The {@code
- * processInstanceKey} is the column-family key, so it is not stored here.
+ * processInstanceKey} is the column-family key, so it is not stored here. The instance's variables
+ * are stored as an array of name/value entries. Write to a fresh instance per put so the array does
+ * not accumulate across reuse.
  */
 public final class PersistedProjection extends UnpackedObject implements DbValue {
 
@@ -32,9 +37,11 @@ public final class PersistedProjection extends UnpackedObject implements DbValue
       new LongProperty("endTime", ProcessInstanceProjection.UNSET);
   private final BooleanProperty terminatedProp = new BooleanProperty("terminated", false);
   private final BooleanProperty factEmittedProp = new BooleanProperty("factEmitted", false);
+  private final ArrayProperty<PersistedVariable> variablesProp =
+      new ArrayProperty<>("variables", PersistedVariable::new);
 
   public PersistedProjection() {
-    super(8);
+    super(9);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
@@ -42,7 +49,8 @@ public final class PersistedProjection extends UnpackedObject implements DbValue
         .declareProperty(startTimeProp)
         .declareProperty(endTimeProp)
         .declareProperty(terminatedProp)
-        .declareProperty(factEmittedProp);
+        .declareProperty(factEmittedProp)
+        .declareProperty(variablesProp);
   }
 
   public PersistedProjection wrap(final ProcessInstanceProjection projection) {
@@ -54,10 +62,15 @@ public final class PersistedProjection extends UnpackedObject implements DbValue
     endTimeProp.setValue(projection.endTime());
     terminatedProp.setValue(projection.terminated());
     factEmittedProp.setValue(projection.factEmitted());
+    projection.variables().forEach((name, value) -> variablesProp.add().set(name, value));
     return this;
   }
 
   public ProcessInstanceProjection toProjection(final long processInstanceKey) {
+    final Map<String, String> variables = new LinkedHashMap<>();
+    for (final PersistedVariable variable : variablesProp) {
+      variables.put(variable.name(), variable.value());
+    }
     return new ProcessInstanceProjection(
         processInstanceKey,
         processDefinitionKeyProp.getValue(),
@@ -67,6 +80,7 @@ public final class PersistedProjection extends UnpackedObject implements DbValue
         startTimeProp.getValue(),
         endTimeProp.getValue(),
         terminatedProp.getValue(),
-        factEmittedProp.getValue());
+        factEmittedProp.getValue(),
+        Map.copyOf(variables));
   }
 }

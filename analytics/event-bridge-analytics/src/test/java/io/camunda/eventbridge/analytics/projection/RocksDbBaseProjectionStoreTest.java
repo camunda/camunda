@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,13 +26,25 @@ final class RocksDbBaseProjectionStoreTest {
     // given
     final ProcessInstanceProjection projection =
         new ProcessInstanceProjection(
-            123L, 77L, "order", 3, "<default>", 1000L, 1500L, false, true);
+            123L,
+            77L,
+            "order",
+            3,
+            "<default>",
+            1000L,
+            1500L,
+            false,
+            true,
+            Map.of("region", "EU", "priority", "high"));
 
-    // when / then
+    // when / then — variables round-trip through the persisted array
     try (final RocksDbBaseProjectionStore store =
         RocksDbBaseProjectionStore.open(dataDir.toFile(), meterRegistry)) {
       store.put(projection);
       assertThat(store.get(123L)).contains(projection);
+      assertThat(store.get(123L).orElseThrow().variables())
+          .containsEntry("region", "EU")
+          .containsEntry("priority", "high");
       assertThat(store.get(999L)).isEmpty();
     }
   }
@@ -50,7 +63,8 @@ final class RocksDbBaseProjectionStoreTest {
   void shouldSurviveReopen() throws Exception {
     // given — a projection and position written, then the store closed
     final ProcessInstanceProjection projection =
-        new ProcessInstanceProjection(7L, 5L, "payment", 1, "tenant-x", 100L, 300L, false, true);
+        new ProcessInstanceProjection(
+            7L, 5L, "payment", 1, "tenant-x", 100L, 300L, false, true, Map.of("region", "US"));
     try (final RocksDbBaseProjectionStore store =
         RocksDbBaseProjectionStore.open(dataDir.toFile(), meterRegistry)) {
       store.put(projection);

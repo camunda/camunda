@@ -89,7 +89,8 @@ public final class RocksDbBaseProjectionStore implements BaseProjectionStore, Au
     context.runInTransaction(
         () -> {
           instanceKey.wrapLong(projection.processInstanceKey());
-          projections.upsert(instanceKey, persistedProjection.wrap(projection));
+          // fresh value so the variables array does not accumulate across reuse of a flyweight
+          projections.upsert(instanceKey, new PersistedProjection().wrap(projection));
         });
   }
 

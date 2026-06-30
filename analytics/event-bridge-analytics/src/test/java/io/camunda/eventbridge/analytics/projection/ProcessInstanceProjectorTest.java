@@ -11,15 +11,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 final class ProcessInstanceProjectorTest {
@@ -68,6 +73,25 @@ final class ProcessInstanceProjectorTest {
     assertThat(projection.hasStart()).isTrue();
     assertThat(projection.isComplete()).isFalse();
     assertThat(projection.factEmitted()).isFalse();
+  }
+
+  @Test
+  void shouldEnrichFactWithCapturedVariables() {
+    // given — an instance whose region variable is observed between activation and completion
+    projector.apply(
+        event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
+    final Optional<ProcessInstanceExecutionTimeFact> none =
+        projector.apply(variableEvent("region", "EU", 11L));
+    assertThat(none).isEmpty();
+
+    // when
+    final Optional<ProcessInstanceExecutionTimeFact> fact =
+        projector.apply(
+            event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 12L));
+
+    // then — the JSON-quoted value is unquoted and carried on the fact
+    assertThat(fact).isPresent();
+    assertThat(fact.orElseThrow().variables()).containsEntry("region", "EU");
   }
 
   @Test
@@ -147,6 +171,24 @@ final class ProcessInstanceProjectorTest {
             .intent(intent);
     final Record<ProcessInstanceRecord> record =
         new CopiedRecord<>(value, metadata, PI_KEY, 1, position, position - 1, timestamp);
+    return new ZeebeRecord("zeebe-records", 1, position, record);
+  }
+
+  private static ZeebeRecord variableEvent(
+      final String name, final String value, final long position) {
+    final VariableRecord variable =
+        new VariableRecord()
+            .setProcessInstanceKey(PI_KEY)
+            .setScopeKey(PI_KEY)
+            .setName(BufferUtil.wrapString(name))
+            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"" + value + "\"")));
+    final RecordMetadata metadata =
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .valueType(ValueType.VARIABLE)
+            .intent(VariableIntent.CREATED);
+    final Record<VariableRecord> record =
+        new CopiedRecord<>(variable, metadata, PI_KEY, 1, position, position - 1, position);
     return new ZeebeRecord("zeebe-records", 1, position, record);
   }
 }

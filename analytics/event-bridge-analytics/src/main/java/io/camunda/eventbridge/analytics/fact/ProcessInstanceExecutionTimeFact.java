@@ -7,9 +7,12 @@
  */
 package io.camunda.eventbridge.analytics.fact;
 
+import java.util.Map;
+
 /**
  * An immutable fact: the execution time of a single process instance, derived once when the
- * instance completes (or terminates).
+ * instance completes (or terminates), enriched with the instance's {@code variables} (snapshot at
+ * completion) so it can be grouped/filtered by a variable dimension such as {@code region}.
  *
  * <p>Facts are a deterministic function of the consumed record stream — they are recomputed by
  * replay rather than stored to avoid loss. {@code sourcePartitionId}/{@code sourcePosition} are the
@@ -28,4 +31,5 @@ public record ProcessInstanceExecutionTimeFact(
     long durationMs,
     boolean completedNormally,
     int sourcePartitionId,
-    long sourcePosition) {}
+    long sourcePosition,
+    Map<String, String> variables) {}

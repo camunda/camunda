@@ -119,6 +119,7 @@ final class ExecutionTimeAggregatorTest {
         durationMs,
         true,
         sourcePartitionId,
-        sourcePosition);
+        sourcePosition,
+        java.util.Map.of());
   }
 }

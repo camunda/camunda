@@ -13,6 +13,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Serializes a {@link ProcessInstanceExecutionTimeFact} to the bytes carried as a fact-stream
@@ -36,6 +38,11 @@ public final class ProcessInstanceExecutionTimeFactCodec {
       out.writeBoolean(fact.completedNormally());
       out.writeInt(fact.sourcePartitionId());
       out.writeLong(fact.sourcePosition());
+      out.writeInt(fact.variables().size());
+      for (final Map.Entry<String, String> variable : fact.variables().entrySet()) {
+        out.writeUTF(variable.getKey());
+        out.writeUTF(variable.getValue());
+      }
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to serialize execution-time fact", e);
     }
@@ -44,18 +51,35 @@ public final class ProcessInstanceExecutionTimeFactCodec {
 
   public ProcessInstanceExecutionTimeFact deserialize(final byte[] payload) {
     try (final DataInputStream in = new DataInputStream(new ByteArrayInputStream(payload))) {
+      final long processInstanceKey = in.readLong();
+      final long processDefinitionKey = in.readLong();
+      final String bpmnProcessId = in.readUTF();
+      final int version = in.readInt();
+      final String tenantId = in.readUTF();
+      final long startTime = in.readLong();
+      final long endTime = in.readLong();
+      final long durationMs = in.readLong();
+      final boolean completedNormally = in.readBoolean();
+      final int sourcePartitionId = in.readInt();
+      final long sourcePosition = in.readLong();
+      final int variableCount = in.readInt();
+      final Map<String, String> variables = new LinkedHashMap<>();
+      for (int i = 0; i < variableCount; i++) {
+        variables.put(in.readUTF(), in.readUTF());
+      }
       return new ProcessInstanceExecutionTimeFact(
-          in.readLong(),
-          in.readLong(),
-          in.readUTF(),
-          in.readInt(),
-          in.readUTF(),
-          in.readLong(),
-          in.readLong(),
-          in.readLong(),
-          in.readBoolean(),
-          in.readInt(),
-          in.readLong());
+          processInstanceKey,
+          processDefinitionKey,
+          bpmnProcessId,
+          version,
+          tenantId,
+          startTime,
+          endTime,
+          durationMs,
+          completedNormally,
+          sourcePartitionId,
+          sourcePosition,
+          Map.copyOf(variables));
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to deserialize execution-time fact", e);
     }

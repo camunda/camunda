@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,24 +37,41 @@ final class WindowedExecutionTimeAggregatorTest {
   }
 
   @Test
-  void shouldCountCompletionsPerDefinitionPerHour() {
-    // given — definition 77: two completions in hour 0, one in hour 1; definition 88: one in hour 0
-    aggregator.apply(fact(77L, 1_000L, 500L, 1, 10L), HOURLY); // hour 0
-    aggregator.apply(fact(77L, 2_000L, 300L, 1, 11L), HOURLY); // hour 0
-    aggregator.apply(fact(77L, HOUR + 1_000L, 700L, 1, 12L), HOURLY); // hour 1
-    aggregator.apply(fact(88L, 500L, 900L, 1, 13L), HOURLY); // hour 0
+  void shouldRollUpExecutionTimePerRegionPerHour() {
+    // given — region EU has two completions in hour 0 (durations 500, 300); region US one (700)
+    aggregator.apply(fact(77L, "EU", 1_000L, 500L, 1, 10L), HOURLY);
+    aggregator.apply(fact(77L, "EU", 2_000L, 300L, 1, 11L), HOURLY);
+    aggregator.apply(fact(77L, "US", 3_000L, 700L, 1, 12L), HOURLY);
 
-    // then — "N completed per definition per hour"
-    assertThat(count(77L, 0L)).isEqualTo(2L);
-    assertThat(count(77L, HOUR)).isEqualTo(1L);
-    assertThat(count(88L, 0L)).isEqualTo(1L);
+    // then — independent cells per region
+    final WindowedExecutionTime eu =
+        aggregator.read(DS, "EU", 77L, VERSION, TENANT, 0L).orElseThrow();
+    assertThat(eu.completedCount()).isEqualTo(2L);
+    assertThat(eu.averageDurationMs()).isEqualTo(400.0); // (500 + 300) / 2
+    assertThat(eu.maxDurationMs()).isEqualTo(500L);
 
-    // and — windowed duration stats roll up within the cell
-    final WindowedExecutionTime hour0 = aggregator.read(DS, 77L, VERSION, TENANT, 0L).orElseThrow();
-    assertThat(hour0.totalDurationMs()).isEqualTo(800L);
-    assertThat(hour0.minDurationMs()).isEqualTo(300L);
-    assertThat(hour0.maxDurationMs()).isEqualTo(500L);
-    assertThat(hour0.windowEnd()).isEqualTo(HOUR);
+    final WindowedExecutionTime us =
+        aggregator.read(DS, "US", 77L, VERSION, TENANT, 0L).orElseThrow();
+    assertThat(us.completedCount()).isEqualTo(1L);
+    assertThat(us.averageDurationMs()).isEqualTo(700.0);
+    assertThat(us.maxDurationMs()).isEqualTo(700L);
+  }
+
+  @Test
+  void shouldDefaultRegionWhenVariableAbsent() {
+    // given — a fact with no region variable
+    aggregator.apply(
+        new ProcessInstanceExecutionTimeFact(
+            1L, 77L, "order", VERSION, TENANT, 0L, 500L, 500L, true, 1, 10L, Map.of()),
+        HOURLY);
+
+    // then — folded under the placeholder region
+    assertThat(
+            aggregator
+                .read(DS, WindowedExecutionTimeAggregator.NO_REGION, 77L, VERSION, TENANT, 0L)
+                .orElseThrow()
+                .completedCount())
+        .isEqualTo(1L);
   }
 
   @Test
@@ -64,51 +82,49 @@ final class WindowedExecutionTimeAggregatorTest {
         List.of(new AggregateDataset(DS, HOUR), new AggregateDataset(2L, day));
 
     // when — one completion folds into both
-    aggregator.apply(fact(77L, HOUR + 1_000L, 500L, 1, 10L), both);
+    aggregator.apply(fact(77L, "EU", HOUR + 1_000L, 500L, 1, 10L), both);
 
     // then — hourly buckets at HOUR, daily buckets at 0; each its own row
-    assertThat(aggregator.read(DS, 77L, VERSION, TENANT, HOUR).orElseThrow().completedCount())
+    assertThat(aggregator.read(DS, "EU", 77L, VERSION, TENANT, HOUR).orElseThrow().completedCount())
         .isEqualTo(1L);
-    assertThat(aggregator.read(2L, 77L, VERSION, TENANT, 0L).orElseThrow().completedCount())
+    assertThat(aggregator.read(2L, "EU", 77L, VERSION, TENANT, 0L).orElseThrow().completedCount())
         .isEqualTo(1L);
   }
 
   @Test
   void shouldDedupDuplicateFactBySourceCoordinate() {
     // given
-    assertThat(aggregator.apply(fact(77L, 1_000L, 500L, 1, 10L), HOURLY)).isTrue();
+    assertThat(aggregator.apply(fact(77L, "EU", 1_000L, 500L, 1, 10L), HOURLY)).isTrue();
 
     // when — same source coordinate redelivered
-    final boolean reapplied = aggregator.apply(fact(77L, 1_000L, 500L, 1, 10L), HOURLY);
+    final boolean reapplied = aggregator.apply(fact(77L, "EU", 1_000L, 500L, 1, 10L), HOURLY);
 
     // then
     assertThat(reapplied).isFalse();
-    assertThat(count(77L, 0L)).isEqualTo(1L);
+    assertThat(aggregator.read(DS, "EU", 77L, VERSION, TENANT, 0L).orElseThrow().completedCount())
+        .isEqualTo(1L);
   }
 
   @Test
   void shouldFinalizeWindowOnceEventTimeWatermarkPasses() {
     // given — one completion in hour 0; watermark is still inside hour 0
-    aggregator.apply(fact(77L, 1_000L, 500L, 1, 10L), HOURLY);
-    assertThat(aggregator.read(DS, 77L, VERSION, TENANT, 0L).orElseThrow().finalized()).isFalse();
+    aggregator.apply(fact(77L, "EU", 1_000L, 500L, 1, 10L), HOURLY);
+    assertThat(aggregator.read(DS, "EU", 77L, VERSION, TENANT, 0L).orElseThrow().finalized())
+        .isFalse();
 
     // when — a later completion advances the event-time watermark past hour 0's end + lateness
-    aggregator.apply(fact(99L, HOUR + LATENESS + 1L, 100L, 1, 11L), HOURLY);
+    aggregator.apply(fact(99L, "EU", HOUR + LATENESS + 1L, 100L, 1, 11L), HOURLY);
 
     // then — hour 0 is now final, the in-progress later window is not
-    assertThat(aggregator.read(DS, 77L, VERSION, TENANT, 0L).orElseThrow().finalized()).isTrue();
-    assertThat(aggregator.read(DS, 99L, VERSION, TENANT, HOUR).orElseThrow().finalized()).isFalse();
-  }
-
-  private long count(final long processDefinitionKey, final long windowStart) {
-    return aggregator
-        .read(DS, processDefinitionKey, VERSION, TENANT, windowStart)
-        .orElseThrow()
-        .completedCount();
+    assertThat(aggregator.read(DS, "EU", 77L, VERSION, TENANT, 0L).orElseThrow().finalized())
+        .isTrue();
+    assertThat(aggregator.read(DS, "EU", 99L, VERSION, TENANT, HOUR).orElseThrow().finalized())
+        .isFalse();
   }
 
   private static ProcessInstanceExecutionTimeFact fact(
       final long processDefinitionKey,
+      final String region,
       final long endTime,
       final long durationMs,
       final int sourcePartitionId,
@@ -124,6 +140,7 @@ final class WindowedExecutionTimeAggregatorTest {
         durationMs,
         true,
         sourcePartitionId,
-        sourcePosition);
+        sourcePosition,
+        Map.of("region", region));
   }
 }

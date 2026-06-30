@@ -14,6 +14,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -40,6 +43,15 @@ public final class ProcessInstanceProjector {
    */
   public Optional<ProcessInstanceExecutionTimeFact> apply(final ZeebeRecord zeebeRecord) {
     final Record<?> record = zeebeRecord.record();
+
+    // Accumulate variables so a derived fact can be enriched with them (e.g. group by region).
+    if (record.getValueType() == ValueType.VARIABLE
+        && record.getValue() instanceof final VariableRecordValue variable) {
+      captureVariable(variable);
+      store.setConsumedPosition(zeebeRecord.offset());
+      return Optional.empty();
+    }
+
     if (record.getValueType() != ValueType.PROCESS_INSTANCE
         || !(record.getValue() instanceof final ProcessInstanceRecordValue value)
         || value.getBpmnElementType() != BpmnElementType.PROCESS
@@ -53,6 +65,7 @@ public final class ProcessInstanceProjector {
     long endTime = previous != null ? previous.endTime() : ProcessInstanceProjection.UNSET;
     boolean terminated = previous != null && previous.terminated();
     boolean factEmitted = previous != null && previous.factEmitted();
+    final Map<String, String> variables = previous != null ? previous.variables() : Map.of();
 
     switch (intent) {
       case ELEMENT_ACTIVATED -> startTime = record.getTimestamp();
@@ -88,7 +101,8 @@ public final class ProcessInstanceProjector {
                   endTime - startTime,
                   !terminated,
                   zeebeRecord.partitionId(),
-                  zeebeRecord.offset()));
+                  zeebeRecord.offset(),
+                  Map.copyOf(variables)));
       factEmitted = true;
     }
 
@@ -102,8 +116,41 @@ public final class ProcessInstanceProjector {
             startTime,
             endTime,
             terminated,
-            factEmitted));
+            factEmitted,
+            variables));
     store.setConsumedPosition(zeebeRecord.offset());
     return fact;
+  }
+
+  private void captureVariable(final VariableRecordValue variable) {
+    final long key = variable.getProcessInstanceKey();
+    final ProcessInstanceProjection previous = store.get(key).orElse(null);
+    final Map<String, String> variables =
+        previous != null ? new HashMap<>(previous.variables()) : new HashMap<>();
+    variables.put(variable.getName(), unquote(variable.getValue()));
+    if (previous == null) {
+      store.put(ProcessInstanceProjection.withVariablesOnly(key, variables));
+    } else {
+      store.put(
+          new ProcessInstanceProjection(
+              previous.processInstanceKey(),
+              previous.processDefinitionKey(),
+              previous.bpmnProcessId(),
+              previous.version(),
+              previous.tenantId(),
+              previous.startTime(),
+              previous.endTime(),
+              previous.terminated(),
+              previous.factEmitted(),
+              variables));
+    }
+  }
+
+  /** Variable values arrive as JSON; strip the quotes from a JSON string so {@code "EU"} → EU. */
+  private static String unquote(final String jsonValue) {
+    if (jsonValue.length() >= 2 && jsonValue.startsWith("\"") && jsonValue.endsWith("\"")) {
+      return jsonValue.substring(1, jsonValue.length() - 1);
+    }
+    return jsonValue;
   }
 }
