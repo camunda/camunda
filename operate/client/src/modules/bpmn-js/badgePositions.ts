@@ -46,8 +46,19 @@ const WAITING_BADGE = {
 
 const WAITING_BADGE_NARROW = {
   top: -36,
-  left: -20,
+  left: -15,
 };
+
+// On narrow elements the label is centered via WAITING_BADGE_NARROW. As the
+// waiting count grows, the label widens, so we need to shift it further
+function getNarrowWaitingBadgePosition(count: number): typeof WAITING_BADGE {
+  const extraLeft = 10 * Math.floor(Math.log10(Math.max(count, 1)));
+
+  return {
+    top: WAITING_BADGE_NARROW.top,
+    left: WAITING_BADGE_NARROW.left - extraLeft,
+  };
+}
 
 const AGENT_STATUS_TAG = {
   top: -32,
@@ -70,6 +81,7 @@ export {
   SUBPROCESS_WITH_INCIDENTS,
   WAITING_BADGE,
   WAITING_BADGE_NARROW,
+  getNarrowWaitingBadgePosition,
   AGENT_STATUS_TAG,
   AGENT_SHINE,
 };

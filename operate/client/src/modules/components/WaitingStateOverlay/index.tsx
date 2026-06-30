@@ -8,28 +8,19 @@
 
 import {createPortal} from 'react-dom';
 import {Container} from './styled';
-import {Time} from '@carbon/react/icons';
-import {observer} from 'mobx-react';
-import {currentTheme} from 'modules/stores/currentTheme';
 
 type Props = {
   container: HTMLElement;
   label: string;
 };
 
-const WaitingStateOverlay: React.FC<Props> = observer(({container, label}) => {
+const WaitingStateOverlay: React.FC<Props> = ({container, label}) => {
   return createPortal(
-    <Container
-      data-testid="waiting-state-overlay"
-      $theme={currentTheme.theme}
-      orientation="horizontal"
-      gap={2}
-    >
-      <Time size={14} />
+    <Container data-testid="waiting-state-overlay">
       <span>{label}</span>
     </Container>,
     container,
   );
-});
+};
 
 export {WaitingStateOverlay};

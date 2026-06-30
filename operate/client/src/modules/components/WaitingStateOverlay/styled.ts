@@ -7,27 +7,17 @@
  */
 
 import styled from 'styled-components';
-import {Stack} from '@carbon/react';
 
-const waitStateBadge = {
-  background: '#fcf5d',
-  color: '#dbb340',
-};
-
-const Container = styled(Stack)<{$theme: 'dark' | 'light'}>`
+const Container = styled.div`
+  display: inline-flex;
   align-items: center;
   font-size: var(--cds-label-01-font-size);
-  font-weight: var(--cds-label-01-font-weight);
+  font-weight: var(--cds-heading-compact-01-font-weight);
   line-height: var(--cds-label-01-line-height);
   letter-spacing: var(--cds-label-01-letter-spacing);
   border-radius: 11px;
-  border: 1px solid ${waitStateBadge.color};
-  background-color: color-mix(
-    in srgb,
-    ${waitStateBadge.background} 20%,
-    transparent
-  );
-  color: ${waitStateBadge.color};
+  background-color: var(--cds-support-warning);
+  color: #000000;
   padding: var(--cds-spacing-02) var(--cds-spacing-04);
   white-space: nowrap;
 `;

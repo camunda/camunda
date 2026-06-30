@@ -24,7 +24,7 @@ import {
   WAITING_BADGE,
   AGENT_STATUS_TAG,
   AGENT_SHINE,
-  WAITING_BADGE_NARROW,
+  getNarrowWaitingBadgePosition,
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
@@ -59,7 +59,10 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
+import {
+  MAX_WAIT_STATES,
+  useElementInstanceInspection,
+} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
 import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
 import {
@@ -253,8 +256,10 @@ const TopPanel: React.FC = observer(() => {
       payload: {label: string};
     }> = [];
 
+    const hasMore = inspectionData.page?.totalItems > MAX_WAIT_STATES;
+
     for (const [elementId, waitStates] of waitStatesByElement) {
-      const label = getWaitStateLabel(waitStates);
+      const label = getWaitStateLabel(waitStates, hasMore);
       if (label) {
         const isNarrowElement = waitStates.some((waitState) =>
           NARROW_WAIT_STATE_ELEMENT_TYPES.has(waitState.elementType),
@@ -262,14 +267,16 @@ const TopPanel: React.FC = observer(() => {
         overlays.push({
           elementId,
           type: OVERLAY_TYPE_WAITING_STATE,
-          position: isNarrowElement ? WAITING_BADGE_NARROW : WAITING_BADGE,
+          position: isNarrowElement
+            ? getNarrowWaitingBadgePosition(waitStates.length)
+            : WAITING_BADGE,
           payload: {label},
         });
       }
     }
 
     return overlays;
-  }, [inspectionData?.items]);
+  }, [inspectionData?.items, inspectionData?.page?.totalItems]);
 
   const {agentOverlays, elementsWithAgent} = useMemo(() => {
     if (!agentInstancesData?.items?.length) {
