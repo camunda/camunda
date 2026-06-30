@@ -45,11 +45,11 @@ JVM_FLAGS=(
 
 build() {
   echo "==> Building dist + examples + analytics (quickly)…"
-  (cd "${REPO_ROOT}" && ./mvnw -q -pl dist,event-bridge/event-bridge-examples,event-bridge/event-bridge-analytics -am install -Dquickly -T1C)
+  (cd "${REPO_ROOT}" && ./mvnw -q -pl dist,event-bridge/event-bridge-examples,analytics/event-bridge-analytics -am install -Dquickly -T1C)
   mkdir -p "${BASE}" "${EB_CLUSTER_DIR}"
   (cd "${REPO_ROOT}" && ./mvnw -q -pl dist dependency:build-classpath -Dmdep.outputFile="${DIST_CP_FILE}")
   (cd "${REPO_ROOT}" && ./mvnw -q -pl event-bridge/event-bridge-examples dependency:build-classpath -Dmdep.outputFile="${EXAMPLES_CP_FILE}")
-  (cd "${REPO_ROOT}" && ./mvnw -q -pl event-bridge/event-bridge-analytics dependency:build-classpath -Dmdep.outputFile="${ANALYTICS_CP_FILE}")
+  (cd "${REPO_ROOT}" && ./mvnw -q -pl analytics/event-bridge-analytics dependency:build-classpath -Dmdep.outputFile="${ANALYTICS_CP_FILE}")
   cp "${DIST_CP_FILE}" "${EB_CLUSTER_DIR}/classpath.txt"
 }
 
@@ -63,7 +63,7 @@ cleanup() {
 trap cleanup EXIT
 
 examples_cp() { echo "${REPO_ROOT}/event-bridge/event-bridge-examples/target/classes:$(cat "${EXAMPLES_CP_FILE}")"; }
-analytics_cp() { echo "${REPO_ROOT}/event-bridge/event-bridge-analytics/target/classes:$(cat "${ANALYTICS_CP_FILE}")"; }
+analytics_cp() { echo "${REPO_ROOT}/analytics/event-bridge-analytics/target/classes:$(cat "${ANALYTICS_CP_FILE}")"; }
 
 main() {
   [[ "${1:-}" == "--skip-build" ]] || build

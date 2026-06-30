@@ -53,6 +53,7 @@
     <module>debug-cli</module>
     <module>microbenchmarks</module>
     <module>event-bridge</module>
+    <module>analytics</module>
   </modules>
 
   <scm>
