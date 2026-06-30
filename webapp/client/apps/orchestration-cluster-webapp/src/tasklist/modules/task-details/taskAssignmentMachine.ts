@@ -122,25 +122,17 @@ const taskAssignmentMachine = setup({
 		fetchUserTask: fetchUserTaskLogic,
 	},
 	guards: {
-		isTimeout: ({event}) => {
-			const error = (event as {error?: unknown}).error as AssignmentFailure | undefined;
-
-			return error?.reason === 'timeout';
+		isTimeout: (_, params: {error: AssignmentFailure | undefined}) => {
+			return params.error?.reason === 'timeout';
 		},
-		assignmentSettled: ({event}) => {
-			const task = (event as {output?: UserTask}).output;
-
-			return task?.assignee !== null;
+		assignmentSettled: (_, params: {task: UserTask | undefined}) => {
+			return params.task?.assignee !== null;
 		},
-		unassignmentSettled: ({event}) => {
-			const task = (event as {output?: UserTask}).output;
-
-			return task?.assignee === null;
+		unassignmentSettled: (_, params: {task: UserTask | undefined}) => {
+			return params.task?.assignee === null;
 		},
-		taskNoLongerAssigning: ({event}) => {
-			const task = (event as {output?: UserTask}).output;
-
-			return task?.state !== 'ASSIGNING';
+		taskNoLongerAssigning: (_, params: {task: UserTask | undefined}) => {
+			return params.task?.state !== 'ASSIGNING';
 		},
 		isInitiallyAssigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee === null,
 		isInitiallyUnassigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee !== null,
@@ -265,12 +257,15 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-						onDone: [
-							{
-								guard: 'taskNoLongerAssigning',
-								target: '#taskAssignment.idle',
-								actions: 'commitTask',
+					onDone: [
+						{
+							guard: {
+								type: 'taskNoLongerAssigning',
+								params: ({event}) => ({task: event.output}),
 							},
+							target: '#taskAssignment.idle',
+							actions: 'commitTask',
+						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -295,12 +290,15 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-						onDone: [
-							{
-								guard: 'taskNoLongerAssigning',
-								target: '#taskAssignment.idle',
-								actions: 'commitTask',
+					onDone: [
+						{
+							guard: {
+								type: 'taskNoLongerAssigning',
+								params: ({event}) => ({task: event.output}),
 							},
+							target: '#taskAssignment.idle',
+							actions: 'commitTask',
+						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -324,7 +322,10 @@ const taskAssignmentMachine = setup({
 				onDone: {target: 'pollingAssignment'},
 				onError: [
 					{
-						guard: 'isTimeout',
+						guard: {
+							type: 'isTimeout',
+							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
+						},
 						target: 'assignmentDelayed',
 					},
 					{
@@ -346,12 +347,15 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-						onDone: [
-							{
-								guard: 'taskNoLongerAssigning',
-								target: '#taskAssignment.assignmentSucceeded',
-								actions: 'commitTask',
+					onDone: [
+						{
+							guard: {
+								type: 'taskNoLongerAssigning',
+								params: ({event}) => ({task: event.output}),
 							},
+							target: '#taskAssignment.assignmentSucceeded',
+							actions: 'commitTask',
+						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -376,12 +380,15 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-						onDone: [
-							{
-								guard: 'assignmentSettled',
-								target: '#taskAssignment.assignmentSucceeded',
-								actions: 'commitTask',
+					onDone: [
+						{
+							guard: {
+								type: 'assignmentSettled',
+								params: ({event}) => ({task: event.output}),
 							},
+							target: '#taskAssignment.assignmentSucceeded',
+							actions: 'commitTask',
+						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -411,7 +418,10 @@ const taskAssignmentMachine = setup({
 				onDone: {target: 'pollingUnassignment'},
 				onError: [
 					{
-						guard: 'isTimeout',
+						guard: {
+							type: 'isTimeout',
+							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
+						},
 						target: 'unassignmentDelayed',
 					},
 					{
@@ -433,12 +443,15 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-						onDone: [
-							{
-								guard: 'taskNoLongerAssigning',
-								target: '#taskAssignment.unassignmentSucceeded',
-								actions: 'commitTask',
+					onDone: [
+						{
+							guard: {
+								type: 'taskNoLongerAssigning',
+								params: ({event}) => ({task: event.output}),
 							},
+							target: '#taskAssignment.unassignmentSucceeded',
+							actions: 'commitTask',
+						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -463,12 +476,15 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-						onDone: [
-							{
-								guard: 'unassignmentSettled',
-								target: '#taskAssignment.unassignmentSucceeded',
-								actions: 'commitTask',
+					onDone: [
+						{
+							guard: {
+								type: 'unassignmentSettled',
+								params: ({event}) => ({task: event.output}),
 							},
+							target: '#taskAssignment.unassignmentSucceeded',
+							actions: 'commitTask',
+						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
