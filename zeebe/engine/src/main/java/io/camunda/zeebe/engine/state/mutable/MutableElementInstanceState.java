@@ -157,16 +157,6 @@ public interface MutableElementInstanceState extends ElementInstanceState {
   void incrementElementActivationCounter(long processInstanceKey, DirectBuffer elementId);
 
   /**
-   * Returns the current activation count for the given element, or {@code 0} when it has never been
-   * activated.
-   *
-   * @param processInstanceKey the key of the root process instance
-   * @param elementId the BPMN element id of the element
-   * @return current activation count, or {@code 0} if not yet activated
-   */
-  long getElementActivationCounter(long processInstanceKey, DirectBuffer elementId);
-
-  /**
    * Deletes all element activation counters that belong to the given process instance. Called when
    * the process instance ends to avoid leaking state.
    *
