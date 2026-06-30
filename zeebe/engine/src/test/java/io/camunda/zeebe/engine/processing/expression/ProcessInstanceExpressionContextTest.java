@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -254,5 +256,175 @@ public class ProcessInstanceExpressionContextTest {
                 .withDecisionId("decision")
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInUserTaskAssigneeExpression() {
+    // given
+    final var processId = "pi-ctx-assignee";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeAssigneeExpression("string(camunda.processInstance.key)")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasAssignee(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInUserTaskCandidateGroupsExpression() {
+    // given
+    final var processId = "pi-ctx-candidate-groups";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeCandidateGroupsExpression("[string(camunda.processInstance.key)]")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasCandidateGroupsList(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInUserTaskCandidateUsersExpression() {
+    // given
+    final var processId = "pi-ctx-candidate-users";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeCandidateUsersExpression("[string(camunda.processInstance.key)]")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasCandidateUsersList(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInUserTaskDueDateExpression() {
+    // given
+    final var processId = "pi-ctx-due-date";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeDueDateExpression(
+                    "if camunda.processInstance.key > 0 then \"2040-01-01T00:00Z\" else null")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    assertThat(userTask.getDueDate()).isNotEmpty();
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInUserTaskFollowUpDateExpression() {
+    // given
+    final var processId = "pi-ctx-follow-up-date";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeFollowUpDateExpression(
+                    "if camunda.processInstance.key > 0 then \"2040-01-01T00:00Z\" else null")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    assertThat(userTask.getFollowUpDate()).isNotEmpty();
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInUserTaskPriorityExpression() {
+    // given
+    final var processId = "pi-ctx-priority";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeTaskPriorityExpression("if camunda.processInstance.key > 0 then 50 else 1")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasPriority(50);
   }
 }
