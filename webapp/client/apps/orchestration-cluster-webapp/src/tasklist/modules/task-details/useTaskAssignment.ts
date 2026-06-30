@@ -17,28 +17,28 @@ type AssignmentStatus = 'off' | 'assigning' | 'unassigning' | 'assignmentSuccess
 
 function deriveAssignmentStatus(snapshot: SnapshotFrom<typeof taskAssignmentMachine>): AssignmentStatus {
 	if (
-		snapshot.matches('assigning') ||
-		snapshot.matches('assignmentDelayed') ||
-		snapshot.matches('pollingAssignment') ||
-		snapshot.matches('awaitingAssignment')
+		snapshot.matches('Assigning') ||
+		snapshot.matches('AssignmentDelayed') ||
+		snapshot.matches('PollingAssignment') ||
+		snapshot.matches('AwaitingAssignment')
 	) {
 		return 'assigning';
 	}
 
 	if (
-		snapshot.matches('unassigning') ||
-		snapshot.matches('unassignmentDelayed') ||
-		snapshot.matches('pollingUnassignment') ||
-		snapshot.matches('awaitingUnassignment')
+		snapshot.matches('Unassigning') ||
+		snapshot.matches('UnassignmentDelayed') ||
+		snapshot.matches('PollingUnassignment') ||
+		snapshot.matches('AwaitingUnassignment')
 	) {
 		return 'unassigning';
 	}
 
-	if (snapshot.matches('assignmentSucceeded')) {
+	if (snapshot.matches('AssignmentSucceeded')) {
 		return 'assignmentSuccessful';
 	}
 
-	if (snapshot.matches('unassignmentSucceeded')) {
+	if (snapshot.matches('UnassignmentSucceeded')) {
 		return 'unassignmentSuccessful';
 	}
 
@@ -67,14 +67,14 @@ function useTaskAssignment({
 	const assign = useCallback(
 		() =>
 			send({
-				type: 'ASSIGN',
+				type: 'task.assign',
 			}),
 		[send],
 	);
 	const unassign = useCallback(
 		() =>
 			send({
-				type: 'UNASSIGN',
+				type: 'task.unassign',
 			}),
 		[send],
 	);

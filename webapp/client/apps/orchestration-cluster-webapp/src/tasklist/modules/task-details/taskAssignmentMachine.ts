@@ -114,7 +114,7 @@ const taskAssignmentMachine = setup({
 	types: {
 		context: {} as MachineContext,
 		input: {} as MachineInput,
-		events: {} as {type: 'ASSIGN'} | {type: 'UNASSIGN'},
+		events: {} as {type: 'task.assign'} | {type: 'task.unassign'},
 	},
 	actors: {
 		assignTask: assignTaskLogic,
@@ -228,24 +228,24 @@ const taskAssignmentMachine = setup({
 }).createMachine({
 	id: 'taskAssignment',
 	context: ({input}) => ({...input, pollRetryCount: 0}),
-	initial: 'idle',
+	initial: 'Idle',
 	states: {
-		idle: {
+		Idle: {
 			always: [
-				{guard: 'isInitiallyAssigning', target: 'awaitingAssignment', actions: 'clearInitialTaskState'},
-				{guard: 'isInitiallyUnassigning', target: 'awaitingUnassignment', actions: 'clearInitialTaskState'},
+				{guard: 'isInitiallyAssigning', target: 'AwaitingAssignment', actions: 'clearInitialTaskState'},
+				{guard: 'isInitiallyUnassigning', target: 'AwaitingUnassignment', actions: 'clearInitialTaskState'},
 			],
 			on: {
-				ASSIGN: {target: 'assigning'},
-				UNASSIGN: {target: 'unassigning'},
+				'task.assign': {target: 'Assigning'},
+				'task.unassign': {target: 'Unassigning'},
 			},
 		},
 
-		awaitingAssignment: {
+		AwaitingAssignment: {
 			entry: 'resetRetryCount',
-			initial: 'fetching',
+			initial: 'Fetching',
 			states: {
-				fetching: {
+				Fetching: {
 					invoke: {
 						src: 'fetchUserTask',
 						input: ({context}) => ({
@@ -258,30 +258,30 @@ const taskAssignmentMachine = setup({
 									type: 'taskNoLongerAssigning',
 									params: ({event}) => ({task: event.output}),
 								},
-								target: '#taskAssignment.idle',
+								target: '#taskAssignment.Idle',
 								actions: {
 									type: 'commitTask',
 									params: ({event}) => ({task: event.output}),
 								},
 							},
-							{target: 'waiting', actions: 'incrementRetryCount'},
+							{target: 'Waiting', actions: 'incrementRetryCount'},
 						],
-						onError: {target: 'waiting', actions: 'incrementRetryCount'},
+						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
 					},
 				},
-				waiting: {
+				Waiting: {
 					after: {
-						POLL_DELAY: {target: 'fetching'},
+						POLL_DELAY: {target: 'Fetching'},
 					},
 				},
 			},
 		},
 
-		awaitingUnassignment: {
+		AwaitingUnassignment: {
 			entry: 'resetRetryCount',
-			initial: 'fetching',
+			initial: 'Fetching',
 			states: {
-				fetching: {
+				Fetching: {
 					invoke: {
 						src: 'fetchUserTask',
 						input: ({context}) => ({
@@ -294,43 +294,43 @@ const taskAssignmentMachine = setup({
 									type: 'taskNoLongerAssigning',
 									params: ({event}) => ({task: event.output}),
 								},
-								target: '#taskAssignment.idle',
+								target: '#taskAssignment.Idle',
 								actions: {
 									type: 'commitTask',
 									params: ({event}) => ({task: event.output}),
 								},
 							},
-							{target: 'waiting', actions: 'incrementRetryCount'},
+							{target: 'Waiting', actions: 'incrementRetryCount'},
 						],
-						onError: {target: 'waiting', actions: 'incrementRetryCount'},
+						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
 					},
 				},
-				waiting: {
+				Waiting: {
 					after: {
-						POLL_DELAY: {target: 'fetching'},
+						POLL_DELAY: {target: 'Fetching'},
 					},
 				},
 			},
 		},
 
-		assigning: {
+		Assigning: {
 			invoke: {
 				src: 'assignTask',
 				input: ({context}) => ({
 					userTaskKey: context.userTaskKey,
 					assignee: context.currentUser,
 				}),
-				onDone: {target: 'pollingAssignment'},
+				onDone: {target: 'PollingAssignment'},
 				onError: [
 					{
 						guard: {
 							type: 'isTimeout',
 							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
 						},
-						target: 'assignmentDelayed',
+						target: 'AssignmentDelayed',
 					},
 					{
-						target: 'idle',
+						target: 'Idle',
 						actions: {
 							type: 'notifyAssignFailure',
 							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
@@ -340,11 +340,11 @@ const taskAssignmentMachine = setup({
 			},
 		},
 
-		assignmentDelayed: {
+		AssignmentDelayed: {
 			entry: ['setOptimisticAssigning', 'notifyAssignmentDelayed', 'resetRetryCount'],
-			initial: 'fetching',
+			initial: 'Fetching',
 			states: {
-				fetching: {
+				Fetching: {
 					invoke: {
 						src: 'fetchUserTask',
 						input: ({context}) => ({
@@ -357,30 +357,30 @@ const taskAssignmentMachine = setup({
 									type: 'taskNoLongerAssigning',
 									params: ({event}) => ({task: event.output}),
 								},
-								target: '#taskAssignment.assignmentSucceeded',
+								target: '#taskAssignment.AssignmentSucceeded',
 								actions: {
 									type: 'commitTask',
 									params: ({event}) => ({task: event.output}),
 								},
 							},
-							{target: 'waiting', actions: 'incrementRetryCount'},
+							{target: 'Waiting', actions: 'incrementRetryCount'},
 						],
-						onError: {target: 'waiting', actions: 'incrementRetryCount'},
+						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
 					},
 				},
-				waiting: {
+				Waiting: {
 					after: {
-						POLL_DELAY: {target: 'fetching'},
+						POLL_DELAY: {target: 'Fetching'},
 					},
 				},
 			},
 		},
 
-		pollingAssignment: {
+		PollingAssignment: {
 			entry: 'resetRetryCount',
-			initial: 'fetching',
+			initial: 'Fetching',
 			states: {
-				fetching: {
+				Fetching: {
 					invoke: {
 						src: 'fetchUserTask',
 						input: ({context}) => ({
@@ -393,49 +393,49 @@ const taskAssignmentMachine = setup({
 									type: 'assignmentSettled',
 									params: ({event}) => ({task: event.output}),
 								},
-								target: '#taskAssignment.assignmentSucceeded',
+								target: '#taskAssignment.AssignmentSucceeded',
 								actions: {
 									type: 'commitTask',
 									params: ({event}) => ({task: event.output}),
 								},
 							},
-							{target: 'waiting', actions: 'incrementRetryCount'},
+							{target: 'Waiting', actions: 'incrementRetryCount'},
 						],
-						onError: {target: 'waiting', actions: 'incrementRetryCount'},
+						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
 					},
 				},
-				waiting: {
+				Waiting: {
 					after: {
-						POLL_DELAY: {target: 'fetching'},
+						POLL_DELAY: {target: 'Fetching'},
 					},
 				},
 			},
 		},
 
-		assignmentSucceeded: {
+		AssignmentSucceeded: {
 			entry: 'trackAssigned',
 			after: {
-				SUCCESS_RESET_DELAY: {target: 'idle'},
+				SUCCESS_RESET_DELAY: {target: 'Idle'},
 			},
 		},
 
-		unassigning: {
+		Unassigning: {
 			invoke: {
 				src: 'unassignTask',
 				input: ({context}) => ({
 					userTaskKey: context.userTaskKey,
 				}),
-				onDone: {target: 'pollingUnassignment'},
+				onDone: {target: 'PollingUnassignment'},
 				onError: [
 					{
 						guard: {
 							type: 'isTimeout',
 							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
 						},
-						target: 'unassignmentDelayed',
+						target: 'UnassignmentDelayed',
 					},
 					{
-						target: 'idle',
+						target: 'Idle',
 						actions: {
 							type: 'notifyUnassignFailure',
 							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
@@ -445,11 +445,11 @@ const taskAssignmentMachine = setup({
 			},
 		},
 
-		unassignmentDelayed: {
+		UnassignmentDelayed: {
 			entry: ['setOptimisticUnassigning', 'notifyUnassignmentDelayed', 'trackUnassignmentDelayed', 'resetRetryCount'],
-			initial: 'fetching',
+			initial: 'Fetching',
 			states: {
-				fetching: {
+				Fetching: {
 					invoke: {
 						src: 'fetchUserTask',
 						input: ({context}) => ({
@@ -462,30 +462,30 @@ const taskAssignmentMachine = setup({
 									type: 'taskNoLongerAssigning',
 									params: ({event}) => ({task: event.output}),
 								},
-								target: '#taskAssignment.unassignmentSucceeded',
+								target: '#taskAssignment.UnassignmentSucceeded',
 								actions: {
 									type: 'commitTask',
 									params: ({event}) => ({task: event.output}),
 								},
 							},
-							{target: 'waiting', actions: 'incrementRetryCount'},
+							{target: 'Waiting', actions: 'incrementRetryCount'},
 						],
-						onError: {target: 'waiting', actions: 'incrementRetryCount'},
+						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
 					},
 				},
-				waiting: {
+				Waiting: {
 					after: {
-						POLL_DELAY: {target: 'fetching'},
+						POLL_DELAY: {target: 'Fetching'},
 					},
 				},
 			},
 		},
 
-		pollingUnassignment: {
+		PollingUnassignment: {
 			entry: 'resetRetryCount',
-			initial: 'fetching',
+			initial: 'Fetching',
 			states: {
-				fetching: {
+				Fetching: {
 					invoke: {
 						src: 'fetchUserTask',
 						input: ({context}) => ({
@@ -498,29 +498,29 @@ const taskAssignmentMachine = setup({
 									type: 'unassignmentSettled',
 									params: ({event}) => ({task: event.output}),
 								},
-								target: '#taskAssignment.unassignmentSucceeded',
+								target: '#taskAssignment.UnassignmentSucceeded',
 								actions: {
 									type: 'commitTask',
 									params: ({event}) => ({task: event.output}),
 								},
 							},
-							{target: 'waiting', actions: 'incrementRetryCount'},
+							{target: 'Waiting', actions: 'incrementRetryCount'},
 						],
-						onError: {target: 'waiting', actions: 'incrementRetryCount'},
+						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
 					},
 				},
-				waiting: {
+				Waiting: {
 					after: {
-						POLL_DELAY: {target: 'fetching'},
+						POLL_DELAY: {target: 'Fetching'},
 					},
 				},
 			},
 		},
 
-		unassignmentSucceeded: {
+		UnassignmentSucceeded: {
 			entry: 'trackUnassigned',
 			after: {
-				SUCCESS_RESET_DELAY: {target: 'idle'},
+				SUCCESS_RESET_DELAY: {target: 'Idle'},
 			},
 		},
 	},
