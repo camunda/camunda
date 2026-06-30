@@ -7,6 +7,8 @@
  */
 package io.camunda.eventbridge.analytics.projection;
 
+import io.camunda.analytics.streaming.fold.Collector;
+import io.camunda.analytics.streaming.fold.Projector;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -17,19 +19,20 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * Stage 1 — the base-projection fold. Reads the consumed record stream and maintains one {@link
- * ProcessInstanceProjection} per process instance. When an instance's root process element reaches
- * {@code ELEMENT_COMPLETED}/{@code ELEMENT_TERMINATED} and a start time is known, it derives the
- * execution-time fact exactly once.
+ * Stage 1 — the base-projection fold, as a library {@link Projector}. Reads the consumed record
+ * stream and maintains one {@link ProcessInstanceProjection} per process instance. When an
+ * instance's root process element reaches {@code ELEMENT_COMPLETED}/{@code ELEMENT_TERMINATED} and
+ * a start time is known, it emits the execution-time fact exactly once into the {@link Collector}.
  *
  * <p>The fold is a deterministic function of the (in-order, per-partition) source stream — every
- * replica that applies the same records reaches the same state and derives the same facts. It only
- * reads the source and updates its own state; it never writes back to the consumed stream.
+ * replica that applies the same records reaches the same state and emits the same facts. It reads
+ * the source and updates its own state only; it never tracks source offsets (the runtime owns that)
+ * and never writes back to the consumed stream.
  */
-public final class ProcessInstanceProjector {
+public final class ProcessInstanceProjector
+    implements Projector<ZeebeRecord, ProcessInstanceExecutionTimeFact> {
 
   private final BaseProjectionStore store;
 
@@ -37,26 +40,24 @@ public final class ProcessInstanceProjector {
     this.store = store;
   }
 
-  /**
-   * Folds one record into the projection, returning the derived fact if this record completed an
-   * instance for the first time.
-   */
-  public Optional<ProcessInstanceExecutionTimeFact> apply(final ZeebeRecord zeebeRecord) {
+  /** Folds one record into the projection, emitting a fact when an instance first completes. */
+  @Override
+  public void apply(
+      final ZeebeRecord zeebeRecord, final Collector<ProcessInstanceExecutionTimeFact> out) {
     final Record<?> record = zeebeRecord.record();
 
     // Accumulate variables so a derived fact can be enriched with them (e.g. group by region).
     if (record.getValueType() == ValueType.VARIABLE
         && record.getValue() instanceof final VariableRecordValue variable) {
       captureVariable(variable);
-      store.setConsumedPosition(zeebeRecord.offset());
-      return Optional.empty();
+      return;
     }
 
     if (record.getValueType() != ValueType.PROCESS_INSTANCE
         || !(record.getValue() instanceof final ProcessInstanceRecordValue value)
         || value.getBpmnElementType() != BpmnElementType.PROCESS
         || !(record.getIntent() instanceof final ProcessInstanceIntent intent)) {
-      return Optional.empty();
+      return;
     }
 
     final long key = value.getProcessInstanceKey();
@@ -79,30 +80,27 @@ public final class ProcessInstanceProjector {
       }
       default -> {
         // other process-instance lifecycle intents do not affect execution time
-        store.setConsumedPosition(zeebeRecord.offset());
-        return Optional.empty();
+        return;
       }
     }
 
-    Optional<ProcessInstanceExecutionTimeFact> fact = Optional.empty();
     if (startTime != ProcessInstanceProjection.UNSET
         && endTime != ProcessInstanceProjection.UNSET
         && !factEmitted) {
-      fact =
-          Optional.of(
-              new ProcessInstanceExecutionTimeFact(
-                  key,
-                  value.getProcessDefinitionKey(),
-                  value.getBpmnProcessId(),
-                  value.getVersion(),
-                  value.getTenantId(),
-                  startTime,
-                  endTime,
-                  endTime - startTime,
-                  !terminated,
-                  zeebeRecord.partitionId(),
-                  zeebeRecord.offset(),
-                  Map.copyOf(variables)));
+      out.collect(
+          new ProcessInstanceExecutionTimeFact(
+              key,
+              value.getProcessDefinitionKey(),
+              value.getBpmnProcessId(),
+              value.getVersion(),
+              value.getTenantId(),
+              startTime,
+              endTime,
+              endTime - startTime,
+              !terminated,
+              zeebeRecord.partitionId(),
+              zeebeRecord.offset(),
+              Map.copyOf(variables)));
       factEmitted = true;
     }
 
@@ -118,8 +116,6 @@ public final class ProcessInstanceProjector {
             terminated,
             factEmitted,
             variables));
-    store.setConsumedPosition(zeebeRecord.offset());
-    return fact;
   }
 
   private void captureVariable(final VariableRecordValue variable) {

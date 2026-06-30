@@ -23,7 +23,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -33,21 +34,24 @@ final class ProcessInstanceProjectorTest {
 
   private final BaseProjectionStore store = StateBackedProjectionStore.inMemory();
   private final ProcessInstanceProjector projector = new ProcessInstanceProjector(store);
+  private final List<ProcessInstanceExecutionTimeFact> facts = new ArrayList<>();
+
+  /** Folds a record, collecting any emitted facts into {@link #facts}. */
+  private void apply(final ZeebeRecord record) {
+    projector.apply(record, facts::add);
+  }
 
   @Test
   void shouldDeriveExecutionTimeFactWhenInstanceCompletes() {
     // given
-    projector.apply(
-        event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
+    apply(event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
 
     // when
-    final Optional<ProcessInstanceExecutionTimeFact> fact =
-        projector.apply(
-            event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 11L));
+    apply(event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 11L));
 
     // then
-    assertThat(fact).isPresent();
-    final ProcessInstanceExecutionTimeFact f = fact.orElseThrow();
+    assertThat(facts).hasSize(1);
+    final ProcessInstanceExecutionTimeFact f = facts.get(0);
     assertThat(f.processInstanceKey()).isEqualTo(PI_KEY);
     assertThat(f.processDefinitionKey()).isEqualTo(77L);
     assertThat(f.bpmnProcessId()).isEqualTo("order");
@@ -61,14 +65,28 @@ final class ProcessInstanceProjectorTest {
   }
 
   @Test
+  void shouldEnrichFactWithCapturedVariables() {
+    // given — an instance whose region variable is observed between activation and completion
+    apply(event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
+    apply(variableEvent("region", "EU", 11L));
+    assertThat(facts).isEmpty();
+
+    // when
+    apply(event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 12L));
+
+    // then — the JSON-quoted value is unquoted and carried on the fact
+    assertThat(facts)
+        .singleElement()
+        .satisfies(f -> assertThat(f.variables()).containsEntry("region", "EU"));
+  }
+
+  @Test
   void shouldNotEmitFactBeforeCompletion() {
     // when — only the activation is seen
-    final Optional<ProcessInstanceExecutionTimeFact> fact =
-        projector.apply(
-            event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
+    apply(event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
 
     // then
-    assertThat(fact).isEmpty();
+    assertThat(facts).isEmpty();
     final ProcessInstanceProjection projection = store.get(PI_KEY).orElseThrow();
     assertThat(projection.hasStart()).isTrue();
     assertThat(projection.isComplete()).isFalse();
@@ -76,79 +94,39 @@ final class ProcessInstanceProjectorTest {
   }
 
   @Test
-  void shouldEnrichFactWithCapturedVariables() {
-    // given — an instance whose region variable is observed between activation and completion
-    projector.apply(
-        event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
-    final Optional<ProcessInstanceExecutionTimeFact> none =
-        projector.apply(variableEvent("region", "EU", 11L));
-    assertThat(none).isEmpty();
-
-    // when
-    final Optional<ProcessInstanceExecutionTimeFact> fact =
-        projector.apply(
-            event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 12L));
-
-    // then — the JSON-quoted value is unquoted and carried on the fact
-    assertThat(fact).isPresent();
-    assertThat(fact.orElseThrow().variables()).containsEntry("region", "EU");
-  }
-
-  @Test
   void shouldFlagTerminatedInstanceAsNotCompletedNormally() {
     // given
-    projector.apply(
-        event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
+    apply(event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
 
     // when
-    final Optional<ProcessInstanceExecutionTimeFact> fact =
-        projector.apply(
-            event(ProcessInstanceIntent.ELEMENT_TERMINATED, BpmnElementType.PROCESS, 1200L, 11L));
+    apply(event(ProcessInstanceIntent.ELEMENT_TERMINATED, BpmnElementType.PROCESS, 1200L, 11L));
 
     // then
-    assertThat(fact).isPresent();
-    assertThat(fact.orElseThrow().completedNormally()).isFalse();
-    assertThat(fact.orElseThrow().durationMs()).isEqualTo(200L);
+    assertThat(facts).singleElement().satisfies(f -> assertThat(f.completedNormally()).isFalse());
+    assertThat(facts.get(0).durationMs()).isEqualTo(200L);
   }
 
   @Test
   void shouldEmitFactOnlyOnce() {
     // given — a completed instance that already produced its fact
-    projector.apply(
-        event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
-    projector.apply(
-        event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 11L));
+    apply(event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
+    apply(event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 11L));
 
     // when — the completion record is redelivered (at-least-once)
-    final Optional<ProcessInstanceExecutionTimeFact> redelivered =
-        projector.apply(
-            event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 12L));
+    apply(event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS, 1500L, 12L));
 
     // then
-    assertThat(redelivered).isEmpty();
+    assertThat(facts).hasSize(1);
   }
 
   @Test
   void shouldIgnoreNonRootElements() {
     // when — a child service task element, not the root process
-    final Optional<ProcessInstanceExecutionTimeFact> fact =
-        projector.apply(
-            event(
-                ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK, 1500L, 11L));
+    apply(event(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK, 1500L, 11L));
 
     // then
-    assertThat(fact).isEmpty();
+    assertThat(facts).isEmpty();
     assertThat(store.get(PI_KEY)).isEmpty();
-  }
-
-  @Test
-  void shouldAdvanceConsumedPosition() {
-    // when
-    projector.apply(
-        event(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS, 1000L, 10L));
-
-    // then
-    assertThat(store.getConsumedPosition()).isEqualTo(10L);
   }
 
   private static ZeebeRecord event(

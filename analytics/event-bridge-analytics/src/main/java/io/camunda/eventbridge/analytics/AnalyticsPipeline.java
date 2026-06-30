@@ -77,7 +77,7 @@ public final class AnalyticsPipeline implements AutoCloseable {
       try {
         final List<ZeebeRecord> records = sourceConsumer.poll(MAX_RECORDS, POLL_TIMEOUT);
         for (final ZeebeRecord record : records) {
-          projector.apply(record).ifPresent(factSink::publish);
+          projector.apply(record, factSink::publish);
           sourceConsumer.commit(record).join();
         }
       } catch (final RuntimeException e) {

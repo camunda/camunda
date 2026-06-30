@@ -60,10 +60,11 @@ final class AnalyticsPipelineEndToEndTest {
     for (final long[] instance : instances) {
       final long piKey = instance[0];
       projector.apply(
-          event(ProcessInstanceIntent.ELEMENT_ACTIVATED, piKey, instance[1], position++));
-      projector
-          .apply(event(ProcessInstanceIntent.ELEMENT_COMPLETED, piKey, instance[2], position++))
-          .ifPresent(fact -> factStream.add(codec.serialize(fact)));
+          event(ProcessInstanceIntent.ELEMENT_ACTIVATED, piKey, instance[1], position++),
+          fact -> {});
+      projector.apply(
+          event(ProcessInstanceIntent.ELEMENT_COMPLETED, piKey, instance[2], position++),
+          fact -> factStream.add(codec.serialize(fact)));
     }
 
     // and — Stage 3 consumes the fact stream

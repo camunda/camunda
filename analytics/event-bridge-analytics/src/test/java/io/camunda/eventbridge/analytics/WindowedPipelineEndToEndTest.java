@@ -70,13 +70,12 @@ final class WindowedPipelineEndToEndTest {
     long position = 1L;
     for (final Inst i : instances) {
       projector.apply(
-          piEvent(ProcessInstanceIntent.ELEMENT_ACTIVATED, i.pi(), i.def(), i.start(), position++));
-      projector.apply(variableEvent(i.pi(), "region", i.region(), position++));
-      projector
-          .apply(
-              piEvent(
-                  ProcessInstanceIntent.ELEMENT_COMPLETED, i.pi(), i.def(), i.end(), position++))
-          .ifPresent(fact -> aggregator.apply(fact, datasets));
+          piEvent(ProcessInstanceIntent.ELEMENT_ACTIVATED, i.pi(), i.def(), i.start(), position++),
+          fact -> {});
+      projector.apply(variableEvent(i.pi(), "region", i.region(), position++), fact -> {});
+      projector.apply(
+          piEvent(ProcessInstanceIntent.ELEMENT_COMPLETED, i.pi(), i.def(), i.end(), position++),
+          fact -> aggregator.apply(fact, datasets));
     }
 
     // then — execution time grouped by region

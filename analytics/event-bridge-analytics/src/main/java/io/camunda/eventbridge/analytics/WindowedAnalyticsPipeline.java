@@ -80,7 +80,7 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
         final List<ZeebeRecord> records = sourceConsumer.poll(MAX_RECORDS, POLL_TIMEOUT);
         for (final ZeebeRecord record : records) {
           // fold the derived fact into every currently-declared dataset (each with its own window)
-          projector.apply(record).ifPresent(fact -> aggregator.apply(fact, datasets));
+          projector.apply(record, fact -> aggregator.apply(fact, datasets));
           // same record also feeds the element-heatmap metric (buffered, flushed per batch)
           heatmap.process(record);
           sourceConsumer.commit(record).join();
