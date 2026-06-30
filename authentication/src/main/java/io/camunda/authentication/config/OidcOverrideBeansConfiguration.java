@@ -9,7 +9,9 @@ package io.camunda.authentication.config;
 
 import static java.util.stream.Collectors.toMap;
 
+import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
@@ -106,14 +108,23 @@ public class OidcOverrideBeansConfiguration {
   }
 
   @Bean
+  @ConditionalOnMissingBean
+  public MembershipResolutionContextPropagator membershipResolutionContextPropagator() {
+    return new PhysicalTenantMembershipContextPropagator();
+  }
+
+  @Bean
   public LazyTokenClaimsConverter tokenClaimsConverter(
-      final CamundaSecurityLibraryProperties cslProperties, final MembershipPort membershipPort) {
+      final CamundaSecurityLibraryProperties cslProperties,
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     final var oidcConfig = cslProperties.getAuthentication().getOidc();
     return new LazyTokenClaimsConverter(
         oidcConfig.getUsernameClaim(),
         oidcConfig.getClientIdClaim(),
         oidcConfig.isPreferUsernameClaim(),
-        membershipPort);
+        membershipPort,
+        membershipResolutionContextPropagator);
   }
 
   @Bean

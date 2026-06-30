@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -23,6 +24,14 @@ class PhysicalTenantContextTest {
   @AfterEach
   void clearRequestContext() {
     RequestContextHolder.resetRequestAttributes();
+    // guarantee the propagation ThreadLocal never bleeds into a later test, even on failure
+    PhysicalTenantContext.clearPropagatedPhysicalTenant();
+  }
+
+  private void bindRequestWithPhysicalTenant(final String physicalTenantId) {
+    final HttpServletRequest request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
   }
 
   @Test
@@ -113,5 +122,57 @@ class PhysicalTenantContextTest {
     // when / then
     assertThat(PhysicalTenantContext.current())
         .isNotEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldReturnSupplierUnchangedWhenNoTenantInEffect() {
+    // given no request scope and no propagated tenant bound (nothing to capture)
+    final Supplier<String> original = () -> "result";
+
+    // when
+    final Supplier<String> wrapped = PhysicalTenantContext.propagateCurrent(original);
+
+    // then the supplier is returned unchanged and nothing is propagated when it runs
+    assertThat(wrapped).isSameAs(original);
+    assertThat(wrapped.get()).isEqualTo("result");
+    assertThat(PhysicalTenantContext.getPropagatedPhysicalTenant()).isNull();
+  }
+
+  @Test
+  void shouldBindCapturedTenantAndClearWhenNoPriorPropagatedValue() {
+    // given a request scope bound at capture time, but no prior propagated tenant
+    bindRequestWithPhysicalTenant("tenant-a");
+    final Supplier<String> wrapped =
+        PhysicalTenantContext.propagateCurrent(PhysicalTenantContext::getPropagatedPhysicalTenant);
+
+    // simulate a deferred run after the request scope is gone (e.g. session serialisation)
+    RequestContextHolder.resetRequestAttributes();
+
+    // when
+    final String observedDuringRun = wrapped.get();
+
+    // then the captured tenant was propagated during the run and cleared afterwards
+    assertThat(observedDuringRun).isEqualTo("tenant-a");
+    assertThat(PhysicalTenantContext.getPropagatedPhysicalTenant()).isNull();
+  }
+
+  @Test
+  void shouldRestorePriorPropagatedValueAfterRun() {
+    // given an already-propagated tenant on the current thread
+    PhysicalTenantContext.setPropagatedPhysicalTenant("outer");
+    // and a request scope bound at capture time so a different tenant is captured
+    bindRequestWithPhysicalTenant("inner");
+    final Supplier<String> wrapped =
+        PhysicalTenantContext.propagateCurrent(PhysicalTenantContext::getPropagatedPhysicalTenant);
+
+    // simulate a deferred run after the request scope is gone
+    RequestContextHolder.resetRequestAttributes();
+
+    // when
+    final String observedDuringRun = wrapped.get();
+
+    // then the captured tenant was propagated during the run and the prior value restored after
+    assertThat(observedDuringRun).isEqualTo("inner");
+    assertThat(PhysicalTenantContext.getPropagatedPhysicalTenant()).isEqualTo("outer");
   }
 }
