@@ -383,7 +383,7 @@ jobs:
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
-    runs-on: gcp-core-4-default
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
