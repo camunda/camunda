@@ -23,40 +23,41 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * The single base-projection fold: each consumed record is processed once and updates the shared
- * read model of process execution — per-instance state (start/end/variables) and per-element start
- * times. From that one fold it derives the facts and emits them into the collector:
+ * The single base-projection fold: each consumed record is processed once. Every element — the root
+ * {@code PROCESS} included, since a process instance is just the root element — is tracked the same
+ * way: {@code ELEMENT_ACTIVATED} records its start time, and {@code ELEMENT_COMPLETED}/{@code
+ * ELEMENT_TERMINATED} reads that start, derives the duration, and emits a fact:
  *
  * <ul>
- *   <li>the root {@code PROCESS} element completing → a {@link ProcessInstanceExecutionTimeFact};
+ *   <li>the {@code PROCESS} element completing → a {@link ProcessInstanceExecutionTimeFact},
+ *       enriched with the instance's variables (so it can be grouped by e.g. region);
  *   <li>any other element completing → an {@link ElementExecutionFact};
- *   <li>{@code VARIABLE} records enrich the instance (so a fact can be grouped by e.g. region).
+ *   <li>{@code VARIABLE} records accumulate the instance's variables.
  * </ul>
  *
- * <p>The runtime fans the emitted {@link ProcessExecutionFact}s out to the rollup(s) for each
- * concrete type — so multiple metrics are served from this one projection without re-reading the
- * stream. The fold is a deterministic function of the in-order, per-partition source stream and
- * does not track source offsets (the runtime owns that).
+ * <p>The start is deleted on completion, so a duplicate completion derives nothing — that is the
+ * emit-once guard (no separate flag needed). The runtime fans the emitted {@link
+ * ProcessExecutionFact}s out to the rollup(s) for each concrete type, so multiple metrics are
+ * served from this one projection without re-reading the stream. The fold is a deterministic
+ * function of the in-order, per-partition source stream.
  */
 public final class ProcessExecutionProjector
     implements Projector<ZeebeRecord, ProcessExecutionFact> {
 
-  private final BaseProjectionStore instances;
+  private final BaseProjectionStore store;
   private final KeyValueStore<DbString, DbLong> elementStarts;
   private final DbString elementKey = new DbString();
   private final DbLong startTime = new DbLong();
 
-  public ProcessExecutionProjector(final BaseProjectionStore instances) {
-    this(instances, new InMemoryKeyValueStore<>(new DbString(), new DbLong()));
+  public ProcessExecutionProjector(final BaseProjectionStore store) {
+    this(store, new InMemoryKeyValueStore<>(new DbString(), new DbLong()));
   }
 
   public ProcessExecutionProjector(
-      final BaseProjectionStore instances, final KeyValueStore<DbString, DbLong> elementStarts) {
-    this.instances = instances;
+      final BaseProjectionStore store, final KeyValueStore<DbString, DbLong> elementStarts) {
+    this.store = store;
     this.elementStarts = elementStarts;
   }
 
@@ -66,7 +67,8 @@ public final class ProcessExecutionProjector
 
     if (record.getValueType() == ValueType.VARIABLE
         && record.getValue() instanceof final VariableRecordValue variable) {
-      captureVariable(variable);
+      store.putVariable(
+          variable.getProcessInstanceKey(), variable.getName(), unquote(variable.getValue()));
       return;
     }
 
@@ -76,78 +78,12 @@ public final class ProcessExecutionProjector
       return;
     }
 
-    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
-      foldInstance(zeebeRecord, value, intent, out);
-    } else {
-      foldElement(zeebeRecord, value, intent, out);
-    }
+    foldElement(zeebeRecord, value, intent, out);
   }
 
-  /** Root process element: maintain the instance projection, emit the execution-time fact once. */
-  private void foldInstance(
-      final ZeebeRecord zeebeRecord,
-      final ProcessInstanceRecordValue value,
-      final ProcessInstanceIntent intent,
-      final Collector<ProcessExecutionFact> out) {
-    final Record<?> record = zeebeRecord.record();
-    final long key = value.getProcessInstanceKey();
-    final ProcessInstanceProjection previous = instances.get(key).orElse(null);
-    long start = previous != null ? previous.startTime() : ProcessInstanceProjection.UNSET;
-    long end = previous != null ? previous.endTime() : ProcessInstanceProjection.UNSET;
-    boolean terminated = previous != null && previous.terminated();
-    boolean factEmitted = previous != null && previous.factEmitted();
-    final Map<String, String> variables = previous != null ? previous.variables() : Map.of();
-
-    switch (intent) {
-      case ELEMENT_ACTIVATED -> start = record.getTimestamp();
-      case ELEMENT_COMPLETED -> {
-        end = record.getTimestamp();
-        terminated = false;
-      }
-      case ELEMENT_TERMINATED -> {
-        end = record.getTimestamp();
-        terminated = true;
-      }
-      default -> {
-        return;
-      }
-    }
-
-    if (start != ProcessInstanceProjection.UNSET
-        && end != ProcessInstanceProjection.UNSET
-        && !factEmitted) {
-      out.collect(
-          new ProcessInstanceExecutionTimeFact(
-              key,
-              value.getProcessDefinitionKey(),
-              value.getBpmnProcessId(),
-              value.getVersion(),
-              value.getTenantId(),
-              start,
-              end,
-              end - start,
-              !terminated,
-              zeebeRecord.partitionId(),
-              zeebeRecord.offset(),
-              Map.copyOf(variables)));
-      factEmitted = true;
-    }
-
-    instances.put(
-        new ProcessInstanceProjection(
-            key,
-            value.getProcessDefinitionKey(),
-            value.getBpmnProcessId(),
-            value.getVersion(),
-            value.getTenantId(),
-            start,
-            end,
-            terminated,
-            factEmitted,
-            variables));
-  }
-
-  /** Non-root element: track its activation time, emit its execution fact on completion. */
+  /**
+   * Track an element's activation time; on completion derive its fact (process or plain element).
+   */
   private void foldElement(
       final ZeebeRecord zeebeRecord,
       final ProcessInstanceRecordValue value,
@@ -166,19 +102,7 @@ public final class ProcessExecutionProjector
               .get(elementKey)
               .ifPresent(
                   start -> {
-                    final long duration = record.getTimestamp() - start.getValue();
-                    out.collect(
-                        new ElementExecutionFact(
-                            value.getBpmnProcessId(),
-                            value.getProcessDefinitionKey(),
-                            value.getVersion(),
-                            value.getTenantId(),
-                            value.getElementId(),
-                            value.getBpmnElementType().name(),
-                            duration,
-                            record.getTimestamp(),
-                            zeebeRecord.partitionId(),
-                            zeebeRecord.offset()));
+                    emit(zeebeRecord, value, intent, record.getTimestamp() - start.getValue(), out);
                     elementStarts.delete(elementKey);
                   });
       default -> {
@@ -187,27 +111,42 @@ public final class ProcessExecutionProjector
     }
   }
 
-  private void captureVariable(final VariableRecordValue variable) {
-    final long key = variable.getProcessInstanceKey();
-    final ProcessInstanceProjection previous = instances.get(key).orElse(null);
-    final Map<String, String> variables =
-        previous != null ? new HashMap<>(previous.variables()) : new HashMap<>();
-    variables.put(variable.getName(), unquote(variable.getValue()));
-    if (previous == null) {
-      instances.put(ProcessInstanceProjection.withVariablesOnly(key, variables));
+  private void emit(
+      final ZeebeRecord zeebeRecord,
+      final ProcessInstanceRecordValue value,
+      final ProcessInstanceIntent intent,
+      final long duration,
+      final Collector<ProcessExecutionFact> out) {
+    final Record<?> record = zeebeRecord.record();
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      out.collect(
+          new ProcessInstanceExecutionTimeFact(
+              value.getProcessInstanceKey(),
+              value.getProcessDefinitionKey(),
+              value.getBpmnProcessId(),
+              value.getVersion(),
+              value.getTenantId(),
+              record.getTimestamp() - duration,
+              record.getTimestamp(),
+              duration,
+              intent == ProcessInstanceIntent.ELEMENT_COMPLETED,
+              zeebeRecord.partitionId(),
+              zeebeRecord.offset(),
+              store.getVariables(value.getProcessInstanceKey())));
+      store.deleteVariables(value.getProcessInstanceKey());
     } else {
-      instances.put(
-          new ProcessInstanceProjection(
-              previous.processInstanceKey(),
-              previous.processDefinitionKey(),
-              previous.bpmnProcessId(),
-              previous.version(),
-              previous.tenantId(),
-              previous.startTime(),
-              previous.endTime(),
-              previous.terminated(),
-              previous.factEmitted(),
-              variables));
+      out.collect(
+          new ElementExecutionFact(
+              value.getBpmnProcessId(),
+              value.getProcessDefinitionKey(),
+              value.getVersion(),
+              value.getTenantId(),
+              value.getElementId(),
+              value.getBpmnElementType().name(),
+              duration,
+              record.getTimestamp(),
+              zeebeRecord.partitionId(),
+              zeebeRecord.offset()));
     }
   }
 

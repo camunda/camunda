@@ -22,61 +22,54 @@ final class StateBackedProjectionStoreTest {
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
-  void shouldPersistAndReadBackProjection() throws Exception {
-    // given
-    final ProcessInstanceProjection projection =
-        new ProcessInstanceProjection(
-            123L,
-            77L,
-            "order",
-            3,
-            "<default>",
-            1000L,
-            1500L,
-            false,
-            true,
-            Map.of("region", "EU", "priority", "high"));
-
-    // when / then — variables round-trip through the persisted array
+  void shouldAccumulateAndDeleteVariables() throws Exception {
     try (final StateBackedProjectionStore store =
         StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
-      store.put(projection);
-      assertThat(store.get(123L)).contains(projection);
-      assertThat(store.get(123L).orElseThrow().variables())
-          .containsEntry("region", "EU")
+      // given — variables accumulate per instance (last write wins)
+      store.putVariable(123L, "region", "EU");
+      store.putVariable(123L, "priority", "high");
+      store.putVariable(123L, "region", "US");
+
+      // then
+      assertThat(store.getVariables(123L))
+          .containsEntry("region", "US")
           .containsEntry("priority", "high");
-      assertThat(store.get(999L)).isEmpty();
+      assertThat(store.getVariables(999L)).isEmpty();
+
+      // when — deleted on completion
+      store.deleteVariables(123L);
+      assertThat(store.getVariables(123L)).isEmpty();
     }
   }
 
   @Test
-  void shouldTrackConsumedPosition() throws Exception {
+  void shouldTrackConsumedPositionPerPartition() throws Exception {
     try (final StateBackedProjectionStore store =
         StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
-      assertThat(store.getConsumedPosition()).isEqualTo(BaseProjectionStore.NO_POSITION);
-      store.setConsumedPosition(42L);
-      assertThat(store.getConsumedPosition()).isEqualTo(42L);
+      assertThat(store.getConsumedPosition(1)).isEqualTo(BaseProjectionStore.NO_POSITION);
+      store.setConsumedPosition(1, 42L);
+      store.setConsumedPosition(2, 99L);
+      assertThat(store.getConsumedPosition(1)).isEqualTo(42L);
+      assertThat(store.getConsumedPosition(2)).isEqualTo(99L);
+      assertThat(store.consumedPositions()).containsOnly(Map.entry(1, 42L), Map.entry(2, 99L));
     }
   }
 
   @Test
   void shouldSurviveReopen() throws Exception {
-    // given — a projection and position written, then the store closed
-    final ProcessInstanceProjection projection =
-        new ProcessInstanceProjection(
-            7L, 5L, "payment", 1, "tenant-x", 100L, 300L, false, true, Map.of("region", "US"));
+    // given — variables and a position written, then the store closed
     try (final StateBackedProjectionStore store =
         StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
-      store.put(projection);
-      store.setConsumedPosition(55L);
+      store.putVariable(7L, "region", "US");
+      store.setConsumedPosition(1, 55L);
     }
 
     // when — reopened from the same directory
     try (final StateBackedProjectionStore reopened =
         StateBackedProjectionStore.rocksDb(dataDir.toFile(), meterRegistry)) {
       // then
-      assertThat(reopened.get(7L)).contains(projection);
-      assertThat(reopened.getConsumedPosition()).isEqualTo(55L);
+      assertThat(reopened.getVariables(7L)).containsEntry("region", "US");
+      assertThat(reopened.getConsumedPosition(1)).isEqualTo(55L);
     }
   }
 }

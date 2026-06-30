@@ -16,10 +16,10 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
   /** Reserved default (RocksDB requires a default CF). */
   DEFAULT(0, ColumnFamilyScope.PARTITION_LOCAL),
 
-  /** Per-process-instance projection, keyed by {@code processInstanceKey}. */
-  PROCESS_INSTANCE_PROJECTION(1, ColumnFamilyScope.PARTITION_LOCAL),
+  /** Per-process-instance variables, keyed by {@code processInstanceKey}. */
+  INSTANCE_VARIABLES(1, ColumnFamilyScope.PARTITION_LOCAL),
 
-  /** Single-entry: the source-stream position up to which the fold has consumed. */
+  /** Per source partition: the position up to which the fold has consumed. */
   CONSUMED_POSITION(2, ColumnFamilyScope.PARTITION_LOCAL),
 
   /**
