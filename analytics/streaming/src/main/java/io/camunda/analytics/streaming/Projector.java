@@ -23,4 +23,13 @@ public interface Projector<R, F> {
 
   /** Folds {@code record} into state, emitting zero or more facts into {@code out}. */
   void apply(R record, Collector<F> out);
+
+  /**
+   * Called once before any {@link #apply}, after persistent state has been restored — open
+   * resources or load cached state here.
+   */
+  default void init() {}
+
+  /** Called once on shutdown — release resources. */
+  default void close() {}
 }
