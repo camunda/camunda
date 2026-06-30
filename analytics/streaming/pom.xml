@@ -19,13 +19,36 @@
   <artifactId>analytics-streaming</artifactId>
   <packaging>jar</packaging>
   <name>Analytics Streaming</name>
-  <description>Domain-independent streaming seams for the analytics pipeline: a fold step that emits
-    facts into a collector, a mergeable aggregate function, key selection and tumbling windows, and
-    an in-memory pre-aggregation (combiner) buffer that keeps the serving store off the per-fact
-    path.</description>
+  <description>Domain-independent streaming framework for the analytics pipeline: a keyed state store
+    over RocksDB, a fold step that emits facts into a collector, mergeable aggregate functions, key
+    selection and tumbling windows, and an in-memory pre-aggregation (combiner) that keeps the
+    serving store off the per-fact path — composed by a lifecycle-managed stream processor.</description>
 
   <dependencies>
-    <!-- Test only — this is a pure-Java library with no runtime dependencies. -->
+    <!-- RocksDB-backed ZeebeDb for the keyed state store -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+    <!-- EnumValue / ScopedColumnFamily for the column-family enum bound -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
+    <!-- Test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>

@@ -30,12 +30,6 @@
       <artifactId>event-bridge-zeebe-connector</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- Key-value state-store library for the base projection (local fast cache) -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>analytics-state-store</artifactId>
-      <version>${project.version}</version>
-    </dependency>
     <!-- Streaming seams: fold/collect, mergeable aggregate, pre-aggregation, windows -->
     <dependency>
       <groupId>io.camunda</groupId>

@@ -24,7 +24,6 @@
     aggregates them into read-optimized datasets for reports.</description>
 
   <modules>
-    <module>state-store</module>
     <module>streaming</module>
     <module>event-bridge-analytics</module>
     <module>analytics-webapp</module>

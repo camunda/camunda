@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.analytics.projection;
 
-import io.camunda.analytics.state.api.KeyValueStore;
-import io.camunda.analytics.state.api.StateStoreProvider;
-import io.camunda.analytics.state.memory.InMemoryStateStoreProvider;
-import io.camunda.analytics.state.rocksdb.RocksDbStateStoreProvider;
+import io.camunda.analytics.streaming.state.api.KeyValueStore;
+import io.camunda.analytics.streaming.state.api.StateStoreProvider;
+import io.camunda.analytics.streaming.state.memory.InMemoryStateStoreProvider;
+import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;

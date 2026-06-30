@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.state.memory;
+package io.camunda.analytics.streaming.state.memory;
 
-import io.camunda.analytics.state.api.KeyValueStore;
+import io.camunda.analytics.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.util.buffer.BufferReader;
