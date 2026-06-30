@@ -211,6 +211,7 @@ import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatist
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -400,6 +401,7 @@ import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatis
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.ProcessInstanceWaitStateStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.JobWorkerExecutors;
@@ -985,6 +987,12 @@ public final class CamundaClientImpl implements CamundaClient {
   public ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey) {
     return new ProcessInstanceElementStatisticsRequestImpl(httpClient, processInstanceKey);
+  }
+
+  @Override
+  public ProcessInstanceWaitStateStatisticsRequest newProcessInstanceWaitStateStatisticsRequest(
+      final long processInstanceKey) {
+    return new ProcessInstanceWaitStateStatisticsRequestImpl(httpClient, processInstanceKey);
   }
 
   @Override

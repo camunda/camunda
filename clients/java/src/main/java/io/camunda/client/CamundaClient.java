@@ -200,6 +200,7 @@ import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatist
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -1049,6 +1050,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process instance statistics request
    */
   ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
+      final long processInstanceKey);
+
+  /**
+   * Executes a request to query process instance wait state statistics, grouped by element id.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * camundaClient
+   *  .newProcessInstanceWaitStateStatisticsRequest(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process instance wait state statistics request
+   */
+  ProcessInstanceWaitStateStatisticsRequest newProcessInstanceWaitStateStatisticsRequest(
       final long processInstanceKey);
 
   /**
