@@ -43,6 +43,7 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
     return new OpenSearchIncidentUpdateRepository(
         PARTITION_ID,
         postImporterQueueTemplate.getAlias(),
+        postImporterQueueTemplate.getFullQualifiedName(),
         incidentTemplate.getAlias(),
         listViewTemplate.getAlias(),
         listViewTemplate.getFullQualifiedName(),
