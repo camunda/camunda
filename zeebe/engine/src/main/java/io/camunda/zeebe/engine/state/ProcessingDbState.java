@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.agenthistory.DbAgentHistoryState;
 import io.camunda.zeebe.engine.state.agentinstance.DbAgentInstanceState;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
@@ -55,6 +56,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -119,6 +121,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
   private final MutableClusterVariableState clusterVariableState;
+  private final MutableAgentHistoryState agentHistoryState;
   private final MutableAgentInstanceState agentInstanceState;
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
@@ -175,6 +178,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
+    agentHistoryState = new DbAgentHistoryState(zeebeDb, transactionContext);
     agentInstanceState = new DbAgentInstanceState(zeebeDb, transactionContext);
     processState =
         new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
@@ -309,6 +313,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClusterVariableState getClusterVariableState() {
     return clusterVariableState;
+  }
+
+  @Override
+  public MutableAgentHistoryState getAgentHistoryState() {
+    return agentHistoryState;
   }
 
   @Override

@@ -56,6 +56,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableClusterVariableState getClusterVariableState();
 
   @Override
+  MutableAgentHistoryState getAgentHistoryState();
+
+  @Override
   MutableAgentInstanceState getAgentInstanceState();
 
   @Override
