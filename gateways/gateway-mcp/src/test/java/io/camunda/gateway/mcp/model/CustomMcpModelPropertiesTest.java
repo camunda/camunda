@@ -58,6 +58,7 @@ public class CustomMcpModelPropertiesTest {
             ProcessDefinitionFilter.class,
             Set.of(
                 "hasStartForm",
+                "isDeleted",
                 "isLatestVersion",
                 "name",
                 "processDefinitionId",

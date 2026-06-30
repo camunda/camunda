@@ -910,6 +910,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
         .hasStartForm(StringUtils.isNotBlank(entity.formId()))
+        .isDeleted(Boolean.TRUE.equals(entity.isDeleted()))
         .build();
   }
 

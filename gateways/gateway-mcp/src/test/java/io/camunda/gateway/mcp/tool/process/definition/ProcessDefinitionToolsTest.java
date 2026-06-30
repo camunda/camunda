@@ -65,7 +65,8 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
           2,
           "v2",
           "tenantId",
-          "formId");
+          "formId",
+          false);
 
   static final SearchQueryResult<ProcessDefinitionEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessDefinitionEntity>()
