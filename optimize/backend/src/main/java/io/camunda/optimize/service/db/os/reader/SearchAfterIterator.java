@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.os.reader;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -41,6 +42,9 @@ class SearchAfterIterator<T> implements Iterator<List<T>> {
     if (finished) {
       return false;
     }
+    if (current != null) {
+      return true;
+    }
     SearchRequest.Builder nextSearch = searchRequest.toBuilder();
     if (lastSortValues != null) {
       nextSearch = nextSearch.searchAfter(lastSortValues);
@@ -59,6 +63,11 @@ class SearchAfterIterator<T> implements Iterator<List<T>> {
 
   @Override
   public List<T> next() {
-    return current;
+    if (!hasNext()) {
+      throw new NoSuchElementException("SearchAfterIterator has no more elements");
+    }
+    final var next = current;
+    current = null;
+    return next;
   }
 }
