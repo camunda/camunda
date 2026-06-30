@@ -383,32 +383,33 @@ jobs:
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-4-default
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         timeout-minutes: 1
-      - uses: ./.github/actions/build-frontend
-        id: build-operate-fe
-        with:
-          directory: ./operate/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
-        with:
-          directory: ./tasklist/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        id: build-identity-fe
-        with:
-          directory: ./identity/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        id: build-optimize-fe
-        with:
-          directory: ./optimize/client
+      - parallel:
+          - uses: ./.github/actions/build-frontend
+            id: build-operate-fe
+            with:
+              directory: ./operate/client
+              package-manager: "npm"
+          - uses: ./.github/actions/build-frontend
+            id: build-tasklist-fe
+            with:
+              directory: ./tasklist/client
+              package-manager: "npm"
+          - uses: ./.github/actions/build-frontend
+            id: build-identity-fe
+            with:
+              directory: ./identity/client
+              package-manager: "npm"
+          - uses: ./.github/actions/build-frontend
+            id: build-optimize-fe
+            with:
+              directory: ./optimize/client
       - name: Observe build status
         if: always()
         continue-on-error: true
