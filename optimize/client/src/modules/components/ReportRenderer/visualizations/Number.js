@@ -135,7 +135,14 @@ export function Number({report, formatter, mightFail, overlay}) {
           return (
             <React.Fragment key={idx}>
               <div className="data">
-                {formatValue(measure.data, valueFormat ?? measure.property, precision)}
+                {formatValue(
+                  measure.data,
+                  valueFormat ?? measure.property,
+                  precision,
+                  // Agentic control plane tiles render durations in compact notation
+                  // (e.g. "3d 4h 6min"); all other reports keep the default verbose form.
+                  data.agenticControlReport
+                )}
                 {idx === 0 && overlay}
               </div>
               {/* The auto-derived subtitle is suppressed when an override is rendered below. */}

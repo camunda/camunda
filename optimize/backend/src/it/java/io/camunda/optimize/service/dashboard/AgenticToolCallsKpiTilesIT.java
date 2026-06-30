@@ -9,6 +9,7 @@ package io.camunda.optimize.service.dashboard;
 
 import static io.camunda.optimize.AgenticInstanceFixtures.PROC_KEY;
 import static io.camunda.optimize.AgenticInstanceFixtures.agenticInstanceWithToolCalls;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.noExtraFilters;
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.rollingEndDateFilter;
@@ -20,6 +21,8 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.service.db.reader.ReportReader;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -29,6 +32,7 @@ import org.junit.jupiter.api.Test;
 class AgenticToolCallsKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private AgenticReportEvaluator reports;
+  private ReportReader reportReader;
 
   @BeforeEach
   void setUp() {
@@ -36,6 +40,18 @@ class AgenticToolCallsKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     reports =
         new AgenticReportEvaluator(
             embeddedOptimizeExtension.getBean(ReportEvaluationService.class));
+    reportReader = embeddedOptimizeExtension.getBean(ReportReader.class);
+  }
+
+  @Test
+  void shouldPersistDescriptionAsSubtitleForToolCallsTile() {
+    // given the agentic reports were seeded by the reconcile above
+
+    // then the total tool calls NUMBER tile carries its description as the subtitle override
+    final ProcessReportDataDto data =
+        (ProcessReportDataDto)
+            reportReader.getReport(KPI_TOOL_CALLS_REPORT_ID).orElseThrow().getData();
+    assertThat(data.getConfiguration().getSubtitle()).isEqualTo(KPI_TOOL_CALLS_DESCRIPTION);
   }
 
   @Test
