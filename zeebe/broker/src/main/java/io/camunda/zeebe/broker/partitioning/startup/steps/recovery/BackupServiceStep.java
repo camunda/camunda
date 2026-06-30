@@ -38,7 +38,7 @@ public record BackupServiceStep(int partitionId)
     final var service =
         new RecoveryBackupService(
             context.getBrokerInfo().getNodeId(),
-            context.partitionId().id(),
+            context.partitionId().number(),
             store,
             context.meterRegistry());
     return context

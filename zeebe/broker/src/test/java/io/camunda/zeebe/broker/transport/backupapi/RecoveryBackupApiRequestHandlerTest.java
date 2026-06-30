@@ -68,7 +68,7 @@ class RecoveryBackupApiRequestHandlerTest {
         new RecoveryBackupApiRequestHandler(
             transport,
             backupService,
-            PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID),
+            new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID),
             true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();

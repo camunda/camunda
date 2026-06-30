@@ -44,9 +44,9 @@ public final class RecoveryPartition {
                 partitionId.group()),
             LOGGER,
             List.of(
-                new BackupStoreStep(partitionId.id()),
-                new BackupServiceStep(partitionId.id()),
-                new BackupApiRequestHandlerStep(partitionId.id()))));
+                new BackupStoreStep(partitionId.number()),
+                new BackupServiceStep(partitionId.number()),
+                new BackupApiRequestHandlerStep(partitionId.number()))));
   }
 
   ActorFuture<RecoveryPartition> start() {

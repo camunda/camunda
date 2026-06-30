@@ -53,7 +53,7 @@ public final class RecoveryBackupApiRequestHandler
     this.transport = transport;
     this.backupService = backupService;
     this.partition = partition;
-    partitionId = partition.id();
+    partitionId = partition.number();
     this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partition, RequestType.BACKUP);
     transport.subscribe(partition, RequestType.BACKUP, this);
