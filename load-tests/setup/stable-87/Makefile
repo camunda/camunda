@@ -1,7 +1,6 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 template_output_dir ?= .
-helm_chart ?= camunda-platform-8.7
 enable_optimize ?= __ENABLE_OPTIMIZE__
 enable_webapps ?= __ENABLE_WEBAPPS__
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -18,7 +17,7 @@ additional_platform_configuration ?=
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
 
-helm_chart_platform := charts/camunda-platform-helm/charts/$(helm_chart)
+helm_chart_platform := charts/camunda-platform
 helm_chart_load_tests := camunda-load-tests/camunda-load-tests
 
 # Scenario: controls the workload profile for the load test.

@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-88-none
       namespace: c8-golden-stable-88-none
-      version: 13.9.1
+      version: 13.8.0
       tags:
       - dev
       custom-properties: []
