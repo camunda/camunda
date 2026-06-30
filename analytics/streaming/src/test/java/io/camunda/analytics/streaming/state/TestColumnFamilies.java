@@ -18,7 +18,11 @@ public enum TestColumnFamilies implements EnumValue, ScopedColumnFamily {
   /** A {@code DbLong -> DbString} store. */
   KV(1, ColumnFamilyScope.PARTITION_LOCAL),
   /** A {@code (DbLong, DbString) -> DbString} store, for prefix scans. */
-  COMPOSITE(2, ColumnFamilyScope.PARTITION_LOCAL);
+  COMPOSITE(2, ColumnFamilyScope.PARTITION_LOCAL),
+  /** Durable rollup cells: {@code windowStart ++ codec(key) -> codec(acc)}. */
+  CELLS(3, ColumnFamilyScope.PARTITION_LOCAL),
+  /** Durable rollup offsets: {@code partitionId -> position} (plus the watermark slot). */
+  OFFSETS(4, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;
