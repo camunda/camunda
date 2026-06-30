@@ -29,5 +29,9 @@ public final class AgentHistoryProcessors {
         ValueType.AGENT_HISTORY,
         AgentHistoryIntent.CREATE,
         new AgentHistoryCreateProcessor(writers, processingState, authCheckBehavior, keyGenerator));
+    typedRecordProcessors.onCommand(
+        ValueType.AGENT_HISTORY,
+        AgentHistoryIntent.COMMIT,
+        new AgentHistoryCommitProcessor(writers, processingState));
   }
 }
