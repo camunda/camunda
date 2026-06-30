@@ -17,10 +17,8 @@ import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +39,6 @@ import org.slf4j.LoggerFactory;
  * remaining dependencies are resolved from the {@link BrokerStartupContext} on demand.
  */
 public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClosable {
-
-  @VisibleForTesting static final Duration PARTITION_READINESS_TIMEOUT = Duration.ofSeconds(10);
-  @VisibleForTesting static final Duration READINESS_POLL_INTERVAL = Duration.ofMillis(100);
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionModeHandler.class);
 
@@ -131,16 +126,16 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
   }
 
   /**
-   * Completes once this member's partitions have settled into the roles expected for {@code mode} -
+   * Checks whether this member's partitions have settled into the roles expected for {@code mode} -
    * {@code LEADER}/{@code FOLLOWER} for processing, {@code INACTIVE} for recovery - as reported by
    * the {@link TopologyManagerImpl}. The roles are driven by the partitions actually starting and
    * (for processing) joining their Raft groups, so this gates the cluster change on the transition
    * having genuinely taken effect rather than merely having been initiated.
    *
-   * <p>It is safe to block here: all members have already flipped mode by the time the {@code
+   * <p>It is safe to check here: all members have already flipped mode by the time the {@code
    * AwaitModeChange} operations run, so the quorum needed for leader election is available and this
-   * cannot deadlock the change plan. A timeout fails the operation so the cluster change can be
-   * retried.
+   * cannot deadlock the change plan. If any partition has not yet reached its expected role the
+   * operation fails immediately.
    */
   @Override
   public ActorFuture<Void> awaitModeApplied(final Mode mode) {
@@ -161,8 +156,7 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
             result.complete(null);
             return;
           }
-          pollPartitionsReady(
-              expectedPartitions, readyRolesFor(mode), PARTITION_READINESS_TIMEOUT, result);
+          pollPartitionsReady(expectedPartitions, readyRolesFor(mode), result);
         });
     return result;
   }
@@ -215,8 +209,8 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
    * The current member's partitions are already stopped (the previous manager's {@code stop()} was
    * awaited before this call), so it is safe to publish the new manager and complete the operation;
    * the partitions start, and any leader election, happen asynchronously once a quorum of members
-   * has transitioned. Full readiness is verified separately by {@link #awaitModeApplied(Mode)},
-   * which runs after every member has flipped. A failed start is logged and surfaced through health
+   * has transitioned. Readiness is checked separately by {@link #awaitModeApplied(Mode)}, which
+   * runs after every member has flipped. A failed start is logged and surfaced through health
    * monitoring rather than stalling the cluster change plan.
    */
   private void startManager(
@@ -262,45 +256,28 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
   private void pollPartitionsReady(
       final Set<Integer> expectedPartitions,
       final Set<PartitionRole> targetRoles,
-      final Duration remaining,
       final ActorFuture<Void> result) {
-    final var concurrencyControl = concurrencyControl();
-    concurrencyControl.runOnCompletion(
-        topologyManager.getLocalPartitionRoles(),
-        (roles, error) -> {
-          if (error != null) {
-            result.completeExceptionally(error);
-            return;
-          }
-          final var notReady =
-              expectedPartitions.stream()
-                  .filter(partitionId -> !targetRoles.contains(roles.get(partitionId)))
-                  .toList();
-          if (notReady.isEmpty()) {
-            result.complete(null);
-            return;
-          }
-          if (!remaining.isPositive()) {
-            result.completeExceptionally(
-                new TimeoutException(
-                    "Partition group %s: partitions %s did not reach roles %s within %s (current roles: %s)"
-                        .formatted(
-                            partitionGroup,
-                            notReady,
-                            targetRoles,
-                            PARTITION_READINESS_TIMEOUT,
-                            roles)));
-            return;
-          }
-          concurrencyControl.schedule(
-              READINESS_POLL_INTERVAL,
-              () ->
-                  pollPartitionsReady(
-                      expectedPartitions,
-                      targetRoles,
-                      remaining.minus(READINESS_POLL_INTERVAL),
-                      result));
-        });
+    concurrencyControl()
+        .runOnCompletion(
+            topologyManager.getLocalPartitionRoles(),
+            (roles, error) -> {
+              if (error != null) {
+                result.completeExceptionally(error);
+                return;
+              }
+              final var pendingRolePartitions =
+                  expectedPartitions.stream()
+                      .filter(partitionId -> !targetRoles.contains(roles.get(partitionId)))
+                      .toList();
+              if (pendingRolePartitions.isEmpty()) {
+                result.complete(null);
+              } else {
+                result.completeExceptionally(
+                    new IllegalStateException(
+                        "Partition group %s: partitions %s have not yet reached roles %s (current roles: %s); the operation will be retried"
+                            .formatted(partitionGroup, pendingRolePartitions, targetRoles, roles)));
+              }
+            });
   }
 
   private static Set<PartitionRole> readyRolesFor(final Mode mode) {
@@ -319,7 +296,7 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
         .partitions()
         .stream()
         .filter(partition -> partition.members().contains(localMemberId))
-        .map(partition -> partition.id().id())
+        .map(partition -> partition.id().number())
         .collect(Collectors.toSet());
   }
 

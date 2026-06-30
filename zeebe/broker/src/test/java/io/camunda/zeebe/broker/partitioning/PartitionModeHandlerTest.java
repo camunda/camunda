@@ -128,7 +128,7 @@ final class PartitionModeHandlerTest {
             .map(
                 id ->
                     new PartitionMetadata(
-                        PartitionId.from(GROUP, id),
+                        new PartitionId(GROUP, id),
                         Set.of(LOCAL_MEMBER),
                         Map.of(LOCAL_MEMBER, 1),
                         1,
@@ -144,12 +144,6 @@ final class PartitionModeHandlerTest {
   }
 
   private void progress() {
-    scheduler.workUntilDone();
-  }
-
-  /** Fires one readiness poll: advances the clock by the poll interval and runs the actor. */
-  private void advancePoll() {
-    scheduler.updateClock(PartitionModeHandler.READINESS_POLL_INTERVAL);
     scheduler.workUntilDone();
   }
 
@@ -414,50 +408,6 @@ final class PartitionModeHandlerTest {
     }
 
     @Test
-    void shouldStayPendingUntilPartitionsReachProcessingRoles() {
-      // given - the partition has not yet joined the group / elected a leader
-      givenLocalPartitions(1);
-      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
-
-      // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
-      progress();
-
-      // then - not ready, the await keeps polling
-      assertThat(await.isDone()).isFalse();
-
-      // when - the partition becomes a follower and the next poll runs
-      givenPartitionRoles(Map.of(1, PartitionRole.FOLLOWER));
-      advancePoll();
-
-      // then
-      assertThat(await.isDone()).isTrue();
-      assertThat(await.isCompletedExceptionally()).isFalse();
-    }
-
-    @Test
-    void shouldWaitForAllPartitionsToBecomeReady() {
-      // given - one partition ready, one still inactive
-      givenLocalPartitions(1, 2);
-      givenPartitionRoles(Map.of(1, PartitionRole.LEADER, 2, PartitionRole.INACTIVE));
-
-      // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
-      progress();
-
-      // then
-      assertThat(await.isDone()).isFalse();
-
-      // when - the lagging partition becomes a follower
-      givenPartitionRoles(Map.of(1, PartitionRole.LEADER, 2, PartitionRole.FOLLOWER));
-      advancePoll();
-
-      // then
-      assertThat(await.isDone()).isTrue();
-      assertThat(await.isCompletedExceptionally()).isFalse();
-    }
-
-    @Test
     void shouldCompleteForRecoveryWhenPartitionsInactive() {
       // given - in recovery mode, the partitions are expected to be deactivated
       givenCurrentManager(GROUP, recoveryManager);
@@ -474,30 +424,7 @@ final class PartitionModeHandlerTest {
     }
 
     @Test
-    void shouldStayPendingForRecoveryUntilPartitionsInactive() {
-      // given - in recovery mode but a partition is still leading (not yet deactivated)
-      givenCurrentManager(GROUP, recoveryManager);
-      givenLocalPartitions(1);
-      givenPartitionRoles(Map.of(1, PartitionRole.LEADER));
-
-      // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.RECOVERING);
-      progress();
-
-      // then
-      assertThat(await.isDone()).isFalse();
-
-      // when - the partition is deactivated
-      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
-      advancePoll();
-
-      // then
-      assertThat(await.isDone()).isTrue();
-      assertThat(await.isCompletedExceptionally()).isFalse();
-    }
-
-    @Test
-    void shouldFailWhenPartitionsDoNotReachRolesWithinTimeout() {
+    void shouldFailWhenPartitionsNotInExpectedRole() {
       // given - the partition never reaches a processing role
       givenLocalPartitions(1);
       givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
@@ -505,15 +432,6 @@ final class PartitionModeHandlerTest {
       // when
       final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
       progress();
-
-      // poll until the readiness timeout elapses
-      final long polls =
-          PartitionModeHandler.PARTITION_READINESS_TIMEOUT.dividedBy(
-                  PartitionModeHandler.READINESS_POLL_INTERVAL)
-              + 1;
-      for (long i = 0; i < polls && !await.isDone(); i++) {
-        advancePoll();
-      }
 
       // then - the operation fails so the cluster change can be retried
       assertThat(await.isCompletedExceptionally()).isTrue();
