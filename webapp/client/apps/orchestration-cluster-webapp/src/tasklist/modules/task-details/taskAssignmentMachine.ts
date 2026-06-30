@@ -18,10 +18,6 @@ import {tracking} from '#/shared/tracking';
 import {isTaskTimeoutError} from './taskErrorHandling';
 import {parseDenialReason} from './parseDenialReason';
 
-const SUCCESS_RESET_DELAY = 500;
-const POLL_BASE_DELAY = 500;
-const POLL_MAX_DELAY = 5000;
-
 type AssignmentFailure = {reason: 'timeout'} | {reason: 'failed'; subtitle?: string};
 
 type MachineInput = {
@@ -232,9 +228,15 @@ const taskAssignmentMachine = setup({
 		incrementRetryCount: assign({pollRetryCount: ({context}) => context.pollRetryCount + 1}),
 		clearInitialTaskState: assign({initialTaskState: null}),
 	},
+
 	delays: {
-		SUCCESS_RESET_DELAY,
-		POLL_DELAY: ({context}) => Math.min(POLL_BASE_DELAY * Math.pow(2, context.pollRetryCount), POLL_MAX_DELAY),
+		SUCCESS_RESET_DELAY: 500,
+		POLL_DELAY: ({context}) => {
+			const POLL_BASE_DELAY = 500;
+			const POLL_MAX_DELAY = 5000;
+
+			return Math.min(POLL_BASE_DELAY * Math.pow(2, context.pollRetryCount), POLL_MAX_DELAY);
+		},
 	},
 }).createMachine({
 	id: 'taskAssignment',
