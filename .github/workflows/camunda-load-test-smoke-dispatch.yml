@@ -75,6 +75,7 @@ jobs:
   smoke:
     name: Smoke (${{ matrix.version }})
     needs: detect-versions
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     permissions:
       contents: read
       id-token: write
@@ -86,4 +87,4 @@ jobs:
     with:
       target-version: ${{ matrix.version }}
       orchestration-tag: ${{ matrix.orchestration-tag }}
-      ref: ${{ github.event.pull_request.head.ref }}
+      ref: ${{ github.ref }}
