@@ -40,7 +40,8 @@ class ProcessCacheTest {
   @BeforeEach
   void setUp() {
     entity =
-        new ProcessDefinitionEntity(1L, "name1", "d1", null, "d1.bpmn", 1, null, "tenant1", null);
+        new ProcessDefinitionEntity(
+            1L, "name1", "d1", null, "d1.bpmn", 1, null, "tenant1", null, false);
 
     configuration = ProcessCache.Configuration.getDefault();
     searchExecutor = mock(SearchClientBasedQueryExecutor.class);
@@ -112,7 +113,8 @@ class ProcessCacheTest {
                     1,
                     null,
                     "tenant",
-                    null)));
+                    null,
+                    false)));
 
     // when - first attempt: missing in secondary storage
     final var first = processCache.getCacheItem(missingKey);
@@ -154,15 +156,15 @@ class ProcessCacheTest {
                 case 1 ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
-                            1L, "n1", "d1", null, "d1.bpmn", 1, null, "t", null));
+                            1L, "n1", "d1", null, "d1.bpmn", 1, null, "t", null, false));
                 case 2 ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
-                            2L, "n2", "d2", null, "d2.bpmn", 1, null, "t", null));
+                            2L, "n2", "d2", null, "d2.bpmn", 1, null, "t", null, false));
                 case 3 ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
-                            3L, "n3", "d3", null, "d3.bpmn", 1, null, "t", null));
+                            3L, "n3", "d3", null, "d3.bpmn", 1, null, "t", null, false));
                 default -> SearchQueryResult.of();
               };
             });
@@ -191,13 +193,13 @@ class ProcessCacheTest {
         .thenReturn(
             SearchQueryResult.of(
                 new ProcessDefinitionEntity(
-                    presentKey, "name1", "d1", null, "d1.bpmn", 1, null, "tenant", null)))
+                    presentKey, "name1", "d1", null, "d1.bpmn", 1, null, "tenant", null, false)))
         .thenReturn(
             SearchQueryResult.of(
                 new ProcessDefinitionEntity(
-                    presentKey, "name1", "d1", null, "d1.bpmn", 1, null, "tenant", null),
+                    presentKey, "name1", "d1", null, "d1.bpmn", 1, null, "tenant", null, false),
                 new ProcessDefinitionEntity(
-                    missingKey, "name2", "d2", null, "d2.bpmn", 1, null, "tenant", null)));
+                    missingKey, "name2", "d2", null, "d2.bpmn", 1, null, "tenant", null, false)));
 
     // when - first bulk request: missingKey not yet visible
     final var first = processCache.getCacheItems(Set.of(presentKey, missingKey));

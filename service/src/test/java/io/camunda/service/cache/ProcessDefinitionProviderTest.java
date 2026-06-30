@@ -192,9 +192,9 @@ class ProcessDefinitionProviderTest {
     when(processDefinition.bpmnXml()).thenReturn(bpmn1);
     when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
     final var processDefinition2 =
-        new ProcessDefinitionEntity(2L, "Process 2", PROC_DEF_ID2, bpmn2, "", 1, "", "", "");
+        new ProcessDefinitionEntity(2L, "Process 2", PROC_DEF_ID2, bpmn2, "", 1, "", "", "", false);
     final var processDefinition3 =
-        new ProcessDefinitionEntity(3L, "Process 3", PROC_DEF_ID3, bpmn3, "", 1, "", "", "");
+        new ProcessDefinitionEntity(3L, "Process 3", PROC_DEF_ID3, bpmn3, "", 1, "", "", "", false);
 
     when(processDefinitionSearchClient.searchProcessDefinitions(any()))
         .thenReturn(

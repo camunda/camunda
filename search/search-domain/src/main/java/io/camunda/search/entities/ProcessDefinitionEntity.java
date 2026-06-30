@@ -19,7 +19,8 @@ public record ProcessDefinitionEntity(
     Integer version,
     @Nullable String versionTag,
     String tenantId,
-    @Nullable String formId)
+    @Nullable String formId,
+    @Nullable Boolean isDeleted)
     implements TenantOwnedEntity {
 
   public ProcessDefinitionEntity {
