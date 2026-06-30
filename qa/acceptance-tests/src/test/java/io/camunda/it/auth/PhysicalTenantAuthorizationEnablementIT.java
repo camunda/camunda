@@ -48,12 +48,21 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * to authorize against.
  */
 @MultiDbTest
-@MultiDbPhysicalTenants({"tenantoff", "tenanton"})
+@MultiDbPhysicalTenants({
+  PhysicalTenantAuthorizationEnablementIT.TENANT_OFF_ID,
+  PhysicalTenantAuthorizationEnablementIT.TENANT_ON_ID
+})
 @EnabledIfSystemProperty(
     named = "test.integration.camunda.database.type",
     matches = "rdbms.*$",
     disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class PhysicalTenantAuthorizationEnablementIT {
+
+  // Declared before BROKER so the per-PT override below can reference TENANT_OFF_ID by name rather
+  // than repeating the literal (these are compile-time constants, so the annotation can use them
+  // too).
+  static final String TENANT_OFF_ID = "tenantoff";
+  static final String TENANT_ON_ID = "tenanton";
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -63,14 +72,11 @@ final class PhysicalTenantAuthorizationEnablementIT {
           .withAuthenticationMethod(AuthenticationMethod.BASIC)
           // disable authorization checks for tenant-off only (per-PT engine security config).
           // Composes with the extension's per-PT storage/admin stamping because withPtConfig
-          // merges into the same per-PT Camunda config via computeIfAbsent. The literal must match
-          // TENANT_OFF_ID below (a forward reference to that constant is not allowed here).
-          .withPtConfig("tenantoff", c -> c.getSecurity().getAuthorizations().setEnabled(false));
+          // merges into the same per-PT Camunda config via computeIfAbsent.
+          .withPtConfig(TENANT_OFF_ID, c -> c.getSecurity().getAuthorizations().setEnabled(false));
 
   static MultiPhysicalTenantClients ptClients;
 
-  private static final String TENANT_OFF_ID = "tenantoff";
-  private static final String TENANT_ON_ID = "tenanton";
   private static final String RESTRICTED_PASSWORD = "restricted";
   private static final Duration PROPAGATION_TIMEOUT = Duration.ofSeconds(30);
 
