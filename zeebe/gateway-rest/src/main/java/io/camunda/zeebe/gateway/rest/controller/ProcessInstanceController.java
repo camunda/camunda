@@ -209,6 +209,24 @@ public class ProcessInstanceController {
   }
 
   @RequiresSecondaryStorage
+  @CamundaGetMapping(path = "/{processInstanceKey}/statistics/wait-states")
+  public ResponseEntity<Object> waitStateStatistics(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toProcessInstanceWaitStateStatisticsResult(
+                  serviceRegistry
+                      .processInstanceServices(physicalTenantId)
+                      .waitStateStatistics(
+                          processInstanceKey, authenticationProvider.getCamundaAuthentication())));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}/sequence-flows")
   public ResponseEntity<Object> sequenceFlows(
       @PhysicalTenantId final String physicalTenantId,
