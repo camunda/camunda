@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.clients.WaitStateSearchClient;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
@@ -56,6 +57,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
             mock(SecurityContextProvider.class),
             mock(ProcessInstanceSearchClient.class),
             mock(SequenceFlowSearchClient.class),
+            mock(WaitStateSearchClient.class),
             mock(IncidentServices.class),
             executorProvider,
             mock(BrokerRequestAuthorizationConverter.class));

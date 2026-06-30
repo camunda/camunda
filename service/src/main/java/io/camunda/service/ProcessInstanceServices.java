@@ -16,11 +16,13 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.clients.WaitStateSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -82,6 +84,7 @@ public final class ProcessInstanceServices
   private static final int MAX_CACHED_DEFINITIONS = 1024;
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
+  private final WaitStateSearchClient waitStateSearchClient;
   private final IncidentServices incidentServices;
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
@@ -96,6 +99,7 @@ public final class ProcessInstanceServices
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
@@ -105,6 +109,7 @@ public final class ProcessInstanceServices
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        waitStateSearchClient,
         incidentServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
@@ -118,6 +123,7 @@ public final class ProcessInstanceServices
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -128,6 +134,7 @@ public final class ProcessInstanceServices
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        waitStateSearchClient,
         incidentServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
@@ -141,6 +148,7 @@ public final class ProcessInstanceServices
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -151,6 +159,7 @@ public final class ProcessInstanceServices
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        waitStateSearchClient,
         incidentServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
@@ -164,6 +173,7 @@ public final class ProcessInstanceServices
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -177,6 +187,7 @@ public final class ProcessInstanceServices
         brokerRequestAuthorizationConverter);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
+    this.waitStateSearchClient = waitStateSearchClient;
     this.incidentServices = incidentServices;
     this.requestRetryHandler = requestRetryHandler;
     executor = executorProvider.getExecutor();
@@ -210,6 +221,20 @@ public final class ProcessInstanceServices
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .processInstanceFlowNodeStatistics(processInstanceKey));
+  }
+
+  public List<WaitStateStatisticsEntity> waitStateStatistics(
+      final long processInstanceKey, final CamundaAuthentication authentication) {
+    // Existence + authorization check: throws ServiceException(NOT_FOUND) / (FORBIDDEN) before
+    // aggregating, since the aggregation alone cannot distinguish "not found" from "no results".
+    getByKey(processInstanceKey, authentication);
+    return executeSearchRequest(
+        () ->
+            waitStateSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .waitStateStatistics(processInstanceKey));
   }
 
   public List<ProcessInstanceEntity> callHierarchy(

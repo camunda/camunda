@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -21,10 +23,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.clients.WaitStateSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
@@ -88,6 +92,7 @@ public final class ProcessInstanceServiceTest {
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient processInstanceSearchClient;
   private SequenceFlowSearchClient sequenceFlowSearchClient;
+  private WaitStateSearchClient waitStateSearchClient;
   private IncidentServices incidentServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
@@ -100,6 +105,7 @@ public final class ProcessInstanceServiceTest {
   public void before() {
     processInstanceSearchClient = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
+    waitStateSearchClient = mock(WaitStateSearchClient.class);
     authentication = CamundaAuthentication.none();
     authorizationCheck =
         RequiredAuthorization.withRequiredAuthorization(
@@ -109,6 +115,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
+    when(waitStateSearchClient.withSecurityContext(any())).thenReturn(waitStateSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
     when(brokerClient.getTopologyManager()).thenReturn(new StubbedTopologyManager(3));
@@ -122,6 +129,7 @@ public final class ProcessInstanceServiceTest {
             securityContextProvider,
             processInstanceSearchClient,
             sequenceFlowSearchClient,
+            waitStateSearchClient,
             incidentServices,
             executorProvider,
             brokerRequestAuthorizationConverter);
@@ -202,6 +210,50 @@ public final class ProcessInstanceServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+  }
+
+  @Test
+  void shouldDelegateWaitStateStatisticsToWaitStateClient() {
+    // given
+    final var processInstanceKey = 42L;
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
+            .create();
+    when(processInstanceSearchClient.getProcessInstance(processInstanceKey)).thenReturn(entity);
+    when(waitStateSearchClient.waitStateStatistics(processInstanceKey))
+        .thenReturn(List.of(new WaitStateStatisticsEntity("task-a", 3L)));
+
+    // when
+    final var result = services.waitStateStatistics(processInstanceKey, authentication);
+
+    // then
+    assertThat(result).containsExactly(new WaitStateStatisticsEntity("task-a", 3L));
+    verify(waitStateSearchClient).waitStateStatistics(processInstanceKey);
+  }
+
+  @Test
+  void shouldThrowNotFoundForUnknownProcessInstanceOnWaitStateStatistics() {
+    // given
+    final var processInstanceKey = 99L;
+    when(processInstanceSearchClient.getProcessInstance(processInstanceKey))
+        .thenThrow(
+            new CamundaSearchException(
+                ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Process Instance", processInstanceKey),
+                Reason.NOT_FOUND));
+
+    // when
+    final ThrowingCallable executeWaitStateStatistics =
+        () -> services.waitStateStatistics(processInstanceKey, authentication);
+
+    // then
+    final var exception =
+        (ServiceException)
+            assertThatThrownBy(executeWaitStateStatistics)
+                .isInstanceOf(ServiceException.class)
+                .actual();
+    assertThat(exception.getStatus()).isEqualTo(Status.NOT_FOUND);
+    verify(waitStateSearchClient, never()).waitStateStatistics(anyLong());
   }
 
   @Test

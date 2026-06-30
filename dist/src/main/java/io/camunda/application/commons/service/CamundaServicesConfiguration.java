@@ -206,6 +206,7 @@ public class CamundaServicesConfiguration {
                       securityContextProvider,
                       search,
                       search,
+                      search,
                       incident,
                       executor,
                       converter,
