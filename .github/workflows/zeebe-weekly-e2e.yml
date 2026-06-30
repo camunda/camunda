@@ -32,7 +32,7 @@ jobs:
       previous-previous-latest-major-minor-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_VERSION }}
       previous-previous-latest-major-minor-patch-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_PATCH_VERSION }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - run: git fetch --tags
       - run: |
           latest_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -n1)
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Weekly E2E
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Trigger Weekly E2E on ${{ matrix.branch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
