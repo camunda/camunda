@@ -304,6 +304,24 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   }
 
   @Test
+  void shouldDisallowPartialSearchResultsWhenGettingArchiveDocIdsBatch() {
+    // given
+    when(client.search(any(SearchRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse()));
+
+    // when
+    ((ElasticsearchArchiverRepository) repository)
+        .getArchiveDocIdsBatch(
+            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), List.of(), 10)
+        .join();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(client).search(captor.capture());
+    assertThat(captor.getValue().allowPartialSearchResults()).isFalse();
+  }
+
+  @Test
   void shouldPropagateRoutingForEachBulkDeleteOperation() {
     // given
     final var docs =

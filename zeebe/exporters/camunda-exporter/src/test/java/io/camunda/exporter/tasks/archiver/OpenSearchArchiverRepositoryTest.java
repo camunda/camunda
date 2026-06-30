@@ -233,6 +233,24 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   }
 
   @Test
+  void shouldDisallowPartialSearchResultsWhenGettingArchiveDocIdsBatch() throws IOException {
+    // given
+    when(client.search(any(SearchRequest.class), eq(Object.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse()));
+
+    // when
+    ((OpenSearchArchiverRepository) repository)
+        .getArchiveDocIdsBatch(
+            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), List.of(), 10)
+        .join();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(client).search(captor.capture(), eq(Object.class));
+    assertThat(captor.getValue().allowPartialSearchResults()).isFalse();
+  }
+
+  @Test
   void shouldPropagateRoutingForEachBulkDeleteOperation() throws IOException {
     // given
     final var docs =
