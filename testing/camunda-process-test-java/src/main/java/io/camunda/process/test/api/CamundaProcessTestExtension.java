@@ -403,13 +403,13 @@ public class CamundaProcessTestExtension
     if (clockResetEnabled) {
       resetRuntimeClock();
     } else {
-      LOG.warn("Skipping runtime clock reset because it is disabled.");
+      LOG.info("Runtime clock reset is disabled. Skipping.");
     }
 
     if (dataDeletionEnabled) {
       deleteRuntimeData();
     } else {
-      LOG.warn("Runtime data deletion is disabled. Tests could be unreliable.");
+      LOG.info("Runtime data deletion is disabled. Skipping.");
     }
   }
 
