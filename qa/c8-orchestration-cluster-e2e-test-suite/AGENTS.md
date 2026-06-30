@@ -305,11 +305,13 @@ or has failed on consecutive nights. If it looks intermittent → flakiness fix,
 **Gate B — Pin it to a recent product change.** Identify the owning module (table below) and find
 the breaking change. You are already inside the `camunda/camunda` checkout (on `${TARGET_REF}`), so
 run `git` from the current directory — do not reference `$ws_dir` (it is not set in your shell):
+
 ```bash
 git log --since=<YYYY-MM-DD> --oneline -- <module-path>   # e.g. operate/ identity/
 # or, for a precise surface:
 gh search code --repo camunda/camunda "<aria-label / data-testid / endpoint>" --limit 5 --json path
 ```
+
 Bound the window with when the test first went red. Name a plausible commit (or documented behavior
 change) when you can — it goes in `suspect_commit` and the Slack thread. **If you cannot pin a
 specific commit but Gate A and Gate C clearly hold** (deterministic failure, test still correct, the
@@ -327,15 +329,15 @@ the selector must target a real element, and the test must not be stale. If the 
 
 Orchestration-suite failures almost always trace to a module inside this same repo (`camunda/camunda`):
 
-| Failure surface | Issue repo | Module path |
-|---|---|---|
-| Operate | `camunda/camunda` | `operate/` |
-| Tasklist | `camunda/camunda` | `tasklist/` |
-| Identity / authorization / RBA | `camunda/camunda` | `identity/`, `authentication/`, `security/` |
-| Zeebe / engine / gateway / REST API | `camunda/camunda` | `zeebe/`, `gateways/`, `service/` |
-| Optimize | `camunda/camunda` | `optimize/` |
-| c8Run setup / packaging | `camunda/camunda` | `c8run/` |
-| Helm chart / deploy config | `camunda/camunda-platform-helm` | `charts/` |
+|           Failure surface           |           Issue repo            |                 Module path                 |
+|-------------------------------------|---------------------------------|---------------------------------------------|
+| Operate                             | `camunda/camunda`               | `operate/`                                  |
+| Tasklist                            | `camunda/camunda`               | `tasklist/`                                 |
+| Identity / authorization / RBA      | `camunda/camunda`               | `identity/`, `authentication/`, `security/` |
+| Zeebe / engine / gateway / REST API | `camunda/camunda`               | `zeebe/`, `gateways/`, `service/`           |
+| Optimize                            | `camunda/camunda`               | `optimize/`                                 |
+| c8Run setup / packaging             | `camunda/camunda`               | `c8run/`                                    |
+| Helm chart / deploy config          | `camunda/camunda-platform-helm` | `charts/`                                   |
 
 ### Filing the bug ticket (dedupe FIRST)
 
@@ -347,14 +349,18 @@ Orchestration-suite failures almost always trace to a module inside this same re
 
 1. **Compute the fingerprint** — `sha256` of `<version>::<file>::<test_name>`, first 8 chars (MUST
    match the triage dispatcher exactly so it can suppress re-dispatch):
+
    ```bash
    FP=$(printf '%s::%s::%s' "<version>" "<file>" "<test_name>" | sha256sum | cut -c1-8)
    ```
+
    **Search for an existing issue** (the marker is globally unique):
+
    ```bash
    gh search issues "nightly-product-bug fp=${FP} is:issue" --owner camunda --state all \
      --limit 1 --json number,url,state,repository --jq '.[0]'
    ```
+
    - Open issue exists → reuse it (comment with this nightly run); do NOT file a new one.
    - Closed issue for the same FP → reopen (`gh issue reopen`) and comment, then reuse its URL.
    - **Also check for a human-filed bug that predates this automation** (no fingerprint marker):
@@ -364,14 +370,18 @@ Orchestration-suite failures almost always trace to a module inside this same re
      nightly run, then **append** the fingerprint line to its body so future runs dedupe and the
      dispatcher suppresses it. Preserve the existing body and use real newlines (a literal `\n` in
      `--body` is written verbatim, not a newline):
+
      ```bash
      body=$(gh issue view <n> --repo <owner>/<repo> --json body --jq .body)
      printf '%s\n\nFingerprint: nightly-product-bug fp=%s\n' "$body" "${FP}" \
        | gh issue edit <n> --repo <owner>/<repo> --body-file -
      ```
+
      Put its URL in `fix-meta.json`.
+
 2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
    component label), but the body MUST contain the fingerprint line below so dedupe works:
+
    ```bash
    gh issue create --repo camunda/camunda \
      --title "<module>: <one-line symptom> (nightly <version>)" \
@@ -390,19 +400,25 @@ Orchestration-suite failures almost always trace to a module inside this same re
    BODY
    )"
    ```
+
    The `Fingerprint:` line is **mandatory**. `kind/bug` / `nightly-detected` are defaults — drop a
    label the repo rejects rather than failing.
+
 3. **Skip the failing test with a bug-linked annotation**, static `test.skip(...)` form, with the
    annotation comment on the line directly above — exact format, no deviation:
+
    ```ts
    // Skipped due to bug #<number>: <issue-url>
    test.skip('<exact test title>', async ({ ... }) => {
    ```
+
    Skip only the failing test (not the whole `describe`) unless every test in the block shares the
    bug. Lint the changed file.
+
 4. **Open ONE PR** with the skip(s): `test:` type (commitlint rejects `fix:` for test-only changes),
    title like `test: skip <spec> pending bug #<number>`, body linking the issue + nightly/triage
    runs. All product-bug skips for this dispatch go in the same branch + PR.
+
 5. Record the verdict in `/tmp/fix-meta.json` (see the product-bug schema in **Result manifest**) —
    the skip PR goes in `prs`, the issue(s) in `product_bugs` — and stop.
 
@@ -655,6 +671,7 @@ filed/reused issue (a dispatch may yield several bugs):
   ]
 }
 ```
+
 `category`, the skip PR in `prs`, and a non-empty `product_bugs` are all required for this verdict.
 `suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
