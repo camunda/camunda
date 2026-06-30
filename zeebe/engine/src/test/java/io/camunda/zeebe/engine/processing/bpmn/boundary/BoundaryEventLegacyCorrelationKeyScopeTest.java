@@ -31,8 +31,7 @@ public final class BoundaryEventLegacyCorrelationKeyScopeTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withFeatureFlags(
-              ff -> ff.setEvaluateBoundaryEventCorrelationKeyInActivityScope(false));
+          .withFeatureFlags(ff -> ff.setEvaluateBoundaryEventCorrelationKeyInActivityScope(false));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

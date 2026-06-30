@@ -47,6 +47,7 @@ public final class FeatureFlags {
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_IDENTITY_SETUP = true;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
+  // Kill-switch for a bug fix; intentionally enabled by default.
   private static final boolean EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = true;
 
   private boolean yieldingDueDateChecker;
