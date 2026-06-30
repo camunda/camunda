@@ -11,10 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.streaming.StreamProcessor;
 import io.camunda.analytics.streaming.aggregate.InMemoryRollupStore;
-import io.camunda.analytics.streaming.aggregate.PreAggregatingRollup;
 import io.camunda.analytics.streaming.aggregate.Rollup;
+import io.camunda.analytics.streaming.dsl.Aggregation;
 import io.camunda.analytics.streaming.fold.Projector;
 import io.camunda.analytics.streaming.window.TumblingWindows;
+import io.camunda.analytics.streaming.window.Windowed;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 import java.util.List;
 import java.util.Map;
@@ -22,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Worked example: from one execution-time fact, two pre-aggregated hourly aggregations — grouped by
- * region and (across regions) by definition — assembled from the {@code analytics-streaming}
- * framework. Adding a second aggregation is registering another rollup with its own key selector.
- * (Wiring — turning consumed records into these facts via the process-instance projector — is
- * separate; here a fact-deriving projector stands in.)
+ * region and (across regions) by definition — built with the fluent DSL. Adding an aggregation is
+ * one more {@code groupBy(...).windowedBy(...).aggregate(...).into(...)} rollup registered with the
+ * projector. (Wiring — turning consumed records into these facts — is separate; here a
+ * fact-deriving projector stands in.)
  */
 final class ExecutionTimeRollupExampleTest {
 
@@ -33,21 +34,28 @@ final class ExecutionTimeRollupExampleTest {
 
   @Test
   void executionTimeByRegionAndByDefinitionPreAggregatedHourly() {
-    // --- shared wiring -----------------------------------------------------------------------
     final TumblingWindows hourly = TumblingWindows.of(HOUR);
     final ExecutionTimeAggregateFunction metric = new ExecutionTimeAggregateFunction();
 
-    // two serving stores, two groupings of the same fact
-    final InMemoryRollupStore<RegionWindowKey, ExecutionTimeAccumulator> byRegion =
+    // two serving stores, two groupings of the same fact, keyed by Windowed<base key>
+    final InMemoryRollupStore<Windowed<String>, ExecutionTimeAccumulator> byRegion =
         new InMemoryRollupStore<>(metric);
-    final InMemoryRollupStore<DefinitionWindowKey, ExecutionTimeAccumulator> byDefinition =
+    final InMemoryRollupStore<Windowed<Long>, ExecutionTimeAccumulator> byDefinition =
         new InMemoryRollupStore<>(metric);
 
     final Rollup<ProcessInstanceExecutionTimeFact> regionRollup =
-        new PreAggregatingRollup<>(metric, new RegionWindowKeySelector(hourly), byRegion, 1_000);
+        Aggregation.<ProcessInstanceExecutionTimeFact, String>groupBy(
+                ExecutionTimeRollupExampleTest::region)
+            .windowedBy(hourly, ProcessInstanceExecutionTimeFact::endTime)
+            .aggregate(metric)
+            .into(byRegion);
+
     final Rollup<ProcessInstanceExecutionTimeFact> definitionRollup =
-        new PreAggregatingRollup<>(
-            metric, new DefinitionWindowKeySelector(hourly), byDefinition, 1_000);
+        Aggregation.<ProcessInstanceExecutionTimeFact, Long>groupBy(
+                ProcessInstanceExecutionTimeFact::processDefinitionKey)
+            .windowedBy(hourly, ProcessInstanceExecutionTimeFact::endTime)
+            .aggregate(metric)
+            .into(byDefinition);
 
     // in production this is the process-instance fold, Projector<ZeebeRecord, fact>; here it just
     // forwards the facts a completed instance would yield
@@ -58,7 +66,6 @@ final class ExecutionTimeRollupExampleTest {
         new StreamProcessor<ProcessInstanceExecutionTimeFact>()
             .register(derive, List.of(regionRollup, definitionRollup));
 
-    // --- run ---------------------------------------------------------------------------------
     processor.init();
     List.of(
             completion("EU", 600L, 500L), // hour 0
@@ -68,29 +75,25 @@ final class ExecutionTimeRollupExampleTest {
         .forEach(processor::process);
     processor.close(); // final flush
 
-    // --- by region (region is part of the key) ----------------------------------------------
+    // by region (region is part of the key)
     final ExecutionTimeResult euHour0 =
-        metric.getResult(byRegion.get(region("EU", 0L)).orElseThrow());
+        metric.getResult(byRegion.get(new Windowed<>("EU", 0L)).orElseThrow());
     assertThat(euHour0.count()).isEqualTo(2L);
     assertThat(euHour0.averageMs()).isEqualTo(400.0); // (500 + 300) / 2
     assertThat(euHour0.maxMs()).isEqualTo(500L);
-    assertThat(metric.getResult(byRegion.get(region("US", 0L)).orElseThrow()).averageMs())
+    assertThat(metric.getResult(byRegion.get(new Windowed<>("US", 0L)).orElseThrow()).averageMs())
         .isEqualTo(700.0);
 
-    // --- by definition (regions rolled up together) ------------------------------------------
+    // by definition (regions rolled up together)
     final ExecutionTimeResult def77Hour0 =
-        metric.getResult(byDefinition.get(definition(0L)).orElseThrow());
+        metric.getResult(byDefinition.get(new Windowed<>(77L, 0L)).orElseThrow());
     assertThat(def77Hour0.count()).isEqualTo(3L); // EU 500, EU 300, US 700
     assertThat(def77Hour0.averageMs()).isEqualTo(500.0); // 1500 / 3
     assertThat(def77Hour0.maxMs()).isEqualTo(700L);
   }
 
-  private static RegionWindowKey region(final String region, final long windowStart) {
-    return new RegionWindowKey(region, 77L, 1, "<default>", windowStart);
-  }
-
-  private static DefinitionWindowKey definition(final long windowStart) {
-    return new DefinitionWindowKey(77L, 1, "<default>", windowStart);
+  private static String region(final ProcessInstanceExecutionTimeFact fact) {
+    return fact.variables().getOrDefault("region", "<none>");
   }
 
   private static ProcessInstanceExecutionTimeFact completion(
