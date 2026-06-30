@@ -31,6 +31,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   private final String processDefinitionId;
   private final String tenantId;
   private final Boolean hasStartForm;
+  private final Boolean isDeleted;
 
   public ProcessDefinitionImpl(final ProcessDefinitionResult item) {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
@@ -41,6 +42,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
     processDefinitionId = item.getProcessDefinitionId();
     tenantId = item.getTenantId();
     hasStartForm = item.getHasStartForm();
+    isDeleted = item.getIsDeleted();
   }
 
   @Override
@@ -84,6 +86,11 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   }
 
   @Override
+  public Boolean isDeleted() {
+    return isDeleted;
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return processDefinitionId;
   }
@@ -98,7 +105,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         versionTag,
         processDefinitionId,
         tenantId,
-        hasStartForm);
+        hasStartForm,
+        isDeleted);
   }
 
   @Override
@@ -114,7 +122,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(hasStartForm, that.hasStartForm);
+        && Objects.equals(hasStartForm, that.hasStartForm)
+        && Objects.equals(isDeleted, that.isDeleted);
   }
 
   @Override
@@ -141,6 +150,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
         + '\''
         + ", hasStartForm="
         + hasStartForm
+        + ", isDeleted="
+        + isDeleted
         + '}';
   }
 }

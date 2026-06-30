@@ -107,7 +107,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
                     .version(2)
                     .versionTag("alpha")
                     .processDefinitionId(sp -> sp.eq("orderProcess"))
-                    .tenantId("<default>"))
+                    .tenantId("<default>")
+                    .isDeleted(true))
         .send()
         .join();
     // then
@@ -122,6 +123,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertThat(filter.getVersionTag()).isEqualTo("alpha");
     assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("orderProcess");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
+    assertThat(filter.getIsDeleted()).isTrue();
   }
 
   @Test

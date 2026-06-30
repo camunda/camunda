@@ -158,6 +158,54 @@ public class DeleteProcessDefinitionHistoryIT {
   }
 
   @Test
+  void shouldMarkProcessDefinitionAsDeletedWhenDeletedWithoutHistory() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+
+    // when - delete without history (keeps secondary storage records but marks as deleted)
+    final DeleteResourceResponse result =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(false)
+            .send()
+            .join();
+    assertThat(result.getCreateBatchOperationResponse()).isNull();
+
+    // then - wait until the process definition is marked as deleted in secondary storage
+    Awaitility.await("Process definition should be marked as deleted")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var deleted =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .filter(f -> f.processDefinitionKey(processDefinitionKey).isDeleted(true))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(deleted).hasSize(1);
+              assertThat(deleted.getFirst().isDeleted()).isTrue();
+            });
+
+    // and - searching with isDeleted=false should not return the deleted definition
+    final var nonDeleted =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(f -> f.processDefinitionKey(processDefinitionKey).isDeleted(false))
+            .send()
+            .join()
+            .items();
+    assertThat(nonDeleted).isEmpty();
+  }
+
+  @Test
   void shouldDeleteProcessDefinitionHistoryAfterDeletingWithoutHistory() {
     // given - a deployed process definition with completed process instances
     final var processId = Strings.newRandomValidBpmnId();
