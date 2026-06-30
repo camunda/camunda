@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.console.ping;
+package io.camunda.application.commons.hub.ping;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
+import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
@@ -22,21 +22,24 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PingConsoleTask implements Runnable {
+public class PingHubTask implements Runnable {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleTask.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PingHubTask.class);
   private static final int MAX_RESPONSE_BODY_LENGTH = 1000;
   private final HttpClient client;
-  private final ConsolePingConfiguration pingConfiguration;
+  private final HubPingConfiguration pingConfiguration;
   private final RetryDecorator retryDecorator;
   private final String licensePayload;
+  private final M2MTokenProvider tokenProvider;
 
   @VisibleForTesting
-  public PingConsoleTask(
-      final ConsolePingConfiguration pingConfiguration,
+  public PingHubTask(
+      final HubPingConfiguration pingConfiguration,
+      final M2MTokenProvider tokenProvider,
       final HttpClient client,
       final String licensePayload) {
     this.pingConfiguration = pingConfiguration;
+    this.tokenProvider = tokenProvider;
     this.client = client;
     retryDecorator =
         new RetryDecorator(
@@ -46,40 +49,42 @@ public class PingConsoleTask implements Runnable {
     this.licensePayload = licensePayload;
   }
 
-  public PingConsoleTask(
-      final ConsolePingConfiguration pingConfiguration, final String licensePayload) {
-    this(pingConfiguration, HttpClient.newHttpClient(), licensePayload);
+  public PingHubTask(
+      final HubPingConfiguration pingConfiguration,
+      final M2MTokenProvider tokenProvider,
+      final String licensePayload) {
+    this(pingConfiguration, tokenProvider, HttpClient.newHttpClient(), licensePayload);
   }
 
   @Override
   public void run() {
     try {
+      final String token = tokenProvider.getToken();
       final HttpRequest request =
           HttpRequest.newBuilder()
               .uri(pingConfiguration.endpoint())
               .header("Accept", "application/json")
               .header("Content-Type", "application/json")
+              .header("Authorization", "Bearer " + token)
               .POST(HttpRequest.BodyPublishers.ofString(licensePayload))
               .build();
 
-      retryDecorator.decorate("Ping console.", () -> tryPingConsole(request));
+      retryDecorator.decorate("Ping Hub.", () -> tryPingHub(request));
 
     } catch (final Exception e) {
-      LOGGER.warn("Failed to execute Console ping task. Exception Message: {}", e.getMessage(), e);
+      LOGGER.warn("Failed to execute Hub ping task. Exception Message: {}", e.getMessage(), e);
     }
   }
 
   @VisibleForTesting
-  protected void tryPingConsole(final HttpRequest request) throws RetriableException {
+  protected void tryPingHub(final HttpRequest request) throws RetriableException {
     final HttpResponse<String> resp;
     try {
       resp = client.send(request, BodyHandlers.ofString());
     } catch (final IOException | InterruptedException e) {
-      // If the request fails due to a network issue, we should retry.
       throw new RetriableException("Network error: " + e.getMessage());
     }
 
-    // We should retry on server errors, timeouts or too many request.
     if (resp.statusCode() >= 500) {
       LOGGER.debug("Received server error: {}. A retry will be attempted.", resp.statusCode());
       throw new RetriableException("Server error: " + resp.statusCode(), resp.body());
@@ -88,7 +93,6 @@ public class PingConsoleTask implements Runnable {
       throw new RetriableException(
           "Too many requests or timeout: " + resp.statusCode(), resp.body());
     } else if (resp.statusCode() >= 400) {
-      // Should not retry for the remaining 4xx errors, but we log them.
       LOGGER.debug(
           "Received client error response: {}. No retry will be attempted.", resp.statusCode());
     }

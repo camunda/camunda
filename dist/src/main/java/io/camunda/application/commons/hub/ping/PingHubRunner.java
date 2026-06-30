@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.console.ping;
+package io.camunda.application.commons.hub.ping;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
-import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
+import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
+import io.camunda.application.commons.hub.ping.PingHubTask.LicensePayload;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -41,20 +41,20 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
-@EnableConfigurationProperties({ConsolePingConfiguration.class})
-@ConditionalOnProperty(prefix = "camunda.console.ping", name = "enabled", havingValue = "true")
-public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListener {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
+@EnableConfigurationProperties({HubPingConfiguration.class})
+@ConditionalOnProperty(prefix = "camunda.hub.ping", name = "enabled", havingValue = "true")
+public class PingHubRunner implements ApplicationRunner, BrokerTopologyListener {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PingHubRunner.class);
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
-  private final ConsolePingConfiguration pingConfiguration;
+  private final HubPingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
   private Either<Exception, String> licensePayload;
   private final BrokerTopologyManager brokerTopologyManager;
   private final ApplicationContext applicationContext;
 
   @Autowired
-  public PingConsoleRunner(
-      final ConsolePingConfiguration pingConfigurationProperties,
+  public PingHubRunner(
+      final HubPingConfiguration pingConfigurationProperties,
       final ManagementServices managementServices,
       final ApplicationContext applicationContext,
       final BrokerTopologyManager brokerTopologyManager) {
@@ -80,17 +80,17 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   }
 
   private void startPingTask() {
-
     LOGGER.info(
-        "Console ping is enabled cluster ID of {}, with endpoint: {}, and period of {}.",
+        "Hub ping is enabled for cluster ID of {}, with endpoint: {}, and period of {}.",
         brokerTopologyManager.getClusterConfiguration().clusterId().get(),
         pingConfiguration.endpoint(),
         pingConfiguration.pingPeriod());
+    final var tokenProvider = new M2MTokenProvider(pingConfiguration.credentials());
     final var executor = createTaskExecutor();
     executor.scheduleAtFixedRate(
-        new PingConsoleTask(pingConfiguration, licensePayload.get()),
+        new PingHubTask(pingConfiguration, tokenProvider, licensePayload.get()),
         1000,
-        pingConfiguration.pingPeriod.toMillis(),
+        pingConfiguration.pingPeriod().toMillis(),
         TimeUnit.MILLISECONDS);
   }
 
@@ -99,10 +99,10 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     if (pingConfiguration.endpoint() == null) {
       return Either.left("Ping endpoint must not be null.");
     }
-    if (pingConfiguration.endpoint.getScheme() == null
-        || pingConfiguration.endpoint.getHost() == null) {
+    if (pingConfiguration.endpoint().getScheme() == null
+        || pingConfiguration.endpoint().getHost() == null) {
       return Either.left(
-          String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint));
+          String.format("Ping endpoint %s must be a valid URI.", pingConfiguration.endpoint()));
     }
     if (brokerTopologyManager.getClusterConfiguration().clusterId().get().isBlank()) {
       return Either.left("Cluster ID must not be null or empty.");
@@ -121,7 +121,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
         return Either.left("Retry delay multiplier must be greater than zero.");
       }
       if (pingConfiguration.retry().getMaxRetryDelay().isZero()
-          || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
+          || pingConfiguration.retry().getMaxRetryDelay().isNegative()) {
         return Either.left("Max retry delay must be greater than zero.");
       }
       if (pingConfiguration.retry().getMinRetryDelay().isZero()
@@ -136,9 +136,30 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
         return Either.left("Max retry delay must be greater than or equal to min retry delay.");
       }
     }
+    if (pingConfiguration.credentials() == null) {
+      return Either.left("M2M credentials must not be null.");
+    }
+    if (pingConfiguration.credentials().tokenEndpoint() == null) {
+      return Either.left("M2M token endpoint must not be null.");
+    }
+    if (pingConfiguration.credentials().tokenEndpoint().getScheme() == null
+        || pingConfiguration.credentials().tokenEndpoint().getHost() == null) {
+      return Either.left(
+          String.format(
+              "M2M token endpoint %s must be a valid URI.",
+              pingConfiguration.credentials().tokenEndpoint()));
+    }
+    if (pingConfiguration.credentials().clientId() == null
+        || pingConfiguration.credentials().clientId().isBlank()) {
+      return Either.left("M2M client ID must not be null or empty.");
+    }
+    if (pingConfiguration.credentials().clientSecret() == null
+        || pingConfiguration.credentials().clientSecret().isBlank()) {
+      return Either.left("M2M client secret must not be null or empty.");
+    }
     if (licensePayload.isLeft()) {
       return Either.left(
-          "Failed to parse license payload for Console ping task: "
+          "Failed to parse license payload for Hub ping task: "
               + licensePayload.getLeft().getMessage());
     }
     return Either.right(null);
@@ -159,11 +180,10 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   public ScheduledThreadPoolExecutor createTaskExecutor() {
     final var threadFactory =
         Thread.ofPlatform()
-            .name("console-license-ping-", 0)
+            .name("hub-license-ping-", 0)
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOGGER))
             .factory();
     final var executor = new ScheduledThreadPoolExecutor(1, threadFactory);
-    // if the executor is shut down, there is no need to continue executing existing tasks
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setRemoveOnCancelPolicy(true);
@@ -214,12 +234,16 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     return future;
   }
 
-  @ConfigurationProperties("camunda.console.ping")
-  public record ConsolePingConfiguration(
+  @ConfigurationProperties("camunda.hub.ping")
+  public record HubPingConfiguration(
       boolean enabled,
       URI endpoint,
       String clusterName,
       Duration pingPeriod,
       RetryConfiguration retry,
-      Map<String, String> properties) {}
+      Map<String, String> properties,
+      M2MCredentials credentials) {
+
+    public record M2MCredentials(URI tokenEndpoint, String clientId, String clientSecret) {}
+  }
 }
