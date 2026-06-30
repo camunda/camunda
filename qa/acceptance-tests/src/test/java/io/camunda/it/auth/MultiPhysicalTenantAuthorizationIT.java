@@ -45,8 +45,9 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 /**
  * Multi-physical-tenant authorization ITs converted to the {@link MultiDbTest} + {@link
  * MultiDbPhysicalTenants} framework. Validates cross-tenant isolation on RDBMS backends with a
- * single broker hosting {@code default}, {@code tenanta}, and {@code tenantb}, each isolated via a
- * per-PT table prefix (shared DB) or a dedicated in-memory database (H2).
+ * single broker hosting {@code default}, {@code tenanta}, and {@code tenantb}, each isolated by its
+ * own secondary storage: a dedicated in-memory database on H2, or a dedicated namespace
+ * (schema/database/user, depending on the dialect) on the other RDBMS backends.
  *
  * <p>RDBMS only — test is disabled for ES/OS because per-PT secondary-storage schema init and
  * per-PT writer are not yet available for those backends.
