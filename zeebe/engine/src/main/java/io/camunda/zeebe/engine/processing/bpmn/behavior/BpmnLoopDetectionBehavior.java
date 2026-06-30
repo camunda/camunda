@@ -52,7 +52,7 @@ public final class BpmnLoopDetectionBehavior {
     this.elementInstanceState = elementInstanceState;
     this.maxActivations = maxActivations;
     this.maxActivationsByType = Map.copyOf(maxActivationsByType);
-    this.retryCooldown = Math.max(1, retryCooldown);
+    this.retryCooldown = retryCooldown;
   }
 
   /**
@@ -83,9 +83,13 @@ public final class BpmnLoopDetectionBehavior {
       return Either.right(null);
     }
     // Always fire on the first activation beyond the threshold so the incident is never skipped;
-    // after that, throttle re-raising to every retryCooldown activations beyond the threshold.
+    // after that, throttle re-raising to every retryCooldown activations beyond the threshold. A
+    // retryCooldown of 0 (or less) disables throttling so the incident is re-raised on every
+    // activation beyond the threshold; the guard also avoids a divide-by-zero in the modulo below.
     final long activationsBeyondThreshold = activationCount - max;
-    if (activationsBeyondThreshold > 1 && activationsBeyondThreshold % retryCooldown != 0) {
+    if (retryCooldown > 1
+        && activationsBeyondThreshold > 1
+        && activationsBeyondThreshold % retryCooldown != 0) {
       return Either.right(null);
     }
 
