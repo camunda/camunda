@@ -52,7 +52,7 @@ spec:
         []
       containers:
         - name: orchestration
-          image: docker.io/camunda/camunda:8.8.28
+          image: docker.io/camunda/camunda:8.8.29
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
