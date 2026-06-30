@@ -88,8 +88,8 @@ class DefaultOAuthCredentialsProviderTest {
     // then — a second token request happens before expiry and the cached bearer changes
     await()
         .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> assertThat(tokenRequestCount()).isGreaterThanOrEqualTo(2));
-    assertThat(applyAndCaptureAuthorization()).isEqualTo("Bearer tok-2");
+        .untilAsserted(() -> assertThat(applyAndCaptureAuthorization()).isEqualTo("Bearer tok-2"));
+    assertThat(tokenRequestCount()).isEqualTo(2);
   }
 
   @Test
