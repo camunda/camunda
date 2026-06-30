@@ -136,6 +136,7 @@ public class AuthorizationUpdateProcessor
     sideEffectWriter.appendSideEffect(
         () -> {
           authorizationCheckBehavior.clearAuthorizationsCache();
+          authorizationScopeStateAdapter.invalidateAll();
           return true;
         });
   }
