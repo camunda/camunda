@@ -44,7 +44,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 @MultiDbPhysicalTenants({"tenanta", "tenantb"})
 @EnabledIfSystemProperty(
     named = "test.integration.camunda.database.type",
-    matches = "RDBMS_.*",
+    matches = "rdbms.*$",
     disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class PhysicalTenantLogicalTenantScopingIT {
 
