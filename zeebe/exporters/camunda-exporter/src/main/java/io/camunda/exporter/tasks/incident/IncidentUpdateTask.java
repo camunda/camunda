@@ -291,7 +291,12 @@ public final class IncidentUpdateTask implements BackgroundTask {
     instances.forEach(
         instance -> {
           data.processInstanceIndices().put(instance.id(), instance.index());
-          data.processInstanceTreePaths().put(instance.key(), instance.treePath());
+          // treePath may be null for documents written before the field existed (e.g. after
+          // replay/upsert/archival). ConcurrentHashMap rejects null values, so we skip the entry
+          // here and let checkDataAndCollectParentTreePaths treat it as missing data.
+          if (instance.treePath() != null) {
+            data.processInstanceTreePaths().put(instance.key(), instance.treePath());
+          }
         });
   }
 

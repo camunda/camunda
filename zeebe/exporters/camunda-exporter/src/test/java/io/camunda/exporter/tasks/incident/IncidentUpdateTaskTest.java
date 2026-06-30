@@ -314,6 +314,43 @@ final class IncidentUpdateTaskTest {
     }
 
     @Test
+    void shouldRetryWhenProcessInstanceHasNullTreePath() {
+      // given - process instance document exists but treePath is null (e.g. after replay/archival);
+      // ConcurrentHashMap.put would throw NPE without the guard in queryData
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      final var instanceWithNullTreePath =
+          new ProcessInstanceDocument(
+              childProcessInstance.id(),
+              childProcessInstance.index(),
+              childProcessInstance.key(),
+              null);
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(parentProcessInstance, instanceWithNullTreePath)));
+
+      // when
+      final var result = task.execute();
+
+      // then - treated as missing data and retried, not thrown as NPE
+      assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(1);
+      verify(metrics).recordIncidentUpdatesRetriesNeeded(1);
+      verify(repository, never()).bulkUpdate(any());
+      verify(incidentNotifier, never()).notifyAsync(any());
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+    }
+
+    @Test
     void shouldFailOnMissingFlowNodeInstance() {
       // given
       final var task =
