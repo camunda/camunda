@@ -54,7 +54,7 @@ test.describe('wait states', () => {
     ).toBeVisible();
 
     await page.screenshot({
-      path: 'e2e-playwright/docs-screenshots/wait-states/operate-wait-state-service-task.png',
+      path: 'e2e-playwright/docs-screenshots/wait-states/operate-wait-states.png',
     });
   });
 });
