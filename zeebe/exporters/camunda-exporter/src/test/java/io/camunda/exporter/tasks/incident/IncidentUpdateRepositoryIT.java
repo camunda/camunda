@@ -493,13 +493,27 @@ abstract class IncidentUpdateRepositoryIT {
 
       // precondition - a plain search does not see the lagging lower entry; this is the per-shard
       // refresh skew that previously made the cursor advance past it and skip it forever
-      assertThat(
-              search(
-                  postImporterQueueTemplate.getFullQualifiedName(),
-                  PostImporterQueueTemplate.KEY,
-                  List.of(String.valueOf(LOWER_KEY)),
-                  PostImporterQueueEntity.class))
-          .isEmpty();
+      Awaitility.await()
+          .pollDelay(Duration.ofSeconds(2))
+          .atMost(Duration.ofSeconds(3))
+          .pollInterval(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                assertThat(
+                        search(
+                            postImporterQueueTemplate.getFullQualifiedName(),
+                            PostImporterQueueTemplate.KEY,
+                            List.of(String.valueOf(HIGHER_KEY)),
+                            PostImporterQueueEntity.class))
+                    .hasSize(1);
+                assertThat(
+                        search(
+                            postImporterQueueTemplate.getFullQualifiedName(),
+                            PostImporterQueueTemplate.KEY,
+                            List.of(String.valueOf(LOWER_KEY)),
+                            PostImporterQueueEntity.class))
+                    .isEmpty();
+              });
 
       try (final var executor = Executors.newSingleThreadScheduledExecutor()) {
         final var task =
