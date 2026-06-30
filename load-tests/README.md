@@ -77,7 +77,7 @@ graph TD
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "profile path:<br/>after 30min wait" --> PROFILE
-    PR -- "metrics path:<br/>after 30min wait,<br/>compare vs daily-on-main" --> METRICS
+    PR -- "metrics path:<br/>15min warmup + 30min window,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
 
@@ -371,17 +371,17 @@ It is as easy as it sounds; we can label an existing PR with the [**benchmark**]
 
 This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 
-Alongside the flamegraph comment, the `benchmark` label also posts a **metrics-comparison comment** on the PR. Both paths fan out from a single 30-minute warm-up:
+Alongside the flamegraph comment, the `benchmark` label also posts a **metrics-comparison comment** on the PR. Both paths share a 15-minute warmup, after which the metrics path opens a 30-minute collection window:
 
-- **Profile path:** after the 30-minute warm-up, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
+- **Profile path:** after the 15-minute warmup, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
 - **Metrics path:**
-  1. Reads metrics over the prior 30-minute window so PromQL `rate`/`increase` numbers cover an apples-to-apples slice of benchmark traffic.
-  2. Resolves the most recent active daily-on-main namespace (`c8-medic-daily-*-test`) via `kubectl`.
+  1. Waits 15 minutes (warmup), then 30 minutes (metrics accumulation), so PromQL `rate`/`increase` numbers cover steady-state traffic with no ramp-up bias.
+  2. Resolves the last completed daily-on-main run via the GitHub Actions API ([`.github/scripts/resolve-daily.py`](../.github/scripts/resolve-daily.py)), walking back up to 7 business days. Derives the daily comparison anchor from `soak.started_at + 45 min` to match the same post-warmup slice as the PR side.
   3. Calls the reusable [`camunda-load-test-metrics.yaml`](../.github/workflows/camunda-load-test-metrics.yaml) workflow against the PR's namespace and the resolved daily namespace, both over an 1800s window.
-  4. Renders a Current / Daily / Optimal / Δ table from [`docs/scripts/queries.yaml`](docs/scripts/queries.yaml) and [`docs/scripts/optimal.json`](docs/scripts/optimal.json), with per-metric tolerances driving the verdict (✅/⚠️/❔). Missing daily values render as `-` so the comment still posts when no daily run is live.
+  4. Renders a Current / Daily / Optimal / Δ table from [`docs/scripts/queries.yaml`](docs/scripts/queries.yaml) and [`docs/scripts/optimal.json`](docs/scripts/optimal.json), with per-metric tolerances driving the verdict (✅/⚠️/❔). Missing daily values render as `-` so the comment still posts when no completed daily run is found.
   5. Tears the PR namespace down once the comparison comment is posted, so namespaces no longer linger after the metrics window closes. Event-driven cleanup on label removal / PR close is unchanged.
 
-A new commit on the PR cancels the in-flight run — including a mid-sleep 30-min wait — and redeploys fresh. This is handled by job-level concurrency in [`pr-load-test-dispatch.yml`](../.github/workflows/pr-load-test-dispatch.yml), keyed per-DB and per-PR.
+A new commit on the PR cancels the in-flight run — including mid-sleep waits — and redeploys fresh. This is handled by job-level concurrency in [`pr-load-test-dispatch.yml`](../.github/workflows/pr-load-test-dispatch.yml), keyed per-DB and per-PR.
 
 #### Trigger Camunda load test GitHub workflow (recommended)
 
