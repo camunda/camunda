@@ -44,6 +44,8 @@ const auditLog = (customFields: Partial<AuditLog> = {}): AuditLog => ({
   relatedEntityType: null,
   entityDescription: null,
   agentElementId: null,
+  inboundChannelType: null,
+  inboundChannelToolName: null,
   ...customFields,
 });
 

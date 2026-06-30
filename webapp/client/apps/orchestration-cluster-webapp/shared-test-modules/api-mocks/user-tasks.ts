@@ -32,6 +32,7 @@ function createUserTask(overrides?: Partial<UserTask>): UserTask {
 		customHeaders: null,
 		formKey: null,
 		externalFormReference: null,
+		businessId: null,
 		tags: [],
 		priority: 50,
 		...overrides,

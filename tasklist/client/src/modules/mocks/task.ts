@@ -35,6 +35,7 @@ const unassignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   completionDate: null,
   customHeaders: null,
   externalFormReference: null,
+  businessId: null,
   tags: [],
   ...customFields,
 });
@@ -63,6 +64,7 @@ const assignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   completionDate: null,
   customHeaders: null,
   externalFormReference: null,
+  businessId: null,
   tags: [],
   ...customFields,
 });
@@ -91,6 +93,7 @@ const completedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   followUpDate: null,
   customHeaders: null,
   externalFormReference: null,
+  businessId: null,
   tags: [],
   ...customFields,
 });
@@ -121,6 +124,7 @@ const assignedTaskWithForm = (
   completionDate: null,
   customHeaders: null,
   externalFormReference: null,
+  businessId: null,
   tags: [],
   ...customFields,
 });
@@ -151,6 +155,7 @@ const unassignedTaskWithForm = (
   completionDate: null,
   customHeaders: null,
   externalFormReference: null,
+  businessId: null,
   tags: [],
   ...customFields,
 });

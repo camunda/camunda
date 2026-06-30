@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.0.78
+
+### 🚀 Enhancements
+
+- Add `businessId` property to decision-instance schema ([#52098](https://github.com/camunda/camunda/issues/52098))
+- Add `businessId` property to user-task schema ([#51691](https://github.com/camunda/camunda/issues/51691))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.77
 
 ### 🚀 Enhancements

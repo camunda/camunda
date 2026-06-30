@@ -12,6 +12,7 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	advancedDateTimeFilterSchema,
+	advancedStringFilterSchema,
 	basicStringFilterSchema,
 	type Endpoint,
 	getEnumFilterSchema,
@@ -43,6 +44,7 @@ const decisionInstanceSchema = z.object({
 	decisionDefinitionKey: z.string(),
 	elementInstanceKey: z.string(),
 	rootDecisionDefinitionKey: z.string(),
+	businessId: z.string().nullable(),
 });
 type DecisionInstance = z.infer<typeof decisionInstanceSchema>;
 
@@ -55,6 +57,7 @@ const queryDecisionInstancesFilterSchema = z
 		elementInstanceKey: basicStringFilterSchema,
 		rootDecisionDefinitionKey: basicStringFilterSchema,
 		decisionRequirementsKey: basicStringFilterSchema,
+		businessId: advancedStringFilterSchema,
 		...decisionInstanceSchema.pick({
 			evaluationFailure: true,
 			decisionDefinitionId: true,
@@ -87,6 +90,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 		'tenantId',
 		'elementInstanceKey',
 		'rootDecisionDefinitionKey',
+		'businessId',
 	] as const,
 	filter: queryDecisionInstancesFilterSchema,
 });

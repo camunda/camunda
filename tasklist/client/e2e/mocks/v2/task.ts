@@ -33,6 +33,7 @@ const unassignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   externalFormReference: null,
   candidateGroups: [],
   candidateUsers: [],
+  businessId: null,
   tags: [],
   ...customFields,
 });
