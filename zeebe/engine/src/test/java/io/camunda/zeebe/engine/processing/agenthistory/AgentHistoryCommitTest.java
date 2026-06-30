@@ -164,6 +164,96 @@ public class AgentHistoryCommitTest {
         .containsExactlyInAnyOrder(firstItemKey, secondItemKey);
   }
 
+  @Test
+  public void shouldCommitMatchingLeaseAndDiscardSupersededOnLeaseBasedCommit() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+
+    ENGINE.pauseProcessing(1);
+    final var keyGenerator =
+        ((MutableProcessingState) ENGINE.getProcessingState()).getKeyGenerator();
+    final long lease1ItemKey = keyGenerator.nextKey();
+    final long lease2ItemKey = keyGenerator.nextKey();
+    final long otherJobItemKey = keyGenerator.nextKey();
+    final long otherJobKey = keyGenerator.nextKey();
+    ENGINE.stop();
+
+    // lease-1 and lease-2 items share jobKey; otherJobItem has lease-1 but a different jobKey —
+    // it must not be affected by the COMMIT, proving the filter is scoped to jobKey.
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(lease1ItemKey)
+            .agentHistory(
+                AgentHistoryIntent.CREATED,
+                new AgentHistoryRecord()
+                    .setAgentHistoryKey(lease1ItemKey)
+                    .setAgentInstanceKey(agentInstanceKey)
+                    .setJobKey(jobKey)
+                    .setJobLease("lease-1")
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setRole(AgentHistoryRole.USER)),
+        RecordToWrite.event()
+            .key(lease2ItemKey)
+            .agentHistory(
+                AgentHistoryIntent.CREATED,
+                new AgentHistoryRecord()
+                    .setAgentHistoryKey(lease2ItemKey)
+                    .setAgentInstanceKey(agentInstanceKey)
+                    .setJobKey(jobKey)
+                    .setJobLease("lease-2")
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setRole(AgentHistoryRole.ASSISTANT)),
+        RecordToWrite.event()
+            .key(otherJobItemKey)
+            .agentHistory(
+                AgentHistoryIntent.CREATED,
+                new AgentHistoryRecord()
+                    .setAgentHistoryKey(otherJobItemKey)
+                    .setAgentInstanceKey(agentInstanceKey)
+                    .setJobKey(otherJobKey)
+                    .setJobLease("lease-1")
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setRole(AgentHistoryRole.USER)));
+    ENGINE.start();
+
+    final var firstCommitted =
+        ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-1").commit();
+    final long commitPosition = firstCommitted.getSourceRecordPosition();
+    final long clockResetKey = ENGINE.clock().reset().getKey();
+
+    // withSourceRecordPosition scopes to events from this COMMIT command only, naturally
+    // excluding otherJobItem (different jobKey, not visited by visitByJobKey)
+    final var agentHistoryEventsForCommit =
+        RecordingExporter.records()
+            .limit(r -> r.getKey() == clockResetKey)
+            .withValueType(ValueType.AGENT_HISTORY)
+            .filter(r -> r.getSourceRecordPosition() == commitPosition)
+            .asList();
+
+    // visitByJobLease(lease-1) → lease-1 item COMMITTED
+    assertThat(
+            agentHistoryEventsForCommit.stream()
+                .filter(r -> r.getIntent() == AgentHistoryIntent.COMMITTED)
+                .map(Record::getKey)
+                .toList())
+        .containsExactly(lease1ItemKey);
+
+    // discard pass (visitByJobKey) → lease-2 item DISCARDED as superseded activation
+    assertThat(
+            agentHistoryEventsForCommit.stream()
+                .filter(r -> r.getIntent() == AgentHistoryIntent.DISCARDED)
+                .map(Record::getKey)
+                .toList())
+        .containsExactly(lease2ItemKey);
+
+    // otherJobItem must not have any event (different jobKey, COMMIT is scoped to jobKey)
+    assertThat(agentHistoryEventsForCommit.stream().map(Record::getKey).toList())
+        .doesNotContain(otherJobItemKey);
+  }
+
   // --- helpers ---
 
   private static Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance() {
