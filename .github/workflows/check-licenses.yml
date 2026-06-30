@@ -59,8 +59,7 @@ jobs:
           fossa_cli_arch: linux_amd64
         - name: single-app
           path: ./
-          runner_definition: >-
-            {"group":"camunda-self-hosted-runners","labels":"github_linux_16_core_arm"}
+          runner_definition: '"aws-core-16-longrunning"'
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
