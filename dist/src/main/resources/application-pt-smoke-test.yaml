@@ -26,6 +26,7 @@ camunda:
           users:
             - alice
             - bob
+
     authentication:
       method: oidc
       # Root declares two OIDC providers:
@@ -72,6 +73,9 @@ camunda:
             issuer-uri: http://localhost:8082/realms/tenanta
             audiences: [pt-default-via-tenanta-aud]
             redirect-uri: "{baseUrl}/sso-callback"
+    session:
+      persistent:
+        enabled: true
   physical-tenants:
     default:
       security:
