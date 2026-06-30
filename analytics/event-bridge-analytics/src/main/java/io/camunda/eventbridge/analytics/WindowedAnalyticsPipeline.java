@@ -57,12 +57,18 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
     while (running) {
       try {
         final List<ZeebeRecord> records = sourceConsumer.poll(MAX_RECORDS, POLL_TIMEOUT);
+        if (records.isEmpty()) {
+          continue;
+        }
+        // fold the whole batch into the rollups' in-memory combiners (no DB writes yet)
         for (final ZeebeRecord record : records) {
           processor.process(record);
-          sourceConsumer.commit(record).join();
         }
-        if (!records.isEmpty()) {
-          processor.flush();
+        // drain the combiners to the serving store: one upsert per group key, not per record
+        processor.flush();
+        // advance offsets only after the flush, so a crash mid-batch replays rather than loses
+        for (final ZeebeRecord record : records) {
+          sourceConsumer.commit(record).join();
         }
       } catch (final RuntimeException e) {
         LOG.warn("Analytics pipeline poll failed; backing off", e);
