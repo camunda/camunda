@@ -245,7 +245,6 @@ public class DefaultRaftServer implements RaftServer {
           new RaftContext(
               name,
               partitionId,
-              partitionGroup,
               localMemberId,
               membershipService,
               protocol,
