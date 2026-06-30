@@ -422,6 +422,16 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
+        isDeleted:
+          description: |
+            Filter by whether the process definition has been deleted.
+            When not set, both deleted and non-deleted process definitions are returned.
+            Set to `false` to exclude deleted definitions (recommended for most use cases).
+            Set to `true` to return only deleted definitions that are still retained in secondary storage.
+          type: boolean
+      x-properties-added-in-version:
+        - propertyName: isDeleted
+          addedInVersion: "8.10"
 
     ProcessDefinitionSearchQueryResult:
       type: object
@@ -447,6 +457,7 @@ components:
         - processDefinitionId
         - tenantId
         - hasStartForm
+        - isDeleted
       properties:
         name:
           description: Name of this process definition.
@@ -478,6 +489,12 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
+        isDeleted:
+          description: Whether this process definition has been deleted but is still retained in secondary storage.
+          type: boolean
+      x-properties-added-in-version:
+        - propertyName: isDeleted
+          addedInVersion: "8.10"
 
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.
