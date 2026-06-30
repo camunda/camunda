@@ -16,7 +16,6 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   batchOperationLifecycleOptions,
   createCancellationBatch,
@@ -64,6 +63,9 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     });
 
     await test.step('Poll batch status', async () => {
+      // Slower RDBMS backings (Postgres / MariaDB) can take longer than the
+      // default 30s to reflect the CANCELED state after the cancel is accepted,
+      // so use the more generous lifecycle budget instead of leaving it ACTIVE.
       await expect(async () => {
         const statusRes = await request.get(
           buildUrl(`/batch-operations/${key}`),
@@ -82,7 +84,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
         );
         const body = await statusRes.json();
         expect(body.state).toBe('CANCELED');
-      }).toPass(defaultAssertionOptions);
+      }).toPass(batchOperationLifecycleOptions);
     });
   });
 
@@ -91,12 +93,22 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 10);
+        // Use 30 instances so the batch stays ACTIVE long enough for the first
+        // cancel to land while it is still cancelable. With only 10 instances
+        // the engine can finish the batch before the cancel arrives (a problem
+        // amplified by slower RDBMS backings), turning the first cancel into a
+        // permanent NOT_FOUND instead of the expected 204.
+        return createCancellationBatch(request, 30);
       });
 
     await test.step('Send first cancel request', async () => {
-      const firstRes = await cancelBatchOperation(request, key);
-      await assertStatusCode(firstRes, 204);
+      // A freshly created batch may briefly return 404 if the cancel command
+      // races ahead of the batch-creation record on the engine partition.
+      // Retry with the shared lifecycle budget to absorb that engine lag.
+      await expect(async () => {
+        const firstRes = await cancelBatchOperation(request, key);
+        await assertStatusCode(firstRes, 204);
+      }).toPass(batchOperationLifecycleOptions);
     });
 
     await test.step('Send second cancel request and assert failure', async () => {
