@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMachine} from '@xstate/react';
+import {useActorRef, useSelector} from '@xstate/react';
 import {useQueryClient} from '@tanstack/react-query';
 import type {SnapshotFrom} from 'xstate';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -16,29 +16,19 @@ import {useCallback} from 'react';
 type AssignmentStatus = 'off' | 'assigning' | 'unassigning' | 'assignmentSuccessful' | 'unassignmentSuccessful';
 
 function deriveAssignmentStatus(snapshot: SnapshotFrom<typeof taskAssignmentMachine>): AssignmentStatus {
-	if (
-		snapshot.matches('Assigning') ||
-		snapshot.matches('AssignmentDelayed') ||
-		snapshot.matches('PollingAssignment') ||
-		snapshot.matches('AwaitingAssignment')
-	) {
+	if (snapshot.hasTag('status:assigning')) {
 		return 'assigning';
 	}
 
-	if (
-		snapshot.matches('Unassigning') ||
-		snapshot.matches('UnassignmentDelayed') ||
-		snapshot.matches('PollingUnassignment') ||
-		snapshot.matches('AwaitingUnassignment')
-	) {
+	if (snapshot.hasTag('status:unassigning')) {
 		return 'unassigning';
 	}
 
-	if (snapshot.matches('AssignmentSucceeded')) {
+	if (snapshot.hasTag('status:assignment_successful')) {
 		return 'assignmentSuccessful';
 	}
 
-	if (snapshot.matches('UnassignmentSucceeded')) {
+	if (snapshot.hasTag('status:unassignment_successful')) {
 		return 'unassignmentSuccessful';
 	}
 
@@ -48,42 +38,36 @@ function deriveAssignmentStatus(snapshot: SnapshotFrom<typeof taskAssignmentMach
 function useTaskAssignment({
 	userTaskKey,
 	currentUser,
-	initialTaskState,
-	initialAssignee,
+	taskState,
+	assignee,
 }: {
 	userTaskKey: string;
 	currentUser: string;
-	initialTaskState: UserTask['state'];
-	initialAssignee: string | null;
+	taskState: UserTask['state'];
+	assignee: string | null;
 }) {
 	const queryClient = useQueryClient();
 
-	const [snapshot, send] = useMachine(taskAssignmentMachine, {
-		input: {queryClient, userTaskKey, currentUser, initialTaskState, initialAssignee},
+	const actorRef = useActorRef(taskAssignmentMachine, {
+		input: {queryClient, userTaskKey, currentUser, initialTaskState: taskState, initialAssignee: assignee},
 	});
 
-	const status = deriveAssignmentStatus(snapshot);
+	const status = useSelector(actorRef, deriveAssignmentStatus);
 	const isBusy = status === 'assigning' || status === 'unassigning';
-	const assign = useCallback(
+	const toggle = useCallback(
 		() =>
-			send({
-				type: 'task.assign',
+			actorRef.send({
+				type: 'task.toggle',
+				taskState,
+				assignee,
 			}),
-		[send],
-	);
-	const unassign = useCallback(
-		() =>
-			send({
-				type: 'task.unassign',
-			}),
-		[send],
+		[actorRef, taskState, assignee],
 	);
 
 	return {
 		status,
 		isBusy,
-		assign,
-		unassign,
+		toggle,
 	};
 }
 

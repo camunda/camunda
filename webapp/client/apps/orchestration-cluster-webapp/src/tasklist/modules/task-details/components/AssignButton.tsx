@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useTaskAssignment, type AssignmentStatus} from '#/tasklist/modules/task-details/useTaskAssignment';
 import {AsyncActionButton} from './AsyncActionButton/AsyncActionButton';
-import {useCallback, useMemo} from 'react';
+import {useMemo} from 'react';
 
 const getAssignmentToggleLabels = (): Record<Exclude<AssignmentStatus, 'off'>, string> => ({
 	assigning: _t('tasklist.taskHeaderAssigning'),
@@ -30,11 +30,11 @@ type Props = {
 const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, currentUser}) => {
 	const isAssigned = typeof assignee === 'string' && taskState !== 'ASSIGNING';
 	const {t} = useTranslation();
-	const {status, isBusy, assign, unassign} = useTaskAssignment({
+	const {status, isBusy, toggle} = useTaskAssignment({
 		userTaskKey,
 		currentUser,
-		initialTaskState: taskState,
-		initialAssignee: assignee,
+		taskState,
+		assignee,
 	});
 
 	function getAsyncActionButtonStatus() {
@@ -47,13 +47,6 @@ const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, curren
 		return 'inactive';
 	}
 
-	const handleClick = useCallback(() => {
-		if (isAssigned) {
-			unassign();
-		} else {
-			assign();
-		}
-	}, [isAssigned, assign, unassign]);
 	const inlineLoadingProps = useMemo(
 		() =>
 			({
@@ -68,12 +61,12 @@ const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, curren
 				kind: isAssigned ? 'ghost' : 'primary',
 				size: 'sm',
 				type: 'button',
-				onClick: handleClick,
+				onClick: toggle,
 				disabled: isBusy,
 				autoFocus: true,
 				id: 'main-content',
 			}) as const,
-		[isAssigned, handleClick, isBusy],
+		[isAssigned, toggle, isBusy],
 	);
 
 	return (

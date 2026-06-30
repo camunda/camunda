@@ -37,6 +37,12 @@ type MachineContext = {
 	pollRetryCount: number;
 };
 
+type TaskAssignmentStatusTag =
+	| 'status:assigning'
+	| 'status:unassigning'
+	| 'status:assignment_successful'
+	| 'status:unassignment_successful';
+
 async function resolveFailureSubtitle(
 	error: unknown,
 	type: 'assignment' | 'unassignment',
@@ -114,7 +120,8 @@ const taskAssignmentMachine = setup({
 	types: {
 		context: {} as MachineContext,
 		input: {} as MachineInput,
-		events: {} as {type: 'task.assign'} | {type: 'task.unassign'},
+		events: {} as {type: 'task.toggle'; taskState: UserTask['state']; assignee: string | null},
+		tags: {} as TaskAssignmentStatusTag,
 	},
 	actors: {
 		assignTask: assignTaskLogic,
@@ -136,6 +143,8 @@ const taskAssignmentMachine = setup({
 		},
 		isInitiallyAssigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee === null,
 		isInitiallyUnassigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee !== null,
+		isTaskAssigned: (_, params: {taskState: UserTask['state']; assignee: string | null}) =>
+			typeof params.assignee === 'string' && params.taskState !== 'ASSIGNING',
 	},
 	actions: {
 		setOptimisticAssigning: ({context}) => {
@@ -236,13 +245,22 @@ const taskAssignmentMachine = setup({
 				{guard: 'isInitiallyUnassigning', target: 'AwaitingUnassignment', actions: 'clearInitialTaskState'},
 			],
 			on: {
-				'task.assign': {target: 'Assigning'},
-				'task.unassign': {target: 'Unassigning'},
+				'task.toggle': [
+					{
+						guard: {
+							type: 'isTaskAssigned',
+							params: ({event}) => ({taskState: event.taskState, assignee: event.assignee}),
+						},
+						target: 'Unassigning',
+					},
+					{target: 'Assigning'},
+				],
 			},
 		},
 
 		AwaitingAssignment: {
 			entry: 'resetRetryCount',
+			tags: 'status:assigning',
 			initial: 'Fetching',
 			states: {
 				Fetching: {
@@ -279,6 +297,7 @@ const taskAssignmentMachine = setup({
 
 		AwaitingUnassignment: {
 			entry: 'resetRetryCount',
+			tags: 'status:unassigning',
 			initial: 'Fetching',
 			states: {
 				Fetching: {
@@ -314,6 +333,7 @@ const taskAssignmentMachine = setup({
 		},
 
 		Assigning: {
+			tags: 'status:assigning',
 			invoke: {
 				src: 'assignTask',
 				input: ({context}) => ({
@@ -342,6 +362,7 @@ const taskAssignmentMachine = setup({
 
 		AssignmentDelayed: {
 			entry: ['setOptimisticAssigning', 'notifyAssignmentDelayed', 'resetRetryCount'],
+			tags: 'status:assigning',
 			initial: 'Fetching',
 			states: {
 				Fetching: {
@@ -378,6 +399,7 @@ const taskAssignmentMachine = setup({
 
 		PollingAssignment: {
 			entry: 'resetRetryCount',
+			tags: 'status:assigning',
 			initial: 'Fetching',
 			states: {
 				Fetching: {
@@ -414,12 +436,14 @@ const taskAssignmentMachine = setup({
 
 		AssignmentSucceeded: {
 			entry: 'trackAssigned',
+			tags: 'status:assignment_successful',
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},
 			},
 		},
 
 		Unassigning: {
+			tags: 'status:unassigning',
 			invoke: {
 				src: 'unassignTask',
 				input: ({context}) => ({
@@ -447,6 +471,7 @@ const taskAssignmentMachine = setup({
 
 		UnassignmentDelayed: {
 			entry: ['setOptimisticUnassigning', 'notifyUnassignmentDelayed', 'trackUnassignmentDelayed', 'resetRetryCount'],
+			tags: 'status:unassigning',
 			initial: 'Fetching',
 			states: {
 				Fetching: {
@@ -483,6 +508,7 @@ const taskAssignmentMachine = setup({
 
 		PollingUnassignment: {
 			entry: 'resetRetryCount',
+			tags: 'status:unassigning',
 			initial: 'Fetching',
 			states: {
 				Fetching: {
@@ -519,6 +545,7 @@ const taskAssignmentMachine = setup({
 
 		UnassignmentSucceeded: {
 			entry: 'trackUnassigned',
+			tags: 'status:unassignment_successful',
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},
 			},
