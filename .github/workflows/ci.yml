@@ -1092,6 +1092,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           minimus: true
+          dockerhub-readonly: true
           maven-cache-key-modifier: it-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
