@@ -481,7 +481,9 @@ jobs:
           # ============================================================================
 
           # IT Distributed = DISTRIBUTED + BACKUP (all distributed platform modules)
-          IT_DISTRIBUTED="${DISTRIBUTED},${BACKUP}"
+          # zeebe-qa-util is excluded from DISTRIBUTED (skipQaBuild=true skips zeebe/qa/ in UT jobs)
+          # but must run its ITs, so it is added here explicitly
+          IT_DISTRIBUTED="${DISTRIBUTED},${BACKUP},':zeebe-qa-util'"
 
           # IT Exporter = EXPORTER (direct reuse)
           IT_EXPORTER="$EXPORTER"
