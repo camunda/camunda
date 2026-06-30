@@ -24,6 +24,7 @@ import {Paths} from 'modules/Routes';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {modificationsStore} from 'modules/stores/modifications';
 
 vi.mock('modules/utils/bpmn');
 
@@ -89,9 +90,17 @@ const mockElementInstances = {
   },
 };
 
-const Wrapper = ({children}: {children?: React.ReactNode}) => {
+const Wrapper = ({
+  children,
+  initialSearch = '',
+}: {
+  children?: React.ReactNode;
+  initialSearch?: string;
+}) => {
   return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+    <MemoryRouter
+      initialEntries={[`${Paths.processInstance('1')}${initialSearch}`]}
+    >
       <ProcessDefinitionKeyContext.Provider value="123">
         <QueryClientProvider client={getMockQueryClient()}>
           <Routes>
@@ -325,5 +334,130 @@ describe('ElementInstanceLog', () => {
     ).toBeInTheDocument();
     vi.clearAllTimers();
     vi.useRealTimers();
+  });
+});
+
+const mockSearchResponse = {
+  items: [
+    {
+      elementInstanceKey: '100',
+      processInstanceKey: '1',
+      processDefinitionKey: 'processName',
+      processDefinitionId: 'processName',
+      state: 'ACTIVE' as const,
+      type: 'SERVICE_TASK' as const,
+      elementId: 'order_task',
+      elementName: 'Order Task',
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+      startDate: '2018-12-12T00:00:00.000+0000',
+      endDate: null,
+      rootProcessInstanceKey: null,
+    },
+  ],
+  page: {
+    totalItems: 1,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
+};
+
+describe('ElementInstanceLog — search flow', () => {
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+  });
+
+  it('shows the filtered results list when the URL has an elementSearch param', async () => {
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+
+    render(<ElementInstanceLog isPanel />, {
+      wrapper: ({children}) => (
+        <Wrapper initialSearch="?elementSearch=order">{children}</Wrapper>
+      ),
+    });
+
+    expect(await screen.findByTestId('search-result-100')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {
+        name: /Multi-Instance Process instance history/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the search input in panel mode', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByLabelText('Filter element instances'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the tree instead of the filtered list when modification mode is active', async () => {
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+    mockSearchElementInstances().withSuccess(mockSearchResponse);
+
+    render(<ElementInstanceLog isPanel />, {
+      wrapper: ({children}) => (
+        <Wrapper initialSearch="?elementSearch=order">{children}</Wrapper>
+      ),
+    });
+
+    // Without modification mode the filtered list is shown.
+    expect(await screen.findByTestId('search-result-100')).toBeInTheDocument();
+
+    // Enable modification mode — the tree must replace the filtered list.
+    modificationsStore.enableModificationMode();
+
+    expect(
+      await screen.findByRole('tree', {
+        name: /Multi-Instance Process instance history/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('search-result-100')).not.toBeInTheDocument();
+
+    modificationsStore.reset();
+  });
+
+  it('hides the search input when modification mode is active', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByLabelText('Filter element instances'),
+    ).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+
+    await waitForElementToBeRemoved(
+      screen.queryByLabelText('Filter element instances'),
+    );
+
+    modificationsStore.reset();
   });
 });

@@ -13,16 +13,12 @@ describe('escapeLikePattern', () => {
     expect(escapeLikePattern('foo')).toBe('*foo*');
   });
 
-  it('escapes the literal $like wildcard `*`', () => {
-    expect(escapeLikePattern('foo*bar')).toBe('*foo\\*bar*');
-  });
-
-  it('escapes the literal single-character wildcard `?`', () => {
-    expect(escapeLikePattern('foo?bar')).toBe('*foo\\?bar*');
-  });
-
-  it('escapes the literal escape character `\\`', () => {
-    expect(escapeLikePattern('foo\\bar')).toBe('*foo\\\\bar*');
+  it.for([
+    ['*', '*foo\\*bar*'],
+    ['?', '*foo\\?bar*'],
+    ['\\', '*foo\\\\bar*'],
+  ] as const)('escapes the special character %s', ([char, expected]) => {
+    expect(escapeLikePattern(`foo${char}bar`)).toBe(expected);
   });
 
   it('passes Unicode and surrogate-pair characters through unchanged', () => {

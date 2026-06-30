@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
@@ -170,8 +170,8 @@ describe('<FilteredElementInstancesList />', () => {
       {wrapper: Wrapper},
     );
 
-    await waitFor(() =>
-      expect(screen.getAllByText(/permission/i).length).toBeGreaterThan(0),
-    );
+    expect(
+      await screen.findByText(INSTANCE_HISTORY_FORBIDDEN.message),
+    ).toBeInTheDocument();
   });
 });
