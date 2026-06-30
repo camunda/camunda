@@ -9,7 +9,7 @@ package io.camunda.analytics.webapp.model;
 
 /**
  * A report on top of a {@link Dataset}: a visualization plus optional filters (a specific process,
- * and an event-time window range). Null filter fields mean "no filter".
+ * a specific region, and an event-time window range). Null filter fields mean "no filter".
  */
 public record Report(
     long id,
@@ -17,5 +17,6 @@ public record Report(
     long datasetId,
     String vizType,
     String bpmnProcessId,
+    String region,
     Long fromWindow,
     Long toWindow) {}

@@ -7,6 +7,11 @@
  */
 package io.camunda.analytics.webapp.model;
 
-/** One row of a rendered report: a (process, window) cell with its aggregated metrics. */
+/** One row of a rendered report: a (region, process, window) cell with its aggregated metrics. */
 public record ReportRow(
-    String bpmnProcessId, long windowStart, long completedCount, double averageDurationMs) {}
+    String region,
+    String bpmnProcessId,
+    long windowStart,
+    long completedCount,
+    double averageDurationMs,
+    long maxDurationMs) {}

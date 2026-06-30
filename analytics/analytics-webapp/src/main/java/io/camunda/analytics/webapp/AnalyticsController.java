@@ -58,6 +58,7 @@ public class AnalyticsController {
         request.datasetId(),
         viz,
         request.bpmnProcessId(),
+        request.region(),
         request.fromWindow(),
         request.toWindow());
   }
@@ -79,6 +80,7 @@ public class AnalyticsController {
       long datasetId,
       String vizType,
       String bpmnProcessId,
+      String region,
       Long fromWindow,
       Long toWindow) {}
 }

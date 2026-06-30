@@ -44,16 +44,19 @@ public class AnalyticsRepository {
               rs.getLong("dataset_id"),
               rs.getString("viz_type"),
               rs.getString("bpmn_process_id"),
+              rs.getString("region"),
               (Long) rs.getObject("from_window"),
               (Long) rs.getObject("to_window"));
 
   private static final RowMapper<ReportRow> REPORT_ROW_MAPPER =
       (rs, n) ->
           new ReportRow(
+              rs.getString("region"),
               rs.getString("bpmn_process_id"),
               rs.getLong("window_start"),
               rs.getLong("completed"),
-              rs.getDouble("avg_duration"));
+              rs.getDouble("avg_duration"),
+              rs.getLong("max_duration"));
 
   private final JdbcTemplate jdbc;
 
@@ -104,6 +107,7 @@ public class AnalyticsRepository {
       final long datasetId,
       final String vizType,
       final String bpmnProcessId,
+      final String region,
       final Long fromWindow,
       final Long toWindow) {
     final KeyHolder keys = new GeneratedKeyHolder();
@@ -112,28 +116,34 @@ public class AnalyticsRepository {
           final var ps =
               con.prepareStatement(
                   "INSERT INTO analytics_report"
-                      + " (name, dataset_id, viz_type, bpmn_process_id, from_window, to_window)"
-                      + " VALUES (?, ?, ?, ?, ?, ?)",
+                      + " (name, dataset_id, viz_type, bpmn_process_id, region, from_window,"
+                      + " to_window) VALUES (?, ?, ?, ?, ?, ?, ?)",
                   new String[] {"id"});
           ps.setString(1, name);
           ps.setLong(2, datasetId);
           ps.setString(3, vizType);
           ps.setString(4, bpmnProcessId);
-          ps.setObject(5, fromWindow);
-          ps.setObject(6, toWindow);
+          ps.setString(5, region);
+          ps.setObject(6, fromWindow);
+          ps.setObject(7, toWindow);
           return ps;
         },
         keys);
     return getReport(keys.getKey().longValue()).orElseThrow();
   }
 
-  /** Runs a report: the windowed "N completed per definition" metric, with the report's filters. */
+  /**
+   * Runs a report: execution time grouped by region (and process and window), with the report's
+   * filters. The per-source-partition partials are merged here — {@code SUM} for additive counts
+   * and total duration (so the average is exact), {@code MAX} for the slowest instance.
+   */
   public List<ReportRow> runReport(final Report report) {
     final StringBuilder sql =
         new StringBuilder(
-            "SELECT bpmn_process_id, window_start, SUM(completed_count) AS completed, "
+            "SELECT region, bpmn_process_id, window_start, SUM(completed_count) AS completed, "
                 + "CASE WHEN SUM(completed_count) = 0 THEN 0 "
-                + "ELSE SUM(total_duration_ms) * 1.0 / SUM(completed_count) END AS avg_duration "
+                + "ELSE SUM(total_duration_ms) * 1.0 / SUM(completed_count) END AS avg_duration, "
+                + "MAX(max_duration_ms) AS max_duration "
                 + "FROM proc_inst_exec_time_window");
     final List<Object> params = new ArrayList<>();
     final List<String> conditions = new ArrayList<>();
@@ -144,6 +154,10 @@ public class AnalyticsRepository {
       conditions.add("bpmn_process_id = ?");
       params.add(report.bpmnProcessId());
     }
+    if (report.region() != null && !report.region().isBlank()) {
+      conditions.add("region = ?");
+      params.add(report.region());
+    }
     if (report.fromWindow() != null) {
       conditions.add("window_start >= ?");
       params.add(report.fromWindow());
@@ -152,10 +166,10 @@ public class AnalyticsRepository {
       conditions.add("window_start <= ?");
       params.add(report.toWindow());
     }
-    if (!conditions.isEmpty()) {
-      sql.append(" WHERE ").append(String.join(" AND ", conditions));
-    }
-    sql.append(" GROUP BY bpmn_process_id, window_start ORDER BY bpmn_process_id, window_start");
+    sql.append(" WHERE ").append(String.join(" AND ", conditions));
+    sql.append(
+        " GROUP BY region, bpmn_process_id, window_start"
+            + " ORDER BY region, bpmn_process_id, window_start");
     return jdbc.query(sql.toString(), REPORT_ROW_MAPPER, params.toArray());
   }
 }

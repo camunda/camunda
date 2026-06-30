@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS analytics_report (
   dataset_id      BIGINT       NOT NULL,
   viz_type        VARCHAR(64)  NOT NULL,
   bpmn_process_id VARCHAR(255),
+  region          VARCHAR(255),
   from_window     BIGINT,
   to_window       BIGINT
 );

@@ -34,12 +34,12 @@ final class AnalyticsRepositoryTest {
     jdbc.execute(
         "CREATE TABLE analytics_report (id BIGINT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255),"
             + " dataset_id BIGINT, viz_type VARCHAR(64), bpmn_process_id VARCHAR(255),"
-            + " from_window BIGINT, to_window BIGINT)");
+            + " region VARCHAR(255), from_window BIGINT, to_window BIGINT)");
     jdbc.execute(
-        "CREATE TABLE proc_inst_exec_time_window (dataset_id BIGINT, process_definition_key BIGINT,"
-            + " bpmn_process_id VARCHAR(255), version INT, tenant_id VARCHAR(255), window_start"
-            + " BIGINT, window_size_ms BIGINT, completed_count BIGINT, total_duration_ms BIGINT,"
-            + " min_duration_ms BIGINT, max_duration_ms BIGINT)");
+        "CREATE TABLE proc_inst_exec_time_window (dataset_id BIGINT, region VARCHAR(255),"
+            + " process_definition_key BIGINT, bpmn_process_id VARCHAR(255), version INT,"
+            + " tenant_id VARCHAR(255), window_start BIGINT, window_size_ms BIGINT, completed_count"
+            + " BIGINT, total_duration_ms BIGINT, min_duration_ms BIGINT, max_duration_ms BIGINT)");
     repository = new AnalyticsRepository(jdbc);
   }
 
@@ -48,7 +48,7 @@ final class AnalyticsRepositoryTest {
     // when
     final Dataset dataset = repository.createDataset("Completions", "definition", 3_600_000L);
     final Report report =
-        repository.createReport("Hourly", dataset.id(), "table", null, null, null);
+        repository.createReport("Hourly", dataset.id(), "table", null, null, null, null);
 
     // then
     assertThat(dataset.id()).isPositive();
@@ -62,10 +62,11 @@ final class AnalyticsRepositoryTest {
   void shouldRunReportAggregatingPerProcessAndWindow() {
     // given — a dataset with windowed rows tagged to it
     final Dataset dataset = repository.createDataset("Completions", "definition", 3_600_000L);
-    seed(dataset.id(), 1L, "order", 0L, 3, 1500);
-    seed(dataset.id(), 1L, "order", 3_600_000L, 1, 800);
-    seed(dataset.id(), 2L, "invoice", 0L, 1, 3950);
-    final Report report = repository.createReport("All", dataset.id(), "table", null, null, null);
+    seed(dataset.id(), "EU", 1L, "order", 0L, 3, 1500, 800);
+    seed(dataset.id(), "EU", 1L, "order", 3_600_000L, 1, 800, 800);
+    seed(dataset.id(), "EU", 2L, "invoice", 0L, 1, 3950, 3950);
+    final Report report =
+        repository.createReport("All", dataset.id(), "table", null, null, null, null);
 
     // when
     final var rows = repository.runReport(report);
@@ -90,9 +91,10 @@ final class AnalyticsRepositoryTest {
     // given — two datasets with rows; a report on the first must not see the second's rows
     final Dataset a = repository.createDataset("A", "definition", 3_600_000L);
     final Dataset b = repository.createDataset("B", "definition", 3_600_000L);
-    seed(a.id(), 1L, "order", 0L, 3, 1500);
-    seed(b.id(), 1L, "order", 0L, 99, 9900);
-    final Report report = repository.createReport("A report", a.id(), "table", null, null, null);
+    seed(a.id(), "EU", 1L, "order", 0L, 3, 1500, 800);
+    seed(b.id(), "EU", 1L, "order", 0L, 99, 9900, 800);
+    final Report report =
+        repository.createReport("A report", a.id(), "table", null, null, null, null);
 
     // when / then — only dataset A's rows
     final var rows = repository.runReport(report);
@@ -103,11 +105,11 @@ final class AnalyticsRepositoryTest {
   void shouldApplyProcessFilter() {
     // given
     final Dataset dataset = repository.createDataset("Completions", "definition", 3_600_000L);
-    seed(dataset.id(), 1L, "order", 0L, 3, 1500);
-    seed(dataset.id(), 1L, "order", 3_600_000L, 1, 800);
-    seed(dataset.id(), 2L, "invoice", 0L, 1, 3950);
+    seed(dataset.id(), "EU", 1L, "order", 0L, 3, 1500, 800);
+    seed(dataset.id(), "EU", 1L, "order", 3_600_000L, 1, 800, 800);
+    seed(dataset.id(), "EU", 2L, "invoice", 0L, 1, 3950, 3950);
     final Report report =
-        repository.createReport("Order only", dataset.id(), "table", "order", null, null);
+        repository.createReport("Order only", dataset.id(), "table", "order", null, null, null);
 
     // when
     final var rows = repository.runReport(report);
@@ -117,21 +119,58 @@ final class AnalyticsRepositoryTest {
     assertThat(rows).hasSize(2);
   }
 
+  @Test
+  void shouldGroupByRegionAndExposeAvgAndMax() {
+    // given — same process/window, two regions; EU has two partials to merge
+    final Dataset dataset = repository.createDataset("By region", "region", 3_600_000L);
+    seed(dataset.id(), "EU", 1L, "order", 0L, 2, 1000, 700);
+    seed(dataset.id(), "EU", 1L, "order", 0L, 1, 500, 500); // a second source-partition partial
+    seed(dataset.id(), "US", 1L, "order", 0L, 1, 900, 900);
+    final Report report =
+        repository.createReport("All regions", dataset.id(), "table", null, null, null, null);
+
+    // when
+    final var rows = repository.runReport(report);
+
+    // then — one row per region; EU merges to 3 instances, avg 500, max 700
+    assertThat(rows).extracting(ReportRow::region).containsExactly("EU", "US");
+    final ReportRow eu =
+        rows.stream().filter(r -> r.region().equals("EU")).findFirst().orElseThrow();
+    assertThat(eu.completedCount()).isEqualTo(3L);
+    assertThat(eu.averageDurationMs()).isEqualTo(500.0); // (1000 + 500) / 3
+    assertThat(eu.maxDurationMs()).isEqualTo(700L);
+
+    // and — filtering by region narrows to that region only
+    final Report usOnly =
+        repository.createReport("US only", dataset.id(), "table", null, "US", null, null);
+    assertThat(repository.runReport(usOnly))
+        .singleElement()
+        .satisfies(
+            r -> {
+              assertThat(r.region()).isEqualTo("US");
+              assertThat(r.maxDurationMs()).isEqualTo(900L);
+            });
+  }
+
   private void seed(
       final long datasetId,
+      final String region,
       final long defKey,
       final String bpmnProcessId,
       final long windowStart,
       final long count,
-      final long totalDuration) {
+      final long totalDuration,
+      final long maxDuration) {
     jdbc.update(
-        "INSERT INTO proc_inst_exec_time_window VALUES (?, ?, ?, 1, '<default>', ?, 3600000, ?, ?,"
-            + " 0, 0)",
+        "INSERT INTO proc_inst_exec_time_window VALUES (?, ?, ?, ?, 1, '<default>', ?, 3600000, ?,"
+            + " ?, 0, ?)",
         datasetId,
+        region,
         defKey,
         bpmnProcessId,
         windowStart,
         count,
-        totalDuration);
+        totalDuration,
+        maxDuration);
   }
 }
