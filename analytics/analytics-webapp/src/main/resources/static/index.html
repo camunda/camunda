@@ -1,0 +1,119 @@
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Analytics — datasets & reports</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 0; color: #1a1a1a; background: #f6f6f6; }
+    header { background: #000; color: #fff; padding: 14px 22px; font-weight: 700; letter-spacing: .5px; }
+    main { max-width: 980px; margin: 22px auto; padding: 0 16px; display: grid; gap: 22px; }
+    .card { background: #fff; border: 1px solid #e3e3e3; border-radius: 8px; padding: 16px 18px; }
+    h2 { margin: 0 0 12px; font-size: 16px; }
+    label { display: inline-block; min-width: 120px; color: #555; }
+    input, select { padding: 6px 8px; border: 1px solid #ccc; border-radius: 5px; min-width: 200px; }
+    .row { margin: 6px 0; }
+    button { background: #ff5000; color: #fff; border: 0; border-radius: 5px; padding: 7px 14px; cursor: pointer; }
+    button.secondary { background: #2563eb; }
+    ul { list-style: none; padding: 0; margin: 8px 0 0; }
+    li { padding: 6px 0; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eee; }
+    .bar { display: inline-block; height: 12px; background: #ff5000; border-radius: 2px; vertical-align: middle; }
+    .muted { color: #888; font-size: 12px; }
+    code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<header>CAMUNDA · Analytics — declare a dataset, build a report</header>
+<main>
+  <section class="card">
+    <h2>1 · Define a dataset</h2>
+    <div class="row"><label>Name</label><input id="ds-name" placeholder="e.g. Process completions"/></div>
+    <div class="row"><label>Window</label>
+      <select id="ds-window">
+        <option value="3600000">Hourly</option>
+        <option value="86400000">Daily</option>
+        <option value="60000">Per minute</option>
+      </select>
+      <span class="muted">fact: process-instance execution time</span>
+    </div>
+    <div class="row"><button onclick="createDataset()">Create dataset</button></div>
+    <ul id="datasets"></ul>
+  </section>
+
+  <section class="card">
+    <h2>2 · Build a report</h2>
+    <div class="row"><label>Name</label><input id="r-name" placeholder="e.g. Completions per hour"/></div>
+    <div class="row"><label>Dataset</label><select id="r-dataset"></select></div>
+    <div class="row"><label>Process filter</label><input id="r-process" placeholder="(optional) bpmnProcessId"/></div>
+    <div class="row"><button onclick="createReport()">Create report</button></div>
+    <ul id="reports"></ul>
+  </section>
+
+  <section class="card">
+    <h2>3 · View report</h2>
+    <div id="report-view"><span class="muted">Pick a report above to view it.</span></div>
+  </section>
+</main>
+
+<script>
+  const api = (p, opts) => fetch('/api' + p, opts).then(r => r.json());
+  const post = (p, body) => api(p, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  const fmt = ms => new Date(Number(ms)).toISOString().replace('T', ' ').slice(0, 16);
+
+  async function refresh() {
+    const datasets = await api('/datasets');
+    document.getElementById('datasets').innerHTML =
+      datasets.map(d => `<li><b>${d.name}</b> <span class="muted">#${d.id} · window ${d.windowSizeMs}ms</span></li>`).join('');
+    document.getElementById('r-dataset').innerHTML =
+      datasets.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    const reports = await api('/reports');
+    document.getElementById('reports').innerHTML =
+      reports.map(r => `<li><b>${r.name}</b> <span class="muted">#${r.id}${r.bpmnProcessId ? ' · ' + r.bpmnProcessId : ''}</span>
+        <button class="secondary" onclick="viewReport(${r.id}, '${r.name.replace(/'/g, "")}')">View</button></li>`).join('');
+  }
+
+  async function createDataset() {
+    const name = document.getElementById('ds-name').value || 'Untitled dataset';
+    const windowSizeMs = Number(document.getElementById('ds-window').value);
+    await post('/datasets', {name, dimensions: 'definition', windowSizeMs});
+    document.getElementById('ds-name').value = '';
+    refresh();
+  }
+
+  async function createReport() {
+    const name = document.getElementById('r-name').value || 'Untitled report';
+    const datasetId = Number(document.getElementById('r-dataset').value);
+    const bpmnProcessId = document.getElementById('r-process').value || null;
+    if (!datasetId) { alert('Create a dataset first.'); return; }
+    await post('/reports', {name, datasetId, vizType: 'table', bpmnProcessId, fromWindow: null, toWindow: null});
+    document.getElementById('r-name').value = '';
+    refresh();
+  }
+
+  async function viewReport(id, name) {
+    const rows = await api(`/reports/${id}/data`);
+    const max = Math.max(1, ...rows.map(r => r.completedCount));
+    const body = rows.length === 0
+      ? '<p class="muted">No data yet — run the pipeline against this dataset DB.</p>'
+      : `<table><thead><tr><th>Process</th><th>Window</th><th>Completed</th><th>Avg duration (ms)</th></tr></thead><tbody>` +
+        rows.map(r => `<tr>
+            <td><code>${r.bpmnProcessId}</code></td>
+            <td>${fmt(r.windowStart)}</td>
+            <td><span class="bar" style="width:${Math.round(120 * r.completedCount / max)}px"></span> ${r.completedCount}</td>
+            <td>${r.averageDurationMs.toFixed(1)}</td>
+          </tr>`).join('') + '</tbody></table>';
+    document.getElementById('report-view').innerHTML = `<h3 style="margin:0 0 4px">${name}</h3>` + body;
+  }
+
+  refresh();
+</script>
+</body>
+</html>

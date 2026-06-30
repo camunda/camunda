@@ -1,0 +1,16 @@
+# Analytics webapp — first-version config.
+# Point analytics.dataset.url at the pipeline's H2 (server mode) to see live data, e.g.
+#   -Danalytics.dataset.url=jdbc:h2:tcp://localhost:9092/./data/analytics-dataset
+# Default is an in-memory DB so the app runs standalone (empty until you seed or wire the pipeline).
+server:
+  port: ${analytics.ui.port:8090}
+
+spring:
+  datasource:
+    url: ${analytics.dataset.url:jdbc:h2:mem:analytics-ui;DB_CLOSE_DELAY=-1}
+    username: ${analytics.dataset.user:sa}
+    password: ${analytics.dataset.password:}
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always

@@ -25,6 +25,7 @@
 
   <modules>
     <module>event-bridge-analytics</module>
+    <module>analytics-webapp</module>
   </modules>
 
 </project>
