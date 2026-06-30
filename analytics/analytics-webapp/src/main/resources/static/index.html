@@ -98,19 +98,41 @@
     refresh();
   }
 
+  function barChart(rows, max) {
+    const W = Math.max(440, rows.length * 64), H = 250, pad = 30, top = 22, chartH = H - top - 60;
+    const step = (W - pad * 2) / rows.length, bw = Math.min(40, step * 0.6);
+    const bars = rows.map((r, i) => {
+      const h = Math.round(chartH * r.completedCount / max);
+      const x = pad + i * step + (step - bw) / 2, y = top + (chartH - h);
+      const lbl = (r.bpmnProcessId.length > 8 ? r.bpmnProcessId.slice(0, 7) + '…' : r.bpmnProcessId) + ' ' + fmt(r.windowStart).slice(11);
+      const ly = top + chartH + 12;
+      return `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="2" fill="#ff5000"></rect>
+        <text x="${x + bw / 2}" y="${y - 4}" text-anchor="middle" font-size="11">${r.completedCount}</text>
+        <text x="${x + bw / 2}" y="${ly}" text-anchor="end" font-size="10" fill="#555" transform="rotate(-35 ${x + bw / 2} ${ly})">${lbl}</text>`;
+    }).join('');
+    return `<svg width="${W}" height="${H}" style="max-width:100%">
+      <text x="${pad}" y="12" font-size="11" fill="#888">completed instances per process · window</text>
+      <line x1="${pad}" y1="${top + chartH}" x2="${W - pad}" y2="${top + chartH}" stroke="#ccc"></line>
+      ${bars}</svg>`;
+  }
+
   async function viewReport(id, name) {
     const rows = await api(`/reports/${id}/data`);
+    const view = document.getElementById('report-view');
+    if (rows.length === 0) {
+      view.innerHTML = `<h3 style="margin:0 0 4px">${name}</h3><p class="muted">No data yet — run the pipeline against this dataset DB.</p>`;
+      return;
+    }
     const max = Math.max(1, ...rows.map(r => r.completedCount));
-    const body = rows.length === 0
-      ? '<p class="muted">No data yet — run the pipeline against this dataset DB.</p>'
-      : `<table><thead><tr><th>Process</th><th>Window</th><th>Completed</th><th>Avg duration (ms)</th></tr></thead><tbody>` +
-        rows.map(r => `<tr>
-            <td><code>${r.bpmnProcessId}</code></td>
-            <td>${fmt(r.windowStart)}</td>
-            <td><span class="bar" style="width:${Math.round(120 * r.completedCount / max)}px"></span> ${r.completedCount}</td>
-            <td>${r.averageDurationMs.toFixed(1)}</td>
-          </tr>`).join('') + '</tbody></table>';
-    document.getElementById('report-view').innerHTML = `<h3 style="margin:0 0 4px">${name}</h3>` + body;
+    const table = `<table><thead><tr><th>Process</th><th>Window</th><th>Completed</th><th>Avg duration (ms)</th></tr></thead><tbody>` +
+      rows.map(r => `<tr>
+          <td><code>${r.bpmnProcessId}</code></td>
+          <td>${fmt(r.windowStart)}</td>
+          <td><span class="bar" style="width:${Math.round(120 * r.completedCount / max)}px"></span> ${r.completedCount}</td>
+          <td>${r.averageDurationMs.toFixed(1)}</td>
+        </tr>`).join('') + '</tbody></table>';
+    view.innerHTML = `<h3 style="margin:0 0 4px">${name}</h3>` + barChart(rows, max) + table
+      + `<div class="row" style="margin-top:8px"><button class="secondary" onclick="viewReport(${id}, '${name.replace(/'/g, "")}')">↻ Refresh</button></div>`;
   }
 
   refresh();

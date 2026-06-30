@@ -52,6 +52,9 @@ public final class StandaloneAnalyticsPipeline {
         Long.getLong("windowSizeMs", WindowedExecutionTimeAggregator.DEFAULT_WINDOW_SIZE_MS);
     final String jdbcUrl =
         System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
+    // user 'sa' so the dataset DB has consistent credentials with the webapp / shared H2 server
+    // (e.g. jdbc:h2:tcp://localhost:9092/analytics-dataset for live UI data).
+    final String jdbcUser = System.getProperty("jdbcUser", "sa");
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
 
@@ -62,6 +65,7 @@ public final class StandaloneAnalyticsPipeline {
 
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL(jdbcUrl);
+    dataSource.setUser(jdbcUser);
     final WindowedExecutionTimeAggregator aggregator =
         new WindowedExecutionTimeAggregator(
             dataSource, windowSizeMs, WindowedExecutionTimeAggregator.DEFAULT_ALLOWED_LATENESS_MS);
