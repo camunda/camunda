@@ -14,8 +14,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 public final class AuthorizationRejectionMapper {
 
   private static final String FORBIDDEN_MSG =
-      "Expected to have '%s' permission on resource type '%s' with id '%s', "
-          + "but the principal is not authorized.";
+      "Insufficient permissions to perform operation '%s' on resource '%s'";
   private static final String TENANT_MSG =
       "Expected to access tenant '%s', but the principal is not authorized.";
 
@@ -28,7 +27,7 @@ public final class AuthorizationRejectionMapper {
       case AuthorizationRejection.Permission p ->
           new Rejection(
               RejectionType.FORBIDDEN,
-              FORBIDDEN_MSG.formatted(p.permissionType(), p.resourceType(), p.resourceId()));
+              FORBIDDEN_MSG.formatted(p.permissionType(), p.resourceType()));
     };
   }
 }

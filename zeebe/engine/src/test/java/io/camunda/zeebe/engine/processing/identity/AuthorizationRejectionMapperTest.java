@@ -39,6 +39,6 @@ class AuthorizationRejectionMapperTest {
     final Rejection result = AuthorizationRejectionMapper.toRejection(rejection);
     // then
     assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
-    assertThat(result.reason()).contains("AUTHORIZATION").contains("CREATE").contains("resource-1");
+    assertThat(result.reason()).contains("AUTHORIZATION").contains("CREATE");
   }
 }

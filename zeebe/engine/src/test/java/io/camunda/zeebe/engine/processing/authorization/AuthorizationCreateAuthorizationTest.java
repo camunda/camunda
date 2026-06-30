@@ -127,7 +127,7 @@ public class AuthorizationCreateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Expected to have 'CREATE' permission on resource type 'AUTHORIZATION' with id '*', but the principal is not authorized.");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'");
   }
 
   @Test
