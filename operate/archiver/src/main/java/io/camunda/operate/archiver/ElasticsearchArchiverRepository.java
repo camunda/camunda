@@ -21,7 +21,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHist
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.ArchiverException;
@@ -80,20 +79,31 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
   private static final int UPDATE_RETRY_COUNT = 3;
 
-  @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
-  protected ThreadPoolTaskScheduler archiverExecutor;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-  @Autowired private ListViewTemplate processInstanceTemplate;
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-  @Autowired private OperateProperties operateProperties;
-  @Autowired private Metrics metrics;
-  @Autowired private RestHighLevelClient esClient;
+  private final ThreadPoolTaskScheduler archiverExecutor;
+  private final OperateProperties operateProperties;
+  private final Metrics metrics;
+  private final RestHighLevelClient esClient;
+  private final BatchOperationTemplate batchOperationTemplate;
+  private final ListViewTemplate processInstanceTemplate;
+  private final DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
+  public ElasticsearchArchiverRepository(
+      @Qualifier("archiverThreadPoolExecutor") final ThreadPoolTaskScheduler archiverExecutor,
+      final OperateProperties operateProperties,
+      final Metrics metrics,
+      final RestHighLevelClient esClient,
+      final ListViewTemplate processInstanceTemplate,
+      final BatchOperationTemplate batchOperationTemplate,
+      final DecisionInstanceTemplate decisionInstanceTemplate) {
+    this.archiverExecutor = archiverExecutor;
+    this.operateProperties = operateProperties;
+    this.metrics = metrics;
+    this.esClient = esClient;
+    this.processInstanceTemplate = processInstanceTemplate;
+    this.batchOperationTemplate = batchOperationTemplate;
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
+  }
 
   private ArchiveBatch createArchiveBatch(
       final SearchResponse searchResponse,

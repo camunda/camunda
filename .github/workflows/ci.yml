@@ -899,7 +899,7 @@ jobs:
         with:
           token: ${{ github.token }}
           maven-args: >-
-            -pl bom,clients/java,clients/camunda-spring-boot-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -pl bom,clients/java,clients/camunda-spring-boot-3-starter,clients/camunda-spring-boot-4-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
           correlator: submit-maven-snapshot-maven

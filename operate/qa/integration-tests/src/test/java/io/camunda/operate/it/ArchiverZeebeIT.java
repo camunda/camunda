@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.BatchOperationArchiverJob;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
@@ -95,6 +96,8 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
+  @Autowired private Metrics metrics;
+
   private ProcessInstancesArchiverJob processInstancesArchiverJob;
 
   private final Random random = new Random();
@@ -110,7 +113,13 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
             .withZone(ZoneId.systemDefault());
     processInstancesArchiverJob =
         beanFactory.getBean(
-            ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+            ProcessInstancesArchiverJob.class,
+            archiver,
+            partitionHolder.getPartitionIds(),
+            processInstanceTemplate,
+            processInstanceDependantTemplates,
+            metrics,
+            archiver.getArchiverRepository());
     cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     clearMetrics();
   }
@@ -365,7 +374,12 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     // when
     final StandaloneDecisionArchiverJob standaloneDecisionArchiverJob =
         beanFactory.getBean(
-            StandaloneDecisionArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+            StandaloneDecisionArchiverJob.class,
+            archiver,
+            partitionHolder.getPartitionIds(),
+            decisionInstanceTemplate,
+            metrics,
+            archiver.getArchiverRepository());
 
     assertThat(standaloneDecisionArchiverJob.archiveNextBatch().join()).isEqualTo(1);
     searchTestRule.refreshSerchIndexes();
@@ -423,7 +437,12 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     // then
     final StandaloneDecisionArchiverJob standaloneDecisionArchiverJob =
         beanFactory.getBean(
-            StandaloneDecisionArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+            StandaloneDecisionArchiverJob.class,
+            archiver,
+            partitionHolder.getPartitionIds(),
+            decisionInstanceTemplate,
+            metrics,
+            archiver.getArchiverRepository());
     assertThat(standaloneDecisionArchiverJob.archiveNextBatch().join())
         .isEqualTo(sourceDecisionInstanceEntities.size());
 

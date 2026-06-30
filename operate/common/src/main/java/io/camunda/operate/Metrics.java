@@ -13,8 +13,6 @@ import io.micrometer.core.instrument.Timer;
 import java.util.Queue;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -81,9 +79,13 @@ public class Metrics {
       TAG_VALUE_CORESTATISTICS = "corestatistics",
       TAG_VALUE_SUCCEEDED = "succeeded",
       TAG_VALUE_FAILED = "failed";
-  private static final Logger LOGGER = LoggerFactory.getLogger(Metrics.class);
-  private Timer importBatchTimer;
-  @Autowired private MeterRegistry registry;
+
+  private final MeterRegistry registry;
+
+  @Autowired
+  public Metrics(final MeterRegistry registry) {
+    this.registry = registry;
+  }
 
   /**
    * Record counts for given name and tags. Tags are further attributes that gives the possibility

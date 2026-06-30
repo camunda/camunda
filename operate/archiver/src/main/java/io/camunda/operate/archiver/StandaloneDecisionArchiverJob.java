@@ -25,18 +25,24 @@ public class StandaloneDecisionArchiverJob extends AbstractArchiverJob {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneDecisionArchiverJob.class);
 
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-
-  @Autowired private Metrics metrics;
-
-  @Autowired private ArchiverRepository archiverRepository;
-
   private final Archiver archiver;
   private final List<Integer> partitionIds;
+  private final DecisionInstanceTemplate decisionInstanceTemplate;
+  private final Metrics metrics;
+  private final ArchiverRepository archiverRepository;
 
-  public StandaloneDecisionArchiverJob(final Archiver archiver, final List<Integer> partitionIds) {
+  @Autowired
+  public StandaloneDecisionArchiverJob(
+      final Archiver archiver,
+      final List<Integer> partitionIds,
+      final DecisionInstanceTemplate decisionInstanceTemplate,
+      final Metrics metrics,
+      final ArchiverRepository archiverRepository) {
     this.archiver = archiver;
     this.partitionIds = partitionIds;
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
+    this.metrics = metrics;
+    this.archiverRepository = archiverRepository;
   }
 
   @Override
