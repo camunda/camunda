@@ -13,10 +13,16 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
+<<<<<<< HEAD
 import io.camunda.webapps.profiles.ProfileWebApp;
 import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+=======
+import io.camunda.zeebe.util.VersionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+>>>>>>> 943c43680 (feat: log info on startup when no ES/OS backup repository is configured)
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -25,6 +31,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @ConditionalOnBackupWebappsEnabled
 public class BackupConfig {
 
+<<<<<<< HEAD
   public static String differentRepoNameFormat =
       "Expected the same repository in operate and tasklist backup config: given backup repositories are %s";
 
@@ -52,6 +59,24 @@ public class BackupConfig {
             opt -> opt.map(BackupRepositoryProps::repositoryName),
             skipEmptyOptional());
     return props.orElse(BackupRepositoryProps.EMPTY);
+=======
+  private static final Logger LOG = LoggerFactory.getLogger(BackupConfig.class);
+
+  @Bean
+  public BackupRepositoryProps backupRepositoryProps(final Camunda camunda) {
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
+    final DocumentBasedSecondaryStorageBackup backupConfig = backupConfig(secondaryStorage);
+    final String repositoryName = backupConfig.getRepositoryName();
+    if (repositoryName == null || repositoryName.isBlank()) {
+      LOG.info(
+          "No backup repository configured for {} secondary storage. Backup endpoints are active"
+              + " but will reject all requests until a repository is configured via"
+              + " 'camunda.data.secondary-storage.{}.backup.repository-name'.",
+          secondaryStorage.getType(),
+          secondaryStorage.getType());
+    }
+    return props(VersionUtil.getVersion(), backupConfig);
+>>>>>>> 943c43680 (feat: log info on startup when no ES/OS backup repository is configured)
   }
 
   @Bean("backupThreadPoolExecutor")
