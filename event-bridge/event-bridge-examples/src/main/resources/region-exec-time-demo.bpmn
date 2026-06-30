@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="region-exec-time-demo-defs"
+                  targetNamespace="http://camunda.org/analytics/demo">
+  <bpmn:process id="region-exec-time-demo" name="Region exec-time demo" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Order received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="processOrder"/>
+    <bpmn:intermediateCatchEvent id="processOrder" name="Process order">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="Timer_1">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=delay</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="processOrder" targetRef="reviewOrder"/>
+    <bpmn:intermediateCatchEvent id="reviewOrder" name="Review order">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="Timer_2">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=reviewDelay</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="reviewOrder" targetRef="EndEvent_1"/>
+    <bpmn:endEvent id="EndEvent_1" name="Order done">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="region-exec-time-demo">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="172" y="142" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="150" y="185" width="82" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="processOrder_di" bpmnElement="processOrder">
+        <dc:Bounds x="292" y="142" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="278" y="185" width="66" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reviewOrder_di" bpmnElement="reviewOrder">
+        <dc:Bounds x="412" y="142" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="400" y="185" width="62" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="532" y="142" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="525" y="185" width="56" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="208" y="160"/>
+        <di:waypoint x="292" y="160"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="328" y="160"/>
+        <di:waypoint x="412" y="160"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="448" y="160"/>
+        <di:waypoint x="532" y="160"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

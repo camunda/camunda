@@ -28,7 +28,14 @@
     .bar { display: inline-block; height: 12px; background: #ff5000; border-radius: 2px; vertical-align: middle; }
     .muted { color: #888; font-size: 12px; }
     code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; }
+    #diagram { height: 380px; border: 1px solid #e3e3e3; border-radius: 6px; background: #fff; }
+    .djs-element.clickable { cursor: pointer; }
   </style>
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.11.1/dist/assets/diagram-js.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.11.1/dist/assets/bpmn-js.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.11.1/dist/assets/bpmn-font/css/bpmn-embedded.css"/>
+  <script src="https://unpkg.com/bpmn-js@17.11.1/dist/bpmn-navigated-viewer.production.min.js"></script>
+  <script src="https://unpkg.com/heatmap.js@2.0.5/build/heatmap.min.js"></script>
 </head>
 <body>
 <header>CAMUNDA · Analytics — declare a dataset, build a report</header>
@@ -64,7 +71,7 @@
   </section>
 
   <section class="card">
-    <h2>4 · Element heatmap</h2>
+    <h2>4 · Element heatmap (on the BPMN diagram)</h2>
     <div class="row">
       <label>Process</label>
       <select id="hm-process" onchange="viewHeatmap()"></select>
@@ -75,7 +82,8 @@
       </select>
       <button class="secondary" onclick="refreshHeatmap()">↻ Refresh</button>
     </div>
-    <div id="heatmap-view"><span class="muted">Run some instances, then pick a process.</span></div>
+    <div id="diagram"></div>
+    <div id="hm-note" class="muted" style="margin-top:8px">Run some instances, then pick a process.</div>
   </section>
 </main>
 
@@ -170,7 +178,19 @@
       + `<div class="row" style="margin-top:8px"><button class="secondary" onclick="viewReport(${id}, '${name.replace(/'/g, "")}')">↻ Refresh</button></div>`;
   }
 
-  // --- element heatmap ---------------------------------------------------------------------
+  // --- element heatmap on the BPMN diagram (bpmn-js + heatmap.js, à la Optimize) ------------
+  let bpmnViewer = null, diagramImported = false, heatNode = null;
+
+  async function ensureDiagram() {
+    if (!bpmnViewer) bpmnViewer = new BpmnJS({container: '#diagram'});
+    if (!diagramImported) {
+      const xml = await fetch('/region-exec-time-demo.bpmn').then(r => r.text());
+      await bpmnViewer.importXML(xml);
+      bpmnViewer.get('canvas').zoom('fit-viewport', 'auto');
+      diagramImported = true;
+    }
+  }
+
   async function refreshHeatmap() {
     const sel = document.getElementById('hm-process');
     const prev = sel.value;
@@ -183,25 +203,74 @@
   async function viewHeatmap() {
     const process = document.getElementById('hm-process').value;
     const metricKey = document.getElementById('hm-metric').value;
-    const view = document.getElementById('heatmap-view');
-    if (!process) { view.innerHTML = '<span class="muted">No heatmap data yet — run some instances.</span>'; return; }
+    const note = document.getElementById('hm-note');
+    if (!process) { note.textContent = 'No heatmap data yet — run some instances.'; return; }
+    await ensureDiagram();
     const cells = await api('/heatmap?process=' + encodeURIComponent(process));
-    if (cells.length === 0) { view.innerHTML = '<p class="muted">No data yet for this process.</p>'; return; }
-    const value = c => metricKey === 'count' ? c.executedCount : c.averageDurationMs;
-    const max = Math.max(1, ...cells.map(value));
-    const cellsHtml = cells.map(c => {
-      const t = value(c) / max;                       // 0..1 intensity for the chosen metric
-      const bg = `rgba(255,80,0,${(0.12 + 0.88 * t).toFixed(2)})`;
-      const headline = metricKey === 'count' ? `${c.executedCount}×` : `${Math.round(c.averageDurationMs)} ms`;
-      return `<div style="background:${bg};border:1px solid #e3e3e3;border-radius:6px;padding:10px 12px;min-width:140px">
-          <div style="font-weight:600">${c.elementId}</div>
-          <div class="muted">${c.elementType}</div>
-          <div style="font-size:18px;margin:6px 0 2px">${headline}</div>
-          <div class="muted">${c.executedCount}× · avg ${Math.round(c.averageDurationMs)}ms · max ${c.maxDurationMs}ms</div>
-        </div>`;
-    }).join('');
-    view.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">${cellsHtml}</div>
-      <div class="muted" style="margin-top:8px">colour intensity ∝ ${metricKey === 'count' ? 'execution count' : 'average execution time'}</div>`;
+    const values = {};
+    cells.forEach(c => values[c.elementId] = metricKey === 'count' ? c.executedCount : c.averageDurationMs);
+    overlayHeatmap(bpmnViewer, values);
+    note.innerHTML = `colour intensity ∝ <b>${metricKey === 'count' ? 'execution count' : 'average execution time'}</b> &nbsp; · &nbsp; `
+      + cells.map(c => `<code>${c.elementId}</code> ${metricKey === 'count' ? c.executedCount + '×' : Math.round(c.averageDurationMs) + 'ms'}`).join(' · ');
+  }
+
+  // ported from Optimize's HeatmapOverlay/service.js: distribute weighted points over each node
+  // (and its incoming flows), render them with heatmap.js, overlay the image on the canvas.
+  const HM = {SEQ_RADIUS: 30, SEQ_STEP: 10, SEQ_MOD: 0.2, ACT_DENSITY: 20, ACT_RADIUS: 50, ACT_MOD: 0.125, SHIFT: 0.17, COOL: 2.5, EDGE: 75, RES: 4};
+
+  function drawFlow(data, waypoints, value, dim) {
+    if (!value) return;
+    for (let i = 1; i < waypoints.length; i++) {
+      const s = waypoints[i - 1], e = waypoints[i];
+      const mv = {x: e.x - s.x, y: e.y - s.y};
+      const denom = Math.abs(mv.x) + Math.abs(mv.y) || 1;
+      const nm = {x: (mv.x / denom) * HM.SEQ_STEP, y: (mv.y / denom) * HM.SEQ_STEP};
+      const steps = Math.sqrt(mv.x * mv.x + mv.y * mv.y) / HM.SEQ_STEP;
+      for (let j = 0; j < steps; j++)
+        data.push({x: (s.x + nm.x * j - dim.x) / HM.RES, y: (s.y + nm.y * j - dim.y) / HM.RES, value: value * HM.SEQ_MOD, radius: HM.SEQ_RADIUS / HM.RES});
+    }
+  }
+
+  function overlayHeatmap(viewer, values) {
+    const canvas = viewer.get('canvas'), reg = viewer.get('elementRegistry');
+    const bb = canvas.getActiveLayer().getBBox();
+    const dim = {x: bb.x - HM.EDGE, y: bb.y - HM.EDGE, width: bb.width + 2 * HM.EDGE, height: bb.height + 2 * HM.EDGE};
+
+    let data = [];
+    for (const id in values) {
+      const el = reg.get(id);
+      if (!el || typeof values[id] !== 'number') continue;
+      for (let i = 0; i < el.width + HM.ACT_DENSITY / 2; i += HM.ACT_DENSITY)
+        for (let j = 0; j < el.height + HM.ACT_DENSITY / 2; j += HM.ACT_DENSITY)
+          data.push({x: (el.x + i - dim.x) / HM.RES, y: (el.y + j - dim.y) / HM.RES, value: (values[id] || Number.EPSILON) * HM.ACT_MOD, radius: HM.ACT_RADIUS / HM.RES});
+      (el.incoming || []).forEach(flow => {
+        const src = flow.source && values[flow.source.id];
+        drawFlow(data, flow.waypoints, src == null ? values[id] : Math.min(values[id], src), dim);
+      });
+    }
+    if (data.length === 0) return;
+
+    // hidden heatmap.js canvas at reduced resolution, then scaled up by the SVG image
+    const container = document.createElement('div');
+    container.style.cssText = `width:${dim.width / HM.RES}px;height:${dim.height / HM.RES}px;position:absolute`;
+    document.body.appendChild(container);
+    const map = h337.create({container});
+    document.body.removeChild(container);
+    container.firstChild.setAttribute('width', dim.width / HM.RES);
+    container.firstChild.setAttribute('height', dim.height / HM.RES);
+
+    const valueMax = Math.max.apply(null, data.map(d => d.value)) || 1;
+    data = data.map(d => ({x: Math.round(d.x), y: Math.round(d.y), radius: d.radius, value: (HM.SHIFT + (d.value / valueMax) * (1 - HM.SHIFT)) / HM.COOL}));
+    map.setData({min: 0, max: 1, data});
+
+    const node = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    ['x', 'y', 'width', 'height'].forEach(p => node.setAttributeNS(null, p, dim[p]));
+    node.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', map.getDataURL());
+    node.setAttributeNS(null, 'style', 'opacity:0.8;pointer-events:none;');
+    const viewport = canvas._viewport || canvas.getActiveLayer().parentNode;
+    if (heatNode && heatNode.parentNode) heatNode.parentNode.removeChild(heatNode);
+    viewport.appendChild(node);
+    heatNode = node;
   }
 
   refresh();
