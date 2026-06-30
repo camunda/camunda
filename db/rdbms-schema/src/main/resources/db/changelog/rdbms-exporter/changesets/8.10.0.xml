@@ -581,4 +581,15 @@
       tableName="${prefix}WAIT_STATE"/>
   </changeSet>
 
+  <changeSet id="add_process_definition_is_deleted_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}PROCESS_DEFINITION" columnName="IS_DELETED"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}PROCESS_DEFINITION">
+      <column name="IS_DELETED" type="BOOLEAN" defaultValueBoolean="false"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

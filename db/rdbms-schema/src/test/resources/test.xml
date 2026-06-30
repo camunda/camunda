@@ -40,6 +40,17 @@
     </sql>
   </changeSet>
 
+  <changeSet id="add_process_definition_is_deleted_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}PROCESS_DEFINITION" columnName="IS_DELETED"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}PROCESS_DEFINITION">
+      <column name="IS_DELETED" type="BOOLEAN" defaultValueBoolean="false"/>
+    </addColumn>
+  </changeSet>
+
   <changeSet id="create_process_instance_table" author="cthiel">
     <createTable tableName="${prefix}PROCESS_INSTANCE">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
