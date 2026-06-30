@@ -165,10 +165,17 @@ explicitly deferred to a later milestone and is not pulled forward by this work.
   8.10). The legacy prefix-less topics are removable in 8.11.
 - The bare-`int` partition keying in the error handler stops aliasing across groups, by construction,
   once the handler is registered per tenant.
+- The broker-to-gateway work-available notification (`notifyWorkAvailable`) stays cluster-wide and is
+  **not** group-scoped. Its only consumer is the gateway `LongPollingActivateJobsHandler`, which keys
+  solely on job type, has no notion of physical tenants, and is woken by a notification that carries no
+  job — only a job-type signal. A notification raised in one physical tenant may therefore wake a
+  long-poll request of another tenant for the same job type, but the woken request re-issues an
+  `ActivateJobs` poll that is already routed to its own partition group, finds nothing, and resumes. No
+  job ever crosses tenants; the only cost is a spurious wakeup. This is accepted and left to be
+  optimized by the separate long-polling isolation work.
 - Out of scope, consistent with the milestone: REST job streaming, authentication/authorization for
-  streaming, streaming from multiple physical tenants over one stream, and gateway `BrokerClient`
-  sharding. Group-scoping the long-polling `notifyWorkAvailable` notification is in scope for the
-  streaming path; general long-polling isolation is a separate decision.
+  streaming, streaming from multiple physical tenants over one stream, gateway `BrokerClient` sharding,
+  and group-scoping the work-available (`notifyWorkAvailable`) notification.
 
 ## Source
 
