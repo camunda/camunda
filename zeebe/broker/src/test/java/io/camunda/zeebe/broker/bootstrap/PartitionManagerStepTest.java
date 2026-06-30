@@ -231,10 +231,14 @@ class PartitionManagerStepTest {
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);
 
-      // when — start both steps
+      // when — start the steps one after the other. They are started sequentially on purpose:
+      // both steps build their PartitionManagerImpl on actor threads, and that construction reads
+      // from the shared RETURNS_DEEP_STUBS clusterServices mock. Mockito's lazy deep-stub
+      // registration is not thread-safe, so driving the same mock from two actor threads
+      // concurrently intermittently corrupts its internal state (WrongTypeOfReturnValue).
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      secondStep.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, secondFuture);
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      secondStep.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, secondFuture);
       assertThat(secondFuture).succeedsWithin(TIME_OUT);
 
       // then — each tenant's ZeebePartitionFactory holds its own flags, not the other's
