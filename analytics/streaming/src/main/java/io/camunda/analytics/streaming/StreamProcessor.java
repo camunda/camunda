@@ -7,6 +7,8 @@
  */
 package io.camunda.analytics.streaming;
 
+import io.camunda.analytics.streaming.aggregate.Rollup;
+import io.camunda.analytics.streaming.fold.Projector;
 import java.util.ArrayList;
 import java.util.List;
 

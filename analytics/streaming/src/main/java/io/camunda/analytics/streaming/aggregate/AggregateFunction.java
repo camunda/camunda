@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.streaming;
+package io.camunda.analytics.streaming.aggregate;
 
 /**
  * A mergeable aggregate: how facts fold into an accumulator and how partial accumulators combine.

@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.streaming;
+package io.camunda.analytics.streaming.aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.fold.Projector;
 import java.util.List;
 import java.util.Map;
 import java.util.function.ToLongFunction;

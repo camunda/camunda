@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.KeySelector;
+import io.camunda.analytics.streaming.aggregate.KeySelector;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 

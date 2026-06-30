@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.streaming;
+package io.camunda.analytics.streaming.fold;
 
 /**
  * The emit channel a {@link Projector} writes derived facts into. The runtime owns the collector

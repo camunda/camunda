@@ -5,7 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.streaming;
+package io.camunda.analytics.streaming.aggregate;
+
+import io.camunda.analytics.streaming.fold.Collector;
+import io.camunda.analytics.streaming.fold.Projector;
 
 /**
  * A {@link Rollup} that expands each fact before it reaches a downstream rollup: it runs the fact

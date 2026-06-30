@@ -9,11 +9,11 @@ package io.camunda.eventbridge.analytics.metric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.analytics.streaming.InMemoryRollupStore;
-import io.camunda.analytics.streaming.PreAggregatingRollup;
-import io.camunda.analytics.streaming.Projector;
-import io.camunda.analytics.streaming.Rollup;
 import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.aggregate.InMemoryRollupStore;
+import io.camunda.analytics.streaming.aggregate.PreAggregatingRollup;
+import io.camunda.analytics.streaming.aggregate.Rollup;
+import io.camunda.analytics.streaming.fold.Projector;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 import java.util.List;

@@ -9,6 +9,9 @@ package io.camunda.analytics.streaming;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.streaming.aggregate.AggregateFunction;
+import io.camunda.analytics.streaming.aggregate.InMemoryRollupStore;
+import io.camunda.analytics.streaming.aggregate.PreAggregatingRollup;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

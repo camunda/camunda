@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.streaming;
+package io.camunda.analytics.streaming.aggregate;
 
 /**
  * Extracts the grouping key a fact aggregates under. Must be deterministic — the same fact always

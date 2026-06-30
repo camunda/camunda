@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.AggregateFunction;
+import io.camunda.analytics.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 
 /**
