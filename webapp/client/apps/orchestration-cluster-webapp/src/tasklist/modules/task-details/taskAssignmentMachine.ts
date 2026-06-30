@@ -180,33 +180,28 @@ const taskAssignmentMachine = setup({
 		trackUnassignmentDelayed: () => {
 			tracking.track({eventName: 'tasklist:task-unassignment-delayed-notification'});
 		},
-		commitTask: ({context, event}) => {
+		commitTask: ({context}, params: {task: UserTask | undefined}) => {
 			const {queryClient, userTaskKey} = context;
-			const task = (event as {output?: UserTask}).output;
 
-			if (task !== undefined) {
-				queryClient.setQueryData(queries.getUserTask(userTaskKey).queryKey, task);
+			if (params.task !== undefined) {
+				queryClient.setQueryData(queries.getUserTask(userTaskKey).queryKey, params.task);
 			}
 
 			queryClient.invalidateQueries({queryKey: ['userTasks']});
 		},
-		notifyAssignFailure: ({event}) => {
-			const error = (event as {error?: AssignmentFailure}).error;
-
+		notifyAssignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
 			notificationsStore.displayNotification({
 				kind: 'error',
 				title: t('tasklist.taskDetailsTaskAssignmentError'),
-				subtitle: error?.reason === 'failed' ? error.subtitle : undefined,
+				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 				isDismissable: true,
 			});
 		},
-		notifyUnassignFailure: ({event}) => {
-			const error = (event as {error?: AssignmentFailure}).error;
-
+		notifyUnassignFailure: (_, params: {error: AssignmentFailure | undefined}) => {
 			notificationsStore.displayNotification({
 				kind: 'error',
 				title: t('tasklist.taskDetailsTaskUnassignmentError'),
-				subtitle: error?.reason === 'failed' ? error.subtitle : undefined,
+				subtitle: params.error?.reason === 'failed' ? params.error.subtitle : undefined,
 				isDismissable: true,
 			});
 		},
@@ -257,15 +252,18 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-					onDone: [
-						{
-							guard: {
-								type: 'taskNoLongerAssigning',
-								params: ({event}) => ({task: event.output}),
+						onDone: [
+							{
+								guard: {
+									type: 'taskNoLongerAssigning',
+									params: ({event}) => ({task: event.output}),
+								},
+								target: '#taskAssignment.idle',
+								actions: {
+									type: 'commitTask',
+									params: ({event}) => ({task: event.output}),
+								},
 							},
-							target: '#taskAssignment.idle',
-							actions: 'commitTask',
-						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -290,15 +288,18 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-					onDone: [
-						{
-							guard: {
-								type: 'taskNoLongerAssigning',
-								params: ({event}) => ({task: event.output}),
+						onDone: [
+							{
+								guard: {
+									type: 'taskNoLongerAssigning',
+									params: ({event}) => ({task: event.output}),
+								},
+								target: '#taskAssignment.idle',
+								actions: {
+									type: 'commitTask',
+									params: ({event}) => ({task: event.output}),
+								},
 							},
-							target: '#taskAssignment.idle',
-							actions: 'commitTask',
-						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -330,7 +331,10 @@ const taskAssignmentMachine = setup({
 					},
 					{
 						target: 'idle',
-						actions: 'notifyAssignFailure',
+						actions: {
+							type: 'notifyAssignFailure',
+							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
+						},
 					},
 				],
 			},
@@ -347,15 +351,18 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-					onDone: [
-						{
-							guard: {
-								type: 'taskNoLongerAssigning',
-								params: ({event}) => ({task: event.output}),
+						onDone: [
+							{
+								guard: {
+									type: 'taskNoLongerAssigning',
+									params: ({event}) => ({task: event.output}),
+								},
+								target: '#taskAssignment.assignmentSucceeded',
+								actions: {
+									type: 'commitTask',
+									params: ({event}) => ({task: event.output}),
+								},
 							},
-							target: '#taskAssignment.assignmentSucceeded',
-							actions: 'commitTask',
-						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -380,15 +387,18 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-					onDone: [
-						{
-							guard: {
-								type: 'assignmentSettled',
-								params: ({event}) => ({task: event.output}),
+						onDone: [
+							{
+								guard: {
+									type: 'assignmentSettled',
+									params: ({event}) => ({task: event.output}),
+								},
+								target: '#taskAssignment.assignmentSucceeded',
+								actions: {
+									type: 'commitTask',
+									params: ({event}) => ({task: event.output}),
+								},
 							},
-							target: '#taskAssignment.assignmentSucceeded',
-							actions: 'commitTask',
-						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -426,7 +436,10 @@ const taskAssignmentMachine = setup({
 					},
 					{
 						target: 'idle',
-						actions: 'notifyUnassignFailure',
+						actions: {
+							type: 'notifyUnassignFailure',
+							params: ({event}) => ({error: event.error as AssignmentFailure | undefined}),
+						},
 					},
 				],
 			},
@@ -443,15 +456,18 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-					onDone: [
-						{
-							guard: {
-								type: 'taskNoLongerAssigning',
-								params: ({event}) => ({task: event.output}),
+						onDone: [
+							{
+								guard: {
+									type: 'taskNoLongerAssigning',
+									params: ({event}) => ({task: event.output}),
+								},
+								target: '#taskAssignment.unassignmentSucceeded',
+								actions: {
+									type: 'commitTask',
+									params: ({event}) => ({task: event.output}),
+								},
 							},
-							target: '#taskAssignment.unassignmentSucceeded',
-							actions: 'commitTask',
-						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
@@ -476,15 +492,18 @@ const taskAssignmentMachine = setup({
 							queryClient: context.queryClient,
 							userTaskKey: context.userTaskKey,
 						}),
-					onDone: [
-						{
-							guard: {
-								type: 'unassignmentSettled',
-								params: ({event}) => ({task: event.output}),
+						onDone: [
+							{
+								guard: {
+									type: 'unassignmentSettled',
+									params: ({event}) => ({task: event.output}),
+								},
+								target: '#taskAssignment.unassignmentSucceeded',
+								actions: {
+									type: 'commitTask',
+									params: ({event}) => ({task: event.output}),
+								},
 							},
-							target: '#taskAssignment.unassignmentSucceeded',
-							actions: 'commitTask',
-						},
 							{target: 'waiting', actions: 'incrementRetryCount'},
 						],
 						onError: {target: 'waiting', actions: 'incrementRetryCount'},
