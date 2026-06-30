@@ -92,13 +92,19 @@ public final class CallActivityProcessor
                     processId, element.getBindingType(), element.getVersionTag(), context))
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
+        .flatMap(
+            process ->
+                resolveChildBusinessId(context, element)
+                    .map(businessId -> new CalledProcess(process, businessId)))
         .thenDo(
-            process -> {
+            calledProcess -> {
+              final var process = calledProcess.process();
               final var activated =
                   stateTransitionBehavior.transitionToActivated(context, element.getEventType());
 
               final var childProcessInstanceKey =
-                  stateTransitionBehavior.createChildProcessInstance(process, context);
+                  stateTransitionBehavior.createChildProcessInstance(
+                      process, context, calledProcess.businessId());
 
               final var propagateAllParentVariablesEnabled =
                   element.isPropagateAllParentVariablesEnabled();
@@ -255,6 +261,33 @@ public final class CallActivityProcessor
         processIdExpression, scopeKey, tenantId);
   }
 
+  /**
+   * Resolves the Business ID to assign to the child process instance, per ADR 0003-810 (D2/D3):
+   *
+   * <ul>
+   *   <li><b>inherit</b> (no configuration) — keep the parent's Business ID, preserving the 8.9
+   *       behavior;
+   *   <li><b>literal/empty</b> (static expression) — use the configured value verbatim, so a
+   *       numeric or reserved-word literal is not coerced and an empty value yields no Business ID;
+   *   <li><b>FEEL</b> (dynamic expression) — evaluate at the call-activity element-instance scope.
+   * </ul>
+   *
+   * <p>The evaluation is threaded through the {@link Either} chain so that a FEEL failure can
+   * surface as an incident (handled in a follow-up feature).
+   */
+  private Either<Failure, String> resolveChildBusinessId(
+      final BpmnElementContext context, final ExecutableCallActivity element) {
+    final var businessIdExpression = element.getCalledElementBusinessId();
+    if (businessIdExpression == null) {
+      return Either.right(context.getBusinessId());
+    }
+    if (businessIdExpression.isStatic()) {
+      return Either.right(businessIdExpression.getExpression());
+    }
+    return expressionProcessor.evaluateStringExpression(
+        businessIdExpression, context.getElementInstanceKey(), context.getTenantId());
+  }
+
   private Either<Failure, DeployedProcess> getCalledProcess(
       final DirectBuffer processId,
       final ZeebeBindingType bindingType,
@@ -339,4 +372,6 @@ public final class CallActivityProcessor
     }
     return Either.right(process);
   }
+
+  private record CalledProcess(DeployedProcess process, String businessId) {}
 }
