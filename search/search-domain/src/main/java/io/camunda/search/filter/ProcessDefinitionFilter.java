@@ -25,7 +25,8 @@ public record ProcessDefinitionFilter(
     List<Integer> versions,
     List<String> versionTags,
     List<String> tenantIds,
-    Boolean hasStartForm)
+    Boolean hasStartForm,
+    Boolean isDeleted)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionFilter> {
@@ -39,6 +40,7 @@ public record ProcessDefinitionFilter(
     private List<Integer> versions;
     private List<String> versionTags;
     private Boolean hasStartForm;
+    private Boolean isDeleted;
 
     public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
@@ -126,6 +128,11 @@ public record ProcessDefinitionFilter(
       return this;
     }
 
+    public Builder isDeleted(final Boolean isDeleted) {
+      this.isDeleted = isDeleted;
+      return this;
+    }
+
     @Override
     public ProcessDefinitionFilter build() {
       return new ProcessDefinitionFilter(
@@ -137,7 +144,8 @@ public record ProcessDefinitionFilter(
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
-          hasStartForm);
+          hasStartForm,
+          isDeleted);
     }
   }
 }
