@@ -47,6 +47,11 @@
       "password": "{{ secrets.ARTIFACTORY_PASSWORD }}"
     },
     {
+      "hostType": "docker",
+      "matchHost": "https://docker.elastic.co",
+      "timeout": 30000
+    },
+    {
       "timeout": 10000
     }
   ],
