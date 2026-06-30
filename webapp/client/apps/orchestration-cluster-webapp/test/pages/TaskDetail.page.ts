@@ -66,6 +66,30 @@ class TaskDetailPage extends BasePage {
 		return this.page.getByRole('button', {name: /Turn on notifications/});
 	}
 
+	get assignButton() {
+		return this.page.getByRole('button', {name: /Assign to me/i});
+	}
+
+	get unassignButton() {
+		return this.page.getByRole('button', {name: /^Unassign$/i});
+	}
+
+	get assigningStatus() {
+		return this.page.getByText('Assigning...');
+	}
+
+	get unassigningStatus() {
+		return this.page.getByText('Unassigning...');
+	}
+
+	get assignmentSuccessful() {
+		return this.page.getByText('Assignment successful');
+	}
+
+	get unassignmentSuccessful() {
+		return this.page.getByText('Unassignment successful');
+	}
+
 	taskName(name: string) {
 		return this.page.getByText(name);
 	}
