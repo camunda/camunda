@@ -68,7 +68,9 @@ public final class StandaloneAnalyticsPipeline {
     final StateBackedProjectionStore store =
         StateBackedProjectionStore.rocksDb(
             new File("data/analytics-projection-" + instanceId), new SimpleMeterRegistry());
-    final ProcessExecutionProjector projector = new ProcessExecutionProjector(store);
+    // instances and in-flight element starts both live in the one RocksDB base projection
+    final ProcessExecutionProjector projector =
+        new ProcessExecutionProjector(store, store.elementStarts());
 
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL(jdbcUrl);

@@ -20,7 +20,12 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
   PROCESS_INSTANCE_PROJECTION(1, ColumnFamilyScope.PARTITION_LOCAL),
 
   /** Single-entry: the source-stream position up to which the fold has consumed. */
-  CONSUMED_POSITION(2, ColumnFamilyScope.PARTITION_LOCAL);
+  CONSUMED_POSITION(2, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Per in-flight element instance: its activation time, keyed by {@code instanceKey:elementId}.
+   */
+  ELEMENT_START(3, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

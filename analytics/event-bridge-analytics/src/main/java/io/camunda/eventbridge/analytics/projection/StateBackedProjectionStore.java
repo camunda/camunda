@@ -12,6 +12,7 @@ import io.camunda.analytics.streaming.state.api.StateStoreProvider;
 import io.camunda.analytics.streaming.state.memory.InMemoryStateStoreProvider;
 import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Optional;
@@ -37,6 +38,8 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
   private final DbLong positionValue = new DbLong();
   private final KeyValueStore<DbLong, DbLong> consumedPosition;
 
+  private final KeyValueStore<DbString, DbLong> elementStarts;
+
   private StateBackedProjectionStore(final StateStoreProvider<AnalyticsColumnFamilies> provider) {
     this.provider = provider;
     projections =
@@ -45,6 +48,16 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
     consumedPosition =
         provider.keyValueStore(
             AnalyticsColumnFamilies.CONSUMED_POSITION, positionKey, positionValue);
+    elementStarts =
+        provider.keyValueStore(AnalyticsColumnFamilies.ELEMENT_START, new DbString(), new DbLong());
+  }
+
+  /**
+   * The per-element-instance activation-time store, on the same backing as the projection — so the
+   * whole base projection (instances + in-flight element starts) is one RocksDB instance.
+   */
+  public KeyValueStore<DbString, DbLong> elementStarts() {
+    return elementStarts;
   }
 
   /**
