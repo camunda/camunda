@@ -185,9 +185,13 @@ final class PhysicalTenantSchemaProvisioner {
    * shared instances (notably Aurora) don't accumulate orphaned schemas/databases across CI runs.
    *
    * <p>Failures are logged and swallowed: cleanup must never fail a test run, and the {@code IF
-   * EXISTS} guards make repeated invocations harmless. Oracle isolates by table prefix in the
-   * shared schema rather than a dedicated schema/database, so there is no namespace object to drop
-   * — its leftover tables are removed by the regular index/table cleanup keyed on the prefix.
+   * EXISTS} guards make repeated invocations harmless.
+   *
+   * <p>Oracle and H2 have no namespace object to drop and are no-ops: H2 uses a throwaway in-memory
+   * database per PT, and Oracle isolates by table prefix in the shared schema. Oracle's per-run
+   * prefixed tables are therefore <em>not</em> dropped here — the run-unique prefix keeps separate
+   * runs from colliding, and the Oracle matrix runs against a fresh container per run, so they
+   * don't accumulate on a long-lived shared instance the way schema/database namespaces would.
    */
   static void dropNamespace(
       final DatabaseType databaseType,

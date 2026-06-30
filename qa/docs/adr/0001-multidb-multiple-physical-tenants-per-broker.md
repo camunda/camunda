@@ -91,8 +91,9 @@ added by hand — thus holds for every PT for free (a fresh in-memory DB on H2, 
 schema/database on the other dialects, a fresh per-run table prefix on Oracle).
 
 Constraint: the namespace name (`<run>_<ptId>`) must stay within the dialect's identifier-length
-limit — the strictest being MySQL/MariaDB's 64-character database name; the run token and PT id are
-kept short accordingly.
+limit — the binding constraint being Oracle's 30-character identifier cap (far stricter than, e.g.,
+MySQL/MariaDB's 64-character database name); the run token and PT id are kept short accordingly
+(a 10-character run token plus a separator leaves a 19-character cap on the PT id).
 
 **D3. Each PT is seeded with its own admin identity.** The extension seeds a `<ptId>-admin` user and
 the `admin` default-role into *that PT's* `security.initialization`, folding in what

@@ -63,7 +63,8 @@ public @interface MultiDbPhysicalTenants {
   /**
    * Non-default physical tenant IDs to provision. Must not include {@code "default"} (the default
    * PT is always implicit). Each declared tenant gets its own isolated namespace (a fresh in-memory
-   * database on {@code RDBMS_H2}; a dedicated schema/database/user on the other RDBMS dialects), a
+   * database on {@code RDBMS_H2}; a dedicated schema or database on PostgreSQL/Aurora,
+   * MySQL/MariaDB and SQL Server; a per-tenant table prefix in the shared schema on Oracle), a
    * seeded {@code <id>-admin} user, and an {@code admin} default role for that user.
    *
    * <p>IDs are embedded into SQL identifiers, so they must be lowercase alphanumeric (starting with
