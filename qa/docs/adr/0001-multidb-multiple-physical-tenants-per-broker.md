@@ -53,9 +53,9 @@ single-PT path (`physicalTenantId` attribute / system property) is unchanged and
 one-element case of the same mechanism. Classes with neither annotation are entirely unaffected.
 
 **D2. `configurePhysicalTenant()` is generalized from one PT to a loop, each PT given its own
-isolated **schema** — single-PT becomes the one-element case of that loop, so there is one
-provisioning path, not two.** Each PT is isolated by a dedicated database schema (a separate
-namespace inside the matrix-provided database server), rather than by a table prefix in a
+isolated storage namespace — single-PT becomes the one-element case of that loop, so there is one
+provisioning path, not two.** On most dialects each PT is isolated by a dedicated database schema (a
+separate namespace inside the matrix-provided database server) rather than by a table prefix in a
 shared schema. A schema per PT mirrors a schema-isolated multi-PT deployment more closely, and
 each PT exercises its own `DataSource` exactly as production wires one `DataSource` per PT. The
 extension creates the namespace before broker start and points the PT's connection at it; the
@@ -67,10 +67,16 @@ concrete primitive is dialect-specific, since "schema" has no single cross-diale
   targets it via `currentSchema`.
 - **MySQL / MariaDB**: schema is synonymous with database, so a `CREATE DATABASE`; the PT URL
   targets that database.
-- **Oracle**: schema is synonymous with user, so a `CREATE USER` with the required grants; the PT
-  connects as that user.
 - **SQL Server (MSSQL)**: a dedicated database per PT (`CREATE DATABASE`), since MSSQL has no
   connection-URL schema selector; the PT URL targets it via `databaseName`.
+- **Oracle** — the exception: each PT gets a per-tenant **table prefix** in the shared `camunda`
+  schema, not a dedicated schema, and reuses the base connection unchanged. Oracle's schema == user,
+  so a schema-per-PT would require `CREATE USER`, which is DBA-only. More fundamentally, the
+  production `SecondaryStorageIsolationValidation` keys a storage location on
+  `(type, connection-url, table-prefix)` and deliberately ignores the connection user, so two Oracle
+  users on the same URL resolve to the *same* location and the broker refuses to start. A distinct
+  table prefix is the validator's explicitly-allowed "shared connection, distinct prefix" mode and
+  needs no privileged bootstrap.
 
 The namespace name embeds a run-unique token (the same token the framework already uses for
 parallel-test isolation) plus the PT id, so concurrent CI runs never collide. RDBMS schema auto-DDL
@@ -82,10 +88,11 @@ supported RDBMS dialect, not just H2.
 
 Fresh-storage-per-run isolation — the property [#56006](https://github.com/camunda/camunda/issues/56006)
 added by hand — thus holds for every PT for free (a fresh in-memory DB on H2, a fresh per-run
-schema on the other dialects).
+schema/database on the other dialects, a fresh per-run table prefix on Oracle).
 
 Constraint: the namespace name (`<run>_<ptId>`) must stay within the dialect's identifier-length
-limit (Oracle 30, MySQL/MariaDB 64); the run token and PT id are kept short accordingly.
+limit — the strictest being MySQL/MariaDB's 64-character database name; the run token and PT id are
+kept short accordingly.
 
 **D3. Each PT is seeded with its own admin identity.** The extension seeds a `<ptId>-admin` user and
 the `admin` default-role into *that PT's* `security.initialization`, folding in what
@@ -113,7 +120,8 @@ storage/admin stamping regardless of order.
 
 **D6. Multi-PT is RDBMS-only (all dialects); ES/OS are skipped, not errored.** The extension throws
 if a PT is requested on non-RDBMS storage. The three converted ITs are gated (JUnit
-`@EnabledIfSystemProperty` on `test.integration.camunda.database.type`, matching `RDBMS_.*`) so they
+`@EnabledIfSystemProperty` on `test.integration.camunda.database.type`, matching `rdbms.*$` — the
+lowercase value the matrix supplies) so they
 run across the RDBMS matrix and skip cleanly on ES/OS. ES/OS cannot host non-default PTs until the
 per-PT writer / schema-init land
 ([#51736](https://github.com/camunda/camunda/issues/51736) /
