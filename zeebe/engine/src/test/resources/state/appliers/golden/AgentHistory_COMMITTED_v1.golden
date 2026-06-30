@@ -24,6 +24,6 @@ public final class AgentHistoryCommittedApplier
 
   @Override
   public void applyState(final long key, final AgentHistoryRecord value) {
-    agentHistoryState.delete(key);
+    agentHistoryState.delete(key, value);
   }
 }
