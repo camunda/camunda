@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.analytics.aggregate;
+package io.camunda.eventbridge.analytics.fact;
 
 /**
- * A declared dataset as the pipeline sees it: an id and the event-time window to bucket by. Facts
- * are aggregated into one cell per dataset, so a dataset's window drives its own rollup.
+ * Marker for the facts the single base-projection fold derives from the process-execution record
+ * stream (process-instance execution time, element execution). The fold emits this common type; the
+ * runtime fans each fact out to the rollup(s) for its concrete type.
  */
-public record AggregateDataset(long id, long windowSizeMs) {}
+public interface ProcessExecutionFact {}

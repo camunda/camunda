@@ -32,4 +32,5 @@ public record ProcessInstanceExecutionTimeFact(
     boolean completedNormally,
     int sourcePartitionId,
     long sourcePosition,
-    Map<String, String> variables) {}
+    Map<String, String> variables)
+    implements ProcessExecutionFact {}
