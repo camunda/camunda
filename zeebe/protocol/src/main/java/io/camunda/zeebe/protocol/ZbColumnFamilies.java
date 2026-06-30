@@ -323,7 +323,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // looks up blocked starts by businessId here and re-attempts the ordinary local start. Mirrors
   // the
   // correlation-key buffer's completion-driven re-drive (see ADR 0002 D5).
-  MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL);
+  MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL),
+  AGENT_HISTORY(150, PARTITION_LOCAL),
+  AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
