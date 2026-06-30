@@ -270,14 +270,16 @@ public class RdbmsSchemaVersionStore {
   protected boolean tableExists(final Connection connection, final String tableName)
       throws SQLException {
     final var meta = connection.getMetaData();
+    final var catalog = connection.getCatalog();
+    final var schema = connection.getSchema();
     // Try uppercase first (most databases store identifiers in upper case), then as-is.
     try (final var rs =
-        meta.getTables(null, null, tableName.toUpperCase(), new String[] {"TABLE"})) {
+        meta.getTables(catalog, schema, tableName.toUpperCase(), new String[] {"TABLE"})) {
       if (rs.next()) {
         return true;
       }
     }
-    try (final var rs = meta.getTables(null, null, tableName, new String[] {"TABLE"})) {
+    try (final var rs = meta.getTables(catalog, schema, tableName, new String[] {"TABLE"})) {
       return rs.next();
     }
   }
