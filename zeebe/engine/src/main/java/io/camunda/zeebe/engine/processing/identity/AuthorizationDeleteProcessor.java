@@ -35,7 +35,9 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class AuthorizationDeleteProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
 

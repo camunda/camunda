@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class AuthorizationRejectionMapper {
 
   private static final String FORBIDDEN_MSG =

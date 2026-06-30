@@ -25,7 +25,9 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class PermissionsBehavior {
 
   public static final String PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE =
