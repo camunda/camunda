@@ -103,8 +103,7 @@ public class ProcessingPropertiesTest {
           .returns(
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
               FeatureFlagsCfg::isEnableMessageBodyOnExpired)
-          .returns(
-              true, FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
+          .returns(true, FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
 
