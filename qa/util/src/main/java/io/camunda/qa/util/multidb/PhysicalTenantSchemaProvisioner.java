@@ -15,34 +15,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provisions a dedicated schema/database/user for a physical tenant in the matrix-provided RDBMS
- * and derives the per-PT JDBC connection parameters.
+ * Provisions the per-physical-tenant secondary storage in the matrix-provided RDBMS and derives the
+ * per-PT JDBC connection parameters.
  *
- * <p>Each non-H2 RDBMS dialect uses a different namespace primitive:
+ * <p>Each non-H2 RDBMS dialect isolates a tenant differently:
  *
  * <ul>
  *   <li>PostgreSQL / Aurora: a dedicated <em>schema</em> inside the base database, selected via
  *       {@code currentSchema=<ns>} in the JDBC URL.
  *   <li>MySQL / MariaDB: a dedicated <em>database</em> (MySQL's schema == database); the database
  *       path segment in the JDBC URL is replaced.
- *   <li>Oracle: a dedicated <em>user</em> (Oracle's schema == user); the PT username is set to the
- *       namespace name with a fixed throwaway password. The JDBC URL is unchanged.
  *   <li>SQL Server: a dedicated <em>database</em>; the {@code databaseName} property in the
  *       semicolon-delimited JDBC URL is replaced.
+ *   <li>Oracle: a per-tenant <em>table prefix</em> in the shared {@code camunda} schema — not a
+ *       dedicated schema. Oracle's schema == user, so a schema-per-PT would need {@code CREATE
+ *       USER} (DBA-only); more fundamentally, the production secondary-storage isolation check
+ *       ({@code SecondaryStorageIsolationValidation}) keys a location on (type, connection url,
+ *       table prefix) and deliberately ignores the user, so two Oracle users on the same URL are
+ *       treated as the same location and rejected. A distinct table prefix is the validator's
+ *       explicitly-allowed "shared connection, distinct prefix" mode and needs no privileges, so
+ *       Oracle uses it instead of a per-PT schema.
  * </ul>
  *
  * <p>The namespace name is {@code <basePrefix>_<tenantId>}, where {@code basePrefix} is the
  * run-unique 10-character random token generated for the current test run (so concurrent CI matrix
- * runs targeting the same server cannot collide). Oracle imposes a 30-character identifier limit,
- * so the namespace {@code basePrefix (10) + "_" + tenantId} must not exceed 30 characters; tenant
- * IDs used in integration tests are kept short (e.g. {@code tenanta}, 7 chars) to stay within this
- * constraint.
+ * runs targeting the same server cannot collide). For the schema/database dialects it names the
+ * schema/database; for Oracle it is the per-PT table prefix.
  */
 @NullMarked
 final class PhysicalTenantSchemaProvisioner {
-
-  /** Fixed throwaway password used when provisioning an Oracle schema-user. */
-  static final String ORACLE_SCHEMA_PASSWORD = "Pt4dmin#1";
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(PhysicalTenantSchemaProvisioner.class);
@@ -50,10 +51,8 @@ final class PhysicalTenantSchemaProvisioner {
   private PhysicalTenantSchemaProvisioner() {}
 
   /**
-   * Builds the namespace name for a physical tenant: {@code <basePrefix>_<tenantId>}.
-   *
-   * <p>Oracle imposes a 30-character maximum on user/schema names. Callers must ensure that {@code
-   * basePrefix.length() + 1 + tenantId.length() <= 30}.
+   * Builds the namespace name for a physical tenant: {@code <basePrefix>_<tenantId>} — the schema
+   * or database name on the schema/database dialects, or the table prefix on Oracle.
    */
   static String buildNamespace(final String basePrefix, final String tenantId) {
     return basePrefix + "_" + tenantId;
@@ -140,20 +139,22 @@ final class PhysicalTenantSchemaProvisioner {
       case RDBMS_POSTGRES, RDBMS_AURORA -> {
         createPostgresSchema(baseUrl, baseUsername, basePassword, namespace);
         yield new PtStorageConfig(
-            derivePostgresUrl(baseUrl, namespace), baseUsername, basePassword);
+            derivePostgresUrl(baseUrl, namespace), baseUsername, basePassword, "");
       }
       case RDBMS_MYSQL, RDBMS_MARIADB -> {
         createMysqlDatabase(baseUrl, baseUsername, basePassword, namespace);
-        yield new PtStorageConfig(deriveMysqlUrl(baseUrl, namespace), baseUsername, basePassword);
-      }
-      case RDBMS_ORACLE -> {
-        createOracleUser(baseUrl, baseUsername, basePassword, namespace);
-        yield new PtStorageConfig(baseUrl, namespace, ORACLE_SCHEMA_PASSWORD);
+        yield new PtStorageConfig(
+            deriveMysqlUrl(baseUrl, namespace), baseUsername, basePassword, "");
       }
       case RDBMS_MSSQL -> {
         createMssqlDatabase(baseUrl, baseUsername, basePassword, namespace);
-        yield new PtStorageConfig(deriveMssqlUrl(baseUrl, namespace), baseUsername, basePassword);
+        yield new PtStorageConfig(
+            deriveMssqlUrl(baseUrl, namespace), baseUsername, basePassword, "");
       }
+      case RDBMS_ORACLE ->
+          // Oracle isolates by table prefix in the shared schema (see class javadoc): no DDL, the
+          // base connection is reused and the namespace becomes the per-PT table prefix.
+          new PtStorageConfig(baseUrl, baseUsername, basePassword, namespace);
       default ->
           throw new IllegalArgumentException(
               "provisionAndDerive called for unsupported database type: " + databaseType);
@@ -170,17 +171,6 @@ final class PhysicalTenantSchemaProvisioner {
     executeDdl(url, user, pass, "CREATE DATABASE IF NOT EXISTS `" + namespace + "`");
   }
 
-  private static void createOracleUser(
-      final String url, final String user, final String pass, final String namespace) {
-    executeDdl(
-        url,
-        user,
-        pass,
-        "CREATE USER " + namespace + " IDENTIFIED BY \"" + ORACLE_SCHEMA_PASSWORD + "\"");
-    executeDdl(url, user, pass, "GRANT CONNECT, RESOURCE TO " + namespace);
-    executeDdl(url, user, pass, "ALTER USER " + namespace + " QUOTA UNLIMITED ON USERS");
-  }
-
   private static void createMssqlDatabase(
       final String url, final String user, final String pass, final String namespace) {
     executeDdl(
@@ -192,26 +182,19 @@ final class PhysicalTenantSchemaProvisioner {
 
   private static void executeDdl(
       final String url, final String user, final String pass, final String ddl) {
-    LOGGER.debug("Executing bootstrap DDL: {}", redactSecrets(ddl));
+    LOGGER.debug("Executing bootstrap DDL: {}", ddl);
     try (final var conn = DriverManager.getConnection(url, user, pass);
         final var stmt = conn.createStatement()) {
       stmt.execute(ddl);
     } catch (final SQLException e) {
-      throw new RuntimeException("Failed to execute bootstrap DDL: " + redactSecrets(ddl), e);
+      throw new RuntimeException("Failed to execute bootstrap DDL: " + ddl, e);
     }
   }
 
   /**
-   * Masks the Oracle schema-user password so it is never written to logs or surfaced in exception
-   * messages, even though it is a throwaway credential.
+   * Holds the derived per-physical-tenant JDBC connection parameters. {@code prefix} is the table
+   * prefix to apply: empty for the schema/database dialects (isolation is at the schema/database
+   * level), or the namespace for Oracle (isolation is by table prefix in the shared schema).
    */
-  private static String redactSecrets(final String ddl) {
-    return ddl.replace(ORACLE_SCHEMA_PASSWORD, "***");
-  }
-
-  /**
-   * Holds the derived JDBC connection parameters for a provisioned physical-tenant schema. The
-   * table prefix is always empty because isolation is achieved at the schema level.
-   */
-  record PtStorageConfig(String url, String username, String password) {}
+  record PtStorageConfig(String url, String username, String password, String prefix) {}
 }

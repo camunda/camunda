@@ -21,10 +21,11 @@ import org.jspecify.annotations.NullMarked;
  * {@code <tenantId>-admin} user, and an {@code admin} default role for that user.
  *
  * <p>The storage-isolation primitive is dialect-specific: {@code RDBMS_H2} gives each tenant a
- * fresh dedicated in-memory database, while the other RDBMS dialects give each tenant a dedicated
- * namespace named {@code <basePrefix>_<tenantId>} — a schema (PostgreSQL/Aurora), database
- * (MySQL/MariaDB, SQL Server), or user (Oracle). See {@link PhysicalTenantSchemaProvisioner} for
- * the per-dialect details.
+ * fresh dedicated in-memory database; PostgreSQL/Aurora, MySQL/MariaDB and SQL Server give each
+ * tenant a dedicated namespace named {@code <basePrefix>_<tenantId>} (a schema or database); and
+ * Oracle gives each tenant a per-tenant table prefix in the shared schema (a dedicated user would
+ * need DBA and is rejected by the production isolation check). See {@link
+ * PhysicalTenantSchemaProvisioner} for the per-dialect details.
  *
  * <p>Only valid in combination with {@link MultiDbTest} and an RDBMS database type (RDBMS-only,
  * because per-PT secondary-storage schema init is not available for ES/OS yet).

@@ -241,17 +241,19 @@ public class CamundaMultiDBExtension
   private static final String PT_ADMIN_PASSWORD = "ptadmin";
 
   /**
-   * Physical-tenant IDs are embedded into SQL identifiers (schema/database/user) and into the
-   * per-PT namespace {@code <basePrefix>_<tenantId>}. Restricting them to lowercase alphanumeric
-   * (starting with a letter) keeps them valid, unambiguous identifiers on every supported dialect
-   * and rules out DDL injection via the bootstrap statements.
+   * Physical-tenant IDs are embedded into SQL identifiers (schema/database name or table prefix)
+   * and into the per-PT namespace {@code <basePrefix>_<tenantId>}. Restricting them to lowercase
+   * alphanumeric (starting with a letter) keeps them valid, unambiguous identifiers on every
+   * supported dialect and rules out DDL injection via the bootstrap statements.
    */
   private static final Pattern PHYSICAL_TENANT_ID_PATTERN = Pattern.compile("[a-z][a-z0-9]*");
 
   /**
    * Maximum physical-tenant id length. The provisioned namespace is {@code <basePrefix>_<tenantId>}
-   * where {@code basePrefix} is the 10-character run token; Oracle caps identifiers at 30
-   * characters, leaving {@code 30 - 10 - 1 = 19} for the tenant id.
+   * (a schema/database name, or an Oracle table prefix) where {@code basePrefix} is the
+   * 10-character run token. Keeping the id short keeps the namespace within every dialect's
+   * identifier-length limit (the strictest being MySQL/MariaDB's 64-character database name);
+   * {@code 19} leaves ample headroom.
    */
   private static final int MAX_PHYSICAL_TENANT_ID_LENGTH = 19;
 
@@ -367,8 +369,8 @@ public class CamundaMultiDBExtension
                 + id
                 + "' exceeds the maximum length of "
                 + MAX_PHYSICAL_TENANT_ID_LENGTH
-                + " characters (to keep the provisioned namespace within Oracle's 30-character"
-                + " identifier limit)");
+                + " characters (to keep the provisioned namespace within the database"
+                + " identifier-length limits)");
       }
       if (seen.contains(id)) {
         throw new IllegalStateException(
@@ -391,20 +393,18 @@ public class CamundaMultiDBExtension
    * <ul>
    *   <li>{@code RDBMS_H2}: each PT gets a fresh dedicated in-memory H2 database (separate URL per
    *       PT, so no table-prefix separation is needed).
-   *   <li>other {@code RDBMS_*}: each PT gets a dedicated namespace (schema, database, or user
-   *       depending on the dialect) named {@code <basePrefix>_<tenantId>}. The namespace is created
-   *       via a bootstrap JDBC connection before the broker starts, and the PT's connection is
-   *       pointed at it. The table prefix is left empty because isolation is at the schema level.
-   *       <ul>
-   *         <li>PostgreSQL / Aurora: {@code CREATE SCHEMA IF NOT EXISTS}; PT URL gets {@code
-   *             currentSchema=<ns>} appended.
-   *         <li>MySQL / MariaDB: {@code CREATE DATABASE IF NOT EXISTS}; PT URL database path
-   *             segment is replaced.
-   *         <li>Oracle: a dedicated user/schema ({@code CREATE USER … IDENTIFIED BY …}); PT
-   *             username is set to the namespace name.
-   *         <li>SQL Server: {@code CREATE DATABASE [<ns>]}; PT URL {@code databaseName} property is
-   *             replaced.
-   *       </ul>
+   *   <li>{@code RDBMS_POSTGRES}/{@code RDBMS_AURORA}, {@code RDBMS_MYSQL}/{@code RDBMS_MARIADB},
+   *       {@code RDBMS_MSSQL}: each PT gets a dedicated namespace (schema or database) named {@code
+   *       <basePrefix>_<tenantId>}, created via a bootstrap JDBC connection before broker start and
+   *       targeted by the PT's URL ({@code currentSchema}, the URL database segment, or {@code
+   *       databaseName} respectively). The table prefix is empty — isolation is at the
+   *       schema/database level.
+   *   <li>{@code RDBMS_ORACLE}: each PT gets a per-tenant table prefix ({@code
+   *       <basePrefix>_<tenantId>}) in the shared {@code camunda} schema, reusing the base
+   *       connection. Oracle's schema == user, so a schema-per-PT would need DBA-only {@code CREATE
+   *       USER}, and the production isolation check rejects two users on the same URL anyway; a
+   *       distinct prefix is the validator's allowed "shared connection, distinct prefix" mode. See
+   *       {@link PhysicalTenantSchemaProvisioner}.
    * </ul>
    *
    * <p>When {@code seedAdminUser} is {@code true} (multi-PT mode), a {@code <tenantId>-admin}
@@ -443,8 +443,10 @@ public class CamundaMultiDBExtension
       ptPassword = "";
       ptPrefix = testPrefix;
     } else {
-      // Dedicated schema per PT: create the namespace via a bootstrap connection, then point the
-      // PT's connection at it. Table prefix is empty — isolation is by schema, not prefix.
+      // Per-PT isolated storage derived from the database type: a dedicated schema/database whose
+      // namespace lives in the PT URL (Postgres/MySQL/MariaDB/SQL Server), or — on Oracle — a
+      // per-PT table prefix in the shared schema. The provisioner returns the prefix to apply
+      // (empty for the schema/database dialects).
       final var baseRdbms =
           springApplication.unifiedConfig().getData().getSecondaryStorage().getRdbms();
       final var ptConfig =
@@ -458,7 +460,7 @@ public class CamundaMultiDBExtension
       ptUrl = ptConfig.url();
       ptUsername = ptConfig.username();
       ptPassword = ptConfig.password();
-      ptPrefix = "";
+      ptPrefix = ptConfig.prefix();
     }
 
     springApplication.withPtConfig(
