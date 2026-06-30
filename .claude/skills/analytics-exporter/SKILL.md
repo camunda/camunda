@@ -10,6 +10,11 @@ process-level OTel telemetry to the Camunda Analytics backend; downstream dashbo
 depend on stable attribute key strings and event names across versions. Getting registration or
 backwards compatibility wrong silently drops data or breaks analytics.
 
+> **Iron rule — NEVER expose PII.** Variable values, usernames, email addresses, user IDs,
+> or any other personally identifiable data must never be emitted. Only process metadata
+> (process IDs, definition keys, instance keys, element IDs, tenant IDs, timestamps) is
+> acceptable. When in doubt, leave it out.
+
 ## Module layout
 
 ```
@@ -43,25 +48,45 @@ duplicate registration.
 
 Open `AnalyticsAttributes.java` and add any new `AttributeKey` constants or string constants.
 
+`AnalyticsAttributes` is organized into domain-specific nested classes (`Process`, `Event`,
+`Tenant`, `Element`, `Metric`, etc.). Add new constants to the appropriate nested class, or
+create a new one if a new domain is needed.
+
 **OTel naming rules:**
-- Attribute keys: dot-delimited namespaces, snake_case — e.g. `"camunda.job.type"` 
-- Event name strings: snake_case — e.g. `"job_created"`
-- Metric name strings: dot-delimited — e.g. `"camunda.job.created"`
+- Attribute keys: dot-delimited namespaces, snake_case — e.g. `"camunda.job.type"`
+- Event name strings: snake_case — e.g. `"job_created"` (go inside the `Event` nested class)
+- Metric name strings: dot-delimited — e.g. `"camunda.job.created"` (go inside `Metric`)
+
+**Keep attribute count minimal.** Every attribute added to a metric becomes a dimension in the
+time-series backend. Too many attributes — especially high-cardinality ones — cause dimension
+explosion and drive up storage and query costs. Only add attributes that are genuinely needed.
+For log events this is less critical, but the same principle applies.
 
 **Iron rule — never remove or rename existing constants.** Attribute key strings, event names,
 and metric names are part of the analytics schema. They are baked into downstream dashboards,
 queries, and alerts. Renaming or removing one silently breaks consumers. Only ever *add* new
 constants. If semantics change, add a new constant alongside the old one.
 
-Group the new constants with the domain they belong to. Follow the existing block comments:
+Adding a new domain (e.g. `Job`):
 
 ```java
-// Job domain
-public static final AttributeKey<String> JOB_TYPE = AttributeKey.stringKey("camunda.job.type");
-public static final AttributeKey<String> JOB_WORKER = AttributeKey.stringKey("camunda.job.worker");
+public static final class Job {
+  public static final AttributeKey<String> TYPE = AttributeKey.stringKey("camunda.job.type");
+  public static final AttributeKey<String> WORKER = AttributeKey.stringKey("camunda.job.worker");
 
-// Event names
-public static final String EVENT_JOB_CREATED = "job_created";
+  private Job() {}
+}
+```
+
+Adding an event name for the new event (inside the existing `Event` nested class):
+
+```java
+public static final class Event {
+  // ... existing constants ...
+  public static final String JOB_CREATED = "job_created";
+
+  private Event() {}
+}
 ```
 
 ## Step 3 — Create the handler
@@ -71,10 +96,10 @@ Create `handler/MyEventHandler.java` in the same package as the other handlers:
 ```java
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_MY_EVENT;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.MY_EVENT;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
 
+import io.camunda.exporter.analytics.AnalyticsAttributes;
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
 import io.camunda.zeebe.protocol.record.Record;
@@ -96,15 +121,21 @@ public final class MyEventHandler implements AnalyticsHandler<MyRecordValue> {
     // Optional: filter on a sub-condition and return early if not applicable.
 
     otelSdkManager.logEvent(
-        EVENT_MY_EVENT,
+        MY_EVENT,
         record.getPosition(),
         log ->
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
-                .setAttribute(TENANT_ID, value.getTenantId())
+                // Tenant.ID and Element.ID share the unqualified name ID — use qualified form
+                .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 }
 ```
+
+**Import style:** use explicit static imports from the nested class (e.g.
+`AnalyticsAttributes.Process.BPMN_PROCESS_ID`). When the unqualified name would be ambiguous
+(e.g. both `Tenant.ID` and `Element.ID` are named `ID`), use the qualified form
+`AnalyticsAttributes.Tenant.ID` directly rather than a static import.
 
 Use `otelSdkManager.logEvent()` for discrete events and `otelSdkManager.incrementMetric()` for
 counters/gauges. See `ProcessInstanceCreationHandler` for an example that uses both.
@@ -174,9 +205,9 @@ class MyEventHandlerTest {
         .singleElement()
         .satisfies(log ->
             assertThat(log.getAttributes().asMap())
-                .containsEntry(AnalyticsAttributes.EVENT_NAME, AnalyticsAttributes.EVENT_MY_EVENT)
-                .containsEntry(AnalyticsAttributes.BPMN_PROCESS_ID, "my-process")
-                .containsEntry(AnalyticsAttributes.TENANT_ID, "tenant-a"));
+                .containsEntry(AnalyticsAttributes.Event.NAME, AnalyticsAttributes.Event.MY_EVENT)
+                .containsEntry(AnalyticsAttributes.Process.BPMN_PROCESS_ID, "my-process")
+                .containsEntry(AnalyticsAttributes.Tenant.ID, "tenant-a"));
   }
 
   // If the handler silently skips some records, test that path too:
@@ -224,8 +255,8 @@ void shouldEmitMyEventWhenRecordExported() {
         .singleElement()
         .satisfies(
             log ->
-                assertThat(log.getAttributes().get(AnalyticsAttributes.EVENT_NAME))
-                    .isEqualTo(AnalyticsAttributes.EVENT_MY_EVENT));
+                assertThat(log.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                    .isEqualTo(AnalyticsAttributes.Event.MY_EVENT));
 }
 ```
 
@@ -245,6 +276,20 @@ void shouldEmitMyEventWhenRecordExported() {
 ```
 
 All tests must pass before committing.
+
+## Step 7 — Final review checklist
+
+Before opening the PR, go through this checklist:
+
+1. **No PII exposed** — double-check every attribute: no variable values, usernames, email
+   addresses, or any other personally identifiable data.
+2. **No attributes renamed or removed** — existing constants in `AnalyticsAttributes` are
+   unchanged; only new constants were added.
+3. **Attribute count is minimal** — no unnecessary dimensions; every attribute added to a
+   metric has a clear analytical purpose.
+4. **Handler is registered** — `.register(ValueType, Intent, handler)` call is present in
+   `AnalyticsExporter.configure()`.
+5. **Tests pass** — `./mvnw verify -pl zeebe/exporters/analytics-exporter -DskipTests=false -Dquickly -T1C` is green.
 
 ## Quick-reference: key files
 
