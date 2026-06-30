@@ -263,10 +263,11 @@ public abstract class ArchiverJobIT {
         metrics,
         processInstanceTemplate,
         batchOperationTemplate,
-        decisionInstanceTemplate);
+        decisionInstanceTemplate,
+        buildScheduler());
   }
 
-  private static ThreadPoolTaskScheduler buildScheduler() {
+  protected static ThreadPoolTaskScheduler buildScheduler() {
     final var scheduler = new ThreadPoolTaskScheduler();
     scheduler.setPoolSize(1);
     scheduler.setThreadNamePrefix("archiver-test-");

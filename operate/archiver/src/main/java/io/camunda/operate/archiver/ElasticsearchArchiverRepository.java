@@ -24,7 +24,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHist
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.operate.Metrics;
