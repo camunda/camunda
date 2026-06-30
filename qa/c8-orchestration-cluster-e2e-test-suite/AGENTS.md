@@ -341,7 +341,7 @@ Orchestration-suite failures almost always trace to a module inside this same re
 > filing/searching issues in `camunda/camunda` and Gate B lookups; qa-processes generally already
 > has the access. ONLY if a call fails (e.g. filing in a different repo such as
 > `camunda/camunda-platform-helm`) retry the SAME command once with the fallback PAT
-> `GH_TOKEN="$GH_TOKEN_PAT" gh ...`. Always qa-processes first; the PAT is a backup.
+> `GH_TOKEN="$GH_PAT" gh ...`. Always qa-processes first; the PAT is a backup.
 
 1. **Compute the fingerprint** — `sha256` of `<version>::<file>::<test_name>`, first 8 chars (MUST
    match the triage dispatcher exactly so it can suppress re-dispatch):
