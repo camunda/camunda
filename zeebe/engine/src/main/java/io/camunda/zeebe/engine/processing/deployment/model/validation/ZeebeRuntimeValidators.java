@@ -87,6 +87,8 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
             .hasValidExpression(
                 ZeebeCalledElement::getProcessId, ExpressionVerification::isMandatory)
+            .hasValidExpression(
+                ZeebeCalledElement::getBusinessId, ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(TimerEventDefinition.class)
