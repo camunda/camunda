@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -63,7 +64,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final Callable<CompletableFuture<Void>> flushLog;
   private final StatePositionSupplier positionSupplier;
   private final Set<FailureListener> listeners = new HashSet<>();
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final TreeMap<Long, ActorFuture<Void>> commitAwaiters = new TreeMap<>();
   private CompletableActorFuture<PersistedSnapshot> ongoingSnapshotFuture;
 
@@ -73,7 +74,7 @@ public final class AsyncSnapshotDirector extends Actor
   private long commitPosition;
 
   private AsyncSnapshotDirector(
-      final int partitionId,
+      final PartitionId partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
       final Duration snapshotRate,
@@ -85,7 +86,7 @@ public final class AsyncSnapshotDirector extends Actor
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     this.partitionId = partitionId;
-    actorName = actorName(partitionId);
+    actorName = actorName(partitionId.number());
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
     this.positionSupplier = positionSupplier;
@@ -106,7 +107,7 @@ public final class AsyncSnapshotDirector extends Actor
    * @return snapshot director
    */
   public static AsyncSnapshotDirector of(
-      final int partitionId,
+      final PartitionId partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
       final StreamProcessorMode streamProcessorMode,
@@ -126,7 +127,7 @@ public final class AsyncSnapshotDirector extends Actor
   @Override
   protected Map<String, String> createContext() {
     final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    putPartitionContext(context, partitionId);
     return context;
   }
 

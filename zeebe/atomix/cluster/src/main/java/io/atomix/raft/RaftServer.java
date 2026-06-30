@@ -34,6 +34,7 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.utils.Builder;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.net.InetAddress;
@@ -466,6 +467,7 @@ public interface RaftServer {
     protected RaftElectionConfig electionConfig = RaftElectionConfig.ofDefaultElection();
     protected RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
     protected int partitionId;
+    protected String partitionGroup = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     protected MeterRegistry meterRegistry;
 
     protected Builder(final MemberId localMemberId) {
@@ -549,6 +551,11 @@ public interface RaftServer {
 
     public Builder withPartitionId(final int partitionId) {
       this.partitionId = partitionId;
+      return this;
+    }
+
+    public Builder withPartitionGroup(final String partitionGroup) {
+      this.partitionGroup = partitionGroup;
       return this;
     }
 

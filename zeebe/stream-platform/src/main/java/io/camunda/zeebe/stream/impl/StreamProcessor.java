@@ -141,7 +141,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected Map<String, String> createContext() {
     final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    putPartitionContext(context, streamProcessorContext.partitionId());
     return context;
   }
 
@@ -178,7 +178,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               scheduledTaskMetrics);
 
       asyncScheduleServiceContext =
-          new AsyncScheduleServiceContext(actorSchedulingService, actorServiceFactory, partitionId);
+          new AsyncScheduleServiceContext(
+              actorSchedulingService, actorServiceFactory, streamProcessorContext.partitionId());
 
       processorActorService = actorServiceFactory.create();
 

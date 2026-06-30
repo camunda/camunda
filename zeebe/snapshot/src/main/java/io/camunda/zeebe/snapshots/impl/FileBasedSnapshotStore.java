@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -35,26 +37,44 @@ public final class FileBasedSnapshotStore extends Actor
         BootstrapSnapshotStore {
 
   private final String actorName;
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final FileBasedSnapshotStoreImpl snapshotStore;
 
   public FileBasedSnapshotStore(
       final int brokerId,
-      final int partitionId,
+      final PartitionId partitionId,
       final Path root,
       final CRC32CChecksumProvider checksumProvider,
       final MeterRegistry meterRegistry) {
-    actorName = buildActorName("SnapshotStore", partitionId);
+    actorName = buildActorName("SnapshotStore", partitionId.number());
     this.partitionId = partitionId;
     snapshotStore =
         new FileBasedSnapshotStoreImpl(
             brokerId, root, checksumProvider, actor, new SnapshotMetrics(meterRegistry));
   }
 
+  /**
+   * Convenience constructor that assumes the default partition group. Kept for tests and callers
+   * that only have a numeric partition id.
+   */
+  public FileBasedSnapshotStore(
+      final int brokerId,
+      final int partitionId,
+      final Path root,
+      final CRC32CChecksumProvider checksumProvider,
+      final MeterRegistry meterRegistry) {
+    this(
+        brokerId,
+        new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionId),
+        root,
+        checksumProvider,
+        meterRegistry);
+  }
+
   @Override
   protected Map<String, String> createContext() {
     final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    putPartitionContext(context, partitionId);
     return context;
   }
 

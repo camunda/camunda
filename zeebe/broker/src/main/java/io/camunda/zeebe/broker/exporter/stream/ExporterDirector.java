@@ -391,6 +391,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   protected Map<String, String> createContext() {
     final var context = super.createContext();
     context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    context.put(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId);
     return context;
   }
 

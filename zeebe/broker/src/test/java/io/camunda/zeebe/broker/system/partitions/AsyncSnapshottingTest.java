@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
@@ -128,7 +130,7 @@ public final class AsyncSnapshottingTest {
   private void createSnapshotDirector(final StreamProcessorMode mode) {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.of(
-            1,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             mockStreamProcessor,
             snapshotController,
             mode,
@@ -248,7 +250,7 @@ public final class AsyncSnapshottingTest {
 
     asyncSnapshotDirector =
         AsyncSnapshotDirector.of(
-            1,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             mockStreamProcessor,
             snapshotController,
             StreamProcessorMode.PROCESSING,
@@ -276,7 +278,7 @@ public final class AsyncSnapshottingTest {
 
     asyncSnapshotDirector =
         AsyncSnapshotDirector.of(
-            1,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             mockStreamProcessor,
             snapshotController,
             StreamProcessorMode.REPLAY,

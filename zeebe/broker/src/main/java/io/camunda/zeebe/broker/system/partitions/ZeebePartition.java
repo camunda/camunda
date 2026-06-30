@@ -113,7 +113,7 @@ public final class ZeebePartition extends Actor
   @Override
   protected Map<String, String> createContext() {
     final var actorContext = super.createContext();
-    actorContext.put(ACTOR_PROP_PARTITION_ID, Integer.toString(context.getPartitionId()));
+    putPartitionContext(actorContext, context.partitionId());
     return actorContext;
   }
 

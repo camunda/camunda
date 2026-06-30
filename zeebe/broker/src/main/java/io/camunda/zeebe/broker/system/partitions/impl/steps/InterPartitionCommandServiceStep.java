@@ -108,7 +108,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
 
     final var receiver =
         new InterPartitionCommandReceiverActor(
-            context.getPartitionId(),
+            partitionId,
             context.getClusterCommunicationService(),
             logStreamWriter,
             receivingSubjects);

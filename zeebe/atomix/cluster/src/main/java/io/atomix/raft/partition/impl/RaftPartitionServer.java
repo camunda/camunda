@@ -176,6 +176,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     return RaftServer.builder(localMemberId)
         .withName(partition.name())
         .withPartitionId(partitionId)
+        .withPartitionGroup(partition.id().group())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
         .withPartitionConfig(config)

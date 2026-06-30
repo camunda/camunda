@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PARTITION_ID;
+import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PHYSICAL_TENANT;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
@@ -70,7 +71,11 @@ final class Partition {
     return new Partition(
         context,
         new StartupProcess<>(
-            Map.of(ACTOR_PROP_PARTITION_ID, context.partitionId().toString()),
+            Map.of(
+                ACTOR_PROP_PARTITION_ID,
+                context.partitionId().toString(),
+                ACTOR_PROP_PHYSICAL_TENANT,
+                context.partitionMetadata().id().group()),
             LOGGER,
             List.of(
                 new MetricsStep(context.partitionId()),
@@ -86,7 +91,11 @@ final class Partition {
     return new Partition(
         context,
         new StartupProcess<>(
-            Map.of(ACTOR_PROP_PARTITION_ID, context.partitionId().toString()),
+            Map.of(
+                ACTOR_PROP_PARTITION_ID,
+                context.partitionId().toString(),
+                ACTOR_PROP_PHYSICAL_TENANT,
+                context.partitionMetadata().id().group()),
             LOGGER,
             List.of(
                 new MetricsStep(context.partitionId()),

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PARTITION_ID;
+import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PHYSICAL_TENANT;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcess;
@@ -34,7 +35,13 @@ public final class RecoveryPartition {
     return new RecoveryPartition(
         context,
         new StartupProcess<>(
-            Map.of(ACTOR_PROP_PARTITION_ID, String.valueOf(partitionId)), LOGGER, List.of()));
+            Map.of(
+                ACTOR_PROP_PARTITION_ID,
+                String.valueOf(partitionId.number()),
+                ACTOR_PROP_PHYSICAL_TENANT,
+                partitionId.group()),
+            LOGGER,
+            List.of()));
   }
 
   ActorFuture<RecoveryPartition> start() {

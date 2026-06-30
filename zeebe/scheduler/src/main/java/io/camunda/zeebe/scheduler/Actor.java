@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Loggers;
 import java.time.Duration;
@@ -24,6 +25,12 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   public static final String ACTOR_PROP_NAME = "actor-name";
   public static final String ACTOR_PROP_PARTITION_ID = "partitionId";
+
+  /**
+   * MDC key for the partition group (a.k.a. physical tenant) the actor belongs to. Mirrors the
+   * {@code physicalTenant} common metrics label (see {@code PartitionKeyNames}).
+   */
+  public static final String ACTOR_PROP_PHYSICAL_TENANT = "physicalTenant";
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
@@ -43,6 +50,16 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   public String getName() {
     return getClass().getSimpleName();
+  }
+
+  /**
+   * Adds the partition id and partition group (physical tenant) of the given partition to the actor
+   * context map so that both show up in the MDC of every log line emitted by this actor.
+   */
+  protected static void putPartitionContext(
+      final Map<String, String> context, final PartitionId partitionId) {
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId.number()));
+    context.put(ACTOR_PROP_PHYSICAL_TENANT, partitionId.group());
   }
 
   /**

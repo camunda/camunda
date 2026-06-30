@@ -164,6 +164,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
   private final int partitionId;
+  private final String partitionGroup;
   private final MeterRegistry meterRegistry;
 
   // after firstCommitIndex is set it will be null
@@ -172,6 +173,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   public RaftContext(
       final String name,
       final int partitionId,
+      final String partitionGroup,
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
@@ -187,6 +189,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
     this.partitionId = partitionId;
+    this.partitionGroup = partitionGroup;
     this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
     health = HealthReport.healthy(this);
 
@@ -207,7 +210,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
 
     threadContext =
-        createThreadContext("raft-server", partitionId, threadContextFactory, localMemberId.id());
+        createThreadContext(
+            "raft-server", partitionId, partitionGroup, threadContextFactory, localMemberId.id());
 
     // Open the metadata store.
     meta = storage.openMetaStore();
@@ -221,7 +225,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             meta,
             () ->
                 createThreadContext(
-                    "raft-log", partitionId, threadContextFactory, localMemberId.id()));
+                    "raft-log",
+                    partitionId,
+                    partitionGroup,
+                    threadContextFactory,
+                    localMemberId.id()));
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
@@ -290,6 +298,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private ThreadContext createThreadContext(
       final String name,
       final int partitionId,
+      final String partitionGroup,
       final RaftThreadContextFactory threadContextFactory,
       final String localMemberId) {
     final var context =
@@ -300,6 +309,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     context.execute(
         () -> {
           MDC.put("partitionId", String.valueOf(partitionId));
+          // matches Actor.ACTOR_PROP_PHYSICAL_TENANT
+          MDC.put("physicalTenant", partitionGroup);
           MDC.put("actor-name", name + "-" + partitionId);
           MDC.put("actor-scheduler", "Broker-" + localMemberId);
           MDC.put(RAFT_ROLE_KEY, Role.INACTIVE.name());

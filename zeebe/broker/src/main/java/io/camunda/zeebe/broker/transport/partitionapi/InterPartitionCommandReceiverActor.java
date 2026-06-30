@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.utils.serializer.serializers.DefaultSerializers;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -31,26 +32,26 @@ public final class InterPartitionCommandReceiverActor extends Actor
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final String actorName;
   private final ClusterCommunicationService communicationService;
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final InterPartitionCommandReceiverImpl receiver;
   private final List<String> receivingSubjects;
 
   public InterPartitionCommandReceiverActor(
-      final int partitionId,
+      final PartitionId partitionId,
       final ClusterCommunicationService communicationService,
       final LogStreamWriter logStreamWriter,
       final List<String> receivingSubjects) {
     this.partitionId = partitionId;
     this.communicationService = communicationService;
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
-    actorName = buildActorName(getClass().getSimpleName(), partitionId);
+    actorName = buildActorName(getClass().getSimpleName(), partitionId.number());
     this.receivingSubjects = receivingSubjects;
   }
 
   @Override
   protected Map<String, String> createContext() {
     final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    putPartitionContext(context, partitionId);
     return context;
   }
 
