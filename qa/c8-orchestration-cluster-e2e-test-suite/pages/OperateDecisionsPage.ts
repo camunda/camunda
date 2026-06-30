@@ -55,8 +55,12 @@ class OperateDecisionsPage {
       name: 'Clear selected item',
     });
     this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
-    this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
-    this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
+    this.evaluatedCheckbox = this.filterRegion.getByRole('checkbox', {
+      name: 'Evaluated',
+    });
+    this.failedCheckbox = this.filterRegion.getByRole('checkbox', {
+      name: 'Failed',
+    });
     this.decisionInstancesList = page.getByTestId('data-list');
   }
 

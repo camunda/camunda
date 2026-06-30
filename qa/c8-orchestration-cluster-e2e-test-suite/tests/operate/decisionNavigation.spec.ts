@@ -57,6 +57,29 @@ test.beforeAll(async ({request}) => {
       {timeout: 60_000, intervals: [2_000, 5_000]},
     )
     .toBeGreaterThanOrEqual(1);
+
+  // Poll until the evaluated decision instance is also indexed — it can be delayed
+  // independently of the failed one, and navigation tests depend on it being present.
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post('/v2/decision-instances/search', {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'EVALUATED',
+              processInstanceKey:
+                processInstanceWithSuccessfulDecision.processInstanceKey,
+            },
+          },
+        });
+        if (response.status() !== 200) return 0;
+        const result = await response.json();
+        return result.page?.totalItems ?? 0;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBeGreaterThanOrEqual(1);
 });
 
 test.describe('Decision Navigation', () => {
@@ -190,11 +213,12 @@ test.describe('Decision Navigation', () => {
     });
 
     await test.step('Click the Process Instance Key link for the evaluated instance', async () => {
-      await operateDecisionsPage.decisionInstancesList
-        .getByRole('link', {
-          name: `View process instance ${processInstanceKey}`,
-        })
-        .click();
+      const processInstanceLink = operateDecisionsPage.decisionInstancesList.getByRole(
+        'link',
+        {name: `View process instance ${processInstanceKey}`},
+      );
+      await expect(processInstanceLink).toBeVisible();
+      await processInstanceLink.click();
     });
 
     await test.step('Verify navigation to the corresponding process instance', async () => {

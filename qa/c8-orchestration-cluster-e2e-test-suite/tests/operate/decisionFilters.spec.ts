@@ -124,7 +124,9 @@ test.describe('Decision Filters', () => {
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(totalCount);
       await expect(
-        operateDecisionsPage.decisionInstancesList.getByRole('row'),
+        operateDecisionsPage.decisionInstancesList.getByRole('link', {
+          name: /View decision instance/,
+        }),
       ).not.toHaveCount(0);
       const evaluatedCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
@@ -178,7 +180,9 @@ test.describe('Decision Filters', () => {
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(totalCount);
       await expect(
-        operateDecisionsPage.decisionInstancesList.getByRole('row'),
+        operateDecisionsPage.decisionInstancesList.getByRole('link', {
+          name: /View decision instance/,
+        }),
       ).not.toHaveCount(0);
       const failedCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
