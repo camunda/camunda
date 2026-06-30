@@ -53,7 +53,7 @@ final class RefreshablePropertiesTest {
   void shouldNotClearUserSetPropertiesOnRefresh() {
     // given a broker with a user-set property that is not part of unified config
     final var broker = new TestStandaloneBroker();
-    broker.withProperty("camunda.security.authorizations.enabled", true);
+    broker.withProperty("camunda.not-part-of-uc", true);
 
     // when refreshable properties are applied and then re-applied
     broker.withRefreshableProperties(
@@ -62,7 +62,7 @@ final class RefreshablePropertiesTest {
         ExtendedConfigurationBuilder.flatPropertiesFor(broker.unifiedConfig()));
 
     // then the user-set property survives both refreshes
-    assertThat(broker.property("camunda.security.authorizations.enabled", Boolean.class, false))
+    assertThat(broker.property("camunda.not-part-of-uc", Boolean.class, false))
         .as("user-set property should not be tracked as refreshable")
         .isTrue();
   }
