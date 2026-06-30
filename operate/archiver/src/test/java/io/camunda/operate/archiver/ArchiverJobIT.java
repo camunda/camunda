@@ -20,13 +20,15 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
+import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -36,6 +38,8 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -93,7 +97,7 @@ public abstract class ArchiverJobIT {
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private List<TemplateDescriptor> allTemplateDescriptors;
-  @Autowired private List<IndexDescriptor> allIndexDescriptors;
+  @Autowired private List<AbstractIndexDescriptor> allIndexDescriptors;
   private ElasticsearchSearchClientAdapter esAdapter;
   private OpensearchSearchClientAdapter osAdapter;
 
@@ -309,8 +313,13 @@ public abstract class ArchiverJobIT {
 
     @Bean
     ObjectMapper objectMapper() {
+      final var javaTimeModule = new JavaTimeModule();
+      final var formatter =
+          DateTimeFormatter.ofPattern(OperateDateTimeFormatter.DATE_FORMAT_DEFAULT);
+      javaTimeModule.addSerializer(
+          OffsetDateTime.class, new CustomOffsetDateTimeSerializer(formatter));
       return new ObjectMapper()
-          .registerModule(new JavaTimeModule())
+          .registerModule(javaTimeModule)
           .registerModule(new Jdk8Module())
           .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
           .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)

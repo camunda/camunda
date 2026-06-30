@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -87,7 +87,7 @@ class OpensearchSearchClientAdapter
   }
 
   @Override
-  public void deleteIndices(final String pattern) throws IOException {
+  public void deleteIndices(final String pattern) {
     try {
       client.indices().delete(r -> r.index(List.of(pattern)).ignoreUnavailable(true));
     } catch (final Exception ignored) {
@@ -98,15 +98,11 @@ class OpensearchSearchClientAdapter
   SchemaManager buildSchemaManager(
       final OperateProperties props,
       final List<TemplateDescriptor> templates,
-      final List<IndexDescriptor> indices) {
+      final List<AbstractIndexDescriptor> indices) {
     final var richClient =
         new RichOpenSearchClient(
             null, client, new OpenSearchAsyncClient(client._transport()), objectMapper);
     return new OpensearchSchemaManager(
-        props,
-        richClient,
-        new ArrayList<>(templates),
-        new ArrayList<IndexDescriptor>(indices),
-        objectMapper);
+        props, richClient, new ArrayList<>(templates), new ArrayList<>(indices), objectMapper);
   }
 }
