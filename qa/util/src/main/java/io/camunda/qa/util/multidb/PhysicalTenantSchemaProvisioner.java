@@ -177,13 +177,21 @@ final class PhysicalTenantSchemaProvisioner {
 
   private static void executeDdl(
       final String url, final String user, final String pass, final String ddl) {
-    LOGGER.debug("Executing bootstrap DDL: {}", ddl);
+    LOGGER.debug("Executing bootstrap DDL: {}", redactSecrets(ddl));
     try (final var conn = DriverManager.getConnection(url, user, pass);
         final var stmt = conn.createStatement()) {
       stmt.execute(ddl);
     } catch (final SQLException e) {
-      throw new RuntimeException("Failed to execute bootstrap DDL: " + ddl, e);
+      throw new RuntimeException("Failed to execute bootstrap DDL: " + redactSecrets(ddl), e);
     }
+  }
+
+  /**
+   * Masks the Oracle schema-user password so it is never written to logs or surfaced in exception
+   * messages, even though it is a throwaway credential.
+   */
+  private static String redactSecrets(final String ddl) {
+    return ddl.replace(ORACLE_SCHEMA_PASSWORD, "***");
   }
 
   /**

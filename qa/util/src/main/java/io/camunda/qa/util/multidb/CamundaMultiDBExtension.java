@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.jspecify.annotations.NonNull;
@@ -238,6 +239,22 @@ public class CamundaMultiDBExtension
   private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
   private static final String PREFERRED_EXTENSION_MULTIDB = "multi-db";
   private static final String PT_ADMIN_PASSWORD = "ptadmin";
+
+  /**
+   * Physical-tenant IDs are embedded into SQL identifiers (schema/database/user) and into the
+   * per-PT namespace {@code <basePrefix>_<tenantId>}. Restricting them to lowercase alphanumeric
+   * (starting with a letter) keeps them valid, unambiguous identifiers on every supported dialect
+   * and rules out DDL injection via the bootstrap statements.
+   */
+  private static final Pattern PHYSICAL_TENANT_ID_PATTERN = Pattern.compile("[a-z][a-z0-9]*");
+
+  /**
+   * Maximum physical-tenant id length. The provisioned namespace is {@code <basePrefix>_<tenantId>}
+   * where {@code basePrefix} is the 10-character run token; Oracle caps identifiers at 30
+   * characters, leaving {@code 30 - 10 - 1 = 19} for the tenant id.
+   */
+  private static final int MAX_PHYSICAL_TENANT_ID_LENGTH = 19;
+
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
@@ -336,6 +353,22 @@ public class CamundaMultiDBExtension
         throw new IllegalStateException(
             "@MultiDbPhysicalTenants must not include 'default'; the default physical tenant is"
                 + " implicit");
+      }
+      if (!PHYSICAL_TENANT_ID_PATTERN.matcher(id).matches()) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants tenant id '"
+                + id
+                + "' must be lowercase alphanumeric and start with a letter (it is embedded into"
+                + " SQL identifiers)");
+      }
+      if (id.length() > MAX_PHYSICAL_TENANT_ID_LENGTH) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants tenant id '"
+                + id
+                + "' exceeds the maximum length of "
+                + MAX_PHYSICAL_TENANT_ID_LENGTH
+                + " characters (to keep the provisioned namespace within Oracle's 30-character"
+                + " identifier limit)");
       }
       if (seen.contains(id)) {
         throw new IllegalStateException(

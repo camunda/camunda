@@ -55,8 +55,14 @@ public @interface MultiDbPhysicalTenants {
 
   /**
    * Non-default physical tenant IDs to provision. Must not include {@code "default"} (the default
-   * PT is always implicit). Each declared tenant gets its own isolated RDBMS schema, a seeded
-   * {@code <id>-admin} user, and an {@code admin} default role for that user.
+   * PT is always implicit). Each declared tenant gets its own isolated namespace (a fresh in-memory
+   * database on {@code RDBMS_H2}; a dedicated schema/database/user on the other RDBMS dialects), a
+   * seeded {@code <id>-admin} user, and an {@code admin} default role for that user.
+   *
+   * <p>IDs are embedded into SQL identifiers, so they must be lowercase alphanumeric (starting with
+   * a letter) and short enough to satisfy the strictest dialect's identifier-length limit (the
+   * namespace {@code <basePrefix>_<id>} must fit Oracle's 30-character cap); the extension
+   * validates this up front.
    */
   String[] value();
 }
