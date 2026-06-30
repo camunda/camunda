@@ -35,3 +35,20 @@ CREATE TABLE IF NOT EXISTS proc_inst_exec_time_window (
   max_duration_ms        BIGINT       NOT NULL,
   PRIMARY KEY (dataset_id, region, process_definition_key, version, tenant_id, window_start)
 );
+
+-- Element heatmap: execution count + execution time per BPMN element, written by the pipeline.
+CREATE TABLE IF NOT EXISTS element_execution_window (
+  bpmn_process_id        VARCHAR(255) NOT NULL,
+  process_definition_key BIGINT       NOT NULL,
+  version                INT          NOT NULL,
+  tenant_id              VARCHAR(255) NOT NULL,
+  element_id             VARCHAR(255) NOT NULL,
+  element_type           VARCHAR(64)  NOT NULL,
+  window_start           BIGINT       NOT NULL,
+  window_size_ms         BIGINT       NOT NULL,
+  executed_count         BIGINT       NOT NULL,
+  total_duration_ms      BIGINT       NOT NULL,
+  min_duration_ms        BIGINT       NOT NULL,
+  max_duration_ms        BIGINT       NOT NULL,
+  PRIMARY KEY (bpmn_process_id, process_definition_key, version, tenant_id, element_id, window_start)
+);

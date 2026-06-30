@@ -62,6 +62,21 @@
     <h2>3 · View report</h2>
     <div id="report-view"><span class="muted">Pick a report above to view it.</span></div>
   </section>
+
+  <section class="card">
+    <h2>4 · Element heatmap</h2>
+    <div class="row">
+      <label>Process</label>
+      <select id="hm-process" onchange="viewHeatmap()"></select>
+      <label style="min-width:64px">Colour by</label>
+      <select id="hm-metric" onchange="viewHeatmap()" style="min-width:170px">
+        <option value="count">Execution count</option>
+        <option value="avg">Avg execution time</option>
+      </select>
+      <button class="secondary" onclick="refreshHeatmap()">↻ Refresh</button>
+    </div>
+    <div id="heatmap-view"><span class="muted">Run some instances, then pick a process.</span></div>
+  </section>
 </main>
 
 <script>
@@ -155,7 +170,42 @@
       + `<div class="row" style="margin-top:8px"><button class="secondary" onclick="viewReport(${id}, '${name.replace(/'/g, "")}')">↻ Refresh</button></div>`;
   }
 
+  // --- element heatmap ---------------------------------------------------------------------
+  async function refreshHeatmap() {
+    const sel = document.getElementById('hm-process');
+    const prev = sel.value;
+    const procs = await api('/heatmap/processes');
+    sel.innerHTML = procs.map(p => `<option value="${p}">${p}</option>`).join('');
+    if (procs.includes(prev)) sel.value = prev;
+    viewHeatmap();
+  }
+
+  async function viewHeatmap() {
+    const process = document.getElementById('hm-process').value;
+    const metricKey = document.getElementById('hm-metric').value;
+    const view = document.getElementById('heatmap-view');
+    if (!process) { view.innerHTML = '<span class="muted">No heatmap data yet — run some instances.</span>'; return; }
+    const cells = await api('/heatmap?process=' + encodeURIComponent(process));
+    if (cells.length === 0) { view.innerHTML = '<p class="muted">No data yet for this process.</p>'; return; }
+    const value = c => metricKey === 'count' ? c.executedCount : c.averageDurationMs;
+    const max = Math.max(1, ...cells.map(value));
+    const cellsHtml = cells.map(c => {
+      const t = value(c) / max;                       // 0..1 intensity for the chosen metric
+      const bg = `rgba(255,80,0,${(0.12 + 0.88 * t).toFixed(2)})`;
+      const headline = metricKey === 'count' ? `${c.executedCount}×` : `${Math.round(c.averageDurationMs)} ms`;
+      return `<div style="background:${bg};border:1px solid #e3e3e3;border-radius:6px;padding:10px 12px;min-width:140px">
+          <div style="font-weight:600">${c.elementId}</div>
+          <div class="muted">${c.elementType}</div>
+          <div style="font-size:18px;margin:6px 0 2px">${headline}</div>
+          <div class="muted">${c.executedCount}× · avg ${Math.round(c.averageDurationMs)}ms · max ${c.maxDurationMs}ms</div>
+        </div>`;
+    }).join('');
+    view.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">${cellsHtml}</div>
+      <div class="muted" style="margin-top:8px">colour intensity ∝ ${metricKey === 'count' ? 'execution count' : 'average execution time'}</div>`;
+  }
+
   refresh();
+  refreshHeatmap();
 </script>
 </body>
 </html>

@@ -7,11 +7,21 @@
  */
 package io.camunda.eventbridge.analytics;
 
+import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.aggregate.Rollup;
+import io.camunda.analytics.streaming.dsl.Aggregation;
+import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.analytics.aggregate.DatasetRegistry;
 import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
+import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
+import io.camunda.eventbridge.analytics.element.ElementExecutionProjector;
+import io.camunda.eventbridge.analytics.element.ElementKey;
+import io.camunda.eventbridge.analytics.element.JdbcElementHeatmapStore;
+import io.camunda.eventbridge.analytics.metric.ExecutionTimeAggregateFunction;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -72,11 +82,33 @@ public final class StandaloneAnalyticsPipeline {
     // reads them and aggregates each fact into every declared dataset.
     final DatasetRegistry datasetRegistry = new DatasetRegistry(dataSource);
 
+    // second metric, built on the streaming library: an element heatmap (execution count + time per
+    // element), pre-aggregated hourly and merged into element_execution_window.
+    final long windowSizeMs = 3_600_000L;
+    final JdbcElementHeatmapStore heatmapStore =
+        new JdbcElementHeatmapStore(dataSource, windowSizeMs);
+    heatmapStore.initSchema();
+    final Rollup<ElementExecutionFact> heatmapRollup =
+        Aggregation.<ElementExecutionFact, ElementKey>groupBy(
+                fact ->
+                    new ElementKey(
+                        fact.bpmnProcessId(),
+                        fact.processDefinitionKey(),
+                        fact.version(),
+                        fact.tenantId(),
+                        fact.elementId(),
+                        fact.elementType()))
+            .windowedBy(TumblingWindows.of(windowSizeMs), ElementExecutionFact::completionTimeMs)
+            .aggregate(new ExecutionTimeAggregateFunction<>(ElementExecutionFact::durationMs))
+            .into(heatmapStore);
+    final StreamProcessor<ZeebeRecord> heatmap =
+        new StreamProcessor<ZeebeRecord>().register(new ElementExecutionProjector(), heatmapRollup);
+
     final ZeebeRecordConsumer source =
         ZeebeRecordConsumer.subscribe(client, GROUP, instanceId, List.of(sourceTopic)).join();
 
     final WindowedAnalyticsPipeline pipeline =
-        new WindowedAnalyticsPipeline(source, projector, aggregator, datasetRegistry);
+        new WindowedAnalyticsPipeline(source, projector, aggregator, datasetRegistry, heatmap);
     pipeline.start();
     LOG.info(
         "Phase-1 analytics instance '{}' started: {} -> per-dataset windowed H2 aggregates",

@@ -8,11 +8,13 @@
 package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.webapp.model.Dataset;
+import io.camunda.analytics.webapp.model.HeatmapCell;
 import io.camunda.analytics.webapp.model.Report;
 import io.camunda.analytics.webapp.model.ReportRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -171,5 +173,42 @@ public class AnalyticsRepository {
         " GROUP BY region, bpmn_process_id, window_start"
             + " ORDER BY region, bpmn_process_id, window_start");
     return jdbc.query(sql.toString(), REPORT_ROW_MAPPER, params.toArray());
+  }
+
+  /** The process definitions the heatmap has data for (for the filter dropdown). */
+  public List<String> heatmapProcesses() {
+    try {
+      return jdbc.queryForList(
+          "SELECT DISTINCT bpmn_process_id FROM element_execution_window ORDER BY bpmn_process_id",
+          String.class);
+    } catch (final DataAccessException tableNotReadyYet) {
+      return List.of();
+    }
+  }
+
+  /**
+   * The heatmap for one process: per element, the execution count and execution-time stats, merged
+   * across windows (the per-source-partition partials add for count/total, max for the slowest).
+   */
+  public List<HeatmapCell> elementHeatmap(final String bpmnProcessId) {
+    try {
+      return jdbc.query(
+          "SELECT element_id, MIN(element_type) AS element_type, SUM(executed_count) AS executed, "
+              + "CASE WHEN SUM(executed_count) = 0 THEN 0 "
+              + "ELSE SUM(total_duration_ms) * 1.0 / SUM(executed_count) END AS avg_duration, "
+              + "MAX(max_duration_ms) AS max_duration "
+              + "FROM element_execution_window WHERE bpmn_process_id = ? "
+              + "GROUP BY element_id ORDER BY executed DESC, element_id",
+          (rs, n) ->
+              new HeatmapCell(
+                  rs.getString("element_id"),
+                  rs.getString("element_type"),
+                  rs.getLong("executed"),
+                  rs.getDouble("avg_duration"),
+                  rs.getLong("max_duration")),
+          bpmnProcessId);
+    } catch (final DataAccessException tableNotReadyYet) {
+      return List.of();
+    }
   }
 }

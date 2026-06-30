@@ -35,7 +35,8 @@ final class ExecutionTimeRollupExampleTest {
   @Test
   void executionTimeByRegionAndByDefinitionPreAggregatedHourly() {
     final TumblingWindows hourly = TumblingWindows.of(HOUR);
-    final ExecutionTimeAggregateFunction metric = new ExecutionTimeAggregateFunction();
+    final ExecutionTimeAggregateFunction<ProcessInstanceExecutionTimeFact> metric =
+        new ExecutionTimeAggregateFunction<>(ProcessInstanceExecutionTimeFact::durationMs);
 
     // two serving stores, two groupings of the same fact, keyed by Windowed<base key>
     final InMemoryRollupStore<Windowed<String>, ExecutionTimeAccumulator> byRegion =

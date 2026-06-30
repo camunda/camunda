@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.analytics;
 
+import io.camunda.analytics.streaming.StreamProcessor;
 import io.camunda.eventbridge.analytics.aggregate.AggregateDataset;
 import io.camunda.eventbridge.analytics.aggregate.DatasetRegistry;
 import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
@@ -43,6 +44,8 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
   private final ProcessInstanceProjector projector;
   private final WindowedExecutionTimeAggregator aggregator;
   private final DatasetRegistry datasetRegistry;
+  // second metric family on the same consumer: the element heatmap, built on the streaming library
+  private final StreamProcessor<ZeebeRecord> heatmap;
 
   private volatile boolean running;
   private Thread thread;
@@ -53,11 +56,13 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
       final ZeebeRecordConsumer sourceConsumer,
       final ProcessInstanceProjector projector,
       final WindowedExecutionTimeAggregator aggregator,
-      final DatasetRegistry datasetRegistry) {
+      final DatasetRegistry datasetRegistry,
+      final StreamProcessor<ZeebeRecord> heatmap) {
     this.sourceConsumer = sourceConsumer;
     this.projector = projector;
     this.aggregator = aggregator;
     this.datasetRegistry = datasetRegistry;
+    this.heatmap = heatmap;
   }
 
   public void start() {
@@ -68,6 +73,7 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
   }
 
   private void run() {
+    heatmap.init();
     while (running) {
       try {
         refreshDatasetsIfDue();
@@ -75,7 +81,12 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
         for (final ZeebeRecord record : records) {
           // fold the derived fact into every currently-declared dataset (each with its own window)
           projector.apply(record).ifPresent(fact -> aggregator.apply(fact, datasets));
+          // same record also feeds the element-heatmap metric (buffered, flushed per batch)
+          heatmap.process(record);
           sourceConsumer.commit(record).join();
+        }
+        if (!records.isEmpty()) {
+          heatmap.flush();
         }
       } catch (final RuntimeException e) {
         LOG.warn("Windowed pipeline poll failed; backing off", e);
@@ -114,5 +125,6 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
         Thread.currentThread().interrupt();
       }
     }
+    heatmap.close(); // final flush of any buffered heatmap partials
   }
 }

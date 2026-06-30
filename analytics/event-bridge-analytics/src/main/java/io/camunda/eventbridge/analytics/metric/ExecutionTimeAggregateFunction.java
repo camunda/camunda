@@ -8,17 +8,25 @@
 package io.camunda.eventbridge.analytics.metric;
 
 import io.camunda.analytics.streaming.aggregate.AggregateFunction;
-import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
+import java.util.function.ToLongFunction;
 
 /**
- * The execution-time metric as a mergeable {@link AggregateFunction}: count, total, min and max of
- * process-instance durations, with the average derived on read. Every operation is additive or a
- * min/max, so {@code merge} is commutative and associative — which is what makes the per-partition
- * and pre-aggregation merges correct.
+ * Execution-time statistics as a mergeable {@link AggregateFunction}: count, total, min and max of
+ * a fact's duration, with the average derived on read. Parameterized by a duration extractor so it
+ * works for any fact that carries a duration — process instances, elements, jobs — not just one
+ * type. Every operation is additive or a min/max, so {@code merge} is commutative and associative,
+ * which is what makes the per-partition and pre-aggregation merges correct.
+ *
+ * @param <F> the fact type
  */
-public final class ExecutionTimeAggregateFunction
-    implements AggregateFunction<
-        ProcessInstanceExecutionTimeFact, ExecutionTimeAccumulator, ExecutionTimeResult> {
+public final class ExecutionTimeAggregateFunction<F>
+    implements AggregateFunction<F, ExecutionTimeAccumulator, ExecutionTimeResult> {
+
+  private final ToLongFunction<F> durationMs;
+
+  public ExecutionTimeAggregateFunction(final ToLongFunction<F> durationMs) {
+    this.durationMs = durationMs;
+  }
 
   @Override
   public ExecutionTimeAccumulator createAccumulator() {
@@ -26,9 +34,8 @@ public final class ExecutionTimeAggregateFunction
   }
 
   @Override
-  public ExecutionTimeAccumulator add(
-      final ProcessInstanceExecutionTimeFact fact, final ExecutionTimeAccumulator acc) {
-    final long duration = fact.durationMs();
+  public ExecutionTimeAccumulator add(final F fact, final ExecutionTimeAccumulator acc) {
+    final long duration = durationMs.applyAsLong(fact);
     return new ExecutionTimeAccumulator(
         acc.count() + 1,
         acc.totalMs() + duration,

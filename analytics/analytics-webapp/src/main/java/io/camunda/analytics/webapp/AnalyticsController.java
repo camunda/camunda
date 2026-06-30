@@ -8,6 +8,7 @@
 package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.webapp.model.Dataset;
+import io.camunda.analytics.webapp.model.HeatmapCell;
 import io.camunda.analytics.webapp.model.Report;
 import io.camunda.analytics.webapp.model.ReportRow;
 import java.util.List;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Declare-and-read API behind the UI: define datasets, define reports, and run a report. */
@@ -69,6 +71,18 @@ public class AnalyticsController {
         .getReport(id)
         .map(report -> ResponseEntity.ok(repository.runReport(report)))
         .orElseGet(() -> ResponseEntity.notFound().build());
+  }
+
+  /** Process definitions the element heatmap has data for. */
+  @GetMapping("/heatmap/processes")
+  public List<String> heatmapProcesses() {
+    return repository.heatmapProcesses();
+  }
+
+  /** The element heatmap for one process definition. */
+  @GetMapping("/heatmap")
+  public List<HeatmapCell> heatmap(@RequestParam("process") final String bpmnProcessId) {
+    return repository.elementHeatmap(bpmnProcessId);
   }
 
   /** Request body to declare a dataset. */
