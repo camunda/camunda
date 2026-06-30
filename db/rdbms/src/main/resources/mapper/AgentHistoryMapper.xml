@@ -79,4 +79,150 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
+  <!-- ===== READ operations ===== -->
+
+  <!--
+    CONTENT and TOOL_CALLS are JSON CLOBs. They are mapped to the raw String properties on
+    AgentHistoryDbModel; AgentHistoryDbModel.contentItems() and toolCallValues() then deserialize
+    them lazily on first access.
+  -->
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.AgentHistoryDbModel">
+    <id property="agentHistoryKey" column="AGENT_HISTORY_KEY" javaType="long"/>
+    <result property="agentInstanceKey" column="AGENT_INSTANCE_KEY" javaType="long"/>
+    <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="long"/>
+    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="long"/>
+    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="long"/>
+    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="long"/>
+    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
+    <result property="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
+    <result property="jobKey" column="JOB_KEY" javaType="long"/>
+    <result property="jobLease" column="JOB_LEASE" javaType="java.lang.String"/>
+    <result property="iteration" column="ITERATION" javaType="java.lang.Integer"/>
+    <result property="role" column="ROLE"
+      javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryRole"/>
+    <result property="commitStatus" column="COMMIT_STATUS"
+      javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryCommitStatus"/>
+    <result property="producedAt" column="PRODUCED_AT" javaType="java.time.OffsetDateTime"/>
+    <result property="inputTokens" column="INPUT_TOKENS" javaType="long"/>
+    <result property="outputTokens" column="OUTPUT_TOKENS" javaType="long"/>
+    <result property="durationMs" column="DURATION_MS" javaType="long"/>
+    <result property="content" column="CONTENT" javaType="java.lang.String"/>
+    <result property="toolCalls" column="TOOL_CALLS" javaType="java.lang.String"/>
+  </resultMap>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.AgentHistoryDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchResultMap">
+    SELECT * FROM (
+      SELECT * FROM (
+        SELECT
+          ah.AGENT_HISTORY_KEY,
+          ah.AGENT_INSTANCE_KEY,
+          ah.ELEMENT_INSTANCE_KEY,
+          ah.PROCESS_INSTANCE_KEY,
+          ah.ROOT_PROCESS_INSTANCE_KEY,
+          ah.PROCESS_DEFINITION_ID,
+          ah.PROCESS_DEFINITION_KEY,
+          ah.TENANT_ID,
+          ah.PARTITION_ID,
+          ah.JOB_KEY,
+          ah.JOB_LEASE,
+          ah.ITERATION,
+          ah.ROLE,
+          ah.COMMIT_STATUS,
+          ah.PRODUCED_AT,
+          ah.INPUT_TOKENS,
+          ah.OUTPUT_TOKENS,
+          ah.DURATION_MS,
+          ah.CONTENT,
+          ah.TOOL_CALLS
+        FROM ${prefix}AGENT_HISTORY ah
+        <include refid="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchAndAuthFilter"/>
+      ) filtered
+      <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+      <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}AGENT_HISTORY ah
+      <include refid="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchAndAuthFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <sql id="searchAndAuthFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND ah.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND ah.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <include refid="io.camunda.db.rdbms.sql.AgentHistoryMapper.searchFilter"/>
+    </where>
+  </sql>
+
+  <sql id="searchFilter">
+    <if test="filter.agentInstanceKeyOperations != null and !filter.agentInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.agentInstanceKeyOperations" item="operation">
+        AND ah.AGENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.historyItemKeyOperations != null and !filter.historyItemKeyOperations.isEmpty()">
+      <foreach collection="filter.historyItemKeyOperations" item="operation">
+        AND ah.AGENT_HISTORY_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.roleOperations != null and !filter.roleOperations.isEmpty()">
+      <foreach collection="filter.roleOperations" item="operation">
+        AND ah.ROLE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+        AND ah.ELEMENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
+      <foreach collection="filter.jobKeyOperations" item="operation">
+        AND ah.JOB_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.iterationOperations != null and !filter.iterationOperations.isEmpty()">
+      <foreach collection="filter.iterationOperations" item="operation">
+        AND ah.ITERATION
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.commitStatusOperations != null and !filter.commitStatusOperations.isEmpty()">
+      <foreach collection="filter.commitStatusOperations" item="operation">
+        AND ah.COMMIT_STATUS
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.producedAtOperations != null and !filter.producedAtOperations.isEmpty()">
+      <foreach collection="filter.producedAtOperations" item="operation">
+        AND ah.PRODUCED_AT
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
 </mapper>
