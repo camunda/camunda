@@ -1104,6 +1104,7 @@ jobs:
           test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
+          dockerhub-readonly: true
           maven-cache-key-modifier: it-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
