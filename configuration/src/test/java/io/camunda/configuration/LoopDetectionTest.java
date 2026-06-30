@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.engine.LoopDetectionCfg;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,27 @@ public class LoopDetectionTest {
       assertThat(loopDetection.getMaxElementActivationCountByType())
           .containsEntry(BpmnElementType.SERVICE_TASK, 300)
           .containsEntry(BpmnElementType.USER_TASK, 0);
+    }
+  }
+
+  @Nested
+  class WithDefaults {
+    final BrokerBasedProperties brokerCfg;
+
+    WithDefaults(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldResolveSameDefaultsAsEngineConfiguration() {
+      // The unified-config LoopDetection layer duplicates these defaults from EngineConfiguration.
+      // Assert the resolved values match the engine constants, to avoid drift.
+      final LoopDetectionCfg loopDetection =
+          brokerCfg.getExperimental().getEngine().getLoopDetection();
+      assertThat(loopDetection.getMaxElementActivationCount())
+          .isEqualTo(EngineConfiguration.DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT);
+      assertThat(loopDetection.getElementActivationRetryCooldown())
+          .isEqualTo(EngineConfiguration.DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN);
     }
   }
 }
