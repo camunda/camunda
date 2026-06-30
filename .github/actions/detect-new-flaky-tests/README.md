@@ -147,10 +147,12 @@ below. Two filters address this before any new flake enters the sticky state.
 
 ### Filter 1 — Package touch-check
 
-`get_pr_changed_paths()` runs:
+`get_pr_changed_paths()` resolves the diff base via `get_merge_base()` (which
+tries `BASE_SHA` first, then `origin/<base_ref>`, so it also works in PR
+merge-ref checkouts) and runs:
 
 ```bash
-git diff --name-only origin/<base_ref>...<head_sha>
+git diff --name-only <merge_base>...<head_sha>
 ```
 
 and extracts the Java package path from every changed `.java` file
