@@ -825,4 +825,125 @@ public class ProcessInstanceExpressionContextTest {
                 .exists())
         .isTrue();
   }
+
+  @Test
+  public void shouldResolveToProcessInstanceKeyInsideEmbeddedSubprocess() {
+    // given
+    final var processId = "pi-ctx-subprocess-scope";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask(
+                                "sub-task",
+                                t ->
+                                    t.zeebeJobType("subprocess-scope-job")
+                                        .zeebeInputExpression(
+                                            "camunda.processInstance.key", "piKey"))
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(pi)
+        .withType("subprocess-scope-job")
+        .await();
+    final var job =
+        ENGINE.jobs().withType("subprocess-scope-job").activate().getValue().getJobs().getFirst();
+    assertThat(job.getVariables()).containsEntry("piKey", pi);
+  }
+
+  @Test
+  public void shouldResolveToCallingProcessInstanceKeyInCallerScope() {
+    // given
+    final var parentProcessId = "pi-ctx-caller-scope";
+    final var childProcessId = "child-caller";
+    final var parent =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .serviceTask(
+                "caller-task",
+                t ->
+                    t.zeebeJobType("caller-scope-job")
+                        .zeebeInputExpression("camunda.processInstance.key", "callerPiKey"))
+            .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+            .endEvent()
+            .done();
+    final var child = Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done();
+    ENGINE
+        .deployment()
+        .withXmlResource("caller-parent.bpmn", parent)
+        .withXmlResource("caller-child.bpmn", child)
+        .deploy();
+
+    // when
+    final long parentPi = ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(parentPi)
+        .withType("caller-scope-job")
+        .await();
+    final var job =
+        ENGINE.jobs().withType("caller-scope-job").activate().getValue().getJobs().getFirst();
+    assertThat(job.getVariables()).containsEntry("callerPiKey", parentPi);
+  }
+
+  @Test
+  public void shouldResolveToChildProcessInstanceKeyInCalledScope() {
+    // given
+    final var parentProcessId = "pi-ctx-called-scope";
+    final var childProcessId = "child-called";
+    final var parent =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+            .endEvent()
+            .done();
+    final var child =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .serviceTask(
+                "child-task",
+                t ->
+                    t.zeebeJobType("called-scope-job")
+                        .zeebeInputExpression("camunda.processInstance.key", "childPiKey"))
+            .endEvent()
+            .done();
+    ENGINE
+        .deployment()
+        .withXmlResource("called-parent.bpmn", parent)
+        .withXmlResource("called-child.bpmn", child)
+        .deploy();
+
+    // when
+    final long parentPi = ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final long childPi =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withBpmnProcessId(childProcessId)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(childPi)
+        .withType("called-scope-job")
+        .await();
+    final var job =
+        ENGINE.jobs().withType("called-scope-job").activate().getValue().getJobs().getFirst();
+    assertThat(job.getVariables()).containsEntry("childPiKey", childPi);
+    assertThat(childPi).isNotEqualTo(parentPi);
+  }
 }
