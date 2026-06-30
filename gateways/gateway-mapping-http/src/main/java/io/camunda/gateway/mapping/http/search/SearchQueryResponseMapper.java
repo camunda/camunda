@@ -137,6 +137,8 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -232,6 +234,7 @@ import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
 import io.camunda.search.entities.WaitStateSignalDetails;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.entities.WaitStateTimerDetails;
 import io.camunda.search.entities.WaitStateUserTaskDetails;
 import io.camunda.search.query.SearchQueryResult;
@@ -339,6 +342,21 @@ public final class SearchQueryResponseMapper {
         .completed(result.completed())
         .elementId(result.flowNodeId())
         .incidents(result.incidents())
+        .build();
+  }
+
+  public static ProcessInstanceWaitStateStatisticsQueryResult
+      toProcessInstanceWaitStateStatisticsResult(final List<WaitStateStatisticsEntity> result) {
+    return ProcessInstanceWaitStateStatisticsQueryResult.Builder.create()
+        .items(result.stream().map(SearchQueryResponseMapper::toWaitStateStatisticsResult).toList())
+        .build();
+  }
+
+  private static ProcessInstanceWaitStateStatisticsResult toWaitStateStatisticsResult(
+      final WaitStateStatisticsEntity entity) {
+    return ProcessInstanceWaitStateStatisticsResult.Builder.create()
+        .elementId(entity.elementId())
+        .waitingCount(entity.count())
         .build();
   }
 
