@@ -268,8 +268,10 @@ final class BrokerRequestManager extends Actor {
     final var nodeInRecovery =
         inactiveNodes.stream()
             .anyMatch(
-                node ->
-                    clusterConfiguration.getMember(node.memberId()).state() == State.RECOVERING);
+                node -> {
+                  final var member = clusterConfiguration.getMember(node.memberId());
+                  return member != null && member.state() == State.RECOVERING;
+                });
 
     if (someNodesInactive && leaderNode == null && !nodeInRecovery) {
       throw new PartitionInactiveException(partitionId);
@@ -289,7 +291,11 @@ final class BrokerRequestManager extends Actor {
     }
     final var clusterConfiguration = topologyManager.getClusterConfiguration();
     return topology.getInactiveNodesForPartition(partitionId).stream()
-        .filter(node -> clusterConfiguration.getMember(node.memberId()).state() == State.RECOVERING)
+        .filter(
+            node -> {
+              final var member = clusterConfiguration.getMember(node.memberId());
+              return member != null && member.state() == State.RECOVERING;
+            })
         .findFirst()
         .orElse(null);
   }
