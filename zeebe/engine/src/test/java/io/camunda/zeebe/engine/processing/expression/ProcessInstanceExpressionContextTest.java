@@ -8,19 +8,24 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -565,6 +570,258 @@ public class ProcessInstanceExpressionContextTest {
                 .withProcessInstanceKey(pi)
                 .withElementId("task")
                 .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInIntermediateTimerDurationExpression() {
+    // given
+    final var processId = "pi-ctx-timer-intermediate";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "timer",
+                    c ->
+                        c.timerWithDurationExpression(
+                            "if camunda.processInstance.key > 0 then \"PT0S\" else \"PT1H\""))
+                .endEvent("end")
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(pi)
+                .withElementId("end")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInTimerBoundaryDurationExpression() {
+    // given
+    final var processId = "pi-ctx-timer-boundary";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("timer-boundary-job"))
+                .boundaryEvent(
+                    "timer-boundary",
+                    b ->
+                        b.timerWithDurationExpression(
+                            "if camunda.processInstance.key > 0 then \"PT0S\" else \"PT1H\""))
+                .endEvent("boundary-end")
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(pi)
+                .withElementId("boundary-end")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInMessageCorrelationKeyExpression() {
+    // given
+    final var processId = "pi-ctx-msg-corr-key";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("msg-catch")
+                .message(
+                    m ->
+                        m.name("test-message")
+                            .zeebeCorrelationKeyExpression("string(camunda.processInstance.key)"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var subscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    assertThat(subscription.getCorrelationKey()).isEqualTo(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInMessageNameExpression() {
+    // given
+    final var processId = "pi-ctx-msg-name";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("msg-catch")
+                .message(
+                    m ->
+                        m.nameExpression("string(camunda.processInstance.key)")
+                            .zeebeCorrelationKeyExpression("\"fixedKey\""))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var subscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    assertThat(subscription.getMessageName()).isEqualTo(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInSignalNameExpression() {
+    // given
+    final var processId = "pi-ctx-signal-name";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("signal-catch")
+                .signal(s -> s.nameExpression("string(camunda.processInstance.key)"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var subscription =
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+            .valueFilter(v -> v.getProcessInstanceKey() == pi)
+            .getFirst()
+            .getValue();
+    assertThat(subscription.getSignalName()).isEqualTo(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInErrorCodeExpression() {
+    // given
+    final var processId = "pi-ctx-error-code";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .endEvent(
+                                "throw-error",
+                                e -> e.errorExpression("string(camunda.processInstance.key)")))
+                .boundaryEvent("caught", b -> b.error())
+                .endEvent("boundary-end")
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(pi)
+                .limitToProcessInstanceCompleted()
+                .onlyEvents())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInEscalationCodeExpression() {
+    // given
+    final var processId = "pi-ctx-escalation-code";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .endEvent(
+                                "throw-escalation",
+                                e -> e.escalationExpression("string(camunda.processInstance.key)")))
+                .boundaryEvent("caught", b -> b.escalation())
+                .endEvent("boundary-end")
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(pi)
+                .limitToProcessInstanceCompleted()
+                .onlyEvents())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInConditionalIntermediateCatchEventExpression() {
+    // given
+    final var processId = "pi-ctx-conditional";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent("conditional-catch")
+                .condition(c -> c.condition("= camunda.processInstance.key > 0 and trigger = true"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    ENGINE.variables().ofScope(pi).withDocument(Map.of("trigger", true)).update();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(pi)
+                .withElementId("conditional-catch")
                 .exists())
         .isTrue();
   }
