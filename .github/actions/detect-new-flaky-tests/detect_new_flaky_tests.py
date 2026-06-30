@@ -652,18 +652,28 @@ def get_pr_changed_paths(
 
 
 def _package_touched(pkg_path: str, changed_pkg_paths: set[str]) -> bool:
-    """Return True if pkg_path is the same as, a parent of, or a child of any changed package.
+    """Return True if pkg_path is the same as, or a child of, any changed package.
+
+    A flake is treated as possibly PR-caused only when the PR changed the test's
+    own package (exact match) or a parent package (production code above the test).
+
+    The inverse "PR changed a strict sub-package of the test's package" rule was
+    removed: for shallow/root test packages almost every file in the monorepo is a
+    descendant, so that rule degenerated to always-true and defeated the filter.
+    Concretely, InvoiceDecisionTest sits in the root package "io/camunda", and any
+    changed package "io/camunda/<anything>" satisfied startswith("io/camunda/"), so
+    the gate flagged it on unrelated PRs (#55489). A 60-day replay of every known
+    true positive showed none relied on the descendant rule — each matched the test's
+    exact package and edited the test file — so dropping it loses no true positive.
 
     Examples (pkg_path → changed_pkg_paths → result):
       "io/a/b"       {io/a/b}           → True  (exact match)
-      "io/a/b"       {io/a/b/internal}  → True  (changed child of test package)
       "io/a/b/impl"  {io/a/b}           → True  (test is child of changed package)
+      "io/a/b"       {io/a/b/internal}  → False (changed sub-package no longer matches)
       "io/a/b"       {io/x/y}           → False (unrelated)
     """
     for cp in changed_pkg_paths:
         if cp == pkg_path:
-            return True
-        if cp.startswith(pkg_path + "/"):
             return True
         if pkg_path.startswith(cp + "/"):
             return True
@@ -679,8 +689,8 @@ def filter_by_touch_check(
 ) -> list[dict]:
     """Suppress false-positive alerts using a three-stage touch-check filter.
 
-    Stage 1 — package-unrelated: PR does not touch the test's Java package (or any
-      sub/parent package) → suppress. A test flaking in a completely unrelated
+    Stage 1 — package-unrelated: PR does not touch the test's Java package (or a
+      parent package) → suppress. A test flaking in a completely unrelated
       package cannot be this PR's fault. Note: a YAML-only PR with no .java changes
       is a valid no-touch signal (changed_pkg_paths is empty, touch_check_available
       is True). Tests whose package cannot be parsed (empty pkg_path) are kept.
