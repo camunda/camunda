@@ -330,7 +330,8 @@
       "agentInstance": "Agenteninstanz",
       "totalTokens": "Tokens insgesamt",
       "inputTokens": "Eingabe-Tokens",
-      "outputTokens": "Ausgabe-Tokens"
+      "outputTokens": "Ausgabe-Tokens",
+      "toolCalls": "Tool-Aufrufe"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -1605,7 +1606,9 @@
       "agenticFailureRateByVersionName": "Vorfallsrate nach Prozessversion",
       "agenticFailureRateByVersionDescription": "Prozentsatz der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall, aufgeschlüsselt nach Prozessdefinitionsversion.",
       "agenticKpiToolCallsName": "Tool-Aufrufe gesamt",
-      "agenticKpiToolCallsDescription": "Gesamtzahl der Tool-Aufrufe durch Agenten in abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum."
+      "agenticKpiToolCallsDescription": "Gesamtzahl der Tool-Aufrufe durch Agenten in abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
+      "agenticToolCallsHeatmapName": "Tool-Aufrufe je Prozessknoten",
+      "agenticToolCallsHeatmapDescription": "Gesamtzahl der Tool-Aufrufe je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt."
     }
   },
   "managementDashboard": {

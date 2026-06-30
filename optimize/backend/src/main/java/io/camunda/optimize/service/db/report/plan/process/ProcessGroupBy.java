@@ -46,7 +46,10 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_USER_TASK_DURATION(new DurationGroupByDto()),
   PROCESS_GROUP_BY_USER_TASK_END_DATE(new EndDateGroupByDto()),
   PROCESS_GROUP_BY_USER_TASK_START_DATE(new StartDateGroupByDto()),
-  PROCESS_GROUP_BY_VARIABLE(new VariableGroupByDto());
+  PROCESS_GROUP_BY_VARIABLE(new VariableGroupByDto()),
+  // Same FlowNodesGroupByDto shape as PROCESS_GROUP_BY_FLOW_NODE, but routes to a dedicated
+  // interpreter that aggregates over the agentInstances nested path instead of flowNodeInstances.
+  PROCESS_GROUP_BY_AGENT_FLOW_NODE(new FlowNodesGroupByDto());
 
   private final ProcessGroupByDto<?> dto;
   private final boolean topNLimitSupported;

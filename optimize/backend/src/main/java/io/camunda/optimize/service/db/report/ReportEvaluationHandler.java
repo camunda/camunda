@@ -17,6 +17,7 @@ import static java.util.stream.Collectors.mapping;
 import io.camunda.optimize.MetricEnum;
 import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -186,6 +187,12 @@ public abstract class ReportEvaluationHandler {
                               .map(this::toReportDataDefinitionDto))
                   .toList();
           processReportData.setDefinitions(validatedDefs);
+          // Heatmap tiles render on top of the BPMN diagram, so the frontend needs the definition
+          // XML in the report configuration. Unlike normal reports, agentic reports are stored with
+          // an empty definition list, so the XML is never persisted; and the standard XML refresh
+          // in updateAndSetLatestReportDefinitionXml runs before the definitions are injected here.
+          // Load and set it now so the diagram is available at render time.
+          populateHeatmapXml(processReportData, validatedDefs);
         } else {
           // L0: no process selected — fetch all fully-imported definitions
           processReportData.setDefinitions(
@@ -208,6 +215,25 @@ public abstract class ReportEvaluationHandler {
                 .toList());
       }
     }
+  }
+
+  private void populateHeatmapXml(
+      final ProcessReportDataDto processReportData,
+      final List<ReportDataDefinitionDto> definitions) {
+    if (processReportData.getVisualization() != ProcessVisualization.HEAT
+        || definitions.isEmpty()) {
+      return;
+    }
+    final ReportDataDefinitionDto primaryDefinition = definitions.get(0);
+    definitionService
+        .getDefinitionWithXmlAsService(
+            DefinitionType.PROCESS,
+            primaryDefinition.getKey(),
+            primaryDefinition.getVersions(),
+            primaryDefinition.getTenantIds())
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .map(ProcessDefinitionOptimizeDto::getBpmn20Xml)
+        .ifPresent(xml -> processReportData.getConfiguration().setXml(xml));
   }
 
   private List<ReportDataDefinitionDto> allFullyImportedProcessDefinitions(final String userId) {

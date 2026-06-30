@@ -8,14 +8,14 @@
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.flownode;
 
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_FLOW_NODE;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_FLOW_NODE;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.AGENT_INSTANCES;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.AGENT_INSTANCE_FLOW_NODE_ID;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.groupby.flownode.ProcessGroupByFlowNodeInterpreterHelper;
@@ -25,7 +25,9 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -35,37 +37,30 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class ProcessGroupByFlowNodeInterpreterOS extends AbstractGroupByFlowNodeInterpreterOS {
-  private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
+public class ProcessGroupByAgentFlowNodeInterpreterOS extends AbstractProcessGroupByInterpreterOS {
+
+  private static final String AGENT_INSTANCES_AGG = "agentInstances";
+  private static final String BY_FLOW_NODE_ID_AGG = "byFlowNodeId";
 
   private final ConfigurationService configurationService;
   private final ProcessGroupByFlowNodeInterpreterHelper helper;
-  private final DefinitionService definitionService;
   private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
 
-  public ProcessGroupByFlowNodeInterpreterOS(
+  public ProcessGroupByAgentFlowNodeInterpreterOS(
       final ConfigurationService configurationService,
       final ProcessGroupByFlowNodeInterpreterHelper helper,
-      final DefinitionService definitionService,
       final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
       final ProcessViewInterpreterFacadeOS viewInterpreter) {
-    super();
     this.configurationService = configurationService;
     this.helper = helper;
-    this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
-    return definitionService;
-  }
-
-  @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
-    return Set.of(PROCESS_GROUP_BY_FLOW_NODE);
+    return Set.of(PROCESS_GROUP_BY_AGENT_FLOW_NODE);
   }
 
   @Override
@@ -73,13 +68,17 @@ public class ProcessGroupByFlowNodeInterpreterOS extends AbstractGroupByFlowNode
       final Query query,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final int size = configurationService.getOpenSearchConfiguration().getAggregationBucketLimit();
-    final Aggregation aggregation =
+    final Aggregation termsAgg =
         new Aggregation.Builder()
-            .terms(termAggregation(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, size))
+            .terms(termAggregation(AGENT_INSTANCES + "." + AGENT_INSTANCE_FLOW_NODE_ID, size))
             .aggregations(distributedByInterpreter.createAggregations(context, query))
             .build();
-    return createFilteredFlowNodeAggregation(
-        context, Map.of(NESTED_EVENTS_AGGREGATION, aggregation));
+    final Aggregation nestedAgg =
+        new Aggregation.Builder()
+            .nested(n -> n.path(AGENT_INSTANCES))
+            .aggregations(BY_FLOW_NODE_ID_AGG, termsAgg)
+            .build();
+    return Map.of(AGENT_INSTANCES_AGG, nestedAgg);
   }
 
   @Override
@@ -87,15 +86,17 @@ public class ProcessGroupByFlowNodeInterpreterOS extends AbstractGroupByFlowNode
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    getFilteredFlowNodesAggregation(response)
-        .map(
-            filteredFlowNodes ->
-                filteredFlowNodes.aggregations().get(NESTED_EVENTS_AGGREGATION).sterms())
+    Optional.ofNullable(response.aggregations())
+        .filter(aggs -> !aggs.isEmpty())
+        // null-safe: yields an empty Optional when the nested agg key is absent
+        .map(aggs -> aggs.get(AGENT_INSTANCES_AGG))
+        .map(Aggregate::nested)
+        .map(nested -> nested.aggregations().get(BY_FLOW_NODE_ID_AGG).sterms())
         .ifPresent(
-            byFlowNodeIdAggregation ->
+            byFlowNodeId ->
                 compositeCommandResult.setGroups(
                     helper.mapFlowNodeBucketsToGroupByResults(
-                        byFlowNodeIdAggregation.buckets().array(),
+                        byFlowNodeId.buckets().array(),
                         StringTermsBucket::key,
                         bucket ->
                             distributedByInterpreter.retrieveResult(
