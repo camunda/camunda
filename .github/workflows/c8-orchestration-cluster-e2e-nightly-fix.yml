@@ -283,7 +283,8 @@ jobs:
 
           STEP 0 — read ${ws_dir}/qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md,
           the "${agents_section}" section. That file is your full operating manual:
-          diagnosis steps, artifact-download patterns, constraints (NEVER skip/fixme),
+          diagnosis steps, artifact-download patterns, constraints (no test.skip()/test.fixme()
+          EXCEPT the gated product-bug skip described below and in Product-Bug Escalation),
           PR conventions, and the /tmp/fix-meta.json schema.
 
           /tmp/test_specs.json contains the failures to address ($(jq 'length' /tmp/test_specs.json) entries).

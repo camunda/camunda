@@ -303,10 +303,10 @@ with a wait/retry); and the failure reproduces across both tasklist modes / DBs 
 or has failed on consecutive nights. If it looks intermittent → flakiness fix, not a product bug.
 
 **Gate B — Pin it to a recent product change.** Identify the owning module (table below) and find
-the breaking change in the workspace checkout (it is the full `camunda/camunda` repo on
-`${TARGET_REF}`):
+the breaking change. You are already inside the `camunda/camunda` checkout (on `${TARGET_REF}`), so
+run `git` from the current directory — do not reference `$ws_dir` (it is not set in your shell):
 ```bash
-git -C "${ws_dir}" log --since=<YYYY-MM-DD> --oneline -- <module-path>   # e.g. operate/ identity/
+git log --since=<YYYY-MM-DD> --oneline -- <module-path>   # e.g. operate/ identity/
 # or, for a precise surface:
 gh search code --repo camunda/camunda "<aria-label / data-testid / endpoint>" --limit 5 --json path
 ```
