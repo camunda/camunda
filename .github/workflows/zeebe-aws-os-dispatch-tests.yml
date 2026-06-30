@@ -11,6 +11,10 @@ name: AWS OpenSearch Manual/Scheduled Run Integration Tests
 on:
   workflow_dispatch:
     inputs:
+      ref:
+        description: Branch or commit to test against
+        type: string
+        default: "main"
       opensearch-version:
         description: Version of AWS OpenSearch
         type: choice
@@ -42,6 +46,8 @@ jobs:
         os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.ref }}
       - name: Setup AWS OpenSearch
         uses: ./.github/actions/setup-aws-opensearch-env
         with:
