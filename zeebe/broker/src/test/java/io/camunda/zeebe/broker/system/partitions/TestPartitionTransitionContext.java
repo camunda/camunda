@@ -101,7 +101,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     transitionMeterRegistry =
         MicrometerUtil.wrap(
             startupMeterRegistry,
-            PartitionKeyNames.tags(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1));
+            PartitionKeyNames.tags(
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1)));
     healthMetrics = new HealthTreeMetrics(transitionMeterRegistry);
   }
 
