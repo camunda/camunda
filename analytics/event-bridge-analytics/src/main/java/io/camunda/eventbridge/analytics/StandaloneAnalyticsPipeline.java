@@ -8,24 +8,31 @@
 package io.camunda.eventbridge.analytics;
 
 import io.camunda.analytics.streaming.StreamProcessor;
-import io.camunda.analytics.streaming.aggregate.MaterializedRollup;
+import io.camunda.analytics.streaming.aggregate.DurableMaterializedRollup;
 import io.camunda.analytics.streaming.aggregate.Rollup;
 import io.camunda.analytics.streaming.aggregate.SourceCoordinate;
 import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
+import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
 import io.camunda.eventbridge.analytics.element.ElementKey;
+import io.camunda.eventbridge.analytics.element.ElementKeyCodec;
 import io.camunda.eventbridge.analytics.element.JdbcElementHeatmapSink;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
+import io.camunda.eventbridge.analytics.metric.ExecutionTimeAccumulatorCodec;
 import io.camunda.eventbridge.analytics.metric.ExecutionTimeAggregateFunction;
 import io.camunda.eventbridge.analytics.metric.JdbcRegionExecutionTimeSink;
 import io.camunda.eventbridge.analytics.metric.RegionKey;
+import io.camunda.eventbridge.analytics.metric.RegionKeyCodec;
 import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
+import io.camunda.zeebe.db.impl.DbBytes;
+import io.camunda.zeebe.db.impl.DbInt;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.util.List;
@@ -36,9 +43,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Runs the consumer-based analytics as a standalone process against a running Event Bridge: consume
  * {@code zeebe-records}, fold once into a RocksDB base projection ({@link
- * ProcessExecutionProjector}), and fan the derived facts out to two windowed rollups built on the
- * streaming library — process-instance execution time grouped by region, and the per-element
- * heatmap — each merged into its own H2 serving table (DB-as-merge; no shuffle, no coordinator).
+ * ProcessExecutionProjector}), and fan the derived facts out to two durable windowed rollups built
+ * on the streaming library — process-instance execution time grouped by region, and the per-element
+ * heatmap. Each rollup holds its windowed aggregate in its own RocksDB store and converges an H2
+ * serving table by idempotent full-value upsert ({@link DurableMaterializedRollup}); the source is
+ * resumed from the base projection's checkpointed position on restart (start-from-offset).
  *
  * <p>System properties: {@code group} (default {@code analytics-projection}), {@code gateway}
  * (default {@code http://localhost:8080}), {@code sourceTopic} ({@code zeebe-records}), {@code
@@ -65,23 +74,27 @@ public final class StandaloneAnalyticsPipeline {
     final String jdbcUser = System.getProperty("jdbcUser", "sa");
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     // the single base projection (RocksDB local cache) — folded once, serving both metrics
     final StateBackedProjectionStore store =
         StateBackedProjectionStore.rocksDb(
-            new File("data/analytics-projection-" + instanceId), new SimpleMeterRegistry());
-    // instances and in-flight element starts both live in the one RocksDB base projection
+            new File("data/analytics-projection-" + instanceId), meterRegistry);
     final ProcessExecutionProjector projector =
         new ProcessExecutionProjector(store, store.elementStarts());
+
+    // the rollups' durable aggregate state (RocksDB), separate from the base projection
+    final RocksDbStateStoreProvider<RollupColumnFamilies> rollupState =
+        RocksDbStateStoreProvider.open(
+            new File("data/analytics-rollups-" + instanceId), meterRegistry);
 
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
 
-    // metric 1 — process-instance execution time by region. The local windowed aggregate is
-    // authoritative; each changed cell is upserted as its full value into the serving table by a
-    // deterministic key, so re-emit converges instead of double-counting (idempotent,
-    // sink-agnostic).
+    // metric 1 — process-instance execution time by region. The windowed aggregate is durable
+    // (RocksDB) and authoritative; each changed cell is upserted as its full value into the serving
+    // table by a deterministic key, so re-emit converges instead of double-counting.
     final JdbcRegionExecutionTimeSink regionSink =
         new JdbcRegionExecutionTimeSink(dataSource, REGION_DATASET_ID, WINDOW_SIZE_MS);
     regionSink.initSchema();
@@ -98,7 +111,7 @@ public final class StandaloneAnalyticsPipeline {
           }
         };
     final Rollup<ProcessInstanceExecutionTimeFact> regionRollup =
-        new MaterializedRollup<>(
+        new DurableMaterializedRollup<>(
             new ExecutionTimeAggregateFunction<>(ProcessInstanceExecutionTimeFact::durationMs),
             fact ->
                 new RegionKey(
@@ -111,9 +124,16 @@ public final class StandaloneAnalyticsPipeline {
             regionCoordinate,
             TumblingWindows.of(WINDOW_SIZE_MS),
             ALLOWED_LATENESS_MS,
-            regionSink);
+            regionSink,
+            rollupState.keyValueStore(
+                RollupColumnFamilies.REGION_CELLS, new DbBytes(), new DbBytes()),
+            rollupState.keyValueStore(
+                RollupColumnFamilies.REGION_OFFSETS, new DbInt(), new DbLong()),
+            new RegionKeyCodec(),
+            new ExecutionTimeAccumulatorCodec(),
+            rollupState::runInTransaction);
 
-    // metric 2 — per-element execution heatmap, same materialized/idempotent machinery.
+    // metric 2 — per-element execution heatmap, same durable/idempotent machinery.
     final JdbcElementHeatmapSink heatmapSink =
         new JdbcElementHeatmapSink(dataSource, WINDOW_SIZE_MS);
     heatmapSink.initSchema();
@@ -130,7 +150,7 @@ public final class StandaloneAnalyticsPipeline {
           }
         };
     final Rollup<ElementExecutionFact> heatmapRollup =
-        new MaterializedRollup<>(
+        new DurableMaterializedRollup<>(
             new ExecutionTimeAggregateFunction<>(ElementExecutionFact::durationMs),
             fact ->
                 new ElementKey(
@@ -144,7 +164,14 @@ public final class StandaloneAnalyticsPipeline {
             heatmapCoordinate,
             TumblingWindows.of(WINDOW_SIZE_MS),
             ALLOWED_LATENESS_MS,
-            heatmapSink);
+            heatmapSink,
+            rollupState.keyValueStore(
+                RollupColumnFamilies.HEATMAP_CELLS, new DbBytes(), new DbBytes()),
+            rollupState.keyValueStore(
+                RollupColumnFamilies.HEATMAP_OFFSETS, new DbInt(), new DbLong()),
+            new ElementKeyCodec(),
+            new ExecutionTimeAccumulatorCodec(),
+            rollupState::runInTransaction);
 
     // one processor, one fold, fan the facts out to their rollups by type
     final StreamProcessor<ZeebeRecord> processor =
@@ -160,10 +187,11 @@ public final class StandaloneAnalyticsPipeline {
     final ZeebeRecordConsumer source =
         ZeebeRecordConsumer.subscribe(client, group, instanceId, List.of(sourceTopic)).join();
 
-    final WindowedAnalyticsPipeline pipeline = new WindowedAnalyticsPipeline(source, processor);
+    final WindowedAnalyticsPipeline pipeline =
+        new WindowedAnalyticsPipeline(source, processor, store, sourceTopic);
     pipeline.start();
     LOG.info(
-        "Analytics instance '{}' started: {} -> base projection -> region + heatmap rollups",
+        "Analytics instance '{}' started: {} -> base projection -> durable region + heatmap rollups",
         instanceId,
         sourceTopic);
 
@@ -173,6 +201,7 @@ public final class StandaloneAnalyticsPipeline {
                 () -> {
                   pipeline.close();
                   try {
+                    rollupState.close();
                     store.close();
                     client.close();
                   } catch (final Exception ignored) {
