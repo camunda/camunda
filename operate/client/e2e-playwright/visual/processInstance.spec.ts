@@ -90,6 +90,7 @@ test.describe('process instance page', () => {
         variables: runningInstance.variables,
         xml: runningInstance.xml,
         incidents: runningInstance.incidents,
+        waitStates: runningInstance.waitStates,
       }),
     );
 
@@ -99,6 +100,7 @@ test.describe('process instance page', () => {
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+    await expect(page.getByTestId('waiting-state-overlay')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
