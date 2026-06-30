@@ -18,4 +18,6 @@ ADR for that domain is written.
 
 ## Index
 
-<!-- ADRs will be listed here as they are created -->
+|                       ADR                        |                                          Decision                                           | Status   |
+|--------------------------------------------------|---------------------------------------------------------------------------------------------|----------|
+| [0001](0001-namespace-diagnostics-collection.md) | Collect namespace-wide diagnostics via `cdbg` (native K8s client) run as a Helm-defined, least-privilege Kubernetes Job | Proposed |
