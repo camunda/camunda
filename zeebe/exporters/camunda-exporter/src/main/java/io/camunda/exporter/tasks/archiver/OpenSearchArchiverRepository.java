@@ -448,6 +448,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .requestCache(false)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
+            .allowPartialSearchResults(false)
             .query(query)
             .size(size)
             .source(s -> s.fetch(false))
