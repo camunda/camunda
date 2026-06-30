@@ -5,27 +5,27 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.physicaltenant;
+package io.camunda.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.multidb.MultiDbPhysicalTenants;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.qa.util.multidb.MultiPhysicalTenantClients;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
-import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import java.util.UUID;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
- * IT-3b — logical-tenant scoping within physical tenants.
+ * IT-3b — logical-tenant scoping within physical tenants, converted to the {@link MultiDbTest} +
+ * {@link MultiDbPhysicalTenants} framework.
  *
  * <p>AC: with multi-tenancy enabled cluster-wide, a logical tenant {@code T} (and the data assigned
  * to it) is created only inside physical tenant tenantb; a tenant-scoped read for {@code T} returns
@@ -36,65 +36,37 @@ import org.junit.jupiter.api.Test;
  * <p>Multi-tenancy is a cluster-wide toggle (not per-PT); the per-PT containment comes from each
  * PT's independent schema.
  *
- * <p>RDBMS-H2 only — Elasticsearch/OpenSearch variants are skipped because per-PT secondary-storage
- * schema init (#51996) and the per-PT writer (#51736) are not yet available, so non-default PTs
- * have no ES/OS indices to read from.
+ * <p>RDBMS only — Elasticsearch/OpenSearch variants are skipped because per-PT secondary-storage
+ * schema init and the per-PT writer are not yet available, so non-default PTs have no ES/OS indices
+ * to read from.
  */
-@ZeebeIntegration
+@MultiDbTest
+@MultiDbPhysicalTenants({"tenanta", "tenantb"})
+@EnabledIfSystemProperty(
+    named = "test.integration.camunda.database.type",
+    matches = "RDBMS_.*",
+    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
 final class PhysicalTenantLogicalTenantScopingIT {
+
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withBasicAuth()
+          .withAuthorizationsEnabled()
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withMultiTenancyEnabled();
+
+  static MultiPhysicalTenantClients ptClients;
 
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
-  private static final String ADMIN_PASSWORD = "ptadmin";
   private static final Duration PROPAGATION_TIMEOUT = Duration.ofSeconds(30);
-
-  private static final PhysicalTenantsITHelper TENANTS =
-      PhysicalTenantsITHelper.builder()
-          .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.rdbmsH2("default"))
-          .withTenant(TENANT_A, Storage.rdbmsH2(TENANT_A))
-          .withTenant(TENANT_B, Storage.rdbmsH2(TENANT_B))
-          .build();
-
-  @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker BROKER = configure();
-
-  private static CamundaClient tenantAAdmin;
-  private static CamundaClient tenantBAdmin;
-
-  private static TestStandaloneBroker configure() {
-    final TestStandaloneBroker broker =
-        TENANTS.configureAdminRoles(
-            new TestStandaloneBroker()
-                .withAuthorizationsEnabled()
-                .withAuthenticationMethod(AuthenticationMethod.BASIC)
-                .withMultiTenancyEnabled());
-    TENANTS.seedBasicAuthAdminUser(broker, TENANT_A, ADMIN_PASSWORD);
-    TENANTS.seedBasicAuthAdminUser(broker, TENANT_B, ADMIN_PASSWORD);
-    return broker;
-  }
-
-  @BeforeAll
-  static void startBroker() {
-    TENANTS.refreshSecondaryStorage(BROKER);
-    BROKER.start();
-    tenantAAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_A, ADMIN_PASSWORD).build();
-    tenantBAdmin = TENANTS.newBasicAuthAdminClientBuilder(BROKER, TENANT_B, ADMIN_PASSWORD).build();
-    TENANTS.awaitAdminReady(tenantAAdmin);
-    TENANTS.awaitAdminReady(tenantBAdmin);
-  }
-
-  @AfterAll
-  static void closeClients() {
-    if (tenantAAdmin != null) {
-      tenantAAdmin.close();
-    }
-    if (tenantBAdmin != null) {
-      tenantBAdmin.close();
-    }
-  }
 
   @Test
   void shouldScopeLogicalTenantDataToItsPhysicalTenant() {
+    final CamundaClient tenantAAdmin = ptClients.admin(TENANT_A);
+    final CamundaClient tenantBAdmin = ptClients.admin(TENANT_B);
+
     // given — a logical tenant T created only in tenantb, with the tenantb admin assigned to it
     final String suffix = UUID.randomUUID().toString().substring(0, 8);
     final String logicalTenant = "logical-" + suffix;
@@ -102,7 +74,7 @@ final class PhysicalTenantLogicalTenantScopingIT {
     tenantBAdmin.newCreateTenantCommand().tenantId(logicalTenant).name(logicalTenant).send().join();
     tenantBAdmin
         .newAssignUserToTenantCommand()
-        .username(TENANTS.adminUsername(TENANT_B))
+        .username(TENANT_B + "-admin")
         .tenantId(logicalTenant)
         .send()
         .join();
