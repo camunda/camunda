@@ -42,6 +42,8 @@ public class ProcessingPropertiesTest {
   private static final boolean EXPECTED_ENABLE_ASYNC_TIMER_DUEDATE_CHECKER = true;
   private static final boolean EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR = false;
   private static final boolean EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED = true;
+  private static final boolean EXPECTED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE =
+      false;
 
   @Nested
   @TestPropertySource(
@@ -100,7 +102,9 @@ public class ProcessingPropertiesTest {
               FeatureFlagsCfg::isEnableStraightThroughProcessingLoopDetector)
           .returns(
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
-              FeatureFlagsCfg::isEnableMessageBodyOnExpired);
+              FeatureFlagsCfg::isEnableMessageBodyOnExpired)
+          .returns(
+              true, FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
 
@@ -126,6 +130,8 @@ public class ProcessingPropertiesTest {
             + EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR,
         "zeebe.broker.experimental.features.enableMessageBodyOnExpired="
             + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        "zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope="
+            + EXPECTED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -164,7 +170,10 @@ public class ProcessingPropertiesTest {
               FeatureFlagsCfg::isEnableStraightThroughProcessingLoopDetector)
           .returns(
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
-              FeatureFlagsCfg::isEnableMessageBodyOnExpired);
+              FeatureFlagsCfg::isEnableMessageBodyOnExpired)
+          .returns(
+              EXPECTED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
+              FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
 
@@ -200,7 +209,9 @@ public class ProcessingPropertiesTest {
         "zeebe.broker.experimental.features.enableMessageTtlCheckerAsync=false",
         "zeebe.broker.experimental.features.enableTimerDueDateCheckerAsync=false",
         "zeebe.broker.experimental.features.enableStraightThroughProcessingLoopDetector=true",
-        "zeebe.broker.experimental.features.enableMessageBodyOnExpired=false"
+        "zeebe.broker.experimental.features.enableMessageBodyOnExpired=false",
+        "zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope="
+            + EXPECTED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -239,7 +250,10 @@ public class ProcessingPropertiesTest {
               FeatureFlagsCfg::isEnableStraightThroughProcessingLoopDetector)
           .returns(
               EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
-              FeatureFlagsCfg::isEnableMessageBodyOnExpired);
+              FeatureFlagsCfg::isEnableMessageBodyOnExpired)
+          .returns(
+              EXPECTED_EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE,
+              FeatureFlagsCfg::isEvaluateBoundaryEventCorrelationKeyInActivityScope);
     }
   }
 }

@@ -85,6 +85,7 @@ public final class CatchEventBehavior {
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final boolean evaluateBoundaryEventCorrelationKeyInActivityScope;
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -96,7 +97,8 @@ public final class CatchEventBehavior {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final int maxNameFieldLength) {
+      final int maxNameFieldLength,
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     stateWriter = writers.state();
@@ -115,6 +117,8 @@ public final class CatchEventBehavior {
     this.clock = clock;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     this.maxNameFieldLength = maxNameFieldLength;
+    this.evaluateBoundaryEventCorrelationKeyInActivityScope =
+        evaluateBoundaryEventCorrelationKeyInActivityScope;
   }
 
   /**
@@ -295,7 +299,8 @@ public final class CatchEventBehavior {
     }
     final var expression = event.getMessage().getCorrelationKeyExpression();
     final long scopeKey =
-        event.getElementType() == BpmnElementType.BOUNDARY_EVENT
+        !evaluateBoundaryEventCorrelationKeyInActivityScope
+                && event.getElementType() == BpmnElementType.BOUNDARY_EVENT
             ? context.getFlowScopeKey()
             : context.getElementInstanceKey();
     final String tenantId = context.getTenantId();
