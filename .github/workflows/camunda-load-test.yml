@@ -278,7 +278,9 @@ jobs:
           LOAD_TEST_NAME: ${{ inputs.name }}
         run: |
           source load-tests/setup/utils.sh
-          namespace="$(new_namespace_name "$LOAD_TEST_NAME")"
+          if ! namespace="$(new_namespace_name "$LOAD_TEST_NAME")"; then
+            exit 1
+          fi
           echo "namespace=${namespace}" >> "$GITHUB_OUTPUT"
 
   show-summary:
