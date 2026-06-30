@@ -8,6 +8,7 @@
 package io.camunda.qa.util.multidb;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
@@ -166,5 +167,51 @@ class PhysicalTenantSchemaProvisionerTest {
 
     // then
     assertThat(result).isEqualTo("jdbc:sqlserver://localhost:1433;databaseName=ABCDEFGHIJ_tenanta");
+  }
+
+  // --- Best-effort namespace cleanup ---
+
+  @Test
+  void shouldNotThrowWhenDroppingNamespaceFailsForSchemaDialect() {
+    // given an unreachable host so the bootstrap connection cannot be established
+    final String unreachableUrl = "jdbc:postgresql://localhost:1/camunda";
+
+    // when / then — cleanup is best-effort and must swallow the failure
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                PhysicalTenantSchemaProvisioner.dropNamespace(
+                    CamundaMultiDBExtension.DatabaseType.RDBMS_POSTGRES,
+                    unreachableUrl,
+                    "user",
+                    "pass",
+                    "ABCDEFGHIJ_tenanta"));
+  }
+
+  @Test
+  void shouldNotAttemptCleanupForOracleAndH2() {
+    // given a URL that would fail if a connection were attempted
+    final String unreachableUrl = "jdbc:invalid://does-not-exist";
+
+    // when / then — Oracle (table-prefix isolation) and H2 (per-PT in-memory DB) have no namespace
+    // object to drop, so dropNamespace is a no-op and never touches the connection
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                PhysicalTenantSchemaProvisioner.dropNamespace(
+                    CamundaMultiDBExtension.DatabaseType.RDBMS_ORACLE,
+                    unreachableUrl,
+                    "user",
+                    "pass",
+                    "ABCDEFGHIJ_tenanta"));
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                PhysicalTenantSchemaProvisioner.dropNamespace(
+                    CamundaMultiDBExtension.DatabaseType.RDBMS_H2,
+                    unreachableUrl,
+                    "user",
+                    "pass",
+                    "ABCDEFGHIJ_tenanta"));
   }
 }

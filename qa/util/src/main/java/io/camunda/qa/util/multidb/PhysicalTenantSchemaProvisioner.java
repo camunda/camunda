@@ -180,6 +180,40 @@ final class PhysicalTenantSchemaProvisioner {
         "IF DB_ID('" + namespace + "') IS NULL CREATE DATABASE [" + namespace + "]");
   }
 
+  /**
+   * Best-effort drop of a previously provisioned namespace, used for per-run cleanup so persistent
+   * shared instances (notably Aurora) don't accumulate orphaned schemas/databases across CI runs.
+   *
+   * <p>Failures are logged and swallowed: cleanup must never fail a test run, and the {@code IF
+   * EXISTS} guards make repeated invocations harmless. Oracle isolates by table prefix in the
+   * shared schema rather than a dedicated schema/database, so there is no namespace object to drop
+   * — its leftover tables are removed by the regular index/table cleanup keyed on the prefix.
+   */
+  static void dropNamespace(
+      final DatabaseType databaseType,
+      final String baseUrl,
+      final String baseUsername,
+      final String basePassword,
+      final String namespace) {
+    final String ddl =
+        switch (databaseType) {
+          case RDBMS_POSTGRES, RDBMS_AURORA -> "DROP SCHEMA IF EXISTS " + namespace + " CASCADE";
+          case RDBMS_MYSQL, RDBMS_MARIADB -> "DROP DATABASE IF EXISTS `" + namespace + "`";
+          case RDBMS_MSSQL ->
+              "IF DB_ID('" + namespace + "') IS NOT NULL DROP DATABASE [" + namespace + "]";
+          // Oracle / H2: nothing to drop (table-prefix isolation / per-PT in-memory DB).
+          default -> null;
+        };
+    if (ddl == null) {
+      return;
+    }
+    try {
+      executeDdl(baseUrl, baseUsername, basePassword, ddl);
+    } catch (final RuntimeException e) {
+      LOGGER.warn("Best-effort cleanup of physical-tenant namespace '{}' failed", namespace, e);
+    }
+  }
+
   private static void executeDdl(
       final String url, final String user, final String pass, final String ddl) {
     LOGGER.debug("Executing bootstrap DDL: {}", ddl);

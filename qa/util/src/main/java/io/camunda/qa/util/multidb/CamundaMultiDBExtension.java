@@ -251,13 +251,16 @@ public class CamundaMultiDBExtension
   /**
    * Maximum physical-tenant id length. The provisioned namespace is {@code <basePrefix>_<tenantId>}
    * (a schema/database name, or an Oracle table prefix) where {@code basePrefix} is the
-   * 10-character run token. Keeping the id short keeps the namespace within every dialect's
-   * identifier-length limit (the strictest being MySQL/MariaDB's 64-character database name);
-   * {@code 19} leaves ample headroom.
+   * 10-character run token, giving a namespace length of {@code 10 + 1 + tenantId.length()}. The
+   * binding constraint is Oracle's 30-character identifier limit — far stricter than, e.g.,
+   * MySQL/MariaDB's 64-character database name — so {@code 19} keeps the namespace at exactly
+   * {@code 10 + 1 + 19 = 30} characters, the longest id that still fits every supported dialect.
    */
   private static final int MAX_PHYSICAL_TENANT_ID_LENGTH = 19;
 
   private final List<AutoCloseable> closeables = new ArrayList<>();
+  // Best-effort drop of per-PT schemas/databases provisioned for this run; cleared in afterAll.
+  private final List<Runnable> physicalTenantNamespaceCleanups = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
   private DatabaseType databaseType;
@@ -461,6 +464,21 @@ public class CamundaMultiDBExtension
       ptUsername = ptConfig.username();
       ptPassword = ptConfig.password();
       ptPrefix = ptConfig.prefix();
+
+      // Track the provisioned namespace so afterAll can drop it best-effort, preventing schemas /
+      // databases from accumulating on persistent shared instances (e.g. Aurora) across CI runs.
+      // The base connection params are captured here because the broker's config may have been
+      // rewritten to the per-PT URL by the time cleanup runs.
+      final var cleanupType = databaseType;
+      final String cleanupUrl = baseRdbms.getUrl();
+      final String cleanupUsername = baseRdbms.getUsername();
+      final String cleanupPassword = baseRdbms.getPassword();
+      final String cleanupNamespace =
+          PhysicalTenantSchemaProvisioner.buildNamespace(baseRdbms.getPrefix(), tenantId);
+      physicalTenantNamespaceCleanups.add(
+          () ->
+              PhysicalTenantSchemaProvisioner.dropNamespace(
+                  cleanupType, cleanupUrl, cleanupUsername, cleanupPassword, cleanupNamespace));
     }
 
     springApplication.withPtConfig(
@@ -1064,7 +1082,13 @@ public class CamundaMultiDBExtension
     CloseHelper.quietCloseAll(closeables);
     CloseHelper.quietClose(authenticatedClientFactory);
 
-    // 2. Delete test indices now that the application has stopped writing
+    // 2. Drop per-physical-tenant schemas/databases provisioned for this run, now that the broker
+    // has stopped writing. Best-effort: failures are logged inside dropNamespace and never fail the
+    // run, so persistent shared instances (e.g. Aurora) don't accumulate orphaned namespaces.
+    physicalTenantNamespaceCleanups.forEach(Runnable::run);
+    physicalTenantNamespaceCleanups.clear();
+
+    // 3. Delete test indices now that the application has stopped writing
     if (testPrefix != null) {
       try {
         setupHelper.cleanup(testPrefix);
@@ -1074,7 +1098,7 @@ public class CamundaMultiDBExtension
     }
     CloseHelper.quietClose(setupHelper);
 
-    // 3. Reset exporter to make sure it doesn't interfere with other tests
+    // 4. Reset exporter to make sure it doesn't interfere with other tests
     RecordingExporter.reset();
 
     coordinationStore(context).remove(EXTENSION_COORDINATION_KEY);
