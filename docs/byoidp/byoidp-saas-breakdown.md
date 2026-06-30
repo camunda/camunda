@@ -48,7 +48,7 @@ rejected during the POC. See the historic doc for reasoning.
 The propagation chain mirrors how existing cluster settings flow:
 
 ```
-Customer admin → Console UI → Console DB + AWS SM/GCP SM → ZeebeCluster CR
+Customer admin → Console UI → Console DB + cluster-namespace K8s Secret → ZeebeCluster CR
                                                               │
                                                               ▼
                                                        Operator (CRD watch)
@@ -63,7 +63,8 @@ Customer admin → Console UI → Console DB + AWS SM/GCP SM → ZeebeCluster CR
 ### Responsibilities
 
 - **`camunda-cloud-management-apps` (Console)** — orchestrator. Owns the customer-facing UI, the
-  source of truth for IdP configuration in Console DB, secret storage in AWS SM / GCP SM, the
+  source of truth for IdP configuration in Console DB, the Phase-1 IdP client secret written as a
+  cluster-namespace Kubernetes Secret (the Phase-3 Connector secrets use AWS SM / GCP SM), the
   `proxy-token-issuer` app, and writes to the `ZeebeCluster` CR. Largest share of work across
   every phase.
 
