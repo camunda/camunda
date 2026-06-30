@@ -352,7 +352,8 @@ public final class EngineProcessors {
         authzService,
         claimsConverter,
         authCheckBehavior,
-        securityConfig);
+        securityConfig,
+        authorizationScopeStateAdapter);
 
     RoleProcessors.addRoleProcessors(
         typedRecordProcessors,

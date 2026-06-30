@@ -11,6 +11,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -38,6 +39,7 @@ public class AuthorizationCreateProcessor
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
   private final AuthorizationEntityValidator authorizationEntityChecker;
+  private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
 
   public AuthorizationCreateProcessor(
       final Writers writers,
@@ -47,7 +49,8 @@ public class AuthorizationCreateProcessor
       final AuthorizationCheckPort authCheckPort,
       final LazyTokenClaimsConverter claimsConverter,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -58,6 +61,7 @@ public class AuthorizationCreateProcessor
     permissionsBehavior =
         new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
     authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
+    this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
   @Override
@@ -94,6 +98,7 @@ public class AuthorizationCreateProcessor
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authorizationCheckBehavior.clearAuthorizationsCache();
+                    authorizationScopeStateAdapter.invalidateAll();
                     return true;
                   });
             },
@@ -118,6 +123,7 @@ public class AuthorizationCreateProcessor
     sideEffectWriter.appendSideEffect(
         () -> {
           authorizationCheckBehavior.clearAuthorizationsCache();
+          authorizationScopeStateAdapter.invalidateAll();
           return true;
         });
   }

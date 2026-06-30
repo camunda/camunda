@@ -130,6 +130,51 @@ public class AuthorizationCreateAuthorizationTest {
             "Expected to have 'CREATE' permission on resource type 'AUTHORIZATION' with id '*', but the principal is not authorized.");
   }
 
+  @Test
+  public void shouldReflectNewlyGrantedAuthorizationImmediately() {
+    // given
+    final var user = createUser();
+    final var targetOwnerId = UUID.randomUUID().toString();
+
+    // prime the scope cache: user has no AUTHORIZATION:CREATE permission yet → rejected
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetOwnerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(
+            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getMatcher())
+        .withResourceId(
+            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getResourceId())
+        .withPermissions(PermissionType.CREATE)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // when — grant the user AUTHORIZATION:CREATE permission (invalidates scope cache)
+    addAuthorizationToUser(user, AuthorizationResourceType.AUTHORIZATION, PermissionType.CREATE);
+
+    // then — user can now create immediately (cache was invalidated, not serving stale empty set)
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetOwnerId)
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(
+            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getMatcher())
+        .withResourceId(
+            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getResourceId())
+        .withPermissions(PermissionType.CREATE)
+        .create(user.getUsername());
+
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId(targetOwnerId)
+                .exists())
+        .isTrue();
+  }
+
   private UserRecordValue createUser() {
     return engine
         .user()

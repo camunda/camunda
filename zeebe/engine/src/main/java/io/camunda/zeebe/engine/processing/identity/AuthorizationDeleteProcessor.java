@@ -15,6 +15,7 @@ import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -50,6 +51,7 @@ public class AuthorizationDeleteProcessor
   private final SideEffectWriter sideEffectWriter;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
+  private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
 
   public AuthorizationDeleteProcessor(
       final Writers writers,
@@ -59,7 +61,8 @@ public class AuthorizationDeleteProcessor
       final AuthorizationCheckPort authCheckPort,
       final LazyTokenClaimsConverter claimsConverter,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -69,6 +72,7 @@ public class AuthorizationDeleteProcessor
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior =
         new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
+    this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
   @Override
@@ -103,6 +107,7 @@ public class AuthorizationDeleteProcessor
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authorizationCheckBehavior.clearAuthorizationsCache();
+                    authorizationScopeStateAdapter.invalidateAll();
                     return true;
                   });
             },
@@ -145,6 +150,7 @@ public class AuthorizationDeleteProcessor
     sideEffectWriter.appendSideEffect(
         () -> {
           authorizationCheckBehavior.clearAuthorizationsCache();
+          authorizationScopeStateAdapter.invalidateAll();
           return true;
         });
   }

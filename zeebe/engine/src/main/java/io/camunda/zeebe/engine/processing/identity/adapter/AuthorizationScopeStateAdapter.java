@@ -49,6 +49,11 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
             .build(new ScopeCacheLoader(authorizationState));
   }
 
+  /** Invalidates all cached authorization scopes, forcing fresh loads on next access. */
+  public void invalidateAll() {
+    scopeCache.invalidateAll();
+  }
+
   /** Returns all authorized scopes for the given owners, resource type, and permission type. */
   @Override
   public List<AuthorizationScope> findAuthorizedScopes(
