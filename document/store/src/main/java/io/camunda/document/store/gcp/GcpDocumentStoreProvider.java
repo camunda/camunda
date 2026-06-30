@@ -7,13 +7,23 @@
  */
 package io.camunda.document.store.gcp;
 
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 
 public class GcpDocumentStoreProvider implements DocumentStoreProvider {
+
+  /**
+   * Null in production. Tests may set this before the broker starts to redirect the GCS client to a
+   * local emulator without touching document store configuration.
+   */
+  @VisibleForTesting public static volatile Supplier<Storage> storageOverride = null;
 
   private static final String BUCKET_NAME_PROPERTY = "BUCKET";
   private static final String PREFIX_PROPERTY = "PREFIX";
@@ -24,7 +34,12 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
   public DocumentStore createDocumentStore(
       final DocumentStoreConfigurationRecord configuration, final ExecutorService executorService) {
     return new GcpDocumentStore(
-        getBucketNameProperty(configuration), getPrefixProperty(configuration), executorService);
+        getBucketNameProperty(configuration),
+        getPrefixProperty(configuration),
+        storageOverride != null
+            ? storageOverride.get()
+            : StorageOptions.getDefaultInstance().getService(),
+        executorService);
   }
 
   private String getBucketNameProperty(final DocumentStoreConfigurationRecord configuration) {
