@@ -18,26 +18,33 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class AuthorizationSecurityDisabledTest {
 
+  private static final String OWNER_ID = UUID.randomUUID().toString();
+
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
+  @Before
+  public void setup() {
+    engine.user().newUser(OWNER_ID).create();
+  }
+
   @Test
   public void shouldAuthorizeAuthorizationCommandWhenAuthorizationsAndMultiTenancyDisabled() {
     // given — engine with both authorization and multi-tenancy checks disabled (default)
-    final var ownerId = UUID.randomUUID().toString();
 
     // when — command sent without any principal claims (no username, no client id)
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerId(ownerId)
+        .withOwnerId(OWNER_ID)
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
         .withResourceMatcher(WILDCARD.getMatcher())
@@ -48,7 +55,7 @@ public class AuthorizationSecurityDisabledTest {
     // then — command is accepted, not rejected or errored
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
-                .withOwnerId(ownerId)
+                .withOwnerId(OWNER_ID)
                 .exists())
         .isTrue();
   }

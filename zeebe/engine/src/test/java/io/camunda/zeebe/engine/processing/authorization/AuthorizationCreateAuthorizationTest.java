@@ -134,19 +134,17 @@ public class AuthorizationCreateAuthorizationTest {
   public void shouldReflectNewlyGrantedAuthorizationImmediately() {
     // given
     final var user = createUser();
-    final var targetOwnerId = UUID.randomUUID().toString();
+    final var targetUser = createUser();
 
     // prime the scope cache: user has no AUTHORIZATION:CREATE permission yet → rejected
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerId(targetOwnerId)
+        .withOwnerId(targetUser.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
-        .withResourceMatcher(
-            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getMatcher())
-        .withResourceId(
-            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getResourceId())
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .withPermissions(PermissionType.CREATE)
         .expectRejection()
         .create(user.getUsername());
@@ -158,19 +156,17 @@ public class AuthorizationCreateAuthorizationTest {
     engine
         .authorization()
         .newAuthorization()
-        .withOwnerId(targetOwnerId)
+        .withOwnerId(targetUser.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.RESOURCE)
-        .withResourceMatcher(
-            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getMatcher())
-        .withResourceId(
-            io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD.getResourceId())
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .withPermissions(PermissionType.CREATE)
         .create(user.getUsername());
 
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
-                .withOwnerId(targetOwnerId)
+                .withOwnerId(targetUser.getUsername())
                 .exists())
         .isTrue();
   }
