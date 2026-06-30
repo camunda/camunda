@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes, useLocation} from 'react-router-dom';
 import {SearchForm} from './index';
 import {Paths} from 'modules/Routes';
@@ -50,6 +50,29 @@ const Wrapper = ({
 );
 
 describe('<SearchForm />', () => {
+  it('sets the URL param after typing and AutoSubmit debounce fires', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const onLocation = vi.fn();
+
+    const {user} = render(<SearchForm />, {
+      wrapper: ({children}) => (
+        <Wrapper onLocation={onLocation}>{children}</Wrapper>
+      ),
+    });
+
+    await user.type(screen.getByLabelText('Filter element instances'), 'order');
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(onLocation).toHaveBeenCalledWith(
+        expect.stringContaining('elementSearch=order'),
+      );
+    });
+
+    vi.useRealTimers();
+  });
+
   it('populates the input from the elementSearch URL param on mount', () => {
     render(<SearchForm />, {
       wrapper: ({children}) => (

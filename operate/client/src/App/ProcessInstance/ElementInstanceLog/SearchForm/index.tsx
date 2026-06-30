@@ -23,8 +23,9 @@ const SearchForm: React.FC = () => {
 
   const handleSearchSubmit = (values: SearchFormValues) => {
     const next = new URLSearchParams(searchParams);
-    if ((values.search ?? '').trim()) {
-      next.set(SEARCH_PARAM_KEY, values.search);
+    const trimmed = (values.search ?? '').trim();
+    if (trimmed) {
+      next.set(SEARCH_PARAM_KEY, trimmed);
     } else {
       next.delete(SEARCH_PARAM_KEY);
     }
@@ -43,7 +44,7 @@ const SearchForm: React.FC = () => {
       initialValues={{search: submittedSearch}}
       keepDirtyOnReinitialize
     >
-      {() => (
+      {({form}) => (
         <>
           <AutoSubmit />
           <Field<string> name="search" parse={(v) => v ?? ''}>
@@ -52,7 +53,7 @@ const SearchForm: React.FC = () => {
                 value={input.value}
                 onChange={(value) => input.onChange(value)}
                 onClear={() => {
-                  input.onChange('');
+                  form.reset({search: ''});
                   handleClearSearch();
                 }}
               />
