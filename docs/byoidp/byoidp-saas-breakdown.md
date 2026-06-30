@@ -31,9 +31,10 @@ configuration model.
   and other SaaS-internal flows keep working unchanged.
 - Configuration lives **per cluster** (org-wide IdP configuration is out of scope of this epic).
 - Configuration is propagated through the existing Console → `ZeebeCluster` CRD → Operator
-  channel, just like the Authorizations and Multi-Tenancy toggles. Client secrets live in AWS
-  Secrets Manager / GCP Secret Manager (matching the existing `connector-secrets-{clusterId}`
-  pattern), not in the Console database or Kubernetes Secrets.
+  channel, just like the Authorizations and Multi-Tenancy toggles. Client secrets are written by
+  Console as Kubernetes Secrets (`idp-config-{clusterId}`) into the cluster namespace and wired
+  onto the pods by the Operator via `secretKeyRef`; they never live in the Console database or the
+  CR (which carries only a reference). They are not stored in Secret Manager.
 - The multi-OIDC plumbing was added to the OC in commit `bfe2316a` and now lives in the
   `camunda-security-library` (CSL), which the OC consumes as a dependency. CSL is the central
   authority for authentication; new auth-layer code lands in CSL, not in the OC's `authentication/`
@@ -143,14 +144,18 @@ path that replaces it), Story 7 (documentation clarity).
   cluster record.
 - A new route for IdP configuration — placement (new `IdpConfigRouter.ts` vs. extension of
   `ClusterRouter.ts`) to be confirmed with the Console team.
-- A new controller for IdP secret management modeled on `connectorSecrets.controller.ts`.
-  Secrets stored in AWS Secrets Manager / GCP Secret Manager under the key
-  `idp-config-{clusterId}` (per cluster region). Secrets are masked on read and never returned to
-  the frontend.
+- IdP secret management: Console writes the client secret as a Kubernetes Secret
+  (`idp-config-{clusterId}`) into the cluster namespace via the Kubernetes API (`CoreV1Api`),
+  keyed per provider (key = the provider registration `name`) so multiple IdPs can share one
+  Secret object. This is a new Console capability and requires a `secrets` RBAC grant for
+  Console's service account on the cluster namespaces. The secret is write-only in the UI and
+  never returned to the frontend; it is not stored in Secret Manager or the Console database.
 - `k8s-spec.utils.ts` extended so `generateSpec()` emits `Spec.Identity.OidcProviders[]` entries
-  on the `ZeebeCluster` CR, with the client secret expressed as a `secretRef`.
+  on the `ZeebeCluster` CR, with the client secret expressed as a `clientSecretRef` (a
+  `SecretKeySelector` pointing at the Console-written Kubernetes Secret) — never the value itself.
 - Pod restart on change reuses the existing reconfigure-and-restart flow used by other cluster
-  settings toggles.
+  settings toggles. Secret rotation additionally bumps a field on the CR, because editing a
+  Kubernetes Secret's contents alone does not restart pods.
 - New field on `GET /external/clusters` and `GET /external/clusters/:uuid` responses:
   `externalIdpEnabled: boolean`. Consumed by Web Modeler in its own repo.
 - Audit log entries for changes to BYOIDP configuration, matching existing settings audit

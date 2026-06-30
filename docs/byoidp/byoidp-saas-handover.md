@@ -127,11 +127,15 @@ Largest share of work; Console owns the UI, secret storage, and the `ZeebeCluste
   or extends this one — action item 5.
 - Cluster entity: `apps/console-backend/src/entities/Cluster.ts` (TypeORM). Non-secret fields go
   in a JSON column on the existing record.
-- Secret pattern template (copy this): `apps/console-backend/src/controller/connectorSecrets.controller.ts`.
-  Connector secrets are stored in **AWS Secrets Manager and GCP Secret Manager** (dual-provider
-  based on cluster region) under the key `connector-secrets-{clusterId}`. Secrets are masked as
-  `"XXX"` when listed and never returned to the frontend. The IdP equivalent should be named
-  `idp-config-{clusterId}`.
+- Secret handling for the IdP client secret: Console writes it as a **Kubernetes Secret**
+  (`idp-config-{clusterId}`, keyed by the provider registration `name`) into the cluster namespace
+  via the Kubernetes API (`CoreV1Api`), reusing the existing per-cluster kubeconfig connection that
+  `k8sCluster.controller.ts` already uses to write the CR. Requires a `secrets` RBAC grant for
+  Console's service account on the cluster namespaces. The secret is write-only (never returned to
+  the frontend) and is **not** stored in Secret Manager — this deliberately differs from the
+  connector-secrets pattern (`connectorSecrets.controller.ts`), which stores
+  `connector-secrets-{clusterId}` in AWS/GCP Secret Manager. The Operator wires the Secret onto the
+  pods via `secretKeyRef`.
 - K8s spec generation: `apps/console-backend/src/controller/k8s/k8s-spec.utils.ts`. The
   `generateSpec()` function builds the `ZeebeCluster` CR (including `overrideEnv` arrays the
   Operator consumes).
