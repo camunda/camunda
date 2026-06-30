@@ -213,6 +213,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final int numberOfInstances = 3;
 
       createTask(bpmnProcessId, flowNodeBpmnId, numberOfInstances);
+      tester.tasksAreCreated(flowNodeBpmnId, numberOfInstances);
 
       // when
       final var result =
@@ -308,6 +309,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Admins");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Users");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Sales");
+      tester.tasksAreCreated(flowNodeBpmnId, numberOfInstances * 3);
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins", "Users", "Sales"));
       when(groupServices.search(any(), any()))
           .thenReturn(
@@ -338,6 +340,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       createTaskWithAssignee(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "demo");
       createTaskWithAssignee(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "admin");
       createTaskWithAssignee(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "sales");
+      tester.tasksAreCreated(flowNodeBpmnId, numberOfInstances * 3);
 
       final var searchQuery = new TaskQueryDTO().setAssignees(new String[] {"demo", "sales"});
 
@@ -382,6 +385,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .startProcessInstances(bpmnProcessId, numberOfInstances)
           .then()
           .taskIsCreated(flowNodeBpmnId);
+      tester.tasksAreCreated(flowNodeBpmnId, numberOfInstances * 3);
       // when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins", "Users",
       // "Sales"));
 
@@ -793,6 +797,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Admins");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Users");
+      tester.tasksAreCreated(flowNodeBpmnId, numberOfInstances * 2);
 
       // Mock identity service behaviour
       identityProperties.setUserAccessRestrictionsEnabled(true);
@@ -831,6 +836,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAdmin, "Admins");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Users");
       createTask(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAllUsers);
+      tester.tasksAreCreated(
+          flowNodeBpmnId,
+          numberOfInstancesAdmin + numberOfInstancesUser + numberOfInstancesAllUsers);
 
       // Mock identity service behaviour
       identityProperties.setUserAccessRestrictionsEnabled(true);
@@ -867,7 +875,11 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAdmin, "Admins");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Users");
-      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "demo");
+      createTaskWithCandidateUser(
+          bpmnProcessId, flowNodeBpmnId, numberOfInstancesCandidateUser, "demo");
+      tester.tasksAreCreated(
+          flowNodeBpmnId,
+          numberOfInstancesAdmin + numberOfInstancesUser + numberOfInstancesCandidateUser);
 
       // Mock identity service behaviour
       identityProperties.setUserAccessRestrictionsEnabled(true);
