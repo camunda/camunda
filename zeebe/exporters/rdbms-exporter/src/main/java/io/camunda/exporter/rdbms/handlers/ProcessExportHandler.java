@@ -41,9 +41,9 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    // do not react on ProcessEvent.DELETED to keep historic data
     return record.getValueType() == ValueType.PROCESS
-        && record.getIntent() == ProcessIntent.CREATED;
+        && (record.getIntent() == ProcessIntent.CREATED
+            || record.getIntent() == ProcessIntent.DELETED);
   }
 
   @Override
@@ -53,6 +53,12 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     final String resourceName = value.getResourceName();
     final var versionTag = value.getVersionTag();
     final var version = value.getVersion();
+
+    if (record.getIntent() == ProcessIntent.DELETED) {
+      processDefinitionWriter.markDeleted(value.getProcessDefinitionKey());
+      return;
+    }
+
     final var processModelReader =
         ProcessModelReader.of(value.getResource(), value.getBpmnProcessId());
     processModelReader.ifPresent(
@@ -92,6 +98,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         StringUtils.defaultIfEmpty(value.getVersionTag(), null),
         value.getVersion(),
         new String(value.getResource(), StandardCharsets.UTF_8),
-        formId);
+        formId,
+        false);
   }
 }

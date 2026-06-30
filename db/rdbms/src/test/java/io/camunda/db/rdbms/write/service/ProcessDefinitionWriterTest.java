@@ -37,7 +37,8 @@ class ProcessDefinitionWriterTest {
             "1.0",
             1,
             "<bpmn>...</bpmn>",
-            "form1");
+            "form1",
+            false);
 
     writer.create(model);
 
