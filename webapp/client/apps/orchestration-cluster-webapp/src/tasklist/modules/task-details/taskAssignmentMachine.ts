@@ -54,7 +54,7 @@ async function resolveFailureSubtitle(
 	return undefined;
 }
 
-const assignTaskActor = fromPromise<'accepted', {userTaskKey: string; assignee: string}>(async ({input}) => {
+const assignTaskLogic = fromPromise<'accepted', {userTaskKey: string; assignee: string}>(async ({input}) => {
 	const {error} = await request(
 		endpoints.assignTask({
 			userTaskKey: input.userTaskKey,
@@ -83,7 +83,7 @@ const assignTaskActor = fromPromise<'accepted', {userTaskKey: string; assignee: 
 	} satisfies AssignmentFailure;
 });
 
-const unassignTaskActor = fromPromise<void, {userTaskKey: string}>(async ({input}) => {
+const unassignTaskLogic = fromPromise<void, {userTaskKey: string}>(async ({input}) => {
 	const {error} = await request(endpoints.unassignTask({userTaskKey: input.userTaskKey}));
 
 	if (error === null) {
@@ -106,7 +106,7 @@ const unassignTaskActor = fromPromise<void, {userTaskKey: string}>(async ({input
 	} satisfies AssignmentFailure;
 });
 
-const fetchUserTaskActor = fromPromise<UserTask, {queryClient: QueryClient; userTaskKey: string}>(async ({input}) =>
+const fetchUserTaskLogic = fromPromise<UserTask, {queryClient: QueryClient; userTaskKey: string}>(async ({input}) =>
 	input.queryClient.fetchQuery(queries.getUserTask(input.userTaskKey)),
 );
 
@@ -117,9 +117,9 @@ const taskAssignmentMachine = setup({
 		events: {} as {type: 'ASSIGN'} | {type: 'UNASSIGN'},
 	},
 	actors: {
-		assignTask: assignTaskActor,
-		unassignTask: unassignTaskActor,
-		fetchUserTask: fetchUserTaskActor,
+		assignTask: assignTaskLogic,
+		unassignTask: unassignTaskLogic,
+		fetchUserTask: fetchUserTaskLogic,
 	},
 	guards: {
 		isTimeout: ({event}) => {
