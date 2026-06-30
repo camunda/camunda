@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.nio.charset.StandardCharsets;
@@ -426,5 +427,145 @@ public class ProcessInstanceExpressionContextTest {
             .getFirst()
             .getValue();
     Assertions.assertThat(userTask).hasPriority(50);
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInExecutionListenerTypeExpression() {
+    // given
+    final var processId = "pi-ctx-exec-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType("exec-listener-task-job")
+                            .zeebeExecutionListener(
+                                el ->
+                                    el.start()
+                                        .typeExpression("string(camunda.processInstance.key)")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final var listenerJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .getFirst()
+            .getValue();
+    assertThat(listenerJob.getType()).isEqualTo(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInTaskListenerTypeExpression() {
+    // given
+    final var processId = "pi-ctx-task-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeTaskListener(
+                    l -> l.completing().typeExpression("string(camunda.processInstance.key)"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    ENGINE.userTask().ofInstance(pi).complete();
+
+    // then
+    final var listenerJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .getFirst()
+            .getValue();
+    assertThat(listenerJob.getType()).isEqualTo(String.valueOf(pi));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInMultiInstanceInputCollection() {
+    // given
+    final var processId = "pi-ctx-mi-collection";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType("mi-collection-job")
+                            .multiInstance(
+                                m ->
+                                    m.sequential()
+                                        .zeebeInputCollectionExpression(
+                                            "[camunda.processInstance.key]")
+                                        .zeebeInputElement("element")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(pi)
+        .withType("mi-collection-job")
+        .await();
+    final var job =
+        ENGINE.jobs().withType("mi-collection-job").activate().getValue().getJobs().getFirst();
+    assertThat(job.getVariables()).containsEntry("element", pi);
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInMultiInstanceCompletionCondition() {
+    // given
+    final var processId = "pi-ctx-mi-condition";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType("mi-condition-job")
+                            .multiInstance(
+                                m ->
+                                    m.sequential()
+                                        .zeebeInputCollectionExpression("[1, 2, 3]")
+                                        .zeebeInputElement("element")
+                                        .completionCondition(
+                                            "= numberOfCompletedInstances = 1 and camunda.processInstance.key > 0")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    ENGINE.job().ofInstance(pi).withType("mi-condition-job").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(pi)
+                .withElementId("task")
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .exists())
+        .isTrue();
   }
 }
