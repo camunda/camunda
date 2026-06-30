@@ -20,6 +20,7 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -350,10 +351,25 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
               r ->
                   r.index(pendingUpdateFullQualifiedName)
                       .ignoreUnavailable(true)
-                      .allowNoIndices(true));
+                      .allowNoIndices(true))
+          .thenComposeAsync(this::failOnPartialRefresh, executor);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  private CompletionStage<RefreshResponse> failOnPartialRefresh(final RefreshResponse response) {
+    final int failed =
+        response.shards() != null && response.shards().failed() != null
+            ? response.shards().failed().intValue()
+            : 0;
+    if (failed > 0) {
+      return CompletableFuture.failedFuture(
+          new ExporterException(
+              "Refresh of %s failed on %d shard(s); aborting batch to avoid skipping pending updates"
+                  .formatted(pendingUpdateFullQualifiedName, failed)));
+    }
+    return CompletableFuture.completedFuture(response);
   }
 
   private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {
