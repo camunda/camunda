@@ -166,14 +166,14 @@ public final class EventAppliers implements EventApplier {
     registerGlobalListenersEventAppliers(state);
     registerJobMetricsBatchEventAppliers(state);
     registerAgentInstanceEventAppliers(state);
-    registerAgentHistoryEventAppliers();
+    registerAgentHistoryEventAppliers(state);
     return this;
   }
 
-  private void registerAgentHistoryEventAppliers() {
-    register(AgentHistoryIntent.CREATED, NOOP_EVENT_APPLIER);
-    register(AgentHistoryIntent.COMMITTED, NOOP_EVENT_APPLIER);
-    register(AgentHistoryIntent.DISCARDED, NOOP_EVENT_APPLIER);
+  private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
+    register(AgentHistoryIntent.CREATED, 1, new AgentHistoryCreatedApplier(state));
+    register(AgentHistoryIntent.COMMITTED, 1, new AgentHistoryCommittedApplier(state));
+    register(AgentHistoryIntent.DISCARDED, 1, new AgentHistoryDiscardedApplier(state));
   }
 
   private void registerAgentInstanceEventAppliers(final MutableProcessingState state) {
