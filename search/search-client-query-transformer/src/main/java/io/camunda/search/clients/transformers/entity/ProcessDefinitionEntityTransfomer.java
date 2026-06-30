@@ -25,6 +25,7 @@ public class ProcessDefinitionEntityTransfomer
         value.getVersion(),
         value.getVersionTag(),
         value.getTenantId(),
-        value.getFormId());
+        value.getFormId(),
+        value.getIsDeleted());
   }
 }
