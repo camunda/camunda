@@ -24,3 +24,13 @@ setup() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"not a valid Kubernetes DNS-1123 label"* ]]
 }
+
+@test "rejects namespace names longer than Kubernetes label limit" {
+  local name
+  name="$(printf 'a%.0s' {1..61})"
+
+  run new_namespace_name "$name"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Kubernetes labels are capped at 63"* ]]
+}
