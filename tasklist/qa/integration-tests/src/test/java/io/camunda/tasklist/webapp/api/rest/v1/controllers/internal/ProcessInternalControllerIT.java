@@ -27,11 +27,13 @@ import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -488,20 +490,30 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
           ZeebeTestUtil.deployProcess(camundaClient, "startedByFormProcessWithoutPublic.bpmn");
       databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
-      final var result =
-          mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1).param("query", bpmnProcessId));
+      // the embedded start-event form is indexed independently of the process, so poll until the
+      // process response carries the linked form id instead of asserting on a single request
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(30))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final var result =
+                    mockMvcHelper.doRequest(
+                        get(TasklistURIs.PROCESSES_URL_V1).param("query", bpmnProcessId));
 
-      assertThat(result)
-          .hasOkHttpStatus()
-          .hasApplicationJsonContentType()
-          .extractingListContent(objectMapper, ProcessResponse.class)
-          .singleElement()
-          .satisfies(
-              process -> {
-                assertThat(process.getId()).isEqualTo(processId1);
-                assertThat(process.getBpmnProcessId()).isEqualTo("startedByFormWithoutPublic");
-                assertThat(process.getStartEventFormId()).isEqualTo("testForm");
-                assertThat(process.getVersion()).isEqualTo(1);
+                assertThat(result)
+                    .hasOkHttpStatus()
+                    .hasApplicationJsonContentType()
+                    .extractingListContent(objectMapper, ProcessResponse.class)
+                    .singleElement()
+                    .satisfies(
+                        process -> {
+                          assertThat(process.getId()).isEqualTo(processId1);
+                          assertThat(process.getBpmnProcessId())
+                              .isEqualTo("startedByFormWithoutPublic");
+                          assertThat(process.getStartEventFormId()).isEqualTo("testForm");
+                          assertThat(process.getVersion()).isEqualTo(1);
+                        });
               });
     }
   }
