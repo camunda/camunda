@@ -92,7 +92,7 @@ The following is a set of questions which can help determine the severity of a b
 
 The `main` branch contains the current in-development state of the project. To work on an issue, follow these steps:
 
-1. Check that a [GitHub issue][issues] exists for the task you want to work on.
+1. Check that a [GitHub issue][issues] exists for the task you want to work on and assign yourself to the issue.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
 2. Check that no one is already working on the issue, and make sure the team would accept a pull request for this topic. Some topics are complex and may touch multiple of [Camunda's Components](https://docs.camunda.io/docs/components/), requiring internal coordination.
 3. Checkout the `main` branch and pull the latest changes.
@@ -285,7 +285,7 @@ This will generate a profiler report in the `target` folder.
 
 Before opening your first pull request, please have a look at this [guide](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
 
-1. To start the review process create a new pull request on GitHub from your branch to the `main` branch. Give it a meaningful name and describe your changes in the body of the pull request. Lastly add a link to the issue this pull request closes, i.e. by writing in the description `closes #123`. Without referencing the issue, our [changelog generation] will not recognize your PR as a new feature or fix and instead only include it in the list of merged PRs.
+1. To start the review process create a new pull request on GitHub from your branch to the `main` branch. Give it a meaningful name and describe your changes in the body of the pull request. Lastly add a link to the issue this pull request closes, i.e. by writing in the description `closes #123`. Without referencing the issue, our [changelog generation] will not recognize your PR as a new feature or fix and instead only include it in the list of merged PRs. Also ensure you are assigned to this issue.
 2. Assign the pull request to one developer to review, if you are not sure who should review the issue skip this step. Someone will assign a reviewer for you.
 3. The reviewer will look at the pull request in the following days and give you either feedback or accept the changes. Your reviewer might use [emoji code](#review-emoji-code) during the reviewing process.
    1. If there are changes requested, address them in a new commit. Notify the reviewer in a comment if the pull request is ready for review again. If the changes are accepted squash them again in the related commit and force push. Then initiate a merge by adding your PR to the merge queue via the `Merge when ready` button.
