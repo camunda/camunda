@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.repo;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
@@ -30,7 +31,8 @@ import org.slf4j.Logger;
 
 public final class ExporterRepository {
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-  private static final int NULL_PARTITION_ID = Integer.MIN_VALUE;
+  private static final PartitionId NULL_PARTITION_ID =
+      new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Integer.MIN_VALUE);
   private final ExternalJarRepository jarRepository;
   private final Map<String, ExporterDescriptor> exporters;
   private @Nullable String licenseKey;
@@ -114,7 +116,6 @@ public final class ExporterRepository {
               LOG,
               descriptor.getConfiguration(),
               NULL_PARTITION_ID,
-              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
               "",
               licenseKey,
               new SimpleMeterRegistry(),

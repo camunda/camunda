@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.mockito.Mockito.spy;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
@@ -138,6 +139,8 @@ public final class ExporterRule implements TestRule {
 
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
+            .partitionId(
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID))
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
             .logStream(stream)

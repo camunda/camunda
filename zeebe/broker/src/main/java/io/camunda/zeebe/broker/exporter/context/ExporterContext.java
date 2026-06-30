@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.context;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -27,8 +28,7 @@ public final class ExporterContext implements Context, AutoCloseable {
 
   private final Logger logger;
   private final Configuration configuration;
-  private final int partitionId;
-  private final String physicalTenantId;
+  private final PartitionId partitionId;
   private final String clusterId;
   private final @Nullable String licenseKey;
   private final CompositeMeterRegistry meterRegistry;
@@ -39,8 +39,7 @@ public final class ExporterContext implements Context, AutoCloseable {
   public ExporterContext(
       final Logger logger,
       final Configuration configuration,
-      final int partitionId,
-      final String physicalTenantId,
+      final PartitionId partitionId,
       final String clusterId,
       final @Nullable String licenseKey,
       final MeterRegistry meterRegistry,
@@ -48,15 +47,13 @@ public final class ExporterContext implements Context, AutoCloseable {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
-    this.physicalTenantId = physicalTenantId;
     this.clusterId = clusterId;
     this.licenseKey = licenseKey;
     this.meterRegistry =
         MicrometerUtil.wrap(
             meterRegistry,
             Tags.concat(
-                PartitionKeyNames.tags(physicalTenantId, partitionId),
-                Tags.of("exporterId", configuration.getId())));
+                PartitionKeyNames.tags(partitionId), Tags.of("exporterId", configuration.getId())));
     this.clock = clock;
   }
 
@@ -82,12 +79,12 @@ public final class ExporterContext implements Context, AutoCloseable {
 
   @Override
   public int getPartitionId() {
-    return partitionId;
+    return partitionId.number();
   }
 
   @Override
   public String getPhysicalTenantId() {
-    return physicalTenantId;
+    return partitionId.group();
   }
 
   @Override

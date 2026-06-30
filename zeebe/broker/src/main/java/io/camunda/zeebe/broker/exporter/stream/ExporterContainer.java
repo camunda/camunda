@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -51,8 +52,7 @@ final class ExporterContainer implements Controller {
 
   ExporterContainer(
       final ExporterDescriptor descriptor,
-      final int partitionId,
-      final String physicalTenantId,
+      final PartitionId partitionId,
       final String clusterId,
       final String licenseKey,
       final ExporterInitializationInfo initializationInfo,
@@ -66,7 +66,6 @@ final class ExporterContainer implements Controller {
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
             partitionId,
-            physicalTenantId,
             clusterId,
             licenseKey,
             meterRegistry,

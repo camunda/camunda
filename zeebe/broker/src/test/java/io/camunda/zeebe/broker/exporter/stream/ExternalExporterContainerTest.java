@@ -167,8 +167,7 @@ final class ExternalExporterContainerTest {
     final var container =
         new ExporterContainer(
             descriptor,
-            0,
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            PARTITION_ID,
             "",
             null,
             new ExporterInitializationInfo(0, null),
