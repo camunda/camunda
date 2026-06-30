@@ -8,11 +8,11 @@
 package io.camunda.zeebe.broker.client.impl;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,12 +33,12 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
   TestTopologyManager(final TestBrokerClusterState topology) {
     if (topology != null) {
-      topologies.put(Protocol.DEFAULT_PARTITION_GROUP_NAME, topology);
+      topologies.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, topology);
     }
   }
 
   TestTopologyManager addPartition(final int id, final BrokerMemberId leaderId) {
-    return addPartition(Protocol.DEFAULT_PARTITION_GROUP_NAME, id, leaderId);
+    return addPartition(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, id, leaderId);
   }
 
   TestTopologyManager addPartition(

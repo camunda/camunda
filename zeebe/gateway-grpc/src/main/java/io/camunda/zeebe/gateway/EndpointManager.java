@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -74,7 +75,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRespo
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -373,7 +373,8 @@ public final class EndpointManager {
     }
     final BrokerClusterState topology =
         topologyManager.getTopology(
-            Objects.requireNonNullElse(physicalTenantId, Protocol.DEFAULT_PARTITION_GROUP_NAME));
+            Objects.requireNonNullElse(
+                physicalTenantId, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
 
     final String gatewayVersion = VersionUtil.getVersion();
     if (gatewayVersion != null && !gatewayVersion.isBlank()) {
@@ -558,7 +559,7 @@ public final class EndpointManager {
     brokerRequest.setAuthorization(getClaims());
     final String physicalTenantId = getPhysicalTenantId();
     brokerRequest.setPartitionGroup(
-        Objects.requireNonNullElse(physicalTenantId, Protocol.DEFAULT_PARTITION_GROUP_NAME));
+        Objects.requireNonNullElse(physicalTenantId, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
     return brokerRequest;
   }
 

@@ -103,7 +103,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>configuration-api</artifactId>
+      <artifactId>camunda-cluster</artifactId>
     </dependency>
     <dependency>
       <groupId>io.github.resilience4j</groupId>

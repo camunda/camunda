@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.api.job.CompleteJobStub;
@@ -18,7 +18,6 @@ import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.camunda.zeebe.protocol.Protocol;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -71,7 +70,8 @@ public class BrokerRequestPhysicalTenantRoutingTest extends GatewayTest {
 
     // then
     final BrokerRequest<?> brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getPartitionGroup()).isEqualTo(Protocol.DEFAULT_PARTITION_GROUP_NAME);
+    assertThat(brokerRequest.getPartitionGroup())
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test

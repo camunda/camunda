@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
-import static io.camunda.zeebe.protocol.Protocol.DEFAULT_PARTITION_GROUP_NAME;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -38,7 +38,7 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldNotBeReadyHealthyOrStartedBeforePartitionManagerIsRegistered() {
     // given
-    final var healthCheckService = newHealthCheckService(DEFAULT_PARTITION_GROUP_NAME);
+    final var healthCheckService = newHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
 
     // when
 
@@ -58,10 +58,10 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldThrowIllegalStateExceptionIfStatusIsUpdatedBeforePartitionsAreKnown() {
     // given
-    final var healthCheckService = newHealthCheckService(DEFAULT_PARTITION_GROUP_NAME);
+    final var healthCheckService = newHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
 
     // when + then
-    final var partitionId = new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 0);
+    final var partitionId = new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 0);
     assertThatThrownBy(() -> healthCheckService.onBecameRaftFollower(partitionId, 0))
         .isInstanceOf(IllegalStateException.class);
     assertThatThrownBy(() -> healthCheckService.onBecameRaftLeader(partitionId, 0))
@@ -73,9 +73,9 @@ public class BrokerHealthCheckServiceTest {
     // given a broker started with one partition in each of two physical tenants. Each physical
     // tenant registers its own partitions, mirroring how PartitionManagerImpl#start does it.
     final var healthCheckService =
-        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+        newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
     healthCheckService.registerBootstrapPartitions(
-        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
     healthCheckService.registerBootstrapPartitions(
         SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
     scheduler.workUntilDone();
@@ -88,7 +88,7 @@ public class BrokerHealthCheckServiceTest {
     assertThat(healthCheckService.isBrokerReady()).isFalse();
 
     // when the default tenant's partition is installed too
-    healthCheckService.onBecameRaftFollower(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+    healthCheckService.onBecameRaftFollower(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
     scheduler.workUntilDone();
 
     // then the broker is ready, because every physical tenant's partition is installed
@@ -101,11 +101,11 @@ public class BrokerHealthCheckServiceTest {
     // second physical tenant comes up. This is the ordering that a naive "all installed" latch gets
     // wrong: it would freeze on the first completion.
     final var healthCheckService =
-        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+        newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
     healthCheckService.registerBootstrapPartitions(
-        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
     scheduler.workUntilDone();
-    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
     scheduler.workUntilDone();
 
     // when a second physical tenant registers its not-yet-installed partition
@@ -129,10 +129,10 @@ public class BrokerHealthCheckServiceTest {
     // given a broker configured with two physical tenants, but only the default tenant comes up and
     // installs its partition; the second tenant never registers (e.g. its startup stalled).
     final var healthCheckService =
-        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+        newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
     healthCheckService.registerBootstrapPartitions(
-        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
-    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
     scheduler.workUntilDone();
 
     // when + then the broker must not report ready: a configured tenant is entirely unaccounted
@@ -154,14 +154,14 @@ public class BrokerHealthCheckServiceTest {
     // given a broker with two physical tenants where the second tenant has no partitions on this
     // node, so it registers an empty set
     final var healthCheckService =
-        newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+        newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
     healthCheckService.registerBootstrapPartitions(
-        DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
     healthCheckService.registerBootstrapPartitions(SECOND_PHYSICAL_TENANT, List.of());
     scheduler.workUntilDone();
 
     // when the default tenant's only partition is installed
-    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+    healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
     scheduler.workUntilDone();
 
     // then the broker is ready: the second tenant started and simply had nothing to install
@@ -178,13 +178,13 @@ public class BrokerHealthCheckServiceTest {
     logger.addAppender(recorder);
     try {
       final var healthCheckService =
-          newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+          newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
       healthCheckService.registerBootstrapPartitions(
-          DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+          DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
       scheduler.workUntilDone();
 
       // when the default tenant's only partition is installed
-      healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+      healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
       scheduler.workUntilDone();
 
       // then the broker must not announce readiness: a configured tenant has not registered yet
@@ -207,15 +207,15 @@ public class BrokerHealthCheckServiceTest {
     logger.addAppender(recorder);
     try {
       final var healthCheckService =
-          newStartedHealthCheckService(DEFAULT_PARTITION_GROUP_NAME, SECOND_PHYSICAL_TENANT);
+          newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID, SECOND_PHYSICAL_TENANT);
       healthCheckService.registerBootstrapPartitions(
-          DEFAULT_PARTITION_GROUP_NAME, List.of(partition(DEFAULT_PARTITION_GROUP_NAME, 1)));
+          DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
       healthCheckService.registerBootstrapPartitions(
           SECOND_PHYSICAL_TENANT, List.of(partition(SECOND_PHYSICAL_TENANT, 1)));
       scheduler.workUntilDone();
 
       // when every tenant's partition is installed
-      healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PARTITION_GROUP_NAME, 1), 1);
+      healthCheckService.onBecameRaftLeader(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
       healthCheckService.onBecameRaftLeader(new PartitionId(SECOND_PHYSICAL_TENANT, 1), 1);
       scheduler.workUntilDone();
 

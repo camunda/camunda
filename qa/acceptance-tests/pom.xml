@@ -638,7 +638,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>configuration-api</artifactId>
+      <artifactId>camunda-cluster</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

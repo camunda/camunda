@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.client.api.dto;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -25,7 +25,7 @@ class BrokerRequestTest {
     final var request = new TestBrokerRequest();
 
     // then
-    assertThat(request.getPartitionGroup()).isEqualTo(Protocol.DEFAULT_PARTITION_GROUP_NAME);
+    assertThat(request.getPartitionGroup()).isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test

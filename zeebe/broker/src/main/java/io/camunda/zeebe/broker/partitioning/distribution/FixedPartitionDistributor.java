@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.partitioning.distribution;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import java.util.Collections;
 import java.util.HashSet;

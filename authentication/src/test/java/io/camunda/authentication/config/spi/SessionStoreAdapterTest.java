@@ -10,7 +10,7 @@ package io.camunda.authentication.config.spi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.PhysicalTenantScopedPersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;

@@ -1339,7 +1339,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>configuration-api</artifactId>
+        <artifactId>camunda-cluster</artifactId>
         <version>${project.version}</version>
       </dependency>
 

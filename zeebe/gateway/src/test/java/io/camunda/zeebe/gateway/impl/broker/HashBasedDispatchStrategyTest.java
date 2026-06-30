@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.gateway.api.util.TestBrokerClusterState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.PartitionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
@@ -41,7 +41,7 @@ final class HashBasedDispatchStrategyTest {
     // then - the request is dispatched based on the partition count from the topology
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), partitionCount));
   }
 
@@ -65,7 +65,7 @@ final class HashBasedDispatchStrategyTest {
     // then - the request is dispatched based on the routing state
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(
             PartitionUtil.getPartitionId(BufferUtil.wrapString(businessId), messagePartitionCount));
   }
@@ -85,9 +85,12 @@ final class HashBasedDispatchStrategyTest {
     final var strategy2 = new HashBasedDispatchStrategy(businessId, "business id");
 
     // then - both should route to the same partition
-    assertThat(strategy1.determinePartition(topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+    assertThat(
+            strategy1.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(
-            strategy2.determinePartition(topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME));
+            strategy2.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   @Test
@@ -107,10 +110,10 @@ final class HashBasedDispatchStrategyTest {
     // then - both strategies should route to the same partition for the same key
     assertThat(
             hashBasedStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(
             messageStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME));
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   private record TestTopologyManager(

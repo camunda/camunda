@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.protocol.Protocol;
 import org.jspecify.annotations.NonNull;
 
 public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
@@ -26,7 +26,7 @@ public interface BrokerTopologyManager extends ClusterConfigurationUpdateListene
    * getTopology("default")}.
    */
   default BrokerClusterState getTopology() {
-    return getTopology(Protocol.DEFAULT_PARTITION_GROUP_NAME);
+    return getTopology(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   /**

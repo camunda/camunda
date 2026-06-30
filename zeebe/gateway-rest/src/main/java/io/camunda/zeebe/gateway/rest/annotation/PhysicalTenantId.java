@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.annotation;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.restore;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;

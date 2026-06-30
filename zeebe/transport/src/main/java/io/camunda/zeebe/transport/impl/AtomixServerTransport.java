@@ -8,8 +8,8 @@
 package io.camunda.zeebe.transport.impl;
 
 import io.atomix.cluster.messaging.MessagingService;
-import io.atomix.primitive.partition.PartitionId;
-import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.RequestHandler;
@@ -106,7 +106,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private List<String> topicNames(final PartitionId partitionId, final RequestType requestType) {
     final var topic = topicName(partitionId.group(), partitionId.number(), requestType);
     if (receiveOnLegacySubject
-        && Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(partitionId.group())) {
+        && PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(partitionId.group())) {
       return List.of(topic, legacyTopicName(partitionId.number(), requestType));
     }
     return List.of(topic);

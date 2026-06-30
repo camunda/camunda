@@ -9,8 +9,8 @@ package io.camunda.zeebe.dynamic.config.util;
 
 import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import java.util.ArrayList;
 import java.util.Comparator;

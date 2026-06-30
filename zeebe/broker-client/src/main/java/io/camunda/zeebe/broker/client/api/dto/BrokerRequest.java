@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker.client.api.dto;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
 import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
@@ -36,7 +36,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   protected final int schemaId;
   protected final int templateId;
 
-  private String partitionGroup = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+  private String partitionGroup = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   public BrokerRequest(final int schemaId, final int templateId) {
     this.schemaId = schemaId;

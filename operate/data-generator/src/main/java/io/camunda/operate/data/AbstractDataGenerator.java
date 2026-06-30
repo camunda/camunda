@@ -12,7 +12,7 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.query.ProcessDefinitionQuery;

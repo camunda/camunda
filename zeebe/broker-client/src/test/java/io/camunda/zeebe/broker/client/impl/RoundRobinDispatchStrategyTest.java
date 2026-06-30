@@ -10,13 +10,13 @@ package io.camunda.zeebe.broker.client.impl;
 import static io.camunda.zeebe.broker.client.BrokerMemberIds.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
-import io.camunda.zeebe.protocol.Protocol;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,8 @@ final class RoundRobinDispatchStrategyTest {
 
     // when
     final var partitionId =
-        dispatchStrategy.determinePartition(topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
+        dispatchStrategy.determinePartition(
+            topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then - the null value will be used as fallback by the request manager to redirect to the
     // deployment partition
@@ -47,11 +48,11 @@ final class RoundRobinDispatchStrategyTest {
     // when - then
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(2);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
   }
 
@@ -76,19 +77,19 @@ final class RoundRobinDispatchStrategyTest {
     // when - then
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(2);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(2);
   }
 
@@ -115,19 +116,19 @@ final class RoundRobinDispatchStrategyTest {
     // when - then
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
   }
 
@@ -152,11 +153,11 @@ final class RoundRobinDispatchStrategyTest {
     // then
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
 
     // when -- updating to routing state version 2, with active partitions 1, 2 and 3
@@ -171,19 +172,19 @@ final class RoundRobinDispatchStrategyTest {
     // then
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(2);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
   }
 
@@ -204,17 +205,17 @@ final class RoundRobinDispatchStrategyTest {
     // then - each group cycles independently from the initial offset
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(dispatchStrategy.determinePartition(topologyManager, "tenant-b")).isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(2);
     assertThat(dispatchStrategy.determinePartition(topologyManager, "tenant-b")).isEqualTo(2);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
     assertThat(dispatchStrategy.determinePartition(topologyManager, "tenant-b")).isEqualTo(3);
   }
@@ -233,7 +234,7 @@ final class RoundRobinDispatchStrategyTest {
     // when - then - the default group skips partition 1 while tenant-b returns it
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(2);
     assertThat(dispatchStrategy.determinePartition(topologyManager, "tenant-b")).isEqualTo(1);
   }
@@ -264,11 +265,11 @@ final class RoundRobinDispatchStrategyTest {
     // when - then - the default group cycles over the active partitions only
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(1);
     assertThat(
             dispatchStrategy.determinePartition(
-                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(3);
 
     // and tenant-b cycles over all of its partitions

@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.db.websession;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.config.spi.SessionStoreAdapter;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionRdbmsClient;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
