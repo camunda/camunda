@@ -13,20 +13,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Optional;
 import javax.sql.DataSource;
 
 /**
- * Phase-1 windowed aggregator (DB-as-merge, no shuffle, no coordinator): folds execution-time facts
- * into per-{@code (definition, version, tenant, window)} cells in an RDBMS, bucketing by completion
- * event-time. The window is part of the primary key, so each cell stays independent and many
- * instances can upsert concurrently — H2 row locking serializes the increments.
+ * Windowed aggregator (DB-as-merge, no shuffle, no coordinator): folds each execution-time fact
+ * into one cell <em>per declared dataset</em>, keyed by {@code (dataset, definition, version,
+ * tenant, window)} and bucketed by completion event-time using that dataset's window. So creating a
+ * dataset with a different window produces its own independent rollup (e.g. hourly vs daily), and
+ * many datasets reuse the single fact stream.
  *
  * <p>Correctness: each fact is deduped by its source coordinate via a per-source-partition
- * high-watermark advanced in the same transaction as the aggregate (effectively-exactly-once under
- * at-least-once delivery / replay). A single-row event-time watermark (max completion time seen)
- * drives window finalization — a window is final once {@code watermark - allowedLateness} has
- * passed its end.
+ * high-watermark advanced in the same transaction as all the per-dataset upserts
+ * (effectively-exactly-once under at-least-once delivery / replay). A single-row event-time
+ * watermark (max completion time seen) drives window finalization. Datasets created later are
+ * forward-only (they aggregate facts from their creation onward; backfill is a separate step).
  */
 public final class WindowedExecutionTimeAggregator {
 
@@ -41,6 +43,7 @@ public final class WindowedExecutionTimeAggregator {
   private static final String CREATE_WINDOW =
       """
       CREATE TABLE IF NOT EXISTS proc_inst_exec_time_window (
+        dataset_id             BIGINT       NOT NULL,
         process_definition_key BIGINT       NOT NULL,
         bpmn_process_id        VARCHAR(255) NOT NULL,
         version                INT          NOT NULL,
@@ -51,7 +54,7 @@ public final class WindowedExecutionTimeAggregator {
         total_duration_ms      BIGINT       NOT NULL,
         min_duration_ms        BIGINT       NOT NULL,
         max_duration_ms        BIGINT       NOT NULL,
-        PRIMARY KEY (process_definition_key, version, tenant_id, window_start)
+        PRIMARY KEY (dataset_id, process_definition_key, version, tenant_id, window_start)
       )""";
 
   private static final String CREATE_FACT_WATERMARK =
@@ -85,34 +88,34 @@ public final class WindowedExecutionTimeAggregator {
         total_duration_ms = total_duration_ms + ?,
         min_duration_ms   = LEAST(min_duration_ms, ?),
         max_duration_ms   = GREATEST(max_duration_ms, ?)
-      WHERE process_definition_key = ? AND version = ? AND tenant_id = ? AND window_start = ?""";
+      WHERE dataset_id = ? AND process_definition_key = ? AND version = ? AND tenant_id = ?
+        AND window_start = ?""";
 
   private static final String INSERT_WINDOW =
       """
       INSERT INTO proc_inst_exec_time_window
-        (process_definition_key, bpmn_process_id, version, tenant_id, window_start, window_size_ms,
-         completed_count, total_duration_ms, min_duration_ms, max_duration_ms)
-      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)""";
+        (dataset_id, process_definition_key, bpmn_process_id, version, tenant_id, window_start,
+         window_size_ms, completed_count, total_duration_ms, min_duration_ms, max_duration_ms)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)""";
 
   private static final String SELECT_WINDOW =
       """
       SELECT bpmn_process_id, window_size_ms, completed_count, total_duration_ms,
              min_duration_ms, max_duration_ms
       FROM proc_inst_exec_time_window
-      WHERE process_definition_key = ? AND version = ? AND tenant_id = ? AND window_start = ?""";
+      WHERE dataset_id = ? AND process_definition_key = ? AND version = ? AND tenant_id = ?
+        AND window_start = ?""";
 
   private final DataSource dataSource;
-  private final long windowSizeMs;
   private final long allowedLatenessMs;
 
   public WindowedExecutionTimeAggregator(final DataSource dataSource) {
-    this(dataSource, DEFAULT_WINDOW_SIZE_MS, DEFAULT_ALLOWED_LATENESS_MS);
+    this(dataSource, DEFAULT_ALLOWED_LATENESS_MS);
   }
 
   public WindowedExecutionTimeAggregator(
-      final DataSource dataSource, final long windowSizeMs, final long allowedLatenessMs) {
+      final DataSource dataSource, final long allowedLatenessMs) {
     this.dataSource = dataSource;
-    this.windowSizeMs = windowSizeMs;
     this.allowedLatenessMs = allowedLatenessMs;
   }
 
@@ -127,16 +130,21 @@ public final class WindowedExecutionTimeAggregator {
     }
   }
 
-  /** The event-time window start a completion timestamp falls into. */
-  public long windowStartFor(final long eventTime) {
+  /** The event-time window start a completion timestamp falls into for the given window size. */
+  public long windowStartFor(final long eventTime, final long windowSizeMs) {
     return Math.floorDiv(eventTime, windowSizeMs) * windowSizeMs;
   }
 
   /**
-   * Folds a fact into its window. Returns {@code true} if aggregated, {@code false} if it was a
-   * duplicate already folded (by source coordinate).
+   * Folds a fact into a cell of every given dataset (each with its own window), in one transaction.
+   * Returns {@code true} if aggregated, {@code false} if it was a duplicate already folded (by
+   * source coordinate) or there were no datasets to fold into.
    */
-  public boolean apply(final ProcessInstanceExecutionTimeFact fact) {
+  public boolean apply(
+      final ProcessInstanceExecutionTimeFact fact, final Collection<AggregateDataset> datasets) {
+    if (datasets.isEmpty()) {
+      return false;
+    }
     try (final Connection connection = dataSource.getConnection()) {
       connection.setAutoCommit(false);
       try {
@@ -144,7 +152,14 @@ public final class WindowedExecutionTimeAggregator {
           connection.rollback();
           return false;
         }
-        upsertWindow(connection, fact, windowStartFor(fact.endTime()));
+        for (final AggregateDataset dataset : datasets) {
+          upsertWindow(
+              connection,
+              fact,
+              dataset.id(),
+              windowStartFor(fact.endTime(), dataset.windowSizeMs()),
+              dataset.windowSizeMs());
+        }
         advanceEventTimeWatermark(connection, fact.endTime());
         writeFactWatermark(connection, fact.sourcePartitionId(), fact.sourcePosition());
         connection.commit();
@@ -159,6 +174,7 @@ public final class WindowedExecutionTimeAggregator {
   }
 
   public Optional<WindowedExecutionTime> read(
+      final long datasetId,
       final long processDefinitionKey,
       final int version,
       final String tenantId,
@@ -166,10 +182,11 @@ public final class WindowedExecutionTimeAggregator {
     final long watermark = eventTimeWatermark();
     try (final Connection connection = dataSource.getConnection();
         final PreparedStatement statement = connection.prepareStatement(SELECT_WINDOW)) {
-      statement.setLong(1, processDefinitionKey);
-      statement.setInt(2, version);
-      statement.setString(3, tenantId);
-      statement.setLong(4, windowStart);
+      statement.setLong(1, datasetId);
+      statement.setLong(2, processDefinitionKey);
+      statement.setInt(3, version);
+      statement.setString(4, tenantId);
+      statement.setLong(5, windowStart);
       try (final ResultSet rs = statement.executeQuery()) {
         if (!rs.next()) {
           return Optional.empty();
@@ -252,30 +269,34 @@ public final class WindowedExecutionTimeAggregator {
   private void upsertWindow(
       final Connection connection,
       final ProcessInstanceExecutionTimeFact fact,
-      final long windowStart)
+      final long datasetId,
+      final long windowStart,
+      final long windowSizeMs)
       throws SQLException {
     try (final PreparedStatement update = connection.prepareStatement(UPDATE_WINDOW)) {
       update.setLong(1, fact.durationMs());
       update.setLong(2, fact.durationMs());
       update.setLong(3, fact.durationMs());
-      update.setLong(4, fact.processDefinitionKey());
-      update.setInt(5, fact.version());
-      update.setString(6, fact.tenantId());
-      update.setLong(7, windowStart);
+      update.setLong(4, datasetId);
+      update.setLong(5, fact.processDefinitionKey());
+      update.setInt(6, fact.version());
+      update.setString(7, fact.tenantId());
+      update.setLong(8, windowStart);
       if (update.executeUpdate() > 0) {
         return;
       }
     }
     try (final PreparedStatement insert = connection.prepareStatement(INSERT_WINDOW)) {
-      insert.setLong(1, fact.processDefinitionKey());
-      insert.setString(2, fact.bpmnProcessId());
-      insert.setInt(3, fact.version());
-      insert.setString(4, fact.tenantId());
-      insert.setLong(5, windowStart);
-      insert.setLong(6, windowSizeMs);
-      insert.setLong(7, fact.durationMs());
+      insert.setLong(1, datasetId);
+      insert.setLong(2, fact.processDefinitionKey());
+      insert.setString(3, fact.bpmnProcessId());
+      insert.setInt(4, fact.version());
+      insert.setString(5, fact.tenantId());
+      insert.setLong(6, windowStart);
+      insert.setLong(7, windowSizeMs);
       insert.setLong(8, fact.durationMs());
       insert.setLong(9, fact.durationMs());
+      insert.setLong(10, fact.durationMs());
       insert.executeUpdate();
     }
   }

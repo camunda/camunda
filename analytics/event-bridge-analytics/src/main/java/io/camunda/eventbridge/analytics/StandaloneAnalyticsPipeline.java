@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.analytics;
 
+import io.camunda.eventbridge.analytics.aggregate.DatasetRegistry;
 import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
 import io.camunda.eventbridge.analytics.projection.RocksDbBaseProjectionStore;
@@ -48,8 +49,6 @@ public final class StandaloneAnalyticsPipeline {
     final String sourceTopic = System.getProperty("sourceTopic", "zeebe-records");
     final String instanceId =
         System.getProperty("instanceId", "projector-" + ProcessHandle.current().pid());
-    final long windowSizeMs =
-        Long.getLong("windowSizeMs", WindowedExecutionTimeAggregator.DEFAULT_WINDOW_SIZE_MS);
     final String jdbcUrl =
         System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
     // user 'sa' so the dataset DB has consistent credentials with the webapp / shared H2 server
@@ -67,21 +66,22 @@ public final class StandaloneAnalyticsPipeline {
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
     final WindowedExecutionTimeAggregator aggregator =
-        new WindowedExecutionTimeAggregator(
-            dataSource, windowSizeMs, WindowedExecutionTimeAggregator.DEFAULT_ALLOWED_LATENESS_MS);
+        new WindowedExecutionTimeAggregator(dataSource);
     aggregator.initSchema();
+    // datasets (and their windows) are declared via the webapp into the shared DB; the pipeline
+    // reads them and aggregates each fact into every declared dataset.
+    final DatasetRegistry datasetRegistry = new DatasetRegistry(dataSource);
 
     final ZeebeRecordConsumer source =
         ZeebeRecordConsumer.subscribe(client, GROUP, instanceId, List.of(sourceTopic)).join();
 
     final WindowedAnalyticsPipeline pipeline =
-        new WindowedAnalyticsPipeline(source, projector, aggregator);
+        new WindowedAnalyticsPipeline(source, projector, aggregator, datasetRegistry);
     pipeline.start();
     LOG.info(
-        "Phase-1 analytics instance '{}' started: {} -> windowed H2 dataset (window {} ms)",
+        "Phase-1 analytics instance '{}' started: {} -> per-dataset windowed H2 aggregates",
         instanceId,
-        sourceTopic,
-        windowSizeMs);
+        sourceTopic);
 
     Runtime.getRuntime()
         .addShutdownHook(

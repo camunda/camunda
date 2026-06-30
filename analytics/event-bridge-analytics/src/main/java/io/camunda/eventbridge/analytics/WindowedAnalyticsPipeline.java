@@ -7,6 +7,8 @@
  */
 package io.camunda.eventbridge.analytics;
 
+import io.camunda.eventbridge.analytics.aggregate.AggregateDataset;
+import io.camunda.eventbridge.analytics.aggregate.DatasetRegistry;
 import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
@@ -35,21 +37,27 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
   private static final int MAX_RECORDS = 100;
   private static final Duration POLL_TIMEOUT = Duration.ofMillis(500);
   private static final Duration ERROR_BACKOFF = Duration.ofSeconds(1);
+  private static final Duration DATASET_REFRESH = Duration.ofSeconds(5);
 
   private final ZeebeRecordConsumer sourceConsumer;
   private final ProcessInstanceProjector projector;
   private final WindowedExecutionTimeAggregator aggregator;
+  private final DatasetRegistry datasetRegistry;
 
   private volatile boolean running;
   private Thread thread;
+  private List<AggregateDataset> datasets = List.of();
+  private long datasetsRefreshedAt;
 
   public WindowedAnalyticsPipeline(
       final ZeebeRecordConsumer sourceConsumer,
       final ProcessInstanceProjector projector,
-      final WindowedExecutionTimeAggregator aggregator) {
+      final WindowedExecutionTimeAggregator aggregator,
+      final DatasetRegistry datasetRegistry) {
     this.sourceConsumer = sourceConsumer;
     this.projector = projector;
     this.aggregator = aggregator;
+    this.datasetRegistry = datasetRegistry;
   }
 
   public void start() {
@@ -62,15 +70,29 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
   private void run() {
     while (running) {
       try {
+        refreshDatasetsIfDue();
         final List<ZeebeRecord> records = sourceConsumer.poll(MAX_RECORDS, POLL_TIMEOUT);
         for (final ZeebeRecord record : records) {
-          projector.apply(record).ifPresent(aggregator::apply);
+          // fold the derived fact into every currently-declared dataset (each with its own window)
+          projector.apply(record).ifPresent(fact -> aggregator.apply(fact, datasets));
           sourceConsumer.commit(record).join();
         }
       } catch (final RuntimeException e) {
         LOG.warn("Windowed pipeline poll failed; backing off", e);
         sleep();
       }
+    }
+  }
+
+  private void refreshDatasetsIfDue() {
+    final long now = System.nanoTime();
+    if (datasetsRefreshedAt == 0 || now - datasetsRefreshedAt >= DATASET_REFRESH.toNanos()) {
+      final List<AggregateDataset> latest = datasetRegistry.datasets();
+      if (!latest.equals(datasets)) {
+        LOG.info("Aggregating into {} dataset(s): {}", latest.size(), latest);
+      }
+      datasets = latest;
+      datasetsRefreshedAt = now;
     }
   }
 

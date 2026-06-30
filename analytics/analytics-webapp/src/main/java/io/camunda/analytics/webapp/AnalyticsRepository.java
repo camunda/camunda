@@ -137,6 +137,9 @@ public class AnalyticsRepository {
                 + "FROM proc_inst_exec_time_window");
     final List<Object> params = new ArrayList<>();
     final List<String> conditions = new ArrayList<>();
+    // a report reads only its dataset's rows (each dataset is aggregated with its own window)
+    conditions.add("dataset_id = ?");
+    params.add(report.datasetId());
     if (report.bpmnProcessId() != null && !report.bpmnProcessId().isBlank()) {
       conditions.add("bpmn_process_id = ?");
       params.add(report.bpmnProcessId());

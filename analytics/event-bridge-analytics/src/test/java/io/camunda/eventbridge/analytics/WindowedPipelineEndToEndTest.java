@@ -9,6 +9,7 @@ package io.camunda.eventbridge.analytics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.eventbridge.analytics.aggregate.AggregateDataset;
 import io.camunda.eventbridge.analytics.aggregate.WindowedExecutionTimeAggregator;
 import io.camunda.eventbridge.analytics.projection.InMemoryBaseProjectionStore;
 import io.camunda.eventbridge.analytics.projection.ProcessInstanceProjector;
@@ -44,8 +45,10 @@ final class WindowedPipelineEndToEndTest {
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:win-e2e-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
     final WindowedExecutionTimeAggregator aggregator =
-        new WindowedExecutionTimeAggregator(dataSource, HOUR, 60_000L);
+        new WindowedExecutionTimeAggregator(dataSource, 60_000L);
     aggregator.initSchema();
+    final long datasetId = 1L;
+    final var datasets = java.util.List.of(new AggregateDataset(datasetId, HOUR));
 
     // definition 77: three instances complete in hour 0, one in hour 1; definition 88: one in hour
     // 0
@@ -68,15 +71,16 @@ final class WindowedPipelineEndToEndTest {
           .apply(
               event(
                   ProcessInstanceIntent.ELEMENT_COMPLETED, piKey, defKey, instance[3], position++))
-          .ifPresent(aggregator::apply);
+          .ifPresent(fact -> aggregator.apply(fact, datasets));
     }
 
     // then — "last hour = N completed per definition"
-    assertThat(aggregator.read(77L, VERSION, TENANT, 0L).orElseThrow().completedCount())
+    assertThat(aggregator.read(datasetId, 77L, VERSION, TENANT, 0L).orElseThrow().completedCount())
         .isEqualTo(3L);
-    assertThat(aggregator.read(77L, VERSION, TENANT, HOUR).orElseThrow().completedCount())
+    assertThat(
+            aggregator.read(datasetId, 77L, VERSION, TENANT, HOUR).orElseThrow().completedCount())
         .isEqualTo(1L);
-    assertThat(aggregator.read(88L, VERSION, TENANT, 0L).orElseThrow().completedCount())
+    assertThat(aggregator.read(datasetId, 88L, VERSION, TENANT, 0L).orElseThrow().completedCount())
         .isEqualTo(1L);
   }
 

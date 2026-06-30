@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS analytics_report (
 -- The windowed aggregate the pipeline writes. Created here too (IF NOT EXISTS) so the webapp runs
 -- standalone before the pipeline has provisioned it; the pipeline owns the writes.
 CREATE TABLE IF NOT EXISTS proc_inst_exec_time_window (
+  dataset_id             BIGINT       NOT NULL,
   process_definition_key BIGINT       NOT NULL,
   bpmn_process_id        VARCHAR(255) NOT NULL,
   version                INT          NOT NULL,
@@ -30,5 +31,5 @@ CREATE TABLE IF NOT EXISTS proc_inst_exec_time_window (
   total_duration_ms      BIGINT       NOT NULL,
   min_duration_ms        BIGINT       NOT NULL,
   max_duration_ms        BIGINT       NOT NULL,
-  PRIMARY KEY (process_definition_key, version, tenant_id, window_start)
+  PRIMARY KEY (dataset_id, process_definition_key, version, tenant_id, window_start)
 );

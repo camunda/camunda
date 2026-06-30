@@ -36,13 +36,10 @@ final class AnalyticsRepositoryTest {
             + " dataset_id BIGINT, viz_type VARCHAR(64), bpmn_process_id VARCHAR(255),"
             + " from_window BIGINT, to_window BIGINT)");
     jdbc.execute(
-        "CREATE TABLE proc_inst_exec_time_window (process_definition_key BIGINT, bpmn_process_id"
-            + " VARCHAR(255), version INT, tenant_id VARCHAR(255), window_start BIGINT,"
-            + " window_size_ms BIGINT, completed_count BIGINT, total_duration_ms BIGINT,"
+        "CREATE TABLE proc_inst_exec_time_window (dataset_id BIGINT, process_definition_key BIGINT,"
+            + " bpmn_process_id VARCHAR(255), version INT, tenant_id VARCHAR(255), window_start"
+            + " BIGINT, window_size_ms BIGINT, completed_count BIGINT, total_duration_ms BIGINT,"
             + " min_duration_ms BIGINT, max_duration_ms BIGINT)");
-    seed(1L, "order", 0L, 3, 1500);
-    seed(1L, "order", 3_600_000L, 1, 800);
-    seed(2L, "invoice", 0L, 1, 3950);
     repository = new AnalyticsRepository(jdbc);
   }
 
@@ -63,14 +60,17 @@ final class AnalyticsRepositoryTest {
 
   @Test
   void shouldRunReportAggregatingPerProcessAndWindow() {
-    // given
+    // given — a dataset with windowed rows tagged to it
     final Dataset dataset = repository.createDataset("Completions", "definition", 3_600_000L);
+    seed(dataset.id(), 1L, "order", 0L, 3, 1500);
+    seed(dataset.id(), 1L, "order", 3_600_000L, 1, 800);
+    seed(dataset.id(), 2L, "invoice", 0L, 1, 3950);
     final Report report = repository.createReport("All", dataset.id(), "table", null, null, null);
 
     // when
     final var rows = repository.runReport(report);
 
-    // then — one row per (process, window), counts summed
+    // then — one row per (process, window), counts summed, scoped to this dataset
     assertThat(rows)
         .extracting(ReportRow::bpmnProcessId, ReportRow::windowStart, ReportRow::completedCount)
         .containsExactlyInAnyOrder(
@@ -86,9 +86,26 @@ final class AnalyticsRepositoryTest {
   }
 
   @Test
+  void shouldScopeReportToItsOwnDataset() {
+    // given — two datasets with rows; a report on the first must not see the second's rows
+    final Dataset a = repository.createDataset("A", "definition", 3_600_000L);
+    final Dataset b = repository.createDataset("B", "definition", 3_600_000L);
+    seed(a.id(), 1L, "order", 0L, 3, 1500);
+    seed(b.id(), 1L, "order", 0L, 99, 9900);
+    final Report report = repository.createReport("A report", a.id(), "table", null, null, null);
+
+    // when / then — only dataset A's rows
+    final var rows = repository.runReport(report);
+    assertThat(rows).singleElement().extracting(ReportRow::completedCount).isEqualTo(3L);
+  }
+
+  @Test
   void shouldApplyProcessFilter() {
     // given
     final Dataset dataset = repository.createDataset("Completions", "definition", 3_600_000L);
+    seed(dataset.id(), 1L, "order", 0L, 3, 1500);
+    seed(dataset.id(), 1L, "order", 3_600_000L, 1, 800);
+    seed(dataset.id(), 2L, "invoice", 0L, 1, 3950);
     final Report report =
         repository.createReport("Order only", dataset.id(), "table", "order", null, null);
 
@@ -101,13 +118,16 @@ final class AnalyticsRepositoryTest {
   }
 
   private void seed(
+      final long datasetId,
       final long defKey,
       final String bpmnProcessId,
       final long windowStart,
       final long count,
       final long totalDuration) {
     jdbc.update(
-        "INSERT INTO proc_inst_exec_time_window VALUES (?, ?, 1, '<default>', ?, 3600000, ?, ?, 0, 0)",
+        "INSERT INTO proc_inst_exec_time_window VALUES (?, ?, ?, 1, '<default>', ?, 3600000, ?, ?,"
+            + " 0, 0)",
+        datasetId,
         defKey,
         bpmnProcessId,
         windowStart,
