@@ -314,8 +314,10 @@ Bound the window with when the test first went red. Name a plausible commit (or 
 change) when you can — it goes in `suspect_commit` and the Slack thread. **If you cannot pin a
 specific commit but Gate A and Gate C clearly hold** (deterministic failure, test still correct, the
 app is visibly misbehaving), still escalate as a product bug with `suspect_commit: "not pinned"` and
-note what you ruled out — do NOT fall back to masking or skipping (both forbidden regardless). Only
-re-examine for a test-side cause if Gate A or Gate C is genuinely in doubt.
+note what you ruled out — i.e. complete the full product-bug escalation (file/reuse the ticket +
+annotated `test.skip(...)` + skip PR). Do NOT instead mask the failure (viewport/timeout/selector
+tweak or a weakened assertion), and do NOT do a bare `test.skip()` without a filed/linked ticket.
+Only re-examine for a test-side cause if Gate A or Gate C is genuinely in doubt.
 
 **Gate C — Confirm the test is still correct.** The assertion must still match intended behavior,
 the selector must target a real element, and the test must not be stale. If the test itself is wrong
