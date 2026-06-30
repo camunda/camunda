@@ -728,6 +728,21 @@ jobs:
           # Decode the base64-encoded dispatches payload from the triage job.
           DISPATCHES_JSON=$(echo "${DISPATCHES_B64}" | base64 -d)
 
+          # Prefetch ALL open product-bug fingerprints in ONE search, then filter
+          # in-memory in the per-spec loop below — avoids one gh search per failing
+          # spec and the associated rate-limit/timeout risk. Each line is "<fp> <url>".
+          # Fail-open: on any error the map is empty and nothing is suppressed (the
+          # fix agent still dedupes at filing time).
+          PB_FP_MAP=$(mktemp)
+          trap 'rm -f "$PB_FP_MAP"' EXIT
+          if [ "${SUPPRESS_PRODUCT_BUGS:-true}" = "true" ]; then
+            gh search issues "nightly-product-bug is:issue" --owner camunda --state open \
+              --limit 200 --json body,url \
+              --jq '.[] | select(.body != null and (.body | test("nightly-product-bug fp=[0-9a-f]{8}"))) | "\(.body | capture("nightly-product-bug fp=(?<f>[0-9a-f]{8})").f) \(.url)"' \
+              2>/dev/null > "$PB_FP_MAP" || true
+            echo "Prefetched $(wc -l < "$PB_FP_MAP" | tr -d ' ') open product-bug fingerprint(s)."
+          fi
+
           while IFS= read -r d; do
             version=$(echo "$d" | jq -r '.version')
             specs=$(echo "$d" | jq -c '.test_specs')
@@ -746,11 +761,12 @@ jobs:
             fi
 
             # Drop tests already tracked by an open product bug (per-test fingerprint,
-            # matching what the fix agent embeds in the issue). Suppression is per-test;
-            # the rest of the version's failures still dispatch. Self-resuming: once the
-            # issue is closed the search misses, so the test is dispatched again (if still
-            # failing). This only gates dispatch on issue state — it never reopens the issue.
-            # Fail-open: any search error keeps the test eligible (agent dedupes at filing).
+            # matching what the fix agent embeds in the issue). Looked up in-memory
+            # against PB_FP_MAP (prefetched once above) — no API call per spec.
+            # Suppression is per-test; the rest of the version's failures still dispatch.
+            # Self-resuming: once the issue is closed it drops out of the prefetched
+            # map, so the test is dispatched again (if still failing). This only gates
+            # dispatch on issue state — it never reopens the issue.
             # Skip this for workflow-level dispatches (specs intentionally empty).
             orig_spec_count=$(echo "$specs" | jq 'length')
             if [ "$orig_spec_count" -gt 0 ] && [ "${SUPPRESS_PRODUCT_BUGS:-true}" = "true" ]; then
@@ -759,8 +775,7 @@ jobs:
                 [ -z "$t" ] && continue
                 tf=$(echo "$t" | jq -r '.file'); tn=$(echo "$t" | jq -r '.test_name')
                 fp=$(printf '%s::%s::%s' "$version" "$tf" "$tn" | sha256sum | cut -c1-8)
-                pb=$(gh search issues "nightly-product-bug fp=${fp} is:issue" --owner camunda --state open \
-                       --limit 1 --json url --jq '.[0].url // ""' 2>/dev/null || echo "")
+                pb=$(awk -v fp="$fp" '$1 == fp {print $2; exit}' "$PB_FP_MAP")
                 if [ -n "$pb" ]; then
                   echo "  suppressed (open product bug ${pb}): ${tf} > ${tn}"
                 else

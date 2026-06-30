@@ -351,7 +351,7 @@ Orchestration-suite failures almost always trace to a module inside this same re
    **Search for an existing issue** (the marker is globally unique):
    ```bash
    gh search issues "nightly-product-bug fp=${FP} is:issue" --owner camunda --state all \
-     --json number,url,state,repository --jq '.[0]'
+     --limit 1 --json number,url,state,repository --jq '.[0]'
    ```
    - Open issue exists → reuse it (comment with this nightly run); do NOT file a new one.
    - Closed issue for the same FP → reopen (`gh issue reopen`) and comment, then reuse its URL.
