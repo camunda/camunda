@@ -24,26 +24,30 @@ const AsyncActionButton: React.FC<Props> = ({children, inlineLoadingProps, butto
 	const {onSuccess, ...restInlineLoadingProps} = inlineLoadingProps ?? {};
 
 	useEffect(() => {
-		let timeoutId: ReturnType<typeof setTimeout>;
+		let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
 		if (onError !== undefined && status === 'error') {
 			timeoutId = setTimeout(onError, 500);
 		}
 
 		return () => {
-			clearTimeout(timeoutId);
+			if (timeoutId !== undefined) {
+				clearTimeout(timeoutId);
+			}
 		};
 	}, [onError, status]);
 
 	useEffect(() => {
-		let timeoutId: ReturnType<typeof setTimeout>;
+		let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
 		if (onSuccess !== undefined && status === 'finished') {
 			timeoutId = setTimeout(onSuccess, 500);
 		}
 
 		return () => {
-			clearTimeout(timeoutId);
+			if (timeoutId !== undefined) {
+				clearTimeout(timeoutId);
+			}
 		};
 	}, [onSuccess, status]);
 
