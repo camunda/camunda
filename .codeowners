@@ -212,6 +212,9 @@ mwnw*                       @camunda/monorepo-devops-team
 # Engine-expert skill
 /.claude/skills/engine-expert/ @korthout @camunda/core-features
 
+# Analytics exporter skill
+/.claude/skills/analytics-exporter/ @camunda/core-features
+
 # Frontend skills
 /.claude/skills/frontend-feature/          @camunda/core-features
 /.claude/skills/frontend-integration-test/ @camunda/core-features
