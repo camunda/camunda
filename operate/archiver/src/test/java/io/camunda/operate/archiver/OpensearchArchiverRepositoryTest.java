@@ -245,6 +245,43 @@ public class OpensearchArchiverRepositoryTest {
   }
 
   @Test
+  void shouldDisallowPartialSearchResultsWhenGettingArchiveDocIdsBatch() {
+    // given
+    final SearchResponse<Object> searchResponse = mock(SearchResponse.class);
+    final var hitsMetadata = mock(org.opensearch.client.opensearch.core.search.HitsMetadata.class);
+    when(searchResponse.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.hits()).thenReturn(List.of());
+
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+
+    try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      mockedTimer.when(Timer::start).thenReturn(timerSample);
+
+      try (final MockedStatic<OpensearchUtil> mockedStatic = mockStatic(OpensearchUtil.class)) {
+        mockedStatic
+            .when(() -> OpensearchUtil.searchAsync(captor.capture(), any(), any()))
+            .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+        // when
+        underTest
+            .getArchiveDocIdsBatch(
+                "source-index",
+                Map.of("key", List.of("1")),
+                Map.of(),
+                Map.of(),
+                10,
+                List.of(),
+                Runnable::run)
+            .join();
+      }
+    }
+
+    // then
+    assertThat(captor.getValue().allowPartialSearchResults()).isFalse();
+  }
+
+  @Test
   public void testGetBatchOperationsNextBatch() {
     setBatchOperationMocks();
     try (final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class)) {

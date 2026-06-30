@@ -43,6 +43,7 @@ import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperati
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.OpensearchUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -393,15 +394,15 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     return reindexFuture.thenApply(ok -> null);
   }
 
-  private CompletableFuture<ArchiveByIdTaskSupplier.ArchiveDocIdsBatch<String>>
-      getArchiveDocIdsBatch(
-          final String sourceIndexName,
-          final Map<String, List<Object>> keysByField,
-          final Map<String, String> inclusionFilters,
-          final Map<String, String> exclusionFilters,
-          final int batchSize,
-          final List<String> searchAfter,
-          final Executor executor) {
+  @VisibleForTesting
+  CompletableFuture<ArchiveByIdTaskSupplier.ArchiveDocIdsBatch<String>> getArchiveDocIdsBatch(
+      final String sourceIndexName,
+      final Map<String, List<Object>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final int batchSize,
+      final List<String> searchAfter,
+      final Executor executor) {
     final List<Query> filterClauses = new ArrayList<>();
     keysByField.forEach(
         (field, vals) ->
@@ -421,6 +422,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
             .sort(sortOptions("id", Asc))
             .size(batchSize)
             .source(SourceConfig.of(s -> s.fetch(false)))
+            .allowPartialSearchResults(false)
             .requestCache(false);
 
     if (!searchAfter.isEmpty()) {
