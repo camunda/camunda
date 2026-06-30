@@ -106,6 +106,7 @@ final class AdminApiRequestHandlerTest {
         @Mock final ClusterConfigurationService clusterConfigurationService) {
       handler =
           new AdminApiRequestHandler(
+              null,
               transport,
               adminAccess,
               raftPartition,
@@ -154,6 +155,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
+              null,
               transport,
               adminAccess,
               raftPartition,
@@ -235,6 +237,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
+              null,
               transport,
               adminAccess,
               raftPartition,
@@ -316,6 +319,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
+              null,
               transport,
               adminAccess,
               raftPartition,
@@ -397,7 +401,7 @@ final class AdminApiRequestHandlerTest {
       final BrokerMemberId memberId = BrokerMemberId.from(1);
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, memberId);
+              null, transport, adminAccess, raftPartition, clusterConfigurationService, memberId);
     }
 
     @BeforeEach

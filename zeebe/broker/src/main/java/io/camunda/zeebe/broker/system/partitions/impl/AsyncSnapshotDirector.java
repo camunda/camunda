@@ -31,7 +31,6 @@ import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -59,12 +58,10 @@ public final class AsyncSnapshotDirector extends Actor
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
-  private final String actorName;
   private final StreamProcessorMode streamProcessorMode;
   private final Callable<CompletableFuture<Void>> flushLog;
   private final StatePositionSupplier positionSupplier;
   private final Set<FailureListener> listeners = new HashSet<>();
-  private final PartitionId partitionId;
   private final TreeMap<Long, ActorFuture<Void>> commitAwaiters = new TreeMap<>();
   private CompletableActorFuture<PersistedSnapshot> ongoingSnapshotFuture;
 
@@ -81,12 +78,11 @@ public final class AsyncSnapshotDirector extends Actor
       final StreamProcessorMode streamProcessorMode,
       final Callable<CompletableFuture<Void>> flushLog,
       final StatePositionSupplier positionSupplier) {
+    super("SnapshotDirector", partitionId);
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
-    this.partitionId = partitionId;
-    actorName = actorName(partitionId.number());
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
     this.positionSupplier = positionSupplier;
@@ -125,18 +121,6 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    putPartitionContext(context, partitionId);
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
-  }
-
-  @Override
   protected void onActorStarting() {
     final var firstSnapshotTime =
         RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
@@ -155,18 +139,13 @@ public final class AsyncSnapshotDirector extends Actor
   @Override
   protected void handleFailure(final Throwable failure) {
     LOG.error(
-        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}.",
-        actorName,
+        "No snapshot was taken. Will try to take snapshot after snapshot period {}.",
         snapshotRate,
         failure);
 
     resetStateOnFailure(failure);
     healthReport = HealthReport.unhealthy(this).withIssue(failure, Instant.now());
     notifyAllListeners();
-  }
-
-  public static String actorName(final int partitionId) {
-    return buildActorName("SnapshotDirector", partitionId);
   }
 
   private void notifyAllListeners() {
@@ -194,7 +173,7 @@ public final class AsyncSnapshotDirector extends Actor
 
   @Override
   public String componentName() {
-    return actorName;
+    return getName();
   }
 
   @Override

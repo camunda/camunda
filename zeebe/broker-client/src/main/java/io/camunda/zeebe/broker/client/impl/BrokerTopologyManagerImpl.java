@@ -57,6 +57,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   public BrokerTopologyManagerImpl(
       final Supplier<Set<Member>> membersSupplier,
       final BrokerClientTopologyMetrics topologyMetrics) {
+    super("GatewayTopologyManager");
     this.membersSupplier = membersSupplier;
     this.topologyMetrics = topologyMetrics;
   }
@@ -180,11 +181,6 @@ public final class BrokerTopologyManagerImpl extends Actor
         .findFirst()
         .map(BrokerClientTopologyImpl::configuredClusterState)
         .orElse(BrokerClientTopologyImpl.uninitialized().configuredClusterState());
-  }
-
-  @Override
-  public String getName() {
-    return "GatewayTopologyManager";
   }
 
   @Override

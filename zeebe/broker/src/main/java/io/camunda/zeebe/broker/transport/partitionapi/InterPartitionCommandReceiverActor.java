@@ -18,7 +18,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 
 /**
@@ -30,9 +29,7 @@ import org.slf4j.Logger;
 public final class InterPartitionCommandReceiverActor extends Actor
     implements DiskSpaceUsageListener, CheckpointListener {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-  private final String actorName;
   private final ClusterCommunicationService communicationService;
-  private final PartitionId partitionId;
   private final InterPartitionCommandReceiverImpl receiver;
   private final List<String> receivingSubjects;
 
@@ -41,23 +38,10 @@ public final class InterPartitionCommandReceiverActor extends Actor
       final ClusterCommunicationService communicationService,
       final LogStreamWriter logStreamWriter,
       final List<String> receivingSubjects) {
-    this.partitionId = partitionId;
+    super("InterPartitionCommandReceiverActor", partitionId);
     this.communicationService = communicationService;
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
-    actorName = buildActorName(getClass().getSimpleName(), partitionId.number());
     this.receivingSubjects = receivingSubjects;
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    putPartitionContext(context, partitionId);
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override

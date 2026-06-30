@@ -42,7 +42,7 @@ public class SnapshotApiRequestHandler
 
   public SnapshotApiRequestHandler(
       final ServerTransport serverTransport, final BrokerClient brokerClient) {
-    super(SnapshotApiRequestReader::new, SnapshotApiResponseWriter::new);
+    super("SnapshotApi", null, SnapshotApiRequestReader::new, SnapshotApiResponseWriter::new);
     this.serverTransport = serverTransport;
     this.brokerClient = brokerClient;
   }

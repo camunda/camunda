@@ -142,7 +142,6 @@ public final class ExporterRule implements TestRule {
             .partitionId(
                 new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID))
             .id(EXPORTER_PROCESSOR_ID)
-            .name(PROCESSOR_NAME)
             .logStream(stream)
             .clock(StreamClock.system())
             .zeebeDb(capturedZeebeDb)

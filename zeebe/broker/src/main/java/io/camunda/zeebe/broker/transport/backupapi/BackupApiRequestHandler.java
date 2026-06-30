@@ -71,7 +71,7 @@ public final class BackupApiRequestHandler
       final DbBackupRangeState backupRangeState,
       final PartitionId partition,
       final boolean backupFeatureEnabled) {
-    super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
+    super("BackupApi", partition, BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.logStreamWriter = logStreamWriter;
     this.transport = transport;
     this.backupManager = backupManager;

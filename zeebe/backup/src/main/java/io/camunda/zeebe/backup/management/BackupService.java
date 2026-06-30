@@ -30,7 +30,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.SequencedCollection;
 import org.slf4j.Logger;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 /** Backup manager that takes and manages backup asynchronously */
 public final class BackupService extends Actor implements BackupManager {
   private static final Logger LOG = LoggerFactory.getLogger(BackupService.class);
-  private final String actorName;
   private final JournalInfoProvider journalInfoProvider;
   private final BrokerMemberId brokerMemberId;
   private final PartitionId partitionId;
@@ -59,6 +57,7 @@ public final class BackupService extends Actor implements BackupManager {
       final LogStreamWriter logStreamWriter,
       final DbBackupRangeState backupRangeState,
       final DbCheckpointMetadataState checkpointMetadataState) {
+    super("BackupService", partitionId);
     this.brokerMemberId = brokerMemberId;
     this.partitionId = partitionId;
     this.snapshotStore = snapshotStore;
@@ -72,20 +71,7 @@ public final class BackupService extends Actor implements BackupManager {
             checkpointMetadataState,
             partitionId.number(),
             partitionRegistry);
-    actorName = buildActorName("BackupService", partitionId.number());
     journalInfoProvider = raftMetadataProvider;
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    putPartitionContext(context, partitionId);
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override

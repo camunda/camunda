@@ -95,7 +95,7 @@ final class ApiRequestHandlerTest {
     TestApiRequestHandler(
         final Supplier<RequestReader> requestReaderSupplier,
         final Supplier<ResponseWriter> responseWriterSupplier) {
-      super(requestReaderSupplier, responseWriterSupplier);
+      super("TestApi", null, requestReaderSupplier, responseWriterSupplier);
     }
 
     @Override

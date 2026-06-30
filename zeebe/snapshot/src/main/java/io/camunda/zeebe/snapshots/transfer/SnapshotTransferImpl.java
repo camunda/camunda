@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.transfer;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -34,9 +35,11 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
   private final ConcurrentHashMap<UUID, CloseableSilently> timers = new ConcurrentHashMap<>();
 
   public SnapshotTransferImpl(
+      final PartitionId partitionId,
       final Function<ConcurrencyControl, SnapshotTransferService> service,
       final SnapshotMetrics snapshotMetrics,
       final ReceivableSnapshotStore snapshotStore) {
+    super("SnapshotTransfer", partitionId);
     this.snapshotMetrics = snapshotMetrics;
     this.snapshotStore = snapshotStore;
     this.service = service.apply(this);

@@ -12,34 +12,18 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
-import java.util.Map;
 
 final class AsyncProcessingScheduleServiceActor extends Actor {
 
   private final ProcessingScheduleServiceImpl scheduleService;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
-  private final String asyncScheduleActorName;
-  private final PartitionId partitionId;
 
   public AsyncProcessingScheduleServiceActor(
       final String name,
       final ProcessingScheduleServiceFactory scheduleServiceFactory,
       final PartitionId partitionId) {
+    super(name, partitionId);
     scheduleService = scheduleServiceFactory.create();
-    asyncScheduleActorName = buildActorName(name, partitionId.number());
-    this.partitionId = partitionId;
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    putPartitionContext(context, partitionId);
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return asyncScheduleActorName;
   }
 
   @Override

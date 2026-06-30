@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
@@ -25,7 +26,10 @@ public final class InterPartitionCommandSenderService extends Actor
   final InterPartitionCommandSenderImpl commandSender;
 
   public InterPartitionCommandSenderService(
-      final ClusterCommunicationService communicationService, final String sendingSubjectPrefix) {
+      final PartitionId partitionId,
+      final ClusterCommunicationService communicationService,
+      final String sendingSubjectPrefix) {
+    super("InterPartitionCommandSenderService", partitionId);
     commandSender = new InterPartitionCommandSenderImpl(communicationService, sendingSubjectPrefix);
   }
 

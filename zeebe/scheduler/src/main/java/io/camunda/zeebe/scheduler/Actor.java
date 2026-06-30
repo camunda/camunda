@@ -12,9 +12,9 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Loggers;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -34,42 +34,81 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
-  private Map<String, String> context;
+  private final Map<String, String> context;
+  private final String name;
 
   /**
-   * Should be overwritten by sub classes to add more context where the actor is run.
+   * Creates a new actor with name and context derived from the given parameters.
    *
-   * @return the context of the actor
+   * @param name A name for the actor. If {@code null}, the name of the class will be used.
+   * @param partitionId The partition the actor belongs to. Unless this is {@code null}, the actor
+   *     name will end with the partition number and the context will contain the partition group
+   *     and number.
+   * @param additionalContext Any additional context to be included in the actor's context besides
+   *     the automatically added {@link #ACTOR_PROP_NAME}, {@link #ACTOR_PROP_PARTITION_ID} and
+   *     {@link #ACTOR_PROP_PHYSICAL_TENANT}.
    */
-  protected Map<String, String> createContext() {
-    // return an modifiable map in order to simplify sub class implementation
-    final var baseContext = new HashMap<String, String>();
-    baseContext.put(ACTOR_PROP_NAME, getName());
-    return baseContext;
+  protected Actor(
+      @Nullable final String name,
+      @Nullable final PartitionId partitionId,
+      @Nullable final Map<String, String> additionalContext) {
+    final var actorName = Objects.requireNonNullElse(name, getClass().getSimpleName());
+    this.name = partitionId != null ? buildActorName(actorName, partitionId.number()) : actorName;
+    context = buildContext(this.name, partitionId, additionalContext);
   }
 
-  public String getName() {
-    return getClass().getSimpleName();
+  /** Creates an actor, named by its class, without a partition or additional context. */
+  protected Actor() {
+    this(null, null, null);
   }
 
   /**
-   * Adds the partition id and partition group (physical tenant) of the given partition to the actor
-   * context map so that both show up in the MDC of every log line emitted by this actor.
+   * Creates an actor with the provided name, without a partition or additional context.
+   *
+   * @param name A name for the actor. If {@code null}, the name of the class will be used.
    */
-  protected static void putPartitionContext(
-      final Map<String, String> context, final PartitionId partitionId) {
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId.number()));
-    context.put(ACTOR_PROP_PHYSICAL_TENANT, partitionId.group());
+  protected Actor(final String name) {
+    this(name, null, null);
   }
 
   /**
-   * @return a map which defines the context where the actor is run. Per default it just returns a
-   *     map with the actor name. Ideally sub classes add more context, like the partition id etc.
+   * Creates a new actor with name and context derived from the given parameters.
+   *
+   * @param name A name for the actor. If {@code null}, the name of the class will be used.
+   * @param partitionId The partition the actor belongs to. Unless this is {@code null}, the actor
+   *     name will end with the partition number and the context will contain the partition group
+   *     and number.
+   */
+  protected Actor(final String name, final PartitionId partitionId) {
+    this(name, partitionId, null);
+  }
+
+  private static Map<String, String> buildContext(
+      final String name,
+      final PartitionId partitionId,
+      final Map<String, String> additionalContext) {
+    final var context =
+        new HashMap<String, String>(
+            3); // most actors have a name and associated partition but no additional context
+    context.put(ACTOR_PROP_NAME, name);
+    if (partitionId != null) {
+      context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId.number()));
+      context.put(ACTOR_PROP_PHYSICAL_TENANT, partitionId.group());
+    }
+    if (additionalContext != null) {
+      context.putAll(additionalContext);
+    }
+    return context;
+  }
+
+  public final String getName() {
+    return name;
+  }
+
+  /**
+   * @return a map that defines the context where the actor is run, as provided to the constructor.
    */
   public Map<String, String> getContext() {
-    if (context == null) {
-      context = Collections.unmodifiableMap(createContext());
-    }
     return context;
   }
 
@@ -98,11 +137,7 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   }
 
   public static Actor wrap(final Consumer<ActorControl> r) {
-    return new Actor() {
-      @Override
-      public String getName() {
-        return r.toString();
-      }
+    return new Actor(r.toString()) {
 
       @Override
       protected void onActorStarted() {

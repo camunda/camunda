@@ -36,8 +36,6 @@ public final class FileBasedSnapshotStore extends Actor
         RestorableSnapshotStore,
         BootstrapSnapshotStore {
 
-  private final String actorName;
-  private final PartitionId partitionId;
   private final FileBasedSnapshotStoreImpl snapshotStore;
 
   public FileBasedSnapshotStore(
@@ -46,8 +44,7 @@ public final class FileBasedSnapshotStore extends Actor
       final Path root,
       final CRC32CChecksumProvider checksumProvider,
       final MeterRegistry meterRegistry) {
-    actorName = buildActorName("SnapshotStore", partitionId.number());
-    this.partitionId = partitionId;
+    super("SnapshotStore", partitionId);
     snapshotStore =
         new FileBasedSnapshotStoreImpl(
             brokerId, root, checksumProvider, actor, new SnapshotMetrics(meterRegistry));
@@ -69,18 +66,6 @@ public final class FileBasedSnapshotStore extends Actor
         root,
         checksumProvider,
         meterRegistry);
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    putPartitionContext(context, partitionId);
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override
@@ -194,11 +179,9 @@ public final class FileBasedSnapshotStore extends Actor
   @Override
   public String toString() {
     return "FileBasedSnapshotStore{"
-        + "actorName='"
-        + actorName
+        + "actor='"
+        + getName()
         + '\''
-        + ", partitionId="
-        + partitionId
         + ", snapshotStore="
         + snapshotStore
         + '}';

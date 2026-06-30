@@ -46,16 +46,12 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
       final MessagingService messagingService,
       final IdGenerator requestIdGenerator,
       final boolean receiveOnLegacySubject) {
+    super("ServerTransport");
     this.messagingService = messagingService;
     this.requestIdGenerator = requestIdGenerator;
     this.receiveOnLegacySubject = receiveOnLegacySubject;
     pendingRequests = new Long2ObjectHashMap<>();
     subscribedTopics = new HashMap<>();
-  }
-
-  @Override
-  public String getName() {
-    return "ServerTransport";
   }
 
   @Override

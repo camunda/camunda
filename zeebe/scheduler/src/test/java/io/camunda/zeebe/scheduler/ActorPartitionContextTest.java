@@ -32,17 +32,9 @@ final class ActorPartitionContextTest {
   }
 
   private static final class PartitionScopedActor extends Actor {
-    private final PartitionId partitionId;
 
     private PartitionScopedActor(final PartitionId partitionId) {
-      this.partitionId = partitionId;
-    }
-
-    @Override
-    protected Map<String, String> createContext() {
-      final var context = super.createContext();
-      putPartitionContext(context, partitionId);
-      return context;
+      super("PartitionScopedActor", partitionId);
     }
   }
 }

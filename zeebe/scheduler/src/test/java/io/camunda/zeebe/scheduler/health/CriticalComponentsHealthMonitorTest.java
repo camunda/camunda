@@ -48,11 +48,7 @@ public class CriticalComponentsHealthMonitorTest {
   public void setup() {
     graphListener = mock();
     final Actor testActor =
-        new Actor() {
-          @Override
-          public String getName() {
-            return "test-actor";
-          }
+        new Actor("test-actor") {
 
           @Override
           protected void onActorStarting() {

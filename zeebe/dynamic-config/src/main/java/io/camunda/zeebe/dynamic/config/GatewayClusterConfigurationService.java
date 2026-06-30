@@ -70,11 +70,6 @@ public class GatewayClusterConfigurationService extends Actor
   }
 
   @Override
-  public String getName() {
-    return "GatewayClusterConfigurationService";
-  }
-
-  @Override
   protected void onActorStarting() {
     LOG.info("Starting Cluster Configuration Manager");
     clusterConfigurationGossiper.start().onComplete(startedFuture);

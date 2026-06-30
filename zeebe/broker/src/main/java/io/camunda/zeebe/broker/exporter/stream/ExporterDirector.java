@@ -75,7 +75,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
-  private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
   private LogStreamReader logStreamReader;
@@ -115,7 +114,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final ExporterDirectorContext context,
       final ExporterPhase exporterPhase,
       final Function<RecordExporter, RecordExporter> recorderExporter) {
-    name = context.getName();
+    super("Exporter", context.getPartitionId());
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = context.getPartitionId();
     clusterId = context.getClusterId();
@@ -386,19 +385,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    context.put(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId);
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
   protected void onActorStarting() {
     if (exporterMode == ExporterMode.ACTIVE) {
       logStreamReader = logStream.newLogStreamReader();
@@ -461,7 +447,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   protected void handleFailure(final Throwable failure) {
     LOG.error(
         "Actor '{}' failed in phase {} with: {} .",
-        name,
+        getName(),
         actor.getLifecyclePhase(),
         failure,
         failure);
@@ -809,7 +795,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   @Override
   public String componentName() {
-    return name;
+    return getName();
   }
 
   @Override

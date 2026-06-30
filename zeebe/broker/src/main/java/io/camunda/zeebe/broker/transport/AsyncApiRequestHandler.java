@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
@@ -39,7 +40,11 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
       ErrorResponseWriter::new;
 
   protected AsyncApiRequestHandler(
-      final Supplier<R> requestReaderSupplier, final Supplier<W> responseWriterSupplier) {
+      final String name,
+      final PartitionId partitionId,
+      final Supplier<R> requestReaderSupplier,
+      final Supplier<W> responseWriterSupplier) {
+    super(name, partitionId);
     this.requestReaderSupplier = requestReaderSupplier;
     this.responseWriterSupplier = responseWriterSupplier;
   }

@@ -37,7 +37,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -99,7 +98,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final ZeebeDb zeebeDb;
   // processing
   private final StreamProcessorContext streamProcessorContext;
-  private final String actorName;
   private LogStreamReader logStreamReader;
   private ProcessingStateMachine processingStateMachine;
   private ReplayStateMachine replayStateMachine;
@@ -115,6 +113,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingScheduleServiceImpl processorActorService;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
+    super("StreamProcessor", processorBuilder.getProcessingContext().partitionId());
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = new ArrayList<>(processorBuilder.getLifecycleListeners());
     zeebeDb = processorBuilder.getZeebeDb();
@@ -128,7 +127,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             .abortCondition(this::isClosed);
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
-    actorName = buildActorName("StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(streamProcessorContext.getMeterRegistry());
     metrics.initializeProcessorPhase(streamProcessorContext.getStreamProcessorPhase());
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
@@ -136,18 +134,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public static StreamProcessorBuilder builder() {
     return new StreamProcessorBuilder();
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    putPartitionContext(context, streamProcessorContext.partitionId());
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override
@@ -388,7 +374,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onFailure(final Throwable throwable) {
-    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
+    LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
 
     asyncScheduleServiceContext
         .closeActors(actor)
@@ -463,7 +449,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public String componentName() {
-    return actorName;
+    return getName();
   }
 
   @Override

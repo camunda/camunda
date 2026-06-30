@@ -44,10 +44,6 @@ public final class ExporterDirectorContext {
     return id;
   }
 
-  public String getName() {
-    return name;
-  }
-
   public LogStream getLogStream() {
     return logStream;
   }
@@ -102,11 +98,6 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext id(final int id) {
     this.id = id;
-    return this;
-  }
-
-  public ExporterDirectorContext name(final String name) {
-    this.name = name;
     return this;
   }
 

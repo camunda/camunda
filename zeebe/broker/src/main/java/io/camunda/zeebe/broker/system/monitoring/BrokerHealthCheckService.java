@@ -116,6 +116,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
       final MemberId nodeId,
       final HealthTreeMetrics healthGraphMetrics,
       final Set<String> expectedPhysicalTenants) {
+    super("HealthCheckService");
     this.expectedPhysicalTenants = Set.copyOf(expectedPhysicalTenants);
     healthMonitor =
         new CriticalComponentsHealthMonitor(
@@ -198,11 +199,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
       readyLogged = true;
       LOG.info("All partitions are installed. Broker is ready!");
     }
-  }
-
-  @Override
-  public String getName() {
-    return "HealthCheckService";
   }
 
   @Override

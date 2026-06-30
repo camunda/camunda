@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.queryapi;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
@@ -41,17 +42,10 @@ public final class QueryApiRequestHandler
 
   private @Nullable QueryService queryService;
   private final QueryApiCfg config;
-  private final String actorName;
 
-  public QueryApiRequestHandler(final QueryApiCfg config) {
-    super(QueryRequestReader::new, QueryResponseWriter::new);
+  public QueryApiRequestHandler(final PartitionId partitionId, final QueryApiCfg config) {
+    super("QueryApi", partitionId, QueryRequestReader::new, QueryResponseWriter::new);
     this.config = config;
-    actorName = "QueryApi";
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override

@@ -112,7 +112,7 @@ final class ClusterConfigurationGossiperTest {
         final AtomixCluster atomixCluster,
         final ClusterConfigurationGossiperConfig config,
         final TopologyMetrics topologyMetrics) {
-
+      super("Node-" + atomixCluster.getMembershipService().getLocalMember().id());
       gossiper =
           new ClusterConfigurationGossiper(
               this,
@@ -123,11 +123,6 @@ final class ClusterConfigurationGossiperTest {
               this::mergeTopology,
               topologyMetrics);
       this.atomixCluster = atomixCluster;
-    }
-
-    @Override
-    public String getName() {
-      return "Node-" + id();
     }
 
     @Override
