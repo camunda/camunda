@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Host-side wiring for persistent web sessions. The session lifecycle beans (repository, mapper,
@@ -68,6 +70,16 @@ public class WebSessionRepositoryConfiguration {
   @Bean
   public WebSessionAttributeConverter webSessionAttributeConverter() {
     return new MigratingWebSessionAttributeConverter();
+  }
+
+  @Bean
+  public WebMvcConfigurer sessionMaterializationInterceptorConfigurer() {
+    return new WebMvcConfigurer() {
+      @Override
+      public void addInterceptors(final InterceptorRegistry registry) {
+        registry.addInterceptor(new SessionCamundaAuthenticationMaterializationInterceptor());
+      }
+    };
   }
 
   @Bean
