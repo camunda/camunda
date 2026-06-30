@@ -30,6 +30,9 @@ class OperateDecisionsPage {
   readonly filterRegion: Locator;
   readonly clearSelectedItemButton: Locator;
   readonly moreFiltersButton: Locator;
+  readonly evaluatedCheckbox: Locator;
+  readonly failedCheckbox: Locator;
+  readonly decisionInstancesList: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -53,6 +56,9 @@ class OperateDecisionsPage {
       name: 'Clear selected item',
     });
     this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
+    this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
+    this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
+    this.decisionInstancesList = page.getByTestId('data-list');
   }
 
   async clickViewDecisionInstanceLink(
@@ -117,6 +123,20 @@ class OperateDecisionsPage {
 
   async clearComboBox(): Promise<void> {
     await this.clearSelectedItemButton.click();
+  }
+
+  async clickEvaluatedCheckbox(): Promise<void> {
+    await this.filterRegion
+      .locator('label')
+      .filter({hasText: 'Evaluated'})
+      .click();
+  }
+
+  async clickFailedCheckbox(): Promise<void> {
+    await this.filterRegion
+      .locator('label')
+      .filter({hasText: 'Failed'})
+      .click();
   }
 
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
