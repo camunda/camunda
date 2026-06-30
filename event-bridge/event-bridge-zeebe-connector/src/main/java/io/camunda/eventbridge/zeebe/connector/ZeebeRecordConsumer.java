@@ -9,8 +9,10 @@ package io.camunda.eventbridge.zeebe.connector;
 
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.client.TopicPartition;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -56,6 +58,14 @@ public final class ZeebeRecordConsumer implements AutoCloseable {
                     event.position(),
                     codec.deserialize(event.payload(), event.partitionId(), event.position())))
         .toList();
+  }
+
+  /**
+   * Resumes each given (topic, partition) from a caller-checkpointed position rather than the
+   * committed offset or reset policy. Pass the position after the last durably processed record.
+   */
+  public void seek(final Map<TopicPartition, Long> startPositions) {
+    consumer.seek(startPositions);
   }
 
   /** Commits progress up to and including the given record. */

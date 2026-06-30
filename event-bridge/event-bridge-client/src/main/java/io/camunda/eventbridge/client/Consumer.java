@@ -71,6 +71,13 @@ public final class Consumer {
    */
   private final ConcurrentHashMap<TopicPartition, Long> nextPositions = new ConcurrentHashMap<>();
 
+  /**
+   * Caller-requested start positions (see {@link #seek}). Consulted when a partition is assigned, so
+   * the consumer resumes from a position the caller has durably checkpointed rather than from the
+   * coordinator's committed offset or the reset policy.
+   */
+  private final ConcurrentHashMap<TopicPartition, Long> startPositions = new ConcurrentHashMap<>();
+
   private volatile ScheduledFuture<?> scheduledHeartbeat;
 
   /** Primary constructor. Consumer starts with no owned partitions and {@code currentEpoch = 0}. */
@@ -235,6 +242,25 @@ public final class Consumer {
 
   // -------------------------------------------------------------------------
   // Public API
+
+  /**
+   * Requests that the next fetch for each given (topic, partition) start at the supplied position,
+   * resuming from a caller-checkpointed offset rather than the coordinator's committed offset or the
+   * reset policy. Pass the position <em>after</em> the last record the caller durably processed
+   * (i.e. {@code lastProcessed + 1}).
+   *
+   * <p>Safe to call before or after the partition is assigned: it takes effect immediately for
+   * already-owned partitions and is remembered for partitions assigned later. A later
+   * coordinator-committed offset never rewinds it (positions only advance via {@code max}), so a
+   * caller whose durable checkpoint is ahead of the committed offset resumes from the checkpoint.
+   */
+  public void seek(final Map<TopicPartition, Long> positions) {
+    positions.forEach(
+        (tp, position) -> {
+          startPositions.put(tp, position);
+          nextPositions.merge(tp, position, Math::max);
+        });
+  }
 
   /**
    * Re-registers this consumer with the coordinator after it has been fenced or the coordinator
@@ -611,9 +637,10 @@ public final class Consumer {
     Collections.sort(sorted);
     nextPositions.keySet().retainAll(sorted);
     for (final var tp : sorted) {
-      // Newly assigned: start unresolved. A committed offset (seedCommittedOffsets) or the reset
-      // policy (resolved on first poll) determines where this partition actually starts.
-      nextPositions.putIfAbsent(tp, UNSET_POSITION);
+      // Newly assigned: prefer a caller-requested start (seek), else start unresolved. A committed
+      // offset (seedCommittedOffsets) or the reset policy (resolved on first poll) then determines
+      // where an unresolved partition actually starts.
+      nextPositions.putIfAbsent(tp, startPositions.getOrDefault(tp, UNSET_POSITION));
     }
     ownedPartitions = Collections.unmodifiableList(sorted);
   }
