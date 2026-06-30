@@ -18,7 +18,8 @@ public record ProcessDefinitionDbModel(
     String versionTag,
     int version,
     String bpmnXml,
-    String formId) {
+    String formId,
+    boolean isDeleted) {
 
   public static class ProcessDefinitionDbModelBuilder
       implements ObjectBuilder<ProcessDefinitionDbModel> {
@@ -32,6 +33,7 @@ public record ProcessDefinitionDbModel(
     private String versionTag;
     private int version;
     private String formId;
+    private boolean isDeleted;
 
     // Public constructor to initialize the builder
     public ProcessDefinitionDbModelBuilder() {}
@@ -82,6 +84,11 @@ public record ProcessDefinitionDbModel(
       return this;
     }
 
+    public ProcessDefinitionDbModelBuilder isDeleted(final boolean isDeleted) {
+      this.isDeleted = isDeleted;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public ProcessDefinitionDbModel build() {
@@ -94,7 +101,8 @@ public record ProcessDefinitionDbModel(
           versionTag,
           version,
           bpmnXml,
-          formId);
+          formId,
+          isDeleted);
     }
   }
 }
