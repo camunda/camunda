@@ -78,9 +78,9 @@ wait_for_pods() {
     echo "$pods"
     echo "::endgroup::"
 
-    out_of_cpu_pods="$(echo "$pods" | grep OutOfCpu | awk '{print $1}')"
+    out_of_cpu_pods="$(echo "$pods" | grep -iw outofcpu | awk '{print $1}')"
     if [[ -n "$out_of_cpu_pods" ]]; then
-        echo "Detected pods with OutOfCpu status, will delete them..."
+        echo "Detected pods with 'out of CPU' status, will delete them..."
         # Mitigation: sometimes, many pods are scheduled on the same node and the
         # kubelet fails to start them with a "OutOfCpu" error.
         # Although it looks like a Kubernetes bug, these pods stay and are being
