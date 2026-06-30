@@ -102,6 +102,12 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
+  public ProcessDefinitionFilter isDeleted(final boolean isDeleted) {
+    filter.setIsDeleted(isDeleted);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessDefinitionFilter getSearchRequestProperty() {
     return filter;
   }
