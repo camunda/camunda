@@ -8,17 +8,18 @@
 package io.camunda.eventbridge.analytics;
 
 import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.aggregate.MaterializedRollup;
 import io.camunda.analytics.streaming.aggregate.Rollup;
+import io.camunda.analytics.streaming.aggregate.SourceCoordinate;
 import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
-import io.camunda.analytics.streaming.dsl.Aggregation;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
 import io.camunda.eventbridge.analytics.element.ElementKey;
-import io.camunda.eventbridge.analytics.element.JdbcElementHeatmapStore;
+import io.camunda.eventbridge.analytics.element.JdbcElementHeatmapSink;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 import io.camunda.eventbridge.analytics.metric.ExecutionTimeAggregateFunction;
-import io.camunda.eventbridge.analytics.metric.JdbcRegionExecutionTimeStore;
+import io.camunda.eventbridge.analytics.metric.JdbcRegionExecutionTimeSink;
 import io.camunda.eventbridge.analytics.metric.RegionKey;
 import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
@@ -47,6 +48,7 @@ public final class StandaloneAnalyticsPipeline {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneAnalyticsPipeline.class);
   private static final long WINDOW_SIZE_MS = 3_600_000L; // hourly
+  private static final long ALLOWED_LATENESS_MS = 60_000L; // grace before a window finalizes
   private static final long REGION_DATASET_ID = 1L; // the webapp's auto-created dataset
   private static final String NO_REGION = "<none>";
 
@@ -76,42 +78,73 @@ public final class StandaloneAnalyticsPipeline {
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
 
-    // metric 1 — process-instance execution time by region
-    final JdbcRegionExecutionTimeStore regionStore =
-        new JdbcRegionExecutionTimeStore(dataSource, REGION_DATASET_ID, WINDOW_SIZE_MS);
-    regionStore.initSchema();
-    final Rollup<ProcessInstanceExecutionTimeFact> regionRollup =
-        Aggregation.<ProcessInstanceExecutionTimeFact, RegionKey>groupBy(
-                fact ->
-                    new RegionKey(
-                        fact.variables().getOrDefault("region", NO_REGION),
-                        fact.bpmnProcessId(),
-                        fact.processDefinitionKey(),
-                        fact.version(),
-                        fact.tenantId()))
-            .windowedBy(
-                TumblingWindows.of(WINDOW_SIZE_MS), ProcessInstanceExecutionTimeFact::endTime)
-            .aggregate(
-                new ExecutionTimeAggregateFunction<>(ProcessInstanceExecutionTimeFact::durationMs))
-            .into(regionStore);
+    // metric 1 — process-instance execution time by region. The local windowed aggregate is
+    // authoritative; each changed cell is upserted as its full value into the serving table by a
+    // deterministic key, so re-emit converges instead of double-counting (idempotent,
+    // sink-agnostic).
+    final JdbcRegionExecutionTimeSink regionSink =
+        new JdbcRegionExecutionTimeSink(dataSource, REGION_DATASET_ID, WINDOW_SIZE_MS);
+    regionSink.initSchema();
+    final SourceCoordinate<ProcessInstanceExecutionTimeFact> regionCoordinate =
+        new SourceCoordinate<>() {
+          @Override
+          public int partition(final ProcessInstanceExecutionTimeFact fact) {
+            return fact.sourcePartitionId();
+          }
 
-    // metric 2 — per-element execution heatmap
-    final JdbcElementHeatmapStore heatmapStore =
-        new JdbcElementHeatmapStore(dataSource, WINDOW_SIZE_MS);
-    heatmapStore.initSchema();
+          @Override
+          public long position(final ProcessInstanceExecutionTimeFact fact) {
+            return fact.sourcePosition();
+          }
+        };
+    final Rollup<ProcessInstanceExecutionTimeFact> regionRollup =
+        new MaterializedRollup<>(
+            new ExecutionTimeAggregateFunction<>(ProcessInstanceExecutionTimeFact::durationMs),
+            fact ->
+                new RegionKey(
+                    fact.variables().getOrDefault("region", NO_REGION),
+                    fact.bpmnProcessId(),
+                    fact.processDefinitionKey(),
+                    fact.version(),
+                    fact.tenantId()),
+            ProcessInstanceExecutionTimeFact::endTime,
+            regionCoordinate,
+            TumblingWindows.of(WINDOW_SIZE_MS),
+            ALLOWED_LATENESS_MS,
+            regionSink);
+
+    // metric 2 — per-element execution heatmap, same materialized/idempotent machinery.
+    final JdbcElementHeatmapSink heatmapSink =
+        new JdbcElementHeatmapSink(dataSource, WINDOW_SIZE_MS);
+    heatmapSink.initSchema();
+    final SourceCoordinate<ElementExecutionFact> heatmapCoordinate =
+        new SourceCoordinate<>() {
+          @Override
+          public int partition(final ElementExecutionFact fact) {
+            return fact.sourcePartitionId();
+          }
+
+          @Override
+          public long position(final ElementExecutionFact fact) {
+            return fact.sourcePosition();
+          }
+        };
     final Rollup<ElementExecutionFact> heatmapRollup =
-        Aggregation.<ElementExecutionFact, ElementKey>groupBy(
-                fact ->
-                    new ElementKey(
-                        fact.bpmnProcessId(),
-                        fact.processDefinitionKey(),
-                        fact.version(),
-                        fact.tenantId(),
-                        fact.elementId(),
-                        fact.elementType()))
-            .windowedBy(TumblingWindows.of(WINDOW_SIZE_MS), ElementExecutionFact::completionTimeMs)
-            .aggregate(new ExecutionTimeAggregateFunction<>(ElementExecutionFact::durationMs))
-            .into(heatmapStore);
+        new MaterializedRollup<>(
+            new ExecutionTimeAggregateFunction<>(ElementExecutionFact::durationMs),
+            fact ->
+                new ElementKey(
+                    fact.bpmnProcessId(),
+                    fact.processDefinitionKey(),
+                    fact.version(),
+                    fact.tenantId(),
+                    fact.elementId(),
+                    fact.elementType()),
+            ElementExecutionFact::completionTimeMs,
+            heatmapCoordinate,
+            TumblingWindows.of(WINDOW_SIZE_MS),
+            ALLOWED_LATENESS_MS,
+            heatmapSink);
 
     // one processor, one fold, fan the facts out to their rollups by type
     final StreamProcessor<ZeebeRecord> processor =

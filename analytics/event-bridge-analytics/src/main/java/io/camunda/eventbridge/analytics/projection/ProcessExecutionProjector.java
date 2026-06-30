@@ -176,7 +176,9 @@ public final class ProcessExecutionProjector
                             value.getElementId(),
                             value.getBpmnElementType().name(),
                             duration,
-                            record.getTimestamp()));
+                            record.getTimestamp(),
+                            zeebeRecord.partitionId(),
+                            zeebeRecord.offset()));
                     elementStarts.delete(elementKey);
                   });
       default -> {

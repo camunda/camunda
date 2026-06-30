@@ -12,7 +12,8 @@ import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
 /**
  * The fact derived when a single BPMN element instance (a flow node) completes: which element, in
  * which definition, how long it took, and when it finished. Feeds the element heatmap (execution
- * count + execution time per element).
+ * count + execution time per element). {@code sourcePartitionId}/{@code sourcePosition} are the
+ * coordinates of the completion record that derived it — the idempotency key for dedup.
  */
 public record ElementExecutionFact(
     String bpmnProcessId,
@@ -22,5 +23,7 @@ public record ElementExecutionFact(
     String elementId,
     String elementType,
     long durationMs,
-    long completionTimeMs)
+    long completionTimeMs,
+    int sourcePartitionId,
+    long sourcePosition)
     implements ProcessExecutionFact {}
