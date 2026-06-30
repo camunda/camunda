@@ -569,11 +569,15 @@ jobs:
           fi
 
           # A confirmed product bug lands as a skip PR, so its bullets + the skip PR
-          # are reported together under the bug heading.
-          if [ "$pb_count" -gt 0 ]; then
+          # are reported together under the bug heading — but only when the skip PR
+          # actually exists; an issue filed with NO skip PR means the test still fails.
+          if [ "$pb_count" -gt 0 ] && [ "$pr_count" -gt 0 ]; then
             icon=":bug:"
             summary="Product bug(s) — test(s) skipped pending fix:"$'\n'"$(printf '%s\n' "${lines[@]}")"
             [ "$JOB_STATUS" = "failure" ] && summary="${summary}"$'\n'"_(post-processing failed — see run)_"
+          elif [ "$pb_count" -gt 0 ]; then
+            icon=":warning:"
+            summary="Product bug(s) filed but NO skip PR — test(s) still failing, needs attention:"$'\n'"$(printf '%s\n' "${lines[@]}")"
           elif [ "$pr_count" -gt 0 ]; then
             icon=":white_check_mark:"
             summary="$(printf '%s\n' "${lines[@]}")"
