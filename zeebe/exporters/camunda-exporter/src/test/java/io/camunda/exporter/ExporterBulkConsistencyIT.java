@@ -41,6 +41,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -318,6 +319,114 @@ final class ExporterBulkConsistencyIT {
 
   private static long userTaskElementKey(final int i) {
     return processInstanceKey(i) + 4;
+  }
+
+  /**
+   * Verifies that a migration-cancel for a legacy job-worker task doc produces a delete (not an
+   * upsert) at all bulk-flush sizes, leaving no task document in the index. Two exporter runs
+   * simulate two engine sessions: the first creates the legacy doc; the second sets a new
+   * firstUserTaskKey watermark and then cancels the legacy job via migration.
+   */
+  @TestTemplate
+  void shouldDeleteLegacyJobWorkerTaskDocOnMigrationCancel(
+      final ExporterConfiguration baseConfig, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    final var legacyJobKey = 9_000_001L;
+    final var currentJobKey = 9_000_002L;
+    final var legacyProcessInstanceKey = 9_000_100L;
+    final var currentProcessInstanceKey = 9_000_200L;
+    final var legacyTaskId = String.valueOf(legacyJobKey);
+
+    // phase 1: current-version CREATED sets the watermark; legacy CREATED is then below it
+    final var phase1Records =
+        List.of(
+            buildJobCreatedRecord(currentJobKey, currentProcessInstanceKey),
+            buildJobCreatedRecord(legacyJobKey, legacyProcessInstanceKey));
+    // phase 2: fresh exporter — re-establish watermark, then cancel the legacy doc
+    final var phase2Records =
+        List.of(
+            buildJobCreatedRecord(currentJobKey, currentProcessInstanceKey),
+            buildJobMigrationCancelRecord(legacyJobKey, legacyProcessInstanceKey));
+
+    final var testBulkSizes = List.of(1, 2, 5, 20);
+
+    // when — reference run (bulk 500)
+    final var referenceConfig = configWithBulkSize(baseConfig, 500, "ref-del");
+    createSchemas(referenceConfig);
+    runExporter(phase1Records, referenceConfig);
+    runExporter(phase2Records, referenceConfig);
+    clientAdapter.refresh();
+
+    final var isEs = ConnectionTypes.isElasticSearch(referenceConfig.getConnect().getType());
+    final var taskIndex =
+        new TaskTemplate(referenceConfig.getConnect().getIndexPrefix(), isEs)
+            .getFullQualifiedName();
+    assertThat(clientAdapter.searchByIds(taskIndex, List.of(legacyTaskId), TaskEntity.class))
+        .as("legacy task doc must be absent after migration-cancel (reference)")
+        .isEmpty();
+
+    // then — identical result at every test bulk size
+    createSchemas(configWithBulkSize(baseConfig, 500, "work-del"));
+    for (final int bulkSize : testBulkSizes) {
+      final var config = configWithBulkSize(baseConfig, bulkSize, "work-del");
+      clientAdapter.deleteAllDocuments(config.getConnect().getIndexPrefix());
+      clientAdapter.refresh();
+      runExporter(phase1Records, config);
+      runExporter(phase2Records, config);
+      clientAdapter.refresh();
+      final var isEsWork = ConnectionTypes.isElasticSearch(config.getConnect().getType());
+      final var taskIndexWork =
+          new TaskTemplate(config.getConnect().getIndexPrefix(), isEsWork).getFullQualifiedName();
+      assertThat(clientAdapter.searchByIds(taskIndexWork, List.of(legacyTaskId), TaskEntity.class))
+          .as("legacy task doc must be absent at bulk size %d", bulkSize)
+          .isEmpty();
+    }
+  }
+
+  private Record<?> buildJobCreatedRecord(final long jobKey, final long processInstanceKey) {
+    return factory.generateRecord(
+        ValueType.JOB,
+        r ->
+            r.withKey(jobKey)
+                .withBrokerVersion(VersionUtil.getVersion())
+                .withTimestamp(System.currentTimeMillis())
+                .withPartitionId(PARTITION_ID)
+                .withIntent(JobIntent.CREATED)
+                .withValue(
+                    ImmutableJobRecordValue.builder()
+                        .from(factory.generateObject(ImmutableJobRecordValue.class))
+                        .withType(Protocol.USER_TASK_JOB_TYPE)
+                        .withElementInstanceKey(jobKey)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withRetries(0)
+                        .withDeadline(System.currentTimeMillis() + 60_000L)
+                        .withTenantId(TENANT_ID)
+                        .withJobToUserTaskMigration(false)
+                        .build()));
+  }
+
+  private Record<?> buildJobMigrationCancelRecord(
+      final long jobKey, final long processInstanceKey) {
+    return factory.generateRecord(
+        ValueType.JOB,
+        r ->
+            r.withKey(jobKey)
+                .withBrokerVersion(VersionUtil.getVersion())
+                .withTimestamp(System.currentTimeMillis())
+                .withPartitionId(PARTITION_ID)
+                .withIntent(JobIntent.CANCELED)
+                .withValue(
+                    ImmutableJobRecordValue.builder()
+                        .from(factory.generateObject(ImmutableJobRecordValue.class))
+                        .withType(Protocol.USER_TASK_JOB_TYPE)
+                        .withElementInstanceKey(jobKey)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withRetries(0)
+                        .withDeadline(System.currentTimeMillis() + 60_000L)
+                        .withTenantId(TENANT_ID)
+                        .withJobToUserTaskMigration(true)
+                        .build()));
   }
 
   private List<Record<?>> buildRecordsForInstance(final int i) {
