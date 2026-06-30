@@ -112,6 +112,13 @@ public abstract class AbstractBrokerlessZeebeCCSMIT extends AbstractIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
+  protected void persistProcessDefinitions(final List<ProcessDefinitionOptimizeDto> definitions) {
+    embeddedOptimizeExtension
+        .getBean(ProcessDefinitionWriter.class)
+        .importProcessDefinitions(definitions);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
   /**
    * Persists the given process instances directly into the Optimize process-instance index, then
    * refreshes all indices so subsequent reads in the same test see the data immediately. Use this
