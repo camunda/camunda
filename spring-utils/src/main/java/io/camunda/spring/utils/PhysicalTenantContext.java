@@ -9,6 +9,7 @@ package io.camunda.spring.utils;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestAttributes;
@@ -137,6 +138,39 @@ public final class PhysicalTenantContext {
         Thread.currentThread().getName(),
         physicalTenantId);
     PROPAGATED_PHYSICAL_TENANT_ID.set(physicalTenantId);
+  }
+
+  /**
+   * Wraps {@code supplier} so that the physical tenant currently in effect — captured eagerly, when
+   * this method is called — is bound as the {@linkplain #setPropagatedPhysicalTenant propagated}
+   * tenant for the duration of each {@code supplier.get()} call, restoring any previously
+   * propagated value afterwards. If no tenant is in effect at capture time, {@code supplier} is
+   * returned unchanged.
+   *
+   * <p>Use this to carry the current thread's tenant into a deferred computation that may run after
+   * the request scope is gone — e.g. a lazy membership list materialised during HTTP session
+   * serialisation, or work handed to an async worker — without the caller managing the propagation
+   * {@link ThreadLocal} directly. This is the same capture-by-value strategy {@code
+   * PhysicalTenantPropagatingExecutorService} applies to executor tasks.
+   */
+  public static <T> Supplier<T> propagateCurrent(final Supplier<T> supplier) {
+    final String physicalTenantId = currentOrNull();
+    if (physicalTenantId == null) {
+      return supplier;
+    }
+    return () -> {
+      final String previous = getPropagatedPhysicalTenant();
+      setPropagatedPhysicalTenant(physicalTenantId);
+      try {
+        return supplier.get();
+      } finally {
+        if (previous != null) {
+          setPropagatedPhysicalTenant(previous);
+        } else {
+          clearPropagatedPhysicalTenant();
+        }
+      }
+    };
   }
 
   private static String asString(final Object value) {
