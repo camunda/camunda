@@ -8,7 +8,7 @@
 package io.camunda.application.commons.security;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -18,8 +18,8 @@ import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ public class NoSecondaryStorageAuthenticationIT {
     context
         .getEnvironment()
         .getSystemProperties()
-        .put(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
+        .put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
     context
         .getEnvironment()
         .getSystemProperties()
@@ -63,7 +63,10 @@ public class NoSecondaryStorageAuthenticationIT {
   void shouldAllowOidcAuthenticationInNoDbModeWithLimitedFunctionality() {
     // given - application context with no secondary storage and OIDC auth
     final var context = new AnnotationConfigApplicationContext();
-    context.getEnvironment().getSystemProperties().put(PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
+    context
+        .getEnvironment()
+        .getSystemProperties()
+        .put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
     context
         .getEnvironment()
         .getSystemProperties()
@@ -119,8 +122,12 @@ public class NoSecondaryStorageAuthenticationIT {
     public LazyTokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
         final CamundaSecurityLibraryProperties cslProperties,
         final NoDBMembershipService noDBMembershipService) {
+      final var oidcConfig = cslProperties.getAuthentication().getOidc();
       return new LazyTokenClaimsConverter(
-          cslProperties.getAuthentication().getOidc(), noDBMembershipService);
+          oidcConfig.getUsernameClaim(),
+          oidcConfig.getClientIdClaim(),
+          oidcConfig.isPreferUsernameClaim(),
+          noDBMembershipService);
     }
   }
 }
