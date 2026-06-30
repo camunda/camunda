@@ -758,7 +758,7 @@ jobs:
                 [ -z "$t" ] && continue
                 tf=$(echo "$t" | jq -r '.file'); tn=$(echo "$t" | jq -r '.test_name')
                 fp=$(printf '%s::%s::%s' "$version" "$tf" "$tn" | sha256sum | cut -c1-8)
-                pb=$(gh search issues "nightly-product-bug fp=${fp}" --owner camunda --state open \
+                pb=$(gh search issues "nightly-product-bug fp=${fp} is:issue" --owner camunda --state open \
                        --limit 1 --json url --jq '.[0].url // ""' 2>/dev/null || echo "")
                 if [ -n "$pb" ]; then
                   echo "  suppressed (open product bug ${pb}): ${tf} > ${tn}"

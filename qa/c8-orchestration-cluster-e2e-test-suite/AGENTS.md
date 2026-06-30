@@ -350,13 +350,13 @@ Orchestration-suite failures almost always trace to a module inside this same re
    ```
    **Search for an existing issue** (the marker is globally unique):
    ```bash
-   gh search issues "nightly-product-bug fp=${FP}" --owner camunda --state all \
+   gh search issues "nightly-product-bug fp=${FP} is:issue" --owner camunda --state all \
      --json number,url,state,repository --jq '.[0]'
    ```
    - Open issue exists → reuse it (comment with this nightly run); do NOT file a new one.
    - Closed issue for the same FP → reopen (`gh issue reopen`) and comment, then reuse its URL.
    - **Also check for a human-filed bug that predates this automation** (no fingerprint marker):
-     `gh search issues "<key symptom words>" --owner camunda --state open --json number,title,url,repository`
+     `gh search issues "<key symptom words> is:issue" --owner camunda --state open --json number,title,url,repository`
      and scan titles for the same regression (e.g. #55864 "Variable list is no longer scrollable").
      If you find a clear match, **reuse it** instead of filing a duplicate: comment linking this
      nightly run, and **append** the `Fingerprint: nightly-product-bug fp=${FP}` line to its body
