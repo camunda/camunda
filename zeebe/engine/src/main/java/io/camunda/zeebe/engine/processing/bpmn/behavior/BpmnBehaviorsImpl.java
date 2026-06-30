@@ -81,7 +81,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -152,7 +153,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             routingInfo,
             clock,
             transientProcessMessageSubscriptionState,
-            config.getMaxNameFieldLength());
+            config.getMaxNameFieldLength(),
+            evaluateBoundaryEventCorrelationKeyInActivityScope);
 
     stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
 

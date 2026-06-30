@@ -47,6 +47,7 @@ public final class FeatureFlags {
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_IDENTITY_SETUP = true;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
+  private static final boolean EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = true;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -54,6 +55,7 @@ public final class FeatureFlags {
   private boolean enableTimerDueDateCheckerAsync;
   private boolean enableStraightThroughProcessingLoopDetector;
   private boolean enableMessageBodyOnExpired;
+  private boolean evaluateBoundaryEventCorrelationKeyInActivityScope;
 
   public FeatureFlags(
       final boolean yieldingDueDateChecker,
@@ -61,7 +63,8 @@ public final class FeatureFlags {
       final boolean enableMessageTTLCheckerAsync,
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
-      final boolean enableMessageBodyOnExpired
+      final boolean enableMessageBodyOnExpired,
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
     this.enableActorMetrics = enableActorMetrics;
@@ -69,6 +72,8 @@ public final class FeatureFlags {
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+    this.evaluateBoundaryEventCorrelationKeyInActivityScope =
+        evaluateBoundaryEventCorrelationKeyInActivityScope;
   }
 
   public static FeatureFlags createDefault() {
@@ -78,7 +83,8 @@ public final class FeatureFlags {
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
-        ENABLE_MESSAGE_BODY_ON_EXPIRED
+        ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE
         /*, FOO_DEFAULT*/ );
   }
 
@@ -94,7 +100,8 @@ public final class FeatureFlags {
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
+        false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
+        true /* EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE */
         /*, FOO_DEFAULT*/ );
   }
 
@@ -122,6 +129,10 @@ public final class FeatureFlags {
     return enableMessageBodyOnExpired;
   }
 
+  public boolean evaluateBoundaryEventCorrelationKeyInActivityScope() {
+    return evaluateBoundaryEventCorrelationKeyInActivityScope;
+  }
+
   public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
   }
@@ -145,6 +156,12 @@ public final class FeatureFlags {
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
+  public void setEvaluateBoundaryEventCorrelationKeyInActivityScope(
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
+    this.evaluateBoundaryEventCorrelationKeyInActivityScope =
+        evaluateBoundaryEventCorrelationKeyInActivityScope;
   }
 
   @Override
