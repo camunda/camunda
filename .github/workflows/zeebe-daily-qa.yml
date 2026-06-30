@@ -32,7 +32,7 @@ jobs:
       third-last-version: ${{ env.THIRD_LAST_VERSION }}
       fourth-last-version: ${{ env.FOURTH_LAST_VERSION }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - run: git fetch --tags
       - run: |
           versions=($(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq))
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Daily QA
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Trigger QA on ${{ matrix.branch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
