@@ -728,19 +728,24 @@ jobs:
           # Decode the base64-encoded dispatches payload from the triage job.
           DISPATCHES_JSON=$(echo "${DISPATCHES_B64}" | base64 -d)
 
-          # Prefetch ALL open product-bug fingerprints in ONE search, then filter
-          # in-memory in the per-spec loop below — avoids one gh search per failing
-          # spec and the associated rate-limit/timeout risk. Each line is "<fp> <url>".
-          # Fail-open: on any error the map is empty and nothing is suppressed (the
-          # fix agent still dedupes at filing time).
+          # Prefetch open product-bug fingerprints in ONE search (up to gh's 1000-result
+          # cap), then filter in-memory in the per-spec loop below — avoids one gh search
+          # per failing spec and the associated rate-limit/timeout risk. Each line is
+          # "<fp> <url>". Fail-open: on any error the map is empty and nothing is
+          # suppressed (the fix agent still dedupes at filing time). If the cap is ever
+          # exceeded, the surplus issues just aren't prefetched → those tests re-dispatch
+          # (still benign — fail-open); we warn so it's visible.
+          PB_FP_CAP=1000
           PB_FP_MAP=$(mktemp)
           trap 'rm -f "$PB_FP_MAP"' EXIT
           if [ "${SUPPRESS_PRODUCT_BUGS:-true}" = "true" ]; then
             gh search issues "nightly-product-bug is:issue" --owner camunda --state open \
-              --limit 200 --json body,url \
+              --limit "$PB_FP_CAP" --json body,url \
               --jq '.[] | select(.body != null and (.body | test("nightly-product-bug fp=[0-9a-f]{8}"))) | "\(.body | capture("nightly-product-bug fp=(?<f>[0-9a-f]{8})").f) \(.url)"' \
               2>/dev/null > "$PB_FP_MAP" || true
-            echo "Prefetched $(wc -l < "$PB_FP_MAP" | tr -d ' ') open product-bug fingerprint(s)."
+            pb_fp_count=$(wc -l < "$PB_FP_MAP" | tr -d ' ')
+            echo "Prefetched ${pb_fp_count} open product-bug fingerprint(s)."
+            [ "$pb_fp_count" -ge "$PB_FP_CAP" ] && echo "::warning::Open product-bug issues hit the ${PB_FP_CAP} search cap — some fingerprints may not be prefetched; affected tests will re-dispatch (fail-open)."
           fi
 
           while IFS= read -r d; do
