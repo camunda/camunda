@@ -334,6 +334,8 @@ final class ExporterBulkConsistencyIT {
     // given
     final var legacyJobKey = 9_000_001L;
     final var currentJobKey = 9_000_002L;
+    final var legacyElementInstanceKey = 9_000_051L;
+    final var currentElementInstanceKey = 9_000_052L;
     final var legacyProcessInstanceKey = 9_000_100L;
     final var currentProcessInstanceKey = 9_000_200L;
     final var legacyTaskId = String.valueOf(legacyJobKey);
@@ -341,13 +343,17 @@ final class ExporterBulkConsistencyIT {
     // phase 1: current-version CREATED sets the watermark; legacy CREATED is then below it
     final var phase1Records =
         List.of(
-            buildJobCreatedRecord(currentJobKey, currentProcessInstanceKey),
-            buildJobCreatedRecord(legacyJobKey, legacyProcessInstanceKey));
+            buildJobCreatedRecord(
+                currentJobKey, currentElementInstanceKey, currentProcessInstanceKey),
+            buildJobCreatedRecord(
+                legacyJobKey, legacyElementInstanceKey, legacyProcessInstanceKey));
     // phase 2: fresh exporter — re-establish watermark, then cancel the legacy doc
     final var phase2Records =
         List.of(
-            buildJobCreatedRecord(currentJobKey, currentProcessInstanceKey),
-            buildJobMigrationCancelRecord(legacyJobKey, legacyProcessInstanceKey));
+            buildJobCreatedRecord(
+                currentJobKey, currentElementInstanceKey, currentProcessInstanceKey),
+            buildJobMigrationCancelRecord(
+                legacyJobKey, legacyElementInstanceKey, legacyProcessInstanceKey));
 
     final var testBulkSizes = List.of(1, 2, 5, 20);
 
@@ -384,7 +390,8 @@ final class ExporterBulkConsistencyIT {
     }
   }
 
-  private Record<?> buildJobCreatedRecord(final long jobKey, final long processInstanceKey) {
+  private Record<?> buildJobCreatedRecord(
+      final long jobKey, final long elementInstanceKey, final long processInstanceKey) {
     return factory.generateRecord(
         ValueType.JOB,
         r ->
@@ -397,7 +404,7 @@ final class ExporterBulkConsistencyIT {
                     ImmutableJobRecordValue.builder()
                         .from(factory.generateObject(ImmutableJobRecordValue.class))
                         .withType(Protocol.USER_TASK_JOB_TYPE)
-                        .withElementInstanceKey(jobKey)
+                        .withElementInstanceKey(elementInstanceKey)
                         .withProcessInstanceKey(processInstanceKey)
                         .withRetries(0)
                         .withDeadline(System.currentTimeMillis() + 60_000L)
@@ -407,7 +414,7 @@ final class ExporterBulkConsistencyIT {
   }
 
   private Record<?> buildJobMigrationCancelRecord(
-      final long jobKey, final long processInstanceKey) {
+      final long jobKey, final long elementInstanceKey, final long processInstanceKey) {
     return factory.generateRecord(
         ValueType.JOB,
         r ->
@@ -420,7 +427,7 @@ final class ExporterBulkConsistencyIT {
                     ImmutableJobRecordValue.builder()
                         .from(factory.generateObject(ImmutableJobRecordValue.class))
                         .withType(Protocol.USER_TASK_JOB_TYPE)
-                        .withElementInstanceKey(jobKey)
+                        .withElementInstanceKey(elementInstanceKey)
                         .withProcessInstanceKey(processInstanceKey)
                         .withRetries(0)
                         .withDeadline(System.currentTimeMillis() + 60_000L)
