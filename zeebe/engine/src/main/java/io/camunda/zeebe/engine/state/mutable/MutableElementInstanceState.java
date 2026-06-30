@@ -151,7 +151,7 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    * Increments the loop-detection activation counter for the given element within the given process
    * instance.
    *
-   * @param processInstanceKey the key of the root process instance
+   * @param processInstanceKey the key of the process instance
    * @param elementId the BPMN element id of the element being activated
    */
   void incrementElementActivationCounter(long processInstanceKey, DirectBuffer elementId);
@@ -160,7 +160,7 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    * Deletes all element activation counters that belong to the given process instance. Called when
    * the process instance ends to avoid leaking state.
    *
-   * @param processInstanceKey the key of the root process instance whose counters should be removed
+   * @param processInstanceKey the key of the process instance whose counters should be removed
    */
   void deleteAllElementActivationCounters(long processInstanceKey);
 }
