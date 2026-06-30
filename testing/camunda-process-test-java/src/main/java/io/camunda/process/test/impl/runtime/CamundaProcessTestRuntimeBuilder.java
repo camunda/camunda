@@ -20,6 +20,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -110,6 +111,10 @@ public class CamundaProcessTestRuntimeBuilder {
       CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionTimeout();
   private Optional<Duration> assertionInterval =
       CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionInterval();
+  private int elementInstancePageLimit =
+      CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES
+          .getElementInstancePageLimit()
+          .orElse(CamundaDataSource.DEFAULT_ELEMENT_INSTANCE_PAGE_LIMIT);
 
   // ============ For testing =================
 
@@ -313,6 +318,24 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  /**
+   * Sets the page size used when fetching element instances for assertions and coverage reporting.
+   * Increase this if a process instance under test can produce more than the default 100 element
+   * instances, otherwise the latest-started (often terminal) elements may be excluded from
+   * assertions and coverage results.
+   *
+   * @param elementInstancePageLimit the maximum number of element instances to fetch per process
+   *     instance, must be greater than 0
+   */
+  public CamundaProcessTestRuntimeBuilder withElementInstancePageLimit(
+      final int elementInstancePageLimit) {
+    if (elementInstancePageLimit <= 0) {
+      throw new IllegalArgumentException("elementInstancePageLimit must be greater than 0");
+    }
+    this.elementInstancePageLimit = elementInstancePageLimit;
+    return this;
+  }
+
   // ============ Build =================
 
   private void loadContainerProvidersFromServiceLoader() {
@@ -480,5 +503,9 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public Optional<Duration> getAssertionInterval() {
     return assertionInterval;
+  }
+
+  public int getElementInstancePageLimit() {
+    return elementInstancePageLimit;
   }
 }

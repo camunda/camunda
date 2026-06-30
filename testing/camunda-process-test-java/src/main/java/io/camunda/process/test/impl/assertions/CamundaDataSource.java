@@ -47,12 +47,24 @@ import java.util.function.Consumer;
 
 public class CamundaDataSource {
 
+  /**
+   * The default page size used when fetching element instances if no custom limit is configured.
+   * Kept for backward compatibility.
+   */
+  public static final int DEFAULT_ELEMENT_INSTANCE_PAGE_LIMIT = 100;
+
   private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 
   private final CamundaClient client;
+  private final int elementInstancePageLimit;
 
   public CamundaDataSource(final CamundaClient client) {
+    this(client, DEFAULT_ELEMENT_INSTANCE_PAGE_LIMIT);
+  }
+
+  public CamundaDataSource(final CamundaClient client, final int elementInstancePageLimit) {
     this.client = client;
+    this.elementInstancePageLimit = elementInstancePageLimit;
   }
 
   public byte[] getDocumentContent(final DocumentReferenceResponse reference) {
@@ -116,7 +128,7 @@ public class CamundaDataSource {
         .newElementInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(elementInstancePageLimit))
         .send()
         .join()
         .items();
