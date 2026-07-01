@@ -133,18 +133,25 @@ export function ProcessHeatmap({
     }
 
     // Optimize's heatmap image, appended into the canvas viewport (pans + zooms with the diagram).
-    const viewport = viewer.get("canvas")._viewport as SVGGElement;
-    if (heatRef.current && heatRef.current.parentNode) {
-      heatRef.current.parentNode.removeChild(heatRef.current);
-    }
-    try {
-      const node = getHeatmap(viewer, values);
-      viewport.appendChild(node);
-      heatRef.current = node;
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error("heatmap render failed", e);
-    }
+    // Rendered per active plane (getHeatmap only draws nodes on the current plane): re-render on
+    // `root.set` so drilling into / out of a collapsed sub-process recomputes the heat for the
+    // plane now shown, matching Optimize's drilldown behaviour.
+    const canvas = viewer.get("canvas");
+    const renderHeat = () => {
+      const viewport = canvas._viewport as SVGGElement;
+      if (heatRef.current && heatRef.current.parentNode) {
+        heatRef.current.parentNode.removeChild(heatRef.current);
+      }
+      try {
+        const node = getHeatmap(viewer, values);
+        viewport.appendChild(node);
+        heatRef.current = node;
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("heatmap render failed", e);
+      }
+    };
+    renderHeat();
 
     // hover tooltip (Optimize-style): reveal the element's metrics on element.hover
     const eventBus = viewer.get("eventBus");
@@ -165,10 +172,12 @@ export function ProcessHeatmap({
     const onOut = () => overlays.remove({ type: "heat-tooltip" });
     eventBus.on("element.hover", onHover);
     eventBus.on("element.out", onOut);
+    eventBus.on("root.set", renderHeat);
 
     return () => {
       eventBus.off("element.hover", onHover);
       eventBus.off("element.out", onOut);
+      eventBus.off("root.set", renderHeat);
       try {
         overlays.remove({ type: "heat-tooltip" });
       } catch {

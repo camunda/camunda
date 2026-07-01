@@ -129,18 +129,24 @@ export function IncidentHeatmap({
       values[e.elementId] = value(e, metric);
     }
 
-    const viewport = viewer.get("canvas")._viewport as SVGGElement;
-    if (heatRef.current && heatRef.current.parentNode) {
-      heatRef.current.parentNode.removeChild(heatRef.current);
-    }
-    try {
-      const node = getHeatmap(viewer, values);
-      viewport.appendChild(node);
-      heatRef.current = node;
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error("incident heatmap render failed", e);
-    }
+    // Rendered per active plane; re-render on `root.set` so drilling into / out of a collapsed
+    // sub-process recomputes the heat for the plane now shown (see ProcessHeatmap).
+    const canvas = viewer.get("canvas");
+    const renderHeat = () => {
+      const viewport = canvas._viewport as SVGGElement;
+      if (heatRef.current && heatRef.current.parentNode) {
+        heatRef.current.parentNode.removeChild(heatRef.current);
+      }
+      try {
+        const node = getHeatmap(viewer, values);
+        viewport.appendChild(node);
+        heatRef.current = node;
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("incident heatmap render failed", e);
+      }
+    };
+    renderHeat();
 
     const eventBus = viewer.get("eventBus");
     const overlays = viewer.get("overlays");
