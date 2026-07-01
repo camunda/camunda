@@ -102,7 +102,7 @@ describe('<AsyncActionButton />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Disabled button'})).toBeDisabled();
 	});
 
-	it('should not render button', async () => {
+	it('should render error state', async () => {
 		const screen = await render(
 			<AsyncActionButton status="error" inlineLoadingProps={{description: 'Failed'}}>
 				Action
@@ -110,5 +110,6 @@ describe('<AsyncActionButton />', () => {
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Action'})).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Failed')).toBeVisible();
 	});
 });
