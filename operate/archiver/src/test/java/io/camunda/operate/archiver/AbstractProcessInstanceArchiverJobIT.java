@@ -301,6 +301,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT extends ArchiverJobIT
   protected IncidentEntity incidentEntity(final ProcessInstanceForListViewEntity parent) {
     final var entity = create(IncidentEntity::new);
     entity.setProcessInstanceKey(parent.getKey());
+    entity.setErrorMessage("test error message");
     return entity;
   }
 

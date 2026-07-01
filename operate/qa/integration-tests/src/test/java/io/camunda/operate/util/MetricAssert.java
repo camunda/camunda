@@ -32,11 +32,12 @@ public class MetricAssert {
   //    }
   //  }
 
-  public static void assertThatMetricsFrom(MockMvc mockMvc, Matcher<? super String> matcher) {
+  public static void assertThatMetricsFrom(
+      final MockMvc mockMvc, final Matcher<? super String> matcher) {
     final MockHttpServletRequestBuilder request = get("/actuator/prometheus");
     try {
       mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().string(matcher));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
     }
   }
@@ -45,14 +46,28 @@ public class MetricAssert {
 
     private final String metricName;
     private final Predicate<Double> valueMatcher;
+    private final String[] tags;
 
-    public ValueMatcher(String metricName, Predicate<Double> valueMatcher) {
+    public ValueMatcher(final String metricName, final Predicate<Double> valueMatcher) {
+      this(metricName, valueMatcher, new String[0]);
+    }
+
+    /**
+     * @param tags alternating key/value pairs, e.g. {@code "type", "search"} — each pair is matched
+     *     as {@code key="value"} in the Prometheus line
+     */
+    public ValueMatcher(
+        final String metricName, final Predicate<Double> valueMatcher, final String... tags) {
+      if (tags.length % 2 != 0) {
+        throw new IllegalArgumentException("tags must be provided as alternating key/value pairs");
+      }
       this.metricName = metricName.toLowerCase();
       this.valueMatcher = valueMatcher;
+      this.tags = tags;
     }
 
     @Override
-    public boolean matches(Object o) {
+    public boolean matches(final Object o) {
       final Double metricValue = getMetricValue(o);
       if (metricValue != null) {
         return valueMatcher.test(metricValue);
@@ -60,7 +75,7 @@ public class MetricAssert {
       return false;
     }
 
-    public Double getMetricValue(Object o) {
+    public Double getMetricValue(final Object o) {
       final Optional<String> metricString = getMetricString(o);
       if (metricString.isPresent()) {
         final String[] oneMetric = metricString.get().split(" ");
@@ -71,15 +86,25 @@ public class MetricAssert {
       return null;
     }
 
-    public Optional<String> getMetricString(Object o) {
+    public Optional<String> getMetricString(final Object o) {
       final String s = (String) o;
       final String[] strings = s.split("\\n");
       return Arrays.stream(strings)
           .filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#"))
+          .filter(this::allTagsPresent)
           .findFirst();
     }
 
+    private boolean allTagsPresent(final String line) {
+      for (int i = 0; i + 1 < tags.length; i += 2) {
+        if (!line.contains(tags[i] + "=\"" + tags[i + 1] + "\"")) {
+          return false;
+        }
+      }
+      return true;
+    }
+
     @Override
-    public void describeTo(Description description) {}
+    public void describeTo(final Description description) {}
   }
 }

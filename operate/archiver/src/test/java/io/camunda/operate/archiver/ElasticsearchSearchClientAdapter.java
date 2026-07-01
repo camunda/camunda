@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
-import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import java.io.IOException;
@@ -107,7 +107,7 @@ class ElasticsearchSearchClientAdapter
   SchemaManager buildSchemaManager(
       final OperateProperties props,
       final List<TemplateDescriptor> templates,
-      final List<IndexDescriptor> indices) {
+      final List<AbstractIndexDescriptor> indices) {
     final var retryClient = new RetryElasticsearchClient();
     ReflectionTestUtils.setField(retryClient, "esClient", client);
     final var manager = new ElasticsearchSchemaManager();

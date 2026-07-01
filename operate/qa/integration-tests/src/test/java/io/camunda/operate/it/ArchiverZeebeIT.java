@@ -18,6 +18,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.BatchOperationArchiverJob;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+import io.camunda.operate.archiver.ProcessInstancesByIdArchiverJob;
 import io.camunda.operate.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
@@ -132,7 +133,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testArchivingProcessInstances() throws ArchiverException, IOException {
+  public void testArchivingProcessInstances() throws IOException {
 
     final Instant currentTime = pinZeebeTime();
 
@@ -205,6 +206,113 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
             containsString("operate_archiver_delete_query")));
   }
 
+  @Test
+  public void shouldArchiveProcessInstancesById() throws IOException {
+    // given
+    final Instant currentTime = pinZeebeTime();
+
+    offsetZeebeTime(Duration.ofDays(-4));
+    final String processId = "demoProcess";
+    final String activityId = "task1";
+    deployProcessWithOneActivity(processId, activityId);
+
+    final int count1 = random.nextInt(6) + 5;
+    final List<Long> ids1 =
+        startInstances(processId, count1, currentTime.minus(3, ChronoUnit.DAYS));
+    createOperations(ids1);
+    final Instant endDate1 = currentTime.minus(2, ChronoUnit.DAYS);
+    finishInstances(count1, endDate1, activityId);
+    searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
+
+    final int count2 = random.nextInt(6) + 5;
+    final List<Long> ids2 = startInstances(processId, count2, endDate1);
+    createOperations(ids2);
+    final Instant endDate2 = currentTime.minus(1, ChronoUnit.DAYS);
+    finishInstances(count2, endDate2, activityId);
+    searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids2);
+
+    final int count3 = random.nextInt(6) + 5;
+    final List<Long> ids3 = startInstances(processId, count3, endDate2);
+
+    resetZeebeTime();
+
+    final ProcessInstancesByIdArchiverJob job =
+        beanFactory.getBean(
+            ProcessInstancesByIdArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+
+    // when
+    assertThat(job.archiveNextBatch().join()).isEqualTo(count1);
+    searchTestRule.refreshSerchIndexes();
+    assertThat(job.archiveNextBatch().join()).isEqualTo(count2);
+    searchTestRule.refreshSerchIndexes();
+    assertThat(job.archiveNextBatch().join()).isEqualTo(0);
+    searchTestRule.refreshSerchIndexes();
+
+    // then
+    assertInstancesInCorrectIndex(count1, ids1, endDate1, true);
+    assertInstancesInCorrectIndex(count2, ids2, endDate2, true);
+    assertInstancesInCorrectIndex(count3, ids3, null, true);
+    assertAllInstancesInAlias(count1 + count2 + count3);
+    assertRemovedFromSourceIndices(ids1);
+    assertRemovedFromSourceIndices(ids2);
+
+    assertThatMetricsFrom(
+        mockMvc,
+        allOf(
+            new MetricAssert.ValueMatcher(
+                "operate_archived_process_instances_total",
+                d -> d.doubleValue() == count1 + count2),
+            containsString("operate_archiver_request_duration")));
+  }
+
+  @Test
+  public void shouldArchiveProcessInstancesByIdWithSmallBatchSize()
+      throws ArchiverException, IOException {
+    // given — batch size of 1 forces a separate searchAfter page per document inside
+    // moveDocumentsById, exercising the pagination loop in ArchiveByIdTaskSupplier
+    operateProperties.getArchiver().setArchiveByIdBatchSize(1);
+    try {
+      final Instant currentTime = pinZeebeTime();
+
+      offsetZeebeTime(Duration.ofDays(-4));
+      final String processId = "demoProcess";
+      final String activityId = "task1";
+      deployProcessWithOneActivity(processId, activityId);
+
+      final int count = random.nextInt(3) + 3;
+      final List<Long> ids =
+          startInstances(processId, count, currentTime.minus(3, ChronoUnit.DAYS));
+      createOperations(ids);
+      final Instant endDate = currentTime.minus(2, ChronoUnit.DAYS);
+      finishInstances(count, endDate, activityId);
+      searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids);
+
+      resetZeebeTime();
+
+      final ProcessInstancesByIdArchiverJob job =
+          beanFactory.getBean(
+              ProcessInstancesByIdArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+
+      // when
+      assertThat(job.archiveNextBatch().join()).isEqualTo(count);
+      searchTestRule.refreshSerchIndexes();
+      assertThat(job.archiveNextBatch().join()).isEqualTo(0);
+      searchTestRule.refreshSerchIndexes();
+
+      // then — all docs must be in destination index despite multiple searchAfter pages
+      assertInstancesInCorrectIndex(count, ids, endDate, true);
+      assertAllInstancesInAlias(count);
+      // pagination proof: with batchSize=1 the PI template alone requires count+1 search calls,
+      // so the total search histogram count must exceed count
+      assertThatMetricsFrom(
+          mockMvc,
+          new MetricAssert.ValueMatcher(
+              "operate_archiver_request_duration_seconds_count", d -> d > count, "type", "search"));
+    } finally {
+      operateProperties.getArchiver().setArchiveByIdBatchSize(500);
+    }
+  }
+
   protected void createOperations(final List<Long> ids1) {
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
@@ -212,6 +320,27 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
         new CreateBatchOperationRequestDto(
             query, OperationType.CANCEL_PROCESS_INSTANCE); // the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
+  }
+
+  private void assertRemovedFromSourceIndices(final List<Long> ids) throws IOException {
+    final List<ProcessInstanceForListViewEntity> remaining =
+        testSearchRepository.getProcessInstances(
+            processInstanceTemplate.getFullQualifiedName(), ids);
+    assertThat(remaining).as("archived PIs must be removed from source list-view index").isEmpty();
+
+    for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
+      final List<Long> remainingIds =
+          testSearchRepository.searchIds(
+              template.getFullQualifiedName(),
+              ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+              ids,
+              ids.size() * 100);
+      assertThat(remainingIds)
+          .as(
+              "archived dependants must be removed from source index %s",
+              template.getFullQualifiedName())
+          .isEmpty();
+    }
   }
 
   private void assertAllInstancesInAlias(final int count) {

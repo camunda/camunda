@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
 import io.camunda.operate.Metrics;
+import io.camunda.operate.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateOpensearchProperties;
@@ -46,6 +47,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -60,6 +62,8 @@ import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggrega
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -268,6 +272,37 @@ public class OpensearchArchiverRepositoryTest {
             "evaluationDate");
       }
     }
+  }
+
+  @Test
+  void shouldPassRoutingToBulkDeleteRequest() throws Exception {
+    // given
+    final var docs =
+        List.of(
+            new IdWithRouting("child-doc", "99"), // child doc routed by PI key
+            new IdWithRouting("pi-doc", null)); // PI doc has no custom routing
+
+    final ArgumentCaptor<BulkRequest> bulkCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+    final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.errors()).thenReturn(false);
+    when(bulkResponse.items()).thenReturn(List.of());
+    when(openSearchAsyncClient.bulk(bulkCaptor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse));
+
+    try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+      final Timer.Sample timer = mock(Timer.Sample.class);
+      mockedTimer.when(Timer::start).thenReturn(timer);
+
+      // when
+      underTest.deleteDocumentsById("source-index", docs, Runnable::run).join();
+    }
+
+    // then — routing is forwarded exactly as supplied
+    final var ops = bulkCaptor.getValue().operations();
+    assertThat(ops.get(0).delete().id()).isEqualTo("child-doc");
+    assertThat(ops.get(0).delete().routing()).isEqualTo("99");
+    assertThat(ops.get(1).delete().id()).isEqualTo("pi-doc");
+    assertThat(ops.get(1).delete().routing()).isNull();
   }
 
   public void testGetNextBatchHelper(

@@ -79,5 +79,11 @@ public class CollectionUtilTest {
 
     partitions = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8);
     assertThat(CollectionUtil.splitAndGetSublist(partitions, 3, 4)).isEmpty();
+
+    // threadsCount > partitions.size(): excess threads must return empty (not throw IOOB)
+    assertThat(CollectionUtil.splitAndGetSublist(List.of(1, 2), 4, 2)).isEmpty();
+    assertThat(CollectionUtil.splitAndGetSublist(List.of(1, 2), 4, 3)).isEmpty();
+    assertThat(CollectionUtil.splitAndGetSublist(List.of(1, 2, 3), 5, 3)).isEmpty();
+    assertThat(CollectionUtil.splitAndGetSublist(List.of(1, 2, 3), 5, 4)).isEmpty();
   }
 }

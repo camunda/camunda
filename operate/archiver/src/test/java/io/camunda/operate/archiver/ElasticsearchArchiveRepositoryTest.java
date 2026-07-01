@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
+import io.camunda.operate.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
@@ -33,6 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.IndicesClient;
@@ -51,6 +57,7 @@ import org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
@@ -246,6 +253,45 @@ public class ElasticsearchArchiveRepositoryTest {
           "evaluationDate",
           elasticsearchUtilMockedStatic);
     }
+  }
+
+  @Test
+  void shouldPassRoutingToBulkDeleteRequest() {
+    // given
+    final var docs =
+        List.of(
+            new IdWithRouting("child-doc", "99"), // child doc routed by PI key
+            new IdWithRouting("pi-doc", null)); // PI doc has no custom routing
+
+    final ArgumentCaptor<BulkRequest> bulkCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+
+    try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+      final Timer.Sample timer = mock(Timer.Sample.class);
+      mockedTimer.when(Timer::start).thenReturn(timer);
+
+      final BulkResponse bulkResponse = mock(BulkResponse.class);
+      when(bulkResponse.hasFailures()).thenReturn(false);
+      when(bulkResponse.getItems()).thenReturn(new BulkItemResponse[0]);
+
+      doAnswer(
+              invocation -> {
+                final ActionListener<BulkResponse> listener = invocation.getArgument(2);
+                listener.onResponse(bulkResponse);
+                return null;
+              })
+          .when(esClient)
+          .bulkAsync(bulkCaptor.capture(), any(), any());
+
+      // when
+      underTest.deleteDocumentsById("source-index", docs, Runnable::run).join();
+    }
+
+    // then — routing is forwarded exactly as supplied
+    final var requests = bulkCaptor.getValue().requests();
+    assertThat(requests.get(0).id()).isEqualTo("child-doc");
+    assertThat(requests.get(0).routing()).isEqualTo("99");
+    assertThat(requests.get(1).id()).isEqualTo("pi-doc");
+    assertThat(requests.get(1).routing()).isNull();
   }
 
   public void testGetNextBatchEmptyBucket(

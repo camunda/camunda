@@ -84,19 +84,35 @@ public class Archiver {
             partitionIds.size());
       }
 
-      for (int i = 0; i < threadsCount; i++) {
+      final boolean archiveById = operateProperties.getArchiver().isArchiveByIdEnabled();
+      if (archiveById) {
+        LOGGER.info("Archive-by-ID mode enabled (opt-in).");
+      }
+
+      final int effectiveThreadsCount = Math.min(threadsCount, partitionIds.size());
+      for (int i = 0; i < effectiveThreadsCount; i++) {
         final List<Integer> partitionIdsSubset =
-            CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
+            CollectionUtil.splitAndGetSublist(partitionIds, effectiveThreadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
-          final var processInstancesArchiverJob =
-              beanFactory.getBean(
-                  ProcessInstancesArchiverJob.class,
-                  this,
-                  partitionIdsSubset,
-                  processInstanceTemplate,
-                  processInstanceDependants,
-                  metrics,
-                  archiverRepository);
+          final AbstractArchiverJob processInstancesArchiverJob =
+              archiveById
+                  ? beanFactory.getBean(
+                      ProcessInstancesByIdArchiverJob.class,
+                      this,
+                      partitionIdsSubset,
+                      processInstanceTemplate,
+                      processInstanceDependants,
+                      metrics,
+                      archiverRepository,
+                      archiverExecutor)
+                  : beanFactory.getBean(
+                      ProcessInstancesArchiverJob.class,
+                      this,
+                      partitionIdsSubset,
+                      processInstanceTemplate,
+                      processInstanceDependants,
+                      metrics,
+                      archiverRepository);
           archiverExecutor.execute(processInstancesArchiverJob);
 
           final var standaloneDecisionArchiverJob =

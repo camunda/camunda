@@ -40,6 +40,10 @@ public class Metrics {
       OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
       OPERATE_NAMESPACE + "archiver.delete.query";
+  public static final String TIMER_NAME_ARCHIVER_REQUEST_DURATION =
+      OPERATE_NAMESPACE + "archiver.request.duration";
+  public static final String TIMER_NAME_ARCHIVER_INDEX_DURATION =
+      OPERATE_NAMESPACE + "archiver.index.duration";
   public static final String TIMER_NAME_IMPORT_FNI_TREE_PATH_CACHE_ACCESS =
       OPERATE_NAMESPACE + "import.fni.tree.path.cache.access";
   // Counters:
@@ -55,6 +59,10 @@ public class Metrics {
       "import.fni.tree.path.cache.result";
   public static final String COUNTER_NAME_REINDEX_FAILURES = "archival.reindex.failures";
   public static final String COUNTER_NAME_DELETE_FAILURES = "archival.delete.failures";
+  public static final String COUNTER_NAME_ARCHIVER_BATCH_RETRIES = "archiver.batch.retries";
+  public static final String COUNTER_NAME_ARCHIVER_REINDEXED_DOCS = "archiver.reindexed.docs";
+  public static final String COUNTER_NAME_ARCHIVER_DELETED_DOCS = "archiver.deleted.docs";
+  public static final String COUNTER_NAME_ARCHIVER_INDEX_DOCS = "archiver.index.docs";
 
   // Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
