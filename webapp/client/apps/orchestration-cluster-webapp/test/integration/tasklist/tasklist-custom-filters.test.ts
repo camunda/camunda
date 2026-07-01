@@ -81,13 +81,14 @@ test.describe('Custom filters', () => {
 				schema: z.object({
 					filter: z.object({
 						state: z.literal('COMPLETED'),
+						businessId: z.literal('ORDER-2024-0042'),
 					}),
 					sort: z.tuple([z.object({field: z.literal('creationDate'), order: z.literal('desc')})]),
 					page: z.object({limit: z.literal(50), from: z.literal(0)}),
 				}),
 				successResponse: HttpResponse.json(
 					createQueryUserTasksResponse({
-						items: [createUserTask({userTaskKey: '1', name: 'Custom filtered task'})],
+						items: [createUserTask({userTaskKey: '1', name: 'Custom filtered task', businessId: 'ORDER-2024-0042'})],
 					}),
 				),
 				failureResponse: new HttpResponse(null, {status: 400}),
@@ -95,6 +96,8 @@ test.describe('Custom filters', () => {
 		);
 
 		await tasklistIndexPage.customFiltersModal.statusOption('Completed').click();
+		await tasklistIndexPage.customFiltersModal.advancedFiltersToggle.click();
+		await tasklistIndexPage.customFiltersModal.businessIdField.fill('ORDER-2024-0042');
 		await tasklistIndexPage.customFiltersModal.applyButton.click();
 
 		await expect(tasklistIndexPage.customFiltersModal.dialog).not.toBeVisible();
@@ -104,6 +107,7 @@ test.describe('Custom filters', () => {
 		const params = new URL(page.url()).searchParams;
 		expect(params.get('filter')).toBe('custom');
 		expect(params.get('state')).toBe('COMPLETED');
+		expect(params.get('businessId')).toBe('ORDER-2024-0042');
 	});
 
 	test('should save a named custom filter and show its link', async ({tasklistIndexPage}) => {

@@ -85,6 +85,17 @@ test('should match the custom filters modal', async ({tasklistIndexPage, page}) 
 	await expect(page).toHaveScreenshot();
 });
 
+test('should match the custom filters modal with advanced filters open', async ({tasklistIndexPage, page}) => {
+	await tasklistIndexPage.goto();
+	await tasklistIndexPage.expandFilters();
+	await tasklistIndexPage.newFilterButton.click();
+
+	await tasklistIndexPage.customFiltersModal.advancedFiltersToggle.click();
+	await tasklistIndexPage.customFiltersModal.businessIdField.fill('ORDER-2024-0042');
+
+	await expect(page).toHaveScreenshot();
+});
+
 test('should match the save filter dialog', async ({tasklistIndexPage, page}) => {
 	await tasklistIndexPage.goto();
 	await tasklistIndexPage.expandFilters();
