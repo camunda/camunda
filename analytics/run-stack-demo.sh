@@ -6,9 +6,10 @@
 #   2. an OC cluster (StandaloneCamunda) with the ZeebeRecordExporter wired in (REST :8088)
 #   3. the analytics pipeline (StandaloneAnalyticsPipeline) -> shared H2 file DB (AUTO_SERVER)
 #   4. the analytics webapp (Spring Boot) on :8090, reading the SAME H2 DB
-#   5. a continuous driver starting timer instances tagged with a 'region' variable
+#   5. a continuous driver deploying + running THREE processes (order / payment-with-gateway /
+#      shipping) with real service tasks + job workers, tagged with a 'region' variable
 #
-# A dataset + report are auto-provisioned so the UI shows "execution time grouped by region".
+# The dashboard SPA reads the serving tables directly, so no dataset/report provisioning is needed.
 #
 # Usage:
 #   analytics/run-stack-demo.sh start [--skip-build]   # bring everything up, then exit (daemons keep running)
@@ -83,6 +84,9 @@ start() {
   mkdir -p "${OC_DIR}" "${PIPE_DIR}" "${WEBAPP_DIR}" "${DRIVER_DIR}" "${DB_DIR}"
   rm -rf "${DB_DIR}"/analytics-dataset.* 2>/dev/null || true
   rm -rf "${OC_DIR}/data" 2>/dev/null || true
+  # wipe the pipeline's durable checkpoint/rollup state too — otherwise it resumes from stale
+  # offsets that point past the end of the fresh topic and consumes nothing.
+  rm -rf "${PIPE_DIR}/data" 2>/dev/null || true
 
   echo "==> Starting a FRESH Event Bridge cluster (wiping stale per-node data)"
   rm -rf "${EB_CLUSTER_DIR}"/node-* 2>/dev/null || true
@@ -115,8 +119,11 @@ start() {
   done
 
   echo "==> Starting the analytics pipeline (shared H2 AUTO_SERVER)…"
+  # slaMs is the SLA-met duration target (like Optimize's duration goal): 90s, matching the demo's
+  # minute-scale instance durations, so ~15% of instances (the slow tier) breach it and recent
+  # start cohorts — still holding in-flight instances — render the maturing band on the dashboard.
   ( cd "${PIPE_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(analytics_cp)" \
-      -Dgateway=${GW} -DinstanceId=demo -DjdbcUrl="${H2_URL}" -DjdbcUser=sa \
+      -Dgateway=${GW} -DinstanceId=demo -DjdbcUrl="${H2_URL}" -DjdbcUser=sa -DslaMs=90000 \
       io.camunda.eventbridge.analytics.StandaloneAnalyticsPipeline >"${PIPE_DIR}/pipeline.log" 2>&1 & echo "$!" >"${PIPE_DIR}/pid" )
 
   echo "==> Starting the analytics webapp on :8090 (same H2)…"
@@ -127,32 +134,26 @@ start() {
   echo "==> Waiting for the webapp API…"
   for _ in $(seq 1 120); do
     kill -0 "$(cat "${WEBAPP_DIR}/pid")" 2>/dev/null || { echo "!! webapp died:"; tail -30 "${WEBAPP_DIR}/webapp.log"; exit 1; }
-    [[ "$(curl -s -o /dev/null -w '%{http_code}' ${UI}/api/datasets)" == "200" ]] && break
+    [[ "$(curl -s -o /dev/null -w '%{http_code}' ${UI}/api/dashboard/processes)" == "200" ]] && break
     sleep 1
   done
 
-  echo "==> Auto-provisioning an hourly 'execution time by region' dataset + report"
-  DS_JSON="$(curl -fsS -X POST "${UI}/api/datasets" -H 'Content-Type: application/json' \
-    -d '{"name":"Execution time by region","dimensions":"region","windowSizeMs":3600000}')"
-  DS_ID="$(echo "${DS_JSON}" | grep -oE '"id":[0-9]+' | head -1 | grep -oE '[0-9]+')"
-  echo "    dataset id=${DS_ID}"
-  curl -fsS -X POST "${UI}/api/reports" -H 'Content-Type: application/json' \
-    -d "{\"name\":\"Execution time by region\",\"datasetId\":${DS_ID},\"vizType\":\"table\"}" >/dev/null
-
-  echo "==> Starting the continuous region driver…"
+  echo "==> Starting the continuous multi-process driver (order / payment+gateway / shipping)…"
   ( cd "${DRIVER_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(examples_cp)" \
-      -Dcamunda.rest=${OC_REST} -DpauseMs=700 \
-      io.camunda.eventbridge.examples.DeployAndRunRegionDemo region-exec-time-demo >"${DRIVER_DIR}/driver.log" 2>&1 & echo "$!" >"${DRIVER_DIR}/pid" )
+      -Dcamunda.rest=${OC_REST} \
+      io.camunda.eventbridge.examples.MultiProcessDemoDriver 1200 >"${DRIVER_DIR}/driver.log" 2>&1 & echo "$!" >"${DRIVER_DIR}/pid" )
 
   cat <<EOF
 
 ================================================================
   Analytics demo stack is UP.
 
-  Open the webapp:   ${UI}
-  (Report "Execution time by region" is pre-created — click "View".
-   Instances take 0.5–4s by region, so give it ~30–60s to fill in,
-   then hit "↻ Refresh" in the report.)
+  Open the dashboard:   ${UI}
+  (Three processes — order-process, payment-process (with an exclusive
+   gateway), shipping-process — run continuously. Give it ~30–60s, then
+   pick a process in the header: duration percentiles, SLA-met /
+   no-incident %, distinct count, top processes and the flow-node table
+   all fill in from live instances.)
 
   Logs:
     OC        ${OC_DIR}/oc.log

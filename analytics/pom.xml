@@ -29,4 +29,21 @@
     <module>analytics-webapp</module>
   </modules>
 
+  <properties>
+    <!-- Mergeable sketches (HLL, KLL quantiles, frequent items) for the streaming aggregates.
+         Pinned to the last line that still ships Java 11 bytecode + the Memory API; 9.0.0 requires
+         Java 25 (Panama MemorySegment) and cannot run on this repo's Java 21 baseline. -->
+    <version.datasketches>6.2.0</version.datasketches>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.datasketches</groupId>
+        <artifactId>datasketches-java</artifactId>
+        <version>${version.datasketches}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
 </project>

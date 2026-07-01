@@ -1,0 +1,301 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.eventbridge.examples;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobWorker;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.net.URI;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Drives a steady but <em>uneven</em>, varied live stream through the whole analytics stack: it
+ * deploys several distinct process definitions with real service tasks + job workers (and one
+ * laid-out, timer-based model), then continuously starts instances that actually <em>complete</em>
+ * with varied durations. Feeds every dashboard metric at once — per-definition duration
+ * percentiles, SLA-met and no-incident ratios, distinct-process count, the top-processes ranking,
+ * and the flow-node duration heatmap.
+ *
+ * <p>Variation is deliberate so the charts have shape:
+ *
+ * <ul>
+ *   <li>arrival is bursty and jittered, not a fixed cadence (occasional bursts, occasional pauses);
+ *   <li>processes are picked by weight, so the top-processes ranking is uneven;
+ *   <li>job workers wait a randomized time before completing, with a fat tail (~10% take much
+ *       longer) so p90/p99 sit well above the median.
+ * </ul>
+ *
+ * <p>Processes deployed:
+ *
+ * <ul>
+ *   <li>{@code order-process} — start → service task ({@code order-collect}) → end.
+ *   <li>{@code payment-process} — start → service task ({@code payment-authorize}) → exclusive
+ *       gateway → (approved) service task ({@code payment-capture}) → end / (declined) → end.
+ *   <li>{@code shipping-process} — start → service task ({@code shipping-dispatch}) → end.
+ *   <li>{@code region-exec-time-demo} — a laid-out, timer-based model deployed from the bundled
+ *       {@code region-exec-time-demo.bpmn}; completes on its own via region-dependent timers.
+ * </ul>
+ *
+ * <pre>
+ *   java io.camunda.eventbridge.examples.MultiProcessDemoDriver [meanIntervalMs]
+ *   -Dcamunda.rest=http://localhost:8088
+ * </pre>
+ *
+ * Runs until interrupted (Ctrl-C / kill).
+ */
+public final class MultiProcessDemoDriver {
+
+  private static final String[] REGIONS = {"EU", "US", "APAC"};
+  private static final String REGION_DEMO = "region-exec-time-demo";
+
+  // Instances run tens of seconds up to a couple of minutes (never longer), so recent SLA start
+  // cohorts still have in-flight instances — that is what makes the maturing band visible on the
+  // dashboard. ~15% do deliberately slow work that blows the ~90s SLA (and lifts p90/p99); ~8%
+  // raise a real Zeebe incident (job failed with no retries left). A faulted instance is cancelled
+  // shortly after so it terminates and registers as "did not finish cleanly" in the no-incident
+  // ratio — otherwise a real incident just hangs the instance and never completes.
+  private static final int SLA_BREACH_PCT = 15;
+  private static final int FAULT_PCT = 8;
+  private static final long FAULT_CANCEL_DELAY_MS = 2_000L;
+  // Enough execution threads that minute-long jobs run concurrently instead of serialising into a
+  // queue (the client defaults to ONE) — otherwise every instance waits and its duration is queue
+  // time, not work time.
+  private static final int WORKER_THREADS = 64;
+  private static final Duration JOB_TIMEOUT = Duration.ofMinutes(5); // must exceed the longest work
+
+  private MultiProcessDemoDriver() {}
+
+  public static void main(final String[] args) throws InterruptedException {
+    final var restAddress = System.getProperty("camunda.rest", "http://localhost:8088");
+    final long meanIntervalMs = args.length > 0 ? Long.parseLong(args[0]) : 600L;
+
+    final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .restAddress(URI.create(restAddress))
+            .preferRestOverGrpc(true)
+            .numJobWorkerExecutionThreads(WORKER_THREADS)
+            .build();
+
+    deploy(client, "order-process", orderProcess());
+    deploy(client, "payment-process", paymentProcess());
+    deploy(client, "shipping-process", shippingProcess());
+    // a laid-out, timer-based model deployed from its bundled resource (completes on its own)
+    client.newDeployResourceCommand().addResourceFromClasspath(REGION_DEMO + ".bpmn").send().join();
+    System.out.println("Deployed '" + REGION_DEMO + "'");
+
+    // weighted mix so the top-processes ranking is uneven
+    final List<String> weighted =
+        List.of(
+            "order-process",
+            "order-process",
+            "order-process",
+            "order-process",
+            "payment-process",
+            "payment-process",
+            "payment-process",
+            "shipping-process",
+            "shipping-process",
+            REGION_DEMO,
+            REGION_DEMO);
+
+    // cancels faulted (incident-raising) instances a moment after the incident, off the worker
+    // thread, so they terminate rather than hang forever.
+    final ScheduledExecutorService canceller = Executors.newSingleThreadScheduledExecutor();
+
+    final List<JobWorker> workers = new ArrayList<>();
+    workers.add(worker(client, canceller, "order-collect"));
+    workers.add(worker(client, canceller, "shipping-dispatch"));
+    workers.add(worker(client, canceller, "payment-capture"));
+    // the authorize task decides the gateway branch by setting the `approved` variable
+    workers.add(
+        client
+            .newWorker()
+            .jobType("payment-authorize")
+            .handler(
+                (jobClient, job) -> {
+                  sleepWork();
+                  final boolean approved = ThreadLocalRandom.current().nextInt(100) < 80;
+                  jobClient
+                      .newCompleteCommand(job.getKey())
+                      .variables(Map.of("approved", approved))
+                      .send()
+                      .join();
+                })
+            .name("payment-authorize-worker")
+            .maxJobsActive(WORKER_THREADS)
+            .timeout(JOB_TIMEOUT)
+            .open());
+
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  workers.forEach(JobWorker::close);
+                  canceller.shutdownNow();
+                  client.close();
+                }));
+
+    System.out.println(
+        "Deployed processes; starting instances with bursty, jittered arrival (Ctrl-C to stop)…");
+    long started = 0;
+    while (!Thread.currentThread().isInterrupted()) {
+      final var rnd = ThreadLocalRandom.current();
+      // occasional burst; otherwise a single start followed by a jittered (sometimes long) gap
+      final int burst = rnd.nextInt(100) < 15 ? rnd.nextInt(3, 7) : 1;
+      for (int b = 0; b < burst; b++) {
+        startInstance(client, weighted.get(rnd.nextInt(weighted.size())));
+        if (++started % 25 == 0) {
+          System.out.println("started " + started + " instances");
+        }
+        if (b < burst - 1) {
+          Thread.sleep(rnd.nextLong(20, 80)); // tight gaps inside a burst
+        }
+      }
+      // jittered gap between arrivals; ~1 in 12 is a longer lull
+      final long gap =
+          rnd.nextInt(12) == 0
+              ? rnd.nextLong(meanIntervalMs * 3, meanIntervalMs * 6)
+              : rnd.nextLong(meanIntervalMs / 3, meanIntervalMs * 2);
+      Thread.sleep(gap);
+    }
+  }
+
+  private static void startInstance(final CamundaClient client, final String process) {
+    final var rnd = ThreadLocalRandom.current();
+    final String region = REGIONS[rnd.nextInt(REGIONS.length)];
+    final Map<String, Object> vars = new HashMap<>();
+    vars.put("region", region);
+    if (process.equals(REGION_DEMO)) {
+      // region-dependent timer durations so per-element execution times differ on the heatmap
+      final double processSecs = 0.5 + rnd.nextInt(REGIONS.length + region.length() % 3) * 0.5;
+      final double reviewSecs = 0.3 + rnd.nextInt(3) * 0.2;
+      vars.put("delay", "PT" + processSecs + "S");
+      vars.put("reviewDelay", "PT" + reviewSecs + "S");
+    }
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(process)
+        .latestVersion()
+        .variables(vars)
+        .send()
+        .join();
+  }
+
+  /**
+   * Randomized work time on a tens-of-seconds-to-a-couple-of-minutes scale (never longer), so that
+   * recent SLA start cohorts still have in-flight instances. {@link #SLA_BREACH_PCT}% are
+   * deliberately slow (100-160s) so they blow the ~90s SLA and lift p90/p99; the rest complete
+   * comfortably under it.
+   */
+  private static void sleepWork() throws InterruptedException {
+    final var rnd = ThreadLocalRandom.current();
+    final int r = rnd.nextInt(100);
+    if (r < SLA_BREACH_PCT) {
+      Thread.sleep(rnd.nextLong(100_000, 160_000)); // deliberately slow — blows the ~90s SLA
+    } else if (r < SLA_BREACH_PCT + 20) {
+      Thread.sleep(rnd.nextLong(45_000, 85_000)); // near the target, still meets it
+    } else {
+      Thread.sleep(rnd.nextLong(5_000, 45_000)); // typical, comfortably under
+    }
+  }
+
+  private static void deploy(
+      final CamundaClient client, final String processId, final BpmnModelInstance model) {
+    client.newDeployResourceCommand().addProcessModel(model, processId + ".bpmn").send().join();
+    System.out.println("Deployed '" + processId + "'");
+  }
+
+  private static BpmnModelInstance orderProcess() {
+    return Bpmn.createExecutableProcess("order-process")
+        .startEvent()
+        .serviceTask("collect", t -> t.zeebeJobType("order-collect"))
+        .endEvent()
+        .done();
+  }
+
+  private static BpmnModelInstance shippingProcess() {
+    return Bpmn.createExecutableProcess("shipping-process")
+        .startEvent()
+        .serviceTask("dispatch", t -> t.zeebeJobType("shipping-dispatch"))
+        .endEvent()
+        .done();
+  }
+
+  // start -> authorize -> XOR gateway -> (approved) capture -> end / (not approved) declined end
+  private static BpmnModelInstance paymentProcess() {
+    return Bpmn.createExecutableProcess("payment-process")
+        .startEvent()
+        .serviceTask("authorize", t -> t.zeebeJobType("payment-authorize"))
+        .exclusiveGateway("decision")
+        .conditionExpression("=approved")
+        .serviceTask("capture", t -> t.zeebeJobType("payment-capture"))
+        .endEvent("captured")
+        .moveToLastGateway()
+        .conditionExpression("=not(approved)")
+        .endEvent("declined")
+        .done();
+  }
+
+  private static JobWorker worker(
+      final CamundaClient client, final ScheduledExecutorService canceller, final String jobType) {
+    return client
+        .newWorker()
+        .jobType(jobType)
+        .handler((jobClient, job) -> handleJob(client, canceller, jobClient, job))
+        .name(jobType + "-worker")
+        .maxJobsActive(WORKER_THREADS)
+        .timeout(JOB_TIMEOUT)
+        .open();
+  }
+
+  /**
+   * Completes the job after some work, except for {@link #FAULT_PCT}% of jobs which fail with no
+   * retries left — raising a real incident — and are then cancelled after a short delay so the
+   * instance terminates (feeding the no-incident ratio) instead of hanging on the incident.
+   */
+  private static void handleJob(
+      final CamundaClient client,
+      final ScheduledExecutorService canceller,
+      final JobClient jobClient,
+      final ActivatedJob job)
+      throws InterruptedException {
+    if (ThreadLocalRandom.current().nextInt(100) < FAULT_PCT) {
+      jobClient
+          .newFailCommand(job.getKey())
+          .retries(0)
+          .errorMessage("injected fault: downstream dependency unavailable")
+          .send()
+          .join();
+      final long instanceKey = job.getProcessInstanceKey();
+      canceller.schedule(
+          () -> {
+            try {
+              client.newCancelInstanceCommand(instanceKey).send().join();
+            } catch (final Exception ignored) {
+              // instance may already be gone — best effort
+            }
+          },
+          FAULT_CANCEL_DELAY_MS,
+          TimeUnit.MILLISECONDS);
+      return;
+    }
+    sleepWork();
+    jobClient.newCompleteCommand(job.getKey()).send().join();
+  }
+}
