@@ -1,6 +1,6 @@
 # hadolint global ignore=DL3006
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
-ARG BASE_DIGEST="sha256:aadeba9fb09a3c48be73b16e5ea8887844064615f0e94b4a12b51d1119a6aef9"
+ARG BASE_DIGEST="sha256:ebbd177f9ff256a301f2e81f8e93a8c512890e0b74cea0417f93bc7600593005"
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
