@@ -35,6 +35,13 @@ public final class AgentHistoryClient {
                   .withSourceRecordPosition(position)
                   .getFirst();
 
+  private static final Function<Long, Record<AgentHistoryRecordValue>> COMMIT_EXPECTATION =
+      (position) ->
+          RecordingExporter.agentHistoryRecords()
+              .onlyEvents()
+              .withSourceRecordPosition(position)
+              .getFirst();
+
   private final CommandWriter writer;
   private final AgentHistoryRecord record = new AgentHistoryRecord();
   private List<String> authorizedTenantIds = List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -104,5 +111,10 @@ public final class AgentHistoryClient {
             record,
             authorizedTenantIds.toArray(new String[0]));
     return (expectRejection ? CREATE_REJECTION_EXPECTATION : CREATED_EXPECTATION).apply(position);
+  }
+
+  public Record<AgentHistoryRecordValue> commit() {
+    final long position = writer.writeCommand(AgentHistoryIntent.COMMIT, record);
+    return COMMIT_EXPECTATION.apply(position);
   }
 }
