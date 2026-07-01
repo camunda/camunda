@@ -381,7 +381,12 @@ class OperateProcessesPage {
   }
 
   async clickCancelProcessInstanceDialogButton(): Promise<void> {
-    await this.cancelProcessInstanceDialogButton.click();
+    await expect(async () => {
+      await expect(this.cancelProcessInstanceDialogButton).toBeVisible({
+        timeout: 5000,
+      });
+      await this.cancelProcessInstanceDialogButton.click({timeout: 5000});
+    }).toPass({timeout: 30000});
   }
 
   async tableHasInstanceKey(keyStr: string): Promise<boolean> {
