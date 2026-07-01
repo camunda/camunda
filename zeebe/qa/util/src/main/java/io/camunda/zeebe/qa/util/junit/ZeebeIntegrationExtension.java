@@ -257,15 +257,16 @@ final class ZeebeIntegrationExtension
     final Path workingDirectory;
     if (broker.unifiedConfig().getCluster().getNodeIdProvider().getType() == Type.FIXED) {
       workingDirectory = directory.resolve(workingDirectoryName(id));
-      try {
-        Files.createDirectory(workingDirectory);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
     } else {
       // Use the shared directory directly for dynamic node IDs
       workingDirectory = id.zone() != null ? directory.resolve(id.zone()) : directory;
-      System.out.println("XXXXX working directory for " + id + " is " + workingDirectory);
+    }
+    try {
+      if (!workingDirectory.toFile().exists()) {
+        Files.createDirectory(workingDirectory);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
 
     broker.withWorkingDirectory(workingDirectory);
