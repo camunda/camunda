@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;

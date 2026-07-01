@@ -10,8 +10,8 @@ package io.camunda.zeebe.dynamic.config.api;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.RoutingStateInitializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;

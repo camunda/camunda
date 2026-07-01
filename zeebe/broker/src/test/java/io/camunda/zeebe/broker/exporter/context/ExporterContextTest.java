@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.exporter.context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;

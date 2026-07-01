@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.api.util;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.EngineSecurityConfig;

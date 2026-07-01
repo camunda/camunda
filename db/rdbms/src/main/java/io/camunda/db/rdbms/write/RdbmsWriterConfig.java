@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.util.ObjectBuilder;
 import java.time.Duration;
 import java.time.InstantSource;

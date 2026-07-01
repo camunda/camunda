@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.transport;
 
-import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 public interface ClientRequest extends BufferWriter {
@@ -27,6 +27,6 @@ public interface ClientRequest extends BufferWriter {
    *     "default"} for backward compatibility
    */
   default String getPartitionGroup() {
-    return Protocol.DEFAULT_PARTITION_GROUP_NAME;
+    return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   }
 }

@@ -9,10 +9,10 @@ package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;

@@ -8,8 +8,8 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;

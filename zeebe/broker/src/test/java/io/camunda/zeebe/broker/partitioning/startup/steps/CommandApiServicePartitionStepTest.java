@@ -16,13 +16,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -52,7 +52,7 @@ class CommandApiServicePartitionStepTest {
 
     final var partitionMetadata = mock(PartitionMetadata.class);
     when(partitionMetadata.id())
-        .thenReturn(new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID));
+        .thenReturn(new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID));
 
     when(mockContext.concurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
     when(mockContext.schedulingService()).thenReturn(mockSchedulingService);

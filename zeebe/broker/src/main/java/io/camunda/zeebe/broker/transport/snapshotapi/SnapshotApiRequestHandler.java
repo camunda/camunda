@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;

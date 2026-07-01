@@ -7,7 +7,7 @@
  */
 package io.camunda.spring.utils;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.function.Supplier;
 import org.slf4j.Logger;

@@ -17,15 +17,15 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -70,7 +70,8 @@ public class SnapshotApiRequestHandlerTest {
   @AutoClose MeterRegistry registry = new SimpleMeterRegistry();
   @TempDir Path temporaryFolder;
   final int partitionId = 1;
-  final PartitionId partition = new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, partitionId);
+  final PartitionId partition =
+      new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionId);
   FileBasedSnapshotStore senderSnapshotStore;
   FileBasedSnapshotStore receiverSnapshotStore;
   private AtomixClientTransportAdapter clientTransport;

@@ -8,7 +8,7 @@
 package io.camunda.authentication.config.controllers;
 
 import io.camunda.authentication.service.DefaultMembershipService;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;

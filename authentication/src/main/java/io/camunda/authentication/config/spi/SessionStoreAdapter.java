@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config.spi;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.search.entities.PersistentWebSessionEntity;

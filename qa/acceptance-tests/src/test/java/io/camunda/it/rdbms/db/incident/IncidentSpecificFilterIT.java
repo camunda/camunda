@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.incident;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;

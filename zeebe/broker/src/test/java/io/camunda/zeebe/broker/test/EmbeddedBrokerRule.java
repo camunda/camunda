@@ -17,7 +17,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;

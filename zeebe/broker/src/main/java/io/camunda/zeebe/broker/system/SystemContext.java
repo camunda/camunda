@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -739,8 +739,7 @@ public final class SystemContext {
 
   /**
    * Returns the security configuration for the {@code default} physical tenant. Requires a {@value
-   * io.camunda.configuration.api.physicaltenants.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}
-   * entry to be registered.
+   * io.camunda.cluster.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} entry to be registered.
    *
    * @throws IllegalStateException if no security configuration is registered for the default
    *     physical tenant

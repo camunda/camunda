@@ -17,10 +17,10 @@ import static org.mockito.Mockito.verify;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
-import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class RaftServerReceiverSubjectsTest {
 
   private static final String PARTITION_GROUP = "group";
-  private static final String DEFAULT_GROUP = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+  private static final String DEFAULT_GROUP = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   private static final String LEGACY_GROUP = "raft-partition";
   private static final MemberId MEMBER_ID = new MemberId("0");
   private static final PartitionId PARTITION_ID = new PartitionId(PARTITION_GROUP, 1);

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.util;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;

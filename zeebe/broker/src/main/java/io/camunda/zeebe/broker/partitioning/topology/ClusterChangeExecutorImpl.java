@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;

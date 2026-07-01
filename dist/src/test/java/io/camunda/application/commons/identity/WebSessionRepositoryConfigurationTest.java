@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.camunda.authentication.config.spi.SessionStoreAdapter;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.DocumentBasedSearchClient;

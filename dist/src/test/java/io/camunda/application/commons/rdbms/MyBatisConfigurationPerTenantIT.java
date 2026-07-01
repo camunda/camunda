@@ -9,9 +9,9 @@ package io.camunda.application.commons.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;

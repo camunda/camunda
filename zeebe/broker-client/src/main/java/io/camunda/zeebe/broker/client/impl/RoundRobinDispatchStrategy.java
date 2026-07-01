@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
-import io.camunda.zeebe.protocol.Protocol;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,7 +84,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
       final BrokerClusterState topology,
       final GroupState state) {
     final var routingState =
-        Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(partitionGroup)
+        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(partitionGroup)
             ? topologyManager.getClusterConfiguration().routingState()
             : Optional.<RoutingState>empty();
     final long expectedVersion =

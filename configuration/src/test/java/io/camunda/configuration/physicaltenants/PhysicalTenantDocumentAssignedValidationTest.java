@@ -10,12 +10,12 @@ package io.camunda.configuration.physicaltenants;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Document;
 import io.camunda.configuration.Document.AwsStore;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;

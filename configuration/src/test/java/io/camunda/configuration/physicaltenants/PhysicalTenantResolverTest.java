@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;

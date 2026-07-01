@@ -19,8 +19,8 @@ import io.camunda.application.commons.search.PhysicalTenantResourceAccessControl
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;

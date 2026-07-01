@@ -16,9 +16,16 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>configuration-api</artifactId>
+  <artifactId>camunda-cluster</artifactId>
   <packaging>jar</packaging>
 
-  <name>Unified Configuration API</name>
+  <name>Camunda Cluster</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>

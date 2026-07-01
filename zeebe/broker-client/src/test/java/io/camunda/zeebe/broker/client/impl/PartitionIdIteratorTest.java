@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.client.impl;
 import static io.camunda.zeebe.broker.client.BrokerMemberIds.ZERO;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.cluster.PhysicalTenantIds;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,8 @@ final class PartitionIdIteratorTest {
   void shouldIterateOverAllPartitions() {
     // given
     final var iterator =
-        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
+        new PartitionIdIterator(
+            1, 3, topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     final List<Integer> ids = new ArrayList<>();
     topologyManager.addPartition(1, ZERO).addPartition(2, ZERO).addPartition(3, ZERO);
 
@@ -37,7 +38,8 @@ final class PartitionIdIteratorTest {
   void shouldSkipPartitionsWithoutLeaders() {
     // given
     final var iterator =
-        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
+        new PartitionIdIterator(
+            1, 3, topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     final List<Integer> ids = new ArrayList<>();
     topologyManager.addPartition(1, ZERO).addPartition(3, ZERO);
 
@@ -55,7 +57,8 @@ final class PartitionIdIteratorTest {
 
     // when
     final var defaultIterator =
-        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
+        new PartitionIdIterator(
+            1, 3, topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     final var tenantIterator = new PartitionIdIterator(1, 3, topologyManager, "tenant-b");
     final List<Integer> ids = new ArrayList<>();
     tenantIterator.forEachRemaining(ids::add);
@@ -72,7 +75,8 @@ final class PartitionIdIteratorTest {
 
     // when
     final var iterator =
-        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
+        new PartitionIdIterator(
+            1, 3, topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(iterator.hasNext()).isFalse();

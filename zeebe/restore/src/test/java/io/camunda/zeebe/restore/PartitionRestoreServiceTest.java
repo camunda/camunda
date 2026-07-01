@@ -14,9 +14,9 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;

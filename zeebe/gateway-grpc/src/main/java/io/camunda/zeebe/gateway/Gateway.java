@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import com.google.rpc.Code;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;

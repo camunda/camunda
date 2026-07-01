@@ -10,9 +10,9 @@ package io.camunda.zeebe.broker.partitioning;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;

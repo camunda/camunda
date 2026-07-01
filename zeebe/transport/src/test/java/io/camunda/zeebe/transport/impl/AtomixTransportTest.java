@@ -15,9 +15,9 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
-import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.ClientRequest;
@@ -305,7 +305,7 @@ public class AtomixTransportTest {
   @Test
   public void shouldReceiveRequestOnLegacyTopicForDefaultGroup() {
     // given
-    Assume.assumeTrue(Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(topicPrefix));
+    Assume.assumeTrue(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
     serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
 
     // when -- requests are sent on the legacy, non-prefixed topic
@@ -322,7 +322,7 @@ public class AtomixTransportTest {
   @Test
   public void shouldNotReceiveRequestOnLegacyTopicForNonDefaultGroup() {
     // given
-    Assume.assumeFalse(Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(topicPrefix));
+    Assume.assumeFalse(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
     serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
 
     // when -- requests are sent on the legacy, non-prefixed topic
@@ -344,7 +344,7 @@ public class AtomixTransportTest {
         transportFactory.createServerTransport(
             cluster.getMessagingService(), new SnowflakeIdGenerator(1), false);
     try {
-      final var partition = new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, 5);
+      final var partition = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 5);
       transport.subscribe(partition, RequestType.COMMAND, new DirectlyResponder()).join();
       final var serverAddress = cluster.getMessagingService().address();
 
@@ -524,7 +524,7 @@ public class AtomixTransportTest {
   private static final class Request implements ClientRequest {
 
     private final String msg;
-    private String partitionGroup = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+    private String partitionGroup = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
     public Request(final String msg) {
       this.msg = msg;

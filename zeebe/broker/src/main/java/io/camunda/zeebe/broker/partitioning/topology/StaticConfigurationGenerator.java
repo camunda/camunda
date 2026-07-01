@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;

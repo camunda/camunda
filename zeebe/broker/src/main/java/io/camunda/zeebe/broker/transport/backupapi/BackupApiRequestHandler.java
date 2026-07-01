@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;

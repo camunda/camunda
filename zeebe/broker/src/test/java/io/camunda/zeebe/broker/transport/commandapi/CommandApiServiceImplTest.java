@@ -17,12 +17,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -45,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CommandApiServiceImplTest {
 
   private static final PartitionId PARTITION_ID =
-      new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1);
+      new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
   @Mock private ServerTransport serverTransport;
   @Mock private QueryApiCfg queryApi;
