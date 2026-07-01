@@ -7,7 +7,7 @@ description: >
 
 inputs:
   failure_category:
-    description: "infra | flaky | product | test | external | unknown"
+    description: "infra | test-infra | flaky | product | test | external | unknown"
     required: true
   stage:
     description: "Pipeline stage, e.g. helm-integration / saas-e2e"
