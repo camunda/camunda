@@ -21,7 +21,7 @@
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
     <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
     <!-- Use a fixed Connectors Docker image version as it follows a different release cycle. Update to the latest available version. -->
-    <io.camunda.process.test.connectorsDockerImageVersion>8.8.14</io.camunda.process.test.connectorsDockerImageVersion>
+    <io.camunda.process.test.connectorsDockerImageVersion>8.8.15</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
   <dependencies>
