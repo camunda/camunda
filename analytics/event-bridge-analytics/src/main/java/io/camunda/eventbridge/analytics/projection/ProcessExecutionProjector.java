@@ -13,6 +13,7 @@ import io.camunda.analytics.streaming.state.api.KeyValueStore;
 import io.camunda.analytics.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
 import io.camunda.eventbridge.analytics.fact.IncidentCohortFact;
+import io.camunda.eventbridge.analytics.fact.IncidentDurationFact;
 import io.camunda.eventbridge.analytics.fact.IncidentFact;
 import io.camunda.eventbridge.analytics.fact.ProcessDefinitionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
@@ -105,6 +106,7 @@ public final class ProcessExecutionProjector
         && record.getIntent() instanceof final IncidentIntent incidentIntent) {
       if (incidentIntent == IncidentIntent.CREATED) {
         final boolean first = store.markIncident(incident.getProcessInstanceKey());
+        store.putIncidentStart(incident.getElementInstanceKey(), record.getTimestamp());
         out.collect(incidentFact(zeebeRecord, incident, 1L));
         if (first) {
           // the instance's first incident: reclassify its start cohort as "had an incident". Stamp
@@ -128,6 +130,19 @@ public final class ProcessExecutionProjector
         }
       } else if (incidentIntent == IncidentIntent.RESOLVED) {
         out.collect(incidentFact(zeebeRecord, incident, -1L));
+        // pair with the earlier CREATE (by element-instance key) to derive the open→resolve time
+        final long createdAt = store.takeIncidentStart(incident.getElementInstanceKey());
+        if (createdAt != BaseProjectionStore.NO_POSITION) {
+          out.collect(
+              new IncidentDurationFact(
+                  incident.getBpmnProcessId(),
+                  incident.getElementId(),
+                  incident.getTenantId(),
+                  record.getTimestamp() - createdAt,
+                  record.getTimestamp(),
+                  zeebeRecord.partitionId(),
+                  zeebeRecord.offset()));
+        }
       }
       return;
     }

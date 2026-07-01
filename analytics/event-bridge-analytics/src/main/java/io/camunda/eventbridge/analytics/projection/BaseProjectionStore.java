@@ -46,6 +46,15 @@ public interface BaseProjectionStore {
    */
   void clearIncident(long processInstanceKey);
 
+  /** Records the create time of the incident open on {@code elementInstanceKey}. */
+  void putIncidentStart(long elementInstanceKey, long createTimeMs);
+
+  /**
+   * Returns and removes the create time of the incident on {@code elementInstanceKey}, or {@link
+   * #NO_POSITION} if none is recorded (e.g. a resolve seen without its create during replay).
+   */
+  long takeIncidentStart(long elementInstanceKey);
+
   /** The position up to which {@code partitionId} has been folded, or {@link #NO_POSITION}. */
   long getConsumedPosition(int partitionId);
 

@@ -35,6 +35,7 @@ import io.camunda.eventbridge.analytics.element.ElementKeyCodec;
 import io.camunda.eventbridge.analytics.element.JdbcElementDurationPercentileSink;
 import io.camunda.eventbridge.analytics.element.JdbcElementHeatmapSink;
 import io.camunda.eventbridge.analytics.fact.IncidentCohortFact;
+import io.camunda.eventbridge.analytics.fact.IncidentDurationFact;
 import io.camunda.eventbridge.analytics.fact.IncidentFact;
 import io.camunda.eventbridge.analytics.fact.ProcessDefinitionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
@@ -54,6 +55,7 @@ import io.camunda.eventbridge.analytics.metric.JdbcActiveInstancesSink;
 import io.camunda.eventbridge.analytics.metric.JdbcDefinitionDurationPercentileSink;
 import io.camunda.eventbridge.analytics.metric.JdbcDefinitionRatioSink;
 import io.camunda.eventbridge.analytics.metric.JdbcDurationBucketSink;
+import io.camunda.eventbridge.analytics.metric.JdbcIncidentDurationSink;
 import io.camunda.eventbridge.analytics.metric.JdbcIncidentFrequencySink;
 import io.camunda.eventbridge.analytics.metric.JdbcOpenIncidentsSink;
 import io.camunda.eventbridge.analytics.metric.JdbcProcessDefinitionSink;
@@ -676,6 +678,37 @@ public final class StandaloneAnalyticsPipeline {
             new IncidentKeyCodec(),
             new LongCodec());
 
+    // incident duration — open→resolve time per flow node (count/total/max → avg on read), for the
+    // incident-duration heatmap. Windowed by resolve time; reuses the execution-time aggregate.
+    final SourceCoordinate<IncidentDurationFact> incidentDurationCoordinate =
+        new SourceCoordinate<>() {
+          @Override
+          public int partition(final IncidentDurationFact fact) {
+            return fact.sourcePartitionId();
+          }
+
+          @Override
+          public long position(final IncidentDurationFact fact) {
+            return fact.sourcePosition();
+          }
+        };
+    final JdbcIncidentDurationSink incidentDurationSink =
+        new JdbcIncidentDurationSink(dataSource, MINUTE_WINDOW_MS);
+    incidentDurationSink.initSchema();
+    final Rollup<IncidentDurationFact> incidentDurationRollup =
+        buildRollup(
+            rollupState,
+            new ExecutionTimeAggregateFunction<>(IncidentDurationFact::durationMs),
+            fact -> new IncidentKey(fact.bpmnProcessId(), fact.elementId(), fact.tenantId()),
+            IncidentDurationFact::resolvedTimeMs,
+            incidentDurationCoordinate,
+            MINUTE_WINDOW_MS,
+            incidentDurationSink,
+            RollupColumnFamilies.INCIDENT_DUR_CELLS,
+            RollupColumnFamilies.INCIDENT_DUR_OFFSETS,
+            new IncidentKeyCodec(),
+            new ExecutionTimeAccumulatorCodec());
+
     // definitions — sink each deployed process's BPMN so the dashboard can render the model behind
     // the flow-node heatmap. Not windowed: a direct idempotent upsert by definition key.
     final JdbcProcessDefinitionSink definitionSink = new JdbcProcessDefinitionSink(dataSource);
@@ -708,6 +741,9 @@ public final class StandaloneAnalyticsPipeline {
     rollups.add(
         new TypeRoutingRollup<ProcessExecutionFact, IncidentFact>(
             IncidentFact.class, openIncidentsRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, IncidentDurationFact>(
+            IncidentDurationFact.class, incidentDurationRollup));
     rollups.add(
         new TypeRoutingRollup<ProcessExecutionFact, SlaCohortFact>(
             SlaCohortFact.class, slaCohortRollup));

@@ -44,6 +44,10 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
   private final DbLong incidentFlag = new DbLong();
   private final KeyValueStore<DbLong, DbLong> incidents;
 
+  private final DbLong incidentStartKey = new DbLong();
+  private final DbLong incidentStartValue = new DbLong();
+  private final KeyValueStore<DbLong, DbLong> incidentStarts;
+
   private StateBackedProjectionStore(final StateStoreProvider<AnalyticsColumnFamilies> provider) {
     this.provider = provider;
     variables =
@@ -57,6 +61,8 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
     incidents =
         provider.keyValueStore(
             AnalyticsColumnFamilies.INSTANCE_INCIDENT, new DbLong(), new DbLong());
+    incidentStarts =
+        provider.keyValueStore(AnalyticsColumnFamilies.INCIDENT_START, new DbLong(), new DbLong());
   }
 
   /**
@@ -120,6 +126,24 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
   public void clearIncident(final long processInstanceKey) {
     incidentKey.wrapLong(processInstanceKey);
     incidents.delete(incidentKey);
+  }
+
+  @Override
+  public void putIncidentStart(final long elementInstanceKey, final long createTimeMs) {
+    incidentStartKey.wrapLong(elementInstanceKey);
+    incidentStartValue.wrapLong(createTimeMs);
+    incidentStarts.put(incidentStartKey, incidentStartValue);
+  }
+
+  @Override
+  public long takeIncidentStart(final long elementInstanceKey) {
+    incidentStartKey.wrapLong(elementInstanceKey);
+    final long start =
+        incidentStarts.get(incidentStartKey).map(DbLong::getValue).orElse(NO_POSITION);
+    if (start != NO_POSITION) {
+      incidentStarts.delete(incidentStartKey);
+    }
+    return start;
   }
 
   @Override

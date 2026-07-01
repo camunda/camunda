@@ -32,7 +32,14 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * processInstanceKey}. Read (and cleared) when the instance reaches a terminal state so the
    * derived fact can record whether the instance ever had an incident.
    */
-  INSTANCE_INCIDENT(4, ColumnFamilyScope.PARTITION_LOCAL);
+  INSTANCE_INCIDENT(4, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Per element instance with an open incident: the incident's create time, keyed by {@code
+   * elementInstanceKey}. Read (and cleared) on resolve to derive the incident's open→resolve
+   * duration.
+   */
+  INCIDENT_START(5, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

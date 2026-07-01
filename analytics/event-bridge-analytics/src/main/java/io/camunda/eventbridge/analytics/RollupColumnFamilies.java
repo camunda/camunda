@@ -163,7 +163,13 @@ public enum RollupColumnFamilies implements EnumValue, ScopedColumnFamily {
   DURATION_BUCKET_CELLS(45, ColumnFamilyScope.PARTITION_LOCAL),
 
   /** Completion-time distribution offsets. */
-  DURATION_BUCKET_OFFSETS(46, ColumnFamilyScope.PARTITION_LOCAL);
+  DURATION_BUCKET_OFFSETS(46, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /** Incident-duration (open→resolve time) per flow node: cells. */
+  INCIDENT_DUR_CELLS(47, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /** Incident-duration offsets. */
+  INCIDENT_DUR_OFFSETS(48, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;
