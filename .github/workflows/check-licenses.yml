@@ -49,17 +49,17 @@ jobs:
         project:
         - name: c8run
           path: ./c8run
-          runner_definition: '"gcp-core-4-longrunning"'
-          fossa_cli_arch: linux_amd64
+          runner_definition: '"github_linux_4_core_arm"'
+          fossa_cli_arch: linux_arm64
         - name: optimize
           path: ./optimize
-          runner_definition: '"gcp-core-16-longrunning"'
+          runner_definition: '"github_linux_16_core_arm"'
           maven-config: |
             -DskipQaBuild=true
-          fossa_cli_arch: linux_amd64
+          fossa_cli_arch: linux_arm64
         - name: single-app
           path: ./
-          runner_definition: '"github_linux_8_core_arm"'
+          runner_definition: '"github_linux_16_core_arm"'
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
