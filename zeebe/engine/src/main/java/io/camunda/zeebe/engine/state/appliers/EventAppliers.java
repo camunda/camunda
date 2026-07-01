@@ -171,9 +171,9 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
-    register(AgentHistoryIntent.CREATED, 1, new AgentHistoryCreatedApplier(state));
-    register(AgentHistoryIntent.COMMITTED, 1, new AgentHistoryCommittedApplier(state));
-    register(AgentHistoryIntent.DISCARDED, 1, new AgentHistoryDiscardedApplier(state));
+    register(AgentHistoryIntent.CREATED, new AgentHistoryCreatedApplier(state));
+    register(AgentHistoryIntent.COMMITTED, new AgentHistoryCommittedApplier(state));
+    register(AgentHistoryIntent.DISCARDED, new AgentHistoryDiscardedApplier(state));
   }
 
   private void registerAgentInstanceEventAppliers(final MutableProcessingState state) {
