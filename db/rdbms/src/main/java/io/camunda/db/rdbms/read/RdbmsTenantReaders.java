@@ -109,7 +109,7 @@ public record RdbmsTenantReaders(
       final RdbmsMapperBundle mappers, final RdbmsReaderConfig readerConfig) {
     return new RdbmsTenantReaders(
         new AgentInstanceDbReader(mappers.agentInstanceMapper(), readerConfig),
-        new AgentHistoryDbReader(readerConfig),
+        new AgentHistoryDbReader(mappers.agentHistoryMapper(), readerConfig),
         new AuditLogDbReader(mappers.auditLogMapper(), readerConfig),
         new AuthorizationDbReader(mappers.authorizationMapper(), readerConfig),
         new BatchOperationDbReader(mappers.batchOperationMapper(), readerConfig),
