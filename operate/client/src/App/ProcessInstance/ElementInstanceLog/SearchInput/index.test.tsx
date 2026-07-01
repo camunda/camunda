@@ -16,7 +16,7 @@ describe('<SearchInput />', () => {
     expect(input).toBeInTheDocument();
     expect(input).toHaveAttribute(
       'placeholder',
-      'Search by element name or ID',
+      'Element name or ID',
     );
   });
 

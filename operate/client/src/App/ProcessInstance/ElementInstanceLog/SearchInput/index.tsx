@@ -19,7 +19,7 @@ const SearchInput: React.FC<Props> = ({value, onChange, onClear}) => {
     <Search
       size="sm"
       labelText="Search instance history"
-      placeholder="Search by element name or ID"
+      placeholder="Element name or ID"
       data-testid="instance-history-search-input"
       value={value}
       onChange={(event) => {
