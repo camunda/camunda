@@ -11,10 +11,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record WaitStateStatisticsEntity(String elementId, Long count) {
+public record WaitStateStatisticsEntity(String elementId, Long waitingCount) {
 
   public WaitStateStatisticsEntity {
     Objects.requireNonNull(elementId, "elementId");
-    Objects.requireNonNull(count, "count");
+    Objects.requireNonNull(waitingCount, "waitingCount");
   }
 }

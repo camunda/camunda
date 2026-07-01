@@ -356,7 +356,7 @@ public final class SearchQueryResponseMapper {
       final WaitStateStatisticsEntity entity) {
     return ProcessInstanceWaitStateStatisticsResult.Builder.create()
         .elementId(entity.elementId())
-        .waitingCount(entity.count())
+        .waitingCount(entity.waitingCount())
         .build();
   }
 
