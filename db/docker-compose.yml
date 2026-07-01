@@ -51,6 +51,8 @@ services:
       - --collation-server=utf8mb4_uca1400_ai_ci
     ports:
       - "3306:3306"
+    volumes:
+      - ./docker-compose-init/02-grant-camunda-create-mysql.sql:/docker-entrypoint-initdb.d/02-grant-camunda-create-mysql.sql:ro
 
   mysql:
     image: mysql:${IMAGE_VERSION:-9.6}
@@ -62,6 +64,8 @@ services:
       MYSQL_PASSWORD: camunda
     ports:
       - "3306:3306"
+    volumes:
+      - ./docker-compose-init/02-grant-camunda-create-mysql.sql:/docker-entrypoint-initdb.d/02-grant-camunda-create-mysql.sql:ro
 
       # Name of the Docker Compose service
   oracle:

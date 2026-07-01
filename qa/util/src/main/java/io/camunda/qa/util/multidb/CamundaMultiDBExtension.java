@@ -12,10 +12,12 @@ import static org.assertj.core.api.Fail.fail;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
 import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -28,10 +30,13 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.jspecify.annotations.NonNull;
@@ -233,13 +238,34 @@ public class CamundaMultiDBExtension
   private static final String EXTENSION_NAME = "CamundaMultiDBExtension";
   private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
   private static final String PREFERRED_EXTENSION_MULTIDB = "multi-db";
+  private static final String PT_ADMIN_PASSWORD = "ptadmin";
+
+  /**
+   * PT ids are interpolated into SQL identifiers (schema/database names, table prefixes) by the
+   * bootstrap DDL, so restrict them to lowercase-alphanumeric starting with a letter — valid on
+   * every dialect and injection-safe.
+   */
+  private static final Pattern PHYSICAL_TENANT_ID_PATTERN = Pattern.compile("[a-z][a-z0-9]*");
+
+  /**
+   * Caps the PT id so the namespace {@code <basePrefix>_<tenantId>} (a 10-char run token plus the
+   * id) fits Oracle's 30-character identifier limit, the strictest supported dialect: {@code 10 + 1
+   * + 19 = 30}.
+   */
+  private static final int MAX_PHYSICAL_TENANT_ID_LENGTH = 19;
+
   private final List<AutoCloseable> closeables = new ArrayList<>();
+  // Best-effort drop of per-PT schemas/databases provisioned for this run; cleared in afterAll.
+  private final List<Runnable> physicalTenantNamespaceCleanups = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
   private DatabaseType databaseType;
   private ApplicationUnderTest applicationUnderTest;
   private String testPrefix;
   private String physicalTenantId;
+  // non-null when @MultiDbPhysicalTenants is present; keyed by tenantId
+  private List<String> multiPhysicalTenantIds;
+  private MultiPhysicalTenantClients multiPhysicalTenantClients;
   private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
@@ -297,33 +323,171 @@ public class CamundaMultiDBExtension
   }
 
   private void configurePhysicalTenant() {
+    // Single-PT path: copy root defaultRoles as-is, no per-PT admin user seeded.
+    provisionPhysicalTenant(physicalTenantId, false);
+  }
+
+  private void configurePhysicalTenants(final List<String> tenantIds) {
+    // Multi-PT path: each PT gets its own seeded <ptId>-admin user + admin default role.
+    for (final String tenantId : tenantIds) {
+      provisionPhysicalTenant(tenantId, true);
+    }
+  }
+
+  /**
+   * Validates the {@link MultiDbPhysicalTenants} ids: at least one, none blank, no duplicates, and
+   * never {@code default} (the default physical tenant is implicit and carries the broker's root
+   * config).
+   */
+  private static List<String> validatedPhysicalTenantIds(final String[] values) {
+    final List<String> ids = List.of(values);
+    if (ids.isEmpty()) {
+      throw new IllegalStateException(
+          "@MultiDbPhysicalTenants must declare at least one tenant id");
+    }
+    final List<String> seen = new ArrayList<>();
+    for (final String id : ids) {
+      if (id.isBlank()) {
+        throw new IllegalStateException("@MultiDbPhysicalTenants tenant ids must not be blank");
+      }
+      if ("default".equals(id)) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants must not include 'default'; the default physical tenant is"
+                + " implicit");
+      }
+      if (!PHYSICAL_TENANT_ID_PATTERN.matcher(id).matches()) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants tenant id '"
+                + id
+                + "' must be lowercase alphanumeric and start with a letter (it is embedded into"
+                + " SQL identifiers)");
+      }
+      if (id.length() > MAX_PHYSICAL_TENANT_ID_LENGTH) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants tenant id '"
+                + id
+                + "' exceeds the maximum length of "
+                + MAX_PHYSICAL_TENANT_ID_LENGTH
+                + " characters (to keep the provisioned namespace within the database"
+                + " identifier-length limits)");
+      }
+      if (seen.contains(id)) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants has a duplicate tenant id '" + id + "'");
+      }
+      seen.add(id);
+    }
+    return ids;
+  }
+
+  /**
+   * Provisions a single physical tenant: configures isolated RDBMS secondary storage, and copies
+   * the root {@code security.initialization} into the PT — a PT must own its initialization and
+   * cannot inherit it from root (see {@code PhysicalTenantRequiredOverrideValidation}).
+   * Authentication method and {@code authorizations.enabled} DO inherit from root and are not
+   * copied.
+   *
+   * <p>Storage isolation strategy:
+   *
+   * <ul>
+   *   <li>{@code RDBMS_H2}: each PT gets a fresh dedicated in-memory H2 database (separate URL per
+   *       PT, so no table-prefix separation is needed).
+   *   <li>{@code RDBMS_POSTGRES}/{@code RDBMS_AURORA}, {@code RDBMS_MYSQL}/{@code RDBMS_MARIADB},
+   *       {@code RDBMS_MSSQL}: each PT gets a dedicated namespace (schema or database) named {@code
+   *       <basePrefix>_<tenantId>}, created via a bootstrap JDBC connection before broker start and
+   *       targeted by the PT's URL ({@code currentSchema}, the URL database segment, or {@code
+   *       databaseName} respectively). The table prefix is empty — isolation is at the
+   *       schema/database level.
+   *   <li>{@code RDBMS_ORACLE}: each PT gets a per-tenant table prefix ({@code
+   *       <basePrefix>_<tenantId>}) in the shared {@code camunda} schema, reusing the base
+   *       connection. Oracle's schema == user, so a schema-per-PT would need DBA-only {@code CREATE
+   *       USER}, and the production isolation check rejects two users on the same URL anyway; a
+   *       distinct prefix is the validator's allowed "shared connection, distinct prefix" mode. See
+   *       {@link PhysicalTenantSchemaProvisioner}.
+   * </ul>
+   *
+   * <p>When {@code seedAdminUser} is {@code true} (multi-PT mode), a {@code <tenantId>-admin}
+   * basic-auth user is appended to the PT's init and the {@code admin} default role is bound to
+   * that user alone. The PT intentionally does NOT inherit the root/default-tenant default-role
+   * bindings (e.g. mapping rules bound to {@code admin}): each physical tenant is isolated and
+   * seeds its own admin identity. When {@code false} (single-PT mode), the root {@code
+   * defaultRoles} are copied verbatim.
+   */
+  private void provisionPhysicalTenant(final String tenantId, final boolean seedAdminUser) {
     if (!(applicationUnderTest.application
         instanceof final TestSpringApplication<?> springApplication)) {
       throw new IllegalStateException(
           "Physical-tenant mode requires a TestSpringApplication-based application; got "
               + applicationUnderTest.application.getClass().getName());
     }
-    final String url =
-        "jdbc:h2:mem:"
-            + physicalTenantId
-            + "-"
-            + UUID.randomUUID()
-            + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
     final var rootInit = springApplication.unifiedConfig().getSecurity().getInitialization();
+    final String adminUsername = tenantId + "-admin";
+
+    // Derive per-PT storage config based on the active database type.
+    final String ptUrl;
+    final String ptUsername;
+    final String ptPassword;
+    final String ptPrefix;
+    if (databaseType == DatabaseType.RDBMS_H2) {
+      // Fresh in-memory database per PT — DBs are already separate, so no prefix needed.
+      ptUrl =
+          "jdbc:h2:mem:"
+              + testPrefix
+              + "-"
+              + tenantId
+              + "-"
+              + UUID.randomUUID()
+              + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+      ptUsername = "sa";
+      ptPassword = "";
+      ptPrefix = testPrefix;
+    } else {
+      // Per-PT isolated storage derived from the database type: a dedicated schema/database whose
+      // namespace lives in the PT URL (Postgres/MySQL/MariaDB/SQL Server), or — on Oracle — a
+      // per-PT table prefix in the shared schema. The provisioner returns the prefix to apply
+      // (empty for the schema/database dialects).
+      final var baseRdbms =
+          springApplication.unifiedConfig().getData().getSecondaryStorage().getRdbms();
+      final var ptConfig =
+          PhysicalTenantSchemaProvisioner.provisionAndDerive(
+              databaseType,
+              baseRdbms.getUrl(),
+              baseRdbms.getUsername(),
+              baseRdbms.getPassword(),
+              baseRdbms.getPrefix(),
+              tenantId);
+      ptUrl = ptConfig.url();
+      ptUsername = ptConfig.username();
+      ptPassword = ptConfig.password();
+      ptPrefix = ptConfig.prefix();
+
+      // Track the provisioned namespace so afterAll can drop it best-effort, preventing schemas /
+      // databases from accumulating on persistent shared instances (e.g. Aurora) across CI runs.
+      // The base connection params are captured here because the broker's config may have been
+      // rewritten to the per-PT URL by the time cleanup runs.
+      final var cleanupType = databaseType;
+      final String cleanupUrl = baseRdbms.getUrl();
+      final String cleanupUsername = baseRdbms.getUsername();
+      final String cleanupPassword = baseRdbms.getPassword();
+      final String cleanupNamespace =
+          PhysicalTenantSchemaProvisioner.buildNamespace(baseRdbms.getPrefix(), tenantId);
+      physicalTenantNamespaceCleanups.add(
+          () ->
+              PhysicalTenantSchemaProvisioner.dropNamespace(
+                  cleanupType, cleanupUrl, cleanupUsername, cleanupPassword, cleanupNamespace));
+    }
+
     springApplication.withPtConfig(
-        physicalTenantId,
+        tenantId,
         camunda -> {
           final var secondaryStorage = camunda.getData().getSecondaryStorage();
           secondaryStorage.setType(SecondaryStorageType.rdbms);
           final var rdbms = secondaryStorage.getRdbms();
-          rdbms.setUrl(url);
-          rdbms.setUsername("sa");
-          rdbms.setPassword("");
-          rdbms.setPrefix(testPrefix);
+          rdbms.setUrl(ptUrl);
+          rdbms.setUsername(ptUsername);
+          rdbms.setPassword(ptPassword);
+          rdbms.setPrefix(ptPrefix);
 
-          // Physical tenants must declare their own security.initialization — the resolver
-          // forbids inheriting it from root (see PhysicalTenantRequiredOverrideValidation).
-          // auth method and authorizations.enabled DO inherit from root, so they are not copied.
           final var init = camunda.getSecurity().getInitialization();
           init.setUsers(rootInit.getUsers());
           init.setRoles(rootInit.getRoles());
@@ -331,8 +495,82 @@ public class CamundaMultiDBExtension
           init.setGroups(rootInit.getGroups());
           init.setAuthorizations(rootInit.getAuthorizations());
           init.setTenants(rootInit.getTenants());
-          init.setDefaultRoles(rootInit.getDefaultRoles());
+
+          if (seedAdminUser) {
+            final var users = new ArrayList<>(init.getUsers());
+            users.add(
+                new ConfiguredUser(
+                    adminUsername,
+                    PT_ADMIN_PASSWORD,
+                    adminUsername,
+                    adminUsername + "@example.com"));
+            init.setUsers(users);
+            // Bind the admin role to this PT's own admin only — intentionally NOT inheriting the
+            // root/default-tenant default-role bindings, so a physical tenant stays isolated.
+            init.setDefaultRoles(Map.of("admin", Map.of("users", List.of(adminUsername))));
+          } else {
+            init.setDefaultRoles(rootInit.getDefaultRoles());
+          }
         });
+  }
+
+  private MultiPhysicalTenantClients buildMultiPhysicalTenantClients(final List<String> tenantIds) {
+    final Map<String, CamundaClient> clients = new LinkedHashMap<>();
+    for (final String tenantId : tenantIds) {
+      final String adminUsername = tenantId + "-admin";
+      final String base =
+          applicationUnderTest.application.restAddress().toString().replaceAll("/+$", "");
+      final URI restAddress = URI.create(base + "/physical-tenants/" + tenantId);
+      final CamundaClient client =
+          applicationUnderTest
+              .application
+              .newClientBuilder()
+              .physicalTenantId(tenantId)
+              .preferRestOverGrpc(true)
+              .restAddress(restAddress)
+              .grpcAddress(applicationUnderTest.application.grpcAddress())
+              .credentialsProvider(
+                  new BasicAuthCredentialsProviderBuilder()
+                      .applyEnvironmentOverrides(false)
+                      .username(adminUsername)
+                      .password(PT_ADMIN_PASSWORD)
+                      .build())
+              .build();
+      clients.put(tenantId, client);
+    }
+    return new MultiPhysicalTenantClients(clients);
+  }
+
+  private void awaitMultiPhysicalTenantAdminsReady(final MultiPhysicalTenantClients ptClients) {
+    for (final String tenantId : multiPhysicalTenantIds) {
+      final CamundaClient admin = ptClients.admin(tenantId);
+      Awaitility.await("per-PT admin ready for tenant " + tenantId)
+          .timeout(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  org.assertj.core.api.Assertions.assertThat(
+                          admin.newUsersSearchRequest().send().join().items())
+                      .isNotNull());
+    }
+  }
+
+  private void injectStaticMultiPtClientsField(
+      final Class<?> testClass, final MultiPhysicalTenantClients ptClients) {
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (field.getType() == MultiPhysicalTenantClients.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, ptClients);
+          } else {
+            fail("MultiPhysicalTenantClients field couldn't be injected. Make sure it is static.");
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
   }
 
   private CamundaClientBuilder applyPhysicalTenant(final CamundaClientBuilder builder) {
@@ -399,6 +637,19 @@ public class CamundaMultiDBExtension
       throw new IllegalStateException(
           "Physical-tenant mode (%s) is only supported on RDBMS storage; got %s."
               .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
+    }
+
+    // Multi-PT mode: @MultiDbPhysicalTenants overrides the single-PT path
+    final MultiDbPhysicalTenants multiPtAnnotation =
+        AnnotationSupport.findAnnotation(testClass, MultiDbPhysicalTenants.class).orElse(null);
+    if (multiPtAnnotation != null) {
+      if (!databaseType.storageType().isRdbms()) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants is only supported on RDBMS storage; got " + databaseType);
+      }
+      multiPhysicalTenantIds = validatedPhysicalTenantIds(multiPtAnnotation.value());
+      // In multi-PT mode the single-PT path is inactive
+      physicalTenantId = null;
     }
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
@@ -568,8 +819,19 @@ public class CamundaMultiDBExtension
       configurePhysicalTenant();
     }
 
+    if (multiPhysicalTenantIds != null) {
+      configurePhysicalTenants(multiPhysicalTenantIds);
+    }
+
     if (applicationUnderTest.shouldBeManaged) {
       manageApplicationUnderTest();
+    }
+
+    if (multiPhysicalTenantIds != null) {
+      multiPhysicalTenantClients = buildMultiPhysicalTenantClients(multiPhysicalTenantIds);
+      closeables.add(multiPhysicalTenantClients);
+      awaitMultiPhysicalTenantAdminsReady(multiPhysicalTenantClients);
+      injectStaticMultiPtClientsField(testClass, multiPhysicalTenantClients);
     }
 
     final EntityManager entityManager =
@@ -816,7 +1078,13 @@ public class CamundaMultiDBExtension
     CloseHelper.quietCloseAll(closeables);
     CloseHelper.quietClose(authenticatedClientFactory);
 
-    // 2. Delete test indices now that the application has stopped writing
+    // 2. Drop per-physical-tenant schemas/databases provisioned for this run, now that the broker
+    // has stopped writing. Best-effort: failures are logged inside dropNamespace and never fail the
+    // run, so persistent shared instances (e.g. Aurora) don't accumulate orphaned namespaces.
+    physicalTenantNamespaceCleanups.forEach(Runnable::run);
+    physicalTenantNamespaceCleanups.clear();
+
+    // 3. Delete test indices now that the application has stopped writing
     if (testPrefix != null) {
       try {
         setupHelper.cleanup(testPrefix);
@@ -826,7 +1094,7 @@ public class CamundaMultiDBExtension
     }
     CloseHelper.quietClose(setupHelper);
 
-    // 3. Reset exporter to make sure it doesn't interfere with other tests
+    // 4. Reset exporter to make sure it doesn't interfere with other tests
     RecordingExporter.reset();
 
     coordinationStore(context).remove(EXTENSION_COORDINATION_KEY);

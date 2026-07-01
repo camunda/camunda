@@ -855,7 +855,7 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
-              <excludedGroups>rdbms, history</excludedGroups>
+              <excludedGroups>rdbms, history, multi-db-physical-tenants</excludedGroups>
               <excludes>
                 <exclude>${identity-packages}</exclude>
                 <exclude>**/*$*.java</exclude>

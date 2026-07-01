@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.physicaltenant;
+package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.OwnerType.GROUP;
 import static io.camunda.client.api.search.enums.OwnerType.MAPPING_RULE;
@@ -20,84 +20,85 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.qa.util.multidb.MultiDbPhysicalTenants;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.qa.util.multidb.MultiPhysicalTenantClients;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
- * Multi-physical-tenant authorization ITs that share a SINGLE 3-PT broker ({@code default}, {@code
- * tenanta}, {@code tenantb}), with authorizations and basic auth enabled, multi-tenancy disabled,
- * and a per-PT admin user seeded into each PT. Sharing one broker avoids the topology-await
- * contention seen when each IT class booted its own heavy 3-PT RDBMS broker serially.
+ * Multi-physical-tenant authorization ITs converted to the {@link MultiDbTest} + {@link
+ * MultiDbPhysicalTenants} framework. Validates cross-tenant isolation on RDBMS backends with a
+ * single broker hosting {@code default}, {@code tenanta}, and {@code tenantb}, each isolated by its
+ * own secondary storage: a dedicated in-memory database on H2, a dedicated schema or database on
+ * PostgreSQL/Aurora, MySQL/MariaDB and SQL Server, or a per-tenant table prefix in the shared
+ * schema on Oracle.
  *
- * <p>Each test isolates itself via unique owner/resource ids (UUID-suffixed), so the methods do not
- * interfere with each other on the shared broker.
- *
- * <p>RDBMS-H2 only — Elasticsearch/OpenSearch variants are skipped because per-PT secondary-storage
- * schema init (#51996) and the per-PT writer (#51736) are not yet available, so non-default PTs
- * have no ES/OS indices to authorize against.
+ * <p>RDBMS only — test is disabled for ES/OS because per-PT secondary-storage schema init and
+ * per-PT writer are not yet available for those backends.
  */
-@ZeebeIntegration
-final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthorizationTestBase {
+@MultiDbTest
+@MultiDbPhysicalTenants({"tenanta", "tenantb"})
+@EnabledIfSystemProperty(
+    named = "test.integration.camunda.database.type",
+    matches = "rdbms.*$",
+    disabledReason = "Physical-tenant secondary storage is RDBMS-only")
+final class MultiPhysicalTenantAuthorizationIT {
 
-  @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker BROKER = configureBroker();
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withBasicAuth()
+          .withAuthorizationsEnabled()
+          .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
-  private static CamundaClient defaultAdmin;
-  private static CamundaClient tenantAAdmin;
-  private static CamundaClient tenantBAdmin;
+  // Injected by the extension: admin clients for tenanta and tenantb
+  static MultiPhysicalTenantClients ptClients;
 
-  @BeforeAll
-  static void startBroker() {
-    TENANTS.refreshSecondaryStorage(BROKER);
-    BROKER.start();
-    defaultAdmin = defaultAdminClient(BROKER);
-    tenantAAdmin = adminClient(BROKER, TENANT_A);
-    tenantBAdmin = adminClient(BROKER, TENANT_B);
-    TENANTS.awaitAdminReady(defaultAdmin);
-    TENANTS.awaitAdminReady(tenantAAdmin);
-    TENANTS.awaitAdminReady(tenantBAdmin);
-  }
+  // Injected by the extension: default-PT admin (broker's built-in default user)
+  static CamundaClient client;
 
-  @AfterAll
-  static void closeClients() {
-    closeQuietly(defaultAdmin);
-    closeQuietly(tenantAAdmin);
-    closeQuietly(tenantBAdmin);
-  }
+  private static final String TENANT_A = "tenanta";
+  private static final String TENANT_B = "tenantb";
+  private static final String RESTRICTED_PASSWORD = "restricted";
+  private static final Duration PROPAGATION_TIMEOUT = Duration.ofSeconds(30);
 
   /**
-   * IT-1 — control-plane authorization isolation. AC: a permission granted only in tenantb
-   * authorizes a control-plane operation (deploy) via the tenantb path, but the same operation is
-   * denied (403) via the tenanta path; granting the same in tenanta flips it to allowed.
+   * IT-1 — control-plane authorization isolation. A permission granted only in tenantb authorizes a
+   * control-plane operation (deploy) via the tenantb path, but the same operation is denied (403)
+   * via the tenanta path.
    */
   @Test
   void shouldAuthorizeControlPlaneInGrantedTenantAndDenyInUngrantedTenant() {
-    // given — the same identity mirrored into both PTs, with deploy granted ONLY in tenantb
+    final CamundaClient tenantAAdmin = ptClients.admin(TENANT_A);
+    final CamundaClient tenantBAdmin = ptClients.admin(TENANT_B);
+
     final String username = "ctrl-" + UUID.randomUUID().toString().substring(0, 8);
     createRestrictedUserNamed(tenantBAdmin, username);
     createRestrictedUserNamed(tenantAAdmin, username);
     grantDeployPermission(tenantBAdmin, username);
 
-    // when / then — the grant authorizes deploy via tenantb (positive)
-    try (final CamundaClient restrictedInB = restrictedClient(BROKER, TENANT_B, username)) {
+    try (final CamundaClient restrictedInB = restrictedClient(TENANT_B, username)) {
       awaitDeployAllowed(restrictedInB, "granted user can deploy via tenantb");
     }
 
-    // and — the same identity (same ownerId), ungranted in tenanta, is forbidden (403) via tenanta;
-    // a cross-PT leak by ownerId would flip this denial to allowed and fail the test
-    try (final CamundaClient restrictedInA = restrictedClient(BROKER, TENANT_A, username)) {
+    try (final CamundaClient restrictedInA = restrictedClient(TENANT_A, username)) {
       assertThatThrownBy(() -> deploy(restrictedInA))
           .as(
               "same identity ungranted in tenanta is denied — a grant in tenantb must not leak"
@@ -106,22 +107,21 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
           .hasMessageContaining("status: 403")
           .hasMessageContaining("FORBIDDEN");
 
-      // positive control — granting the same permission in tenanta flips it to allowed
       grantDeployPermission(tenantAAdmin, username);
       awaitDeployAllowed(restrictedInA, "granting in tenanta flips the denial to allowed");
     }
   }
 
   /**
-   * IT-5 — no cross-PT or default-tenant leakage. AC: grants applied in default or tenanta do NOT
-   * authorize in tenantb; an ungranted tenantb user stays denied (403) despite those grants, and
-   * granting in tenantb itself flips it to allowed (positive control).
+   * IT-5 — no cross-PT or default-tenant leakage. Grants applied in default or tenanta do NOT
+   * authorize in tenantb.
    */
   @Test
   void shouldNotAuthorizeInTenantBFromGrantsInDefaultOrTenantA() {
-    // given — the same identity mirrored into default, tenanta, and tenantb; deploy granted only in
-    // default and tenanta (NOT tenantb), so a cross-PT leak of that grant would flip the tenantb
-    // denial to allowed (same ownerId) and fail the test
+    final CamundaClient defaultAdmin = client;
+    final CamundaClient tenantAAdmin = ptClients.admin(TENANT_A);
+    final CamundaClient tenantBAdmin = ptClients.admin(TENANT_B);
+
     final String username = "leak-" + UUID.randomUUID().toString().substring(0, 8);
     createRestrictedUserNamed(defaultAdmin, username);
     createRestrictedUserNamed(tenantAAdmin, username);
@@ -129,9 +129,7 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
     grantDeployPermission(defaultAdmin, username);
     grantDeployPermission(tenantAAdmin, username);
 
-    try (final CamundaClient restrictedInB = restrictedClient(BROKER, TENANT_B, username)) {
-      // then — the same identity stays denied via tenantb across the propagation window;
-      // a cross-PT leak from default/tenanta would flip this to allowed (same ownerId)
+    try (final CamundaClient restrictedInB = restrictedClient(TENANT_B, username)) {
       Awaitility.await(
               "same identity stays denied in tenantb despite grants in default and tenanta")
           .during(PROPAGATION_TIMEOUT.dividedBy(6))
@@ -146,26 +144,21 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
                       .hasMessageContaining("status: 403")
                       .hasMessageContaining("FORBIDDEN"));
 
-      // positive control — granting in tenantb itself flips the tenantb user to allowed
       grantDeployPermission(tenantBAdmin, username);
       awaitDeployAllowed(restrictedInB, "granting in tenantb itself authorizes the operation");
     }
   }
 
   /**
-   * IT-2 — data-plane request filtering and cross-PT grant non-leakage. AC: a user granted READ on
-   * specific process definitions in tenantb sees only those via the tenantb path; the search result
-   * reflects the in-context PT's grants, not another PT's.
-   *
-   * <p>To make the negative assertion a genuine control (not vacuously true), the SAME reader
-   * username is mirrored into default and tenanta and granted READ on the {@code ungranted}
-   * definition's id there. If a cross-PT grant leaked into tenantb's authorization view, the reader
-   * would then see {@code ungranted} via tenantb and the test would fail — so the {@code
-   * doesNotContain(ungranted)} assertion specifically proves cross-PT grant non-leakage.
+   * IT-2 — data-plane request filtering and cross-PT grant non-leakage. A user granted READ on
+   * specific process definitions in tenantb sees only those via the tenantb path.
    */
   @Test
   void shouldFilterDataPlaneSearchToInContextTenantGrants() {
-    // given — three process definitions deployed in tenantb, READ granted on only two of them
+    final CamundaClient defaultAdmin = client;
+    final CamundaClient tenantAAdmin = ptClients.admin(TENANT_A);
+    final CamundaClient tenantBAdmin = ptClients.admin(TENANT_B);
+
     final String suffix = UUID.randomUUID().toString().substring(0, 8);
     final String granted1 = "granted1-" + suffix;
     final String granted2 = "granted2-" + suffix;
@@ -184,15 +177,13 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
         granted1,
         granted2);
 
-    // leak trap — the same reader, mirrored into default and tenanta, IS granted READ on the
-    // 'ungranted' id there; a cross-PT leak would surface that id in the tenantb view below
+    // leak trap — mirror the same reader into default and tenanta with READ on the 'ungranted' id
     createRestrictedUserNamed(defaultAdmin, reader);
     createRestrictedUserNamed(tenantAAdmin, reader);
     grant(defaultAdmin, reader, USER, READ_PROCESS_DEFINITION, PROCESS_DEFINITION, ungranted);
     grant(tenantAAdmin, reader, USER, READ_PROCESS_DEFINITION, PROCESS_DEFINITION, ungranted);
 
-    // when / then — the reader sees exactly the two granted definitions via tenantb (filtered)
-    try (final CamundaClient readerClient = restrictedClient(BROKER, TENANT_B, reader)) {
+    try (final CamundaClient readerClient = restrictedClient(TENANT_B, reader)) {
       Awaitility.await("reader sees only the granted process definitions via tenantb")
           .atMost(PROPAGATION_TIMEOUT)
           .ignoreExceptions()
@@ -211,58 +202,48 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
   }
 
   /**
-   * IT-3 — membership-derived authorization across PTs. AC: a permission granted to a GROUP, a ROLE
-   * and a MAPPING_RULE (not the user directly) in tenantb authorizes a member user via tenantb but
-   * is denied (403) via tenanta.
-   *
-   * <p>GROUP and ROLE are fully exercised end-to-end: a member user inherits the grant and deploy
-   * succeeds in tenantb. To prove the grant specifically does not leak (rather than merely that the
-   * identity is PT-scoped), the same username is created independently in tenanta with NO
-   * grant/membership; via tenanta the member authenticates but is unauthorized, so the denial is a
-   * true 403, not a 401. MAPPING_RULE binds OIDC token claims to an identity, so a BASIC-auth user
-   * cannot inherit a mapping-rule grant on this harness; for that kind we instead assert the
-   * mapping-rule authorization record is itself PT-isolated (visible via tenantb, absent via
-   * tenanta), which is the membership-authorization signal observable under basic auth.
+   * IT-3 — membership-derived authorization across PTs. A permission granted to a GROUP, a ROLE and
+   * a MAPPING_RULE in tenantb authorizes a member user via tenantb but is denied (403) via tenanta.
    */
   @Test
   void shouldDeriveAuthorizationFromGroupRoleAndMappingRuleMembership() {
-    // GROUP membership — grant deploy to a group in tenantb, add a member user
+    final CamundaClient tenantAAdmin = ptClients.admin(TENANT_A);
+    final CamundaClient tenantBAdmin = ptClients.admin(TENANT_B);
+
     final String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+    // GROUP membership
     final String groupId = "grp-" + suffix;
     tenantBAdmin.newCreateGroupCommand().groupId(groupId).name(groupId).send().join();
     final String groupMember = createRestrictedUser(tenantBAdmin, "grp-member");
     tenantBAdmin.newAssignUserToGroupCommand().username(groupMember).groupId(groupId).send().join();
     grant(tenantBAdmin, groupId, GROUP, CREATE, RESOURCE, "*");
-
-    // mirror the SAME username into tenanta independently, with NO grant/membership there, so the
-    // cross-tenant denial is a true 403 (identity exists, unauthorized) not a 401 (unknown
-    // identity)
     createRestrictedUserNamed(tenantAAdmin, groupMember);
 
-    try (final CamundaClient memberClient = restrictedClient(BROKER, TENANT_B, groupMember)) {
+    try (final CamundaClient memberClient = restrictedClient(TENANT_B, groupMember)) {
       awaitDeployAllowed(memberClient, "group member inherits deploy grant via tenantb");
     }
-    try (final CamundaClient memberInA = restrictedClient(BROKER, TENANT_A, groupMember)) {
+    try (final CamundaClient memberInA = restrictedClient(TENANT_A, groupMember)) {
       assertDeployForbidden(memberInA, "group grant in tenantb must not authorize via tenanta");
     }
 
-    // ROLE membership — grant deploy to a role in tenantb, assign a member user
+    // ROLE membership
     final String roleId = "role-" + suffix;
     tenantBAdmin.newCreateRoleCommand().roleId(roleId).name(roleId).send().join();
     final String roleMember = createRestrictedUser(tenantBAdmin, "role-member");
     tenantBAdmin.newAssignRoleToUserCommand().roleId(roleId).username(roleMember).send().join();
     grant(tenantBAdmin, roleId, ROLE, CREATE, RESOURCE, "*");
-    // mirror the same username into tenanta (ungranted) so the cross-tenant denial is a true 403
     createRestrictedUserNamed(tenantAAdmin, roleMember);
 
-    try (final CamundaClient memberClient = restrictedClient(BROKER, TENANT_B, roleMember)) {
+    try (final CamundaClient memberClient = restrictedClient(TENANT_B, roleMember)) {
       awaitDeployAllowed(memberClient, "role member inherits deploy grant via tenantb");
     }
-    try (final CamundaClient memberInA = restrictedClient(BROKER, TENANT_A, roleMember)) {
+    try (final CamundaClient memberInA = restrictedClient(TENANT_A, roleMember)) {
       assertDeployForbidden(memberInA, "role grant in tenantb must not authorize via tenanta");
     }
 
-    // MAPPING_RULE membership — assert the mapping-rule authorization record is PT-isolated
+    // MAPPING_RULE — assert the auth record is PT-isolated (visible via tenantb, absent via
+    // tenanta)
     final String mappingRuleId = "mr-" + suffix;
     tenantBAdmin
         .newCreateMappingRuleCommand()
@@ -282,7 +263,6 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
                 assertThat(authorizationsForOwner(tenantBAdmin, mappingRuleId))
                     .as("mapping-rule grant created in tenantb is visible via tenantb")
                     .isNotEmpty());
-    // assert tenanta stays empty over a short window, so a late-arriving leak fails the test
     Awaitility.await("mapping-rule grant stays absent via tenanta")
         .during(PROPAGATION_TIMEOUT.dividedBy(6))
         .atMost(PROPAGATION_TIMEOUT)
@@ -294,18 +274,18 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
   }
 
   /**
-   * IT-4 — engine batch operation (off the request thread). AC: a batch operation created via the
-   * tenantb path operates only on tenantb's authorized process instances; instances in
-   * default/tenanta are untouched. This exercises the async/off-request authorization path: item
-   * materialization runs on the engine using the creator's PT-scoped authorization, so the batch
-   * must resolve only tenantb instances.
+   * IT-4 — engine batch operation (off the request thread). A batch created via the tenantb path
+   * operates only on tenantb's authorized process instances.
    */
   @Test
   void shouldScopeBatchOperationToCreatingTenantInstances() {
+    final CamundaClient defaultAdmin = client;
+    final CamundaClient tenantAAdmin = ptClients.admin(TENANT_A);
+    final CamundaClient tenantBAdmin = ptClients.admin(TENANT_B);
+
     final String suffix = UUID.randomUUID().toString().substring(0, 8);
     final String processId = "batch-" + suffix;
 
-    // given — the same waiting process deployed and instantiated in default, tenanta and tenantb
     deployWaitingProcess(defaultAdmin, processId);
     deployWaitingProcess(tenantAAdmin, processId);
     deployWaitingProcess(tenantBAdmin, processId);
@@ -317,7 +297,6 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
     awaitActiveInstances(tenantAAdmin, processId, instancesPerTenant);
     awaitActiveInstances(tenantBAdmin, processId, instancesPerTenant);
 
-    // when — a cancel batch operation is created via the tenantb path over all active instances
     final var batch =
         tenantBAdmin
             .newCreateBatchOperationCommand()
@@ -326,7 +305,6 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
             .send()
             .join();
 
-    // then — the batch resolves only tenantb's instances (off-request authorization is PT-scoped)
     Awaitility.await("batch operation materializes only tenantb instances")
         .atMost(PROPAGATION_TIMEOUT)
         .ignoreExceptions()
@@ -344,7 +322,6 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
                   .hasSize(instancesPerTenant);
             });
 
-    // and — default and tenanta instances remain active (untouched by tenantb's batch)
     Awaitility.await("tenantb instances are cancelled by the batch")
         .atMost(PROPAGATION_TIMEOUT)
         .ignoreExceptions()
@@ -363,7 +340,25 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
             });
   }
 
-  // --- helpers -------------------------------------------------------------
+  // --- helpers -------------------------------------------------------------------------
+
+  private CamundaClient restrictedClient(final String tenantId, final String username) {
+    final String base = BROKER.restAddress().toString().replaceAll("/+$", "");
+    final java.net.URI restAddress = java.net.URI.create(base + "/physical-tenants/" + tenantId);
+    return BROKER
+        .newClientBuilder()
+        .physicalTenantId(tenantId)
+        .preferRestOverGrpc(true)
+        .restAddress(restAddress)
+        .grpcAddress(BROKER.grpcAddress())
+        .credentialsProvider(
+            new BasicAuthCredentialsProviderBuilder()
+                .applyEnvironmentOverrides(false)
+                .username(username)
+                .password(RESTRICTED_PASSWORD)
+                .build())
+        .build();
+  }
 
   private void awaitDeployAllowed(final CamundaClient client, final String reason) {
     Awaitility.await(reason)
@@ -442,9 +437,62 @@ final class MultiPhysicalTenantAuthorizationIT extends MultiPhysicalTenantAuthor
         .items();
   }
 
-  private static void closeQuietly(final CamundaClient client) {
-    if (client != null) {
-      client.close();
+  private static String createRestrictedUser(final CamundaClient admin, final String prefix) {
+    return createRestrictedUserNamed(
+        admin, prefix + "-" + UUID.randomUUID().toString().substring(0, 8));
+  }
+
+  private static String createRestrictedUserNamed(
+      final CamundaClient admin, final String username) {
+    admin
+        .newCreateUserCommand()
+        .username(username)
+        .password(RESTRICTED_PASSWORD)
+        .name(username)
+        .email(username + "@example.com")
+        .send()
+        .join();
+    Awaitility.await("restricted user '" + username + "' exists in its PT")
+        .atMost(PROPAGATION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        admin
+                            .newUsersSearchRequest()
+                            .filter(f -> f.username(username))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+    return username;
+  }
+
+  private static void grantDeployPermission(final CamundaClient admin, final String username) {
+    grant(admin, username, USER, CREATE, RESOURCE, "*");
+  }
+
+  private static void grant(
+      final CamundaClient admin,
+      final String ownerId,
+      final OwnerType ownerType,
+      final PermissionType permission,
+      final ResourceType resourceType,
+      final String... resourceIds) {
+    for (final String resourceId : resourceIds) {
+      admin
+          .newCreateAuthorizationCommand()
+          .ownerId(ownerId)
+          .ownerType(ownerType)
+          .resourceId(resourceId)
+          .resourceType(resourceType)
+          .permissionTypes(permission)
+          .send()
+          .join();
     }
+  }
+
+  private static BpmnModelInstance simpleProcess(final String processId) {
+    return Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
   }
 }
