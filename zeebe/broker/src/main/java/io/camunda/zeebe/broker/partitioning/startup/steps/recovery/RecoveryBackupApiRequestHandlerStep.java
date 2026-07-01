@@ -19,7 +19,7 @@ import io.camunda.zeebe.scheduler.startup.StartupStep;
  * partition can serve the read-only subset of the backup API while in recovery mode. The handler is
  * always installed; when no backup store is configured it responds with a "feature disabled" error.
  */
-public record BackupApiRequestHandlerStep(int partitionId)
+public record RecoveryBackupApiRequestHandlerStep(int partitionId)
     implements StartupStep<RecoveryPartitionStartupContext> {
 
   @Override

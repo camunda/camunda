@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-final class BackupApiRequestHandlerStepTest {
+final class RecoveryBackupApiRequestHandlerStepTest {
 
   @Mock AtomixServerTransport serverTransport;
 
