@@ -238,7 +238,10 @@ outputs:
   load-test-setup-changes:
     description: Output whether the load-test setup golden file tests should be run based on files changed
     value: >-
-      ${{ steps.filter-load-test-setup.outputs.load-test-setup-change == 'true' }}
+      ${{
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-load-test-setup.outputs.load-test-setup-change == 'true'
+      }}
 
 runs:
   using: composite
