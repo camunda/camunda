@@ -39,6 +39,7 @@ function getTasksRequestBody(
 		followUpDateFrom,
 		followUpDateTo,
 		elementId,
+		businessId,
 	} = search;
 	const sort: QueryUserTasksRequestBody['sort'] = [
 		{
@@ -118,6 +119,10 @@ function getTasksRequestBody(
 
 	if (elementId !== undefined) {
 		customFilter.elementId = elementId;
+	}
+
+	if (businessId !== undefined) {
+		customFilter.businessId = businessId;
 	}
 
 	if (dueDateFrom !== undefined && dueDateTo !== undefined) {

@@ -192,6 +192,7 @@ describe('<FieldsModal />', () => {
 		);
 
 		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toBeVisible();
+		await expect.element(screen.getByRole('textbox', {name: /business id/i})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: /add variable/i})).toBeVisible();
 	});
 
@@ -300,6 +301,7 @@ describe('<FieldsModal />', () => {
 						followUpDateFrom: new Date('2022-01-01'),
 						followUpDateTo: new Date('2022-01-01'),
 						taskId: 'task-0',
+						businessId: 'order-0',
 						variables: [{name: 'variable-0', value: '"value-0"'}],
 					}}
 					onClose={() => {}}
@@ -317,6 +319,7 @@ describe('<FieldsModal />', () => {
 		await expect.element(screen.getByRole('radio', {name: /completed/i})).toBeChecked();
 		await expect.element(screen.getByRole('combobox', {name: /process/i})).toHaveValue('0');
 		await expect.element(screen.getByRole('textbox', {name: /task id/i})).toHaveValue('task-0');
+		await expect.element(screen.getByRole('textbox', {name: /business id/i})).toHaveValue('order-0');
 		await expect.element(screen.getByRole('textbox', {name: /^name$/i})).toHaveValue('variable-0');
 		await expect.element(screen.getByRole('textbox', {name: /value/i})).toHaveValue('"value-0"');
 	});

@@ -59,6 +59,7 @@ const ADVANCED_FILTERS: Array<keyof NamedCustomFilters> = [
 	'followUpDateFrom',
 	'followUpDateTo',
 	'taskId',
+	'businessId',
 	'variables',
 ];
 
@@ -395,6 +396,17 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 														{...input}
 														id={input.name}
 														labelText={t('tasklist.customFiltersModalTaskIDLabel')}
+													/>
+												)}
+											</Field>
+
+											<Field name="businessId">
+												{({input}) => (
+													<TextInput
+														{...input}
+														id={input.name}
+														labelText={t('tasklist.customFiltersModalBusinessIdLabel')}
+														className={styles.secondColumn}
 													/>
 												)}
 											</Field>

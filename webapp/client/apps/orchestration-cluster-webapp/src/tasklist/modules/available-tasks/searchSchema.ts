@@ -29,7 +29,8 @@ type CustomFilterParam =
 	| 'dueDateTo'
 	| 'followUpDateFrom'
 	| 'followUpDateTo'
-	| 'elementId';
+	| 'elementId'
+	| 'businessId';
 
 const tasklistIndexSearchSchema = z.object({
 	filter: z.string().default('all-open'),
@@ -45,6 +46,7 @@ const tasklistIndexSearchSchema = z.object({
 	followUpDateFrom: z.string().optional(),
 	followUpDateTo: z.string().optional(),
 	elementId: z.string().optional(),
+	businessId: z.string().optional(),
 });
 
 type TasklistIndexSearch = z.infer<typeof tasklistIndexSearchSchema>;
@@ -84,6 +86,7 @@ const stripCustomFilterParams: SearchMiddleware<TasklistIndexSearch> = ({search,
 			followUpDateFrom: undefined,
 			followUpDateTo: undefined,
 			elementId: undefined,
+			businessId: undefined,
 		};
 	}
 

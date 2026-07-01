@@ -78,6 +78,7 @@ const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, assignButton, ch
 				candidateUsers={task.candidateUsers}
 				candidateGroups={task.candidateGroups}
 				tenantId={task.tenantId}
+				businessId={task.businessId}
 				user={currentUser}
 			/>
 		</div>

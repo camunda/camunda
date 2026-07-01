@@ -72,6 +72,7 @@ const AvailableTasks: React.FC<Props> = ({
 							taskId={task.userTaskKey.toString()}
 							displayName={task.name ?? task.elementId}
 							processDisplayName={task.processName ?? task.processDefinitionId}
+							businessId={task.businessId}
 							assignee={task.assignee}
 							creationDate={task.creationDate}
 							followUpDate={task.followUpDate}

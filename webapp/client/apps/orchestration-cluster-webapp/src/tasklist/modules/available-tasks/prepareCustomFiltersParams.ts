@@ -11,8 +11,18 @@ import type {CustomFilters} from '#/tasklist/modules/available-tasks/customFilte
 import type {CustomFilterSearchParams} from './searchSchema';
 
 function prepareCustomFiltersParams(filters: CustomFilters, user: string): CustomFilterSearchParams {
-	const {assignee, status, bpmnProcess, tenant, dueDateFrom, dueDateTo, followUpDateFrom, followUpDateTo, taskId} =
-		filters;
+	const {
+		assignee,
+		status,
+		bpmnProcess,
+		tenant,
+		dueDateFrom,
+		dueDateTo,
+		followUpDateFrom,
+		followUpDateTo,
+		taskId,
+		businessId,
+	} = filters;
 	const params: CustomFilterSearchParams = {};
 
 	switch (assignee) {
@@ -75,6 +85,10 @@ function prepareCustomFiltersParams(filters: CustomFilters, user: string): Custo
 
 	if (taskId !== undefined) {
 		params.elementId = taskId;
+	}
+
+	if (businessId !== undefined) {
+		params.businessId = businessId;
 	}
 
 	return params;

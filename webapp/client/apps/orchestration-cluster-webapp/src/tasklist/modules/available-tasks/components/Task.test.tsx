@@ -17,6 +17,7 @@ const currentUser = createCurrentUser({username: 'demo'});
 const baseProps = {
 	taskId: 'task-42',
 	displayName: 'Review invoice',
+	businessId: null,
 	processDisplayName: 'Invoice process',
 	assignee: null,
 	creationDate: '2024-01-06T12:00:00.000Z',
@@ -36,6 +37,15 @@ describe('<Task />', () => {
 
 		await expect.element(screen.getByText('Review invoice')).toBeVisible();
 		await expect.element(screen.getByText('Invoice process')).toBeVisible();
+	});
+
+	it('should render a business id when provided', async () => {
+		const screen = await renderWithRouter(() => <Task {...baseProps} businessId="order-123" />, {
+			path: '/tasklist/$userTaskKey',
+			initialEntry: '/tasklist/other-task',
+		});
+
+		await expect.element(screen.getByText('order-123')).toBeVisible();
 	});
 
 	it('should render a link with an accessible label for an unassigned task', async () => {
