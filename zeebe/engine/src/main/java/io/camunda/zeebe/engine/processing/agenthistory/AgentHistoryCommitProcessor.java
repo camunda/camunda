@@ -42,6 +42,15 @@ public final class AgentHistoryCommitProcessor implements TypedRecordProcessor<A
       agentHistoryState.visitByJobKey(jobKey, visitor);
     } else {
       agentHistoryState.visitByJobLease(jobKey, jobLease, visitor);
+      // Discard items from superseded activations (different lease, same job)
+      agentHistoryState.visitByJobKey(
+          jobKey,
+          item -> {
+            if (!jobLease.equals(item.getJobLease())) {
+              stateWriter.appendFollowUpEvent(
+                  item.getAgentHistoryKey(), AgentHistoryIntent.DISCARDED, item);
+            }
+          });
     }
     // no-op when no items exist — backward-compatible with non-agentic jobs
   }
