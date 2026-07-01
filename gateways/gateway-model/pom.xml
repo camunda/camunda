@@ -23,7 +23,7 @@
     <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
     <!-- Roaster builds the emitted Java AST inside the maven-antrun-plugin classpath;
          only used by this module so the version is local. -->
-    <version.roaster>2.31.0.Final</version.roaster>
+    <version.roaster>2.31.1.Final</version.roaster>
   </properties>
 
   <dependencies>
