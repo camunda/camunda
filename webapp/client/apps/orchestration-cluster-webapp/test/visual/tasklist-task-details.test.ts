@@ -45,7 +45,7 @@ test('should match the task details page snapshot', async ({network, taskDetailP
 					state: 'CREATED',
 					name: 'Review purchase order',
 					processName: 'Procurement process',
-					assignee: null,
+					assignee: 'demo',
 					candidateUsers: ['alice', 'bob'],
 					candidateGroups: ['managers'],
 					priority: 60,
@@ -62,6 +62,33 @@ test('should match the task details page snapshot', async ({network, taskDetailP
 	await expect(taskDetailPage.detailsInfo).toBeVisible();
 	await expect(taskDetailPage.taskName('Review purchase order')).toBeVisible();
 	await expect(taskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
+	await expect(taskDetailPage.completeTaskButton).toBeEnabled();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the unassigned task details snapshot', async ({network, taskDetailPage, page}) => {
+	network.use(
+		mockGetUserTaskEndpoint({
+			successResponse: HttpResponse.json(
+				createUserTask({
+					state: 'CREATED',
+					name: 'Review supplier onboarding',
+					processName: 'Procurement process',
+					assignee: null,
+					candidateUsers: ['alice', 'bob'],
+					candidateGroups: ['managers'],
+					creationDate: '2024-01-12T09:30:00.000Z',
+				}),
+			),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.goto('2251799813685281');
+	await expect(taskDetailPage.detailsInfo).toBeVisible();
+	await expect(taskDetailPage.taskName('Review supplier onboarding')).toBeVisible();
+	await expect(taskDetailPage.completeTaskButton).toBeDisabled();
 
 	await expect(page).toHaveScreenshot();
 });
@@ -86,6 +113,7 @@ test('should match the completed task details snapshot', async ({network, taskDe
 	await taskDetailPage.seedHideNotificationBanner();
 	await taskDetailPage.goto('2251799813685281');
 	await expect(taskDetailPage.completionLabel).toBeVisible();
+	await expect(taskDetailPage.completeTaskButton).not.toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
