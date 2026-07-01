@@ -46,6 +46,56 @@ paths:
           description: The cluster is DOWN and does not have any partition with a healthy leader.
       x-added-in-version: "8.8"
 
+  /mode:
+    patch:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: changeClusterMode
+      x-required-permissions: []
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Change cluster mode
+      description: >-
+        Transitions the cluster between processing and recovery mode. Entering recovery mode
+        deactivates all partitions so that only a restricted set of read-only operations remains
+        available; exiting recovery mode returns the cluster to normal processing. Returns the
+        planned cluster change so its progress can be tracked via the topology.
+      parameters:
+        - name: mode
+          in: query
+          required: true
+          description: The target cluster mode.
+          schema:
+            type: string
+            enum:
+              - PROCESSING
+              - RECOVERING
+        - name: dryRun
+          in: query
+          required: false
+          description: >-
+            If true, the requested change is only validated and the resulting plan is returned,
+            without applying it to the cluster.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: The mode change request was accepted; returns the planned cluster changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterModeChangeResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
 ## Schema definitions
 
 components:
@@ -173,3 +223,37 @@ components:
             - healthy
             - unhealthy
             - dead
+
+    ClusterModeChangeResponse:
+      description: The planned changes resulting from a cluster mode transition request.
+      type: object
+      required:
+        - changeId
+        - plannedChanges
+      properties:
+        changeId:
+          description: The ID of the cluster change that was triggered by the request.
+          type: string
+          example: "7"
+        plannedChanges:
+          description: The ordered list of operations that will be applied to complete the change.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterModeChangeOperation'
+
+    ClusterModeChangeOperation:
+      description: A single operation that is part of a cluster mode change.
+      type: object
+      required:
+        - operation
+        - mode
+      properties:
+        operation:
+          description: The type of the operation.
+          type: string
+          example: ModeChangeOperation
+        mode:
+          description: The target mode of the operation, if applicable.
+          type: string
+          nullable: true
+          example: RECOVERING
