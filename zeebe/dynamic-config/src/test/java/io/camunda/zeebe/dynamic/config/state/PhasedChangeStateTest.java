@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange.Status;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import java.time.Instant;
 import java.util.List;
@@ -49,7 +48,8 @@ class PhasedChangeStateTest {
     void shouldDeriveNextIdFromLastChange() {
       // given
       final var lastChange =
-          new CompletedPhasedChange(7L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedPhasedChange(
+              7L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH);
       final var state = new PhasedChangeState(Optional.empty(), Optional.of(lastChange));
 
       // when
@@ -63,7 +63,8 @@ class PhasedChangeStateTest {
     void shouldRetainLastChangeAfterInitPlan() {
       // given
       final var lastChange =
-          new CompletedPhasedChange(3L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedPhasedChange(
+              3L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH);
       final var state = new PhasedChangeState(Optional.empty(), Optional.of(lastChange));
 
       // when
@@ -93,13 +94,13 @@ class PhasedChangeStateTest {
       final long planId = state.pending().get().id();
 
       // when
-      final var completed = state.completePlan(Status.COMPLETED);
+      final var completed = state.completePlan(TerminalChangeStatus.COMPLETED);
 
       // then
       assertThat(completed.pending()).isEmpty();
       assertThat(completed.lastChange()).isPresent();
       assertThat(completed.lastChange().get().id()).isEqualTo(planId);
-      assertThat(completed.lastChange().get().status()).isEqualTo(Status.COMPLETED);
+      assertThat(completed.lastChange().get().status()).isEqualTo(TerminalChangeStatus.COMPLETED);
     }
 
     @Test
@@ -109,7 +110,7 @@ class PhasedChangeStateTest {
       final var expectedStartedAt = state.pending().get().startedAt();
 
       // when
-      final var completed = state.completePlan(Status.COMPLETED);
+      final var completed = state.completePlan(TerminalChangeStatus.COMPLETED);
 
       // then
       assertThat(completed.lastChange().get().startedAt()).isEqualTo(expectedStartedAt);
@@ -121,7 +122,7 @@ class PhasedChangeStateTest {
       final var state = PhasedChangeState.empty();
 
       // when / then
-      assertThatThrownBy(() -> state.completePlan(Status.COMPLETED))
+      assertThatThrownBy(() -> state.completePlan(TerminalChangeStatus.COMPLETED))
           .isInstanceOf(IllegalStateException.class);
     }
   }
@@ -176,8 +177,10 @@ class PhasedChangeStateTest {
     void shouldTakeLastChangeWithHigherId() {
       // given
       final var older =
-          new CompletedPhasedChange(2L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
-      final var newer = new CompletedPhasedChange(5L, Status.FAILED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedPhasedChange(
+              2L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+      final var newer =
+          new CompletedPhasedChange(5L, TerminalChangeStatus.FAILED, Instant.EPOCH, Instant.EPOCH);
       final var a = new PhasedChangeState(Optional.empty(), Optional.of(older));
       final var b = new PhasedChangeState(Optional.empty(), Optional.of(newer));
 
@@ -190,7 +193,8 @@ class PhasedChangeStateTest {
     void shouldAdoptLastChangeFromOtherWhenThisHasNone() {
       // given
       final var lastChange =
-          new CompletedPhasedChange(1L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedPhasedChange(
+              1L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH);
       final var withLast = new PhasedChangeState(Optional.empty(), Optional.of(lastChange));
       final var withoutLast = PhasedChangeState.empty();
 
@@ -216,7 +220,7 @@ class PhasedChangeStateTest {
         final long currentId = state.pending().get().id();
         assertThat(currentId).isGreaterThan(previousId);
         previousId = currentId;
-        state = state.completePlan(Status.COMPLETED);
+        state = state.completePlan(TerminalChangeStatus.COMPLETED);
       }
     }
   }
@@ -229,7 +233,8 @@ class PhasedChangeStateTest {
       // given
       final var plan = PhasedChangePlan.init(3L, twoPhases, Instant.EPOCH);
       final var completed =
-          new CompletedPhasedChange(3L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedPhasedChange(
+              3L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH);
 
       // when / then
       assertThatThrownBy(() -> new PhasedChangeState(Optional.of(plan), Optional.of(completed)))
@@ -241,7 +246,8 @@ class PhasedChangeStateTest {
       // given
       final var plan = PhasedChangePlan.init(2L, twoPhases, Instant.EPOCH);
       final var completed =
-          new CompletedPhasedChange(5L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+          new CompletedPhasedChange(
+              5L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH);
 
       // when / then
       assertThatThrownBy(() -> new PhasedChangeState(Optional.of(plan), Optional.of(completed)))
@@ -255,12 +261,14 @@ class PhasedChangeStateTest {
           new PhasedChangeState(
               Optional.of(PhasedChangePlan.init(3L, twoPhases, Instant.EPOCH)),
               Optional.of(
-                  new CompletedPhasedChange(2L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH)));
+                  new CompletedPhasedChange(
+                      2L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH)));
       final var stateWithCompleted =
           new PhasedChangeState(
               Optional.empty(),
               Optional.of(
-                  new CompletedPhasedChange(3L, Status.COMPLETED, Instant.EPOCH, Instant.EPOCH)));
+                  new CompletedPhasedChange(
+                      3L, TerminalChangeStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH)));
 
       // when
       final var merged = stateWithPending.merge(stateWithCompleted);
