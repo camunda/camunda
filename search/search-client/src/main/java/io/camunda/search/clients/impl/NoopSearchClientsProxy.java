@@ -56,6 +56,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
@@ -506,5 +507,10 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public SearchQueryResult<WaitStateEntity> searchWaitStates(
       final ElementInstanceWaitStateQuery query) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public List<WaitStateStatisticsEntity> waitStateStatistics(final long processInstanceKey) {
+    return emptyList();
   }
 }

@@ -8,13 +8,17 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.auth.SecurityContext;
+import java.util.List;
 
 public interface WaitStateSearchClient {
 
   SearchQueryResult<WaitStateEntity> searchWaitStates(ElementInstanceWaitStateQuery query);
+
+  List<WaitStateStatisticsEntity> waitStateStatistics(long processInstanceKey);
 
   WaitStateSearchClient withSecurityContext(SecurityContext securityContext);
 }
