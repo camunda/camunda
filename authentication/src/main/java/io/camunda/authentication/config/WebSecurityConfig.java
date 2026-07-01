@@ -138,13 +138,18 @@ public class WebSecurityConfig {
    * <p>Gated on secondary storage being enabled because the wrapped service needs an {@link
    * AuthorizationRepositoryPort} backed by live authorization data. Without secondary storage CSL's
    * webapp authorization filter has nothing to enforce and skips itself anyway.
+   *
+   * <p>The {@code authorizations.enabled} flag is forwarded to the wrapped service so it grants all
+   * when authorization is disabled, consistent with CSL's default and the data plane.
    */
   @Bean
   @ConditionalOnSecondaryStorageEnabled
   @ConditionalOnMissingBean(ResourcePermissionPort.class)
   public ResourcePermissionPort resourcePermissionPort(
-      final AuthorizationRepositoryPort authorizationRepository) {
-    return new IdentityToAdminComponentAliasAdapter(authorizationRepository);
+      final AuthorizationRepositoryPort authorizationRepository,
+      final CamundaSecurityLibraryProperties securityProperties) {
+    return new IdentityToAdminComponentAliasAdapter(
+        authorizationRepository, securityProperties.getAuthorizations().isEnabled());
   }
 
   /** Wires OC's RFC 9728 protected-resource-metadata customiser onto the OIDC chains. */
