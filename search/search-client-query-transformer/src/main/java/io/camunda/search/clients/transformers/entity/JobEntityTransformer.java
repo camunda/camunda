@@ -91,6 +91,7 @@ public class JobEntityTransformer
       case "FAILED" -> JobState.FAILED;
       case "PRIORITY_UPDATED" -> JobState.PRIORITY_UPDATED;
       case "RETRIES_UPDATED" -> JobState.RETRIES_UPDATED;
+      case "TIMEOUT_UPDATED" -> JobState.TIMEOUT_UPDATED;
       case "TIMED_OUT" -> JobState.TIMED_OUT;
       case "CANCELED" -> JobState.CANCELED;
       case "ERROR_THROWN" -> JobState.ERROR_THROWN;

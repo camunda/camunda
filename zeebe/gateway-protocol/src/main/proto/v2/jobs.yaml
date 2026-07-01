@@ -1262,6 +1262,7 @@ components:
         - MIGRATED
         - PRIORITY_UPDATED
         - RETRIES_UPDATED
+        - TIMEOUT_UPDATED
         - TIMED_OUT
 
     JobKindEnum:

@@ -101,6 +101,7 @@ final class JobHandlerTest {
         "FAILED",
         "RETRIES_UPDATED",
         "PRIORITY_UPDATED",
+        "TIMEOUT_UPDATED",
         "CANCELED",
         "ERROR_THROWN",
         "MIGRATED"
