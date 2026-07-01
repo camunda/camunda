@@ -1626,9 +1626,10 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: '@camunda/identity'
+      CLIENT_DIR: identity/client
     defaults:
       run:
-        working-directory: identity/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -1637,9 +1638,11 @@ jobs:
         with:
           node-version: 24
           cache: 'npm'
-          cache-dependency-path: 'identity/client/package-lock.json'
+          cache-dependency-path: '${{ env.CLIENT_DIR }}/package-lock.json'
       - name: Install dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Check formatting
         run: npm run test:format
       - name: Lint code
@@ -1795,9 +1798,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
     defaults:
       run:
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        working-directory: ${{ env.SUITE_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -1806,7 +1811,9 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.SUITE_DIR }}
       - name: Lint (tsc + eslint)
         run: npm run lint
       - name: Observe build status
@@ -1948,6 +1955,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+    env:
+      VERIFIER_DIR: .github/scripts/x-added-in-version-check
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
       - name: Checkout PR
@@ -1973,10 +1982,11 @@ jobs:
             "https://github.com/"
           echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
       - name: Install verifier dependencies
-        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.VERIFIER_DIR }}
       - name: Build verifier artefacts (endpoint-map + version-map)
-        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
         env:
           # LATEST_BRANCH is not consumed by the in-repo scripts directly.
           # build-artefacts.mjs clones `return-of-api-added-in-analysis` and
@@ -1991,7 +2001,7 @@ jobs:
       - name: Run PR verifier
         # Verifier exits non-zero on findings, which fails the job and
         # therefore the `check-results` aggregate gate.
-        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
         env:
           OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
           ENDPOINT_MAP_PATH: ./artefacts/endpoint-map.json

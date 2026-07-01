@@ -25,6 +25,7 @@ env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
   # renovate: datasource=node-version depName=node
   NODE_VERSION: '24.16.0'
+  DOCS_DIR: monorepo-docs-site
 
 jobs:
   # Detect changes to avoid unnecessary builds
@@ -66,14 +67,15 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: monorepo-docs-site/package-lock.json
+          cache-dependency-path: ${{ env.DOCS_DIR }}/package-lock.json
 
       - name: Install dependencies
-        working-directory: monorepo-docs-site
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.DOCS_DIR }}
 
       - name: Build documentation
-        working-directory: monorepo-docs-site
+        working-directory: ${{ env.DOCS_DIR }}
         run: npm run build
 
       - name: Deploy to GitHub Pages
