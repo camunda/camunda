@@ -34,9 +34,6 @@ on:
         description: 'Short name for the deployment'
         type: string
         default: 'agrn'
-  merge_group:
-    types:
-      - checks_requested
 
 env:
   TEST_OWNER: '@camunda/distribution'
