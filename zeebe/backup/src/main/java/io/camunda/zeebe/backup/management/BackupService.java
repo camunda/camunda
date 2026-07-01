@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.management;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
@@ -29,7 +30,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.SequencedCollection;
 import org.slf4j.Logger;
@@ -38,10 +38,9 @@ import org.slf4j.LoggerFactory;
 /** Backup manager that takes and manages backup asynchronously */
 public final class BackupService extends Actor implements BackupManager {
   private static final Logger LOG = LoggerFactory.getLogger(BackupService.class);
-  private final String actorName;
   private final JournalInfoProvider journalInfoProvider;
   private final BrokerMemberId brokerMemberId;
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
@@ -49,7 +48,7 @@ public final class BackupService extends Actor implements BackupManager {
 
   public BackupService(
       final BrokerMemberId brokerMemberId,
-      final int partitionId,
+      final PartitionId partitionId,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
@@ -58,6 +57,7 @@ public final class BackupService extends Actor implements BackupManager {
       final LogStreamWriter logStreamWriter,
       final DbBackupRangeState backupRangeState,
       final DbCheckpointMetadataState checkpointMetadataState) {
+    super("BackupService", partitionId);
     this.brokerMemberId = brokerMemberId;
     this.partitionId = partitionId;
     this.snapshotStore = snapshotStore;
@@ -69,22 +69,9 @@ public final class BackupService extends Actor implements BackupManager {
             logStreamWriter,
             backupRangeState,
             checkpointMetadataState,
-            partitionId,
+            partitionId.number(),
             partitionRegistry);
-    actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override
@@ -144,7 +131,7 @@ public final class BackupService extends Actor implements BackupManager {
 
     final var future = new CompletableActorFuture<BackupStatus>();
     internalBackupManager
-        .getBackupStatus(partitionId, checkpointId, actor)
+        .getBackupStatus(partitionId.number(), checkpointId, actor)
         .onComplete(
             (backupStatus, throwable) -> {
               if (throwable != null) {
@@ -172,7 +159,8 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
     final var operationMetrics = metrics.startListingBackups();
-    final var resultFuture = internalBackupManager.listBackups(partitionId, pattern, actor);
+    final var resultFuture =
+        internalBackupManager.listBackups(partitionId.number(), pattern, actor);
     resultFuture.onComplete(operationMetrics::complete);
     resultFuture.onComplete(
         (ignore, error) -> {
@@ -193,7 +181,7 @@ public final class BackupService extends Actor implements BackupManager {
     final var operationMetrics = metrics.startDeleting();
 
     final var backupDeleted =
-        internalBackupManager.deleteBackupIfExists(partitionId, checkpointId, actor);
+        internalBackupManager.deleteBackupIfExists(partitionId.number(), checkpointId, actor);
     backupDeleted.onComplete(operationMetrics::complete);
     backupDeleted.onComplete(
         (ignore, error) -> {
@@ -206,7 +194,7 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public void failInProgressBackup(final long lastCheckpointId) {
-    internalBackupManager.failInProgressBackups(partitionId, lastCheckpointId, actor);
+    internalBackupManager.failInProgressBackups(partitionId.number(), lastCheckpointId, actor);
   }
 
   @Override
@@ -241,6 +229,6 @@ public final class BackupService extends Actor implements BackupManager {
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
     return new BackupIdentifierImpl(
-        brokerMemberId.nodeIdx(), brokerMemberId.zone(), partitionId, checkpointId);
+        brokerMemberId.nodeIdx(), brokerMemberId.zone(), partitionId.number(), checkpointId);
   }
 }

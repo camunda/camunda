@@ -71,6 +71,7 @@ import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -163,7 +164,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final MeterRegistry meterRegistry;
 
   // after firstCommitIndex is set it will be null
@@ -171,7 +172,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public RaftContext(
       final String name,
-      final int partitionId,
+      final PartitionId partitionId,
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
@@ -232,7 +233,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         .getLatestSnapshot()
         .ifPresent(persistedSnapshot -> currentSnapshot = persistedSnapshot);
     StateUtil.verifySnapshotLogConsistent(
-        partitionId,
+        partitionId.number(),
         getCurrentSnapshotIndex(),
         raftLog.getFirstIndex(),
         raftLog.isEmpty(),
@@ -289,18 +290,20 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   private ThreadContext createThreadContext(
       final String name,
-      final int partitionId,
+      final PartitionId partitionId,
       final RaftThreadContextFactory threadContextFactory,
       final String localMemberId) {
     final var context =
         threadContextFactory.createContext(
-            namedThreads("%s-%s-%d".formatted(name, localMemberId, partitionId), LOGGER),
+            namedThreads("%s-%s-%d".formatted(name, localMemberId, partitionId.number()), LOGGER),
             this::onUncaughtException);
     // in order to set the partition id once in the raft thread
     context.execute(
         () -> {
-          MDC.put("partitionId", String.valueOf(partitionId));
-          MDC.put("actor-name", name + "-" + partitionId);
+          MDC.put("partitionId", String.valueOf(partitionId.number()));
+          // matches Actor.ACTOR_PROP_PHYSICAL_TENANT
+          MDC.put("physicalTenant", partitionId.group());
+          MDC.put("actor-name", name + "-" + partitionId.number());
           MDC.put("actor-scheduler", "Broker-" + localMemberId);
           MDC.put(RAFT_ROLE_KEY, Role.INACTIVE.name());
         });
@@ -1307,7 +1310,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   public int getPartitionId() {
-    return partitionId;
+    return partitionId.number();
   }
 
   public void updateState(final State newState) {

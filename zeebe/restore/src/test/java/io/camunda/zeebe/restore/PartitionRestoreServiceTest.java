@@ -116,7 +116,7 @@ class PartitionRestoreServiceTest {
     backupService =
         new BackupService(
             BrokerMemberId.from(nodeId),
-            partitionId,
+            new PartitionId("raft", partitionId),
             backupStore,
             snapshotStore,
             dataDirectory,

@@ -340,8 +340,7 @@ public class RestoreManager implements CloseableSilently {
       final PartitionMetadata metadata, final RaftPartitionFactory factory) {
     final var partitionId = metadata.id();
     final var partitionRegistry =
-        MicrometerUtil.wrap(
-            meterRegistry, PartitionKeyNames.tags(partitionId.group(), partitionId.number()));
+        MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(partitionId));
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);

@@ -41,14 +41,12 @@ public final class TopologyManagerImpl extends Actor
   private final BrokerInfo localPartitionGroupInfo;
 
   private final List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
-  private final String actorName;
 
   public TopologyManagerImpl(
       final ClusterMembershipService membershipService, final BrokerInfo partitionGroupInfo) {
+    super("TopologyManager" + partitionGroupInfo.getPartitionGroup());
     this.membershipService = membershipService;
     localPartitionGroupInfo = partitionGroupInfo;
-
-    actorName = "TopologyManager-" + partitionGroupInfo.getPartitionGroup();
   }
 
   @Override
@@ -68,11 +66,6 @@ public final class TopologyManagerImpl extends Actor
   @Override
   public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
     return setInactive(partitionId);
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override

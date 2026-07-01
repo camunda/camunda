@@ -166,7 +166,6 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServer buildServer(final MeterRegistry meterRegistry) {
-    final var partitionId = partition.id().number();
     final var electionConfig =
         config.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
@@ -175,7 +174,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
     return RaftServer.builder(localMemberId)
         .withName(partition.name())
-        .withPartitionId(partitionId)
+        .withPartitionId(partition.id())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
         .withPartitionConfig(config)

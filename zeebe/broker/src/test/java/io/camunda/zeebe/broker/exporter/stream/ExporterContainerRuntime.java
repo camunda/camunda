@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -72,20 +72,10 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   }
 
   public ExporterContainer newContainer(
-      final ExporterDescriptor descriptor, final int partitionId) {
+      final ExporterDescriptor descriptor, final PartitionId partitionId) {
     return newContainer(
         descriptor,
         partitionId,
-        new ExporterInitializationInfo(0, null),
-        new SimpleMeterRegistry());
-  }
-
-  public ExporterContainer newContainer(
-      final ExporterDescriptor descriptor, final int partitionId, final String physicalTenantId) {
-    return newContainer(
-        descriptor,
-        partitionId,
-        physicalTenantId,
         new ExporterInitializationInfo(0, null),
         new SimpleMeterRegistry(),
         pos -> true);
@@ -93,14 +83,14 @@ public final class ExporterContainerRuntime implements CloseableSilently {
 
   public ExporterContainer newContainer(
       final ExporterDescriptor descriptor,
-      final int partitionId,
+      final PartitionId partitionId,
       final ExporterInitializationInfo initializationInfo) {
     return newContainer(descriptor, partitionId, initializationInfo, new SimpleMeterRegistry());
   }
 
   public ExporterContainer newContainer(
       final ExporterDescriptor descriptor,
-      final int partitionId,
+      final PartitionId partitionId,
       final ExporterInitializationInfo initializationInfo,
       final MeterRegistry meterRegistry) {
     return newContainer(descriptor, partitionId, initializationInfo, meterRegistry, pos -> true);
@@ -108,23 +98,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
 
   public ExporterContainer newContainer(
       final ExporterDescriptor descriptor,
-      final int partitionId,
-      final ExporterInitializationInfo initializationInfo,
-      final MeterRegistry meterRegistry,
-      final ExporterReplayControl replayControl) {
-    return newContainer(
-        descriptor,
-        partitionId,
-        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-        initializationInfo,
-        meterRegistry,
-        replayControl);
-  }
-
-  public ExporterContainer newContainer(
-      final ExporterDescriptor descriptor,
-      final int partitionId,
-      final String physicalTenantId,
+      final PartitionId partitionId,
       final ExporterInitializationInfo initializationInfo,
       final MeterRegistry meterRegistry,
       final ExporterReplayControl replayControl) {
@@ -133,7 +107,6 @@ public final class ExporterContainerRuntime implements CloseableSilently {
         new ExporterContainer(
             descriptor,
             partitionId,
-            physicalTenantId,
             "",
             null,
             initializationInfo,

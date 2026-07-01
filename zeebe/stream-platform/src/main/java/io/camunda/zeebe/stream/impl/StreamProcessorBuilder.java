@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -51,6 +52,11 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder logStream(final LogStream stream) {
     streamProcessorContext.logStream(stream);
+    return this;
+  }
+
+  public StreamProcessorBuilder partitionId(final PartitionId partitionId) {
+    streamProcessorContext.partitionId(partitionId);
     return this;
   }
 

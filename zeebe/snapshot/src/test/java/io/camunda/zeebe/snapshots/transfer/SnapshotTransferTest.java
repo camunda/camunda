@@ -17,6 +17,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
@@ -72,6 +74,7 @@ public class SnapshotTransferTest {
     takeSnapshotMock = mock(TakeSnapshot.class);
     snapshotTransfer =
         new SnapshotTransferImpl(
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             control ->
                 spy(
                     new SnapshotTransferServiceImpl(

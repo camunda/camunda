@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
@@ -74,7 +75,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
-  private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
   private LogStreamReader logStreamReader;
@@ -94,8 +94,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
-  private final int partitionId;
-  private final String physicalTenantId;
+  private final PartitionId partitionId;
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
   private final @Nullable String licenseKey;
@@ -115,10 +114,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final ExporterDirectorContext context,
       final ExporterPhase exporterPhase,
       final Function<RecordExporter, RecordExporter> recorderExporter) {
-    name = context.getName();
+    super("Exporter", context.getPartitionId());
     logStream = Objects.requireNonNull(context.getLogStream());
-    partitionId = logStream.getPartitionId();
-    physicalTenantId = context.getTenantName();
+    partitionId = context.getPartitionId();
     clusterId = context.getClusterId();
     licenseKey = context.getLicenseKey();
     meterRegistry = context.getMeterRegistry();
@@ -130,7 +128,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                     new ExporterContainer(
                         descriptorEntry.getKey(),
                         partitionId,
-                        physicalTenantId,
                         clusterId,
                         licenseKey,
                         descriptorEntry.getValue(),
@@ -141,16 +138,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
     recordExporter =
-        recorderExporter.apply(new RecordExporter(metrics, containers, partitionId, clock));
+        recorderExporter.apply(
+            new RecordExporter(metrics, containers, partitionId.number(), clock));
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
 
     final var exporterPositionsLegacySubject =
-        String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId);
+        String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId.number());
     exporterPositionsSendingSubject =
-        String.format(EXPORTER_STATE_TOPIC_FORMAT, physicalTenantId, partitionId);
+        String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId.group(), partitionId.number());
     exporterPositionsReceivingSubjects =
         context.isReceiveOnLegacySubject()
             ? List.of(exporterPositionsLegacySubject, exporterPositionsSendingSubject)
@@ -353,7 +351,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         new ExporterContainer(
             descriptor,
             partitionId,
-            physicalTenantId,
             clusterId,
             licenseKey,
             initializationInfo,
@@ -385,18 +382,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExporterPhase.CLOSED);
     }
     return actor.call(() -> exporterPhase);
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return name;
   }
 
   @Override
@@ -462,7 +447,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   protected void handleFailure(final Throwable failure) {
     LOG.error(
         "Actor '{}' failed in phase {} with: {} .",
-        name,
+        getName(),
         actor.getLifecyclePhase(),
         failure,
         failure);
@@ -810,7 +795,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   @Override
   public String componentName() {
-    return name;
+    return getName();
   }
 
   @Override

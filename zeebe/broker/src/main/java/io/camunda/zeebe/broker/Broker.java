@@ -229,13 +229,9 @@ public final class Broker implements AutoCloseable {
     private final BrokerStartupProcess brokerStartupProcess;
 
     private BrokerStartupActor(final BrokerStartupContextImpl startupContext) {
+      super("Startup");
       startupContext.setConcurrencyControl(actor);
       brokerStartupProcess = new BrokerStartupProcess(startupContext);
-    }
-
-    @Override
-    public String getName() {
-      return "Startup";
     }
 
     private ActorFuture<BrokerContext> start() {

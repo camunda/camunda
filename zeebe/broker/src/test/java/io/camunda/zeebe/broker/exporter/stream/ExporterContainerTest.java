@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
@@ -42,7 +43,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 final class ExporterContainerTest {
 
   private static final String EXPORTER_ID = "fakeExporter";
-  private static final int PARTITION_ID = 123;
+  private static final PartitionId PARTITION_ID =
+      new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 123);
   private static final String REGISTERED_COUNTER_NAME = "zeebe_exporter_counter";
 
   private ExporterContainerRuntime runtime;
@@ -227,7 +229,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getContext().getLogger()).isNotNull();
       assertThat(exporter.getContext().getConfiguration()).isNotNull();
       assertThat(exporter.getContext().getConfiguration().getId()).isEqualTo(EXPORTER_ID);
-      assertThat(exporter.getContext().getPartitionId()).isEqualTo(PARTITION_ID);
+      assertThat(exporter.getContext().getPartitionId()).isEqualTo(PARTITION_ID.number());
       assertThat(exporter.getContext().getConfiguration().getArguments())
           .isEqualTo(Map.of("key", "value"));
     }
@@ -250,7 +252,7 @@ final class ExporterContainerTest {
               .getRepository()
               .validateAndAddExporterDescriptor(
                   "tenantExporter", FakeExporter.class, Map.of("key", "value"));
-      final var container = runtime.newContainer(descriptor, PARTITION_ID, "tenant-a");
+      final var container = runtime.newContainer(descriptor, new PartitionId("tenant-a", 1));
       final var tenantExporter = (FakeExporter) container.getExporter();
 
       // when

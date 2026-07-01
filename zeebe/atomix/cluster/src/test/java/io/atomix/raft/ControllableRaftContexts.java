@@ -36,6 +36,8 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.testing.TestFileBasedSnapshotStore;
@@ -223,7 +225,7 @@ public final class ControllableRaftContexts {
     final var raft =
         new RaftContext(
             memberId.id() + "-partition-1",
-            1,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             memberId,
             mock(ClusterMembershipService.class, withSettings().stubOnly()),
             new ControllableRaftServerProtocol(memberId, serverProtocols, messageQueue),

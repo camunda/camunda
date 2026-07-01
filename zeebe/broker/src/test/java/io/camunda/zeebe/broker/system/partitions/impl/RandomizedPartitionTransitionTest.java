@@ -428,10 +428,8 @@ public class RandomizedPartitionTransitionTest {
   }
 
   private static final class TestActor extends Actor {
-
-    @Override
-    public String getName() {
-      return "RandomizedPartitionTransitionTest.testActor";
+    TestActor() {
+      super("RandomizedPartitionTransitionTest.testActor");
     }
   }
 

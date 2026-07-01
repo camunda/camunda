@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
@@ -125,8 +126,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
-            1,
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             "",
             exporterRepository.getLicenseKey(),
             meterRegistry,

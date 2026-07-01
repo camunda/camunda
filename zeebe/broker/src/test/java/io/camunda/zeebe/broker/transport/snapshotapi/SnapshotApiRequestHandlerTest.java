@@ -180,7 +180,11 @@ public class SnapshotApiRequestHandlerTest {
 
     final var transfer =
         submitActor(
-            new SnapshotTransferImpl(ignore -> client, snapshotMetrics, receiverSnapshotStore));
+            new SnapshotTransferImpl(
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
+                ignore -> client,
+                snapshotMetrics,
+                receiverSnapshotStore));
     // when
     final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
     scheduler.workUntilDone();
