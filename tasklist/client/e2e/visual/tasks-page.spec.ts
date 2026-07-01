@@ -615,7 +615,7 @@ test.describe('tasks page', () => {
 
     await tasksPage.expandSidePanelButton.click();
     await tasksPage.addCustomFilterButton.click();
-    await tasksPage.tasksFilterModal.advancedFiltersToggle.click();
+    await tasksPage.tasksFilterModal.advancedFiltersToggle.click({force: true});
     await tasksPage.tasksFilterModal.businessIdField.fill('ORDER-2024-0042');
 
     await expect(page).toHaveScreenshot();

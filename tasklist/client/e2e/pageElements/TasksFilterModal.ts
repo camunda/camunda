@@ -15,10 +15,9 @@ class TasksFilterModal {
   constructor(page: Page) {
     this.modal = page.getByRole('dialog', {name: 'Custom filters modal'});
 
-    // NOTE: Locating the actual switch would be superior, but not clickable in Carbon....
-    this.advancedFiltersToggle = this.modal.locator(
-      'label[for="toggle-advanced-filters"]',
-    );
+    this.advancedFiltersToggle = this.modal.getByRole('switch', {
+      name: 'Advanced filters',
+    });
     this.businessIdField = this.modal.getByRole('textbox', {
       name: 'Business ID',
     });
