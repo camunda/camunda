@@ -61,13 +61,14 @@ jobs:
     env:
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
-      # IT classes are split across two shards balanced by measured runtime (not class count),
-      # so the slowest shard stays under target. TaskControllerIT alone dominates (~25 min of
-      # method time) so it sits in shard 1 with only light fillers. The "Verify shard coverage"
-      # step fails the build if a new/renamed IT class is missing from both lists, which on this
-      # frozen stable branch is the only maintenance trigger.
-      SHARD1_CLASSES: "TaskControllerIT,UsageMetricIT,MetricIT,ZeebeConnectorIT,ProcessCacheIT,VariableSearchTermsQueryChunkIT,FeatureFlagIT,ElasticsearchConnectorIT,OpensearchConnectorIT,OldRoutesRedirectionControllerConsolidatedAuthIT,OldRoutesRedirectionControllerIT,HealthCheckIT,ClientConfigRestServiceIT"
-      SHARD2_CLASSES: "ProcessInternalControllerIT,FormControllerIT,VariablesControllerIT,TaskStorePerfIT,ZeebeUserTaskIT,ProcessExternalControllerIT,ProbesTestIT,ZeebeMigrateProcessTaskIT,TaskCompletionConcurrencyIT,ZeebeAdHocSubProcessIT,ZeebeMultipleProcessesIT,ElasticsearchConnectorSSLAuthIT,ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT,ElasticsearchConnectorBasicAuthIT,ZeebeConnectorSecureIT,GenerateOpenApiIT,DevUtilExternalControllerIT,ModesWithTasklistUiDisabledIT,OnlyWebappIT,ModesWithTasklistDisabledIT,OpenSearchConnectorBasicAuthIT,StartupIT,OpenSearchConnectorSSLAuthIT,NoWebappIT,IndexControllerIT"
+      # TaskControllerIT is a ~10 min monolith that a single fork cannot split, so it sets the
+      # floor for whichever shard holds it. Isolate it in shard 1; shard 2 runs the remaining 37
+      # classes, which fan out across the forks so their critical path is TaskStorePerfIT (~6 min)
+      # rather than their sum. The "Verify shard coverage" step fails the build if a new/renamed IT
+      # class is missing from both lists, which on this frozen stable branch is the only
+      # maintenance trigger.
+      SHARD1_CLASSES: "TaskControllerIT"
+      SHARD2_CLASSES: "UsageMetricIT,MetricIT,ZeebeConnectorIT,ProcessCacheIT,VariableSearchTermsQueryChunkIT,FeatureFlagIT,ElasticsearchConnectorIT,OpensearchConnectorIT,OldRoutesRedirectionControllerConsolidatedAuthIT,OldRoutesRedirectionControllerIT,HealthCheckIT,ClientConfigRestServiceIT,ProcessInternalControllerIT,FormControllerIT,VariablesControllerIT,TaskStorePerfIT,ZeebeUserTaskIT,ProcessExternalControllerIT,ProbesTestIT,ZeebeMigrateProcessTaskIT,TaskCompletionConcurrencyIT,ZeebeAdHocSubProcessIT,ZeebeMultipleProcessesIT,ElasticsearchConnectorSSLAuthIT,ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT,ElasticsearchConnectorBasicAuthIT,ZeebeConnectorSecureIT,GenerateOpenApiIT,DevUtilExternalControllerIT,ModesWithTasklistUiDisabledIT,OnlyWebappIT,ModesWithTasklistDisabledIT,OpenSearchConnectorBasicAuthIT,StartupIT,OpenSearchConnectorSSLAuthIT,NoWebappIT,IndexControllerIT"
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
