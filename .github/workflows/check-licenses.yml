@@ -120,7 +120,7 @@ jobs:
       id: analyze1
       continue-on-error: true
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/analyze@fossa-arm64
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -130,7 +130,7 @@ jobs:
     - name: Analyze project (attempt 2)
       if: steps.analyze1.outcome != 'success'
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/analyze@fossa-arm64
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
