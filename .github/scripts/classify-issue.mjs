@@ -15,7 +15,7 @@
  *   ANTHROPIC_API_KEY    Claude API key
  *
  * Optional env:
- *   AI_CLASSIFY_APPLY_LABEL  'true' to apply labels/project assignments (default: 'false')
+ *   DRY_RUN                  'true' to skip label/project writes (default: 'false')
  *   OWNER                    GitHub org (default: 'camunda')
  *   REPO                     GitHub repo (default: 'camunda')
  *   GITHUB_STEP_SUMMARY      Written by GHA; path to append job summary markdown
