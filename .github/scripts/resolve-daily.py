@@ -88,7 +88,7 @@ def soak_started_at(run_id: str) -> str | None:
     out = gh([
         "api", f"repos/{REPO}/actions/runs/{run_id}/jobs",
         "--jq",
-        f'.jobs[] | select(.name == "{SOAK_JOB_NAME}") | .started_at',
+        f'.jobs[] | select(.name | startswith("{SOAK_JOB_NAME}")) | .started_at',
     ])
     if not out:
         return None
