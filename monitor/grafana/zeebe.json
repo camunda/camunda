@@ -8851,16 +8851,23 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
+<<<<<<< HEAD
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "quantile-50th",
+=======
+              "expr": "histogram_quantile(0.5, sum by (le, physicalTenant, partition) (rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))) > 0",
+              "instant": false,
+              "legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-50th",
+>>>>>>> f627c511 (fix: repair Process Instance Execution Time dashboard panel)
               "range": true,
               "refId": "C"
             },
             {
               "datasource": {
                 "type": "prometheus",
+<<<<<<< HEAD
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
@@ -8868,6 +8875,26 @@
               "hide": false,
               "instant": false,
               "legendFormat": "quantile-99th",
+=======
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.9, sum by (le, physicalTenant, partition) (rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))) > 0",
+              "instant": false,
+              "legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-90th",
+              "range": true,
+              "refId": "D"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum by (le, physicalTenant, partition) (rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))) > 0",
+              "instant": false,
+              "legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-99th",
+>>>>>>> f627c511 (fix: repair Process Instance Execution Time dashboard panel)
               "range": true,
               "refId": "D"
             }
