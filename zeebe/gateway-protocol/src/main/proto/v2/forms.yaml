@@ -7,6 +7,8 @@ paths:
       tags:
         - Form
       operationId: getFormByKey
+      x-required-permissions:
+        - { resourceType: RESOURCE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []

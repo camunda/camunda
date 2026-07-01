@@ -7,6 +7,7 @@ paths:
       tags:
         - License
       operationId: getLicense
+      x-required-permissions: []
       # Public license-status endpoint — declared unauthenticated at runtime
       # via SecurityPathAdapter. `security: []` overrides the conditional
       # enforcement on the global schemes for this operation.

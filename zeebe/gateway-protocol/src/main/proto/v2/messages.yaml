@@ -7,6 +7,8 @@ paths:
       tags:
         - Message
       operationId: publishMessage
+      x-required-permissions:
+        - { resourceType: MESSAGE, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -44,6 +46,9 @@ paths:
       tags:
         - Message
       operationId: correlateMessage
+      x-required-permissions:
+        - dynamic: true
+          note: Resolved from the matched subscription — CREATE_PROCESS_INSTANCE (start-event) or UPDATE_PROCESS_INSTANCE (intermediate) on PROCESS_DEFINITION.
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -88,6 +93,9 @@ paths:
       tags:
         - Message subscription
       operationId: searchMessageSubscriptions
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -135,6 +143,9 @@ paths:
       tags:
         - Message subscription
       operationId: searchCorrelatedMessageSubscriptions
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

@@ -6,6 +6,7 @@ paths:
       tags:
         - Authentication
       operationId: getAuthentication
+      x-required-permissions: []
       summary: Get current user
       description: Retrieves the current authenticated user.
       security:

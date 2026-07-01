@@ -7,6 +7,9 @@ paths:
       tags:
         - Signal
       operationId: broadcastSignal
+      x-required-permissions:
+        - dynamic: true
+          note: Resolved from the matched signal subscription — CREATE_PROCESS_INSTANCE (start-event) or UPDATE_PROCESS_INSTANCE (intermediate) on PROCESS_DEFINITION.
       security:
         - bearerAuth: []
         - basicAuth: []

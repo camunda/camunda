@@ -63,6 +63,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-utils</artifactId>
     </dependency>
 
