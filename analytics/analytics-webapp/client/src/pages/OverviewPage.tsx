@@ -45,7 +45,7 @@ export function OverviewPage({
         <StatTile
           label="In progress"
           value={formatCount(data.activeNow)}
-          hint={`running now · tenant ${tenant}`}
+          hint="running now"
           accent={chartColor(0)}
         />
         <StatTile label="Started" value={formatCount(data.activated)} hint="in range" />

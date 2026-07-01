@@ -108,10 +108,15 @@ public class DashboardController {
     return repository.elementDurations(bpmnProcessId, from, to);
   }
 
-  /** Current in-flight instance count for a tenant (a gauge, independent of any time range). */
+  /**
+   * Current in-flight instance count for one process definition (a gauge, independent of any time
+   * range).
+   */
   @GetMapping("/active-instances")
-  public long activeInstances(@RequestParam("tenant") final String tenantId) {
-    return repository.activeInstances(tenantId);
+  public long activeInstances(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam("tenant") final String tenantId) {
+    return repository.activeInstances(bpmnProcessId, tenantId);
   }
 
   /** Instances started (activated) for a process over the optional range. */

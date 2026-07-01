@@ -85,7 +85,7 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
       api.elementDurations(process, range),
       api.incidents(process, range),
       api.openIncidents(process),
-      api.activeInstances(tenant),
+      api.activeInstances(process, tenant),
       api.activatedInstances(process, range),
     ])
       .then(

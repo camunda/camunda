@@ -121,8 +121,8 @@ export const api = {
     getJson<DistinctPoint[]>(`/api/dashboard/distinct?tenant=${q(tenant)}${rangeQs(range)}`),
   topProcesses: (tenant: string, range: TimeRange | null) =>
     getJson<TopProcess[]>(`/api/dashboard/top-processes?tenant=${q(tenant)}${rangeQs(range)}`),
-  activeInstances: (tenant: string) =>
-    getJson<number>(`/api/dashboard/active-instances?tenant=${q(tenant)}`),
+  activeInstances: (process: string, tenant: string) =>
+    getJson<number>(`/api/dashboard/active-instances?process=${q(process)}&tenant=${q(tenant)}`),
   activatedInstances: (process: string, range: TimeRange | null) =>
     getJson<number>(`/api/dashboard/activated-instances?process=${q(process)}${rangeQs(range)}`),
   slaCohorts: (process: string, range: TimeRange | null) =>

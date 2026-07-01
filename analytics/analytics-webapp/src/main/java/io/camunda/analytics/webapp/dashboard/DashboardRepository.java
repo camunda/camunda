@@ -332,12 +332,17 @@ public class DashboardRepository {
     return out;
   }
 
-  /** Current in-flight instance count for a tenant (range-independent gauge), summed over defs. */
-  public long activeInstances(final String tenantId) {
+  /**
+   * Current in-flight instance count for one process definition (range-independent gauge), summed
+   * over its versions.
+   */
+  public long activeInstances(final String bpmnProcessId, final String tenantId) {
     final Long n =
         jdbc.queryForObject(
-            "SELECT COALESCE(SUM(active_count), 0) FROM active_instances WHERE tenant_id = ?",
+            "SELECT COALESCE(SUM(active_count), 0) FROM active_instances"
+                + " WHERE bpmn_process_id = ? AND tenant_id = ?",
             Long.class,
+            bpmnProcessId,
             tenantId);
     return n == null ? 0L : n;
   }
