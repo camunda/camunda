@@ -16,7 +16,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -98,10 +97,10 @@ class ApplicationAuthorizationDisabledIT {
   }
 
   private static void assertAccessAllowed(final HttpResponse<String> response) {
-    assertThat(response.statusCode())
-        .isNotIn(
-            HttpURLConnection.HTTP_UNAUTHORIZED,
-            HttpURLConnection.HTTP_FORBIDDEN,
-            HttpURLConnection.HTTP_MOVED_TEMP);
+    // Assert a successful (2xx) response rather than merely "not forbidden": the webapp endpoint
+    // serves the SPA via a server-side forward on success, so a 2xx is expected. A weaker
+    // "not 401/403/302" check would also pass on a 500 or a stray redirect and hide a real
+    // breakage unrelated to authorization.
+    assertThat(response.statusCode()).isBetween(200, 299);
   }
 }
