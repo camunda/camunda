@@ -1,9 +1,9 @@
-# description: Snapshot-tests the rendered Kubernetes manifests for the load test setup against committed golden files. Fails when `make template` output differs from load-tests/setup/test/golden/.
+# description: Runs the load test setup golden-file snapshot tests and shell utility Bats tests.
 # test location: load-tests/setup/test
 # type: ci
 # owner: @camunda/reliability-testing
 ---
-name: Load Test Setup - Golden File Tests
+name: Load Test Setup - CI
 
 on:
   pull_request:
@@ -12,7 +12,6 @@ on:
   push:
     branches:
       - main
-      - "stable/**"
     paths:
       - "load-tests/setup/**"
 
@@ -23,6 +22,34 @@ defaults:
 permissions: {}
 
 jobs:
+  bats-tests:
+    name: Bats Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install bats
+        run: sudo apt-get install -y bats
+
+      - name: Run Bats tests
+        run: bats load-tests/setup/test/utils.bats
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   golden-test:
     name: Golden File Tests
     runs-on: ubuntu-latest

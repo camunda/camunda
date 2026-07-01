@@ -227,9 +227,6 @@ on:
         required: false
 
 env:
-  # Namespaces MUST start with c8 due to access policy
-  NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
-
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
 
@@ -262,10 +259,37 @@ defaults:
     shell: bash
 
 jobs:
+  normalize-load-test-name:
+    name: Normalize load test name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      namespace: ${{ steps.namespace.outputs.namespace }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Compute namespace
+        id: namespace
+        env:
+          LOAD_TEST_NAME: ${{ inputs.name }}
+        run: |
+          source load-tests/setup/utils.sh
+          if ! namespace="$(new_namespace_name "$LOAD_TEST_NAME")"; then
+            exit 1
+          fi
+          echo "namespace=${namespace}" >> "$GITHUB_OUTPUT"
+
   show-summary:
     name: Summarize workflow inputs
+    needs: normalize-load-test-name
     runs-on: ubuntu-latest
     permissions: {}
+    env:
+      NAMESPACE: ${{ needs.normalize-load-test-name.outputs.namespace }}
     steps:
       - name: Show summary
         run: |-
@@ -277,6 +301,7 @@ jobs:
           | Input | Value |
           |-------|-------|
           | Name | \`${NAME}\` |
+          | Namespace | \`${NAMESPACE}\` |
           | Ref | \`${REF}\` |
           | Target version | \`${TARGET_VERSION}\` |
           | Scenario | \`${SCENARIO}\` |
@@ -541,6 +566,7 @@ jobs:
   deploy-cluster-under-test:
     name: Deploy cluster under test
     needs:
+      - normalize-load-test-name
       - calculate-image-tag
       - build-camunda-image
       - build-load-test-images
@@ -549,6 +575,7 @@ jobs:
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
+      needs.normalize-load-test-name.result == 'success' &&
       needs.calculate-image-tag.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped') &&
@@ -558,6 +585,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      NAMESPACE: ${{ needs.normalize-load-test-name.outputs.namespace }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
