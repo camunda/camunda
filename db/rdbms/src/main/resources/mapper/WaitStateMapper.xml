@@ -120,6 +120,35 @@
     </where>
   </sql>
 
+  <resultMap id="waitStateStatisticsResultMap"
+    type="io.camunda.search.entities.WaitStateStatisticsEntity">
+    <constructor>
+      <idArg column="ELEMENT_ID" javaType="java.lang.String"/>
+      <arg column="WAITING_COUNT" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <select id="waitStateStatistics"
+    parameterType="io.camunda.db.rdbms.read.domain.WaitStateStatisticsDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.WaitStateMapper.waitStateStatisticsResultMap">
+    SELECT ELEMENT_ID, COUNT(*) AS WAITING_COUNT
+    FROM ${prefix}WAIT_STATE
+    WHERE PROCESS_INSTANCE_KEY = #{filter.processInstanceKey}
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND PROCESS_DEFINITION_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
+    GROUP BY ELEMENT_ID
+  </select>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.WaitStateDbModel">
     INSERT INTO ${prefix}WAIT_STATE (WAIT_STATE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_INSTANCE_KEY,
                                      ELEMENT_INSTANCE_KEY, ELEMENT_ID, ELEMENT_TYPE, WAIT_STATE_TYPE,

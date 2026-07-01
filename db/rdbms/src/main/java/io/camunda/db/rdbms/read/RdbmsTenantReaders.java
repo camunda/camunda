@@ -159,7 +159,7 @@ public record RdbmsTenantReaders(
         new UserTaskDbReader(mappers.userTaskMapper(), readerConfig),
         new VariableDbReader(mappers.variableMapper(), readerConfig),
         new WaitStateDbReader(mappers.waitStateMapper(), readerConfig),
-        new WaitStateStatisticsDbReader(readerConfig));
+        new WaitStateStatisticsDbReader(mappers.waitStateMapper(), readerConfig));
   }
 
   public SearchClientReaders toSearchClientReaders() {

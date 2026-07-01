@@ -8,7 +8,9 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.WaitStateDbQuery;
+import io.camunda.db.rdbms.read.domain.WaitStateStatisticsDbQuery;
 import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import java.util.List;
 
 public interface WaitStateMapper {
@@ -24,4 +26,6 @@ public interface WaitStateMapper {
   long count(WaitStateDbQuery query);
 
   List<WaitStateDbModel> search(WaitStateDbQuery query);
+
+  List<WaitStateStatisticsEntity> waitStateStatistics(WaitStateStatisticsDbQuery query);
 }
