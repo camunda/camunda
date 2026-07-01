@@ -140,7 +140,12 @@ public final class TestCluster implements CloseableSilently {
         nodes().values().stream()
             .map(node -> CompletableFuture.runAsync(node::start))
             .toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(started).join();
+    try {
+      CompletableFuture.allOf(started).get(2, TimeUnit.MINUTES);
+    } catch (final Exception e) {
+      LOGGER.error("Failed to start cluster", e);
+      throw new RuntimeException(e);
+    }
     return this;
   }
 
