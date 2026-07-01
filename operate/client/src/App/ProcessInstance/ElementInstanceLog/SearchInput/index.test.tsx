@@ -14,7 +14,10 @@ describe('<SearchInput />', () => {
     render(<SearchInput value="" onChange={vi.fn()} onClear={vi.fn()} />);
     const input = screen.getByLabelText('Filter element instances');
     expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute('placeholder', 'Name or ID');
+    expect(input).toHaveAttribute(
+      'placeholder',
+      'Search by element name or ID',
+    );
   });
 
   it('reflects the value prop in the input', () => {
