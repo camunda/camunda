@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -100,8 +101,8 @@ public class UserTaskJobBasedHandlerTest {
   }
 
   @Test
-  void shouldNotHandleUserTaskMigrationRecord() {
-    // given
+  void shouldNotHandleNonCanceledMigrationRecord() {
+    // given: migration=true records that are NOT CANCELED must never be handled
     final JobRecordValue jobRecordValue =
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
@@ -109,14 +110,80 @@ public class UserTaskJobBasedHandlerTest {
             .withJobToUserTaskMigration(true)
             .build();
 
-    SUPPORTED_INTENTS.forEach(
-        intent -> {
-          final Record<JobRecordValue> jobRecord =
-              factory.generateRecord(
-                  ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
-          // when - then
-          assertThat(underTest.handlesRecord(jobRecord)).isFalse();
-        });
+    SUPPORTED_INTENTS.stream()
+        .filter(intent -> !intent.equals(JobIntent.CANCELED))
+        .forEach(
+            intent -> {
+              final Record<JobRecordValue> jobRecord =
+                  factory.generateRecord(
+                      ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
+              assertThat(underTest.handlesRecord(jobRecord)).isFalse();
+            });
+  }
+
+  @Test
+  void shouldHandleRecordForMigrationCancelWithLegacyKey() {
+    // given: CANCELED + migration=true + key below watermark → true (stale-doc delete)
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CANCELED).withKey(legacyJobKey).withValue(value));
+
+    assertThat(underTest.handlesRecord(record)).isTrue();
+  }
+
+  @Test
+  void shouldNotHandleRecordForMigrationCancelWithCurrentVersionKey() {
+    // given: CANCELED + migration=true + key above watermark → false (current-version, no delete)
+    final long firstUserTaskKey = 100;
+    final long currentJobKey = 110;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CANCELED).withKey(currentJobKey).withValue(value));
+
+    assertThat(underTest.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldHandleRecordForMigrationCancelWhenWatermarkUnset() {
+    // given: CANCELED + migration=true + watermark=-1 → any key treated as legacy → true
+    // (watermark reset to -1 in @BeforeEach)
+    final long anyJobKey = 12345;
+
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CANCELED).withKey(anyJobKey).withValue(value));
+
+    assertThat(underTest.handlesRecord(record)).isTrue();
   }
 
   @Test
@@ -263,6 +330,7 @@ public class UserTaskJobBasedHandlerTest {
         new TaskEntity()
             .setId(String.valueOf(recordKey))
             .setKey(recordKey)
+            .setState(TaskState.CREATED)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -272,6 +340,7 @@ public class UserTaskJobBasedHandlerTest {
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
+    updateFieldsMap.put(TaskTemplate.STATE, TaskState.CREATED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
@@ -417,6 +486,7 @@ public class UserTaskJobBasedHandlerTest {
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
             .withProcessInstanceKey(processInstanceKey)
+            .withJobToUserTaskMigration(false)
             .build();
 
     final Record<JobRecordValue> jobRecord =
@@ -775,6 +845,186 @@ public class UserTaskJobBasedHandlerTest {
 
     // then
     assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
+  }
+
+  @Test
+  void shouldDeleteLegacyDocumentOnMigrationCancelForPreviousVersionRecord() {
+    // given
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90; // below watermark → legacy doc _id = jobKey
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue migrationCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> migrationCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(legacyJobKey)
+                    .withValue(migrationCancelValue));
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when: process the migration cancel through the handler
+    assertThat(underTest.handlesRecord(migrationCancelRecord)).isTrue();
+    final var ids = underTest.generateIds(migrationCancelRecord);
+    ids.forEach(
+        id -> {
+          final var entity = underTest.createNewEntity(id);
+          underTest.updateEntity(migrationCancelRecord, entity);
+          underTest.flush(entity, mockRequest);
+        });
+
+    // then — the stale legacy task doc (keyed by jobKey) must be deleted; no upsert should occur
+    verify(mockRequest, times(1))
+        .deleteWithRouting(indexName, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
+    verify(mockRequest, never())
+        .upsertWithRouting(
+            org.mockito.ArgumentMatchers.eq(indexName),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)));
+  }
+
+  @Test
+  void shouldDeleteLegacyDocumentOnMigrationCancelEvenWhenCreatedInSameBatch() {
+    // given: simulates a batch containing both JOB.CREATED and JOB.CANCELED+migration for the
+    // same legacy job key — the CANCELED must still issue a delete, not an upsert
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue createdValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(false)
+            .build();
+
+    final Record<JobRecordValue> createdRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CREATED).withKey(legacyJobKey).withValue(createdValue));
+
+    final JobRecordValue migrationCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> migrationCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(legacyJobKey)
+                    .withValue(migrationCancelValue));
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    final TaskEntity sharedEntity = underTest.createNewEntity(String.valueOf(legacyJobKey));
+
+    // simulate same-batch processing: CREATED first, then CANCELED+migration on the same entity
+    underTest.updateEntity(createdRecord, sharedEntity);
+    underTest.updateEntity(migrationCancelRecord, sharedEntity);
+    underTest.flush(sharedEntity, mockRequest);
+
+    // then — the migration-cancel must mark the entity for deletion so the delete path is taken
+    assertThat(sharedEntity.isMarkedForDeletion()).isTrue();
+    verify(mockRequest, times(1))
+        .deleteWithRouting(indexName, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
+    verify(mockRequest, never())
+        .upsertWithRouting(
+            org.mockito.ArgumentMatchers.eq(indexName),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)));
+  }
+
+  @Test
+  void shouldNotDeleteDocumentOnMigrationCancelForCurrentVersionRecord() {
+    // given: jobKey above watermark → current-version scheme (_id = elementInstanceKey)
+    final long firstUserTaskKey = 100;
+    final long currentJobKey =
+        110; // above watermark → current-version doc _id = elementInstanceKey
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue migrationCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> migrationCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(currentJobKey)
+                    .withValue(migrationCancelValue));
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when: current-version migration cancel — handlesRecord returns false, nothing dispatched
+    assertThat(underTest.handlesRecord(migrationCancelRecord)).isFalse();
+  }
+
+  @Test
+  void shouldNotDeleteDocumentOnNonMigrationCancel() {
+    // given: a normal (non-migration) JOB CANCELED — must never trigger a delete
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90; // below watermark, but NOT a migration cancel
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue normalCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(false)
+            .build();
+
+    final Record<JobRecordValue> normalCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(legacyJobKey)
+                    .withValue(normalCancelValue));
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when: non-migration cancel is handled normally (state update, not delete)
+    assertThat(underTest.handlesRecord(normalCancelRecord)).isTrue();
+    final var ids = underTest.generateIds(normalCancelRecord);
+    ids.forEach(
+        id -> {
+          final var entity = underTest.createNewEntity(id);
+          underTest.updateEntity(normalCancelRecord, entity);
+          underTest.flush(entity, mockRequest);
+        });
+
+    // then — normal cancel issues an upsert (state update), never a delete
+    verify(mockRequest, never())
+        .deleteWithRouting(
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any());
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            org.mockito.ArgumentMatchers.eq(indexName),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)));
   }
 
   @Test

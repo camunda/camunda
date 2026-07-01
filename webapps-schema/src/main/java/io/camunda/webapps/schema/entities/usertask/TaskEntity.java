@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.usertask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
@@ -105,6 +106,8 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskImplementation implementation;
+
+  @JsonIgnore private boolean markedForDeletion;
 
   public TaskEntity() {}
 
@@ -386,6 +389,15 @@ public class TaskEntity extends AbstractExporterEntity<TaskEntity>
 
   public TaskEntity setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
+    return this;
+  }
+
+  public boolean isMarkedForDeletion() {
+    return markedForDeletion;
+  }
+
+  public TaskEntity setMarkedForDeletion(final boolean markedForDeletion) {
+    this.markedForDeletion = markedForDeletion;
     return this;
   }
 

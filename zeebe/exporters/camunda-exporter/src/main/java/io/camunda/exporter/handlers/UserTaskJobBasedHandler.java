@@ -85,9 +85,18 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
 
   @Override
   public boolean handlesRecord(final Record<JobRecordValue> record) {
-    return SUPPORTED_INTENTS.contains(record.getIntent())
-        && record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE)
-        && !record.getValue().isJobToUserTaskMigration();
+    if (!(record.getIntent() instanceof final JobIntent intent)
+        || !SUPPORTED_INTENTS.contains(intent)) {
+      return false;
+    }
+    if (!record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
+      return false;
+    }
+    if (!record.getValue().isJobToUserTaskMigration()) {
+      return true;
+    }
+    return record.getIntent().equals(JobIntent.CANCELED)
+        && refersToPreviousVersionRecord(record.getKey());
   }
 
   @Override
@@ -112,14 +121,22 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     entity.setKey(record.getKey());
     switch (record.getIntent()) {
       case JobIntent.CREATED -> createTaskEntity(entity, record);
-      case JobIntent.COMPLETED, JobIntent.CANCELED ->
+      case JobIntent.COMPLETED ->
           entity
-              .setState(
-                  record.getIntent().equals(JobIntent.COMPLETED)
-                      ? TaskState.COMPLETED
-                      : TaskState.CANCELED)
+              .setState(TaskState.COMPLETED)
               .setCompletionTime(
                   ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      case JobIntent.CANCELED -> {
+        if (record.getValue().isJobToUserTaskMigration()) {
+          // stale legacy job-worker task doc; flush() will delete it instead of upserting
+          entity.setMarkedForDeletion(true);
+        } else {
+          entity
+              .setState(TaskState.CANCELED)
+              .setCompletionTime(
+                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+        }
+      }
       case JobIntent.MIGRATED ->
           entity
               .setFlowNodeBpmnId(record.getValue().getElementId())
@@ -152,11 +169,17 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
 
   @Override
   public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
+    final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
+
+    if (entity.isMarkedForDeletion() && previousVersionRecord) {
+      final var jobKey = String.valueOf(entity.getKey());
+      batchRequest.deleteWithRouting(indexName, jobKey, jobKey);
+      return;
+    }
+
     final var updateFields = getUpdatedFields(entity);
     final var taskEntityId = entity.getId();
     final var processInstanceKey = entity.getProcessInstanceId();
-
-    final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.upsertWithRouting(
         indexName,
