@@ -8983,9 +8983,9 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "zeebe_process_instance_execution_time_seconds{quantile=\"0.5\", cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}  > 0",
+              "expr": "histogram_quantile(0.5, sum by (le, physicalTenant, partition) (rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))) > 0",
               "instant": false,
-"legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-50th",
+              "legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-50th",
               "range": true,
               "refId": "C"
             },
@@ -8995,9 +8995,9 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "zeebe_process_instance_execution_time_seconds{quantile=\"0.9\", cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}  > 0",
+              "expr": "histogram_quantile(0.9, sum by (le, physicalTenant, partition) (rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))) > 0",
               "instant": false,
-"legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-90th",
+              "legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-90th",
               "range": true,
               "refId": "D"
             },
@@ -9007,9 +9007,9 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "zeebe_process_instance_execution_time_seconds{quantile=\"0.99\", cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}  > 0",
+              "expr": "histogram_quantile(0.99, sum by (le, physicalTenant, partition) (rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval]))) > 0",
               "instant": false,
-"legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-99th",
+              "legendFormat": "{{physicalTenant}} Partition: {{partition}} quantile-99th",
               "range": true,
               "refId": "E"
             }
