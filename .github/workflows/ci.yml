@@ -287,7 +287,13 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   build-platform-frontend:
-    if: needs.detect-changes.outputs.frontend-changes == 'true'
+    # Runs when the frontend changed, OR on any non-PR event targeting main/stable
+    # (push/schedule/workflow_dispatch) so the snapshot deploy jobs — which download
+    # these artifacts and run with `always()` on those refs — always have a producer.
+    if: >-
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      (github.event_name != 'pull_request' &&
+       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')))
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -2054,12 +2060,6 @@ jobs:
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
-      # Not produced by build-platform-frontend, so still built inline here.
-      - uses: ./.github/actions/build-frontend
-        id: build-cpt-coverage-fe
-        with:
-          directory: ./testing/camunda-process-test-coverage
-          package-manager: "npm"
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
@@ -2114,7 +2114,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
       # Frontend bundles are built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). build-zeebe runs with -PskipFrontendBuild below.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
