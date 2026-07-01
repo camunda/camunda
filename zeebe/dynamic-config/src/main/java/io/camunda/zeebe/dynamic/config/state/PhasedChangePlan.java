@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A pre-computed sequence of phases for cluster-spanning operations that touch both {@link
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
  * wins. If plan IDs differ, the higher plan ID always wins — plan IDs are monotonically increasing,
  * so the higher ID is always the newer plan.
  */
+@NullMarked
 public record PhasedChangePlan(
     long id, int currentPhaseIndex, List<Phase> phases, Instant startedAt) {
 

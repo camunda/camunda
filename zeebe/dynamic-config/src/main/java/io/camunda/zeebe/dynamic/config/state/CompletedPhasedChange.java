@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import java.time.Instant;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Minimal record of a completed {@link PhasedChangePlan}, retained so that:
@@ -18,6 +19,7 @@ import java.time.Instant;
  *       succeeded.
  * </ul>
  */
+@NullMarked
 public record CompletedPhasedChange(
     long id, Status status, Instant startedAt, Instant completedAt) {
 

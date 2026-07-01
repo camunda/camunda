@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Holds at most one pending {@link PhasedChangePlan} together with the last completed change.
@@ -25,10 +28,13 @@ import java.util.stream.Stream;
  *   <li>{@code lastChange}: the side with the higher ID wins.
  * </ul>
  */
+@NullMarked
 public record PhasedChangeState(
     Optional<PhasedChangePlan> pending, Optional<CompletedPhasedChange> lastChange) {
 
   public PhasedChangeState {
+    requireNonNull(pending, "pending must not be null");
+    requireNonNull(lastChange, "lastChange must not be null");
     pending.ifPresent(
         p ->
             lastChange.ifPresent(
