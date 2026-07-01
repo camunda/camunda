@@ -84,6 +84,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-instances/%s/call-hierarchy";
   private static final String URL_PROCESS_INSTANCE_SEQUENCE_FLOWS =
       REST_API_PATH + "/process-instances/%s/sequence-flows";
+  private static final String URL_PROCESS_INSTANCE_WAIT_STATE_STATISTICS =
+      REST_API_PATH + "/process-instances/%s/statistics/wait-states";
   private static final String URL_PROCESS_INSTANCES = REST_API_PATH + "/process-instances";
   private static final String URL_PROCESS_INSTANCES_CANCELLATION =
       REST_API_PATH + "/process-instances/cancellation";
@@ -282,6 +284,10 @@ public class RestGatewayPaths {
 
   public static String getProcessInstanceCallHierarchyUrl(final long processInstanceKey) {
     return String.format(URL_PROCESS_INSTANCE_CALL_HIERARCHY, processInstanceKey);
+  }
+
+  public static String getProcessInstanceWaitStateStatisticsUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_WAIT_STATE_STATISTICS, processInstanceKey);
   }
 
   public static String getProcessInstancesUrl(final long processInstanceKey) {

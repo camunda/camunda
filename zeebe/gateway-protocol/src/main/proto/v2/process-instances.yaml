@@ -191,6 +191,44 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
 
+  /process-instances/{processInstanceKey}/statistics/wait-states:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Process instance
+      operationId: getProcessInstanceWaitStateStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Get wait state statistics
+      description: Get statistics about waiting element instances by the process instance key, grouped by element id.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      responses:
+        "200":
+          description: The process instance wait state statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstanceWaitStateStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /process-instances/search:
     post:
       x-eventually-consistent: true
@@ -1636,6 +1674,34 @@ components:
           type: array
           items:
             $ref: 'process-definitions.yaml#/components/schemas/ProcessElementStatisticsResult'
+
+    ProcessInstanceWaitStateStatisticsQueryResult:
+      description: Process instance wait state statistics query response.
+      required:
+        - items
+      type: object
+      properties:
+        items:
+          description: The wait state statistics.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceWaitStateStatisticsResult'
+
+    ProcessInstanceWaitStateStatisticsResult:
+      description: Process instance wait state statistics response item.
+      type: object
+      required:
+        - elementId
+        - waitingCount
+      properties:
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element id for which the wait states are aggregated.
+        waitingCount:
+          description: The total number of waiting instances of the element.
+          type: integer
+          format: int64
 
     ProcessInstanceMigrationInstruction:
       type: object
