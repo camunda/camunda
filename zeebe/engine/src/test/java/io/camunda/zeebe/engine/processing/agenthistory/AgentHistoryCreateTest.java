@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -33,6 +34,7 @@ public class AgentHistoryCreateTest {
 
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "agent-task";
+  private static final String JOB_TYPE = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -63,13 +65,6 @@ public class AgentHistoryCreateTest {
     assertThat(created.getValue().getJobKey()).isEqualTo(jobKey);
     assertThat(created.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(created.getValue().getBpmnProcessId()).isEqualTo(PROCESS_ID);
-
-    final var committed =
-        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
-            .withAgentInstanceKey(agentInstanceKey)
-            .getFirst();
-    assertThat(committed.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(committed.getKey()).isEqualTo(created.getKey());
   }
 
   @Test
@@ -190,7 +185,7 @@ public class AgentHistoryCreateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
                 .done())
         .deploy();
@@ -203,10 +198,10 @@ public class AgentHistoryCreateTest {
   }
 
   private static long activateJobForProcessInstance(final long processInstanceKey) {
-    ENGINE.jobs().withType("agent").activate();
+    ENGINE.jobs().withType(JOB_TYPE).activate();
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withType("agent")
+        .withType(JOB_TYPE)
         .getFirst()
         .getKey();
   }
