@@ -21,10 +21,10 @@ public interface NodeIdProvider extends AutoCloseable {
   /**
    * Scale the available node ids to the new cluster size
    *
-   * @param newClusterSize the new cluster size (number of nodes in this region)
+   * @param brokerCountInZone the new cluster size (number of nodes in this zone)
    * @return a CompletableFuture that completes when the scaling operation is done
    */
-  CompletableFuture<Void> scale(int newClusterSize);
+  CompletableFuture<Void> scale(int brokerCountInZone);
 
   /**
    * @return the node instance. Null can be returned when the provider is shutting down
@@ -88,7 +88,7 @@ public interface NodeIdProvider extends AutoCloseable {
       }
 
       @Override
-      public CompletableFuture<Void> scale(final int newClusterSize) {
+      public CompletableFuture<Void> scale(final int brokerCountInZone) {
         return CompletableFuture.completedFuture(null);
       }
 

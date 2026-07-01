@@ -98,9 +98,9 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> scale(final int newClusterSize) {
+  public CompletableFuture<Void> scale(final int brokerCountInZone) {
     return CompletableFuture.runAsync(
-        () -> nodeIdRepository.scale(newClusterSize), backgroundTaskExecutor);
+        () -> nodeIdRepository.scale(brokerCountInZone), backgroundTaskExecutor);
   }
 
   @Override
