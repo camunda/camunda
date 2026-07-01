@@ -553,6 +553,183 @@ public class GlobalUserTaskListenersTest {
         .await();
   }
 
+  @Test
+  void shouldTriggerGlobalUpdatingListenerCreatedViaApi() {
+    // given: a global updating listener defined via the API and a process with a user task
+    restartBroker();
+
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("apiUpdating")
+        .type("apiUpdating")
+        .eventTypes(GlobalTaskListenerEventType.UPDATING)
+        .send()
+        .join();
+
+    setupAutocompleteWorker("apiUpdating");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getValue();
+
+    // when: the user task is updated
+    camundaClient
+        .newUpdateUserTaskCommand(userTask.getUserTaskKey())
+        .priority(55)
+        .action("escalate")
+        .send()
+        .join();
+
+    // then: the global updating listener is executed
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task update is started
+                    r.getIntent() == UserTaskIntent.UPDATING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task update has been completed
+                    r.getIntent() == UserTaskIntent.UPDATED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for updating event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.UPDATING)
+        .extracting(JobRecordValue::getType)
+        // check that the global listener has been executed
+        .containsExactly("apiUpdating");
+  }
+
+  @Test
+  void shouldTriggerGlobalCompletingListenerCreatedViaApi() {
+    // given: a global completing listener defined via the API and a process with a user task
+    restartBroker();
+
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("apiCompleting")
+        .type("apiCompleting")
+        .eventTypes(GlobalTaskListenerEventType.COMPLETING)
+        .send()
+        .join();
+
+    setupAutocompleteWorker("apiCompleting");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getValue();
+
+    // when: the user task is completed
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
+
+    // then: the global completing listener is executed
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task completion is started
+                    r.getIntent() == UserTaskIntent.COMPLETING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task completion has been completed
+                    r.getIntent() == UserTaskIntent.COMPLETED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for completing event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.COMPLETING)
+        .extracting(JobRecordValue::getType)
+        // check that the global listener has been executed
+        .containsExactly("apiCompleting");
+  }
+
+  @Test
+  void shouldTriggerGlobalCancelingListenerCreatedViaApi() {
+    // given: a global canceling listener defined via the API and a process with a user task
+    restartBroker();
+
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("apiCanceling")
+        .type("apiCanceling")
+        .eventTypes(GlobalTaskListenerEventType.CANCELING)
+        .send()
+        .join();
+
+    setupAutocompleteWorker("apiCanceling");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .await();
+
+    // when: the process instance is canceled while the user task is active
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send();
+
+    // then: the global canceling listener is executed
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task cancellation is started
+                    r.getIntent() == UserTaskIntent.CANCELING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task cancellation has been completed
+                    r.getIntent() == UserTaskIntent.CANCELED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for canceling event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.CANCELING)
+        .extracting(JobRecordValue::getType)
+        // check that the global listener has been executed
+        .containsExactly("apiCanceling");
+  }
+
   private void setupAutocompleteWorker(final String jobType) {
     camundaClient
         .newWorker()
