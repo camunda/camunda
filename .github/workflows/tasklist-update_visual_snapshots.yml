@@ -14,6 +14,9 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
+env:
+  CLIENT_DIR: ./tasklist/client
+
 jobs:
   update-snapshots:
     if: github.event.pull_request.state != 'closed' && (github.event.label.name == 'update-snapshots' || contains( github.event.pull_request.labels.*.name, 'update-snapshots'))
@@ -30,13 +33,14 @@ jobs:
         with:
           node-version: "22"
       - name: Install node dependencies
-        working-directory: ./tasklist/client
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
-        working-directory: ./tasklist/client
+        working-directory: ${{ env.CLIENT_DIR }}
         run: npm run build:visual-regression
       - name: Update snapshots
-        working-directory: ./tasklist/client
+        working-directory: ${{ env.CLIENT_DIR }}
         run: npm run test:visual --update-snapshots
       - name: Commit screenshots
         uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0

@@ -44,9 +44,9 @@ runs:
 
     - name: Install node dependencies (npm)
       if: ${{ inputs.package-manager == 'npm' }}
-      working-directory: ${{ inputs.directory }}
-      shell: bash
-      run: npm ci
+      uses: ./.github/actions/npm-ci-with-retry
+      with:
+        directory: ${{ inputs.directory }}
 
     - name: Build frontend (yarn)
       if: ${{ inputs.package-manager == 'yarn' }}
