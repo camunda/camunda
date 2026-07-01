@@ -459,6 +459,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .requestCache(false)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
+            .allowPartialSearchResults(false)
             .query(query)
             .size(size)
             .source(s -> s.fetch(false))
