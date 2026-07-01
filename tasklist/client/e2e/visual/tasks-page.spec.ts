@@ -79,6 +79,28 @@ test.describe('tasks page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('tasks with a business id', async ({
+    page,
+    tasksPage,
+    mockQueryUserTasksRequest,
+  }) => {
+    mockQueryUserTasksRequest([
+      unassignedTask({
+        assignee: 'jane',
+        businessId: 'ORDER-2024-0042',
+      }),
+      unassignedTask({
+        businessId: 'ORDER-2024-0043',
+      }),
+    ]);
+
+    await tasksPage.goto();
+
+    await expect(page.getByText('ORDER-2024-0042')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('tasks assigned to me', async ({
     page,
     tasksPage,
@@ -327,6 +349,37 @@ test.describe('tasks page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('selected task with a business id', async ({
+    page,
+    tasksPage,
+    mockQueryUserTasksRequest,
+    mockGetUserTaskRequest,
+    mockQueryVariablesByUserTaskRequest,
+    mockGetProcessDefinitionXmlRequest,
+  }) => {
+    const TASK_WITH_BUSINESS_ID = unassignedTask({
+      assignee: 'demo',
+      businessId: 'ORDER-2024-0042',
+    });
+
+    mockQueryUserTasksRequest([TASK_WITH_BUSINESS_ID]);
+    mockGetUserTaskRequest(TASK_WITH_BUSINESS_ID);
+    mockQueryVariablesByUserTaskRequest({
+      userTaskKey: TASK_WITH_BUSINESS_ID.userTaskKey,
+    });
+    mockGetProcessDefinitionXmlRequest({
+      processDefinitionKey: TASK_WITH_BUSINESS_ID.processDefinitionKey,
+    });
+
+    await tasksPage.gotoTaskDetails(TASK_WITH_BUSINESS_ID.userTaskKey);
+
+    await expect(
+      tasksPage.detailsPanel.getByText('ORDER-2024-0042'),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('selected completed task', async ({
     page,
     tasksPage,
@@ -547,6 +600,23 @@ test.describe('tasks page', () => {
 
     await tasksPage.expandSidePanelButton.click();
     await tasksPage.addCustomFilterButton.click();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('custom filters modal with business id field', async ({
+    page,
+    tasksPage,
+    mockQueryUserTasksRequest,
+  }) => {
+    mockQueryUserTasksRequest();
+
+    await tasksPage.goto();
+
+    await tasksPage.expandSidePanelButton.click();
+    await tasksPage.addCustomFilterButton.click();
+    await tasksPage.tasksFilterModal.advancedFiltersToggle.click({force: true});
+    await tasksPage.tasksFilterModal.businessIdField.fill('ORDER-2024-0042');
 
     await expect(page).toHaveScreenshot();
   });

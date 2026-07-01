@@ -7,6 +7,7 @@
  */
 
 import type {Page, Locator} from '@playwright/test';
+import {TasksFilterModal} from './TasksFilterModal';
 
 type FilterParam =
   | 'all-open'
@@ -31,6 +32,7 @@ class TasksPage {
   readonly expandSidePanelButton: Locator;
   readonly collapseSidePanelButton: Locator;
   readonly addCustomFilterButton: Locator;
+  readonly tasksFilterModal: TasksFilterModal;
   readonly bpmnDiagram: Locator;
   readonly taskCompletionNotification: Locator;
 
@@ -61,6 +63,7 @@ class TasksPage {
     this.addCustomFilterButton = page.getByRole('button', {
       name: 'New filter',
     });
+    this.tasksFilterModal = new TasksFilterModal(page);
     this.bpmnDiagram = page.getByTestId('diagram');
     this.taskCompletionNotification = page.getByText('Task completed');
   }

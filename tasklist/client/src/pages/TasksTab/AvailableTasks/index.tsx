@@ -95,6 +95,7 @@ const AvailableTasks: React.FC<Props> = ({
                     processDisplayName={
                       task.processName ?? task.processDefinitionId
                     }
+                    businessId={task.businessId}
                     assignee={task.assignee}
                     creationDate={task.creationDate}
                     followUpDate={task.followUpDate}

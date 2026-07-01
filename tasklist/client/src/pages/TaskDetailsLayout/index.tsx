@@ -182,6 +182,7 @@ const TaskDetailsLayout: React.FC = () => {
         candidateUsers={task.candidateUsers}
         candidateGroups={task.candidateGroups}
         tenantId={task.tenantId}
+        businessId={task.businessId}
         user={currentUser}
       />
     </div>
