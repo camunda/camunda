@@ -51,10 +51,10 @@ There are two sets of data, defined in two different Spring profiles:
 
 Ways to activated profiles:
 
-- when running via `make env-up` or `docker-compose`: edit `docker-compose.yml`, section `services.operate.environment` (always leave `dev` profile active)
+- when running via `make env-up` or `docker-compose`: edit `docker-compose.yml`, section `services.camunda.environment`
 
 ```text
-- SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+- SPRING_PROFILES_ACTIVE=broker,operate,dev,dev-data,consolidated-auth
 ```
 
 - when running from distribution via `operate` shell script or `operate.bat`:
