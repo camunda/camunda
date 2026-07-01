@@ -197,6 +197,9 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceWaitStateStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
