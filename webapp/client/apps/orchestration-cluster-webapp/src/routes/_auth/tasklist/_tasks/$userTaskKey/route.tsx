@@ -13,6 +13,7 @@ import {useSuspenseQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {TaskDetailPage} from '#/tasklist/pages/TaskDetailPage';
+import {AssignButton} from '#/tasklist/modules/task-details/components/AssignButton';
 import {DetailsSkeleton} from '#/tasklist/modules/task-details/components/DetailsSkeleton';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {requestErrorSchema} from '#/shared/http/request';
@@ -38,7 +39,7 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey')({
 		const {userTaskKey} = Route.useParams();
 		const navigate = useNavigate();
 
-		const {data: task, refetch} = useSuspenseQuery({
+		const {data: task} = useSuspenseQuery({
 			...queries.getUserTask(userTaskKey),
 			refetchInterval(query) {
 				const state = query.state.data?.state;
@@ -64,7 +65,19 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey')({
 		}, [navigate, task.processInstanceKey, task.processName, task.state, task.processDefinitionId]);
 
 		return (
-			<TaskDetailPage task={task} currentUser={currentUser} refetch={refetch}>
+			<TaskDetailPage
+				task={task}
+				currentUser={currentUser}
+				assignButton={
+					<AssignButton
+						key={task.userTaskKey}
+						userTaskKey={task.userTaskKey}
+						taskState={task.state}
+						assignee={task.assignee ?? null}
+						currentUser={currentUser.username}
+					/>
+				}
+			>
 				<Outlet />
 			</TaskDetailPage>
 		);

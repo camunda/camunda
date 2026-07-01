@@ -12,13 +12,13 @@ import {TaskDetailsLayout} from '#/tasklist/modules/task-details/components/Task
 type Props = {
 	task: UserTask;
 	currentUser: CurrentUser;
-	refetch: () => void;
+	assignButton: React.ReactNode;
 	children: React.ReactNode;
 };
 
-const TaskDetailPage: React.FC<Props> = ({task, currentUser, children}) => {
+const TaskDetailPage: React.FC<Props> = ({task, currentUser, assignButton, children}) => {
 	return (
-		<TaskDetailsLayout task={task} currentUser={currentUser} assignButton={null}>
+		<TaskDetailsLayout task={task} currentUser={currentUser} assignButton={assignButton}>
 			{children}
 		</TaskDetailsLayout>
 	);
