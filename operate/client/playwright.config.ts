@@ -51,7 +51,6 @@ const config = defineConfig({
   timeout: 30 * 1000,
   expect: {
     timeout: 15 * 1000,
-    toHaveScreenshot: {maxDiffPixelRatio: 0.015},
   },
   fullyParallel: true,
   forbidOnly: IS_CI,
