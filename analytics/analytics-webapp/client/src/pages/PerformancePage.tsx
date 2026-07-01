@@ -11,6 +11,8 @@ import { formatCount, formatDuration, formatPercent } from "../lib/format";
 import { qualityKpis, useMetrics } from "../lib/useMetrics";
 import { CountTrend } from "../components/CountTrend";
 import { DurationDistribution } from "../components/DurationDistribution";
+import { FrequencyDurationTrend } from "../components/FrequencyDurationTrend";
+import { IncidentHeatmap } from "../components/IncidentHeatmap";
 import { Incidents } from "../components/Incidents";
 import { NoIncidentCohortChart } from "../components/NoIncidentCohortChart";
 import { NoIncidentDonut } from "../components/NoIncidentDonut";
@@ -69,6 +71,7 @@ export function PerformancePage({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PercentileTrend points={data.duration} />
+        <FrequencyDurationTrend points={data.duration} />
         <CountTrend
           title="Instance trends"
           description="Instances started per window (by start cohort)"
@@ -83,6 +86,8 @@ export function PerformancePage({
       </div>
 
       <ProcessHeatmap process={process} elements={data.elements} />
+
+      <IncidentHeatmap process={process} incidents={data.incidents} />
 
       <Incidents rows={data.incidents} />
     </div>

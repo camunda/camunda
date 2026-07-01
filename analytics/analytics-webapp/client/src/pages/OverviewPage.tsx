@@ -10,7 +10,7 @@ import { chartColor } from "../lib/chartColors";
 import { formatCount } from "../lib/format";
 import { useMetrics } from "../lib/useMetrics";
 import { CountTrend } from "../components/CountTrend";
-import { Incidents } from "../components/Incidents";
+import { IncidentHeatmap } from "../components/IncidentHeatmap";
 import { ProcessHeatmap } from "../components/ProcessHeatmap";
 import { StatTile } from "../components/StatTile";
 
@@ -68,7 +68,7 @@ export function OverviewPage({
 
       <ProcessHeatmap process={process} elements={data.elements} />
 
-      <Incidents rows={data.incidents} />
+      <IncidentHeatmap process={process} incidents={data.incidents} />
     </div>
   );
 }

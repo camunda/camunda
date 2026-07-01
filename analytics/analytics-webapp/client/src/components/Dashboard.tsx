@@ -34,6 +34,8 @@ import { ElementDurations } from "./ElementDurations";
 import { PercentileTrend } from "./PercentileTrend";
 import { ProcessHeatmap } from "./ProcessHeatmap";
 import { DurationDistribution } from "./DurationDistribution";
+import { FrequencyDurationTrend } from "./FrequencyDurationTrend";
+import { IncidentHeatmap } from "./IncidentHeatmap";
 import { Incidents } from "./Incidents";
 import { NoIncidentCohortChart } from "./NoIncidentCohortChart";
 import { NoIncidentDonut } from "./NoIncidentDonut";
@@ -204,6 +206,7 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PercentileTrend points={data.duration} />
+        <FrequencyDurationTrend points={data.duration} />
         <SlaCohortChart cohorts={data.slaCohorts} />
         <NoIncidentCohortChart points={data.noIncident} />
         <DurationDistribution points={data.durationBuckets} />
@@ -215,6 +218,8 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
       </div>
 
       <ProcessHeatmap process={process} elements={data.elements} />
+
+      <IncidentHeatmap process={process} incidents={data.incidents} />
 
       <Incidents rows={data.incidents} />
 
