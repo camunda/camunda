@@ -14,6 +14,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.jspecify.annotations.NullMarked;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Declares one or more non-default physical tenants that {@link CamundaMultiDBExtension} should
@@ -58,6 +59,7 @@ import org.jspecify.annotations.NullMarked;
 @Documented
 @Inherited
 @NullMarked
+@Tag("multi-db-physical-tenants")
 public @interface MultiDbPhysicalTenants {
 
   /**
