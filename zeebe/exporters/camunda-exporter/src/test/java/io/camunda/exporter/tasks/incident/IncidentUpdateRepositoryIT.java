@@ -399,7 +399,6 @@ abstract class IncidentUpdateRepositoryIT {
       // given
       final var metadata = new ExporterMetadata(new ObjectMapper());
       final var repository = createRepository();
-      final var executor = Executors.newSingleThreadScheduledExecutor();
 
       final var incidentNotifier = mock(IncidentNotifier.class);
       when(incidentNotifier.notifyAsync(anyList()))
@@ -422,25 +421,163 @@ abstract class IncidentUpdateRepositoryIT {
                   engineClient.indexExists(listViewTemplate.getFullQualifiedName())
                       && engineClient.indexExists(flowNodeInstanceTemplate.getFullQualifiedName()));
 
-      // when
-      final var incidentUpdateTask =
-          new IncidentUpdateTask(
-              metadata,
-              repository,
-              true,
-              100,
-              executor,
-              incidentNotifier,
-              mock(CamundaExporterMetrics.class),
-              LOGGER);
+      try (final var executor = Executors.newSingleThreadScheduledExecutor()) {
+        // when
+        final var incidentUpdateTask =
+            new IncidentUpdateTask(
+                metadata,
+                repository,
+                true,
+                100,
+                executor,
+                incidentNotifier,
+                mock(CamundaExporterMetrics.class),
+                LOGGER);
 
-      incidentUpdateTask.execute().toCompletableFuture().join();
+        incidentUpdateTask.execute().toCompletableFuture().join();
 
-      // then
+        // then
+        Awaitility.await()
+            .until(() -> metadata.getLastIncidentUpdatePosition() == incidentUpdatePosition);
+      }
+    }
+  }
+
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
+  @Nested
+  final class PendingIncidentWatermarkSkipRegressionIT {
+    // The queue index is created with multiple shards (as in production) and with auto-refresh
+    // disabled so the tests, rather than the search engine, decide exactly when a written entry
+    // becomes searchable. This lets us deterministically reproduce a refresh-skew: at search time a
+    // lower-position entry is not yet visible while a higher-position entry is, which is what a
+    // lagging shard produces for the consumer. This test verifies the fix for
+    // https://github.com/camunda/camunda/issues/56117 end to end: the repository force-refreshes
+    // the queue write index before each batch read, so the lagging lower entry becomes visible and
+    // is no longer skipped by the forward-only cursor, and its incident is not left stuck PENDING.
+    private static final int QUEUE_SHARDS = 3;
+    private static final long LOWER_POSITION = 1L;
+    private static final long HIGHER_POSITION = 2L;
+    private static final long LOWER_KEY = 1L;
+    private static final long HIGHER_KEY = 2L;
+
+    @RegressionTest("https://github.com/camunda/camunda/issues/56117")
+    void shouldNotLeaveIncidentPendingWhenLowerPositionEntryLags() throws Exception {
+      // given - two pending incidents, one per queue entry
+      final var metadata = new ExporterMetadata(new ObjectMapper());
+      final var repository = createRepository();
+      final var incidentNotifier = mock(IncidentNotifier.class);
+      when(incidentNotifier.notifyAsync(anyList()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      indexIncident(newIncident(LOWER_KEY));
+      indexIncident(newIncident(HIGHER_KEY));
+
+      // the task queries the list-view and flow-node indices, so they must exist
+      engineClient.createIndex(listViewTemplate, new IndexConfiguration());
+      engineClient.createIndex(flowNodeInstanceTemplate, new IndexConfiguration());
       Awaitility.await()
-          .until(() -> metadata.getLastIncidentUpdatePosition() == incidentUpdatePosition);
+          .until(
+              () ->
+                  engineClient.indexExists(listViewTemplate.getFullQualifiedName())
+                      && engineClient.indexExists(flowNodeInstanceTemplate.getFullQualifiedName()));
 
-      executor.close();
+      // the higher-position entry is written and refreshed first, so it is searchable...
+      createQueueIndexWithManualRefreshOnly();
+      indexPendingUpdate(HIGHER_KEY, HIGHER_POSITION, true);
+      // ...while the lower-position entry is written without a refresh, so it stays invisible,
+      // exactly as a lagging shard would present it to the consumer at search time
+      indexPendingUpdate(LOWER_KEY, LOWER_POSITION, false);
+
+      // precondition - a plain search does not see the lagging lower entry; this is the per-shard
+      // refresh skew that previously made the cursor advance past it and skip it forever
+      Awaitility.await()
+          .pollDelay(Duration.ofSeconds(2))
+          .atMost(Duration.ofSeconds(3))
+          .pollInterval(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                assertThat(
+                        search(
+                            postImporterQueueTemplate.getFullQualifiedName(),
+                            PostImporterQueueTemplate.KEY,
+                            List.of(String.valueOf(HIGHER_KEY)),
+                            PostImporterQueueEntity.class))
+                    .hasSize(1);
+                assertThat(
+                        search(
+                            postImporterQueueTemplate.getFullQualifiedName(),
+                            PostImporterQueueTemplate.KEY,
+                            List.of(String.valueOf(LOWER_KEY)),
+                            PostImporterQueueEntity.class))
+                    .isEmpty();
+              });
+
+      try (final var executor = Executors.newSingleThreadScheduledExecutor()) {
+        final var task =
+            new IncidentUpdateTask(
+                metadata,
+                repository,
+                // apply with a sparse tree path so the batch processes without the process
+                // instances being present in the list view
+                true,
+                100,
+                executor,
+                incidentNotifier,
+                mock(CamundaExporterMetrics.class),
+                LOGGER,
+                // shorten the missing-data backoff vs. the default 5s; must be a whole second since
+                // uncheckedThreadSleep passes the sub-second remainder to Thread.sleep's nanos arg
+                Duration.ofSeconds(1));
+
+        // when - a single run reads the batch; the repository force-refreshes the queue write index
+        // first, so the lagging lower entry is visible and processed alongside the higher one
+        task.execute().toCompletableFuture().join();
+        Awaitility.await().until(() -> metadata.getLastIncidentUpdatePosition() == HIGHER_POSITION);
+
+        // then - both incidents transition out of PENDING; the lower one is not skipped
+        final var incidents =
+            search(
+                incidentTemplate.getFullQualifiedName(),
+                IncidentTemplate.KEY,
+                List.of(String.valueOf(LOWER_KEY), String.valueOf(HIGHER_KEY)),
+                IncidentEntity.class);
+        assertThat(incidents)
+            .hasSize(2)
+            .allSatisfy(
+                incident -> assertThat(incident.getState()).isEqualTo(IncidentState.ACTIVE));
+        assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(HIGHER_POSITION);
+      }
+    }
+
+    private void createQueueIndexWithManualRefreshOnly() {
+      final var config = new IndexConfiguration();
+      config.setNumberOfShards(QUEUE_SHARDS);
+      config.setNumberOfReplicas(0);
+      // -1 disables periodic refresh: documents only become searchable on an explicit refresh
+      config.setRefreshInterval("-1");
+      engineClient.createIndex(postImporterQueueTemplate, config);
+    }
+
+    private void indexPendingUpdate(final long key, final long position, final boolean refresh)
+        throws PersistenceException {
+      final var entry =
+          new PostImporterQueueEntity()
+              .setActionType(PostImporterActionType.INCIDENT)
+              .setIntent(IncidentIntent.CREATED.name())
+              .setKey(key)
+              .setPartitionId(PARTITION_ID)
+              .setProcessInstanceKey(key)
+              .setPosition(position);
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), entry);
+      if (refresh) {
+        batchRequest.executeWithRefresh();
+      } else {
+        batchRequest.execute();
+      }
     }
   }
 
