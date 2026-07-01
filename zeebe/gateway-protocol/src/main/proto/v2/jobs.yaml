@@ -293,6 +293,10 @@ paths:
       tags:
         - Job
       operationId: updateJobsBatchOperation
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: BATCH, permissionType: CREATE }
+            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_UPDATE_JOB }
       security:
         - bearerAuth: []
         - basicAuth: []
