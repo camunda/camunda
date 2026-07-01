@@ -79,16 +79,10 @@ public record PhasedChangePlan(
   }
 
   /**
-   * A single phase in a {@link PhasedChangePlan}. Exactly one of the two permitted subtypes is
-   * active.
-   */
-  public sealed interface Phase permits GlobalPhase, PartitionGroupParallelPhase {}
-
-  /**
    * A phase whose operations are activated into {@link GlobalConfiguration#pendingChanges} when
    * this phase starts.
    */
-  public record GlobalPhase(List<ClusterConfigurationChangeOperation> operations) implements Phase {
+  public record GlobalPhase(List<GlobalChangeOperation> operations) implements Phase {
     public GlobalPhase {
       operations = List.copyOf(operations);
     }
@@ -99,7 +93,7 @@ public record PhasedChangePlan(
    * partition group.
    */
   public record PartitionGroupParallelPhase(
-      Map<String, List<ClusterConfigurationChangeOperation>> groupOperations) implements Phase {
+      Map<String, List<PartitionGroupOperation>> groupOperations) implements Phase {
     public PartitionGroupParallelPhase {
       groupOperations =
           groupOperations.entrySet().stream()
@@ -107,4 +101,10 @@ public record PhasedChangePlan(
                   Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())));
     }
   }
+
+  /**
+   * A single phase in a {@link PhasedChangePlan}. Exactly one of the two permitted subtypes is
+   * active.
+   */
+  public sealed interface Phase permits GlobalPhase, PartitionGroupParallelPhase {}
 }

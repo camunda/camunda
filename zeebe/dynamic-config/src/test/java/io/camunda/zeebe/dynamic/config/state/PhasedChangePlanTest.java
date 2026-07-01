@@ -11,8 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import java.time.Instant;
@@ -30,7 +31,7 @@ class PhasedChangePlanTest {
       new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_1)));
   private final PartitionGroupParallelPhase groupPhase1 =
       new PartitionGroupParallelPhase(
-          Map.of("groupA", List.of(new MemberLeaveOperation(MEMBER_2))));
+          Map.of("groupA", List.of(new UpdateIncarnationNumberOperation(MEMBER_2))));
   private final GlobalPhase globalPhase2 =
       new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1)));
 
@@ -184,7 +185,7 @@ class PhasedChangePlanTest {
     void shouldDefensivelyCopyGlobalPhaseOperations() {
       // given
       final var mutableOps =
-          new java.util.ArrayList<ClusterConfigurationChangeOperation>(
+          new java.util.ArrayList<GlobalChangeOperation>(
               List.of(new MemberJoinOperation(MEMBER_1)));
       final var phase = new GlobalPhase(mutableOps);
 
@@ -199,12 +200,12 @@ class PhasedChangePlanTest {
     void shouldDefensivelyCopyPartitionGroupParallelPhaseOperations() {
       // given
       final var mutableOps =
-          new java.util.ArrayList<ClusterConfigurationChangeOperation>(
-              List.of(new MemberJoinOperation(MEMBER_1)));
+          new java.util.ArrayList<PartitionGroupOperation>(
+              List.of(new UpdateIncarnationNumberOperation(MEMBER_1)));
       final var phase = new PartitionGroupParallelPhase(Map.of("g1", mutableOps));
 
       // when
-      mutableOps.add(new MemberLeaveOperation(MEMBER_2));
+      mutableOps.add(new UpdateIncarnationNumberOperation(MEMBER_2));
 
       // then
       assertThat(phase.groupOperations().get("g1")).hasSize(1);
