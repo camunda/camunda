@@ -301,7 +301,7 @@ orchestration:
   # Retention for the ES Exporter indices - legacy Zeebe indices
   retention:
     enabled: true
-    minimumAge: 1d
+    minimumAge: 3d # Optimize needs time to import data before ILM cleanup (see #56443)
   # Retention for the Camunda Exporter
   history:
     retention:

@@ -264,7 +264,7 @@ data:
                 numberOfReplicas: "1"
               retention:
                 enabled: true
-                minimumAge: "1d"
+                minimumAge: "3d"
                 policyName: "zeebe-record-retention-policy"
     
   log4j2.xml: |
