@@ -1055,9 +1055,9 @@ Content-Type: application/pdf
 
 ###
 # @name download-document-authorized
-# Use HEAD to avoid receiving binary response body that crashes older ijhttp versions
-HEAD http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/octet-stream
 
 > {%
   client.test("Document download should be successful", function () {
