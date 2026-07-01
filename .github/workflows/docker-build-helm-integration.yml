@@ -1,17 +1,17 @@
-# description: This workflow builds the Camunda Docker image, pushes it to Harbor, and runs Helm integration tests. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
+# description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
 # type: CI
 # owner: @camunda/distribution
 ---
-name: Docker Build and Helm Integration Test
+name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
 
 on:
   push:
     branches:
-      - stable/8.7
+      - stable/8.9
   workflow_dispatch:
     inputs:
       version:
-        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-mq<PR_NUMBER|SHA>-run<run_id>-a<attempt> for push to stable/8.7 — the mq prefix is required by the Harbor replication filter `**-mq**-run**`)'
+        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-mq<PR_NUMBER|SHA>-run<run_id>-a<attempt> for push to stable/8.9 — the mq prefix is required by the Harbor replication filter `**-mq**-run**`)'
         type: string
         required: false
       helmRepositoryBranchName:
@@ -21,7 +21,7 @@ on:
       helmRepositoryDirName:
         description: 'Helm chart directory name'
         type: string
-        default: 'camunda-platform-8.7'
+        default: 'camunda-platform-8.9'
       scenario:
         description: 'Test scenario'
         type: string
@@ -38,13 +38,17 @@ on:
     types:
       - checks_requested
 
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidence
+concurrency:
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
+  cancel-in-progress: true
+
 env:
   TEST_OWNER: '@camunda/distribution'
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
-  HARBOR_ZEEBE_REPOSITORY: registry.camunda.cloud/team-camunda/zeebe
-  HARBOR_OPERATE_REPOSITORY: registry.camunda.cloud/team-camunda/operate
-  HARBOR_TASKLIST_REPOSITORY: registry.camunda.cloud/team-camunda/tasklist
+  HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
 
 defaults:
   run:
@@ -58,40 +62,11 @@ jobs:
     timeout-minutes: 1
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
-    outputs:
-      concurrency-group: ${{ steps.concurrency-group.outputs.group }}
-      merge-group-pr-numbers: ${{ steps.concurrency-group.outputs.pr-numbers }}
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
       github.event_name == 'merge_group'
     steps:
-      - name: Compute concurrency group
-        id: concurrency-group
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-            REF_SOURCE="${{ github.event.merge_group.head_ref || github.ref }}"
-            # Expected merge queue ref shape includes pr-<number> segments, e.g.
-            # refs/heads/gh-readonly-queue/stable/8.7/pr-123-<suffix>
-            PR_MATCHES=$(grep -oE 'pr-[0-9]+' <<< "${REF_SOURCE}" | paste -sd '-' - || true)
-            if [[ -n "${PR_MATCHES}" ]]; then
-              echo "pr-numbers=${PR_MATCHES//pr-/pr}" >> "$GITHUB_OUTPUT"
-              echo "group=${{ github.workflow }}-${PR_MATCHES}" >> "$GITHUB_OUTPUT"
-            else
-              echo "pr-numbers=" >> "$GITHUB_OUTPUT"
-              echo "::warning::Could not derive stable merge_group PR key from ref '${REF_SOURCE}'; using ref as fallback."
-              echo "group=${{ github.workflow }}-${{ github.ref }}" >> "$GITHUB_OUTPUT"
-            fi
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            # For push to main/stable/*, every commit must run its own build (no cancellation),
-            # so use the SHA in the concurrency group. Other branches keep ref-based grouping.
-            echo "pr-numbers=" >> "$GITHUB_OUTPUT"
-            echo "group=${{ github.workflow }}-push-${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "pr-numbers=" >> "$GITHUB_OUTPUT"
-            echo "group=${{ github.workflow }}-${{ github.ref }}" >> "$GITHUB_OUTPUT"
-          fi
       - run: echo "Workflow conditions met, proceeding with build"
       - name: Emit AlwaysGreen failure context
         if: ${{ always() && (failure() || cancelled()) }}
@@ -245,7 +220,7 @@ jobs:
       # uses. Without it the Monorepo CI Health linter flags this job.
       - name: Checkout (for observe-build-status)
         if: always()
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -260,22 +235,18 @@ jobs:
   # Parallel frontend builds
   build-operate-frontend:
     name: Build Operate Frontend
-    # needs both: preflight gates execution; should-run provides the
-    # concurrency-group output the `concurrency:` block below reads.
-    needs: [should-run, preflight]
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: ${{ github.event_name == 'merge_group' }}
-    concurrency:
-      group: ${{ needs.should-run.outputs.concurrency-group }}-build-operate-frontend
-      cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
+          package-manager: "npm"
       - name: Upload Operate frontend artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -317,22 +288,21 @@ jobs:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
+
   build-tasklist-frontend:
     name: Build Tasklist Frontend
-    needs: [should-run, preflight]
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: ${{ github.event_name == 'merge_group' }}
-    concurrency:
-      group: ${{ needs.should-run.outputs.concurrency-group }}-build-tasklist-frontend
-      cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./tasklist/client
+          package-manager: "npm"
       - name: Upload Tasklist frontend artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -374,22 +344,21 @@ jobs:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
+
   build-identity-frontend:
     name: Build Identity Frontend
-    needs: [should-run, preflight]
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: ${{ github.event_name == 'merge_group' }}
-    concurrency:
-      group: ${{ needs.should-run.outputs.concurrency-group }}-build-identity-frontend
-      cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - name: Upload Identity frontend artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -433,22 +402,18 @@ jobs:
           retention-days: 5
 
   # Main build job - waits for all frontends to complete
-  build-and-push-images:
-    name: Build and Push Docker Images
-    # Includes should-run to consume its computed concurrency-group output.
-    needs: [should-run, build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: [build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
     permissions: { }
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     continue-on-error: ${{ github.event_name == 'merge_group' }}
-    concurrency:
-      group: ${{ needs.should-run.outputs.concurrency-group }}-build-and-push-images
-      cancel-in-progress: true
     outputs:
       image-tag: ${{ steps.set-image-tag.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build
@@ -463,44 +428,40 @@ jobs:
       - name: Get Maven project version
         id: maven-version
         run: |
-          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --non-recursive)
+          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set semantic image tag
         id: set-image-tag
-        shell: bash
         run: |
           MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
           if [[ -n "${{ inputs.version }}" ]]; then
             # Use explicitly provided version
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
-            # For merge queue: prefer <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
-            # but fall back to a SHA-based tag if we cannot derive PR numbers from merge_group payload/ref.
-            PR_NUM="${{ needs.should-run.outputs.merge-group-pr-numbers }}"
-            if [[ -n "${PR_NUM}" ]]; then
-              echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
-            else
-              SHA_SHORT="${GITHUB_SHA::7}"
-              echo "::warning::Could not determine PR number from merge_group payload/ref; using merge-group SHA-based tag instead."
-              echo "tag=${MAVEN_VERSION}-mq${SHA_SHORT}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            # For merge queue: <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
+            PR_NUM=$(sed -nE 's|^refs/heads/gh-readonly-queue/.+/pr-([0-9]+)-.*$|\1|p' <<< "${{ github.ref }}")
+            if [[ -z "${PR_NUM}" ]]; then
+              echo "Failed to resolve a single PR number from merge_group ref: '${{ github.ref }}'" >&2
+              exit 1
             fi
+            echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.7.0-SNAPSHOT-dispatch-run12345678-a1)
+            # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.9.0-SNAPSHOT-dispatch-run12345678-a1)
             echo "tag=${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
-            # For push to stable/8.7 (typically a backport): synthesize an
+            # For push to stable/8.9 (typically a backport): synthesize an
             # `-mq<N>-run<id>-a<n>` tag from the original PR number carried in
             # the commit subject's "(#NNNN)" suffix so the SRE Harbor
             # replication filter `**-mq**-run**` accepts the image. Without
-            # this prefix, stable backport pushes produced `-stable-8.7-run`
+            # this prefix, stable backport pushes produced `-stable-8.9-run`
             # tags that the replication rule silently dropped.
             # Fall back to a 7-char SHA-based mq tag if the subject doesn't
             # carry a PR number (manual squash, rebase, force-push).
             SUBJECT=$(git log -1 --format=%s)
             PR_NUM=$(sed -nE 's|.*\(#([0-9]+)\).*|\1|p' <<< "${SUBJECT}")
             if [[ -n "${PR_NUM}" ]]; then
-              # e.g. 8.7.0-SNAPSHOT-mq53787-run12345678-a1
+              # e.g. 8.9.0-SNAPSHOT-mq53787-run12345678-a1
               echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
             else
               SHA_SHORT="${GITHUB_SHA::7}"
@@ -533,51 +494,25 @@ jobs:
         with:
           maven-extra-args: -PskipFrontendBuild
 
-      - name: Build and push Zeebe Docker image to Harbor
-        id: build-zeebe-docker
+      - name: Build and push Docker image to Harbor
+        id: build-docker
         uses: ./.github/actions/build-platform-docker
         with:
-          repository: ${{ env.HARBOR_ZEEBE_REPOSITORY }}
+          repository: ${{ env.HARBOR_REPOSITORY }}
           version: ${{ steps.set-image-tag.outputs.tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: linux/amd64
-          dockerfile: Dockerfile
-          push: true
-
-      - name: Build and push Operate Docker image to Harbor
-        id: build-operate-docker
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: ${{ env.HARBOR_OPERATE_REPOSITORY }}
-          version: ${{ steps.set-image-tag.outputs.tag }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
-          platforms: linux/amd64
-          dockerfile: operate.Dockerfile
-          push: true
-
-      - name: Build and push Tasklist Docker image to Harbor
-        id: build-tasklist-docker
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: ${{ env.HARBOR_TASKLIST_REPOSITORY }}
-          version: ${{ steps.set-image-tag.outputs.tag }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
-          platforms: linux/amd64
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
           push: true
 
       - name: Output image details
         run: |
           {
-            echo "### Docker Images Built and Pushed"
+            echo "### Docker Image Built and Pushed"
             echo ""
+            echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}"
             echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}"
-            echo ""
-            echo "| Component | Image |"
-            echo "|-----------|-------|"
-            echo "| Zeebe | ${{ env.HARBOR_ZEEBE_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
-            echo "| Operate | ${{ env.HARBOR_OPERATE_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
-            echo "| Tasklist | ${{ env.HARBOR_TASKLIST_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }} |"
+            echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
@@ -618,17 +553,12 @@ jobs:
 
   format-identifier:
     name: Format Identifier
-    # Runs in parallel with frontend builds (no dependency on their outputs).
-    # Needs both: preflight gates execution; should-run provides the
-    # concurrency-group output.
-    needs: [should-run, preflight]
+    # Runs in parallel with frontend builds (no dependency on their outputs)
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 5
     continue-on-error: ${{ github.event_name == 'merge_group' }}
-    concurrency:
-      group: ${{ needs.should-run.outputs.concurrency-group }}-format-identifier
-      cancel-in-progress: true
     outputs:
       identifier: ${{ steps.format.outputs.identifier }}
     steps:
@@ -670,18 +600,15 @@ jobs:
 
   helm-deploy:
     name: Helm chart Integration Tests
-    needs: [should-run, build-and-push-images, format-identifier]
-    concurrency:
-      group: ${{ needs.should-run.outputs.concurrency-group }}-helm-deploy
-      cancel-in-progress: true
+    needs: [build-and-push, format-identifier]
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
-      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.7' }}
-      namespace-prefix: mono-8-7
+      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
+      namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
@@ -690,28 +617,11 @@ jobs:
       always-delete-namespace: true
       flows: install
       extra-values: |
-        zeebe:
+        orchestration:
           image:
             registry: registry.camunda.cloud
-            repository: team-camunda/zeebe
-            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
-        zeebeGateway:
-          image:
-            registry: registry.camunda.cloud
-            repository: team-camunda/zeebe
-            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
-        operate:
-          image:
-            registry: registry.camunda.cloud
-            repository: team-camunda/operate
-            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
-        tasklist:
-          image:
-            registry: registry.camunda.cloud
-            repository: team-camunda/tasklist
-            tag: ${{ needs.build-and-push-images.outputs.image-tag }}
-        global:
-          image:
+            repository: team-camunda/camunda
+            tag: ${{ needs.build-and-push.outputs.image-tag }}
             pullSecrets:
               - name: index-docker-io
               - name: registry-camunda-cloud
@@ -720,48 +630,71 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
-        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
 
   helm-deploy-status:
     name: Observe Helm chart Integration Tests status
     needs: helm-deploy
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     continue-on-error: ${{ github.event_name == 'merge_group' }}
-    permissions: { }
+    permissions:
+
+      contents: read
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: |
           # shellcheck disable=SC2242
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
-      - name: Add Helm debugging guidance on failure
+      # Standardised AlwaysGreen feedback → also post a Verdict/Evidence/Next-steps
+      # comment on the PR (resolved from the merge_group head_ref). Best-effort.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         if: failure()
-        run: |
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
-          {
-            echo "## Helm Integration Tests Failed"
-            echo ""
-            echo "### Where to look"
-            echo "Open [this run](${RUN_URL}) → job \`Helm chart Integration Tests\`"
-            echo "Expand the reusable workflow steps to find the failing install or test step."
-            echo ""
-            echo "### Common failure patterns"
-            echo "| Symptom | Likely cause |"
-            echo "|---|---|"
-            echo "| Pod not ready / CrashLoopBackOff | Container image issue or misconfiguration — check pod logs in the job output |"
-            echo "| Helm install timeout | Resource limits, PVC issues, or missing secrets — check Kubernetes events |"
-            echo "| E2E assertions failed | App started but behaving incorrectly — check E2E test output and screenshots |"
-            echo "| ImagePullBackOff | Harbor push failed or wrong tag — re-run the Docker build job |"
-            echo "| Namespace cleanup error | Previous run left dangling resources — usually safe to re-run |"
-            echo ""
-            echo "### Full debugging guide"
-            echo "[CI Debugging Cookbook — Helm Chart Setup/Integration failures](${COOKBOOK_URL}#failure-type-3--helm-chart-setup--integration-tests) · [Helm Chart E2E failures](${COOKBOOK_URL}#failure-type-4--helm-chart-e2e-tests)"
-            echo ""
-            echo "### Need help?"
-            echo "- Slack: [#ask-alwaysgreen](https://camunda.slack.com/archives/C0AQ378VBEV) / [#alwaysgreen-reliability](https://camunda.slack.com/archives/C0AK0AVKRL0)"
-          } >> "$GITHUB_STEP_SUMMARY"
+        with:
+          node-version: "20"
+      - name: Import Slack token
+        id: slack-secrets
+        if: failure()
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+      - name: Generate GitHub App Token
+        id: app-token
+        if: failure()
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+      - name: Post AlwaysGreen failure feedback
+        if: failure()
+        continue-on-error: true
+        uses: ./.github/actions/post-failure-feedback
+        with:
+          failure_category: unknown
+          stage: helm-integration
+          owner_team: "@camunda/distribution"
+          run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          status: failure
+          evidence: "Helm chart Integration Tests failed."
+          pr: ${{ github.event.merge_group.head_ref || github.event.pull_request.number }}
+          # Existing AlwaysGreen alerting channel (#alwaysgreen-reliability), same
+          # as alwaysgreen-streak-detector.yml.
+          slack_channel: "C0AK0AVKRL0"
+          slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -802,15 +735,13 @@ jobs:
   trigger-saas-e2e:
     name: Trigger SaaS E2E tests
     runs-on: ubuntu-latest
-    needs: [should-run, build-and-push-images, format-identifier]
-    timeout-minutes: 30
+    needs: [build-and-push, format-identifier]
+    timeout-minutes: 35
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
-    concurrency:
-      group: ${{ needs.should-run.outputs.concurrency-group }}-trigger-saas-e2e
-      cancel-in-progress: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Generate GitHub App Token (for dispatch)
         id: github-token
@@ -831,7 +762,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
+          # Use the image tag as the generation name to match filter patterns
+          # e.g., "8.9.0-SNAPSHOT-mq53787-run12345678-a1" matches "**-mq**-run**-a**"
+          GEN_NAME="${IMAGE_TAG}"
+
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -842,12 +778,13 @@ jobs:
                       "correlation_id": "'"$CORRELATION_ID"'",
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
-                      "c8Version": "8.7",
-                      "zeebeVersion": "${{ needs.build-and-push-images.outputs.image-tag }}",
-                      "operateVersion": "8.7-SNAPSHOT",
-                      "tasklistVersion": "8.7-SNAPSHOT",
-                      "connectorsVersion": "8.7-SNAPSHOT",
-                      "optimizeVersion": "8.7-SNAPSHOT"
+                      "gen_name": "'"${GEN_NAME}"'",
+                      "c8Version": "8.9",
+                      "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
+                      "operateVersion": "8.9-SNAPSHOT",
+                      "tasklistVersion": "8.9-SNAPSHOT",
+                      "connectorsVersion": "8.9-SNAPSHOT",
+                      "optimizeVersion": "8.9-SNAPSHOT"
                   }
                 }'
 
