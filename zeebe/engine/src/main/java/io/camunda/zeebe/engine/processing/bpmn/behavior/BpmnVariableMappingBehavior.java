@@ -159,7 +159,8 @@ public final class BpmnVariableMappingBehavior {
           rootProcessInstanceKey,
           bpmnProcessId,
           context.getTenantId(),
-          variables);
+          variables,
+          false);
     } else if (isConnectedToEventBasedGateway(element)
         || (element.getElementType() == BpmnElementType.BOUNDARY_EVENT && !isErrorEvent(element))
         || element.getElementType() == BpmnElementType.START_EVENT) {

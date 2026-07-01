@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
@@ -342,6 +343,72 @@ final class VariableBehaviorTest {
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId);
             });
+  }
+
+  @Test
+  void shouldNotPropagateUnmodifiedVariableExistingInIntermediateScope() {
+    // given
+    final long processDefinitionKey = 1;
+    final long rootScopeKey = 1;
+    final long subprocessScopeKey = 2;
+    final long taskScopeKey = 3;
+    final long subprocessVariableKey = 4;
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    // String "1" on both sides so the MessagePack encodings match
+    final Map<String, Object> document = Map.of("x", "1");
+    state.createScope(rootScopeKey, VariableState.NO_PARENT);
+    state.createScope(subprocessScopeKey, rootScopeKey);
+    state.createScope(taskScopeKey, subprocessScopeKey);
+    // 'x' already exists locally in the intermediate (subprocess) scope with the same value
+    setVariable(subprocessVariableKey, subprocessScopeKey, processDefinitionKey, "x", "1");
+
+    // when
+    behavior.mergeDocument(
+        taskScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        rootScopeKey,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document),
+        false);
+
+    // then – no global variable is created and the unchanged local variable is not updated
+    assertThat(getFollowUpEvents()).isEmpty();
+  }
+
+  @Test
+  void shouldPropagateUnmodifiedVariableExistingInIntermediateScopeWhenPropagationEnabled() {
+    // given
+    final long processDefinitionKey = 1;
+    final long rootScopeKey = 1;
+    final long subprocessScopeKey = 2;
+    final long taskScopeKey = 3;
+    final long subprocessVariableKey = 4;
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    // String "1" on both sides so the MessagePack encodings match
+    final Map<String, Object> document = Map.of("x", "1");
+    state.createScope(rootScopeKey, VariableState.NO_PARENT);
+    state.createScope(subprocessScopeKey, rootScopeKey);
+    state.createScope(taskScopeKey, subprocessScopeKey);
+    setVariable(subprocessVariableKey, subprocessScopeKey, processDefinitionKey, "x", "1");
+
+    // when – default (7-arg) overload keeps the historical propagate behavior
+    behavior.mergeDocument(
+        taskScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        rootScopeKey,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then – the unchanged variable propagates and is created at the root scope
+    assertThat(getFollowUpEvents())
+        .extracting(r -> r.intent, r -> r.value.getScopeKey())
+        .containsExactly(tuple(VariableIntent.CREATED, rootScopeKey));
   }
 
   @Test

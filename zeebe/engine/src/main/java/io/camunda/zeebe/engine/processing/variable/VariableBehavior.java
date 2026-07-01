@@ -147,6 +147,39 @@ public final class VariableBehavior {
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document) {
+    mergeDocument(
+        scopeKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        bpmnProcessId,
+        tenantId,
+        document,
+        true);
+  }
+
+  /**
+   * Merges the given document, propagating its changes from the bottom to the top of the scope
+   * hierarchy. See {@link #mergeDocument(long, long, long, long, DirectBuffer, String,
+   * DirectBuffer)} for the full description of the propagation semantics.
+   *
+   * @param propagateExistingVariables when {@code true} (the default for the 7-arg overload) a
+   *     variable that already exists in an intermediate scope with an <em>unchanged</em> value is
+   *     left in the in-flight document and keeps propagating upward — preserving the historical
+   *     behavior relied upon by explicit output mappings. When {@code false}, such a variable is
+   *     removed from the document (anchored to the scope it already lives in) so it is not
+   *     re-created at the root scope. Pass {@code false} for default variable propagation of job
+   *     and event variables (see #19441).
+   */
+  public void mergeDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final String tenantId,
+      final DirectBuffer document,
+      final boolean propagateExistingVariables) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
@@ -172,14 +205,22 @@ public final class VariableBehavior {
         final VariableInstance variableInstance =
             variableState.getVariableInstanceLocal(currentScope, entry.getName());
 
-        if (variableInstance != null && !variableInstance.getValue().equals(entry.getValue())) {
-          applyEntryToRecord(entry);
-          stateWriter.appendFollowUpEvent(
-              variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
-          variableEvents.add(
-              new VariableEvent(
-                  currentScope, VariableIntent.UPDATED, getVariableRecordCopy(variableRecord)));
-          entryIterator.remove();
+        if (variableInstance != null) {
+          final boolean valueChanged = !variableInstance.getValue().equals(entry.getValue());
+          if (valueChanged) {
+            applyEntryToRecord(entry);
+            stateWriter.appendFollowUpEvent(
+                variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
+            variableEvents.add(
+                new VariableEvent(
+                    currentScope, VariableIntent.UPDATED, getVariableRecordCopy(variableRecord)));
+          }
+          // Remove (anchor) when the value changed — as before — or, for default variable
+          // propagation, whenever the variable already lives in this scope, so an unchanged
+          // value is not re-created at the root scope (#19441).
+          if (valueChanged || !propagateExistingVariables) {
+            entryIterator.remove();
+          }
         }
       }
 
