@@ -20,15 +20,20 @@ import "bpmn-js/dist/assets/bpmn-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
 import { useEffect, useRef, useState } from "react";
 import type { IncidentFlowNode } from "../lib/api";
-import { formatCount } from "../lib/format";
+import { formatCount, formatDuration } from "../lib/format";
 import { getHeatmap } from "../lib/optimizeHeatmap";
 
-type Metric = "raised" | "open";
+type Metric = "raised" | "open" | "avgDuration";
 
 const METRICS: { key: Metric; label: string }[] = [
   { key: "raised", label: "Raised (in range)" },
   { key: "open", label: "Open (now)" },
+  { key: "avgDuration", label: "Avg duration" },
 ];
+
+function value(e: IncidentFlowNode, m: Metric): number {
+  return m === "raised" ? e.raised : m === "open" ? e.open : e.avgDurationMs;
+}
 
 function escapeHtml(s: string): string {
   return s.replace(
@@ -45,8 +50,8 @@ function tooltipHtml(e: IncidentFlowNode): HTMLElement {
     "pointer-events:none;";
   div.innerHTML =
     `<div style="font-weight:600">${escapeHtml(e.elementId)}</div>` +
-    `<div>Raised: <b>${formatCount(e.raised)}</b></div>` +
-    `<div>Open now: <b>${formatCount(e.open)}</b></div>`;
+    `<div>Raised: <b>${formatCount(e.raised)}</b> · Open now: <b>${formatCount(e.open)}</b></div>` +
+    `<div>Avg <b>${formatDuration(e.avgDurationMs)}</b> · max <b>${formatDuration(e.maxDurationMs)}</b> to resolve</div>`;
   return div;
 }
 
@@ -121,7 +126,7 @@ export function IncidentHeatmap({
     }
     const values: Record<string, number> = {};
     for (const e of incidents) {
-      values[e.elementId] = metric === "raised" ? e.raised : e.open;
+      values[e.elementId] = value(e, metric);
     }
 
     const viewport = viewer.get("canvas")._viewport as SVGGElement;

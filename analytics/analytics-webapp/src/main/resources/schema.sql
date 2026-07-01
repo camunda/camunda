@@ -194,6 +194,20 @@ CREATE TABLE IF NOT EXISTS incident_frequency_window (
   PRIMARY KEY (bpmn_process_id, element_id, tenant_id, window_start)
 );
 
+-- Incident resolution time per flow node (count/total/max of open→resolve durations), written by
+-- the pipeline; the read derives the average for the incident-duration heatmap.
+CREATE TABLE IF NOT EXISTS incident_duration_window (
+  bpmn_process_id   VARCHAR(255) NOT NULL,
+  element_id        VARCHAR(255) NOT NULL,
+  tenant_id         VARCHAR(255) NOT NULL,
+  window_start      BIGINT       NOT NULL,
+  window_size_ms    BIGINT       NOT NULL,
+  incident_count    BIGINT       NOT NULL,
+  total_duration_ms BIGINT       NOT NULL,
+  max_duration_ms   BIGINT       NOT NULL,
+  PRIMARY KEY (bpmn_process_id, element_id, tenant_id, window_start)
+);
+
 -- Currently-open incidents per flow node (created − resolved gauge), written by the pipeline.
 CREATE TABLE IF NOT EXISTS open_incidents (
   bpmn_process_id VARCHAR(255) NOT NULL,

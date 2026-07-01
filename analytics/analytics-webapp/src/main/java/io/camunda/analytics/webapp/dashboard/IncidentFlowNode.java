@@ -10,6 +10,8 @@ package io.camunda.analytics.webapp.dashboard;
 /**
  * Incident counts for one flow node: {@code raised} = incidents created in the selected range
  * (counts incidents, so multiple per instance all count); {@code open} = currently open there
- * (created − resolved, range-independent gauge).
+ * (created − resolved, range-independent gauge); {@code avgDurationMs}/{@code maxDurationMs} = the
+ * average/longest open→resolve time of incidents resolved in the range (0 if none resolved).
  */
-public record IncidentFlowNode(String elementId, long raised, long open) {}
+public record IncidentFlowNode(
+    String elementId, long raised, long open, long avgDurationMs, long maxDurationMs) {}

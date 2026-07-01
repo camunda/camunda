@@ -505,7 +505,8 @@ public class DashboardRepository {
    */
   public List<IncidentFlowNode> incidents(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
-    final Map<String, long[]> byElement = new LinkedHashMap<>(); // element -> {raised, open}
+    // element -> {raised, open, totalDurationMs, durationCount, maxDurationMs}
+    final Map<String, long[]> byElement = new LinkedHashMap<>();
     final StringBuilder raisedSql =
         new StringBuilder(
             "SELECT element_id, SUM(incident_count) AS raised FROM incident_frequency_window"
@@ -518,19 +519,40 @@ public class DashboardRepository {
         raisedSql.toString(),
         (RowCallbackHandler)
             rs ->
-                byElement.computeIfAbsent(rs.getString("element_id"), k -> new long[2])[0] =
+                byElement.computeIfAbsent(rs.getString("element_id"), k -> new long[5])[0] =
                     rs.getLong("raised"),
         raisedArgs.toArray());
     jdbc.query(
         "SELECT element_id, open_count FROM open_incidents WHERE bpmn_process_id = ?",
         (RowCallbackHandler)
             rs ->
-                byElement.computeIfAbsent(rs.getString("element_id"), k -> new long[2])[1] =
+                byElement.computeIfAbsent(rs.getString("element_id"), k -> new long[5])[1] =
                     rs.getLong("open_count"),
         bpmnProcessId);
+    final StringBuilder durSql =
+        new StringBuilder(
+            "SELECT element_id, SUM(total_duration_ms) AS tot, SUM(incident_count) AS cnt,"
+                + " MAX(max_duration_ms) AS mx FROM incident_duration_window WHERE bpmn_process_id = ?");
+    final List<Object> durArgs = new ArrayList<>();
+    durArgs.add(bpmnProcessId);
+    appendRange(durSql, durArgs, fromWindow, toWindow);
+    durSql.append(" GROUP BY element_id");
+    jdbc.query(
+        durSql.toString(),
+        (RowCallbackHandler)
+            rs -> {
+              final long[] v =
+                  byElement.computeIfAbsent(rs.getString("element_id"), k -> new long[5]);
+              v[2] = rs.getLong("tot");
+              v[3] = rs.getLong("cnt");
+              v[4] = rs.getLong("mx");
+            },
+        durArgs.toArray());
     final List<IncidentFlowNode> out = new ArrayList<>();
     for (final Map.Entry<String, long[]> e : byElement.entrySet()) {
-      out.add(new IncidentFlowNode(e.getKey(), e.getValue()[0], e.getValue()[1]));
+      final long[] v = e.getValue();
+      final long avg = v[3] == 0 ? 0L : v[2] / v[3];
+      out.add(new IncidentFlowNode(e.getKey(), v[0], v[1], avg, v[4]));
     }
     out.sort((a, b) -> Long.compare(b.raised(), a.raised()));
     return out;
