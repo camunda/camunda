@@ -441,6 +441,101 @@ describe('InstancesSelection - checkedRunningIds', () => {
   });
 });
 
+describe('InstancesSelection - hasSelectedInstancesWithIncidents', () => {
+  beforeEach(() => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleRunningIds: ['1', '2', '3'],
+      visibleFinishedIds: ['4'],
+      visibleIncidentIds: ['1'],
+    });
+  });
+
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should return true when an instance with an incident is selected in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('1'); // incident
+    processInstancesSelectionStore.select('2'); // running, no incident
+
+    expect(
+      processInstancesSelectionStore.hasSelectedInstancesWithIncidents,
+    ).toBe(true);
+  });
+
+  it('should return false when no instance with an incident is selected in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('2'); // running, no incident
+    processInstancesSelectionStore.select('3'); // running, no incident
+    processInstancesSelectionStore.select('4'); // finished
+
+    expect(
+      processInstancesSelectionStore.hasSelectedInstancesWithIncidents,
+    ).toBe(false);
+  });
+
+  it('should return true when selectionMode is ALL', () => {
+    processInstancesSelectionStore.selectAll();
+
+    expect(
+      processInstancesSelectionStore.hasSelectedInstancesWithIncidents,
+    ).toBe(true);
+  });
+
+  it('should return true when selectionMode is EXCLUDE', () => {
+    processInstancesSelectionStore.selectAll();
+    processInstancesSelectionStore.select('1');
+
+    expect(
+      processInstancesSelectionStore.hasSelectedInstancesWithIncidents,
+    ).toBe(true);
+  });
+});
+
+describe('InstancesSelection - checkedIncidentIds', () => {
+  beforeEach(() => {
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 4,
+      visibleIds: ['1', '2', '3', '4'],
+      visibleRunningIds: ['1', '2', '3', '4'],
+      visibleFinishedIds: [],
+      visibleIncidentIds: ['1', '3'],
+    });
+  });
+
+  afterEach(() => {
+    processInstancesSelectionStore.reset();
+  });
+
+  it('should return only incident ids from selectedIds in INCLUDE mode', () => {
+    processInstancesSelectionStore.select('1'); // incident
+    processInstancesSelectionStore.select('2'); // no incident
+    processInstancesSelectionStore.select('3'); // incident
+
+    expect(processInstancesSelectionStore.checkedIncidentIds).toEqual([
+      '1',
+      '3',
+    ]);
+  });
+
+  it('should return incident ids not in excludedIds in EXCLUDE mode', () => {
+    processInstancesSelectionStore.selectAll();
+    processInstancesSelectionStore.select('1'); // exclude incident id
+
+    expect(processInstancesSelectionStore.checkedIncidentIds).toEqual(['3']);
+  });
+
+  it('should return all incident ids in ALL mode', () => {
+    processInstancesSelectionStore.selectAll();
+
+    expect(processInstancesSelectionStore.checkedIncidentIds).toEqual([
+      '1',
+      '3',
+    ]);
+  });
+});
+
 describe('InstancesSelection - excludedIds', () => {
   beforeEach(() => {
     processInstancesSelectionStore.setRuntime({
