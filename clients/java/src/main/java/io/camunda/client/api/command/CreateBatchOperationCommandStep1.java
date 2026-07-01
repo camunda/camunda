@@ -17,8 +17,10 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.time.Duration;
 import java.util.function.Consumer;
 
 public interface CreateBatchOperationCommandStep1 {
@@ -64,6 +66,13 @@ public interface CreateBatchOperationCommandStep1 {
    * @return the builder for this command
    */
   CreateBatchOperationCommandStep2<DecisionInstanceFilter> deleteDecisionInstance();
+
+  /**
+   * Defines the type of the batch operation to update jobs.
+   *
+   * @return the builder for this command
+   */
+  JobUpdateStep<JobFilter> updateJob();
 
   interface CreateBatchOperationCommandStep2<E extends SearchRequestFilter> {
 
@@ -114,6 +123,22 @@ public interface CreateBatchOperationCommandStep1 {
      * @return the builder for fluent use
      */
     ProcessInstanceMigrationStep<E> targetProcessDefinitionKey(long targetProcessDefinitionKey);
+  }
+
+  interface JobUpdateStep<E extends SearchRequestFilter>
+      extends CreateBatchOperationCommandStep2<E> {
+
+    /** Sets the priority of the jobs to update. */
+    JobUpdateStep<E> priority(int priority);
+
+    /** Sets the number of retries of the jobs to update. */
+    JobUpdateStep<E> retries(int retries);
+
+    /** Sets the timeout of the jobs to update (in milliseconds). */
+    JobUpdateStep<E> timeout(long timeout);
+
+    /** Sets the timeout of the jobs to update. */
+    JobUpdateStep<E> timeout(Duration timeout);
   }
 
   interface ProcessInstanceModificationStep<E extends SearchRequestFilter>
