@@ -20,8 +20,8 @@ import java.util.Optional;
 /**
  * Tracks the status of individual items in a batch operation of type {@link
  * BatchOperationType#UPDATE_JOB}. A job update is considered completed when the engine emits {@link
- * JobIntent#UPDATED} or {@link JobIntent#PRIORITY_UPDATED}, and failed when the {@link
- * JobIntent#UPDATE} command is rejected.
+ * JobIntent#UPDATED}, the terminal event always appended after any changeset field is applied, and
+ * failed when the {@link JobIntent#UPDATE} command is rejected.
  */
 public class JobBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<JobRecordValue> {
@@ -49,8 +49,7 @@ public class JobBatchOperationExportHandler
 
   @Override
   boolean isCompleted(final Record<JobRecordValue> record) {
-    return record.getIntent().equals(JobIntent.UPDATED)
-        || record.getIntent().equals(JobIntent.PRIORITY_UPDATED);
+    return record.getIntent().equals(JobIntent.UPDATED);
   }
 
   @Override
