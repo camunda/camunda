@@ -99,22 +99,30 @@ public final class MultiInstanceBodyProcessor
     return multiInstanceInputCollectionBehavior
         .initializeInputCollection(element, context)
         .flatMap(
-            inputCollection ->
-                eventSubscriptionBehavior
-                    .subscribeToEvents(element, context)
-                    .map(ok -> inputCollection))
-        .flatMap(
             inputCollection -> {
-              // For parallel MI, check whether this batch would push the cumulative projected
-              // child activations past the configured threshold. Sequential MI creates children
-              // one-by-one (not in a batch) and is therefore excluded from this check.
-              if (!element.getLoopCharacteristics().isSequential()) {
+              // For parallel MI, check whether this batch would push the cumulative child
+              // activations past the configured threshold before any child is spawned. The
+              // threshold
+              // is resolved for the inner activity's type, since that is what the spawned children
+              // are. Sequential MI creates children one-by-one (not in a batch) and is therefore
+              // excluded. The guard is skipped while resolving an incident so a retry actually
+              // activates the children instead of raising the same incident again.
+              if (!element.getLoopCharacteristics().isSequential()
+                  && !stateTransitionBehavior.isIncidentResolving()) {
                 return loopDetectionBehavior
-                    .checkBatchActivationThreshold(context, inputCollection.size())
+                    .checkBatchActivationThreshold(
+                        context,
+                        element.getInnerActivity().getElementType(),
+                        inputCollection.size())
                     .map(ok -> inputCollection);
               }
               return Either.right(inputCollection);
             })
+        .flatMap(
+            inputCollection ->
+                eventSubscriptionBehavior
+                    .subscribeToEvents(element, context)
+                    .map(ok -> inputCollection))
         .thenDo(inputCollection -> activate(element, context, inputCollection));
   }
 
@@ -261,22 +269,34 @@ public final class MultiInstanceBodyProcessor
 
     final ElementInstance multiInstanceElementInstance =
         stateBehavior.getElementInstance(flowScopeContext);
+    final int inputCollectionSize = inputCollectionOrFailure.get().size();
 
     if (loopCharacteristics.isSequential()) {
-      final var inputCollection = inputCollectionOrFailure.get();
       final var loopCounter = multiInstanceElementInstance.getMultiInstanceLoopCounter();
 
-      if (loopCounter < inputCollection.size()) {
+      if (loopCounter < inputCollectionSize) {
         createInnerInstance(element, flowScopeContext);
 
         // canBeCompleted() doesn't take the created child instance into account because
         // it wrote just a ACTIVATE command that create no new instance immediately
         childInstanceCreated = true;
       }
+    } else if (stateBehavior.canBeCompleted(childContext)
+        && multiInstanceElementInstance.getMultiInstanceLoopCounter() < inputCollectionSize
+        && loopDetectionBehavior.isChildActivationThresholdExceeded(
+            flowScopeContext.getProcessInstanceKey(),
+            flowScopeContext.getElementId(),
+            element.getInnerActivity().getElementType())) {
+      // The parallel multi-instance activation batch was stopped early by loop detection. Once all
+      // activated children have finished, drain the next collection item one at a time so the
+      // activation threshold keeps throttling child creation (the operator resolves each incident
+      // to advance) instead of flooding the instance or leaving it stuck with the collection only
+      // half-processed.
+      createInnerInstance(element, flowScopeContext);
+      childInstanceCreated = true;
     }
 
     if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
-      final int inputCollectionSize = inputCollectionOrFailure.get().size();
       if (isAllChildrenHasCompletedOrTerminated(
           multiInstanceElementInstance, inputCollectionSize)) {
         stateTransitionBehavior.completeElement(flowScopeContext);

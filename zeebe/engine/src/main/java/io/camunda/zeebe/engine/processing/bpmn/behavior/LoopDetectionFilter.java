@@ -7,12 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import org.agrona.DirectBuffer;
 
 /**
  * Single source of truth deciding whether an element activation participates in loop detection.
@@ -20,65 +17,44 @@ import org.agrona.DirectBuffer;
  * <p>The activation check (performed by {@code BpmnStreamProcessor}) and the activation counter
  * increment (performed by {@code ProcessInstanceElementActivatingV4Applier}) MUST agree on which
  * activations are counted. If they drift, an element could be checked but never counted or counted
- * but never checked. Both callers therefore delegate to this predicate.
+ * but never checked. Both callers therefore delegate to {@link #shouldCount}.
  *
- * <p>Multi-instance elements are filtered to avoid false positives:
+ * <p>Multi-instance bodies are the only elements excluded from counting: the body itself is a
+ * container, and its children accumulate the count instead. This holds for both flavours:
  *
  * <ul>
- *   <li>Sequential MI bodies are skipped: they share their {@code elementId} counter with their
- *       sequential children (the element that actually accumulates the count).
- *   <li>Parallel MI children are skipped: they are activated in a single batch and checked via the
- *       projected child-batch size instead.
+ *   <li>Sequential MI children are activated one-by-one, so each activation increments the counter.
+ *   <li>Parallel MI children are activated through the activation batch; each child activation
+ *       increments the same counter, so the batch is counted exactly rather than projected on the
+ *       body.
  * </ul>
  *
- * All other elements (including parallel MI bodies and sequential MI children) are counted.
+ * <p>Because a multi-instance body and its inner activity share the same {@code elementId},
+ * counting the children accumulates on a single per-element counter across every body activation,
+ * giving the exact number of child activations even when the body is re-activated in a loop.
  */
 public final class LoopDetectionFilter {
 
   private LoopDetectionFilter() {}
 
   /**
-   * @param processState used to resolve multi-instance loop characteristics
    * @param value the record of the activated element
-   * @param flowScopeInstance the flow scope of the activated element, or {@code null} if the
-   *     element has no flow scopes
    * @return {@code true} if this activation should be counted for loop detection
    */
-  public static boolean shouldCount(
-      final ProcessState processState,
-      final ProcessInstanceRecord value,
-      final ElementInstance flowScopeInstance) {
-    final var processDefinitionKey = value.getProcessDefinitionKey();
-    final var tenantId = value.getTenantId();
-
-    if (value.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-      // Only count parallel MI bodies; sequential MI bodies share their elementId counter with
-      // their sequential children (the element that actually accumulates the count).
-      final var miBody =
-          getMultiInstanceBody(
-              processState, processDefinitionKey, tenantId, value.getElementIdBuffer());
-      return miBody != null && !miBody.getLoopCharacteristics().isSequential();
-    }
-
-    final var flowScopeValue = flowScopeInstance == null ? null : flowScopeInstance.getValue();
-    if (flowScopeValue != null
-        && flowScopeValue.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-      // Skip parallel MI children (activated in a batch, checked via the projected batch size).
-      // Count sequential MI children (activated one-by-one, so normal loop detection applies).
-      final var miBody =
-          getMultiInstanceBody(
-              processState, processDefinitionKey, tenantId, flowScopeValue.getElementIdBuffer());
-      return miBody != null && miBody.getLoopCharacteristics().isSequential();
-    }
-    return true;
+  public static boolean shouldCount(final ProcessInstanceRecord value) {
+    // The multi-instance body itself is never counted; its children accumulate the activation count
+    // (sequential children one-by-one, parallel children through the activation batch). All other
+    // elements, including the MI children, are counted.
+    return value.getBpmnElementType() != BpmnElementType.MULTI_INSTANCE_BODY;
   }
 
-  private static ExecutableMultiInstanceBody getMultiInstanceBody(
-      final ProcessState processState,
-      final long processDefinitionKey,
-      final String tenantId,
-      final DirectBuffer elementId) {
-    return processState.getFlowElement(
-        processDefinitionKey, tenantId, elementId, ExecutableMultiInstanceBody.class);
+  /**
+   * @param flowScopeInstance the flow scope of the activated element, or {@code null} if the
+   *     element has no flow scope
+   * @return {@code true} if the activated element is a child of a multi-instance body
+   */
+  public static boolean isMultiInstanceChild(final ElementInstance flowScopeInstance) {
+    return flowScopeInstance != null
+        && flowScopeInstance.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY;
   }
 }

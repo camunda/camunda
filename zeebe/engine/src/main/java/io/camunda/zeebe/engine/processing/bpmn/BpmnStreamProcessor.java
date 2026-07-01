@@ -172,10 +172,15 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
     switch (intent) {
       case ACTIVATE_ELEMENT:
+        // If the element instance already exists when its ACTIVATE_ELEMENT command is processed,
+        // the command is being re-processed to resolve an incident. Loop detection is then skipped
+        // so the retry can proceed instead of raising the same incident again; the retry cooldown
+        // governs re-raising on later (fresh) activations.
+        final boolean isIncidentResolution = stateBehavior.getElementInstance(context) != null;
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
-            .flatMap(ok -> runLoopDetection(activatingContext))
+            .flatMap(ok -> runLoopDetection(activatingContext, isIncidentResolution))
             .flatMap(ok -> beforeActivating(element, processor, activatingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
@@ -439,20 +444,23 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
    * Runs the loop-detection activation-threshold check when it applies to this element activation,
    * otherwise short-circuits to success.
    */
-  private Either<Failure, ?> runLoopDetection(final BpmnElementContext context) {
-    return shouldRunLoopDetection(context)
-        ? loopDetectionBehavior.checkActivationThreshold(context)
-        : BpmnElementProcessor.SUCCESS;
-  }
-
-  /**
-   * Decides whether loop-detection counting applies to this element activation. Delegates to {@link
-   * LoopDetectionFilter#shouldCount} so the activation check and the counter increment (in {@code
-   * ProcessInstanceElementActivatingV4Applier}) are consistent.
-   */
-  private boolean shouldRunLoopDetection(final BpmnElementContext context) {
-    return LoopDetectionFilter.shouldCount(
-        processState, context.getRecordValue(), stateBehavior.getFlowScopeInstance(context));
+  private Either<Failure, ?> runLoopDetection(
+      final BpmnElementContext context, final boolean isIncidentResolution) {
+    if (isIncidentResolution) {
+      // Resolving a loop-detection incident lets the activation proceed instead of raising the same
+      // incident again; the retry cooldown governs re-raising on later fresh activations.
+      return BpmnElementProcessor.SUCCESS;
+    }
+    if (!LoopDetectionFilter.shouldCount(context.getRecordValue())) {
+      return BpmnElementProcessor.SUCCESS;
+    }
+    // Multi-instance children are gated on the body type being enabled and are checked against
+    // their
+    // own (inner) element type; all other elements use the plain activation-threshold check.
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+    return LoopDetectionFilter.isMultiInstanceChild(flowScopeInstance)
+        ? loopDetectionBehavior.checkMultiInstanceChildActivationThreshold(context)
+        : loopDetectionBehavior.checkActivationThreshold(context);
   }
 
   private ExecutableFlowElement getElement(

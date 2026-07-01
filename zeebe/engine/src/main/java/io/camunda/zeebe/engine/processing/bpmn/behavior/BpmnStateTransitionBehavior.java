@@ -218,8 +218,16 @@ public final class BpmnStateTransitionBehavior {
     }
   }
 
-  /** see {{@link #verifyIncidentResolving(BpmnElementContext, String)} */
-  private boolean isIncidentResolving() {
+  /**
+   * Returns whether the current processing happens while resolving an incident (i.e. the failed
+   * command is being re-processed via {@code IncidentResolveProcessor}). Callers can use this to
+   * let an activation proceed on retry instead of raising the same incident again — for example,
+   * loop detection skips its threshold checks during resolution so a resolved incident actually
+   * lets the element (and its children) continue.
+   *
+   * <p>See {@link #verifyIncidentResolving(BpmnElementContext, String)}.
+   */
+  public boolean isIncidentResolving() {
     final var illegalStateException = new IllegalStateException();
     return isIncidentResolving(illegalStateException);
   }
