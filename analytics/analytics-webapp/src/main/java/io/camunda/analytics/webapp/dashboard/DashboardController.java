@@ -82,6 +82,15 @@ public class DashboardController {
     return repository.topProcesses(tenantId, from, to);
   }
 
+  /** Per-start-cohort completion-time distribution (started split into duration bands + open). */
+  @GetMapping("/duration-buckets")
+  public List<DurationBucketPoint> durationBuckets(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.durationBuckets(bpmnProcessId, from, to);
+  }
+
   /** Per-start-cohort SLA breakdown (started split into met/breached/open) for the stacked bar. */
   @GetMapping("/sla-cohorts")
   public List<SlaCohortPoint> slaCohorts(

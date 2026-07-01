@@ -128,6 +128,24 @@ CREATE TABLE IF NOT EXISTS sla_cohort_window (
   PRIMARY KEY (bpmn_process_id, process_definition_key, version, tenant_id, window_start)
 );
 
+-- Completion-time distribution per start cohort: of the instances started in a window, how many
+-- finished in each duration band (≤10s/≤30s/≤60s/≤120s/>120s). Written by the pipeline.
+CREATE TABLE IF NOT EXISTS duration_bucket_window (
+  bpmn_process_id        VARCHAR(255) NOT NULL,
+  process_definition_key BIGINT       NOT NULL,
+  version                INT          NOT NULL,
+  tenant_id              VARCHAR(255) NOT NULL,
+  window_start           BIGINT       NOT NULL,
+  window_size_ms         BIGINT       NOT NULL,
+  started_count          BIGINT       NOT NULL,
+  le10s                  BIGINT       NOT NULL,
+  le30s                  BIGINT       NOT NULL,
+  le60s                  BIGINT       NOT NULL,
+  le120s                 BIGINT       NOT NULL,
+  gt120s                 BIGINT       NOT NULL,
+  PRIMARY KEY (bpmn_process_id, process_definition_key, version, tenant_id, window_start)
+);
+
 -- Distinct-process count (HLL estimate) per tenant+granularity, written by the pipeline. The
 -- granularity column carries the time-hierarchy tier (1h finest, 1d coarse) so a range read merges
 -- the coarsest tier that still resolves the range.

@@ -15,9 +15,32 @@ import {
 } from "@camunda/design-system";
 import { Dashboard } from "./components/Dashboard";
 import { RangePicker } from "./components/RangePicker";
+import { KpiPage } from "./pages/KpiPage";
+import { OverviewPage } from "./pages/OverviewPage";
+import { PerformancePage } from "./pages/PerformancePage";
 import { api, type TimeRange } from "./lib/api";
 
+/** Each Optimize instant-preview dashboard is its own hash-routed page. */
+const PAGES = [
+  { hash: "overview", label: "Overview" },
+  { hash: "kpis", label: "KPIs" },
+  { hash: "performance", label: "Performance" },
+  { hash: "all", label: "All metrics" },
+] as const;
+
+function currentHash(): string {
+  const h = window.location.hash.replace(/^#\/?/, "");
+  return PAGES.some((p) => p.hash === h) ? h : "overview";
+}
+
 export default function App() {
+  const [route, setRoute] = useState<string>(currentHash());
+  useEffect(() => {
+    const onHash = () => setRoute(currentHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
   const [processes, setProcesses] = useState<string[]>([]);
   const [tenants, setTenants] = useState<string[]>([]);
   const [process, setProcess] = useState<string>("");
@@ -93,18 +116,39 @@ export default function App() {
             />
           </label>
         </div>
+        <nav className="mx-auto flex max-w-6xl gap-1 px-6">
+          {PAGES.map((p) => (
+            <a
+              key={p.hash}
+              href={`#/${p.hash}`}
+              className={`border-b-2 px-3 py-2 text-sm ${
+                route === p.hash
+                  ? "border-brand-500 font-medium text-neutral-foreground"
+                  : "border-transparent text-neutral-foreground-muted hover:text-neutral-foreground"
+              }`}
+            >
+              {p.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
         {error ? (
           <p className="text-destructive-foreground">Failed to load: {error}</p>
-        ) : process ? (
-          <Dashboard process={process} tenant={tenant || "<default>"} range={range} />
-        ) : (
+        ) : !process ? (
           <p className="text-neutral-foreground-muted">
             No analytics data yet. Run the pipeline (or start with <code>-Danalytics.seed=true</code>) and
             reload.
           </p>
+        ) : route === "kpis" ? (
+          <KpiPage process={process} tenant={tenant || "<default>"} range={range} />
+        ) : route === "performance" ? (
+          <PerformancePage process={process} tenant={tenant || "<default>"} range={range} />
+        ) : route === "all" ? (
+          <Dashboard process={process} tenant={tenant || "<default>"} range={range} />
+        ) : (
+          <OverviewPage process={process} tenant={tenant || "<default>"} range={range} />
         )}
       </main>
     </div>

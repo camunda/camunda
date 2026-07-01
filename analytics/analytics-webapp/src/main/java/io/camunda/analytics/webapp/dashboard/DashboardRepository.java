@@ -536,6 +536,38 @@ public class DashboardRepository {
     return out;
   }
 
+  /**
+   * Completion-time distribution per start cohort for a process: per window, {@code started} and
+   * the five duration bands, with {@code open} (still running) derived as started − Σ bands.
+   */
+  public List<DurationBucketPoint> durationBuckets(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final StringBuilder sql =
+        new StringBuilder(
+            "SELECT window_start, SUM(started_count) AS started, SUM(le10s) AS b0,"
+                + " SUM(le30s) AS b1, SUM(le60s) AS b2, SUM(le120s) AS b3, SUM(gt120s) AS b4"
+                + " FROM duration_bucket_window WHERE bpmn_process_id = ?");
+    final List<Object> args = new ArrayList<>();
+    args.add(bpmnProcessId);
+    appendRange(sql, args, fromWindow, toWindow);
+    sql.append(" GROUP BY window_start ORDER BY window_start");
+    return jdbc.query(
+        sql.toString(),
+        (rs, n) -> {
+          final long started = rs.getLong("started");
+          final long[] bands = {
+            rs.getLong("b0"), rs.getLong("b1"), rs.getLong("b2"), rs.getLong("b3"), rs.getLong("b4")
+          };
+          long settled = 0L;
+          for (final long b : bands) {
+            settled += b;
+          }
+          return new DurationBucketPoint(
+              rs.getLong("window_start"), started, bands, Math.max(0L, started - settled));
+        },
+        args.toArray());
+  }
+
   /** Currently-open incident count for a process (sum of the per-flow-node gauge). */
   public long openIncidents(final String bpmnProcessId) {
     final Long n =

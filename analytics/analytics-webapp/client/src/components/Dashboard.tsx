@@ -28,12 +28,15 @@ import {
 } from "../lib/api";
 import { chartColor } from "../lib/chartColors";
 import { formatCount, formatDuration, formatPercent, formatWindow } from "../lib/format";
+import { qualityKpis } from "../lib/useMetrics";
 import { ChartCard } from "./ChartCard";
 import { ElementDurations } from "./ElementDurations";
 import { PercentileTrend } from "./PercentileTrend";
 import { ProcessHeatmap } from "./ProcessHeatmap";
+import { DurationDistribution } from "./DurationDistribution";
 import { Incidents } from "./Incidents";
-import { RatioTrend } from "./RatioTrend";
+import { NoIncidentCohortChart } from "./NoIncidentCohortChart";
+import { NoIncidentDonut } from "./NoIncidentDonut";
 import { SlaCohortChart } from "./SlaCohortChart";
 import { StatTile } from "./StatTile";
 import { TopProcesses } from "./TopProcesses";
@@ -60,24 +63,6 @@ interface DashboardData {
 }
 
 const last = <T,>(xs: T[]): T | undefined => (xs.length ? xs[xs.length - 1] : undefined);
-
-/**
- * Aggregate ratio over the selected range — sum matched / sum total (additive, exact). Maturing SLA
- * cohorts are excluded so the headline is final (their met count may still rise); if every point is
- * still maturing, fall back to all so the tile isn't blank.
- */
-function aggregateRatio(points: RatioPoint[]): {
-  matched: number;
-  total: number;
-  ratio: number;
-  maturing: boolean;
-} {
-  const settled = points.filter((p) => !p.maturing);
-  const used = settled.length ? settled : points;
-  const matched = used.reduce((s, p) => s + p.matched, 0);
-  const total = used.reduce((s, p) => s + p.total, 0);
-  return { matched, total, ratio: total === 0 ? 0 : matched / total, maturing: settled.length === 0 };
-}
 
 export function Dashboard({ process, tenant, range }: DashboardProps) {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -153,8 +138,7 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
 
   // KPI tiles are the exact merged distribution over the range (durationSummary), not "latest".
   const summary = data.summary;
-  const sla = aggregateRatio(data.sla);
-  const noIncident = aggregateRatio(data.noIncident);
+  const { sla, noIncident } = qualityKpis(data.sla, data.noIncident);
   const latestDistinct = last(data.distinct);
   const throughput = summary.observationCount;
 
@@ -190,7 +174,7 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
           value={noIncident.total ? formatPercent(noIncident.ratio) : "—"}
           hint={
             noIncident.total
-              ? `${formatCount(noIncident.matched)} / ${formatCount(noIncident.total)} instances`
+              ? `${formatCount(noIncident.matched)} / ${formatCount(noIncident.total)} started`
               : undefined
           }
         />
@@ -221,7 +205,9 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PercentileTrend points={data.duration} />
         <SlaCohortChart cohorts={data.slaCohorts} />
-        <RatioTrend noIncident={data.noIncident} />
+        <NoIncidentCohortChart points={data.noIncident} />
+        <DurationDistribution points={data.durationBuckets} />
+        <NoIncidentDonut matched={noIncident.matched} total={noIncident.total} />
         <TopProcesses items={data.top} />
         <ChartCard title="Distinct processes over time" description={`Approximate cardinality for tenant ${tenant}`}>
           <DistinctInline points={data.distinct} />

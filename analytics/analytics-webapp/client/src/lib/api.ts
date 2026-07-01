@@ -48,6 +48,15 @@ export interface TopProcess {
   upperBound: number;
 }
 
+/** Completion-time distribution for one start cohort: of `started`, how many finished in each
+ * duration band [≤10s, ≤30s, ≤60s, ≤120s, >120s]; `open` are still running. */
+export interface DurationBucketPoint {
+  windowStart: number;
+  started: number;
+  bands: number[];
+  open: number;
+}
+
 /** One SLA start cohort: instances that started in the window, split by outcome (started = met +
  * breached + open). The maturing window's split can still change as its open instances finish. */
 export interface SlaCohortPoint {
@@ -116,6 +125,10 @@ export const api = {
     getJson<number>(`/api/dashboard/activated-instances?process=${q(process)}${rangeQs(range)}`),
   slaCohorts: (process: string, range: TimeRange | null) =>
     getJson<SlaCohortPoint[]>(`/api/dashboard/sla-cohorts?process=${q(process)}${rangeQs(range)}`),
+  durationBuckets: (process: string, range: TimeRange | null) =>
+    getJson<DurationBucketPoint[]>(
+      `/api/dashboard/duration-buckets?process=${q(process)}${rangeQs(range)}`,
+    ),
   incidents: (process: string, range: TimeRange | null) =>
     getJson<IncidentFlowNode[]>(`/api/dashboard/incidents?process=${q(process)}${rangeQs(range)}`),
   openIncidents: (process: string) =>
