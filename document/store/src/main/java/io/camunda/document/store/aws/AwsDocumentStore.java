@@ -54,8 +54,6 @@ import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.model.Tag;
-import software.amazon.awssdk.services.s3.model.Tagging;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -68,8 +66,6 @@ public class AwsDocumentStore implements DocumentStore {
   public static final String SIZE_METADATA_KEY = "size";
   public static final String CONTENT_TYPE_METADATA_KEY = "content-type";
   private static final Logger LOGGER = LoggerFactory.getLogger(AwsDocumentStore.class);
-  private static final Tag NO_AUTO_DELETE_TAG =
-      Tag.builder().key("NoAutoDelete").value("true").build();
 
   private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
   private static final String METADATA_PROCESS_INSTANCE_KEY = "camunda.processInstanceKey";
@@ -369,13 +365,14 @@ public class AwsDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentReference> uploadDocument(
       final DocumentCreationRequest request, final String documentId) {
     final String fileName = resolveFileName(request.metadata(), documentId);
+    final OffsetDateTime effectiveExpiry = resolveEffectiveExpiry(request.metadata().expiresAt());
 
     final String hash;
     try {
       hash =
           requiresBuffering
-              ? uploadBuffered(request, documentId, fileName)
-              : uploadStreaming(request, documentId, fileName);
+              ? uploadBuffered(request, documentId, fileName, effectiveExpiry)
+              : uploadStreaming(request, documentId, fileName, effectiveExpiry);
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
@@ -384,7 +381,7 @@ public class AwsDocumentStore implements DocumentStore {
         new DocumentMetadataModel(
             request.metadata().contentType(),
             resolveFileName(request.metadata(), documentId),
-            request.metadata().expiresAt(),
+            effectiveExpiry,
             request.metadata().size(),
             request.metadata().processDefinitionId(),
             request.metadata().processInstanceKey(),
@@ -393,14 +390,16 @@ public class AwsDocumentStore implements DocumentStore {
   }
 
   private String uploadStreaming(
-      final DocumentCreationRequest request, final String documentId, final String fileName)
+      final DocumentCreationRequest request,
+      final String documentId,
+      final String fileName,
+      final OffsetDateTime effectiveExpiry)
       throws Exception {
     final var putObjectRequest =
         PutObjectRequest.builder()
             .key(resolveKey(documentId))
             .bucket(bucketName)
-            .metadata(toS3MetaData(request.metadata(), fileName, ""))
-            .tagging(generateExpiryTag(request.metadata().expiresAt()))
+            .metadata(toS3MetaData(request.metadata(), fileName, "", effectiveExpiry))
             .contentType(request.metadata().contentType())
             .build();
 
@@ -418,9 +417,8 @@ public class AwsDocumentStore implements DocumentStore {
             .destinationKey(resolveKey(documentId))
             .sourceBucket(bucketName)
             .destinationBucket(bucketName)
-            .metadata(toS3MetaData(request.metadata(), fileName, hash))
+            .metadata(toS3MetaData(request.metadata(), fileName, hash, effectiveExpiry))
             .metadataDirective(MetadataDirective.REPLACE)
-            .tagging(generateExpiryTag(request.metadata().expiresAt()))
             .contentType(request.metadata().contentType())
             .build();
 
@@ -438,7 +436,10 @@ public class AwsDocumentStore implements DocumentStore {
    *     skip the metadata-replacing copy that the streaming path performs.
    */
   private String uploadBuffered(
-      final DocumentCreationRequest request, final String documentId, final String fileName)
+      final DocumentCreationRequest request,
+      final String documentId,
+      final String fileName,
+      final OffsetDateTime effectiveExpiry)
       throws Exception {
     final Path temp = Files.createTempFile("camunda-document-upload-", ".bin");
     try {
@@ -449,8 +450,7 @@ public class AwsDocumentStore implements DocumentStore {
           PutObjectRequest.builder()
               .key(resolveKey(documentId))
               .bucket(bucketName)
-              .metadata(toS3MetaData(request.metadata(), fileName, hash))
-              .tagging(generateExpiryTag(request.metadata().expiresAt()))
+              .metadata(toS3MetaData(request.metadata(), fileName, hash, effectiveExpiry))
               .contentType(request.metadata().contentType())
               .build();
 
@@ -462,7 +462,10 @@ public class AwsDocumentStore implements DocumentStore {
   }
 
   private Map<String, String> toS3MetaData(
-      final DocumentMetadataModel metadata, final String fileName, final String contentHash) {
+      final DocumentMetadataModel metadata,
+      final String fileName,
+      final String contentHash,
+      final OffsetDateTime effectiveExpiry) {
     if (metadata == null) {
       return Collections.emptyMap();
     }
@@ -472,7 +475,7 @@ public class AwsDocumentStore implements DocumentStore {
     putIfPresent(CONTENT_TYPE_METADATA_KEY, metadata.contentType(), metadataMap);
     putIfPresent(SIZE_METADATA_KEY, metadata.size(), metadataMap);
     putIfPresent(FILENAME_METADATA_KEY, fileName, metadataMap);
-    putIfPresent(EXPIRES_AT_METADATA_KEY, metadata.expiresAt(), metadataMap);
+    putIfPresent(EXPIRES_AT_METADATA_KEY, effectiveExpiry, metadataMap);
 
     metadataMap.put(CONTENT_HASH_METADATA_KEY, contentHash);
 
@@ -488,6 +491,17 @@ public class AwsDocumentStore implements DocumentStore {
     return metadataMap;
   }
 
+  private OffsetDateTime resolveEffectiveExpiry(final OffsetDateTime requestedExpiry) {
+    final OffsetDateTime maxExpiry = OffsetDateTime.now().plus(Duration.ofDays(defaultTTL));
+    if (requestedExpiry == null || requestedExpiry.isEqual(maxExpiry)) {
+      return null;
+    }
+    if (requestedExpiry.isAfter(maxExpiry)) {
+      return maxExpiry;
+    }
+    return requestedExpiry;
+  }
+
   private <T> void putIfPresent(
       final String key, final T value, final Map<String, String> metadataMap) {
     if (value != null) {
@@ -501,20 +515,6 @@ public class AwsDocumentStore implements DocumentStore {
       return new DocumentNotFound(documentId);
     }
     return new UnknownDocumentError(e);
-  }
-
-  private Tagging generateExpiryTag(final OffsetDateTime expiryDate) {
-    final boolean isExpiryDateBeyondBucketTTL =
-        expiryDate != null
-            && defaultTTL != null
-            && expiryDate.isAfter(OffsetDateTime.now().plus(Duration.ofDays(defaultTTL)));
-
-    return Tagging.builder()
-        .tagSet(
-            isExpiryDateBeyondBucketTTL
-                ? Collections.singletonList(NO_AUTO_DELETE_TAG)
-                : Collections.emptyList())
-        .build();
   }
 
   private String resolveKey(final String documentId) {

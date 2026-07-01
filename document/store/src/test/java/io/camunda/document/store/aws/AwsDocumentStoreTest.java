@@ -9,6 +9,7 @@ package io.camunda.document.store.aws;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.*;
 
 import io.camunda.document.api.*;
@@ -25,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -146,12 +148,13 @@ class AwsDocumentStoreTest {
   }
 
   @Test
-  void createDocumentShouldApplyTagIfDocumentExpiryGreaterThanTTL() {
+  void createDocumentShouldCapExpiryIfDocumentExpiryGreaterThanTTL() {
     // given
     final var documentId = "existing-document-id";
     final var inputStream = new ByteArrayInputStream(new byte[0]);
     final ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor.captor();
-    final var expiryTime = OffsetDateTime.now().plus(Duration.ofDays(60));
+    final var now = OffsetDateTime.now();
+    final var expiryTime = now.plus(Duration.ofDays(60));
     final var metadata =
         new DocumentMetadataModel(
             "application/text",
@@ -172,7 +175,43 @@ class AwsDocumentStoreTest {
 
     // then
     verify(s3Client).putObject(putObjectRequestCaptor.capture(), any(RequestBody.class));
-    assertThat(putObjectRequestCaptor.getValue().tagging()).isEqualTo("NoAutoDelete=true");
+    // OffsetDateTime.now() in production and in the test are captured at different instants;
+    // string equality would fail on sub-millisecond differences, so we compare with tolerance.
+    final var storedExpiry =
+        OffsetDateTime.parse(putObjectRequestCaptor.getValue().metadata().get("expires-at"));
+    assertThat(storedExpiry)
+        .isCloseTo(now.plus(Duration.ofDays(BUCKET_TTL)), within(1, ChronoUnit.SECONDS));
+  }
+
+  @Test
+  void createDocumentShouldSetExpiryIfDocumentExpirySmallerThanTTL() {
+    // given
+    final var documentId = "existing-document-id";
+    final var inputStream = new ByteArrayInputStream(new byte[0]);
+    final ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor.captor();
+    final var expiryTime = OffsetDateTime.now().plus(Duration.ofDays(10));
+    final var metadata =
+        new DocumentMetadataModel(
+            "application/text",
+            "given-test-document.jpeg",
+            expiryTime,
+            10000L,
+            null,
+            null,
+            Collections.emptyMap());
+
+    final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
+
+    // when
+    documentStore.createDocument(request).join();
+
+    // then
+    verify(s3Client).putObject(putObjectRequestCaptor.capture(), any(RequestBody.class));
+    assertThat(putObjectRequestCaptor.getValue().metadata().get("expires-at"))
+        .isEqualTo(expiryTime.toString());
   }
 
   @Test
