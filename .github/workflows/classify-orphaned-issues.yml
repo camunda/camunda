@@ -1,0 +1,113 @@
+# type: Project Management
+# owner: @camunda/monorepo-devops-team
+---
+# Hourly scan for open issues not assigned to any active project board.
+#
+# Two cases handled:
+#   1. No component/* label  → Claude AI classifies → applies label → add-to-projects.yml routes
+#   2. Has component/* label → direct GraphQL add to the mapped project board
+#
+# Re-classification guard: the ai-classified label is applied on every classification.
+# Remove it from an issue to force the classifier to try again.
+#
+# Manual trigger (useful for testing):
+#   gh workflow run classify-orphaned-issues.yml -f issue_number=1234
+#   gh workflow run classify-orphaned-issues.yml -f batch_limit=20
+#   gh workflow run classify-orphaned-issues.yml -f batch_limit=20 -f apply_label=true
+#
+name: Classify orphaned issues
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Classify a specific issue number (leave blank to scan all orphans)'
+        required: false
+        type: number
+      batch_limit:
+        description: 'Max orphans to classify per run (scan mode only)'
+        required: false
+        type: number
+        default: 5
+      apply_label:
+        description: 'Apply labels and project assignments (overrides hardcoded default)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  classify:
+    name: Scan and classify orphaned issues
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+        with:
+          github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          # Org-wide token needed to add issues to org-level project boards
+          owner: camunda
+          repositories: '!all'
+
+      - name: Get Anthropic API key
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: .github/scripts/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .github/scripts
+
+      - name: Classify orphaned issues
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          # DRY_RUN=true unless apply_label is explicitly set to 'true' via workflow_dispatch
+          DRY_RUN: ${{ github.event.inputs.apply_label != 'true' && 'true' || 'false' }}
+        run: |
+          if [[ -n "${{ github.event.inputs.issue_number }}" ]]; then
+            node .github/scripts/classify-issue.mjs --issue ${{ github.event.inputs.issue_number }}
+          else
+            node .github/scripts/classify-issue.mjs --scan --limit ${{ github.event.inputs.batch_limit || 5 }}
+          fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -1,0 +1,9 @@
+{
+  "name": "gh-issue-classifier",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.109.0"
+  }
+}

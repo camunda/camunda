@@ -112,13 +112,16 @@ jobs:
           labeled: component/c8run
 
       - id: add-to-feel
-        if: github.event.action != 'labeled' || github.event.label.name == 'component/feel-js'
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/feel-js'
+            || github.event.label.name == 'component/feel-scala'
         name: Add to Feel Team project
         uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/79
           github-token: ${{ steps.github-token.outputs.token }}
-          labeled: component/feel-js
+          labeled: component/feel-js, component/feel-scala
 
       - id: add-to-devops
         if: >
