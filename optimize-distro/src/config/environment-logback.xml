@@ -1,6 +1,9 @@
 <configuration>
   <conversionRule conversionWord="sanitize" class="io.camunda.optimize.util.LogUtil" />
-  <if condition='property("JSON_LOGGING").contains("true")'>
+  <condition class="ch.qos.logback.core.boolex.ExpressionPropertyCondition">
+    <expression>propertyContains("JSON_LOGGING", "true")</expression>
+  </condition>
+  <if>
     <then>
       <appender name="UPGRADE_JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
