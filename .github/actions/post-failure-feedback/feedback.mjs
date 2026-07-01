@@ -48,6 +48,14 @@ const CATALOG = {
       `If it persists, ping <${RELIABILITY}|#alwaysgreen-reliability> — the owner team triages cluster/runner issues.`,
     ],
   },
+  'test-infra': {
+    title: 'Test infrastructure issue — not your code',
+    emoji: '🟠',
+    steps: [
+      'Re-run the failed job.',
+      `If it persists, ping the owner team — the test environment (cluster, login endpoint) may need attention.`,
+    ],
+  },
   external: {
     title: 'External dependency failure (registry / Harbor / marketplace)',
     emoji: '🟠',
