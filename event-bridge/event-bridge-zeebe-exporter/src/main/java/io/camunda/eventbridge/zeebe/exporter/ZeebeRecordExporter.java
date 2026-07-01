@@ -12,8 +12,11 @@ import io.camunda.eventbridge.client.EventBridgeClient.BatchPublisher;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -38,7 +41,7 @@ import org.slf4j.LoggerFactory;
  *     args:
  *       url: http://localhost:8080
  *       topic: zeebe-records
- *       batchSize: 100
+ *       batchSize: 5000
  *       flushIntervalMs: 1000
  * }</pre>
  */
@@ -71,6 +74,21 @@ public final class ZeebeRecordExporter implements Exporter {
   public void configure(final Context context) {
     log = context.getLogger();
     config = context.getConfiguration().instantiate(ExporterConfiguration.class);
+    // Export only EVENT records — the durable facts the analytics pipeline projects. COMMAND and
+    // COMMAND_REJECTION records are the engine's intent stream; they roughly double record volume
+    // and carry no analytics value, so the runtime skips them before they ever reach export().
+    context.setFilter(
+        new RecordFilter() {
+          @Override
+          public boolean acceptType(final RecordType recordType) {
+            return recordType == RecordType.EVENT;
+          }
+
+          @Override
+          public boolean acceptValue(final ValueType valueType) {
+            return true;
+          }
+        });
   }
 
   @Override
@@ -136,7 +154,13 @@ public final class ZeebeRecordExporter implements Exporter {
   public static final class ExporterConfiguration {
     public String url = "http://localhost:8080";
     public String topic = "zeebe-records";
-    public int batchSize = 100;
+    // Batch aggressively: flush() publishes synchronously (.join()) on the exporter director
+    // thread, so a small batch means a network round-trip per record and starves the whole
+    // director. Large batches amortize the round-trip; flushIntervalMs bounds the tail latency
+    // when the record rate is low. Matches the Camunda ES/OS exporter's bulk defaults (size 5000,
+    // delay 1s) — its proven high-throughput settings — rather than the RDBMS exporter's
+    // 1000/500ms.
+    public int batchSize = 5000;
     public long flushIntervalMs = 1000;
   }
 }
