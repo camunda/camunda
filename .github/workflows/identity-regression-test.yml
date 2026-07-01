@@ -259,52 +259,6 @@ jobs:
             exit 1
           fi
 
-      - name: Test document download authorization
-        if: matrix.case == 'user-authorizations-tests.http'
-        shell: bash
-        run: |
-          # Use curl for the binary document download authorization test to avoid
-          # a Kotlin coroutines reactive-subscription race condition in ijhttp that
-          # causes it to crash with UninitializedPropertyAccessException when it
-          # receives or processes responses with binary Content-Type headers.
-          AUTH_TOKEN=$(jq -r '.local.BASIC_AUTH_TOKEN' qa/http/http-client.private.env.json)
-
-          echo "Uploading test document..."
-          STATUS=$(curl -s \
-            -X POST http://localhost:8080/v2/documents \
-            -H "Authorization: Basic $AUTH_TOKEN" \
-            -H "Accept: application/json" \
-            -F "file=@qa/http/test.pdf;type=application/pdf" \
-            -o /tmp/doc_upload.json \
-            -w "%{http_code}")
-          echo "Upload response ($STATUS): $(cat /tmp/doc_upload.json)"
-          if [ "$STATUS" != "201" ]; then
-            echo "FAIL: Document upload returned $STATUS (expected 201)"
-            exit 1
-          fi
-
-          DOCUMENT_ID=$(jq -r '.documentId' /tmp/doc_upload.json)
-          CONTENT_HASH=$(jq -r '.contentHash' /tmp/doc_upload.json)
-
-          echo "Testing authorized binary document download..."
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "http://localhost:8080/v2/documents/$DOCUMENT_ID?contentHash=$CONTENT_HASH" \
-            -H "Authorization: Basic $AUTH_TOKEN")
-          echo "Authorized download: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "FAIL: Authorized download returned $STATUS (expected 200)"
-            curl -s -o /dev/null -X DELETE "http://localhost:8080/v2/documents/$DOCUMENT_ID" \
-              -H "Authorization: Basic $AUTH_TOKEN" || true
-            exit 1
-          fi
-
-          echo "Cleaning up test document..."
-          curl -s -o /dev/null \
-            -X DELETE "http://localhost:8080/v2/documents/$DOCUMENT_ID" \
-            -H "Authorization: Basic $AUTH_TOKEN" || true
-
-          echo "✅ Document download authorization test: PASS"
-
       - name: Install IntelliJ HTTP Client
         shell: bash
         run: |

@@ -1054,10 +1054,23 @@ Content-Type: application/pdf
 %}
 
 ###
+# @name download-document-authorized
+# Use HEAD to avoid receiving binary response body that crashes older ijhttp versions
+HEAD http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+
+> {%
+  client.test("Document download should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+###
 # @no-cookie-jar
 # @name download-document-unauthorized
 GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
 Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Accept: application/octet-stream
 
 > {%
   client.test("Document download should be unsuccessful", function () {
@@ -1102,6 +1115,7 @@ Authorization: Basic {{BASIC_AUTH_TOKEN}}
 # @name verify-deleted-document
 GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/octet-stream
 
 > {%
   if (client.global.get("DOCUMENT_DELETED") === "true") {
