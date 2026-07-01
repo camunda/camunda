@@ -157,7 +157,13 @@ public enum RollupColumnFamilies implements EnumValue, ScopedColumnFamily {
   INCIDENT_OPEN_CELLS(43, ColumnFamilyScope.PARTITION_LOCAL),
 
   /** Open-incidents gauge offsets. */
-  INCIDENT_OPEN_OFFSETS(44, ColumnFamilyScope.PARTITION_LOCAL);
+  INCIDENT_OPEN_OFFSETS(44, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /** Completion-time distribution (duration bands) per start cohort: cells. */
+  DURATION_BUCKET_CELLS(45, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /** Completion-time distribution offsets. */
+  DURATION_BUCKET_OFFSETS(46, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

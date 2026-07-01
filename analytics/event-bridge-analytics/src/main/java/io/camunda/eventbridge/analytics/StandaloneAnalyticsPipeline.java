@@ -43,6 +43,8 @@ import io.camunda.eventbridge.analytics.fact.ProcessInstanceLifecycleFact;
 import io.camunda.eventbridge.analytics.fact.SlaCohortFact;
 import io.camunda.eventbridge.analytics.metric.DefinitionKey;
 import io.camunda.eventbridge.analytics.metric.DefinitionKeyCodec;
+import io.camunda.eventbridge.analytics.metric.DurationBucketAccumulatorCodec;
+import io.camunda.eventbridge.analytics.metric.DurationBucketAggregateFunction;
 import io.camunda.eventbridge.analytics.metric.ExecutionTimeAccumulatorCodec;
 import io.camunda.eventbridge.analytics.metric.ExecutionTimeAggregateFunction;
 import io.camunda.eventbridge.analytics.metric.IncidentKey;
@@ -51,6 +53,7 @@ import io.camunda.eventbridge.analytics.metric.JdbcActivatedInstancesSink;
 import io.camunda.eventbridge.analytics.metric.JdbcActiveInstancesSink;
 import io.camunda.eventbridge.analytics.metric.JdbcDefinitionDurationPercentileSink;
 import io.camunda.eventbridge.analytics.metric.JdbcDefinitionRatioSink;
+import io.camunda.eventbridge.analytics.metric.JdbcDurationBucketSink;
 import io.camunda.eventbridge.analytics.metric.JdbcIncidentFrequencySink;
 import io.camunda.eventbridge.analytics.metric.JdbcOpenIncidentsSink;
 import io.camunda.eventbridge.analytics.metric.JdbcProcessDefinitionSink;
@@ -108,10 +111,19 @@ public final class StandaloneAnalyticsPipeline {
   // for the coarsest granularity of the time hierarchy (exact all-time percentiles, one row/key).
   private static final long TOTAL_WINDOW_MS = 10_000L * 365 * 24 * 60 * 60 * 1000;
   private static final long ALLOWED_LATENESS_MS = 30_000L; // grace before a window finalizes
+  // Start cohorts (SLA, no-incident) are keyed by start time but also receive a much later signal
+  // (the completion outcome / the instance's first incident). Keep those windows open well past the
+  // longest instance run so that late signal lands before the window is pruned — otherwise it would
+  // re-create the pruned cell from scratch and the overwrite-sink would wipe the started count.
+  // Must
+  // exceed the maximum instance duration (incl. replay watermark skew).
+  private static final long COHORT_LATENESS_MS = 600_000L;
   private static final long REGION_DATASET_ID = 1L; // the webapp's auto-created dataset
   private static final String NO_REGION = "<none>";
   private static final int TOP_K = 10; // heavy hitters retained per tenant/window
   private static final long DEFAULT_SLA_MS = 300_000L; // "SLA met" threshold: instance under 5 min
+  // Duration bands for the completion-time distribution: ≤10s, ≤30s, ≤60s, ≤120s, >120s.
+  private static final long[] DURATION_BUCKETS_MS = {10_000L, 30_000L, 60_000L, 120_000L};
 
   private StandaloneAnalyticsPipeline() {}
 
@@ -368,7 +380,7 @@ public final class StandaloneAnalyticsPipeline {
             SlaCohortFact::startTime,
             slaCoordinate,
             TumblingWindows.of(MINUTE_WINDOW_MS),
-            slaMs + ALLOWED_LATENESS_MS, // keep the cohort open until it matures (start + target)
+            COHORT_LATENESS_MS, // keep the start window open past the longest run for late outcomes
             slaCohortSink,
             rollupState.keyValueStore(
                 RollupColumnFamilies.SLA_RATIO_CELLS, new DbBytes(), new DbBytes()),
@@ -376,7 +388,37 @@ public final class StandaloneAnalyticsPipeline {
                 RollupColumnFamilies.SLA_RATIO_OFFSETS, new DbInt(), new DbLong()),
             new DefinitionKeyCodec(),
             new SlaCohortAccumulatorCodec(),
-            rollupState::runInTransaction);
+            rollupState::runInTransaction,
+            acc -> acc.started() > 0 && acc.settled() >= acc.started()); // drained: all settled
+
+    // completion-time distribution per START cohort: of the instances that started in a window, how
+    // many finished in each duration band. A superset of SLA-met (the one-threshold case); reuses
+    // the same cohort signals (activation + outcome duration) and drains the same way.
+    final JdbcDurationBucketSink durationBucketSink =
+        new JdbcDurationBucketSink(dataSource, MINUTE_WINDOW_MS);
+    durationBucketSink.initSchema();
+    final Rollup<SlaCohortFact> durationBucketRollup =
+        new DurableMaterializedRollup<>(
+            new DurationBucketAggregateFunction(DURATION_BUCKETS_MS),
+            fact ->
+                new DefinitionKey(
+                    fact.bpmnProcessId(),
+                    fact.processDefinitionKey(),
+                    fact.version(),
+                    fact.tenantId()),
+            SlaCohortFact::startTime,
+            slaCoordinate,
+            TumblingWindows.of(MINUTE_WINDOW_MS),
+            COHORT_LATENESS_MS,
+            durationBucketSink,
+            rollupState.keyValueStore(
+                RollupColumnFamilies.DURATION_BUCKET_CELLS, new DbBytes(), new DbBytes()),
+            rollupState.keyValueStore(
+                RollupColumnFamilies.DURATION_BUCKET_OFFSETS, new DbInt(), new DbLong()),
+            new DefinitionKeyCodec(),
+            new DurationBucketAccumulatorCodec(),
+            rollupState::runInTransaction,
+            acc -> acc.started() > 0 && acc.settled() >= acc.started()); // drained: all settled
 
     // metric 6 — % of instances without an incident, by definition (Optimize's percentNoIncidents),
     // measured forward-looking over the START cohort: the denominator is instances that started in
@@ -409,7 +451,7 @@ public final class StandaloneAnalyticsPipeline {
             IncidentCohortFact::startTime,
             noIncidentCoordinate,
             TumblingWindows.of(MINUTE_WINDOW_MS),
-            ALLOWED_LATENESS_MS,
+            COHORT_LATENESS_MS,
             incidentRatioSink,
             rollupState.keyValueStore(
                 RollupColumnFamilies.INCIDENT_RATIO_CELLS, new DbBytes(), new DbBytes()),
@@ -669,6 +711,9 @@ public final class StandaloneAnalyticsPipeline {
     rollups.add(
         new TypeRoutingRollup<ProcessExecutionFact, SlaCohortFact>(
             SlaCohortFact.class, slaCohortRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, SlaCohortFact>(
+            SlaCohortFact.class, durationBucketRollup));
     rollups.add(
         new TypeRoutingRollup<ProcessExecutionFact, IncidentCohortFact>(
             IncidentCohortFact.class, incidentRatioRollup));
