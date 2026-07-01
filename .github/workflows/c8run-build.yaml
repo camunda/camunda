@@ -183,8 +183,9 @@ jobs:
           checkout: "false"
 
       - name: Install dependencies
-        run: npm ci
-        working-directory: ./c8run/e2e_tests
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ./c8run/e2e_tests
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
@@ -339,8 +340,9 @@ jobs:
           node-version: 24
 
       - name: Install dependencies
-        run: npm ci
-        working-directory: .\c8run\e2e_tests
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ./c8run/e2e_tests
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
