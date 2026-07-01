@@ -72,6 +72,7 @@ public final class MultiProcessDemoDriver {
   // ratio — otherwise a real incident just hangs the instance and never completes.
   private static final int SLA_BREACH_PCT = 15;
   private static final int FAULT_PCT = 8;
+  private static final int INCIDENT_LEFT_OPEN_PCT = 30; // of faults: left open instead of cancelled
   private static final long FAULT_CANCEL_DELAY_MS = 2_000L;
   // Enough execution threads that minute-long jobs run concurrently instead of serialising into a
   // queue (the client defaults to ONE) — otherwise every instance waits and its duration is queue
@@ -266,8 +267,10 @@ public final class MultiProcessDemoDriver {
 
   /**
    * Completes the job after some work, except for {@link #FAULT_PCT}% of jobs which fail with no
-   * retries left — raising a real incident — and are then cancelled after a short delay so the
-   * instance terminates (feeding the no-incident ratio) instead of hanging on the incident.
+   * retries left — raising a real incident. Most faulted instances are then cancelled after a short
+   * delay (resolving the incident, so it counts toward incident duration and the no-incident
+   * ratio); a share ({@link #INCIDENT_LEFT_OPEN_PCT}%) are left alone, so their incident stays open
+   * and the open-incidents gauge is non-zero.
    */
   private static void handleJob(
       final CamundaClient client,
@@ -275,13 +278,17 @@ public final class MultiProcessDemoDriver {
       final JobClient jobClient,
       final ActivatedJob job)
       throws InterruptedException {
-    if (ThreadLocalRandom.current().nextInt(100) < FAULT_PCT) {
+    final var rnd = ThreadLocalRandom.current();
+    if (rnd.nextInt(100) < FAULT_PCT) {
       jobClient
           .newFailCommand(job.getKey())
           .retries(0)
           .errorMessage("injected fault: downstream dependency unavailable")
           .send()
           .join();
+      if (rnd.nextInt(100) < INCIDENT_LEFT_OPEN_PCT) {
+        return; // leave the incident open — feeds the open-incidents gauge/heatmap
+      }
       final long instanceKey = job.getProcessInstanceKey();
       canceller.schedule(
           () -> {
