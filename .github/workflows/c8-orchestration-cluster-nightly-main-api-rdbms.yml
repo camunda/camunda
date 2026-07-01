@@ -30,10 +30,9 @@ jobs:
 
   # Auto-retry when a matrix leg failed because its self-hosted runner was
   # terminated mid-job (spot preemption / autoscaler scale-down / node eviction)
-  # rather than a real test failure. The reusable retry only re-runs the failed
-  # jobs when one of the runner-shutdown messages below is present in the run's
-  # logs — genuine test failures do not carry them, so they are never masked.
-  # Capped at two retries via run_attempt.
+  # rather than a real test failure. The reusable action only re-runs the failed
+  # jobs when one of the runner-shutdown messages is present in the run logs, so
+  # genuine test failures are never masked. Capped at two retries via run_attempt.
   rerun-failed-jobs:
     needs:
       - nightly-api-tests-rdbms
@@ -41,37 +40,14 @@ jobs:
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
     steps:
-      - name: Import secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+      - name: Rerun failed jobs on runner shutdown
+        uses: camunda/infra-global-github-actions/rerun-failed-run@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # rerun-failed-run: v1.1.0
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/infra/ci/retrigger-gha-workflow RETRIGGER_APP_ID;
-            secret/data/products/infra/ci/retrigger-gha-workflow RETRIGGER_APP_KEY;
-
-      - name: Generate GitHub token
-        id: github-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        with:
-          app-id: ${{ steps.secrets.outputs.RETRIGGER_APP_ID }}
-          private-key: ${{ steps.secrets.outputs.RETRIGGER_APP_KEY }}
-          owner: camunda
-          repositories: infra-global-github-actions
-
-      - name: Retry run on runner shutdown
-        env:
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: |
-          gh workflow run retry-worfklow-run.yml \
-            -R camunda/infra-global-github-actions \
-            --ref main \
-            -f owner="${GITHUB_REPOSITORY_OWNER}" \
-            -f repository="${GITHUB_REPOSITORY#*/}" \
-            -f run-id="${GITHUB_RUN_ID}" \
-            -f attempt="${GITHUB_RUN_ATTEMPT}" \
-            -f error-messages='["The runner has received a shutdown signal", "The operation was canceled."]'
+          error-messages: |
+            The runner has received a shutdown signal
+            lost communication with the server
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
