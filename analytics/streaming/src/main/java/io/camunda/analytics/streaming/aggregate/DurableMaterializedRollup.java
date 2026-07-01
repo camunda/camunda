@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 
 /**
@@ -59,6 +60,14 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
   private final Codec<ACC> accCodec;
   private final TransactionRunner tx;
 
+  // Optional early-finalization predicate: a window is finalized as soon as its accumulator reports
+  // it is "drained" (all its instances have reached a terminal state) once its own event-time
+  // window
+  // has passed — so a start cohort that receives a late completion/incident signal stays open until
+  // it is genuinely complete, rather than being evicted on a time guess and then resurrected. The
+  // time-based lateness remains as a backstop for cohorts that never drain (e.g. stuck instances).
+  private final Predicate<ACC> drained;
+
   // Flyweights this rollup writes through (reads return the store's own flyweights).
   private final DbBytes cellKey = new DbBytes();
   private final DbBytes cellValue = new DbBytes();
@@ -84,6 +93,36 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
       final Codec<K> keyCodec,
       final Codec<ACC> accCodec,
       final TransactionRunner tx) {
+    this(
+        aggregate,
+        keySelector,
+        eventTime,
+        coordinate,
+        windows,
+        allowedLatenessMs,
+        sink,
+        cellStore,
+        offsetStore,
+        keyCodec,
+        accCodec,
+        tx,
+        acc -> false); // no early drain — pure time-based retention
+  }
+
+  public DurableMaterializedRollup(
+      final AggregateFunction<F, ACC, ?> aggregate,
+      final KeySelector<F, K> keySelector,
+      final ToLongFunction<F> eventTime,
+      final SourceCoordinate<F> coordinate,
+      final TumblingWindows windows,
+      final long allowedLatenessMs,
+      final ResultSink<Windowed<K>, ACC> sink,
+      final KeyValueStore<DbBytes, DbBytes> cellStore,
+      final KeyValueStore<DbInt, DbLong> offsetStore,
+      final Codec<K> keyCodec,
+      final Codec<ACC> accCodec,
+      final TransactionRunner tx,
+      final Predicate<ACC> drained) {
     this.aggregate = aggregate;
     this.keySelector = keySelector;
     this.eventTime = eventTime;
@@ -96,6 +135,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     this.keyCodec = keyCodec;
     this.accCodec = accCodec;
     this.tx = tx;
+    this.drained = drained;
     recover();
   }
 
@@ -117,8 +157,18 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     appliedPosition.put(partition, position);
 
     final long timestamp = eventTime.applyAsLong(fact);
-    final Windowed<K> key =
-        new Windowed<>(keySelector.getKey(fact), windows.windowStart(timestamp));
+    final long windowStart = windows.windowStart(timestamp);
+    // Drop facts whose window has already closed (its cell has been, or is about to be, finalized
+    // and evicted). Folding them would resurrect an evicted cell from an empty accumulator, and the
+    // idempotent full-value sink would then overwrite the finalized row with that partial —
+    // silently
+    // wiping counts (e.g. a late completion resetting a start cohort's "started" to 0). The dedup
+    // position is still advanced so the source offset progresses.
+    if (maxEventTime != Long.MIN_VALUE
+        && windowStart + windows.sizeMs() + allowedLatenessMs <= maxEventTime) {
+      return;
+    }
+    final Windowed<K> key = new Windowed<>(keySelector.getKey(fact), windowStart);
     pending.merge(key, aggregate.add(fact, aggregate.createAccumulator()), aggregate::merge);
     maxEventTime = Math.max(maxEventTime, timestamp);
   }
@@ -203,8 +253,13 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     cellStore.forEach(
         (key, value) -> {
           final Windowed<K> windowed = decodeKey(key.getBytes());
-          if (windowed.windowStart() + windows.sizeMs() <= watermark) {
-            closed.put(windowed, accCodec.decode(value.getBytes()));
+          final long windowEnd = windowed.windowStart() + windows.sizeMs();
+          final ACC acc = accCodec.decode(value.getBytes());
+          // Evict when the cohort has drained (complete, and its activation window has passed so no
+          // more instances can join it), or — as a backstop for windows that never drain — once the
+          // time-based lateness has elapsed.
+          if ((windowEnd <= maxEventTime && drained.test(acc)) || windowEnd <= watermark) {
+            closed.put(windowed, acc);
           }
         });
     for (final Map.Entry<Windowed<K>, ACC> entry : closed.entrySet()) {
