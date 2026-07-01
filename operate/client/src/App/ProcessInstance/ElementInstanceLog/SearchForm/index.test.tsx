@@ -60,7 +60,7 @@ describe('<SearchForm />', () => {
       ),
     });
 
-    await user.type(screen.getByLabelText('Filter element instances'), 'order');
+    await user.type(screen.getByLabelText('Search instance history'), 'order');
 
     vi.runOnlyPendingTimers();
 
@@ -80,7 +80,7 @@ describe('<SearchForm />', () => {
       ),
     });
 
-    expect(screen.getByLabelText('Filter element instances')).toHaveValue(
+    expect(screen.getByLabelText('Search instance history')).toHaveValue(
       'order task',
     );
   });

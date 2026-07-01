@@ -409,7 +409,7 @@ describe('ElementInstanceLog — search flow', () => {
     );
 
     expect(
-      screen.getByLabelText('Filter element instances'),
+      screen.getByLabelText('Search instance history'),
     ).toBeInTheDocument();
   });
 
@@ -449,13 +449,13 @@ describe('ElementInstanceLog — search flow', () => {
     );
 
     expect(
-      screen.getByLabelText('Filter element instances'),
+      screen.getByLabelText('Search instance history'),
     ).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
 
     await waitForElementToBeRemoved(
-      screen.queryByLabelText('Filter element instances'),
+      screen.queryByLabelText('Search instance history'),
     );
 
     modificationsStore.reset();
