@@ -54,7 +54,24 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   UPDATE((short) 20),
   UPDATED((short) 21),
 
-  PRIORITY_UPDATED((short) 22);
+  PRIORITY_UPDATED((short) 22),
+
+  /**
+   * Command: operator/user pauses an ACTIVATED job. Admission and the corresponding {@link #PAUSED}
+   * event applier are both gated under {@code Capability.JOB_PAUSE_RESUME} (ordinal 19).
+   */
+  PAUSE((short) 23, false),
+  /** Event: the job has transitioned ACTIVATED → PAUSED. */
+  PAUSED((short) 24),
+
+  /**
+   * Command: operator/user resumes a PAUSED job. Same gate as {@link #PAUSE} — admission and the
+   * corresponding {@link #RESUMED} event applier both live under {@code
+   * Capability.JOB_PAUSE_RESUME}.
+   */
+  RESUME((short) 25, false),
+  /** Event: the job has transitioned PAUSED → ACTIVATED. */
+  RESUMED((short) 26);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -120,6 +137,14 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
         return UPDATED;
       case 22:
         return PRIORITY_UPDATED;
+      case 23:
+        return PAUSE;
+      case 24:
+        return PAUSED;
+      case 25:
+        return RESUME;
+      case 26:
+        return RESUMED;
       default:
         return UNKNOWN;
     }
@@ -146,6 +171,8 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
       case MIGRATED:
       case UPDATED:
       case PRIORITY_UPDATED:
+      case PAUSED:
+      case RESUMED:
         return true;
       default:
         return false;

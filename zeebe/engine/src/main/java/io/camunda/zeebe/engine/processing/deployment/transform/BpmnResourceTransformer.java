@@ -11,11 +11,13 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.ClusterVersionCancelListenerValidator;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightThroughProcessingLoopValidator;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.UnsupportedMultiTenantFeaturesValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -56,6 +58,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
   private final ProcessDefinitionMetrics processDefinitionMetrics;
   private final Map<DeploymentResource, BpmnModelInstance> parsedModels = new IdentityHashMap<>();
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -67,7 +70,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final ValidationConfig config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
-      final ProcessDefinitionMetrics processDefinitionMetrics) {
+      final ProcessDefinitionMetrics processDefinitionMetrics,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     bpmnTransformer =
         BpmnFactory.createTransformer(
             clock, expressionLanguageMetrics, config.maxNameFieldLength());
@@ -80,6 +84,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
     this.processDefinitionMetrics = processDefinitionMetrics;
+    this.clusterVersionFeatures = clusterVersionFeatures;
   }
 
   @Override
@@ -131,6 +136,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
             return UnsupportedMultiTenantFeaturesValidator.validate(
                     resource, executableProcesses, deployment.getTenantId())
+                .flatMap(
+                    ok ->
+                        ClusterVersionCancelListenerValidator.validate(
+                            resource, executableProcesses, clusterVersionFeatures))
                 .flatMap(
                     ok -> {
                       if (enableStraightThroughProcessingLoopDetector) {

@@ -15,6 +15,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterVariableServices;
+import io.camunda.service.ClusterVersionServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
@@ -125,4 +126,6 @@ public interface ServiceRegistry {
   // -- cluster-wide --
 
   ManagementServices managementServices();
+
+  ClusterVersionServices clusterVersionServices();
 }

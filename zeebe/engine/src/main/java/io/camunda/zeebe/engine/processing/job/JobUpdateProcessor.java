@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -27,12 +29,17 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
-  public JobUpdateProcessor(final JobUpdateBehaviour jobUpdateBehaviour, final Writers writers) {
+  public JobUpdateProcessor(
+      final JobUpdateBehaviour jobUpdateBehaviour,
+      final Writers writers,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     this.jobUpdateBehaviour = jobUpdateBehaviour;
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     stateWriter = writers.state();
+    this.clusterVersionFeatures = clusterVersionFeatures;
   }
 
   @Override
@@ -54,6 +61,20 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
               }
               if (changeset.contains(JobRecord.TIMEOUT)) {
                 jobUpdateBehaviour.validateJobTimeout(jobKey, job).ifPresent(errors::add);
+              }
+              if (changeset.contains(JobRecord.PRIORITY)
+                  && !clusterVersionFeatures.isActive(Capability.JOB_PRIORITIZATION)) {
+                // ECV gate: PRIORITY_UPDATED is a new event intent (PR #51333). Emitting it on a
+                // log that older replicas might replay would surface as an unknown intent. Reject
+                // loudly until the operator raises ECV to JOB_PRIORITIZATION; other fields in the
+                // same changeset are also rejected — the command is treated as atomic.
+                errors.add(
+                    "Cannot update priority: the cluster has not activated the '"
+                        + Capability.JOB_PRIORITIZATION.name()
+                        + "' capability. Raise the cluster's ECV before sending priority updates"
+                        + " — for example: POST /v2/cluster-version/raise {\"capability\":\""
+                        + Capability.JOB_PRIORITIZATION.name()
+                        + "\"}.");
               }
               if (!errors.isEmpty()) {
                 handleRejection(errors, command);

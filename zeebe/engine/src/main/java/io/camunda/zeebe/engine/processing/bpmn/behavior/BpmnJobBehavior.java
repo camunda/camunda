@@ -16,6 +16,7 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventTyp
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -101,6 +103,17 @@ public final class BpmnJobBehavior {
       To resolve this incident, migrate the process instance to a process definition \
       that is deployed together with the intended form to use.\
       """;
+
+  /**
+   * Task header key recognised by {@link #createNewJob(BpmnElementContext,
+   * ExecutableJobWorkerElement, JobProperties)} as the marker that promotes a service-task job from
+   * {@link JobKind#BPMN_ELEMENT} to {@link JobKind#MAINTENANCE} when {@link
+   * Capability#JOB_KIND_MAINTENANCE} is active. Demo-scope: in production this would be triggered
+   * by an engine-internal scheduler, not by a BPMN deployer; the header is a small surface that
+   * lets a gate test exercise the producer end-to-end without standing up the scheduler.
+   */
+  public static final String MAINTENANCE_TASK_HEADER = "__ecv_maintenance__";
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
@@ -119,6 +132,7 @@ public final class BpmnJobBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -131,7 +145,8 @@ public final class BpmnJobBehavior {
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
-      final BpmnUserTaskBehavior userTaskBehavior) {
+      final BpmnUserTaskBehavior userTaskBehavior,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -143,6 +158,7 @@ public final class BpmnJobBehavior {
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
     this.userTaskBehavior = userTaskBehavior;
+    this.clusterVersionFeatures = clusterVersionFeatures;
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
@@ -155,7 +171,12 @@ public final class BpmnJobBehavior {
             p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
         .flatMap(
             p ->
-                evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                // ECV gate: skip the BPMN priority expression entirely when JOB_PRIORITIZATION is
+                // inactive. The job record gets priority=0, which produces a v=2 write path
+                // (legacy JOB_ACTIVATABLE column family) byte-identical to a pre-PR broker.
+                (clusterVersionFeatures.isActive(Capability.JOB_PRIORITIZATION)
+                        ? evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                        : Either.<Failure, Integer>right(0))
                     .map(p::priority))
         .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
@@ -379,12 +400,20 @@ public final class BpmnJobBehavior {
       final ExecutableJobWorkerElement element,
       final JobProperties jobProperties) {
 
+    final var taskHeaders = element.getJobWorkerProperties().getTaskHeaders();
+    final JobKind jobKind;
+    if (taskHeaders.containsKey(MAINTENANCE_TASK_HEADER)
+        && clusterVersionFeatures.isActive(Capability.JOB_KIND_MAINTENANCE)) {
+      // The deployer asked for a MAINTENANCE-kind job AND the cluster has reached the ordinal
+      // that introduced the new enum value. Below the gate, stamp the pre-feature BPMN_ELEMENT
+      // value — a pre-feature follower's JobKind.valueOf cannot resolve "MAINTENANCE" so the
+      // gate guards the wire format from carrying it.
+      jobKind = JobKind.MAINTENANCE;
+    } else {
+      jobKind = JobKind.BPMN_ELEMENT;
+    }
     writeJobCreatedEvent(
-        context,
-        jobProperties,
-        JobKind.BPMN_ELEMENT,
-        JobListenerEventType.UNSPECIFIED,
-        element.getJobWorkerProperties().getTaskHeaders());
+        context, jobProperties, jobKind, JobListenerEventType.UNSPECIFIED, taskHeaders);
   }
 
   public void createNewExecutionListenerJob(
@@ -609,7 +638,10 @@ public final class BpmnJobBehavior {
   private BpmnElementType getBpmnElementTypeForLogging(
       final JobKind jobKind, final BpmnElementContext context) {
     return switch (jobKind) {
-      case BPMN_ELEMENT, EXECUTION_LISTENER -> context.getBpmnElementType();
+      // MAINTENANCE jobs are stamped on service tasks just like BPMN_ELEMENT jobs (the
+      // distinction is only that the consumer skips them in ActivateJobs); the element type for
+      // logging is therefore taken from the context, same as the BPMN_ELEMENT path.
+      case BPMN_ELEMENT, EXECUTION_LISTENER, MAINTENANCE -> context.getBpmnElementType();
       case TASK_LISTENER -> BpmnElementType.USER_TASK;
       case AD_HOC_SUB_PROCESS -> BpmnElementType.SUB_PROCESS;
     };

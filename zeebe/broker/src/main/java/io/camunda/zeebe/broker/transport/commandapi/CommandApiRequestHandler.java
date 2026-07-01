@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.transport.commandapi;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionGate;
+import io.camunda.zeebe.engine.state.immutable.ClusterVersionState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -37,6 +39,12 @@ final class CommandApiRequestHandler
   private @Nullable LogStreamWriter leadingStream;
   private boolean isDiskSpaceAvailable = true;
   private boolean processingPaused;
+  // Cached active Engine Capability Version (ECV). The transport actor cannot read
+  // ClusterVersionState directly (lives on the stream-processor actor), so the active ECV is
+  // pushed in via updateActiveClusterVersion(...) — analogous to how isDiskSpaceAvailable is
+  // pushed from the disk-space monitor.
+  private int activeEcvLine = ClusterVersionState.INITIAL_LINE;
+  private int activeEcvOrdinal = ClusterVersionState.INITIAL_ORDINAL;
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -118,6 +126,21 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter);
     }
 
+    // ECV admission gate: reject commands whose feature requires a higher cluster version than
+    // the one currently active. The rejection is synchronous; logStreamWriter.tryWrite is never
+    // called, so nothing reaches the log.
+    if (!ClusterVersionGate.admits(valueType, intent, activeEcvOrdinal)) {
+      final int required = ClusterVersionGate.requirementFor(valueType, intent).orElseThrow();
+      errorWriter
+          .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
+          .errorMessage(
+              String.format(
+                  "Command %s.%s is not yet available on this cluster: requires cluster version "
+                      + "ordinal %d but current active ordinal is %d",
+                  valueType.name(), intent, required, activeEcvOrdinal));
+      return Either.left(errorWriter);
+    }
+
     try {
       return writeCommand(command.key(), metadata, value, logStreamWriter, errorWriter, partitionId)
           .map(b -> responseWriter)
@@ -164,6 +187,19 @@ final class CommandApiRequestHandler
 
   void removePartition(final int partitionId) {
     actor.submit(() -> leadingStream = null);
+  }
+
+  /**
+   * Update the cached active Engine Capability Version (ECV). Called by the component that tracks
+   * ECV transitions (e.g. an APPLIED-listener on the stream processor). Runs on the handler's actor
+   * so the read in {@code handleExecuteCommandRequest} is single-threaded.
+   */
+  void updateActiveClusterVersion(final int line, final int ordinal) {
+    actor.submit(
+        () -> {
+          activeEcvLine = line;
+          activeEcvOrdinal = ordinal;
+        });
   }
 
   void onDiskSpaceNotAvailable() {

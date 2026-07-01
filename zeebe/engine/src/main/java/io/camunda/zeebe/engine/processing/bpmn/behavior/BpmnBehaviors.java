@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -62,4 +63,6 @@ public interface BpmnBehaviors {
   JobUpdateBehaviour jobUpdateBehaviour();
 
   BpmnAdHocSubProcessBehavior adHocSubProcessBehavior();
+
+  ClusterVersionFeatures clusterVersionFeatures();
 }

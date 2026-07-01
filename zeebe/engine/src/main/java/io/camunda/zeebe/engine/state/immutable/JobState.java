@@ -58,7 +58,27 @@ public interface JobState {
     ACTIVATED((byte) 1),
     FAILED((byte) 2),
     NOT_FOUND((byte) 3),
-    ERROR_THROWN((byte) 4);
+    ERROR_THROWN((byte) 4),
+    /**
+     * Intermediate "claimed but not yet committed to a worker" state introduced as the
+     * demonstration of how a new state machine vertex flows through ECV. A job in this state has
+     * been removed from the activatable column family and has its activation deadline tracked, but
+     * is not yet considered ACTIVATED — the v=2 of {@code JobBatchActivatedApplier} flips it to
+     * ACTIVATED. Below {@code Capability.JOB_BATCH_RESERVATION_STATE}, this value is never written
+     * (the leader emits only the original ACTIVATED follow-up event and v=1 of its applier moves
+     * jobs ACTIVATABLE → ACTIVATED in one shot).
+     */
+    RESERVED((byte) 5),
+
+    /**
+     * Operator-initiated pause of an ACTIVATED job. Reached via the {@code JobIntent.PAUSE} command
+     * and the {@code JobPausedApplier}, both gated under {@code Capability.JOB_PAUSE_RESUME}. While
+     * in this state the job is no longer eligible for timeout reclaim, completion, or fail commands
+     * — the existing precondition validators on those processors only admit {@code ACTIVATED} (and
+     * sometimes {@code ACTIVATABLE}), so a paused job naturally rejects every transition except
+     * {@code RESUME}.
+     */
+    PAUSED((byte) 6);
 
     byte value;
 

@@ -247,6 +247,140 @@ public class EventAppliersTest {
         .isThrownBy(() -> eventAppliers.register(intent, 1, anotherMockedApplier));
   }
 
+  @Nested
+  class VersionSelectionAcrossOrdinalsTests {
+
+    // The catalog declares ClusterVersionIntent.APPLIED at three versions:
+    //   v=1 ungated (BASELINE), v=2 gated at ordinal 2 (APPLIED_V2),
+    //   v=3 gated at ordinal 3 (DEMO_GATED_BRANCH).
+    // These tests use that ladder to verify the "between two gates" case at the boundary:
+    // active >= required eligible, active < required skipped, highest eligible wins. The
+    // mechanism scales to any ordinal numbers — "active=15, gates at 10 and 20" behaves
+    // identically to "active=2, gates at 2 and 3" by the same algebra.
+
+    @Test
+    void shouldSelectV1WhenActiveAtBaseline() {
+      // given
+      eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));
+      eventAppliers.setActiveClusterVersionProvider(
+          () ->
+              io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.BASELINE_ORDINAL);
+
+      // when
+      final int selected =
+          eventAppliers.selectVersionFor(
+              io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent.APPLIED);
+
+      // then — only the ungated v=1 is eligible
+      assertThat(selected).isEqualTo(1);
+    }
+
+    @Test
+    void shouldSelectMiddleVersionWhenActiveBetweenGates() {
+      // given — active = 2 admits v=2 but not v=3 (the canonical between-gates case)
+      eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));
+      eventAppliers.setActiveClusterVersionProvider(() -> 2);
+
+      // when
+      final int selected =
+          eventAppliers.selectVersionFor(
+              io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent.APPLIED);
+
+      // then — v=2 wins; v=3 (required=3) is skipped because active 2 < required 3
+      assertThat(selected).isEqualTo(2);
+    }
+
+    @Test
+    void shouldSelectHighestWhenActiveAboveAllGates() {
+      // given — active well above every gate
+      eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));
+      eventAppliers.setActiveClusterVersionProvider(() -> 15);
+
+      // when
+      final int selected =
+          eventAppliers.selectVersionFor(
+              io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent.APPLIED);
+
+      // then — v=3 is the highest eligible
+      assertThat(selected).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  class EcvGateEnforcementTests {
+
+    @Test
+    void shouldAcceptVersionOneApplierWithBaselineDefault() {
+      // given — a v=1 applier returning the default BASELINE classification (real, not mock,
+      // so the enum-intent gate fires); JobIntent.CREATED at v=1 is a pre-ECV baseline applier
+      final TypedEventApplier<io.camunda.zeebe.protocol.record.intent.JobIntent, ?> applier =
+          (k, v) -> {};
+
+      // when / then — accepted, v=1 with BASELINE is the implicit pre-ECV case
+      eventAppliers.register(io.camunda.zeebe.protocol.record.intent.JobIntent.CREATED, 1, applier);
+    }
+
+    @Test
+    void shouldRejectNewUnclassifiedVersionTwoApplier() {
+      // given — an enum intent that is NOT in BASELINE_APPLIERS, registered at v=2 with a
+      // BASELINE-defaulting applier. The dev forgot to classify it.
+      final TypedEventApplier<io.camunda.zeebe.protocol.record.intent.AuthorizationIntent, ?>
+          applier = (k, v) -> {};
+
+      // when / then — fails loudly with a pointer
+      assertThatExceptionOfType(IllegalStateException.class)
+          .isThrownBy(
+              () ->
+                  eventAppliers.register(
+                      io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.CREATED,
+                      2,
+                      applier))
+          .withMessageContaining("inherits the default Capability.BASELINE classification")
+          .withMessageContaining("EventAppliers.BASELINE_APPLIERS");
+    }
+
+    @Test
+    void shouldAcceptLegacyVersionTwoApplierInBaselineAllowlist() {
+      // given — JobIntent.CREATED at v=2 is in the pre-ECV legacy allowlist
+      final TypedEventApplier<io.camunda.zeebe.protocol.record.intent.JobIntent, ?> applier =
+          (k, v) -> {};
+
+      // when / then — accepted via the allowlist
+      eventAppliers.register(io.camunda.zeebe.protocol.record.intent.JobIntent.CREATED, 2, applier);
+    }
+
+    @Test
+    void shouldRejectCapabilityMismatch() {
+      // given — an applier that claims gatedBy() = APPLIED_V2, but registered for an intent the
+      // catalog doesn't list under APPLIED_V2
+      final TypedEventApplier<
+              io.camunda.zeebe.protocol.record.intent.AuthorizationIntent, RecordValue>
+          applier =
+              new TypedEventApplier<>() {
+                @Override
+                public void applyState(final long key, final RecordValue value) {}
+
+                @Override
+                public io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog
+                        .Capability
+                    gatedBy() {
+                  return io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog
+                      .Capability.APPLIED_V2;
+                }
+              };
+
+      // when / then — assertGatedBy throws at register-time
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  eventAppliers.register(
+                      io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.CREATED,
+                      2,
+                      applier))
+          .withMessageContaining("APPLIED_V2");
+    }
+  }
+
   @Test
   void shouldOnlyRegisterAppliersForEvents() {
     // given

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -71,7 +72,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final RoutingInfo routingInfo,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     this.partitionId = partitionId;
     this.messageState = messageState;
     this.keyGenerator = keyGenerator;
@@ -87,7 +89,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            clusterVersionFeatures);
     correlateBehavior =
         new MessageCorrelateBehavior(
             startEventSubscriptionState,

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
@@ -56,7 +57,8 @@ public final class DeploymentTransformer {
             config,
             clock,
             expressionLanguageMetrics,
-            processDefinitionMetrics);
+            processDefinitionMetrics,
+            new ClusterVersionFeatures(processingState.getClusterVersionState()));
 
     final var dmnResourceTransformer =
         new DmnResourceTransformer(

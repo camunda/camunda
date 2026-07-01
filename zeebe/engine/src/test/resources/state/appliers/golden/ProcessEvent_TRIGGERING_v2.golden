@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import org.agrona.DirectBuffer;
@@ -59,5 +60,10 @@ final class ProcessEventTriggeringV2Applier
     }
     eventSubProcessInterruptionMarker.markInstanceIfInterrupted(
         scopeKey, value.getProcessDefinitionKey(), value.getTenantId(), targetElementIdBuffer);
+  }
+
+  @Override
+  public Capability gatedBy() {
+    return Capability.EVENT_START_RPI_METRIC;
   }
 }

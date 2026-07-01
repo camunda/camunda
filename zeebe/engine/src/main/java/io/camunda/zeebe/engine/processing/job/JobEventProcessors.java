@@ -46,7 +46,8 @@ public final class JobEventProcessors {
             writers,
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.clusterVersionFeatures());
 
     final var jobBackoffChecker =
         new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
@@ -80,6 +81,14 @@ public final class JobEventProcessors {
             new JobYieldProcessor(processingState, bpmnBehaviors, writers, authCheckBehavior))
         .onCommand(
             ValueType.JOB,
+            JobIntent.PAUSE,
+            new JobPauseProcessor(processingState, writers, authCheckBehavior))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.RESUME,
+            new JobResumeProcessor(processingState, writers, authCheckBehavior))
+        .onCommand(
+            ValueType.JOB,
             JobIntent.THROW_ERROR,
             new JobThrowErrorProcessor(
                 processingState,
@@ -105,7 +114,10 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE,
-            new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
+            new JobUpdateProcessor(
+                bpmnBehaviors.jobUpdateBehaviour(),
+                writers,
+                bpmnBehaviors.clusterVersionFeatures()))
         .onCommand(
             ValueType.JOB,
             JobIntent.CANCEL,
@@ -125,7 +137,8 @@ public final class JobEventProcessors {
                 jobMetrics,
                 authCheckBehavior,
                 clock,
-                incidentMetrics))
+                incidentMetrics,
+                bpmnBehaviors.clusterVersionFeatures()))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),

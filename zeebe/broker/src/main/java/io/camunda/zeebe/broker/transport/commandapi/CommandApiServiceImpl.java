@@ -128,6 +128,15 @@ public final class CommandApiServiceImpl extends Actor
     serverTransport.unsubscribe(this.partitionId, RequestType.QUERY);
   }
 
+  /**
+   * Push the new active Engine Capability Version to the command-API admission layer. Intended to
+   * be called by an ECV-listener wired into the stream processor (e.g. on every applied {@code
+   * ClusterVersionIntent.APPLIED}). For the PoC, the broker test calls it directly.
+   */
+  public void updateActiveClusterVersion(final int line, final int ordinal) {
+    actor.run(() -> commandHandler.updateActiveClusterVersion(line, ordinal));
+  }
+
   @Override
   public void onDiskSpaceNotAvailable() {
     actor.run(commandHandler::onDiskSpaceNotAvailable);

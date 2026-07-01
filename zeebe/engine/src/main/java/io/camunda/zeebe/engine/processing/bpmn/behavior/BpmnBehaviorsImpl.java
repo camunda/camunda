@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -66,6 +67,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -156,6 +158,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
 
+    // Initialize the ECV gate early so behaviors that wire EventHandle (event publication,
+    // buffered message start, etc.) and BpmnJobBehavior below can all share the same instance.
+    clusterVersionFeatures = new ClusterVersionFeatures(processingState.getClusterVersionState());
+
     eventTriggerBehavior =
         new EventTriggerBehavior(
             processingState.getKeyGenerator(),
@@ -195,7 +201,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             eventTriggerBehavior,
             stateBehavior,
-            writers);
+            writers,
+            clusterVersionFeatures);
 
     processResultSenderBehavior =
         new BpmnProcessResultSenderBehavior(processingState, writers.response());
@@ -210,7 +217,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             subscriptionCommandSender,
             routingInfo,
             clock,
-            config.isBusinessIdUniquenessEnabled());
+            config.isBusinessIdUniquenessEnabled(),
+            clusterVersionFeatures);
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
@@ -270,7 +278,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             incidentBehavior,
             jobActivationBehavior,
             jobMetrics,
-            userTaskBehavior);
+            userTaskBehavior,
+            clusterVersionFeatures);
 
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
@@ -400,6 +409,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
     return adHocSubProcessBehavior;
+  }
+
+  @Override
+  public ClusterVersionFeatures clusterVersionFeatures() {
+    return clusterVersionFeatures;
   }
 
   public ExpressionBehavior expressionBehavior() {

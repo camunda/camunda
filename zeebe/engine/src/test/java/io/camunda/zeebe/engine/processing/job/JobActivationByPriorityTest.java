@@ -26,7 +26,9 @@ import org.junit.Test;
 
 public class JobActivationByPriorityTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition().withInitialClusterVersionAtMax();
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 

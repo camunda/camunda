@@ -71,6 +71,7 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
+          .withInitialClusterVersionAtMax()
           .withEngineConfig(
               config ->
                   config

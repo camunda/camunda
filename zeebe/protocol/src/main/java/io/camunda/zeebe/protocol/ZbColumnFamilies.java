@@ -323,7 +323,18 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // looks up blocked starts by businessId here and re-attempts the ordinary local start. Mirrors
   // the
   // correlation-key buffer's completion-driven re-drive (see ADR 0002 D5).
-  MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL);
+  MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL),
+  /**
+   * Stores the active Engine Capability Version (line, ordinal) for the cluster. Singleton entry.
+   * Global because every partition must see the same active ECV.
+   */
+  CLUSTER_VERSION(150, GLOBAL),
+  /**
+   * Suppressed behavior flag names — features explicitly disabled by an operator after the cluster
+   * reached their activation ordinal. Acts as a kill-switch overlay on top of the ECV gate, the
+   * rollback-lite mechanism the PoC offers in place of FCV-style downgrades.
+   */
+  CLUSTER_VERSION_SUPPRESSED_FLAGS(151, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -45,7 +45,8 @@ public final class UserTaskCommandProcessors {
             writers,
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.clusterVersionFeatures());
 
     commandToProcessor =
         new EnumMap<>(

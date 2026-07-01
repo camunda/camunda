@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionUpdateListener;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -126,6 +127,7 @@ public final class EngineRule extends ExternalResource {
   private ResetRecordingExporterMode awaitIdentitySetupResetMode =
       ResetRecordingExporterMode.AFTER_IDENTITY_SETUP;
   private boolean initializeRoutingState = true;
+  private boolean initializeClusterVersionAtMax = false;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -148,6 +150,8 @@ public final class EngineRule extends ExternalResource {
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
+  private ClusterVersionUpdateListener clusterVersionUpdateListener =
+      ClusterVersionUpdateListener.NOOP;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -299,8 +303,24 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withClusterVersionUpdateListener(final ClusterVersionUpdateListener listener) {
+    clusterVersionUpdateListener = listener;
+    return this;
+  }
+
   public EngineRule withInitializeRoutingState(final boolean initializeRoutingState) {
     this.initializeRoutingState = initializeRoutingState;
+    return this;
+  }
+
+  /**
+   * Pre-seed the cluster's active ECV to the catalog's max capability ordinal before any test runs.
+   * Equivalent to a {@code RAISE} command applied at engine startup. Use this in tests that
+   * exercise ECV-gated features (e.g. businessId uniqueness, cancel execution listeners) so the
+   * gate is open from the first record.
+   */
+  public EngineRule withInitialClusterVersionAtMax() {
+    initializeClusterVersionAtMax = true;
     return this;
   }
 
@@ -365,6 +385,16 @@ public final class EngineRule extends ExternalResource {
                   dbRoutingState.setDesiredPartitions(state.desiredPartitions(), 0L);
                 }
 
+                if (initializeClusterVersionAtMax) {
+                  final var clusterVersionState =
+                      recordProcessorContext.getProcessingState().getClusterVersionState();
+                  clusterVersionState.activate(
+                      810,
+                      io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog
+                          .maxCapability()
+                          .at());
+                }
+
                 engineConfigModifier.accept(recordProcessorContext.getConfig());
                 return EngineProcessors.createEngineProcessors(
                         recordProcessorContext,
@@ -374,7 +404,8 @@ public final class EngineRule extends ExternalResource {
                         featureFlags,
                         jobStreamer,
                         searchClientsProxy,
-                        brokerRequestAuthorizationConverter)
+                        brokerRequestAuthorizationConverter,
+                        clusterVersionUpdateListener)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

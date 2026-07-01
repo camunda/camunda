@@ -296,6 +296,43 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /**
+   * Number of {@code JobBatchIntent.ACTIVATED} emissions, labelled by the {@code reservationOrigin}
+   * field carried on the batch record. Producer-side reads, gated under {@code
+   * Capability.JOB_BATCH_RESERVATION_ORIGIN} (ordinal 18): below the gate the field is absent from
+   * the record and the counter increments under {@code UNSPECIFIED}; above the gate the {@code
+   * JobBatchActivateProcessor} stamps {@code WORKER_REQUEST} and the counter buckets under that
+   * label. A future ordinal that extends {@link
+   * io.camunda.zeebe.protocol.record.value.ReservationOrigin} (e.g. adding {@code
+   * ENGINE_INITIATED}) just adds a new bucket here, no schema change needed.
+   */
+  JOB_BATCH_ACTIVATIONS_BY_ORIGIN {
+    @Override
+    public String getDescription() {
+      return "Number of job-batch activations, labelled by the reservation origin carried on the batch";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.job.batch.activations_by_origin.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {EngineKeyNames.RESERVATION_ORIGIN};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
   /** Number of unique deployed process definitions (distinct BPMN process IDs) */
   DEPLOYED_PROCESS_DEFINITIONS {
     @Override
@@ -431,6 +468,18 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "job_kind";
+      }
+    },
+
+    /**
+     * Specifies the {@link io.camunda.zeebe.protocol.record.value.ReservationOrigin} stamped on a
+     * job-batch record at activation time. Used by {@link
+     * EngineMetricsDoc#JOB_BATCH_ACTIVATIONS_BY_ORIGIN}.
+     */
+    RESERVATION_ORIGIN {
+      @Override
+      public String asString() {
+        return "reservation_origin";
       }
     },
 

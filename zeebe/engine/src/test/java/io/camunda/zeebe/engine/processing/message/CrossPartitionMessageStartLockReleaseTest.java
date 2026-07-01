@@ -117,6 +117,7 @@ public final class CrossPartitionMessageStartLockReleaseTest {
   @Rule
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
+          .withInitialClusterVersionAtMax()
           .withEngineConfig(
               config ->
                   config

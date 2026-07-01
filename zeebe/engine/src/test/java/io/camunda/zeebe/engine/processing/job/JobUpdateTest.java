@@ -30,7 +30,10 @@ import org.junit.Test;
 
 public class JobUpdateTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition().withInitialClusterVersionAtMax();
+
   private static final String PROCESS_ID = "process";
   private static String jobType;
 

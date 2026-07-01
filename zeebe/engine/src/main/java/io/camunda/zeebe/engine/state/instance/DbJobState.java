@@ -144,6 +144,12 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
+    createJobLegacy(key, record, type);
+  }
+
+  @Override
+  public void createWithPriorityActivation(final long key, final JobRecord record) {
+    final DirectBuffer type = record.getTypeBuffer();
     createJob(key, record, type);
   }
 
@@ -356,10 +362,75 @@ public final class DbJobState implements JobState, MutableJobState {
         });
   }
 
+  @Override
+  public void reserve(final long key, final JobRecord record) {
+    // First half of the two-step activation flow (above-gate). Mirrors activate() but stops at
+    // State.RESERVED instead of advancing to ACTIVATED — the second-half applier flips that.
+    final DirectBuffer type = record.getTypeBuffer();
+    final long deadline = record.getDeadline();
+
+    validateParameters(type);
+    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
+
+    updateJobRecord(key, record);
+    updateJobState(State.RESERVED);
+    makeJobNotActivatable(record);
+    addJobDeadline(key, deadline);
+  }
+
+  @Override
+  public void confirmReservation(final long key) {
+    // Second half: the record/CF/deadline work was already done by reserve(); only the state
+    // column flips. updateJobState reads from the per-call jobKey wrapping, so set it first.
+    jobKey.wrapLong(key);
+    updateJobState(State.ACTIVATED);
+  }
+
+  @Override
+  public void pause(final long key, final JobRecord record) {
+    // Drop the activation deadline so JobTimeOutProcessor stops re-driving the job, then flip
+    // the state column. The record snapshot is updated as well so a downstream RESUME has a
+    // current view to read the original deadline from.
+    updateJobRecord(key, record);
+    updateJobState(State.PAUSED);
+    removeJobDeadline(key, record.getDeadline());
+  }
+
+  @Override
+  public void resume(final long key, final JobRecord record) {
+    // Mirror of pause(): flip back to ACTIVATED and re-register the activation deadline using
+    // whatever value the resume command carries (typically the original deadline; nothing
+    // prevents the operator from extending it).
+    updateJobRecord(key, record);
+    updateJobState(State.ACTIVATED);
+    addJobDeadline(key, record.getDeadline());
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
     makeJobActivatable(type, key, record.getTenantId(), record.getPriority());
+  }
+
+  /**
+   * Pre-prioritization create. Writes the job to {@code JOB_ACTIVATABLE} (legacy CF) and does not
+   * touch {@code JOB_ACTIVATABLE_BY_PRIORITY}. Used by the v=2 applier so a low-ECV cluster's state
+   * is identical to a pre-PR broker's.
+   */
+  private void createJobLegacy(final long key, final JobRecord record, final DirectBuffer type) {
+    createJobRecord(key, record);
+    initializeJobState();
+    makeJobActivatableLegacy(type, key, record.getTenantId());
+  }
+
+  private void makeJobActivatableLegacy(
+      final DirectBuffer type, final long key, final String tenantId) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
+    jobTypeKey.wrapBuffer(type);
+    jobKey.wrapLong(key);
+    tenantIdKey.wrapString(tenantId);
+    activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {

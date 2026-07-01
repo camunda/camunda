@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior;
@@ -53,7 +54,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final SubscriptionCommandSender commandSender,
       final RoutingInfo routingInfo,
       final InstantSource clock,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     messageState = processingState.getMessageState();
     processState = processingState.getProcessState();
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
@@ -70,7 +72,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            clusterVersionFeatures);
 
     // Reuse the live-publish correlation logic for the buffered pick-up so a buffered message whose
     // businessId belongs to another partition is re-routed through the cross-partition handshake

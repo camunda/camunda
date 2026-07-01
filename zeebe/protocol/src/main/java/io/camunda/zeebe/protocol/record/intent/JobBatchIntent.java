@@ -17,7 +17,16 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum JobBatchIntent implements Intent {
   ACTIVATE((short) 0),
-  ACTIVATED((short) 1);
+  ACTIVATED((short) 1),
+  /**
+   * Emitted by the engine immediately before {@link #ACTIVATED} when the cluster's ECV permits it
+   * (see {@code Capability.JOB_BATCH_RESERVATION_STATE}). Marks the moment the engine has committed
+   * to handing this batch of jobs to a worker but before the existing state transition to ACTIVATED
+   * is applied. Below the gate the engine emits only {@link #ACTIVATED} as before, keeping the
+   * record stream byte-identical to a pre-feature broker — that is the property that makes a
+   * mid-rolling-upgrade leader handover safe.
+   */
+  RESERVED((short) 2);
 
   private final short value;
 
@@ -35,6 +44,8 @@ public enum JobBatchIntent implements Intent {
         return ACTIVATE;
       case 1:
         return ACTIVATED;
+      case 2:
+        return RESERVED;
       default:
         return Intent.UNKNOWN;
     }
@@ -49,6 +60,7 @@ public enum JobBatchIntent implements Intent {
   public boolean isEvent() {
     switch (this) {
       case ACTIVATED:
+      case RESERVED:
         return true;
       default:
         return false;

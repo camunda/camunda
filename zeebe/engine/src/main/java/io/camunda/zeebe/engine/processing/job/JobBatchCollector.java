@@ -111,6 +111,15 @@ final class JobBatchCollector {
             // Skip Jobs the user is not authorized for
             return true;
           }
+          if (jobRecord.getJobKind() == JobKind.MAINTENANCE) {
+            // MAINTENANCE jobs are engine-internal — never handed to external workers via the
+            // standard ActivateJobs path. Above Capability.JOB_KIND_MAINTENANCE this kind can
+            // appear in the activatable column families; the collector filters it out so
+            // existing workers don't accidentally pick up the new kind they don't know how to
+            // process. Below the gate the producer side never stamps MAINTENANCE, so the filter
+            // is a no-op there.
+            return true;
+          }
 
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch

@@ -26,7 +26,8 @@ import org.junit.Test;
  */
 public class UsageMetricRpiTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine = EngineRule.singlePartition().withInitialClusterVersionAtMax();
 
   @Test
   public void shouldTrackRpiMetricWhenProcessStartedViaApi() {

@@ -80,4 +80,13 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the tenant filtering strategy used for job activation
    */
   TenantFilter getTenantFilter();
+
+  /**
+   * Records what triggered the engine to reserve this batch. Populated only when the cluster's
+   * active ECV is at or above {@code Capability.JOB_BATCH_RESERVATION_ORIGIN} (ordinal 18); below
+   * the gate the field is absent from the on-wire record entirely, and a fresh deserialization
+   * returns {@link ReservationOrigin#UNSPECIFIED}. See {@link ReservationOrigin} for the
+   * rolling-upgrade rationale and the rule on extending it in future ordinals.
+   */
+  ReservationOrigin getReservationOrigin();
 }

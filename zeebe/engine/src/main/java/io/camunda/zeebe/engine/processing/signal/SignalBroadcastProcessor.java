@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.signal;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
@@ -59,7 +60,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -76,7 +78,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            clusterVersionFeatures);
   }
 
   @Override

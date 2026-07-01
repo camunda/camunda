@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.ReservationOrigin;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -59,6 +62,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ProcessState processState;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final IncidentMetrics incidentMetrics;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -67,7 +71,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobProcessingMetrics jobMetrics,
       final AuthorizationCheckBehavior authCheckBehavior,
       final InstantSource clock,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final ClusterVersionFeatures clusterVersionFeatures) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -81,6 +86,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     this.incidentMetrics = incidentMetrics;
+    this.clusterVersionFeatures = clusterVersionFeatures;
   }
 
   @Override
@@ -190,11 +196,34 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobBatchRecord value,
       final long jobBatchKey,
       final Map<JobKind, Integer> activatedJobsCountPerJobKind) {
+    // Above ordinal 18, stamp the reservationOrigin field on the JobBatchRecord. Below the gate
+    // the field is left at its default (UNSPECIFIED) and is omitted from the serialized record
+    // entirely — a pre-feature follower's MsgPack decode never sees an unknown property name,
+    // and downstream consumers that don't yet read the field are unaffected. The accompanying
+    // ReservationOrigin doc-comment explains how a future ordinal extending this enum would put
+    // the JobKind.MAINTENANCE-style Enum.valueOf hazard in play on this same field.
+    if (clusterVersionFeatures.isActive(Capability.JOB_BATCH_RESERVATION_ORIGIN)) {
+      value.setReservationOrigin(ReservationOrigin.WORKER_REQUEST);
+    }
+
+    // The RESERVED event is itself a new protocol record introduced together with the
+    // JobBatchReservedApplier (ordinal 16). Emitting it on a replica that still selects
+    // pre-feature dispatch would crash there because JobBatchIntent.RESERVED is an enum value
+    // that pre-feature binaries map to Intent.UNKNOWN. The gate keeps the emission off until
+    // every replica has been upgraded — at which point the operator raises ECV and the new
+    // event starts appearing in the log alongside the existing ACTIVATED follow-up.
+    if (clusterVersionFeatures.isActive(Capability.JOB_BATCH_RESERVATION_STATE)) {
+      stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.RESERVED, value);
+    }
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
     activatedJobsCountPerJobKind.forEach(
         (jobKind, count) ->
             jobMetrics.countJobEvent(JobAction.ACTIVATED, jobKind, value.getType(), count));
+    // Bucket the batch by reservationOrigin. Below Capability.JOB_BATCH_RESERVATION_ORIGIN the
+    // field is UNSPECIFIED (the producer leaves it at its default); above the gate it's
+    // WORKER_REQUEST. Reader-side use of the new field that makes the gate observable.
+    jobMetrics.countJobBatchActivationByOrigin(value.getReservationOrigin());
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(
