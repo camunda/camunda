@@ -510,6 +510,32 @@ class TestFilterByTouchCheck(unittest.TestCase):
         result = self._run(tests, changed_pkgs=["io/camunda/zeebe/backup/gcs"])
         self.assertEqual(result, tests)
 
+    def test_parent_package_kept(self):
+        """PR changes a parent package (prod code above the test) → kept."""
+        tests = [_make_test("io.camunda.zeebe.backup.gcs")]
+        result = self._run(tests, changed_pkgs=["io/camunda/zeebe/backup"])
+        self.assertEqual(result, tests)
+
+    def test_descendant_package_no_longer_matches(self):
+        """PR changes only a strict sub-package of the test's package → suppress.
+
+        The descendant rule was removed (see _package_touched): a change inside a
+        sub-package no longer counts as touching the test's package.
+        """
+        tests = [_make_test("io.camunda.zeebe.backup.gcs")]
+        result = self._run(tests, changed_pkgs=["io/camunda/zeebe/backup/gcs/impl"])
+        self.assertEqual(result, [])
+
+    def test_root_package_not_flagged_by_unrelated_change(self):
+        """Regression for #55489: a test in the root io.camunda package must not be
+        flagged just because the PR changed some io/camunda/<area> sub-package."""
+        tests = [_make_test("io.camunda", "InvoiceDecisionTest")]
+        result = self._run(
+            tests,
+            changed_pkgs=["io/camunda/db/rdbms", "io/camunda/search/clients"],
+        )
+        self.assertEqual(result, [])
+
     def test_blank_class_suppressed_when_file_not_in_diff(self):
         test = _make_test("io.camunda.zeebe.backup.gcs", "GcsBackupIT")
         result = self._run(
