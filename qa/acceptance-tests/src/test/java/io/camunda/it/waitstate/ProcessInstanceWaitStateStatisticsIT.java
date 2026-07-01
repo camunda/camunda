@@ -13,14 +13,17 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.statistics.response.ProcessInstanceWaitStateStatistics;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -259,6 +262,20 @@ public class ProcessInstanceWaitStateStatisticsIT {
               assertThat(s.getElementId()).isEqualTo("task-b");
               assertThat(s.getWaitingCount()).isEqualTo(1L);
             });
+  }
+
+  @Test
+  void shouldReturnNotFoundForUnknownProcessInstance() {
+    // given
+    final long unknownProcessInstanceKey = Long.MAX_VALUE;
+
+    // when
+    final ThrowingCallable request = () -> statistics(unknownProcessInstanceKey);
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(request).actual();
+    assertThat(problemException.code()).isEqualTo(404);
   }
 
   // Barrier: wait until the expected number of wait states for this instance are visible in
