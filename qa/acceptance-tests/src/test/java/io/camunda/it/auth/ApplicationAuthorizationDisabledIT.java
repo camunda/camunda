@@ -61,13 +61,7 @@ class ApplicationAuthorizationDisabledIT {
 
   @MultiDbTestApplication
   private static final TestCamundaApplication STANDALONE_CAMUNDA =
-      new TestCamundaApplication()
-          .withBasicAuth()
-          .withAuthorizationsDisabled()
-          // withAuthenticatedAccess must be done after disabling authorizations as the latter
-          // implicitly sets withUnauthenticatedAccess(); we still want login to be required so the
-          // webapp authorization filter runs against an authenticated principal.
-          .withAuthenticatedAccess();
+      authenticatedAccessWithAuthorizationsDisabled();
 
   private static final String RESTRICTED = "restricted";
   private static final String DEFAULT_PASSWORD = "password";
@@ -78,7 +72,7 @@ class ApplicationAuthorizationDisabledIT {
       new TestUser(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
   @ParameterizedTest
-  @ValueSource(strings = {"operate", "admin"})
+  @ValueSource(strings = {"operate", "admin", "tasklist"})
   void accessComponentUserWithoutComponentAccessAllowedWhenAuthorizationsDisabled(
       final String appName) throws IOException, URISyntaxException, InterruptedException {
     // given
@@ -94,6 +88,20 @@ class ApplicationAuthorizationDisabledIT {
       final HttpResponse<String> response = result.get();
       assertAccessAllowed(response);
     }
+  }
+
+  /**
+   * Builds the app with authentication required but authorizations disabled. {@code
+   * withAuthenticatedAccess()} must be called after {@code withAuthorizationsDisabled()} because
+   * the latter implicitly enables unauthenticated access; encapsulating the order here keeps it
+   * from being reordered by accident so the webapp authorization filter still runs against an
+   * authenticated principal.
+   */
+  private static TestCamundaApplication authenticatedAccessWithAuthorizationsDisabled() {
+    return new TestCamundaApplication()
+        .withBasicAuth()
+        .withAuthorizationsDisabled()
+        .withAuthenticatedAccess();
   }
 
   private static void assertAccessAllowed(final HttpResponse<String> response) {
