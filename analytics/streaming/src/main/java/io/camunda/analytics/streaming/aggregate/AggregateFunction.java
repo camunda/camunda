@@ -14,8 +14,12 @@ package io.camunda.analytics.streaming.aggregate;
  *
  * <p>{@link #merge} must be <strong>commutative and associative</strong>. That is what makes
  * pre-aggregation correct: folding many facts into a local accumulator and merging the one partial
- * into the serving store yields the same result as merging each fact individually. A metric with no
- * exact {@code merge} (distinct-count, percentiles) is not directly aggregatable this way.
+ * into the serving store yields the same result as merging each fact individually. Metrics with no
+ * exact scalar {@code merge} — distinct-count, quantiles, top-k — still fit this contract when the
+ * accumulator is a <em>sketch</em> (HLL, KLL, frequent items): the estimate is approximate, but the
+ * sketch <em>merge</em> is exact, commutative and associative, so they pre-aggregate with bounded
+ * state exactly as {@code count} and {@code sum} do (see {@link DistinctCountAggregateFunction},
+ * {@link QuantileAggregateFunction}, {@link TopKAggregateFunction}).
  *
  * <p>The function itself is stateless; all state lives in the accumulator instances it produces.
  *

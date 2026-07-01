@@ -47,6 +47,12 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
     </dependency>
+    <!-- Mergeable sketches for the approximate aggregates: HLL (distinct), KLL (quantiles), and
+         frequent items (top-k) — each with a commutative/associative union and byte serialization. -->
+    <dependency>
+      <groupId>org.apache.datasketches</groupId>
+      <artifactId>datasketches-java</artifactId>
+    </dependency>
 
     <!-- Test -->
     <dependency>
