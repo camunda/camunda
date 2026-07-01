@@ -42,6 +42,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
@@ -78,6 +79,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.builder().calculation(SlicesCalculation.Auto).build();
+
+  // Operations "change_policy" and "add" return 400 or 404 when no managed indices match the
+  // resolved pattern — both are harmless since there are simply no managed indices to update.
+  private static final Set<String> LENIENT_OPERATIONS = Set.of("change_policy", "add");
 
   private final int partitionId;
   private final HistoryConfiguration config;
@@ -766,14 +771,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String operation,
       final String policyName,
       final String indexNamePattern) {
-    final var status = response.getStatus();
 
-    // change_policy returns 400 or 404 when no managed indices match the resolved pattern —
-    // both are harmless since there are simply no managed indices to update.
-    if ((status == 400 || status == 404) && "change_policy".equals(operation)) {
+    final int status = response.getStatus();
+
+    if ((status == 400 || status == 404) && LENIENT_OPERATIONS.contains(operation)) {
       logger.debug(
-          "No managed indices to update for pattern '{}' (change_policy '{}' returned {})",
+          "No managed indices to update for pattern '{}' (operation '{}' '{}' returned {})",
           indexNamePattern,
+          operation,
           policyName,
           status);
       return CompletableFuture.completedFuture(null);
@@ -782,9 +787,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     if (status >= 400) {
       return CompletableFuture.failedFuture(
           new ExporterException(
-              "Failed to "
+              "Failed to execute operation "
                   + operation
-                  + " index lifecycle policy '"
+                  + " with index lifecycle policy '"
                   + policyName
                   + "' for index: "
                   + indexNamePattern
