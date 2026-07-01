@@ -23,6 +23,7 @@ on:
 env:
   TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
+  CLIENT_DIR: webapp/client
 
 jobs:
   publish-zod-schemas:
@@ -34,7 +35,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: webapp/client
+        working-directory: ${{ env.CLIENT_DIR }}
         shell: bash
     env:
       TEST_PRODUCT: Camunda
@@ -54,7 +55,9 @@ jobs:
           scope: '@camunda'
 
       - name: Install dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
 
       - name: Build package (automatic triggers)
         if: ${{ github.event_name == 'push' }}

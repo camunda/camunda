@@ -16,6 +16,10 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
+env:
+  SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
+  CLIENT_DIR: ./operate/client
+
 jobs:
   read-versions:
     runs-on: ubuntu-latest
@@ -65,19 +69,21 @@ jobs:
           node-version: 24
 
       - name: Install node dependencies
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.SUITE_DIR }}
 
       - name: Install frontend dependencies
-        working-directory: ./operate/client
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        working-directory: ${{ env.SUITE_DIR }}
 
       - name: Build frontend
-        working-directory: ./operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
         run: npm run build
         env:
           NODE_OPTIONS: --max_old_space_size=4096
@@ -165,7 +171,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
         run: npm run test -- --project=operate-e2e
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        working-directory: ${{ env.SUITE_DIR }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

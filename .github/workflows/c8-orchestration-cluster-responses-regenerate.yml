@@ -75,11 +75,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+          cache-dependency-path: ${{ env.SUITE_DIR }}/package-lock.json
 
       - name: Install dependencies
-        working-directory: ${{ env.SUITE_DIR }}
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.SUITE_DIR }}
 
       - name: Import Vault secrets
         id: secrets
