@@ -7,16 +7,17 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../visual-fixtures';
+import {test} from '@/visual-fixtures';
 import {
   compensationProcessInstance,
   completedInstance,
   instanceWithIncident,
   mockResponses,
   runningInstance,
-} from '../mocks/processInstance';
-import {URL_API_PATTERN} from '../constants';
-import {clientConfigMock} from '../mocks/clientConfig';
+  waitStateRunningInstance,
+} from '@/mocks/processInstance';
+import {URL_API_PATTERN} from '@/constants';
+import {clientConfigMock} from '@/mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -90,7 +91,6 @@ test.describe('process instance page', () => {
         variables: runningInstance.variables,
         xml: runningInstance.xml,
         incidents: runningInstance.incidents,
-        waitStates: runningInstance.waitStates,
       }),
     );
 
@@ -100,7 +100,47 @@ test.describe('process instance page', () => {
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
-    await expect(page.getByTestId('waiting-state-overlay')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('running instance - wait state details', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: waitStateRunningInstance.detail,
+        callHierarchy: waitStateRunningInstance.callHierarchy,
+        elementInstances: waitStateRunningInstance.elementInstances,
+        statistics: waitStateRunningInstance.statistics,
+        sequenceFlows: waitStateRunningInstance.sequenceFlows,
+        variables: waitStateRunningInstance.variables,
+        xml: waitStateRunningInstance.xml,
+        incidents: waitStateRunningInstance.incidents,
+        waitStates: waitStateRunningInstance.waitStates,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: waitStateRunningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+
+    // select the waiting user task and open its details
+    await processInstancePage.diagram
+      .getFlowNodeById('Activity_0dex012')
+      .click();
+    await page.getByRole('link', {name: 'Details', exact: true}).click();
+
+    // both wait states are listed for the selected element
+    await expect(page.getByTestId('waiting-status')).toBeVisible();
+    await expect(page.getByText('Waiting for task completion')).toBeVisible();
+    await expect(
+      page.getByText('Waiting for task listener: notify-assignee'),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

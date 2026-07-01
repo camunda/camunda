@@ -154,30 +154,6 @@ const runningInstance: InstanceMock = {
       },
     ],
   },
-  waitStates: {
-    items: [
-      {
-        rootProcessInstanceKey: null,
-        processInstanceKey: '2251799813687144',
-        elementInstanceKey: '2251799813687150',
-        elementId: 'Activity_0dex012',
-        elementType: 'USER_TASK',
-        tenantId: '<default>',
-        bpmnProcessId: 'signalEventProcess',
-        details: {
-          waitStateType: 'USER_TASK',
-          taskKey: '2251799813687160',
-          dueDate: null,
-        },
-      },
-    ],
-    page: {
-      totalItems: 1,
-      startCursor: null,
-      endCursor: null,
-      hasMoreTotalItems: false,
-    },
-  },
 };
 
 export {runningInstance};
