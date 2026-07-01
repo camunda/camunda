@@ -122,6 +122,18 @@ function isExcluded(element: any) {
   return isBpmnType(element, "SubProcess") && !element.collapsed;
 }
 
+// True if the element belongs to the plane currently shown (its parent chain reaches the active
+// root). Elements inside a collapsed sub-process / call activity sit on another plane and must not
+// be drawn on this diagram — their plane-local coordinates would place them at the top-left.
+function onPlane(element: any, activeRoot: any): boolean {
+  for (let e = element; e; e = e.parent) {
+    if (e === activeRoot) {
+      return true;
+    }
+  }
+  return false;
+}
+
 interface HeatPoint {
   x: number;
   y: number;
@@ -137,6 +149,11 @@ function generateData(
 ): HeatPoint[] {
   const data: HeatPoint[] = [];
   const elementRegistry = viewer.get("elementRegistry");
+  // The registry holds elements from every plane (collapsed sub-processes / call activities have
+  // their own plane, with coordinates relative to that plane's origin). Only elements on the plane
+  // currently shown belong on this diagram; others would land at the top-left corner. Keep the ones
+  // whose parent chain reaches the active root.
+  const activeRoot = viewer.get("canvas").getRootElement();
 
   for (const key in values) {
     const element = elementRegistry.get(key);
@@ -144,6 +161,10 @@ function generateData(
     if (!element || typeof values[key] !== "number") {
       // for example for multi instance bodies
       continue;
+    }
+
+    if (!onPlane(element, activeRoot)) {
+      continue; // element lives on another plane (inside a collapsed sub-process / call activity)
     }
 
     if (!isExcluded(element)) {
