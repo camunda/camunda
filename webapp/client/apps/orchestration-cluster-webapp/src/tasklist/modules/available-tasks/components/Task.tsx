@@ -25,6 +25,7 @@ type Props = {
 	taskId: string;
 	displayName: string;
 	processDisplayName: string;
+	businessId: string | null;
 	assignee: string | null | undefined;
 	creationDate: string;
 	followUpDate: string | null | undefined;
@@ -40,6 +41,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 			taskId,
 			displayName,
 			processDisplayName,
+			businessId,
 			assignee,
 			creationDate: creationDateString,
 			followUpDate: followUpDateString,
@@ -81,6 +83,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 						<div className={cn(styles.flex, styles.flexColumn)}>
 							<span className={styles.name}>{displayName}</span>
 							<span className={styles.label}>{processDisplayName}</span>
+							{businessId !== null && <span className={styles.label}>{businessId}</span>}
 						</div>
 
 						<div className={cn(styles.flex, styles.flexRow)}>

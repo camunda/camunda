@@ -23,6 +23,7 @@ type Props = {
 	candidateUsers: string[];
 	candidateGroups: string[];
 	tenantId: string;
+	businessId: string | null | undefined;
 	user: CurrentUser;
 };
 
@@ -35,6 +36,7 @@ const Aside: React.FC<Props> = ({
 	candidateUsers,
 	candidateGroups,
 	tenantId,
+	businessId,
 	user,
 }) => {
 	const {t} = useTranslation();
@@ -98,6 +100,13 @@ const Aside: React.FC<Props> = ({
 						<span className={styles.itemHeading}>{t('tasklist.taskDetailsFollowUpDateLabel')}</span>
 						<br />
 						<span className={styles.itemBody}>{formatISODateTime(followUpDate)?.absolute.text ?? followUpDate}</span>
+					</ContainedListItem>
+				) : null}
+				{businessId ? (
+					<ContainedListItem>
+						<span className={styles.itemHeading}>{t('tasklist.taskDetailsBusinessIdLabel')}</span>
+						<br />
+						<span className={styles.itemBody}>{businessId}</span>
 					</ContainedListItem>
 				) : null}
 			</ContainedList>

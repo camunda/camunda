@@ -48,6 +48,15 @@ class CustomFiltersModal extends View {
 		return this.assigneeGroup.getByText(name, {exact: true});
 	}
 
+	// NOTE: A switch role locator would be superior, but only works with force clicks which fail for the toggle sometimes...
+	get advancedFiltersToggle() {
+		return this.dialog.locator('label[for="toggle-advanced-filters"]');
+	}
+
+	get businessIdField() {
+		return this.dialog.getByRole('textbox', {name: /business id/i});
+	}
+
 	get applyButton() {
 		return this.dialog.getByRole('button', {name: /^apply$/i});
 	}

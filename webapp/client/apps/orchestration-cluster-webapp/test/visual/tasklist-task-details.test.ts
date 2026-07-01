@@ -49,6 +49,7 @@ test('should match the task details page snapshot', async ({network, taskDetailP
 					candidateUsers: ['alice', 'bob'],
 					candidateGroups: ['managers'],
 					priority: 60,
+					businessId: 'ORDER-2024-0042',
 					dueDate: '2024-06-15T17:00:00.000Z',
 					creationDate: '2024-01-10T09:30:00.000Z',
 				}),
@@ -60,6 +61,7 @@ test('should match the task details page snapshot', async ({network, taskDetailP
 	await taskDetailPage.goto('2251799813685281');
 	await expect(taskDetailPage.detailsInfo).toBeVisible();
 	await expect(taskDetailPage.taskName('Review purchase order')).toBeVisible();
+	await expect(taskDetailPage.aside.getByText('ORDER-2024-0042')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

@@ -32,6 +32,7 @@ const baseProps = {
 	candidateUsers: [],
 	candidateGroups: [],
 	tenantId: '<default>',
+	businessId: null,
 	user: singleTenantUser,
 };
 
@@ -100,6 +101,19 @@ describe('<Aside />', () => {
 		const screen = await render(<Aside {...baseProps} priority={null} />);
 
 		await expect.element(screen.getByText('Priority')).not.toBeInTheDocument();
+	});
+
+	it('should render business id when present', async () => {
+		const screen = await render(<Aside {...baseProps} businessId="order-123" />);
+
+		await expect.element(screen.getByText('Business ID')).toBeVisible();
+		await expect.element(screen.getByText('order-123')).toBeVisible();
+	});
+
+	it('should not render business id when null', async () => {
+		const screen = await render(<Aside {...baseProps} businessId={null} />);
+
+		await expect.element(screen.getByText('Business ID')).not.toBeInTheDocument();
 	});
 
 	it('should render tenant name when user has multiple tenants', async () => {
