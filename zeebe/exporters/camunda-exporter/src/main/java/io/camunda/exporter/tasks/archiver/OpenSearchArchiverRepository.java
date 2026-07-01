@@ -771,12 +771,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String operation,
       final String policyName,
       final String indexNamePattern) {
-
     final int status = response.getStatus();
-
     if ((status == 400 || status == 404) && LENIENT_OPERATIONS.contains(operation)) {
       logger.debug(
-          "No managed indices to update for pattern '{}' (operation '{}' '{}' returned {})",
+          "No managed indices to update for pattern '{}' (operation '{}' with '{}' returned {})",
           indexNamePattern,
           operation,
           policyName,
@@ -798,6 +796,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                   + ", Reason: "
                   + response.getReason()));
     }
+
     return CompletableFuture.completedFuture(null);
   }
 
