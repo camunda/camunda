@@ -8,23 +8,61 @@
 package io.camunda.eventbridge.analytics;
 
 import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.aggregate.AggregateFunction;
+import io.camunda.analytics.streaming.aggregate.Codec;
+import io.camunda.analytics.streaming.aggregate.DistinctCountAggregateFunction;
 import io.camunda.analytics.streaming.aggregate.DurableMaterializedRollup;
+import io.camunda.analytics.streaming.aggregate.HllSketchCodec;
+import io.camunda.analytics.streaming.aggregate.ItemsSketchCodec;
+import io.camunda.analytics.streaming.aggregate.KeySelector;
+import io.camunda.analytics.streaming.aggregate.KllDoublesSketchCodec;
+import io.camunda.analytics.streaming.aggregate.LongCodec;
+import io.camunda.analytics.streaming.aggregate.QuantileAggregateFunction;
+import io.camunda.analytics.streaming.aggregate.RatioAccumulatorCodec;
+import io.camunda.analytics.streaming.aggregate.ResultSink;
 import io.camunda.analytics.streaming.aggregate.Rollup;
 import io.camunda.analytics.streaming.aggregate.SourceCoordinate;
+import io.camunda.analytics.streaming.aggregate.StringCodec;
+import io.camunda.analytics.streaming.aggregate.SumAggregateFunction;
+import io.camunda.analytics.streaming.aggregate.TopKAggregateFunction;
 import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
 import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.analytics.streaming.window.TumblingWindows;
+import io.camunda.analytics.streaming.window.Windowed;
 import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
 import io.camunda.eventbridge.analytics.element.ElementKey;
 import io.camunda.eventbridge.analytics.element.ElementKeyCodec;
+import io.camunda.eventbridge.analytics.element.JdbcElementDurationPercentileSink;
 import io.camunda.eventbridge.analytics.element.JdbcElementHeatmapSink;
+import io.camunda.eventbridge.analytics.fact.IncidentCohortFact;
+import io.camunda.eventbridge.analytics.fact.IncidentFact;
+import io.camunda.eventbridge.analytics.fact.ProcessDefinitionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
+import io.camunda.eventbridge.analytics.fact.ProcessInstanceLifecycleFact;
+import io.camunda.eventbridge.analytics.fact.SlaCohortFact;
+import io.camunda.eventbridge.analytics.metric.DefinitionKey;
+import io.camunda.eventbridge.analytics.metric.DefinitionKeyCodec;
 import io.camunda.eventbridge.analytics.metric.ExecutionTimeAccumulatorCodec;
 import io.camunda.eventbridge.analytics.metric.ExecutionTimeAggregateFunction;
+import io.camunda.eventbridge.analytics.metric.IncidentKey;
+import io.camunda.eventbridge.analytics.metric.IncidentKeyCodec;
+import io.camunda.eventbridge.analytics.metric.JdbcActivatedInstancesSink;
+import io.camunda.eventbridge.analytics.metric.JdbcActiveInstancesSink;
+import io.camunda.eventbridge.analytics.metric.JdbcDefinitionDurationPercentileSink;
+import io.camunda.eventbridge.analytics.metric.JdbcDefinitionRatioSink;
+import io.camunda.eventbridge.analytics.metric.JdbcIncidentFrequencySink;
+import io.camunda.eventbridge.analytics.metric.JdbcOpenIncidentsSink;
+import io.camunda.eventbridge.analytics.metric.JdbcProcessDefinitionSink;
 import io.camunda.eventbridge.analytics.metric.JdbcRegionExecutionTimeSink;
+import io.camunda.eventbridge.analytics.metric.JdbcSlaCohortSink;
+import io.camunda.eventbridge.analytics.metric.JdbcTenantDistinctProcessSink;
+import io.camunda.eventbridge.analytics.metric.JdbcTenantTopProcessesSink;
+import io.camunda.eventbridge.analytics.metric.NoIncidentCohortAggregateFunction;
 import io.camunda.eventbridge.analytics.metric.RegionKey;
 import io.camunda.eventbridge.analytics.metric.RegionKeyCodec;
+import io.camunda.eventbridge.analytics.metric.SlaCohortAccumulatorCodec;
+import io.camunda.eventbridge.analytics.metric.SlaCohortAggregateFunction;
 import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
@@ -35,7 +73,9 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.ToLongFunction;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,23 +83,35 @@ import org.slf4j.LoggerFactory;
 /**
  * Runs the consumer-based analytics as a standalone process against a running Event Bridge: consume
  * {@code zeebe-records}, fold once into a RocksDB base projection ({@link
- * ProcessExecutionProjector}), and fan the derived facts out to two durable windowed rollups built
- * on the streaming library — process-instance execution time grouped by region, and the per-element
- * heatmap. Each rollup holds its windowed aggregate in its own RocksDB store and converges an H2
- * serving table by idempotent full-value upsert ({@link DurableMaterializedRollup}); the source is
- * resumed from the base projection's checkpointed position on restart (start-from-offset).
+ * ProcessExecutionProjector}), and fan the derived facts out to a set of durable windowed rollups
+ * built on the streaming library. These mirror the metrics on Optimize's default dashboards:
+ * process-instance execution time (avg/min/max) by region, the per-element duration heatmap,
+ * duration percentiles (p50/p75/p90/p99) by process definition and by element, the SLA-met and
+ * no-incident percentages by definition, plus distinct-process and top-process (heavy-hitter)
+ * rollups by tenant. Each rollup holds its windowed aggregate in its own RocksDB store and
+ * converges an H2 serving table by idempotent full-value upsert ({@link
+ * DurableMaterializedRollup}); the source is resumed from the base projection's checkpointed
+ * position on restart (start-from-offset).
  *
  * <p>System properties: {@code group} (default {@code analytics-projection}), {@code gateway}
  * (default {@code http://localhost:8080}), {@code sourceTopic} ({@code zeebe-records}), {@code
- * instanceId} (default = PID), {@code jdbcUrl}/{@code jdbcUser} (the shared serving DB).
+ * instanceId} (default = PID), {@code jdbcUrl}/{@code jdbcUser} (the shared serving DB), {@code
+ * slaMs} (the duration-SLA threshold for the SLA-met percentage, default five minutes).
  */
 public final class StandaloneAnalyticsPipeline {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneAnalyticsPipeline.class);
-  private static final long WINDOW_SIZE_MS = 3_600_000L; // hourly
-  private static final long ALLOWED_LATENESS_MS = 60_000L; // grace before a window finalizes
+  private static final long MINUTE_WINDOW_MS = 60_000L; // 1-minute windows for the live metrics
+  private static final long HOUR_WINDOW_MS = 3_600_000L; // hourly window (distinct + the 1h tier)
+  private static final long DAY_WINDOW_MS = 86_400_000L; // daily window (the coarse 1d tier)
+  // A single all-time bucket: a window larger than any timestamp so windowStart is always 0. Used
+  // for the coarsest granularity of the time hierarchy (exact all-time percentiles, one row/key).
+  private static final long TOTAL_WINDOW_MS = 10_000L * 365 * 24 * 60 * 60 * 1000;
+  private static final long ALLOWED_LATENESS_MS = 30_000L; // grace before a window finalizes
   private static final long REGION_DATASET_ID = 1L; // the webapp's auto-created dataset
   private static final String NO_REGION = "<none>";
+  private static final int TOP_K = 10; // heavy hitters retained per tenant/window
+  private static final long DEFAULT_SLA_MS = 300_000L; // "SLA met" threshold: instance under 5 min
 
   private StandaloneAnalyticsPipeline() {}
 
@@ -72,6 +124,7 @@ public final class StandaloneAnalyticsPipeline {
     final String jdbcUrl =
         System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
     final String jdbcUser = System.getProperty("jdbcUser", "sa");
+    final long slaMs = Long.getLong("slaMs", DEFAULT_SLA_MS);
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -96,7 +149,7 @@ public final class StandaloneAnalyticsPipeline {
     // (RocksDB) and authoritative; each changed cell is upserted as its full value into the serving
     // table by a deterministic key, so re-emit converges instead of double-counting.
     final JdbcRegionExecutionTimeSink regionSink =
-        new JdbcRegionExecutionTimeSink(dataSource, REGION_DATASET_ID, WINDOW_SIZE_MS);
+        new JdbcRegionExecutionTimeSink(dataSource, REGION_DATASET_ID, MINUTE_WINDOW_MS);
     regionSink.initSchema();
     final SourceCoordinate<ProcessInstanceExecutionTimeFact> regionCoordinate =
         new SourceCoordinate<>() {
@@ -122,7 +175,7 @@ public final class StandaloneAnalyticsPipeline {
                     fact.tenantId()),
             ProcessInstanceExecutionTimeFact::endTime,
             regionCoordinate,
-            TumblingWindows.of(WINDOW_SIZE_MS),
+            TumblingWindows.of(MINUTE_WINDOW_MS),
             ALLOWED_LATENESS_MS,
             regionSink,
             rollupState.keyValueStore(
@@ -135,7 +188,7 @@ public final class StandaloneAnalyticsPipeline {
 
     // metric 2 — per-element execution heatmap, same durable/idempotent machinery.
     final JdbcElementHeatmapSink heatmapSink =
-        new JdbcElementHeatmapSink(dataSource, WINDOW_SIZE_MS);
+        new JdbcElementHeatmapSink(dataSource, MINUTE_WINDOW_MS);
     heatmapSink.initSchema();
     final SourceCoordinate<ElementExecutionFact> heatmapCoordinate =
         new SourceCoordinate<>() {
@@ -162,7 +215,7 @@ public final class StandaloneAnalyticsPipeline {
                     fact.elementType()),
             ElementExecutionFact::completionTimeMs,
             heatmapCoordinate,
-            TumblingWindows.of(WINDOW_SIZE_MS),
+            TumblingWindows.of(MINUTE_WINDOW_MS),
             ALLOWED_LATENESS_MS,
             heatmapSink,
             rollupState.keyValueStore(
@@ -173,16 +226,458 @@ public final class StandaloneAnalyticsPipeline {
             new ExecutionTimeAccumulatorCodec(),
             rollupState::runInTransaction);
 
-    // one processor, one fold, fan the facts out to their rollups by type
+    // metric 3 — process-instance duration percentiles (p50/p75/p90/p99) by process definition,
+    // from the same completion fact as metric 1. These are the ranks Optimize's default duration
+    // tiles use; the windowing supplies the control-chart trend over time. The accumulator is a KLL
+    // sketch, so its merge is a sketch union — it pre-aggregates and combines across partitions
+    // exactly as the additive metrics do.
+    //
+    // Time hierarchy: the SAME facts feed a rollup at every tier (1m/1h/1d and a single all-time
+    // bucket), run in parallel — no background compaction. Because the sketch merge is associative,
+    // aggregating raw facts into a coarse window equals merging the fine windows underneath it, so
+    // every tier is exact; a range read then merges the coarsest tier that still resolves the range
+    // instead of thousands of 1m sketch blobs (see DashboardRepository#granularityFor).
+    final List<Tier> defPctlTiers =
+        List.of(
+            new Tier(
+                "1m",
+                MINUTE_WINDOW_MS,
+                RollupColumnFamilies.DEF_PCTL_CELLS,
+                RollupColumnFamilies.DEF_PCTL_OFFSETS),
+            new Tier(
+                "1h",
+                HOUR_WINDOW_MS,
+                RollupColumnFamilies.DEF_PCTL_1H_CELLS,
+                RollupColumnFamilies.DEF_PCTL_1H_OFFSETS),
+            new Tier(
+                "1d",
+                DAY_WINDOW_MS,
+                RollupColumnFamilies.DEF_PCTL_1D_CELLS,
+                RollupColumnFamilies.DEF_PCTL_1D_OFFSETS),
+            new Tier(
+                "total",
+                TOTAL_WINDOW_MS,
+                RollupColumnFamilies.DEF_PCTL_TOTAL_CELLS,
+                RollupColumnFamilies.DEF_PCTL_TOTAL_OFFSETS));
+    final List<Rollup<ProcessExecutionFact>> defPercentileRollups = new ArrayList<>();
+    for (final Tier tier : defPctlTiers) {
+      final JdbcDefinitionDurationPercentileSink sink =
+          new JdbcDefinitionDurationPercentileSink(dataSource, tier.windowMs(), tier.label());
+      sink.initSchema();
+      defPercentileRollups.add(
+          new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
+              ProcessInstanceExecutionTimeFact.class,
+              buildRollup(
+                  rollupState,
+                  new QuantileAggregateFunction<>(fact -> (double) fact.durationMs()),
+                  StandaloneAnalyticsPipeline::definitionKey,
+                  ProcessInstanceExecutionTimeFact::endTime,
+                  regionCoordinate,
+                  tier.windowMs(),
+                  sink,
+                  tier.cells(),
+                  tier.offsets(),
+                  new DefinitionKeyCodec(),
+                  new KllDoublesSketchCodec())));
+    }
+
+    // metric 4 — per-element (flow-node) duration percentiles, complementing the heatmap's
+    // avg/min/max so the default flownode-duration heatmap can show p50 per node. Same time
+    // hierarchy as the definition percentiles.
+    final List<Tier> elemPctlTiers =
+        List.of(
+            new Tier(
+                "1m",
+                MINUTE_WINDOW_MS,
+                RollupColumnFamilies.ELEM_PCTL_CELLS,
+                RollupColumnFamilies.ELEM_PCTL_OFFSETS),
+            new Tier(
+                "1h",
+                HOUR_WINDOW_MS,
+                RollupColumnFamilies.ELEM_PCTL_1H_CELLS,
+                RollupColumnFamilies.ELEM_PCTL_1H_OFFSETS),
+            new Tier(
+                "1d",
+                DAY_WINDOW_MS,
+                RollupColumnFamilies.ELEM_PCTL_1D_CELLS,
+                RollupColumnFamilies.ELEM_PCTL_1D_OFFSETS),
+            new Tier(
+                "total",
+                TOTAL_WINDOW_MS,
+                RollupColumnFamilies.ELEM_PCTL_TOTAL_CELLS,
+                RollupColumnFamilies.ELEM_PCTL_TOTAL_OFFSETS));
+    final List<Rollup<ProcessExecutionFact>> elementPercentileRollups = new ArrayList<>();
+    for (final Tier tier : elemPctlTiers) {
+      final JdbcElementDurationPercentileSink sink =
+          new JdbcElementDurationPercentileSink(dataSource, tier.windowMs(), tier.label());
+      sink.initSchema();
+      elementPercentileRollups.add(
+          new TypeRoutingRollup<ProcessExecutionFact, ElementExecutionFact>(
+              ElementExecutionFact.class,
+              buildRollup(
+                  rollupState,
+                  new QuantileAggregateFunction<>(fact -> (double) fact.durationMs()),
+                  fact ->
+                      new ElementKey(
+                          fact.bpmnProcessId(),
+                          fact.processDefinitionKey(),
+                          fact.version(),
+                          fact.tenantId(),
+                          fact.elementId(),
+                          fact.elementType()),
+                  ElementExecutionFact::completionTimeMs,
+                  heatmapCoordinate,
+                  tier.windowMs(),
+                  sink,
+                  tier.cells(),
+                  tier.offsets(),
+                  new ElementKeyCodec(),
+                  new KllDoublesSketchCodec())));
+    }
+
+    // metric 5 — % of instances meeting the duration SLA, by definition (Optimize's percentSLAMet),
+    // measured forward-looking over the START cohort: the denominator is instances that started in
+    // the window, the numerator those that completed normally within the target. Keyed and windowed
+    // by START time so both signals land in the same cohort; the window is kept open for the length
+    // of the SLA target (allowed lateness = slaMs) so a still-running instance that blows its
+    // deadline lowers the ratio at cohort maturity rather than staying invisible until it finishes.
+    final SourceCoordinate<SlaCohortFact> slaCoordinate =
+        new SourceCoordinate<>() {
+          @Override
+          public int partition(final SlaCohortFact fact) {
+            return fact.sourcePartitionId();
+          }
+
+          @Override
+          public long position(final SlaCohortFact fact) {
+            return fact.sourcePosition();
+          }
+        };
+    final JdbcSlaCohortSink slaCohortSink =
+        new JdbcSlaCohortSink(dataSource, MINUTE_WINDOW_MS, slaMs);
+    slaCohortSink.initSchema();
+    final Rollup<SlaCohortFact> slaCohortRollup =
+        new DurableMaterializedRollup<>(
+            new SlaCohortAggregateFunction(slaMs),
+            fact ->
+                new DefinitionKey(
+                    fact.bpmnProcessId(),
+                    fact.processDefinitionKey(),
+                    fact.version(),
+                    fact.tenantId()),
+            SlaCohortFact::startTime,
+            slaCoordinate,
+            TumblingWindows.of(MINUTE_WINDOW_MS),
+            slaMs + ALLOWED_LATENESS_MS, // keep the cohort open until it matures (start + target)
+            slaCohortSink,
+            rollupState.keyValueStore(
+                RollupColumnFamilies.SLA_RATIO_CELLS, new DbBytes(), new DbBytes()),
+            rollupState.keyValueStore(
+                RollupColumnFamilies.SLA_RATIO_OFFSETS, new DbInt(), new DbLong()),
+            new DefinitionKeyCodec(),
+            new SlaCohortAccumulatorCodec(),
+            rollupState::runInTransaction);
+
+    // metric 6 — % of instances without an incident, by definition (Optimize's percentNoIncidents),
+    // measured forward-looking over the START cohort: the denominator is instances that started in
+    // the window and the numerator those with no incident. The instance's first incident is stamped
+    // with its start time (so it lands in the same cohort) and fires when the incident is created —
+    // so a running instance's incident lowers the share immediately, and it counts once per
+    // instance (distinct). Version is dropped from the key (0) since the incident record lacks it;
+    // the read groups by process anyway.
+    final SourceCoordinate<IncidentCohortFact> noIncidentCoordinate =
+        new SourceCoordinate<>() {
+          @Override
+          public int partition(final IncidentCohortFact fact) {
+            return fact.sourcePartitionId();
+          }
+
+          @Override
+          public long position(final IncidentCohortFact fact) {
+            return fact.sourcePosition();
+          }
+        };
+    final JdbcDefinitionRatioSink incidentRatioSink =
+        new JdbcDefinitionRatioSink(dataSource, MINUTE_WINDOW_MS, "no_incident");
+    incidentRatioSink.initSchema();
+    final Rollup<IncidentCohortFact> incidentRatioRollup =
+        new DurableMaterializedRollup<>(
+            new NoIncidentCohortAggregateFunction(),
+            fact ->
+                new DefinitionKey(
+                    fact.bpmnProcessId(), fact.processDefinitionKey(), 0, fact.tenantId()),
+            IncidentCohortFact::startTime,
+            noIncidentCoordinate,
+            TumblingWindows.of(MINUTE_WINDOW_MS),
+            ALLOWED_LATENESS_MS,
+            incidentRatioSink,
+            rollupState.keyValueStore(
+                RollupColumnFamilies.INCIDENT_RATIO_CELLS, new DbBytes(), new DbBytes()),
+            rollupState.keyValueStore(
+                RollupColumnFamilies.INCIDENT_RATIO_OFFSETS, new DbInt(), new DbLong()),
+            new DefinitionKeyCodec(),
+            new RatioAccumulatorCodec(),
+            rollupState::runInTransaction);
+
+    // metric 7 — distinct number of processes active per tenant, from the same fact. The
+    // accumulator is an HLL sketch; the count is approximate but the register-wise merge is exact.
+    // Kept on an HOURLY window (cardinality is a slow-moving figure — a per-minute distinct count
+    // over a low-cardinality set is noise).
+    // Distinct is a mergeable HLL sketch too, but it stays coarse: cardinality is slow-moving, so
+    // the finest tier is hourly (a per-minute distinct count over a low-cardinality set is noise),
+    // with a 1d tier above it so a long range merges days rather than thousands of hours.
+    final List<Tier> distinctTiers =
+        List.of(
+            new Tier(
+                "1h",
+                HOUR_WINDOW_MS,
+                RollupColumnFamilies.DISTINCT_CELLS,
+                RollupColumnFamilies.DISTINCT_OFFSETS),
+            new Tier(
+                "1d",
+                DAY_WINDOW_MS,
+                RollupColumnFamilies.DISTINCT_1D_CELLS,
+                RollupColumnFamilies.DISTINCT_1D_OFFSETS));
+    final List<Rollup<ProcessExecutionFact>> distinctRollups = new ArrayList<>();
+    for (final Tier tier : distinctTiers) {
+      final JdbcTenantDistinctProcessSink sink =
+          new JdbcTenantDistinctProcessSink(dataSource, tier.windowMs(), tier.label());
+      sink.initSchema();
+      distinctRollups.add(
+          new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
+              ProcessInstanceExecutionTimeFact.class,
+              buildRollup(
+                  rollupState,
+                  new DistinctCountAggregateFunction<>(
+                      ProcessInstanceExecutionTimeFact::bpmnProcessId),
+                  ProcessInstanceExecutionTimeFact::tenantId,
+                  ProcessInstanceExecutionTimeFact::endTime,
+                  regionCoordinate,
+                  tier.windowMs(),
+                  sink,
+                  tier.cells(),
+                  tier.offsets(),
+                  new StringCodec(),
+                  new HllSketchCodec())));
+    }
+
+    // metric 8 — top processes by volume per tenant, from the same fact. The accumulator is a
+    // frequent-items sketch; its frequency merge is commutative and associative, so it runs at
+    // every
+    // tier of the time hierarchy (1m/1h/1d for range reads, total all-time), each storing its
+    // sketch
+    // for merge-on-read.
+    final List<Tier> topkTiers =
+        List.of(
+            new Tier(
+                "1m",
+                MINUTE_WINDOW_MS,
+                RollupColumnFamilies.TOPK_CELLS,
+                RollupColumnFamilies.TOPK_OFFSETS),
+            new Tier(
+                "1h",
+                HOUR_WINDOW_MS,
+                RollupColumnFamilies.TOPK_1H_CELLS,
+                RollupColumnFamilies.TOPK_1H_OFFSETS),
+            new Tier(
+                "1d",
+                DAY_WINDOW_MS,
+                RollupColumnFamilies.TOPK_1D_CELLS,
+                RollupColumnFamilies.TOPK_1D_OFFSETS),
+            new Tier(
+                "total",
+                TOTAL_WINDOW_MS,
+                RollupColumnFamilies.TOPK_TOTAL_CELLS,
+                RollupColumnFamilies.TOPK_TOTAL_OFFSETS));
+    final List<Rollup<ProcessExecutionFact>> topProcessesRollups = new ArrayList<>();
+    for (final Tier tier : topkTiers) {
+      final JdbcTenantTopProcessesSink sink =
+          new JdbcTenantTopProcessesSink(dataSource, tier.windowMs(), tier.label());
+      sink.initSchema();
+      topProcessesRollups.add(
+          new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
+              ProcessInstanceExecutionTimeFact.class,
+              buildRollup(
+                  rollupState,
+                  new TopKAggregateFunction<>(
+                      ProcessInstanceExecutionTimeFact::bpmnProcessId,
+                      TOP_K,
+                      TopKAggregateFunction.DEFAULT_MAX_MAP_SIZE),
+                  ProcessInstanceExecutionTimeFact::tenantId,
+                  ProcessInstanceExecutionTimeFact::endTime,
+                  regionCoordinate,
+                  tier.windowMs(),
+                  sink,
+                  tier.cells(),
+                  tier.offsets(),
+                  new StringCodec(),
+                  new ItemsSketchCodec())));
+    }
+
+    // instance lifecycle — the projector emits +1 on activation and -1 on completion/termination.
+    final SourceCoordinate<ProcessInstanceLifecycleFact> lifecycleCoordinate =
+        new SourceCoordinate<>() {
+          @Override
+          public int partition(final ProcessInstanceLifecycleFact fact) {
+            return fact.sourcePartitionId();
+          }
+
+          @Override
+          public long position(final ProcessInstanceLifecycleFact fact) {
+            return fact.sourcePosition();
+          }
+        };
+
+    // active instances — a range-independent gauge: sum of the +1/-1 deltas in one all-time bucket
+    // per definition = the current in-flight count.
+    final JdbcActiveInstancesSink activeSink = new JdbcActiveInstancesSink(dataSource);
+    activeSink.initSchema();
+    final Rollup<ProcessInstanceLifecycleFact> activeRollup =
+        new DurableMaterializedRollup<>(
+            new SumAggregateFunction<>(ProcessInstanceLifecycleFact::delta),
+            fact ->
+                new DefinitionKey(
+                    fact.bpmnProcessId(),
+                    fact.processDefinitionKey(),
+                    fact.version(),
+                    fact.tenantId()),
+            ProcessInstanceLifecycleFact::timestamp,
+            lifecycleCoordinate,
+            TumblingWindows.of(TOTAL_WINDOW_MS),
+            ALLOWED_LATENESS_MS,
+            activeSink,
+            rollupState.keyValueStore(
+                RollupColumnFamilies.ACTIVE_CELLS, new DbBytes(), new DbBytes()),
+            rollupState.keyValueStore(
+                RollupColumnFamilies.ACTIVE_OFFSETS, new DbInt(), new DbLong()),
+            new DefinitionKeyCodec(),
+            new LongCodec(),
+            rollupState::runInTransaction);
+
+    // activated instances — a windowed count of activations (the +1s); additive, so a read sums it
+    // over the selected range to get "instances started in this range".
+    final JdbcActivatedInstancesSink activatedSink =
+        new JdbcActivatedInstancesSink(dataSource, MINUTE_WINDOW_MS);
+    activatedSink.initSchema();
+    final Rollup<ProcessInstanceLifecycleFact> activatedRollup =
+        new DurableMaterializedRollup<>(
+            new SumAggregateFunction<>(fact -> fact.delta() > 0 ? 1L : 0L),
+            fact ->
+                new DefinitionKey(
+                    fact.bpmnProcessId(),
+                    fact.processDefinitionKey(),
+                    fact.version(),
+                    fact.tenantId()),
+            ProcessInstanceLifecycleFact::timestamp,
+            lifecycleCoordinate,
+            TumblingWindows.of(MINUTE_WINDOW_MS),
+            ALLOWED_LATENESS_MS,
+            activatedSink,
+            rollupState.keyValueStore(
+                RollupColumnFamilies.ACTIVATED_CELLS, new DbBytes(), new DbBytes()),
+            rollupState.keyValueStore(
+                RollupColumnFamilies.ACTIVATED_OFFSETS, new DbInt(), new DbLong()),
+            new DefinitionKeyCodec(),
+            new LongCodec(),
+            rollupState::runInTransaction);
+
+    // incidents — the projector emits +1 on create and -1 on resolve, per flow node.
+    final SourceCoordinate<IncidentFact> incidentCoordinate =
+        new SourceCoordinate<>() {
+          @Override
+          public int partition(final IncidentFact fact) {
+            return fact.sourcePartitionId();
+          }
+
+          @Override
+          public long position(final IncidentFact fact) {
+            return fact.sourcePosition();
+          }
+        };
+    final KeySelector<IncidentFact, IncidentKey> incidentKey =
+        fact -> new IncidentKey(fact.bpmnProcessId(), fact.elementId(), fact.tenantId());
+
+    // incident frequency — a windowed count of incidents raised (the +1s) per flow node; additive,
+    // so a read sums it over the range and can group by flow node for the BPMN heatmap.
+    final JdbcIncidentFrequencySink incidentFrequencySink =
+        new JdbcIncidentFrequencySink(dataSource, MINUTE_WINDOW_MS);
+    incidentFrequencySink.initSchema();
+    final Rollup<IncidentFact> incidentFrequencyRollup =
+        buildRollup(
+            rollupState,
+            new SumAggregateFunction<>(fact -> fact.delta() > 0 ? 1L : 0L),
+            incidentKey,
+            IncidentFact::timestamp,
+            incidentCoordinate,
+            MINUTE_WINDOW_MS,
+            incidentFrequencySink,
+            RollupColumnFamilies.INCIDENT_FREQ_CELLS,
+            RollupColumnFamilies.INCIDENT_FREQ_OFFSETS,
+            new IncidentKeyCodec(),
+            new LongCodec());
+
+    // open incidents — a range-independent gauge: created minus resolved in one all-time bucket per
+    // flow node = the number of incidents currently open.
+    final JdbcOpenIncidentsSink openIncidentsSink = new JdbcOpenIncidentsSink(dataSource);
+    openIncidentsSink.initSchema();
+    final Rollup<IncidentFact> openIncidentsRollup =
+        buildRollup(
+            rollupState,
+            new SumAggregateFunction<>(IncidentFact::delta),
+            incidentKey,
+            IncidentFact::timestamp,
+            incidentCoordinate,
+            TOTAL_WINDOW_MS,
+            openIncidentsSink,
+            RollupColumnFamilies.INCIDENT_OPEN_CELLS,
+            RollupColumnFamilies.INCIDENT_OPEN_OFFSETS,
+            new IncidentKeyCodec(),
+            new LongCodec());
+
+    // definitions — sink each deployed process's BPMN so the dashboard can render the model behind
+    // the flow-node heatmap. Not windowed: a direct idempotent upsert by definition key.
+    final JdbcProcessDefinitionSink definitionSink = new JdbcProcessDefinitionSink(dataSource);
+    definitionSink.initSchema();
+
+    // one processor, one fold, fan the facts out to their rollups by type. The process-instance
+    // metrics all consume the same completion fact — the fold derives it once and each routing
+    // entry hands it to its own durable rollup; the element metrics likewise share the element
+    // fact; the definition sink takes the deployed-process facts. The tiered sketch metrics
+    // contribute one routing entry per time-hierarchy tier.
+    final List<Rollup<ProcessExecutionFact>> rollups = new ArrayList<>();
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
+            ProcessInstanceExecutionTimeFact.class, regionRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, ElementExecutionFact>(
+            ElementExecutionFact.class, heatmapRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, ProcessDefinitionFact>(
+            ProcessDefinitionFact.class, definitionSink));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceLifecycleFact>(
+            ProcessInstanceLifecycleFact.class, activeRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceLifecycleFact>(
+            ProcessInstanceLifecycleFact.class, activatedRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, IncidentFact>(
+            IncidentFact.class, incidentFrequencyRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, IncidentFact>(
+            IncidentFact.class, openIncidentsRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, SlaCohortFact>(
+            SlaCohortFact.class, slaCohortRollup));
+    rollups.add(
+        new TypeRoutingRollup<ProcessExecutionFact, IncidentCohortFact>(
+            IncidentCohortFact.class, incidentRatioRollup));
+    rollups.addAll(defPercentileRollups);
+    rollups.addAll(elementPercentileRollups);
+    rollups.addAll(distinctRollups);
+    rollups.addAll(topProcessesRollups);
     final StreamProcessor<ZeebeRecord> processor =
-        new StreamProcessor<ZeebeRecord>()
-            .register(
-                projector,
-                List.of(
-                    new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
-                        ProcessInstanceExecutionTimeFact.class, regionRollup),
-                    new TypeRoutingRollup<ProcessExecutionFact, ElementExecutionFact>(
-                        ElementExecutionFact.class, heatmapRollup)));
+        new StreamProcessor<ZeebeRecord>().register(projector, rollups);
 
     final ZeebeRecordConsumer source =
         ZeebeRecordConsumer.subscribe(client, group, instanceId, List.of(sourceTopic)).join();
@@ -191,7 +686,8 @@ public final class StandaloneAnalyticsPipeline {
         new WindowedAnalyticsPipeline(source, processor, store, sourceTopic);
     pipeline.start();
     LOG.info(
-        "Analytics instance '{}' started: {} -> base projection -> durable region + heatmap rollups",
+        "Analytics instance '{}' started: {} -> base projection -> durable rollups "
+            + "(exec-time, heatmap, duration percentiles, SLA + no-incident ratios, distinct, top-k)",
         instanceId,
         sourceTopic);
 
@@ -209,5 +705,47 @@ public final class StandaloneAnalyticsPipeline {
                   }
                 }));
     Thread.currentThread().join();
+  }
+
+  /** Groups a process-instance fact by its process definition (id, key, version, tenant). */
+  private static DefinitionKey definitionKey(final ProcessInstanceExecutionTimeFact fact) {
+    return new DefinitionKey(
+        fact.bpmnProcessId(), fact.processDefinitionKey(), fact.version(), fact.tenantId());
+  }
+
+  /**
+   * One tier of a metric's time hierarchy: the window size, the {@code granularity} label the sink
+   * stamps on the row, and the pair of RocksDB column families holding that tier's cells and dedup
+   * offsets. Each tier is an independent rollup fed the same facts.
+   */
+  private record Tier(
+      String label, long windowMs, RollupColumnFamilies cells, RollupColumnFamilies offsets) {}
+
+  /** Builds one durable windowed rollup, wiring its cell/offset stores from the shared state. */
+  private static <F, K, ACC> Rollup<F> buildRollup(
+      final RocksDbStateStoreProvider<RollupColumnFamilies> state,
+      final AggregateFunction<F, ACC, ?> aggregate,
+      final KeySelector<F, K> keySelector,
+      final ToLongFunction<F> eventTime,
+      final SourceCoordinate<F> coordinate,
+      final long windowMs,
+      final ResultSink<Windowed<K>, ACC> sink,
+      final RollupColumnFamilies cells,
+      final RollupColumnFamilies offsets,
+      final Codec<K> keyCodec,
+      final Codec<ACC> accCodec) {
+    return new DurableMaterializedRollup<>(
+        aggregate,
+        keySelector,
+        eventTime,
+        coordinate,
+        TumblingWindows.of(windowMs),
+        ALLOWED_LATENESS_MS,
+        sink,
+        state.keyValueStore(cells, new DbBytes(), new DbBytes()),
+        state.keyValueStore(offsets, new DbInt(), new DbLong()),
+        keyCodec,
+        accCodec,
+        state::runInTransaction);
   }
 }

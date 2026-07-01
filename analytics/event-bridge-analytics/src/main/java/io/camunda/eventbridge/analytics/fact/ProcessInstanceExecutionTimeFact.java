@@ -30,6 +30,7 @@ public record ProcessInstanceExecutionTimeFact(
     long endTime,
     long durationMs,
     boolean completedNormally,
+    boolean hadIncident,
     int sourcePartitionId,
     long sourcePosition,
     Map<String, String> variables)

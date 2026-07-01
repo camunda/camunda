@@ -40,6 +40,10 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
 
   private final KeyValueStore<DbString, DbLong> elementStarts;
 
+  private final DbLong incidentKey = new DbLong();
+  private final DbLong incidentFlag = new DbLong();
+  private final KeyValueStore<DbLong, DbLong> incidents;
+
   private StateBackedProjectionStore(final StateStoreProvider<AnalyticsColumnFamilies> provider) {
     this.provider = provider;
     variables =
@@ -50,6 +54,9 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
             AnalyticsColumnFamilies.CONSUMED_POSITION, positionKey, positionValue);
     elementStarts =
         provider.keyValueStore(AnalyticsColumnFamilies.ELEMENT_START, new DbString(), new DbLong());
+    incidents =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.INSTANCE_INCIDENT, new DbLong(), new DbLong());
   }
 
   /**
@@ -92,6 +99,27 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
   public void deleteVariables(final long processInstanceKey) {
     instanceKey.wrapLong(processInstanceKey);
     variables.delete(instanceKey);
+  }
+
+  @Override
+  public boolean markIncident(final long processInstanceKey) {
+    incidentKey.wrapLong(processInstanceKey);
+    final boolean first = incidents.get(incidentKey).isEmpty();
+    incidentFlag.wrapLong(1L);
+    incidents.put(incidentKey, incidentFlag);
+    return first;
+  }
+
+  @Override
+  public boolean hasIncident(final long processInstanceKey) {
+    incidentKey.wrapLong(processInstanceKey);
+    return incidents.get(incidentKey).isPresent();
+  }
+
+  @Override
+  public void clearIncident(final long processInstanceKey) {
+    incidentKey.wrapLong(processInstanceKey);
+    incidents.delete(incidentKey);
   }
 
   @Override

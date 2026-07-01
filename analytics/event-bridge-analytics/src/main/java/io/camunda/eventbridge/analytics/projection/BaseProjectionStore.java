@@ -32,6 +32,20 @@ public interface BaseProjectionStore {
   /** Drops all variables of {@code processInstanceKey} (called when the instance completes). */
   void deleteVariables(long processInstanceKey);
 
+  /**
+   * Marks that {@code processInstanceKey} has raised an incident; returns {@code true} if this is
+   * the first incident for the instance (so the caller can count it once for distinct metrics).
+   */
+  boolean markIncident(long processInstanceKey);
+
+  /** Whether {@code processInstanceKey} has raised an incident since it started. */
+  boolean hasIncident(long processInstanceKey);
+
+  /**
+   * Clears the incident flag for {@code processInstanceKey} (called when it reaches a terminal).
+   */
+  void clearIncident(long processInstanceKey);
+
   /** The position up to which {@code partitionId} has been folded, or {@link #NO_POSITION}. */
   long getConsumedPosition(int partitionId);
 

@@ -25,7 +25,14 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
   /**
    * Per in-flight element instance: its activation time, keyed by {@code instanceKey:elementId}.
    */
-  ELEMENT_START(3, ColumnFamilyScope.PARTITION_LOCAL);
+  ELEMENT_START(3, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Per process instance: a flag set when it has raised at least one incident, keyed by {@code
+   * processInstanceKey}. Read (and cleared) when the instance reaches a terminal state so the
+   * derived fact can record whether the instance ever had an incident.
+   */
+  INSTANCE_INCIDENT(4, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

@@ -62,6 +62,12 @@
       <artifactId>micrometer-core</artifactId>
     </dependency>
 
+    <!-- Sketch accumulators the serving sinks read from directly (quantiles, HLL, frequent items) -->
+    <dependency>
+      <groupId>org.apache.datasketches</groupId>
+      <artifactId>datasketches-java</artifactId>
+    </dependency>
+
     <!-- Aggregated dataset store -->
     <dependency>
       <groupId>com.h2database</groupId>
