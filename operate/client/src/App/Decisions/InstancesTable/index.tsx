@@ -100,6 +100,8 @@ const InstancesTable: React.FC = observer(() => {
     clientConfig.multiTenancyEnabled &&
     (filter?.tenantId === undefined || filter?.tenantId === 'all');
 
+  const hasBusinessIds = decisionInstances.some(({businessId}) => !!businessId);
+
   return (
     <Container>
       <PanelHeader
@@ -131,6 +133,7 @@ const InstancesTable: React.FC = observer(() => {
             tenantId,
             evaluationDate,
             processInstanceKey,
+            businessId,
           }) => {
             return {
               id: decisionEvaluationInstanceKey,
@@ -160,6 +163,7 @@ const InstancesTable: React.FC = observer(() => {
                 </Link>
               ),
               decisionDefinitionVersion,
+              businessId: businessId ?? '--',
               tenantId: isTenantColumnVisible ? tenantId : undefined,
               evaluationDate: formatDate(evaluationDate),
               processInstanceKey: processInstanceKey ? (
@@ -195,6 +199,15 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Version',
             key: 'decisionDefinitionVersion',
           },
+          ...(hasBusinessIds
+            ? [
+                {
+                  header: 'Business ID',
+                  key: 'businessId',
+                  sortKey: 'businessId',
+                },
+              ]
+            : []),
           ...(isTenantColumnVisible
             ? [
                 {

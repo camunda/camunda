@@ -31,6 +31,7 @@ import {
 } from 'modules/mocks/mockDecisionInstance';
 import * as clientConfig from 'modules/utils/getClientConfig';
 import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
+import {searchResult} from 'modules/testUtils';
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -204,6 +205,38 @@ describe('<InstancesTable />', () => {
         name: /Decision Instances - 2 results/i,
       }),
     ).toBeInTheDocument();
+  });
+
+  it('should show a Business ID column when at least one instance has a businessId', async () => {
+    mockSearchDecisionInstances().withSuccess(
+      searchResult([
+        {...invoiceClassification, businessId: 'order-12345'},
+        assignApproverGroup,
+      ]),
+    );
+
+    render(<InstancesTable />, {wrapper: createWrapper()});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('columnheader', {name: /Business ID/}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('order-12345')).toBeInTheDocument();
+  });
+
+  it('should hide the Business ID column when no instance has a businessId', async () => {
+    render(<InstancesTable />, {wrapper: createWrapper()});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.queryByRole('columnheader', {name: /Business ID/}),
+    ).not.toBeInTheDocument();
   });
 
   it('should navigate to decision instance page', async () => {

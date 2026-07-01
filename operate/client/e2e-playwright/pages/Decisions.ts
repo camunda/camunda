@@ -13,6 +13,7 @@ import {DeleteResourceModal} from './components/DeleteResourceModal';
 type OptionalFilter =
   | 'Process Instance Key'
   | 'Decision Instance Key(s)'
+  | 'Business ID'
   | 'Evaluation Date Range';
 
 export class Decisions {

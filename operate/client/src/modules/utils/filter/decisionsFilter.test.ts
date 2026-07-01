@@ -27,6 +27,7 @@ describe('parseDecisionInstancesSearchFilter', () => {
       'decisionEvaluationInstanceKey',
       '2251799813702856-1 2251799813702857-1',
     );
+    searchParams.append('businessId', 'like_order');
 
     const filter = parseDecisionInstancesSearchFilter(searchParams);
 
@@ -43,7 +44,18 @@ describe('parseDecisionInstancesSearchFilter', () => {
         $gt: '2023-08-29T00:00:00.000Z',
         $lt: '2023-09-28T23:59:59.000Z',
       },
+      businessId: {$like: '*order*'},
     });
+  });
+
+  it('should ignore an invalid businessId filter value', () => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('evaluated', 'true');
+    searchParams.append('businessId', 'invalid-no-separator');
+
+    const filter = parseDecisionInstancesSearchFilter(searchParams);
+
+    expect(filter).toEqual({state: {$in: ['EVALUATED']}});
   });
 
   it('should return undefined when no state param is set', () => {
