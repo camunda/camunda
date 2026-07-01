@@ -329,10 +329,12 @@ public class DynamicNodeIdScalingIT {
 
   @Nested
   class ScaleDown {
-    private static final int SCALE_DOWN_TARGET_CLUSTER_SIZE = 1;
+    private static final int SCALE_DOWN_INITIAL_CLUSTER_SIZE = 3;
+    private static final int SCALE_DOWN_TARGET_CLUSTER_SIZE_IN_ZONE = 1;
+    private static final int REPLICATION_FACTOR = 1;
 
     @TestZeebe(autoStart = false)
-    private final TestCluster testCluster =
+    protected TestCluster testCluster =
         TestCluster.builder()
             .withName(CLUSTER_NAME)
             // Start a separate gateway as the brokers might shutdown during scale down.
@@ -341,7 +343,7 @@ public class DynamicNodeIdScalingIT {
             .withGatewayConfig(g -> g.withCreateSchema(false).withUnauthenticatedAccess())
             .withBrokersCount(initialClusterSize())
             .withPartitionsCount(PARTITIONS_COUNT)
-            .withReplicationFactor(1)
+            .withReplicationFactor(REPLICATION_FACTOR)
             .withoutNodeId()
             .withNodeConfig(
                 app ->
@@ -353,7 +355,11 @@ public class DynamicNodeIdScalingIT {
             .build();
 
     protected int initialClusterSize() {
-      return 3;
+      return SCALE_DOWN_INITIAL_CLUSTER_SIZE;
+    }
+
+    protected int targetClusterSize() {
+      return SCALE_DOWN_TARGET_CLUSTER_SIZE_IN_ZONE;
     }
 
     protected Partitioning partitioningConfig() {
@@ -364,8 +370,17 @@ public class DynamicNodeIdScalingIT {
       return null;
     }
 
+    /** The number of brokers in {@link #zone()} before scaling down. */
+    protected int initialCountInZone() {
+      return initialClusterSize();
+    }
+
+    protected int replicationFactor() {
+      return REPLICATION_FACTOR;
+    }
+
     @Test
-    public void shouldScaleDownClusterFromThreeToOneBroker() {
+    public void shouldScaleDownCluster() {
       // given - start cluster with three brokers
       testCluster.start();
       testCluster.awaitHealthyTopology();
@@ -376,7 +391,9 @@ public class DynamicNodeIdScalingIT {
       final var scaleDownRequest =
           new ClusterConfigPatchRequest()
               .brokers(
-                  new ClusterConfigPatchRequestBrokers().count(SCALE_DOWN_TARGET_CLUSTER_SIZE));
+                  new ClusterConfigPatchRequestBrokers()
+                      .count(SCALE_DOWN_TARGET_CLUSTER_SIZE_IN_ZONE)
+                      .zone(zone()));
 
       clusterActuator.patchCluster(scaleDownRequest, false, false);
 
@@ -385,9 +402,7 @@ public class DynamicNodeIdScalingIT {
           .atMost(Duration.ofMinutes(2))
           .pollInterval(Duration.ofSeconds(2))
           .untilAsserted(
-              () ->
-                  assertConfigurationChangeCompleted(
-                      clusterActuator, SCALE_DOWN_TARGET_CLUSTER_SIZE));
+              () -> assertConfigurationChangeCompleted(clusterActuator, targetClusterSize()));
 
       Awaitility.await("Scaled down brokers are shutdown")
           .atMost(Duration.ofMinutes(1))
@@ -397,15 +412,15 @@ public class DynamicNodeIdScalingIT {
                           testCluster.brokers().values().stream()
                               .filter(TestSpringApplication::isStarted)
                               .count())
-                      .isEqualTo(1));
+                      .isEqualTo(targetClusterSize()));
     }
 
     @Test
     void shouldScaleUpAgainAfterScaleDown() {
       // given
-      shouldScaleDownClusterFromThreeToOneBroker();
+      shouldScaleDownCluster();
       testCluster.awaitCompleteTopology(
-          SCALE_DOWN_TARGET_CLUSTER_SIZE, PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
+          targetClusterSize(), PARTITIONS_COUNT, replicationFactor(), Duration.ofSeconds(10));
 
       // when
       final var clusterActuator = ClusterActuator.of(testCluster.anyGateway());
@@ -415,7 +430,8 @@ public class DynamicNodeIdScalingIT {
 
       final var scaleUpRequest =
           new ClusterConfigPatchRequest()
-              .brokers(new ClusterConfigPatchRequestBrokers().count(initialClusterSize()));
+              .brokers(
+                  new ClusterConfigPatchRequestBrokers().count(initialCountInZone()).zone(zone()));
 
       clusterActuator.patchCluster(scaleUpRequest, false, false);
 
@@ -425,7 +441,62 @@ public class DynamicNodeIdScalingIT {
           .untilAsserted(
               () -> assertConfigurationChangeCompleted(clusterActuator, initialClusterSize()));
       testCluster.awaitCompleteTopology(
-          initialClusterSize(), PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
+          initialClusterSize(), PARTITIONS_COUNT, replicationFactor(), Duration.ofSeconds(10));
+    }
+  }
+
+  @Nested
+  class ZonedScaleDown extends ScaleDown {
+
+    private final List<Zone> zones;
+
+    ZonedScaleDown() {
+      zones = List.of(new Zone("zoneA", 2, 1, 1000), new Zone("zoneB", 1, 1, 100));
+      testCluster =
+          TestCluster.builder()
+              .withName("zoned-" + CLUSTER_NAME)
+              // Start a separate gateway as the brokers might shutdown during scale down.
+              .withEmbeddedGateway(false)
+              .withGatewaysCount(1)
+              .withGatewayConfig(g -> g.withCreateSchema(false).withUnauthenticatedAccess())
+              .withBrokersCount(initialClusterSize())
+              .withPartitionsCount(PARTITIONS_COUNT)
+              .withReplicationFactor(replicationFactor())
+              .withoutNodeId()
+              .multiZone(zones)
+              .withNodeConfig(
+                  app ->
+                      app.withUnifiedConfig(
+                          cfg -> {
+                            cfg.getCluster().setSize(initialClusterSize());
+                            configureS3NodeIdProvider(cfg);
+                          }))
+              .build();
+    }
+
+    @Override
+    protected int initialClusterSize() {
+      return 3;
+    }
+
+    @Override
+    protected int targetClusterSize() {
+      return 2;
+    }
+
+    @Override
+    protected String zone() {
+      return zones.getFirst().name();
+    }
+
+    @Override
+    protected int initialCountInZone() {
+      return zones.getFirst().numberOfBrokers();
+    }
+
+    @Override
+    protected int replicationFactor() {
+      return zones.stream().mapToInt(Zone::numberOfReplicas).sum();
     }
   }
 }
