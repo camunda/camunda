@@ -469,6 +469,7 @@ runs:
       filters: |
         load-test-setup-change:
           - 'load-tests/setup/**'
+          - '.tool-versions'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch
