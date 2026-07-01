@@ -166,11 +166,11 @@ public class DynamicNodeIdScalingIT {
     }
 
     protected int targetClusterSizeInZone() {
-      return 3;
+      return TARGET_CLUSTER_SIZE;
     }
 
     protected int targetClusterSize() {
-      return 3;
+      return TARGET_CLUSTER_SIZE;
     }
 
     protected Partitioning partitioningConfig() {
