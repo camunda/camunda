@@ -15,9 +15,10 @@ class TasksFilterModal {
   constructor(page: Page) {
     this.modal = page.getByRole('dialog', {name: 'Custom filters modal'});
 
-    this.advancedFiltersToggle = this.modal.getByRole('switch', {
-      name: 'Advanced filters',
-    });
+    // NOTE: A switch role locator would be superior, but only works with force clicks which fail for the toggle sometimes...
+    this.advancedFiltersToggle = this.modal.locator(
+      'label[for="toggle-advanced-filters"]',
+    );
     this.businessIdField = this.modal.getByRole('textbox', {
       name: 'Business ID',
     });
