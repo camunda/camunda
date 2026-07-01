@@ -188,20 +188,60 @@ and if the follower truly lost state the retried chunk gets an ERROR response an
 restart path kicks in. So the reset is unnecessary conservatism: treat all transport failures
 like timeouts. Restart-from-scratch then only happens on explicit follower rejection.
 
-### 3.5 Leader-side bounded pipelining
+### 3.5 Leader-side bounded pipelining — revised after review discussion
 
-Replace the boolean `installing` with a small outstanding-request window (k≈2–4):
+Earlier claim "no change beyond leader bookkeeping" was too strong: the happy path is easy, the
+failure paths are the actual feature. Revised analysis:
 
-- Same wire format, same one-connection ordering; the follower already accepts any in-order
-  stream (its check is "chunk id equals what the previous chunk announced as next").
-- On OK: slide the window. On timeout/ERROR anywhere in the window: drain, fall back to
-  sequential retry from the oldest unacked chunk (with 3.4, that's cheap).
-- Bounded memory (k·C). Per-request timeout semantics per chunk are unchanged. Raft-thread work
-  still serializes per side, so the thread-block ceiling is untouched — but the wire no longer
-  idles for `RTT + follower-work` between chunks; leader read of chunk n+1 overlaps follower
-  write of chunk n.
-- At 1 MiB chunks, 60 ms RTT, 1 GiB snapshot: removes ~`N·RTT` ≈ 1024 × 60 ms ≈ 61 s of pure
-  waiting (plus the per-chunk fsync tax if 3.3 isn't done first).
+**Why the `installing` flag exists.** It keeps the install failure-state machine one-dimensional:
+the leader's install state is a single cursor (`nextSnapshotChunkId`), and retry is "seek back to
+the cursor". The contrast with appends is instructive — appends *are* pipelined today
+(`RaftMemberContext.canAppend` allows `inFlightAppendCount < maxAppendsPerFollower`, default 2,
+`RaftPartitionConfig.java:37`) because the append protocol is self-resynchronizing: every
+`AppendResponse` carries the follower's last log index, so after any confusion the leader resyncs
+cheaply (`resetNextIndex`/`resetMatchIndex`). The install protocol has no "where are you" signal;
+the only recovery from a sequence mismatch is abort + restart-from-scratch. Stop-and-wait is what
+makes install failure handling trivially safe. (The flag itself predates the fork — inherited
+from upstream Atomix.)
+
+**Keeping the pipeline filled** is the easy part and needs no timers: same ack-clocking as today,
+with a window. Replace the boolean with a counter; on replication start send until
+`inFlight == k`; each OK response tops the window back up (the recursive
+`handleInstallResponseOk → appendEntries` path already exists). The reader is a cursor — building
+chunk n+1 does not need n's ack. Responses complete in order on the raft thread; timeouts fire
+from a separate scheduler and can interleave, so outstanding requests need an ordered queue.
+
+**The real hazard: timeout races.** Leader times out chunk n while n+1, n+2 are in flight. TCP
+didn't lose them — the follower may process all three; the acks just arrive after the timeout
+fired. The leader then retries n, but the follower's dedup only remembers the *immediately
+previous* chunk id (`PassiveRole.java:438-446`), so the retry hits the strict-sequence check →
+abort → full restart. Naive pipelining thus turns today's safe timeout-retry into
+restart-from-scratch on exactly the flaky links we care about.
+
+**Fix (small, follower-local, no wire change): applied-watermark idempotency.** Chunk ids are
+(fileName, offset) and apply order equals the reader's lexicographic order, so "already applied"
+is a simple ≤-watermark test. Follower: respond idempotent-OK to any chunk at-or-below the
+watermark (re-writing identical bytes at the same offset is harmless anyway), ERROR only beyond
+`nextExpected`. Leader: on any failure, stop sending, let the window drain (each outstanding
+request resolves within X), then resume sequentially from the oldest unacked chunk.
+
+**Raft-thread pressure (the heartbeat concern).** With a full window the follower's raft thread
+loses its idle-RTT breathing room: there is always another install queued, so timer tasks and
+poll/vote requests wait behind at most k queued chunks — added latency ≈ k · t_proc(c). At
+c = 1 MiB: with per-chunk fsync still in place (5–10 ms) and k = 4 that is up to ~50 ms — still
+under heartbeat/2 = 125 ms but uncomfortable; without the per-chunk fsync (3.3) it is ~8 ms.
+So 3.3 should land before or with pipelining, chunk size must stay small (pipelining is the
+*alternative* to growing chunks, never combined with it), and the model's thread-block ceiling
+generalizes to `c ≤ R·budget/k`. Two mitigating facts: the leader sends nothing else to that
+member during install anyway (the install *is* the heartbeat), and pipelining makes processed
+installs arrive *more* often, so the follower's election timer is reset more frequently, not
+less. Note `k` need only cover the BDP: `k ≈ 1 + BDP/c` — at 100 Mbps × 60 ms RTT (BDP ≈ 750 KB)
+k = 2 already fills the pipe at 1 MiB chunks. Default k = 2, cap at 4.
+
+**Payoff unchanged:** at 1 MiB chunks, 60 ms RTT, 1 GiB snapshot, stop-and-wait wastes
+~N·RTT ≈ 1024 × 60 ms ≈ 61 s of idle wire time. Honest sizing: leader window + follower
+watermark + failure-path tests — moderate, not easy; the precedent that the raft thread and
+protocol tolerate 2 in-flight requests per member already exists in the append path.
 
 ### 3.6 Delta replication (the big one, still bounded)
 
