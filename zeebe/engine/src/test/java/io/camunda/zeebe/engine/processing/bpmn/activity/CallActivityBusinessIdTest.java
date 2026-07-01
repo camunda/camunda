@@ -51,10 +51,12 @@ public final class CallActivityBusinessIdTest {
     return Bpmn.createExecutableProcess(CHILD_PROCESS_ID).startEvent().endEvent().done();
   }
 
-  private static BpmnModelInstance childProcessCalling(final String grandchildBusinessId) {
+  private static BpmnModelInstance childProcessCalling(
+      final Consumer<CallActivityBuilder> grandchildCallActivity) {
     final CallActivityBuilder callActivity =
         Bpmn.createExecutableProcess(CHILD_PROCESS_ID).startEvent().callActivity("call-grandchild");
-    callActivity.zeebeProcessId(GRANDCHILD_PROCESS_ID).zeebeBusinessId(grandchildBusinessId);
+    callActivity.zeebeProcessId(GRANDCHILD_PROCESS_ID);
+    grandchildCallActivity.accept(callActivity);
     return callActivity.endEvent().done();
   }
 
@@ -171,7 +173,7 @@ public final class CallActivityBusinessIdTest {
     ENGINE
         .deployment()
         .withXmlResource("parent.bpmn", parentProcess(c -> c.zeebeBusinessId("level-1")))
-        .withXmlResource("child.bpmn", childProcessCalling("level-2"))
+        .withXmlResource("child.bpmn", childProcessCalling(c -> c.zeebeBusinessId("level-2")))
         .withXmlResource("grandchild.bpmn", grandchildProcess())
         .deploy();
 
@@ -188,11 +190,62 @@ public final class CallActivityBusinessIdTest {
     Assertions.assertThat(childInstance.getValue()).hasBusinessId("level-1");
 
     final Record<ProcessInstanceRecordValue> grandchildInstance =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withParentProcessInstanceKey(childInstance.getKey())
-            .withElementType(BpmnElementType.PROCESS)
-            .getFirst();
+        childProcessInstance(childInstance.getKey());
     Assertions.assertThat(grandchildInstance.getValue()).hasBusinessId("level-2");
+  }
+
+  @Test
+  public void shouldInheritGrandchildBusinessIdFromChildNotParent() {
+    // given - the child overrides its Business ID, the grandchild's call activity sets none
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess(c -> c.zeebeBusinessId("child-level")))
+        .withXmlResource("child.bpmn", childProcessCalling(c -> {}))
+        .withXmlResource("grandchild.bpmn", grandchildProcess())
+        .deploy();
+
+    // when
+    final long parentKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PARENT_PROCESS_ID)
+            .withBusinessId(PARENT_BUSINESS_ID)
+            .create();
+
+    // then - the grandchild inherits the child's Business ID, not the (different) parent's
+    final Record<ProcessInstanceRecordValue> childInstance = childProcessInstance(parentKey);
+    Assertions.assertThat(childInstance.getValue()).hasBusinessId("child-level");
+
+    final Record<ProcessInstanceRecordValue> grandchildInstance =
+        childProcessInstance(childInstance.getKey());
+    Assertions.assertThat(grandchildInstance.getValue()).hasBusinessId("child-level");
+  }
+
+  @Test
+  public void shouldInheritParentBusinessIdThroughNestedCallActivities() {
+    // given - neither the child nor the grandchild call activity sets a Business ID
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess(c -> {}))
+        .withXmlResource("child.bpmn", childProcessCalling(c -> {}))
+        .withXmlResource("grandchild.bpmn", grandchildProcess())
+        .deploy();
+
+    // when
+    final long parentKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PARENT_PROCESS_ID)
+            .withBusinessId(PARENT_BUSINESS_ID)
+            .create();
+
+    // then - the parent's Business ID propagates all the way down
+    final Record<ProcessInstanceRecordValue> childInstance = childProcessInstance(parentKey);
+    Assertions.assertThat(childInstance.getValue()).hasBusinessId(PARENT_BUSINESS_ID);
+
+    final Record<ProcessInstanceRecordValue> grandchildInstance =
+        childProcessInstance(childInstance.getKey());
+    Assertions.assertThat(grandchildInstance.getValue()).hasBusinessId(PARENT_BUSINESS_ID);
   }
 
   @Test
