@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
