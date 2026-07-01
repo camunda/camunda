@@ -84,7 +84,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
-        <Layout isPanel={isPanel} searchInput={<SearchForm />}>
+        <Layout isPanel={isPanel}>
           <Skeleton />
         </Layout>
       );
@@ -98,7 +98,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
           businessObjectsError?.response?.status === HTTP_STATUS_FORBIDDEN);
 
       return (
-        <Layout isPanel={isPanel} searchInput={<SearchForm />}>
+        <Layout isPanel={isPanel}>
           <ErrorMessage
             message={
               isForbidden

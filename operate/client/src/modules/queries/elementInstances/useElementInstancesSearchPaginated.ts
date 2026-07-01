@@ -34,8 +34,7 @@ const useElementInstancesSearchPaginated = <
     staleTime: 5000,
     enabled: options?.enabled ?? true,
     select: options?.select,
-    placeholderData:
-      (options?.enabled ?? true) ? (previousData) => previousData : undefined,
+    placeholderData: (previousData) => previousData,
     queryFn: async ({pageParam}) => {
       const {response, error} = await searchElementInstances({
         ...options?.payload,
