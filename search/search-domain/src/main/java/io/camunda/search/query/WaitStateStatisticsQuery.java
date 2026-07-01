@@ -8,14 +8,14 @@
 package io.camunda.search.query;
 
 import io.camunda.search.aggregation.WaitStateStatisticsAggregation;
-import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
+import io.camunda.search.filter.WaitStateStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SortOption;
 
-public record WaitStateStatisticsQuery(ProcessInstanceStatisticsFilter filter)
+public record WaitStateStatisticsQuery(WaitStateStatisticsFilter filter)
     implements TypedSearchAggregationQuery<
-        ProcessInstanceStatisticsFilter, SortOption, WaitStateStatisticsAggregation> {
+        WaitStateStatisticsFilter, SortOption, WaitStateStatisticsAggregation> {
 
   @Override
   public SortOption sort() {

@@ -67,6 +67,7 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
+import io.camunda.search.filter.WaitStateStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
@@ -829,8 +830,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
             requireScopedReaders()
                 .waitStateStatisticsReader()
                 .aggregate(
-                    new WaitStateStatisticsQuery(
-                        new ProcessInstanceStatisticsFilter(processInstanceKey)),
+                    new WaitStateStatisticsQuery(new WaitStateStatisticsFilter(processInstanceKey)),
                     access));
   }
 
