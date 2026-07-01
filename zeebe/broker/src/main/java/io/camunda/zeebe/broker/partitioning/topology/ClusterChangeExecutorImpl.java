@@ -71,9 +71,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
       final int currentClusterSize, final Set<MemberId> clusterMembers) {
     final ActorFuture<Void> result = concurrencyControl.createFuture();
 
-    // Cluster size in the same zone (if present)
-    final var newClusterSize = membersInZone(clusterMembers);
-    if (currentClusterSize >= newClusterSize) {
+    if (currentClusterSize >= clusterMembers.size()) {
       // No scaling up, so no need to call the NodeIdProvider
       result.complete(null);
       return result;
@@ -83,7 +81,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         () -> {
           try {
             nodeIdProvider
-                .scale(newClusterSize)
+                .scale(membersInZone(clusterMembers))
                 .thenAcceptAsync(ignore -> result.complete(null), concurrencyControl)
                 .exceptionallyAsync(
                     e -> {
