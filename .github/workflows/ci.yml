@@ -271,7 +271,13 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   build-platform-frontend:
-    if: needs.detect-changes.outputs.frontend-changes == 'true'
+    # Runs when the frontend changed, OR on any non-PR event targeting main/stable
+    # (push/schedule/workflow_dispatch) so the snapshot deploy jobs — which download
+    # these artifacts and run with `always()` on those refs — always have a producer.
+    if: >-
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      (github.event_name != 'pull_request' &&
+       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')))
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
