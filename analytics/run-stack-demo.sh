@@ -31,7 +31,11 @@ WEB_CP="${BASE}/webapp-cp.txt"
 
 EB_CLUSTER_DIR="${EB_CLUSTER_DIR:-/tmp/eb-cluster}"
 export EB_CLUSTER_DIR
-export EB_TOPICS_ARGS="-Devent-bridge.topics[0].name=zeebe-records -Devent-bridge.topics[0].partition-count=3 -Devent-bridge.topics[0].replication-factor=3"
+# OC (StandaloneCamunda) runs a single Zeebe partition, and the exporter routes each record to the
+# event-bridge partition matching its source partition id — so ALL records land on partition 1 and
+# any extra partitions stay empty (the consumer just wastes a fetch round-trip on them each sweep).
+# Match the producer: one partition. Keep RF 3 for replication across the 3 nodes.
+export EB_TOPICS_ARGS="-Devent-bridge.topics[0].name=zeebe-records -Devent-bridge.topics[0].partition-count=1 -Devent-bridge.topics[0].replication-factor=3"
 
 GW="http://localhost:8080"
 OC_REST="http://localhost:8088"
@@ -76,6 +80,19 @@ stop() {
     rm -f "${p}"
   done
   "${REPO_ROOT}/event-bridge/run-local-cluster.sh" stop || true
+  # Belt-and-braces: kill by main class too. The pid files only track processes THIS invocation
+  # started; a pipeline/webapp left over from an earlier session (a different pid) would otherwise
+  # survive — and because the analytics H2 runs in AUTO_SERVER mode, a lingering webapp keeps the
+  # (even deleted) dataset alive in memory and holds :8090, so the next start can't rebind and the
+  # UI keeps serving stale data. Match on the exact main classes so nothing unrelated is touched.
+  for cls in \
+    io.camunda.application.StandaloneCamunda \
+    io.camunda.application.StandaloneEventBridge \
+    io.camunda.eventbridge.analytics.StandaloneAnalyticsPipeline \
+    io.camunda.analytics.webapp.AnalyticsWebappApplication \
+    io.camunda.eventbridge.examples.MultiProcessDemoDriver; do
+    pkill -9 -f "${cls}" 2>/dev/null || true
+  done
   echo "    done."
 }
 
@@ -83,6 +100,10 @@ start() {
   [[ "${1:-}" == "--skip-build" ]] || build
   mkdir -p "${OC_DIR}" "${PIPE_DIR}" "${WEBAPP_DIR}" "${DRIVER_DIR}" "${DB_DIR}"
   rm -rf "${DB_DIR}"/analytics-dataset.* 2>/dev/null || true
+  # OC's RDBMS secondary storage now lives in its OWN persistent H2 (AUTO_SERVER), separate from the
+  # analytics app's H2, so OC can be restarted without wiping it (an in-memory H2 was lost on every
+  # OC restart, wedging the RDBMS exporter). Only a FRESH start clears it.
+  rm -rf "${DB_DIR}"/oc-rdbms.* 2>/dev/null || true
   rm -rf "${OC_DIR}/data" 2>/dev/null || true
   # wipe the pipeline's durable checkpoint/rollup state too — otherwise it resumes from stale
   # offsets that point past the end of the fresh topic and consumes nothing.
@@ -99,14 +120,16 @@ start() {
   ( cd "${OC_DIR}"
     java "${JVM_FLAGS[@]}" -cp "$(dist_cp)" \
       -Dspring.profiles.active=broker,insecure,rdbmsH2 \
+      -Dcamunda.data.secondary-storage.rdbms.url="jdbc:h2:file:${DB_DIR}/oc-rdbms;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1" \
+      -Dlogging.level.io.camunda.db.rdbms=WARN \
       -Dserver.port=8088 -Dmanagement.server.port=9700 \
       -Dzeebe.broker.network.commandApi.port=26701 \
       -Dzeebe.broker.network.internalApi.port=26702 \
       -Dzeebe.broker.exporters.eventbridge.className=io.camunda.eventbridge.zeebe.exporter.ZeebeRecordExporter \
       -Dzeebe.broker.exporters.eventbridge.args.url=${GW} \
       -Dzeebe.broker.exporters.eventbridge.args.topic=${TOPIC} \
-      -Dzeebe.broker.exporters.eventbridge.args.batchSize=1 \
-      -Dzeebe.broker.exporters.eventbridge.args.flushIntervalMs=200 \
+      -Dzeebe.broker.exporters.eventbridge.args.batchSize=5000 \
+      -Dzeebe.broker.exporters.eventbridge.args.flushIntervalMs=1000 \
       -Dzeebe.broker.data.directory="${OC_DIR}/data" \
       io.camunda.application.StandaloneCamunda >"${OC_DIR}/oc.log" 2>&1 &
     echo "$!" >"${OC_DIR}/pid" )
@@ -138,10 +161,15 @@ start() {
     sleep 1
   done
 
-  echo "==> Starting the continuous multi-process driver (order / payment+gateway / shipping)…"
-  ( cd "${DRIVER_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(examples_cp)" \
-      -Dcamunda.rest=${OC_REST} \
-      io.camunda.eventbridge.examples.MultiProcessDemoDriver 1200 >"${DRIVER_DIR}/driver.log" 2>&1 & echo "$!" >"${DRIVER_DIR}/pid" )
+  if [[ -n "${EB_SKIP_DRIVER:-}" ]]; then
+    echo "==> EB_SKIP_DRIVER set — not starting the default multi-process driver"
+    echo "    (start a load separately, e.g. analytics/run-realistic-load.sh start)"
+  else
+    echo "==> Starting the continuous multi-process driver (order / payment+gateway / shipping)…"
+    ( cd "${DRIVER_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(examples_cp)" \
+        -Dcamunda.rest=${OC_REST} \
+        io.camunda.eventbridge.examples.MultiProcessDemoDriver 1200 >"${DRIVER_DIR}/driver.log" 2>&1 & echo "$!" >"${DRIVER_DIR}/pid" )
+  fi
 
   cat <<EOF
 
