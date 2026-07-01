@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -29,7 +28,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<AgentHistoryRecord> {
 
   private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
@@ -43,7 +41,6 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
-    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
@@ -141,15 +138,6 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
 
     stateWriter.appendFollowUpEvent(historyKey, AgentHistoryIntent.CREATED, event);
     responseWriter.writeEventOnCommand(historyKey, AgentHistoryIntent.CREATED, event, command);
-    // TODO (#55033): COMMIT is emitted immediately after each item is created as an
-    // intermediate step; once the pending-commit lifecycle is wired to job
-    // completion/failure events, this follow-up command will be moved there instead.
-    commandWriter.appendFollowUpCommand(
-        historyKey,
-        AgentHistoryIntent.COMMIT,
-        new AgentHistoryRecord()
-            .setJobKey(commandValue.getJobKey())
-            .setJobLease(commandValue.getJobLease()));
   }
 
   private void writeRejection(
