@@ -228,6 +228,23 @@ type GetProcessInstanceStatisticsParams = Pick<ProcessInstance, 'processInstance
 	statisticName: StatisticName;
 };
 
+const getProcessInstanceWaitStateStatistics: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+	method: 'GET',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/statistics/wait-states`,
+};
+
+const waitStateStatisticSchema = z.object({
+	elementId: z.string(),
+	waitingCount: z.number(),
+});
+type WaitStateStatistic = z.infer<typeof waitStateStatisticSchema>;
+
+const getProcessInstanceWaitStateStatisticsResponseBodySchema =
+	getCollectionResponseBodySchema(waitStateStatisticSchema);
+type GetProcessInstanceWaitStateStatisticsResponseBody = z.infer<
+	typeof getProcessInstanceWaitStateStatisticsResponseBodySchema
+>;
+
 const getProcessInstanceSequenceFlows: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
 	method: 'GET',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/sequence-flows`,
@@ -406,6 +423,7 @@ export {
 	queryProcessInstanceIncidents,
 	getProcessInstanceCallHierarchy,
 	getProcessInstanceStatistics,
+	getProcessInstanceWaitStateStatistics,
 	getProcessInstanceSequenceFlows,
 	createIncidentResolutionBatchOperation,
 	createCancellationBatchOperation,
@@ -424,6 +442,8 @@ export {
 	queryProcessInstanceIncidentsResponseBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
+	getProcessInstanceWaitStateStatisticsResponseBodySchema,
+	waitStateStatisticSchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
 	createIncidentResolutionBatchOperationResponseBodySchema,
 	createCancellationBatchOperationResponseBodySchema,
@@ -454,6 +474,8 @@ export type {
 	StatisticName,
 	ProcessInstance,
 	GetProcessInstanceStatisticsResponseBody,
+	GetProcessInstanceWaitStateStatisticsResponseBody,
+	WaitStateStatistic,
 	CreateIncidentResolutionBatchOperationRequestBody,
 	CreateIncidentResolutionBatchOperationResponseBody,
 	CreateCancellationBatchOperationRequestBody,
