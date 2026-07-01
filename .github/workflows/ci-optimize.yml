@@ -264,7 +264,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        uses: YunaBraska/java-info-action@69c249915ed5de0752199dcceebeba79c34d3952 # 3.0.9
         with:
           work-dir: ./optimize
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -315,7 +315,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        uses: YunaBraska/java-info-action@69c249915ed5de0752199dcceebeba79c34d3952 # 3.0.9
         with:
           work-dir: ./optimize
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache: v1.0.0
@@ -403,7 +403,7 @@ jobs:
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        uses: YunaBraska/java-info-action@69c249915ed5de0752199dcceebeba79c34d3952 # 3.0.9
         with:
           work-dir: ./optimize
 
@@ -539,7 +539,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        uses: YunaBraska/java-info-action@69c249915ed5de0752199dcceebeba79c34d3952 # 3.0.9
         with:
           work-dir: ./optimize
 
